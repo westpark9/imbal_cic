@@ -191,11 +191,20 @@ class FinalExperiment:
                     # CSV 파일 로드
                     df = pd.read_csv(file_path)
                     
-                    # 'Label' 컬럼이 있는지 확인
-                    if 'Label' in df.columns:
+              
+                    
+                    # 'Label' 컬럼 찾기 (공백 제거 후 비교)
+                    label_column = None
+                    for col in df.columns:
+                        if col.strip() == 'Label':
+                            label_column = col
+                            break
+                    
+                    if label_column is not None:
+                        
                         # 정상 트래픽과 공격 트래픽 분리
-                        df['Label'] = df['Label'].str.strip()
-                        df = df[df['Label'] != 'BENIGN']  # 정상 트래픽 제외
+                        df[label_column] = df[label_column].str.strip()
+                        df = df[df[label_column] != 'BENIGN']  # 정상 트래픽 제외
                         
                         # NaN 값 처리
                         df = df.dropna()
@@ -205,8 +214,10 @@ class FinalExperiment:
                         df = df.dropna()
                         
                         all_data.append(df)
+                        print(f"       Loaded {len(df)} samples")
                     else:
-                        print(f"     Warning: {file_name} has no 'Label' column")
+                        print(f"       Warning: {file_name} has no 'Label' column")
+                        print(f"       Available columns: {list(df.columns)}")
                         
                 except Exception as e:
                     print(f"     Error loading {file_name}: {e}")
@@ -220,12 +231,22 @@ class FinalExperiment:
         combined_df = pd.concat(all_data, ignore_index=True)
         print(f"     Total samples: {len(combined_df)}")
         
+        # 레이블 컬럼 찾기 (첫 번째 데이터프레임에서)
+        label_column = None
+        for col in combined_df.columns:
+            if col.strip() == 'Label':
+                label_column = col
+                break
+        
+        if label_column is None:
+            raise ValueError("Label column not found in combined data!")
+        
         # 레이블 인코딩
         label_encoder = LabelEncoder()
-        combined_df['Label_encoded'] = label_encoder.fit_transform(combined_df['Label'])
+        combined_df['Label_encoded'] = label_encoder.fit_transform(combined_df[label_column])
         
         # 특성과 레이블 분리
-        feature_columns = [col for col in combined_df.columns if col not in ['Label', 'Label_encoded']]
+        feature_columns = [col for col in combined_df.columns if col not in [label_column, 'Label_encoded']]
         X = combined_df[feature_columns].values
         y = combined_df['Label_encoded'].values
         
@@ -316,7 +337,15 @@ class FinalExperiment:
         optimizer = optim.Adam(warmup_model.parameters(), lr=0.001, weight_decay=1e-4)
 
         warmup_model.train()
-        for epoch in range(10):  # Quick warmup
+        print("     Warming up backbone for feature extraction...")
+        
+        # Warmup 에포크에 대한 프로그레스 바
+        warmup_pbar = tqdm(range(10), desc="Backbone Warmup", unit="epoch")
+        
+        for epoch in warmup_pbar:
+            total_loss = 0.0
+            num_batches = 0
+            
             for data, targets in train_loader:
                 data, targets = data.to(self.device), targets.to(self.device)
                 optimizer.zero_grad()
@@ -324,6 +353,14 @@ class FinalExperiment:
                 loss = criterion(outputs, targets)
                 loss.backward()
                 optimizer.step()
+                
+                total_loss += loss.item()
+                num_batches += 1
+            
+            avg_loss = total_loss / num_batches
+            warmup_pbar.set_postfix_str(f"Loss: {avg_loss:.4f}")
+        
+        warmup_pbar.close()
 
         # Step 2: Extract class embeddings
         feature_extractor = SharedBackbone(input_dim, feature_dim=256).to(self.device)
@@ -402,8 +439,14 @@ class FinalExperiment:
         optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
-        for epoch in range(epochs):
+        # 전체 에포크에 대한 프로그레스 바
+        epoch_pbar = tqdm(range(epochs), desc="Training Baseline", unit="epoch")
+        
+        for epoch in epoch_pbar:
             model.train()
+            total_loss = 0.0
+            num_batches = 0
+            
             for data, targets in train_loader:
                 data, targets = data.to(self.device), targets.to(self.device)
                 optimizer.zero_grad()
@@ -411,8 +454,17 @@ class FinalExperiment:
                 loss = criterion(outputs, targets)
                 loss.backward()
                 optimizer.step()
+                
+                total_loss += loss.item()
+                num_batches += 1
+            
             scheduler.step()
-
+            
+            # 에포크별 진행 상황 업데이트 (시간 정보만)
+            avg_loss = total_loss / num_batches
+            epoch_pbar.set_postfix_str(f"Loss: {avg_loss:.4f}")
+        
+        epoch_pbar.close()
         return model
 
     def train_expert_ensemble(self, expert_groups, seed, epochs=100):
@@ -449,12 +501,20 @@ class FinalExperiment:
         optimizer = optim.Adam(all_params, lr=0.001, weight_decay=1e-4)
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
-        for epoch in range(epochs):
+        # 전체 에포크에 대한 프로그레스 바
+        epoch_pbar = tqdm(range(epochs), desc="Training Ensemble", unit="epoch")
+        
+        for epoch in epoch_pbar:
             shared_backbone.train()
             router.train()
             for expert_classifier in expert_classifiers:
                 expert_classifier.train()
 
+            total_loss = 0.0
+            total_cls_loss = 0.0
+            total_router_loss = 0.0
+            num_batches = 0
+            
             for data, targets in train_loader:
                 data, targets = data.to(self.device), targets.to(self.device)
 
@@ -490,12 +550,22 @@ class FinalExperiment:
                 classification_loss = criterion(final_logits, targets)
                 router_loss = criterion(routing_weights, expert_assignments)
 
-                total_loss = classification_loss + 0.1 * router_loss
-                total_loss.backward()
+                total_loss_val = classification_loss + 0.1 * router_loss
+                total_loss_val.backward()
                 optimizer.step()
+                
+                total_loss += total_loss_val.item()
+                total_cls_loss += classification_loss.item()
+                total_router_loss += router_loss.item()
+                num_batches += 1
 
             scheduler.step()
-
+            
+            # 에포크별 진행 상황 업데이트 (시간 정보만)
+            avg_total_loss = total_loss / num_batches
+            epoch_pbar.set_postfix_str(f"Loss: {avg_total_loss:.4f}")
+        
+        epoch_pbar.close()
         return shared_backbone, expert_classifiers, router
 
     def compute_per_class_metrics(self, predictions, targets, num_classes):
@@ -575,13 +645,25 @@ class FinalExperiment:
         all_targets = []
 
         model.eval()
+        print("     Evaluating baseline model...")
+        
         with torch.no_grad():
-            for data, targets in test_loader:
+            # 평가 진행 상황을 보여주는 프로그레스 바
+            eval_pbar = tqdm(test_loader, desc="Evaluating", unit="batch")
+            
+            for data, targets in eval_pbar:
                 data, targets = data.to(self.device), targets.to(self.device)
                 outputs = model(data)
                 _, predicted = outputs.max(1)
                 all_predictions.extend(predicted.cpu().numpy())
                 all_targets.extend(targets.cpu().numpy())
+                
+                # 진행 상황 업데이트
+                eval_pbar.set_postfix({
+                    'Samples': len(all_predictions)
+                })
+        
+        eval_pbar.close()
 
         all_predictions = np.array(all_predictions)
         all_targets = np.array(all_targets)
@@ -615,8 +697,13 @@ class FinalExperiment:
         for expert_classifier in expert_classifiers:
             expert_classifier.eval()
 
+        print("     Evaluating expert ensemble...")
+        
         with torch.no_grad():
-            for data, targets in test_loader:
+            # 평가 진행 상황을 보여주는 프로그레스 바
+            eval_pbar = tqdm(test_loader, desc="Evaluating Ensemble", unit="batch")
+            
+            for data, targets in eval_pbar:
                 data, targets = data.to(self.device), targets.to(self.device)
 
                 features = shared_backbone(data)
@@ -637,6 +724,8 @@ class FinalExperiment:
                 _, predicted = final_logits.max(1)
                 all_predictions.extend(predicted.cpu().numpy())
                 all_targets.extend(targets.cpu().numpy())
+        
+        eval_pbar.close()
 
         all_predictions = np.array(all_predictions)
         all_targets = np.array(all_targets)
