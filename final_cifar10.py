@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Final Comprehensive Experiment: Clustering-Based Expert Ensemble vs Baseline
-CICIDS-2017 Network Intrusion Detection Dataset Version
+Supports both fixed seed (reproducible) and random seed (robust evaluation) modes.
 
 Usage:
     python final_experiment.py --mode fixed --seed 42           # Fixed seed for reproducibility
@@ -13,7 +13,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import DataLoader, Subset
+import torchvision
+import torchvision.transforms as transforms
+from torchvision.models import resnet18, ResNet18_Weights
 import numpy as np
 import random
 from tqdm import tqdm
@@ -23,9 +26,8 @@ import json
 import argparse
 from datetime import datetime
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score, confusion_matrix
-from sklearn.model_selection import train_test_split
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -34,47 +36,32 @@ import pandas as pd
 warnings.filterwarnings("ignore")
 
 
-class CICIDS2017Dataset(Dataset):
-    """CICIDS-2017 데이터셋을 위한 커스텀 Dataset 클래스"""
-    
-    def __init__(self, features, labels, transform=None):
-        self.features = torch.FloatTensor(features)
-        self.labels = torch.LongTensor(labels)
-        self.transform = transform
-    
-    def __len__(self):
-        return len(self.features)
-    
-    def __getitem__(self, idx):
-        features = self.features[idx]
-        label = self.labels[idx]
-        
-        if self.transform:
-            features = self.transform(features)
-            
-        return features, label
-
-
 class SharedBackbone(nn.Module):
-    """Shared backbone network for feature extraction - MLP version for tabular data"""
+    """Shared backbone network for feature extraction"""
 
-    def __init__(self, input_dim, feature_dim=256):
+    def __init__(self, feature_dim=256):
         super(SharedBackbone, self).__init__()
-        
+
+        backbone = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+        backbone.conv1 = nn.Conv2d(
+            3, 64, kernel_size=3, stride=1, padding=1, bias=False
+        )
+        backbone.maxpool = nn.Identity()
+
+        self.backbone_features = nn.Sequential(*list(backbone.children())[:-1])
+
+        in_features = backbone.fc.in_features
         self.feature_extractor = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(512, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(512, feature_dim),
+            nn.Dropout(0.2),
+            nn.Linear(in_features, feature_dim),
             nn.ReLU(inplace=True),
             nn.BatchNorm1d(feature_dim),
         )
 
     def forward(self, x):
-        return self.feature_extractor(x)
+        backbone_out = self.backbone_features(x).flatten(1)
+        features = self.feature_extractor(backbone_out)
+        return features
 
 
 class ExpertClassifier(nn.Module):
@@ -83,7 +70,7 @@ class ExpertClassifier(nn.Module):
     def __init__(self, feature_dim, num_classes):
         super(ExpertClassifier, self).__init__()
         self.classifier = nn.Sequential(
-            nn.Dropout(0.2),
+            nn.Dropout(0.1),
             nn.Linear(feature_dim, 128),
             nn.ReLU(inplace=True),
             nn.Linear(128, num_classes),
@@ -117,31 +104,26 @@ class FallbackRouter(nn.Module):
 
 
 class BaselineModel(nn.Module):
-    """Simple baseline model for comparison - MLP version for tabular data"""
+    """Simple baseline model for comparison"""
 
-    def __init__(self, input_dim, num_classes):
+    def __init__(self):
         super(BaselineModel, self).__init__()
-        
-        self.classifier = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(512, 256),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(256, 128),
-            nn.ReLU(inplace=True),
-            nn.Linear(128, num_classes),
+        self.backbone = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+        self.backbone.conv1 = nn.Conv2d(
+            3, 64, kernel_size=3, stride=1, padding=1, bias=False
         )
+        self.backbone.maxpool = nn.Identity()
+
+        in_features = self.backbone.fc.in_features
+        self.backbone.fc = nn.Linear(in_features, 10)
 
     def forward(self, x):
-        return self.classifier(x)
+        return self.backbone(x)
 
 
 class FinalExperiment:
     """
     Final comprehensive experiment class supporting both fixed and random seed modes
-    CICIDS-2017 Network Intrusion Detection Dataset Version
     """
 
     def __init__(self, num_experts=4, imbalance_factor=100):
@@ -150,7 +132,6 @@ class FinalExperiment:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         print("Final Clustering-Based Expert Ensemble Experiment")
-        print(f"   Dataset: CICIDS-2017 Network Intrusion Detection")
         print(f"   Number of experts: {num_experts}")
         print(f"   Imbalance factor: {imbalance_factor}")
         print(f"   Device: {self.device}")
@@ -165,158 +146,87 @@ class FinalExperiment:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    def load_cicids2017_data(self, data_dir):
-        """CICIDS-2017 데이터를 로드하고 전처리합니다"""
-        print("   Loading CICIDS-2017 dataset...")
-        
-        # 데이터 파일 목록
-        data_files = [
-            'Monday-WorkingHours.pcap_ISCX.csv',
-            'Tuesday-WorkingHours.pcap_ISCX.csv',
-            'Wednesday-workingHours.pcap_ISCX.csv',
-            'Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv',
-            'Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv',
-            'Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv',
-            'Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv',
-            'Friday-WorkingHours-Morning.pcap_ISCX.csv'
-        ]
-        
-        all_data = []
-        
-        for file_name in data_files:
-            file_path = os.path.join(data_dir, file_name)
-            if os.path.exists(file_path):
-                print(f"     Loading {file_name}...")
-                try:
-                    # CSV 파일 로드
-                    df = pd.read_csv(file_path)
-                    
-                    # 'Label' 컬럼이 있는지 확인
-                    if 'Label' in df.columns:
-                        # 정상 트래픽과 공격 트래픽 분리
-                        df['Label'] = df['Label'].str.strip()
-                        df = df[df['Label'] != 'BENIGN']  # 정상 트래픽 제외
-                        
-                        # NaN 값 처리
-                        df = df.dropna()
-                        
-                        # 무한대 값 처리
-                        df = df.replace([np.inf, -np.inf], np.nan)
-                        df = df.dropna()
-                        
-                        all_data.append(df)
-                    else:
-                        print(f"     Warning: {file_name} has no 'Label' column")
-                        
-                except Exception as e:
-                    print(f"     Error loading {file_name}: {e}")
-            else:
-                print(f"     Warning: {file_path} not found")
-        
-        if not all_data:
-            raise ValueError("No valid data files found!")
-        
-        # 모든 데이터 합치기
-        combined_df = pd.concat(all_data, ignore_index=True)
-        print(f"     Total samples: {len(combined_df)}")
-        
-        # 레이블 인코딩
-        label_encoder = LabelEncoder()
-        combined_df['Label_encoded'] = label_encoder.fit_transform(combined_df['Label'])
-        
-        # 특성과 레이블 분리
-        feature_columns = [col for col in combined_df.columns if col not in ['Label', 'Label_encoded']]
-        X = combined_df[feature_columns].values
-        y = combined_df['Label_encoded'].values
-        
-        # 특성 스케일링
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
-        
-        # 클래스별 샘플 수 확인
-        unique_labels, counts = np.unique(y, return_counts=True)
-        print(f"     Classes: {len(unique_labels)}")
-        for label, count in zip(unique_labels, counts):
-            class_name = label_encoder.inverse_transform([label])[0]
-            print(f"       {class_name}: {count}")
-        
-        return X_scaled, y, label_encoder, scaler, feature_columns
+    def setup_dataset(self, seed):
+        """Setup CIFAR-10 with long-tail imbalance"""
+        self.set_random_seed(seed)  # Ensure dataset creation is reproducible
 
-    def setup_dataset(self, seed, data_dir):
-        """CICIDS-2017 데이터셋 설정 및 불균형 데이터 생성"""
-        self.set_random_seed(seed)
-        
-        # 데이터 로드
-        X, y, self.label_encoder, self.scaler, self.feature_columns = self.load_cicids2017_data(data_dir)
-        
-        # 훈련/테스트 분할
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=seed, stratify=y
-        )
-        
-        # 불균형 데이터셋 생성
-        X_train_imbalanced, y_train_imbalanced, self.samples_per_class = self._create_imbalanced_dataset(
-            X_train, y_train
-        )
-        
-        # 데이터셋 생성
-        self.train_subset = CICIDS2017Dataset(X_train_imbalanced, y_train_imbalanced)
-        self.test_dataset = CICIDS2017Dataset(X_test, y_test)
-        
-        # 클래스 수 저장
-        self.num_classes = len(np.unique(y))
-        
-        print(f"   Dataset: {len(self.train_subset)} train, {len(self.test_dataset)} test")
-        print(f"   Features: {X.shape[1]}")
-        print(f"   Classes: {self.num_classes}")
+        mean = [0.5071, 0.4867, 0.4408]
+        std = [0.2675, 0.2565, 0.2761]
 
-    def _create_imbalanced_dataset(self, X, y):
-        """불균형 데이터셋 생성 (long-tail distribution)"""
-        unique_labels, counts = np.unique(y, return_counts=True)
-        
-        max_samples = np.max(counts)
+        train_transform = transforms.Compose(
+            [
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
+            ]
+        )
+
+        test_transform = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)]
+        )
+
+        full_train = torchvision.datasets.CIFAR10(
+            root="./data", train=True, download=True, transform=train_transform
+        )
+        self.train_subset, self.samples_per_class = self._create_imbalanced_dataset(
+            full_train
+        )
+        self.test_dataset = torchvision.datasets.CIFAR10(
+            root="./data", train=False, download=True, transform=test_transform
+        )
+
+        print(
+            f"   Dataset: {len(self.train_subset)} train, {len(self.test_dataset)} test"
+        )
+
+    def _create_imbalanced_dataset(self, dataset):
+        """Create long-tail imbalanced dataset"""
+        targets = [dataset[i][1] for i in range(len(dataset))]
+
+        max_samples = 5000
         min_samples = max_samples // self.imbalance_factor
-        
+
         samples_per_class = []
-        selected_indices = []
-        
-        for i, (label, count) in enumerate(zip(unique_labels, counts)):
-            # long-tail distribution 적용
-            ratio = i / (len(unique_labels) - 1)
+        for i in range(10):
+            ratio = i / 9
             num_samples = int(max_samples * (min_samples / max_samples) ** ratio)
-            num_samples = max(num_samples, min_samples)
-            
-            # 해당 클래스의 인덱스 찾기
-            label_indices = np.where(y == label)[0]
-            
-            if len(label_indices) >= num_samples:
-                selected = np.random.choice(label_indices, num_samples, replace=False)
+            samples_per_class.append(max(num_samples, min_samples))
+
+        class_indices = [[] for _ in range(10)]
+        for idx, target in enumerate(targets):
+            class_indices[target].append(idx)
+
+        selected_indices = []
+        for class_id, max_count in enumerate(samples_per_class):
+            indices = class_indices[class_id]
+            if len(indices) >= max_count:
+                selected = np.random.choice(indices, max_count, replace=False)
             else:
-                selected = label_indices
-            
+                selected = indices
             selected_indices.extend(selected)
-            samples_per_class.append(num_samples)
-        
-        return X[selected_indices], y[selected_indices], samples_per_class
+
+        return Subset(dataset, selected_indices), samples_per_class
 
     def get_clustering_groups(self, seed):
-        """클러스터링 기반 전문가 그룹 생성"""
+        """Get clustering-based expert groups using the 6-step pipeline"""
         print("   Executing 6-step clustering pipeline...")
 
         # Step 1: Backbone warmup for feature extraction
-        self.set_random_seed(seed + 10)
-        
-        input_dim = len(self.feature_columns)
-        warmup_model = BaselineModel(input_dim, self.num_classes).to(self.device)
+        self.set_random_seed(seed + 10)  # Offset seed for warmup
+
+        warmup_model = BaselineModel().to(self.device)
         train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=True, num_workers=0
+            self.train_subset, batch_size=128, shuffle=True, num_workers=2
         )
 
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(warmup_model.parameters(), lr=0.001, weight_decay=1e-4)
+        optimizer = optim.SGD(
+            warmup_model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4
+        )
 
         warmup_model.train()
-        for epoch in range(10):  # Quick warmup
+        for epoch in range(15):  # Quick warmup
             for data, targets in train_loader:
                 data, targets = data.to(self.device), targets.to(self.device)
                 optimizer.zero_grad()
@@ -326,18 +236,26 @@ class FinalExperiment:
                 optimizer.step()
 
         # Step 2: Extract class embeddings
-        feature_extractor = SharedBackbone(input_dim, feature_dim=256).to(self.device)
-        
-        # Load warmed-up weights (첫 번째 레이어만)
-        feature_extractor.feature_extractor[0].weight.data = warmup_model.classifier[0].weight.data
-        feature_extractor.feature_extractor[0].bias.data = warmup_model.classifier[0].bias.data
+        feature_extractor = SharedBackbone(feature_dim=256).to(self.device)
+
+        # Load warmed-up weights
+        backbone_state = {}
+        for name, param in warmup_model.state_dict().items():
+            if not name.startswith("backbone.fc"):
+                backbone_state[name.replace("backbone.", "")] = param
+
+        feature_state = feature_extractor.state_dict()
+        for name, param in backbone_state.items():
+            if name in feature_state and feature_state[name].shape == param.shape:
+                feature_state[name] = param
+        feature_extractor.load_state_dict(feature_state)
 
         feature_extractor.eval()
 
         # Collect class features
-        class_features = [[] for _ in range(self.num_classes)]
+        class_features = [[] for _ in range(10)]
         train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=False, num_workers=0
+            self.train_subset, batch_size=128, shuffle=False, num_workers=2
         )
 
         with torch.no_grad():
@@ -350,7 +268,7 @@ class FinalExperiment:
 
         # Calculate class centroids
         class_centroids = []
-        for class_id in range(self.num_classes):
+        for class_id in range(10):
             if len(class_features[class_id]) > 0:
                 centroid = np.mean(class_features[class_id], axis=0)
                 class_centroids.append(centroid)
@@ -362,7 +280,9 @@ class FinalExperiment:
 
         # Step 3: Clustering with [frequency + embeddings]
         samples_array = np.array(self.samples_per_class)
-        frequency_zscore = (samples_array - np.mean(samples_array)) / np.std(samples_array)
+        frequency_zscore = (samples_array - np.mean(samples_array)) / np.std(
+            samples_array
+        )
 
         frequency_weight = 10
         frequency_features = np.repeat(
@@ -387,19 +307,20 @@ class FinalExperiment:
         return clustered_groups
 
     def train_baseline(self, seed, epochs=100):
-        """베이스라인 모델 학습"""
+        """Train baseline model"""
         print("   Training baseline model...")
 
         self.set_random_seed(seed)
 
-        input_dim = len(self.feature_columns)
-        model = BaselineModel(input_dim, self.num_classes).to(self.device)
+        model = BaselineModel().to(self.device)
         train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=True, num_workers=0
+            self.train_subset, batch_size=128, shuffle=True, num_workers=2
         )
 
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+        optimizer = optim.SGD(
+            model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4
+        )
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
         for epoch in range(epochs):
@@ -416,14 +337,13 @@ class FinalExperiment:
         return model
 
     def train_expert_ensemble(self, expert_groups, seed, epochs=100):
-        """클러스터링 기반 전문가 앙상블 학습"""
+        """Train clustering-based expert ensemble"""
         print("   Training clustering-based expert ensemble...")
 
-        self.set_random_seed(seed + 300)
+        self.set_random_seed(seed + 300)  # Offset seed for ensemble training
 
         # Initialize models
-        input_dim = len(self.feature_columns)
-        shared_backbone = SharedBackbone(input_dim, feature_dim=256).to(self.device)
+        shared_backbone = SharedBackbone(feature_dim=256).to(self.device)
         expert_classifiers = []
         for group in expert_groups:
             expert_classifier = ExpertClassifier(
@@ -442,11 +362,11 @@ class FinalExperiment:
         all_params.extend(list(router.parameters()))
 
         train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=True, num_workers=0
+            self.train_subset, batch_size=128, shuffle=True, num_workers=2
         )
 
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(all_params, lr=0.001, weight_decay=1e-4)
+        optimizer = optim.SGD(all_params, lr=0.1, momentum=0.9, weight_decay=5e-4)
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
         for epoch in range(epochs):
@@ -474,7 +394,7 @@ class FinalExperiment:
                             break
 
                 # Expert predictions
-                final_logits = torch.zeros(data.size(0), self.num_classes, device=self.device)
+                final_logits = torch.zeros(data.size(0), 10, device=self.device)
 
                 for expert_idx, (expert_classifier, expert_classes) in enumerate(
                     zip(expert_classifiers, expert_groups)
@@ -568,7 +488,7 @@ class FinalExperiment:
     def evaluate_model(self, model):
         """단일 모델 평가 및 클래스별 성능 지표 계산"""
         test_loader = DataLoader(
-            self.test_dataset, batch_size=128, shuffle=False, num_workers=0
+            self.test_dataset, batch_size=128, shuffle=False, num_workers=2
         )
 
         all_predictions = []
@@ -591,7 +511,7 @@ class FinalExperiment:
         
         # 클래스별 성능 지표
         per_class_acc, per_class_f1 = self.compute_per_class_metrics(
-            all_predictions, all_targets, self.num_classes
+            all_predictions, all_targets, 10
         )
         
         # 혼동 행렬
@@ -604,7 +524,7 @@ class FinalExperiment:
     ):
         """전문가 앙상블 평가 및 클래스별 성능 지표 계산"""
         test_loader = DataLoader(
-            self.test_dataset, batch_size=128, shuffle=False, num_workers=0
+            self.test_dataset, batch_size=128, shuffle=False, num_workers=2
         )
 
         all_predictions = []
@@ -622,7 +542,7 @@ class FinalExperiment:
                 features = shared_backbone(data)
                 routing_weights = router(features)
 
-                final_logits = torch.zeros(data.size(0), self.num_classes, device=self.device)
+                final_logits = torch.zeros(data.size(0), 10, device=self.device)
 
                 for expert_idx, (expert_classifier, expert_classes) in enumerate(
                     zip(expert_classifiers, expert_groups)
@@ -646,7 +566,7 @@ class FinalExperiment:
         
         # 클래스별 성능 지표
         per_class_acc, per_class_f1 = self.compute_per_class_metrics(
-            all_predictions, all_targets, self.num_classes
+            all_predictions, all_targets, 10
         )
         
         # 혼동 행렬
@@ -654,7 +574,7 @@ class FinalExperiment:
         
         return accuracy, per_class_acc, per_class_f1, cm
 
-    def run_single_experiment(self, seed, data_dir):
+    def run_single_experiment(self, seed):
         """단일 실험 실행 및 결과 저장"""
         print(f"\nExperiment with seed {seed}")
         print("=" * 50)
@@ -666,7 +586,7 @@ class FinalExperiment:
         os.makedirs(exp_dir, exist_ok=True)
 
         # 데이터셋 설정
-        self.setup_dataset(seed, data_dir)
+        self.setup_dataset(seed)
 
         # 베이스라인 모델 학습 및 평가
         baseline_model = self.train_baseline(seed)
@@ -685,7 +605,7 @@ class FinalExperiment:
         improvement = ensemble_acc - baseline_acc
 
         # 결과 시각화 및 저장
-        class_names = self.label_encoder.classes_
+        class_names = self.test_dataset.classes
         
         # 혼동 행렬 시각화
         self.plot_confusion_matrix(
@@ -738,7 +658,7 @@ class FinalExperiment:
 
         return results
 
-    def run_multiple_experiments(self, seeds, data_dir):
+    def run_multiple_experiments(self, seeds):
         """Run multiple experiments with different seeds"""
         print(f"\nRunning {len(seeds)} experiments with seeds: {seeds}")
         print("=" * 80)
@@ -747,7 +667,7 @@ class FinalExperiment:
 
         for i, seed in enumerate(seeds):
             print(f"\nTrial {i+1}/{len(seeds)}")
-            result = self.run_single_experiment(seed, data_dir)
+            result = self.run_single_experiment(seed)
             all_results.append(result)
 
         # Calculate statistics
@@ -812,7 +732,7 @@ class FinalExperiment:
 def main():
     """Main function with argument parsing"""
     parser = argparse.ArgumentParser(
-        description="Final Clustering-Based Expert Ensemble Experiment - CICIDS-2017 Version"
+        description="Final Clustering-Based Expert Ensemble Experiment"
     )
     parser.add_argument(
         "--mode",
@@ -838,12 +758,6 @@ def main():
         default=100,
         help="Imbalance factor for long-tail distribution",
     )
-    parser.add_argument(
-        "--data_dir",
-        type=str,
-        default="./MachineLearningCVE",
-        help="Directory containing CICIDS-2017 CSV files",
-    )
 
     args = parser.parse_args()
 
@@ -854,7 +768,7 @@ def main():
 
     if args.mode == "fixed":
         print(f"\nRunning FIXED SEED experiment (seed={args.seed})")
-        result = experiment.run_single_experiment(args.seed, args.data_dir)
+        result = experiment.run_single_experiment(args.seed)
 
         # Save single result
         with open(f"final_experiment_fixed_seed{args.seed}.json", "w") as f:
@@ -863,7 +777,7 @@ def main():
     elif args.mode == "random":
         print(f"\nRunning RANDOM SEED experiments ({args.trials} trials)")
         random_seeds = [random.randint(1, 10000) for _ in range(args.trials)]
-        summary = experiment.run_multiple_experiments(random_seeds, args.data_dir)
+        summary = experiment.run_multiple_experiments(random_seeds)
 
     elif args.mode == "both":
         print(f"\nRunning BOTH modes:")
@@ -874,14 +788,14 @@ def main():
         print(f"\n" + "=" * 80)
         print(f"FIXED SEED EXPERIMENT")
         print(f"=" * 80)
-        fixed_result = experiment.run_single_experiment(args.seed, args.data_dir)
+        fixed_result = experiment.run_single_experiment(args.seed)
 
         # Random seed experiments
         print(f"\n" + "=" * 80)
         print(f"RANDOM SEED EXPERIMENTS")
         print(f"=" * 80)
         random_seeds = [random.randint(1, 10000) for _ in range(args.trials)]
-        random_summary = experiment.run_multiple_experiments(random_seeds, args.data_dir)
+        random_summary = experiment.run_multiple_experiments(random_seeds)
 
         # Compare results
         print(f"\n" + "=" * 80)
