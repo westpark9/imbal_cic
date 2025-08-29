@@ -2,11 +2,11 @@
 """
 Final Comprehensive Experiment: Clustering-Based Expert Ensemble vs Baseline
 CICIDS-2017 Network Intrusion Detection Dataset Version
-############################
+
 Usage:
-    python final_experiment.py --mode fixed --seed 42           # Fixed seed for reproducibility
-    python final_experiment.py --mode random --trials 3        # Random seeds for robust evaluation
-    python final_experiment.py --mode both --seed 42 --trials 3 # Both modes
+    python final3.py --mode fixed --seed 42 --epochs 50        # Fixed seed with 50 epochs
+    python final3.py --mode random --trials 3 --epochs 100     # Random seeds with 100 epochs
+    python final3.py --mode both --seed 42 --trials 3 --epochs 75 # Both modes with 75 epochs
 """
 
 import torch
@@ -30,6 +30,11 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+
+# Windows multiprocessing 문제 해결
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 warnings.filterwarnings("ignore")
 
@@ -144,15 +149,14 @@ class FinalExperiment:
     CICIDS-2017 Network Intrusion Detection Dataset Version
     """
 
-    def __init__(self, num_experts=4, imbalance_factor=100):
+    def __init__(self, num_experts=4):
         self.num_experts = num_experts
-        self.imbalance_factor = imbalance_factor
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         print("Final Clustering-Based Expert Ensemble Experiment")
         print(f"   Dataset: CICIDS-2017 Network Intrusion Detection")
         print(f"   Number of experts: {num_experts}")
-        print(f"   Imbalance factor: {imbalance_factor}")
+        print(f"   Using original data distribution (no artificial balancing)")
         print(f"   Device: {self.device}")
 
     def set_random_seed(self, seed):
@@ -204,7 +208,9 @@ class FinalExperiment:
                         
                         # 정상 트래픽과 공격 트래픽 분리
                         df[label_column] = df[label_column].str.strip()
-                        df = df[df[label_column] != 'BENIGN']  # 정상 트래픽 제외
+                        
+                        # 정상 트래픽도 포함 (데이터 불균형 방지)
+                        # df = df[df[label_column] != 'BENIGN']  # 이 줄을 주석 처리
                         
                         # NaN 값 처리
                         df = df.dropna()
@@ -213,8 +219,14 @@ class FinalExperiment:
                         df = df.replace([np.inf, -np.inf], np.nan)
                         df = df.dropna()
                         
+                        # 클래스별 샘플 수 제한 (너무 많은 클래스 방지)
+                        if len(df) > 0:
+                            label_counts = df[label_column].value_counts()
+                            print(f"       Classes in {file_name}: {list(label_counts.index)}")
+                            print(f"       Sample counts: {dict(label_counts)}")
+                        
                         all_data.append(df)
-                        print(f"       Loaded {len(df)} samples")
+                        print(f"       Loaded {len(df)} samples (including some benign traffic)")
                     else:
                         print(f"       Warning: {file_name} has no 'Label' column")
                         print(f"       Available columns: {list(df.columns)}")
@@ -270,18 +282,13 @@ class FinalExperiment:
         # 데이터 로드
         X, y, self.label_encoder, self.scaler, self.feature_columns = self.load_cicids2017_data(data_dir)
         
-        # 훈련/테스트 분할
+        # 훈련/테스트 분할 (7:3)
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=seed, stratify=y
+            X, y, test_size=0.3, random_state=seed, stratify=y
         )
         
-        # 불균형 데이터셋 생성
-        X_train_imbalanced, y_train_imbalanced, self.samples_per_class = self._create_imbalanced_dataset(
-            X_train, y_train
-        )
-        
-        # 데이터셋 생성
-        self.train_subset = CICIDS2017Dataset(X_train_imbalanced, y_train_imbalanced)
+        # 원본 데이터 그대로 사용 (불균형 데이터셋 생성 제거)
+        self.train_subset = CICIDS2017Dataset(X_train, y_train)
         self.test_dataset = CICIDS2017Dataset(X_test, y_test)
         
         # 클래스 수 저장
@@ -291,34 +298,7 @@ class FinalExperiment:
         print(f"   Features: {X.shape[1]}")
         print(f"   Classes: {self.num_classes}")
 
-    def _create_imbalanced_dataset(self, X, y):
-        """불균형 데이터셋 생성 (long-tail distribution)"""
-        unique_labels, counts = np.unique(y, return_counts=True)
-        
-        max_samples = np.max(counts)
-        min_samples = max_samples // self.imbalance_factor
-        
-        samples_per_class = []
-        selected_indices = []
-        
-        for i, (label, count) in enumerate(zip(unique_labels, counts)):
-            # long-tail distribution 적용
-            ratio = i / (len(unique_labels) - 1)
-            num_samples = int(max_samples * (min_samples / max_samples) ** ratio)
-            num_samples = max(num_samples, min_samples)
-            
-            # 해당 클래스의 인덱스 찾기
-            label_indices = np.where(y == label)[0]
-            
-            if len(label_indices) >= num_samples:
-                selected = np.random.choice(label_indices, num_samples, replace=False)
-            else:
-                selected = label_indices
-            
-            selected_indices.extend(selected)
-            samples_per_class.append(num_samples)
-        
-        return X[selected_indices], y[selected_indices], samples_per_class
+    # _create_imbalanced_dataset 함수 제거 - 원본 데이터 그대로 사용
 
     def get_clustering_groups(self, seed):
         """클러스터링 기반 전문가 그룹 생성"""
@@ -330,7 +310,7 @@ class FinalExperiment:
         input_dim = len(self.feature_columns)
         warmup_model = BaselineModel(input_dim, self.num_classes).to(self.device)
         train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=True, num_workers=0
+            self.train_subset, batch_size=128, shuffle=True, num_workers=0, persistent_workers=False
         )
 
         criterion = nn.CrossEntropyLoss()
@@ -374,7 +354,7 @@ class FinalExperiment:
         # Collect class features
         class_features = [[] for _ in range(self.num_classes)]
         train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=False, num_workers=0
+            self.train_subset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
         )
 
         with torch.no_grad():
@@ -398,7 +378,9 @@ class FinalExperiment:
         class_centroids = np.array(class_centroids)
 
         # Step 3: Clustering with [frequency + embeddings]
-        samples_array = np.array(self.samples_per_class)
+        # 원본 데이터의 클래스별 샘플 수 계산
+        unique_labels, counts = np.unique(y_train, return_counts=True)
+        samples_array = np.array(counts)
         frequency_zscore = (samples_array - np.mean(samples_array)) / np.std(samples_array)
 
         frequency_weight = 10
@@ -413,7 +395,7 @@ class FinalExperiment:
         scaler = StandardScaler()
         combined_features_scaled = scaler.fit_transform(combined_features)
 
-        kmeans = KMeans(n_clusters=self.num_experts, random_state=seed + 200, n_init=20)
+        kmeans = KMeans(n_clusters=self.num_experts, random_state=seed + 200, n_init=20, n_jobs=1)
         cluster_labels = kmeans.fit_predict(combined_features_scaled)
 
         # Group classes by cluster
@@ -432,7 +414,7 @@ class FinalExperiment:
         input_dim = len(self.feature_columns)
         model = BaselineModel(input_dim, self.num_classes).to(self.device)
         train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=True, num_workers=0
+            self.train_subset, batch_size=128, shuffle=True, num_workers=0, persistent_workers=False
         )
 
         criterion = nn.CrossEntropyLoss()
@@ -494,7 +476,7 @@ class FinalExperiment:
         all_params.extend(list(router.parameters()))
 
         train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=True, num_workers=0
+            self.train_subset, batch_size=128, shuffle=True, num_workers=0, persistent_workers=False
         )
 
         criterion = nn.CrossEntropyLoss()
@@ -638,7 +620,7 @@ class FinalExperiment:
     def evaluate_model(self, model):
         """단일 모델 평가 및 클래스별 성능 지표 계산"""
         test_loader = DataLoader(
-            self.test_dataset, batch_size=128, shuffle=False, num_workers=0
+            self.test_dataset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
         )
 
         all_predictions = []
@@ -686,7 +668,7 @@ class FinalExperiment:
     ):
         """전문가 앙상블 평가 및 클래스별 성능 지표 계산"""
         test_loader = DataLoader(
-            self.test_dataset, batch_size=128, shuffle=False, num_workers=0
+            self.test_dataset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
         )
 
         all_predictions = []
@@ -743,7 +725,7 @@ class FinalExperiment:
         
         return accuracy, per_class_acc, per_class_f1, cm
 
-    def run_single_experiment(self, seed, data_dir):
+    def run_single_experiment(self, seed, data_dir, epochs=100):
         """단일 실험 실행 및 결과 저장"""
         print(f"\nExperiment with seed {seed}")
         print("=" * 50)
@@ -758,13 +740,13 @@ class FinalExperiment:
         self.setup_dataset(seed, data_dir)
 
         # 베이스라인 모델 학습 및 평가
-        baseline_model = self.train_baseline(seed)
+        baseline_model = self.train_baseline(seed, epochs)
         baseline_acc, baseline_per_class_acc, baseline_per_class_f1, baseline_cm = self.evaluate_model(baseline_model)
 
         # 클러스터링 그룹 생성 및 앙상블 학습
         clustering_groups = self.get_clustering_groups(seed)
         shared_backbone, expert_classifiers, router = self.train_expert_ensemble(
-            clustering_groups, seed
+            clustering_groups, seed, epochs
         )
         ensemble_acc, ensemble_per_class_acc, ensemble_per_class_f1, ensemble_cm = self.evaluate_expert_ensemble(
             shared_backbone, expert_classifiers, router, clustering_groups
@@ -827,7 +809,7 @@ class FinalExperiment:
 
         return results
 
-    def run_multiple_experiments(self, seeds, data_dir):
+    def run_multiple_experiments(self, seeds, data_dir, epochs=100):
         """Run multiple experiments with different seeds"""
         print(f"\nRunning {len(seeds)} experiments with seeds: {seeds}")
         print("=" * 80)
@@ -836,7 +818,7 @@ class FinalExperiment:
 
         for i, seed in enumerate(seeds):
             print(f"\nTrial {i+1}/{len(seeds)}")
-            result = self.run_single_experiment(seed, data_dir)
+            result = self.run_single_experiment(seed, data_dir, epochs)
             all_results.append(result)
 
         # Calculate statistics
@@ -921,29 +903,30 @@ def main():
     parser.add_argument(
         "--num_experts", type=int, default=4, help="Number of expert networks"
     )
-    parser.add_argument(
-        "--imbalance_factor",
-        type=int,
-        default=100,
-        help="Imbalance factor for long-tail distribution",
-    )
+    # imbalance_factor argument 제거 - CICIDS-2017은 원본 데이터 사용
     parser.add_argument(
         "--data_dir",
         type=str,
         default="./MachineLearningCVE",
         help="Directory containing CICIDS-2017 CSV files",
     )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=100,
+        help="Number of training epochs for models",
+    )
 
     args = parser.parse_args()
 
     # Initialize experiment
     experiment = FinalExperiment(
-        num_experts=args.num_experts, imbalance_factor=args.imbalance_factor
+        num_experts=args.num_experts
     )
 
     if args.mode == "fixed":
         print(f"\nRunning FIXED SEED experiment (seed={args.seed})")
-        result = experiment.run_single_experiment(args.seed, args.data_dir)
+        result = experiment.run_single_experiment(args.seed, args.data_dir, args.epochs)
 
         # Save single result
         with open(f"final_experiment_fixed_seed{args.seed}.json", "w") as f:
@@ -952,7 +935,7 @@ def main():
     elif args.mode == "random":
         print(f"\nRunning RANDOM SEED experiments ({args.trials} trials)")
         random_seeds = [random.randint(1, 10000) for _ in range(args.trials)]
-        summary = experiment.run_multiple_experiments(random_seeds, args.data_dir)
+        summary = experiment.run_multiple_experiments(random_seeds, args.data_dir, args.epochs)
 
     elif args.mode == "both":
         print(f"\nRunning BOTH modes:")
@@ -963,14 +946,14 @@ def main():
         print(f"\n" + "=" * 80)
         print(f"FIXED SEED EXPERIMENT")
         print(f"=" * 80)
-        fixed_result = experiment.run_single_experiment(args.seed, args.data_dir)
+        fixed_result = experiment.run_single_experiment(args.seed, args.data_dir, args.epochs)
 
         # Random seed experiments
         print(f"\n" + "=" * 80)
         print(f"RANDOM SEED EXPERIMENTS")
         print(f"=" * 80)
         random_seeds = [random.randint(1, 10000) for _ in range(args.trials)]
-        random_summary = experiment.run_multiple_experiments(random_seeds, args.data_dir)
+        random_summary = experiment.run_multiple_experiments(random_seeds, args.data_dir, args.epochs)
 
         # Compare results
         print(f"\n" + "=" * 80)
