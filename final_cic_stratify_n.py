@@ -342,15 +342,15 @@ class FinalExperiment:
         # 데이터 로드
         X, y, self.label_encoder, self.scaler, self.feature_columns = self.load_cicids2017_data(data_dir)
         
-        # 훈련/테스트 분할 (7:3) with 클래스별 비율 확인
+        # 훈련/테스트 분할 (7:3) - 원본 불균형 분포 유지
         print(f"     Splitting data into train/test (7:3 ratio)...")
         
-        # Stratified split으로 클래스 비율 유지
+        # 일반적인 train_test_split (stratify 없음) - 자연스러운 불균형 유지
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.3, random_state=seed, stratify=y
+            X, y, test_size=0.3, random_state=seed
         )
         
-        # 클래스별 비율 확인 (stratify=y로 자동 7:3 비율 유지)
+        # 클래스별 분포 확인
         print(f"     Class distribution verification:")
         unique_classes = np.unique(y)
         total_train = len(X_train)
