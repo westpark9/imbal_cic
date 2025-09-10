@@ -455,9 +455,19 @@ class FinalExperiment:
         for expert_idx, class_list in enumerate(clustered_groups):
             total_samples = sum(class_id_to_count.get(int(cid), 0) for cid in class_list)
             print(f"         - Expert {expert_idx}: {len(class_list)} classes, {total_samples} samples")
-            for cid in sorted(class_list, key=lambda x: class_id_to_count.get(int(x), 0), reverse=True):
-                cnt = class_id_to_count.get(int(cid), 0)
-                print(f"             · class {cid}: {cnt}")
+            if len(class_list) == 0:
+                print(f"             WARNING: Expert {expert_idx} has no classes assigned!")
+            else:
+                for cid in sorted(class_list, key=lambda x: class_id_to_count.get(int(x), 0), reverse=True):
+                    cnt = class_id_to_count.get(int(cid), 0)
+                    class_name = self.label_encoder.inverse_transform([cid])[0]
+                    print(f"             · class {cid} ({class_name}): {cnt}")
+        
+        # 클러스터링 결과 검증
+        empty_experts = [i for i, group in enumerate(clustered_groups) if len(group) == 0]
+        if empty_experts:
+            print(f"       WARNING: Experts {empty_experts} have no classes assigned!")
+            print(f"       This will cause these experts to always return 0 accuracy.")
 
         return clustered_groups
 
@@ -598,7 +608,7 @@ class FinalExperiment:
         y_pred = xgb_model.predict(X_test)
         
         # 정확도 계산
-        accuracy = 100.0 * (y_pred == y_test).mean()
+        accuracy = (y_pred == y_test).mean()
         
         # F1 점수 계산
         f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
@@ -895,7 +905,7 @@ class FinalExperiment:
         y_pred = xgb_model.predict(X_test)
         
         # 전체 정확도
-        accuracy = 100.0 * (y_pred == y_test).mean()
+        accuracy = (y_pred == y_test).mean()
         
         # 클래스별 성능 지표
         num_classes = len(np.unique(y_test))
@@ -1149,7 +1159,7 @@ class FinalExperiment:
         all_targets = np.array(all_targets)
 
         # 전체 정확도
-        accuracy = 100.0 * (all_predictions == all_targets).mean()
+        accuracy = (all_predictions == all_targets).mean()
         
         # 클래스별 성능 지표
         per_class_acc, per_class_f1 = self.compute_per_class_metrics(
@@ -1211,7 +1221,7 @@ class FinalExperiment:
         all_targets = np.array(all_targets)
 
         # 전체 정확도
-        accuracy = 100.0 * (all_predictions == all_targets).mean()
+        accuracy = (all_predictions == all_targets).mean()
         
         # 클래스별 성능 지표
         per_class_acc, per_class_f1 = self.compute_per_class_metrics(
@@ -1372,16 +1382,16 @@ class FinalExperiment:
 
         print(f"Results:")
         if 'baseline' in models:
-            print(f"   Baseline MLP:                 {baseline_acc:.2f}%")
+            print(f"   Baseline MLP:                 {baseline_acc:.4f}")
         if 'ensemble' in models:
-            print(f"   Expert Ensemble:              {ensemble_acc:.2f}%")
+            print(f"   Expert Ensemble:              {ensemble_acc:.4f}")
         if 'xgboost' in models:
-            print(f"   XGBoost:                      {xgb_acc:.2f}%")
+            print(f"   XGBoost:                      {xgb_acc:.4f}")
         
         if 'baseline' in models and 'ensemble' in models:
-            print(f"   Ensemble Improvement:         {improvement_ensemble:+.2f}%p")
+            print(f"   Ensemble Improvement:         {improvement_ensemble:+.4f}")
         if 'baseline' in models and 'xgboost' in models:
-            print(f"   XGBoost Improvement:          {improvement_xgb:+.2f}%p")
+            print(f"   XGBoost Improvement:          {improvement_xgb:+.4f}")
             
         print(f"   Runtime:                      {elapsed_time:.1f} minutes")
         print(f"   Results saved to:             {exp_dir}")
