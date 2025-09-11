@@ -189,7 +189,6 @@ class FinalExperiment:
         ]
         
         all_csv_files = [f for f in os.listdir(data_dir) if f.endswith('.csv')]
-        # print(f"     Available CSV files in {data_dir}: {all_csv_files}")
         
         for csv_file in all_csv_files:
             if csv_file not in data_files:
@@ -201,7 +200,6 @@ class FinalExperiment:
         for file_name in data_files:
             file_path = os.path.join(data_dir, file_name)
             if os.path.exists(file_path):
-                # print(f"     Loading {file_name}...")
                 try:
                     df = pd.read_csv(file_path)
 
@@ -212,22 +210,17 @@ class FinalExperiment:
                             break
                     
                     if label_column is not None:
-                        
                         # 정상 트래픽과 공격 트래픽 분리
                         df[label_column] = df[label_column].str.strip()
                         
                         df = df.dropna()
-                        
                         df = df.replace([np.inf, -np.inf], np.nan)
                         df = df.dropna()
                         
                         if len(df) > 0:
                             label_counts = df[label_column].value_counts()
-                            # print(f"       Classes in {file_name}: {list(label_counts.index)}")
-                            # print(f"       Sample counts: {dict(label_counts)}")
-                        
+
                         all_data.append(df)
-                        # print(f"       Loaded {len(df)} samples (including all classes)")
                     else:
                         print(f"       Warning: {file_name} has no 'Label' column")
                         print(f"       Available columns: {list(df.columns)}")
@@ -319,15 +312,7 @@ class FinalExperiment:
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.3, random_state=seed
         )
-        
-        # 클래스별 분포 확인
-        print(f"     Class distribution verification:")
-        unique_classes = np.unique(y)
-        total_train = len(X_train)
-        total_test = len(X_test)
-
-        print(f"     Final split: Train={total_train} samples, Test={total_test} samples")
-        print(f"     Overall ratio: Train={total_train/(total_train+total_test):.1%}, Test={total_test/(total_train+total_test):.1%}")
+     
         
         # 데이터셋 객체 생성
         self.train_subset = CICIDS2017Dataset(X_train, y_train)
@@ -409,7 +394,6 @@ class FinalExperiment:
                 class_centroids.append(centroid)
 
         class_centroids = np.array(class_centroids)
-        print(f"       DEBUG: class_centroids shape: {class_centroids.shape}, NaN count: {np.isnan(class_centroids).sum()}")
 
         # Step 3: Clustering with [frequency (from TRAIN) + class embeddings]
         # 학습 분할의 클래스별 샘플 수 사용 (final_cifar10.py 방식과 일치)
@@ -426,10 +410,7 @@ class FinalExperiment:
         frequency_features = np.repeat(
             frequency_zscore.reshape(-1, 1), frequency_weight, axis=1
         )
-        print(f"       DEBUG: frequency_features shape: {frequency_features.shape}, NaN count: {np.isnan(frequency_features).sum()}")
-
         combined_features = np.concatenate([frequency_features, class_centroids], axis=1)
-        print(f"       DEBUG: combined_features shape: {combined_features.shape}, NaN count: {np.isnan(combined_features).sum()}")
         
         # standard scaler 생략
         
@@ -446,11 +427,6 @@ class FinalExperiment:
         for class_id, cluster_id in enumerate(cluster_labels):
             clustered_groups[cluster_id].append(class_id)
         
-        # 클러스터링 결과 상세 출력
-        print(f"       DEBUG: cluster_labels = {cluster_labels}")
-        print(f"       DEBUG: combined_features shape = {combined_features.shape}")
-        print(f"       DEBUG: frequency_features (first 5 classes) = {frequency_features[:5, 0]}")
-        print(f"       DEBUG: class_centroids norm (first 5 classes) = {np.linalg.norm(class_centroids[:5], axis=1)}")
 
         # Print per-expert class membership and sample counts
         train_labels = self.train_subset.labels.cpu().numpy()
@@ -475,34 +451,6 @@ class FinalExperiment:
             print(f"       WARNING: Experts {empty_experts} have no classes assigned!")
             print(f"       This will cause these experts to always return 0 accuracy.")
 
-        # 실제 Train/Test 분할 후 각 Expert별 클래스 분포 확인
-        print("       DEBUG: Checking actual class distribution after train/test split...")
-        train_labels = self.train_subset.labels.cpu().numpy()
-        test_labels = self.test_subset.labels.cpu().numpy()
-        
-        for expert_idx, expert_classes in enumerate(clustered_groups):
-            train_expert_samples = []
-            test_expert_samples = []
-            
-            for label in train_labels:
-                if label in expert_classes:
-                    train_expert_samples.append(label)
-            
-            for label in test_labels:
-                if label in expert_classes:
-                    test_expert_samples.append(label)
-            
-            if train_expert_samples:
-                train_unique, train_counts = np.unique(train_expert_samples, return_counts=True)
-                print(f"       DEBUG: Expert {expert_idx} TRAIN samples: {dict(zip(train_unique, train_counts))}")
-            else:
-                print(f"       DEBUG: Expert {expert_idx} TRAIN samples: NONE!")
-                
-            if test_expert_samples:
-                test_unique, test_counts = np.unique(test_expert_samples, return_counts=True)
-                print(f"       DEBUG: Expert {expert_idx} TEST samples: {dict(zip(test_unique, test_counts))}")
-            else:
-                print(f"       DEBUG: Expert {expert_idx} TEST samples: NONE!")
 
         return clustered_groups
 
@@ -621,15 +569,6 @@ class FinalExperiment:
         all_predictions = np.array(all_predictions)
         all_targets = np.array(all_targets)
 
-        # 디버깅 정보 출력 (훈련 과정에서만)
-        if len(all_predictions) > 0:
-            print(f"       DEBUG Expert {expert_classes}: {len(all_predictions)} samples")
-            print(f"         - predictions range: {all_predictions.min()}-{all_predictions.max()}, targets range: {all_targets.min()}-{all_targets.max()}")
-            print(f"         - unique predictions: {np.unique(all_predictions)}, unique targets: {np.unique(all_targets)}")
-            print(f"         - expert_classes length: {len(expert_classes)}")
-            print(f"         - prediction counts: {np.bincount(all_predictions)}")
-            print(f"         - target counts: {np.bincount(all_targets)}")
-
         # 정확도 계산
         accuracy = (all_predictions == all_targets).mean()
         
@@ -736,7 +675,6 @@ class FinalExperiment:
                 feature_dim=256, num_classes=len(group)
             ).to(self.device)
             expert_classifiers.append(expert_classifier)
-            print(f"       DEBUG: Expert {expert_idx} created with {len(group)} classes: {group}")
 
         router = FallbackRouter(num_experts=self.num_experts, feature_dim=256).to(
             self.device
@@ -811,10 +749,6 @@ class FinalExperiment:
                     zip(expert_classifiers, expert_groups)
                 ):
                     expert_pred = expert_classifier(features)
-                    
-                    # Expert 2 디버깅 (훈련 과정에서만, 첫 번째 배치만)
-                    if expert_idx == 2 and num_batches == 0:  # Expert 2, 첫 번째 배치만
-                        print(f"       DEBUG Expert 2 Training: expert_pred shape: {expert_pred.shape}, predicted range: {expert_pred.argmax(1).min().item()}-{expert_pred.argmax(1).max().item()}")
 
                     for i, global_class in enumerate(expert_classes):
                         final_logits[:, global_class] += (
