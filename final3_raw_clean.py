@@ -343,7 +343,7 @@ class FinalExperiment:
         print("     Warming up backbone for feature extraction...")
         
         # Warmup 에포크에 대한 프로그레스 바 (final_cifar10.py와 일치)
-        warmup_pbar = tqdm(range(1), desc="Backbone Warmup", unit="epoch")
+        warmup_pbar = tqdm(range(15), desc="Backbone Warmup", unit="epoch")
         
         for epoch in warmup_pbar: 
             for data, targets in train_loader:
@@ -406,7 +406,7 @@ class FinalExperiment:
         else:
             frequency_zscore = (samples_array - np.mean(samples_array)) / std_sa
 
-        frequency_weight = 10
+        frequency_weight = 50
         frequency_features = np.repeat(
             frequency_zscore.reshape(-1, 1), frequency_weight, axis=1
         )
@@ -731,6 +731,26 @@ class FinalExperiment:
 
                 features = shared_backbone(data)
                 routing_weights = router(features)
+
+                # Router weight 디버깅 (첫 번째 배치의 처음 5개 샘플만)
+                if num_batches == 0:  # 첫 번째 배치에서만 출력
+                    print(f"       DEBUG Router Training: routing_weights shape: {routing_weights.shape}")
+                    print(f"       DEBUG Router Training: routing_weights (first 5 samples):")
+                    for i in range(min(5, routing_weights.size(0))):
+                        weights = routing_weights[i].detach().cpu().numpy()
+                        target_class = targets[i].item()
+                        class_name = self.label_encoder.inverse_transform([target_class])[0]
+                        max_expert = np.argmax(weights)
+                        
+                        # 해당 클래스가 실제로 할당된 Expert 찾기
+                        assigned_expert = None
+                        for expert_idx, expert_classes in enumerate(expert_groups):
+                            if target_class in expert_classes:
+                                assigned_expert = expert_idx
+                                break
+                        
+                        print(f"         Sample {i}: Class {target_class} ({class_name}) -> Router: Expert {max_expert}, Assigned: Expert {assigned_expert} (weights: {weights})")
+                    print(f"       DEBUG Router Training: routing_weights range: {routing_weights.min().item():.4f}-{routing_weights.max().item():.4f}")
 
                 # Expert assignments
                 expert_assignments = torch.zeros(
@@ -1178,11 +1198,47 @@ class FinalExperiment:
             # 평가 진행 상황을 보여주는 프로그레스 바
             eval_pbar = tqdm(test_loader, desc="Evaluating Ensemble", unit="batch")
             
+            batch_count = 0
             for data, targets in eval_pbar:
                 data, targets = data.to(self.device), targets.to(self.device)
 
                 features = shared_backbone(data)
                 routing_weights = router(features)
+
+                # Router weight 디버깅 (첫 번째 배치의 처음 5개 샘플만)
+                if batch_count == 0:  # 첫 번째 배치에서만 출력
+                    print(f"       DEBUG Router Evaluation: routing_weights shape: {routing_weights.shape}")
+                    print(f"       DEBUG Router Evaluation: routing_weights (first 5 samples):")
+                    for i in range(min(5, routing_weights.size(0))):
+                        weights = routing_weights[i].detach().cpu().numpy()
+                        target_class = targets[i].item()
+                        class_name = self.label_encoder.inverse_transform([target_class])[0]
+                        max_expert = np.argmax(weights)
+                        
+                        # 해당 클래스가 실제로 할당된 Expert 찾기
+                        assigned_expert = None
+                        for expert_idx, expert_classes in enumerate(expert_groups):
+                            if target_class in expert_classes:
+                                assigned_expert = expert_idx
+                                break
+                        
+                        print(f"         Sample {i}: Class {target_class} ({class_name}) -> Router: Expert {max_expert}, Assigned: Expert {assigned_expert} (weights: {weights})")
+                    print(f"       DEBUG Router Evaluation: routing_weights range: {routing_weights.min().item():.4f}-{routing_weights.max().item():.4f}")
+                    
+                    # 클래스별 Expert 할당 통계
+                    print(f"       DEBUG Router Evaluation: Class-to-Expert mapping (first batch):")
+                    class_expert_mapping = {}
+                    for i in range(routing_weights.size(0)):
+                        target_class = targets[i].item()
+                        max_expert = np.argmax(routing_weights[i].detach().cpu().numpy())
+                        if target_class not in class_expert_mapping:
+                            class_expert_mapping[target_class] = []
+                        class_expert_mapping[target_class].append(max_expert)
+                    
+                    for class_id, expert_assignments in class_expert_mapping.items():
+                        class_name = self.label_encoder.inverse_transform([class_id])[0]
+                        expert_counts = {expert: expert_assignments.count(expert) for expert in range(4)}
+                        print(f"         Class {class_id} ({class_name}): {expert_counts}")
 
                 final_logits = torch.zeros(data.size(0), self.num_classes, device=self.device)
 
@@ -1199,6 +1255,8 @@ class FinalExperiment:
                 _, predicted = final_logits.max(1)
                 all_predictions.extend(predicted.cpu().numpy())
                 all_targets.extend(targets.cpu().numpy())
+                
+                batch_count += 1
         
         eval_pbar.close()
 

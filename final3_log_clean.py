@@ -413,7 +413,7 @@ class FinalExperiment:
         print("     Warming up backbone for feature extraction...")
         
         # Warmup 에포크에 대한 프로그레스 바 (final_cifar10.py와 일치)
-        warmup_pbar = tqdm(range(1), desc="Backbone Warmup", unit="epoch")
+        warmup_pbar = tqdm(range(15), desc="Backbone Warmup", unit="epoch")
         
         for epoch in warmup_pbar: 
             for data, targets in train_loader:
