@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-simple MLP // Standard + LogScaler
+Deeper MLP // StandardScaler X
 """
 
 import torch
@@ -20,6 +20,7 @@ import argparse
 from datetime import datetime
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.decomposition import PCA
 from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.model_selection import train_test_split
 import os
@@ -59,18 +60,37 @@ class CICIDS2017Dataset(Dataset):
 
 
 class SharedBackbone(nn.Module):
-    """Shared backbone network for feature extraction - MLP version for tabular data"""
+    """Shared backbone network for feature extraction - Enhanced MLP version for tabular data"""
 
     def __init__(self, input_dim, feature_dim=256):
         super(SharedBackbone, self).__init__()
         
         self.feature_extractor = nn.Sequential(
-            nn.Linear(input_dim, 512),
+            # First block - larger initial layer
+            nn.Linear(input_dim, 1024),
             nn.ReLU(inplace=True),
-            nn.Dropout(0.2),
+            nn.BatchNorm1d(1024),
+            nn.Dropout(0.3),
+            
+            # Second block
+            nn.Linear(1024, 512),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.3),
+            
+            # Third block
             nn.Linear(512, 512),
             nn.ReLU(inplace=True),
+            nn.BatchNorm1d(512),
             nn.Dropout(0.2),
+            
+            # Fourth block
+            nn.Linear(512, 512),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.2),
+            
+            # Final feature extraction
             nn.Linear(512, feature_dim),
             nn.ReLU(inplace=True),
             nn.BatchNorm1d(feature_dim),
@@ -87,8 +107,13 @@ class ExpertClassifier(nn.Module):
         super(ExpertClassifier, self).__init__()
         self.classifier = nn.Sequential(
             nn.Dropout(0.2),
-            nn.Linear(feature_dim, 128),
+            nn.Linear(feature_dim, 256),
             nn.ReLU(inplace=True),
+            nn.BatchNorm1d(256),
+            nn.Dropout(0.1),
+            nn.Linear(256, 128),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(128),
             nn.Linear(128, num_classes),
         )
 
@@ -105,8 +130,13 @@ class FallbackRouter(nn.Module):
         self.feature_dim = feature_dim
 
         self.router = nn.Sequential(
-            nn.Linear(feature_dim, 128),
+            nn.Linear(feature_dim, 256),
             nn.ReLU(inplace=True),
+            nn.BatchNorm1d(256),
+            nn.Dropout(0.2),
+            nn.Linear(256, 128),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(128),
             nn.Dropout(0.1),
             nn.Linear(128, 64),
             nn.ReLU(inplace=True),
@@ -120,20 +150,43 @@ class FallbackRouter(nn.Module):
 
 
 class BaselineModel(nn.Module):
-    """Simple baseline model for comparison - MLP version for tabular data"""
+    """Enhanced baseline model for comparison - Deeper MLP version for tabular data"""
 
     def __init__(self, input_dim, num_classes):
         super(BaselineModel, self).__init__()
         
         self.classifier = nn.Sequential(
-            nn.Linear(input_dim, 512),
+            # First block - larger initial layer
+            nn.Linear(input_dim, 1024),
             nn.ReLU(inplace=True),
+            nn.BatchNorm1d(1024),
+            nn.Dropout(0.3),
+            
+            # Second block
+            nn.Linear(1024, 512),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.3),
+            
+            # Third block
+            nn.Linear(512, 512),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(512),
             nn.Dropout(0.2),
+            
+            # Fourth block
             nn.Linear(512, 256),
             nn.ReLU(inplace=True),
+            nn.BatchNorm1d(256),
             nn.Dropout(0.2),
+            
+            # Fifth block
             nn.Linear(256, 128),
             nn.ReLU(inplace=True),
+            nn.BatchNorm1d(128),
+            nn.Dropout(0.1),
+            
+            # Final classification layer
             nn.Linear(128, num_classes),
         )
 
@@ -365,7 +418,7 @@ class FinalExperiment:
         warmup_model.train()
         print("     Warming up backbone for feature extraction...")
         
-        # Warmup 에포크에 대한 프로그레스 바 (final_cifar10.py와 일치)
+        # Warmup 에포크에 대한 프로그레스 바 (깊어진 네트워크로 인해 10 에포크로 단축)
         warmup_pbar = tqdm(range(1), desc="Backbone Warmup", unit="epoch")
         
         for epoch in warmup_pbar: 
@@ -382,9 +435,29 @@ class FinalExperiment:
         # Step 2: Extract class embeddings
         feature_extractor = SharedBackbone(input_dim, feature_dim=256).to(self.device)
         
-        # Load warmed-up weights (첫 번째 레이어만)
-        feature_extractor.feature_extractor[0].weight.data = warmup_model.classifier[0].weight.data
-        feature_extractor.feature_extractor[0].bias.data = warmup_model.classifier[0].bias.data
+        # Load warmed-up weights (모든 호환되는 레이어)
+        warmup_state = warmup_model.state_dict()
+        feature_state = feature_extractor.state_dict()
+        
+        # 레이어 매핑: warmup classifier -> feature_extractor
+        layer_mapping = {
+            'classifier.0.weight': 'feature_extractor.0.weight',
+            'classifier.0.bias': 'feature_extractor.0.bias',
+            'classifier.2.weight': 'feature_extractor.4.weight',  # 1024->512
+            'classifier.2.bias': 'feature_extractor.4.bias',
+            'classifier.5.weight': 'feature_extractor.8.weight',   # 512->512
+            'classifier.5.bias': 'feature_extractor.8.bias',
+            'classifier.8.weight': 'feature_extractor.12.weight',  # 512->512
+            'classifier.8.bias': 'feature_extractor.12.bias'
+        }
+        
+        # 호환되는 레이어의 가중치 전이
+        for warmup_key, feature_key in layer_mapping.items():
+            if warmup_key in warmup_state and feature_key in feature_state:
+                if warmup_state[warmup_key].shape == feature_state[feature_key].shape:
+                    feature_state[feature_key] = warmup_state[warmup_key].clone()
+        
+        feature_extractor.load_state_dict(feature_state)
 
         feature_extractor.eval()
 
@@ -419,7 +492,6 @@ class FinalExperiment:
         class_centroids = np.array(class_centroids)
 
         # Step 3: Clustering with [frequency (from TRAIN) + class embeddings]
-        # 학습 분할의 클래스별 샘플 수 사용 (final_cifar10.py 방식과 일치)
         train_labels = self.train_subset.labels.cpu().numpy()
         unique_labels, counts = np.unique(train_labels, return_counts=True)
         samples_array = counts.astype(np.float32)
@@ -429,21 +501,62 @@ class FinalExperiment:
         else:
             frequency_zscore = (samples_array - np.mean(samples_array)) / std_sa
 
-        frequency_weight = 10
-        frequency_features = np.repeat(
-            frequency_zscore.reshape(-1, 1), frequency_weight, axis=1
-        )
-        combined_features = np.concatenate([frequency_features, class_centroids], axis=1)
+        print(f"       Class samples and frequency z-scores:")
+        for i, (class_id, count) in enumerate(zip(unique_labels, counts)):
+            class_name = self.label_encoder.inverse_transform([class_id])[0]
+            print(f"         Class {class_id} ({class_name}): {count} samples, z-score: {frequency_zscore[i]:.3f}")
+
+        # 샘플 수 기반 클러스터링을 위해 frequency만 사용하거나 극도로 강화
+        print(f"       Using frequency-dominant clustering for sample-balanced experts...")
+        
+        # Option 1: Frequency만 사용 (가장 확실한 방법)
+        use_frequency_only = True
+        
+        if use_frequency_only:
+            # Frequency-only 모드: 더 강력한 변환으로 극단값 완화
+            
+            # 세제곱근 변환 (큰 값들의 차이를 더 크게 줄임)
+            cube_root_samples = np.power(samples_array, 1/3)
+            
+            # Min-Max 정규화 (0-1 범위)
+            min_val = cube_root_samples.min()
+            max_val = cube_root_samples.max()
+            normalized_samples = (cube_root_samples - min_val) / (max_val - min_val)
+            
+            # 0-1 범위를 0-10 범위로 확장 (KMeans가 구분하기 쉽도록)
+            scaled_features = normalized_samples * 10.0
+            
+            frequency_features = np.repeat(scaled_features.reshape(-1, 1), 20, axis=1)
+            combined_features = frequency_features
+            
+            print(f"       Using frequency-only clustering with cube-root scaling (20 dimensions)")
+            print(f"       Original samples range: [{samples_array.min():.0f}, {samples_array.max():.0f}]")
+            print(f"       Cube-root samples range: [{cube_root_samples.min():.3f}, {cube_root_samples.max():.3f}]")
+            print(f"       Normalized range: [{normalized_samples.min():.3f}, {normalized_samples.max():.3f}]")
+            print(f"       Final scaled range: [{scaled_features.min():.3f}, {scaled_features.max():.3f}]")
+            
+            # 각 클래스의 변환된 값 출력 (디버깅용)
+            print(f"       Transformed values per class:")
+            for i, (class_id, count) in enumerate(zip(unique_labels, counts)):
+                class_name = self.label_encoder.inverse_transform([class_id])[0]
+                print(f"         Class {class_id} ({class_name}): {count} -> {scaled_features[i]:.3f}")
         
         
-        # KMeans NaN 검증
+        print(f"       Combined features shape: {combined_features.shape}")
+        if not use_frequency_only:
+            print(f"       Frequency weight applied: {frequency_weight}")
+            print(f"       Feature range after scaling: [{reduced_centroids_scaled.min():.3f}, {reduced_centroids_scaled.max():.3f}]")
+            print(f"       Frequency range: [{frequency_features.min():.3f}, {frequency_features.max():.3f}]")
+        else:
+            print(f"       Final frequency range: [{frequency_features.min():.3f}, {frequency_features.max():.3f}]")
+
+        # NaN 처리
         if np.isnan(combined_features).any():
             print(f"       WARNING: NaN found in clustering features, replacing with zeros")
             combined_features = np.nan_to_num(combined_features, nan=0.0)
 
         kmeans = KMeans(n_clusters=self.num_experts, random_state=seed + 200, n_init=20)
         cluster_labels = kmeans.fit_predict(combined_features)
-
         # Group classes by cluster
         clustered_groups = [[] for _ in range(self.num_experts)]
         for class_id, cluster_id in enumerate(cluster_labels):
@@ -754,6 +867,26 @@ class FinalExperiment:
                 features = shared_backbone(data)
                 routing_weights = router(features)
 
+                # Router weight 디버깅 (첫 번째 배치의 처음 5개 샘플만)
+                if num_batches == 0:  # 첫 번째 배치에서만 출력
+                    print(f"       DEBUG Router Training: routing_weights shape: {routing_weights.shape}")
+                    print(f"       DEBUG Router Training: routing_weights (first 5 samples):")
+                    for i in range(min(5, routing_weights.size(0))):
+                        weights = routing_weights[i].detach().cpu().numpy()
+                        target_class = targets[i].item()
+                        class_name = self.label_encoder.inverse_transform([target_class])[0]
+                        max_expert = np.argmax(weights)
+                        
+                        # 해당 클래스가 실제로 할당된 Expert 찾기
+                        assigned_expert = None
+                        for expert_idx, expert_classes in enumerate(expert_groups):
+                            if target_class in expert_classes:
+                                assigned_expert = expert_idx
+                                break
+                        
+                        print(f"         Sample {i}: Class {target_class} ({class_name}) -> Router: Expert {max_expert}, Assigned: Expert {assigned_expert} (weights: {weights})")
+                    print(f"       DEBUG Router Training: routing_weights range: {routing_weights.min().item():.4f}-{routing_weights.max().item():.4f}")
+
                 # Expert assignments
                 expert_assignments = torch.zeros(
                     targets.size(0), dtype=torch.long, device=self.device
@@ -781,7 +914,7 @@ class FinalExperiment:
                 classification_loss = criterion(final_logits, targets)
                 router_loss = criterion(routing_weights, expert_assignments)
 
-                total_loss_val = classification_loss + 0.1 * router_loss
+                total_loss_val = classification_loss + 0.5 * router_loss
                 total_loss_val.backward()
                 optimizer.step()
                 
@@ -1200,11 +1333,47 @@ class FinalExperiment:
             # 평가 진행 상황을 보여주는 프로그레스 바
             eval_pbar = tqdm(test_loader, desc="Evaluating Ensemble", unit="batch")
             
+            batch_count = 0
             for data, targets in eval_pbar:
                 data, targets = data.to(self.device), targets.to(self.device)
 
                 features = shared_backbone(data)
                 routing_weights = router(features)
+
+                # Router weight 디버깅 (첫 번째 배치의 처음 5개 샘플만)
+                if batch_count == 0:  # 첫 번째 배치에서만 출력
+                    print(f"       DEBUG Router Evaluation: routing_weights shape: {routing_weights.shape}")
+                    print(f"       DEBUG Router Evaluation: routing_weights (first 5 samples):")
+                    for i in range(min(5, routing_weights.size(0))):
+                        weights = routing_weights[i].detach().cpu().numpy()
+                        target_class = targets[i].item()
+                        class_name = self.label_encoder.inverse_transform([target_class])[0]
+                        max_expert = np.argmax(weights)
+                        
+                        # 해당 클래스가 실제로 할당된 Expert 찾기
+                        assigned_expert = None
+                        for expert_idx, expert_classes in enumerate(expert_groups):
+                            if target_class in expert_classes:
+                                assigned_expert = expert_idx
+                                break
+                        
+                        print(f"         Sample {i}: Class {target_class} ({class_name}) -> Router: Expert {max_expert}, Assigned: Expert {assigned_expert} (weights: {weights})")
+                    print(f"       DEBUG Router Evaluation: routing_weights range: {routing_weights.min().item():.4f}-{routing_weights.max().item():.4f}")
+                    
+                    # 클래스별 Expert 할당 통계
+                    print(f"       DEBUG Router Evaluation: Class-to-Expert mapping (first batch):")
+                    class_expert_mapping = {}
+                    for i in range(routing_weights.size(0)):
+                        target_class = targets[i].item()
+                        max_expert = np.argmax(routing_weights[i].detach().cpu().numpy())
+                        if target_class not in class_expert_mapping:
+                            class_expert_mapping[target_class] = []
+                        class_expert_mapping[target_class].append(max_expert)
+                    
+                    for class_id, expert_assignments in class_expert_mapping.items():
+                        class_name = self.label_encoder.inverse_transform([class_id])[0]
+                        expert_counts = {expert: expert_assignments.count(expert) for expert in range(4)}
+                        print(f"         Class {class_id} ({class_name}): {expert_counts}")
 
                 final_logits = torch.zeros(data.size(0), self.num_classes, device=self.device)
 
@@ -1221,6 +1390,8 @@ class FinalExperiment:
                 _, predicted = final_logits.max(1)
                 all_predictions.extend(predicted.cpu().numpy())
                 all_targets.extend(targets.cpu().numpy())
+                
+                batch_count += 1
         
         eval_pbar.close()
 
@@ -1596,5 +1767,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
