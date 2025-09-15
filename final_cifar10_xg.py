@@ -428,7 +428,7 @@ class FinalExperiment:
         
         # Train XGBoost model
         xgb_model.model = xgb.XGBClassifier(
-            n_estimators=100,
+            n_estimators=300,
             max_depth=6,
             learning_rate=0.1,
             subsample=0.8,
