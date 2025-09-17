@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple MLP // StandardScaler X
+Simple MLP // StandardScaler O
 """
 
 import torch
@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from collections import defaultdict
-import xgboost as xgb
+
 
 # Windows multiprocessing 문제 해결
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -257,34 +257,39 @@ class FinalExperiment:
         print(f"     Feature preprocessing and scaling...")
         
         # 1-1. 중복 feature 제거 ('Fwd Header Length' 중복)
+        if 'Destination Port' in X_df.columns:
+            X_df = X_df.drop(columns=['Destination Port'])
         if 'Fwd Header Length' in X_df.columns:
             X_df = X_df.drop(columns=['Fwd Header Length'])
         
-        # 1-2. 특정 열의 -1 값을 0으로 처리 (KMeans는 NaN 허용 안함)
+        # 1-2. 특정 열의 -1 값을 0으로 처리 (StandardScaler 적용 후에도 안전성을 위해 유지)
         win_bytes_cols = ['Init_Win_bytes_forward', 'Init_Win_bytes_backward']
         for col in win_bytes_cols:
             if col in X_df.columns:
                 X_df[col] = X_df[col].replace(-1, 0)
         
         # 1-3. 각 feature별 통계 분석 및 스케일링
-        X_scaled = X_df.copy()
+        # StandardScaler 적용
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X_df)
+    
         
         # 최종 NaN 검증 및 처리 (KMeans 호환성)
-        nan_count = X_scaled.isnull().sum().sum()
+        nan_count = np.isnan(X_scaled).sum()
         if nan_count > 0:
             print(f"       WARNING: Found {nan_count} NaN values after scaling, replacing with 0")
-            X_scaled = X_scaled.fillna(0)
+            X_scaled = np.nan_to_num(X_scaled, nan=0.0)
         else:
             print(f"       - No NaN values found after scaling")
         
         # inf 값 처리
-        inf_count = np.isinf(X_scaled).sum().sum()
+        inf_count = np.isinf(X_scaled).sum()
         if inf_count > 0:
             print(f"       WARNING: Found {inf_count} inf values, replacing with 0")
-            X_scaled = X_scaled.replace([np.inf, -np.inf], 0)
+            X_scaled = np.nan_to_num(X_scaled, posinf=0.0, neginf=0.0)
 
         # 최종 결과
-        X_final = X_scaled.values
+        X_final = X_scaled
         
         # 클래스별 샘플 수 확인
         unique_labels, counts = np.unique(y, return_counts=True)
@@ -352,7 +357,7 @@ class FinalExperiment:
         print("     Warming up backbone for feature extraction...")
         
         # Warmup 에포크에 대한 프로그레스 바 (final_cifar10.py와 일치)
-        warmup_pbar = tqdm(range(1), desc="Backbone Warmup", unit="epoch")
+        warmup_pbar = tqdm(range(15), desc="Backbone Warmup", unit="epoch")
         
         for epoch in warmup_pbar: 
             for data, targets in train_loader:
@@ -425,15 +430,17 @@ class FinalExperiment:
         combined_features = np.concatenate([frequency_features, class_centroids], axis=1)
         print(f"       DEBUG: combined_features shape: {combined_features.shape}, NaN count: {np.isnan(combined_features).sum()}")
         
-        # standard scaler 생략
+        # StandardScaler 적용 
+        clustering_scaler = StandardScaler()
+        combined_features_scaled = clustering_scaler.fit_transform(combined_features)
         
         # KMeans NaN 검증
-        if np.isnan(combined_features).any():
+        if np.isnan(combined_features_scaled).any():
             print(f"       WARNING: NaN found in clustering features, replacing with zeros")
-            combined_features = np.nan_to_num(combined_features, nan=0.0)
+            combined_features_scaled = np.nan_to_num(combined_features_scaled, nan=0.0)
 
         kmeans = KMeans(n_clusters=self.num_experts, random_state=seed + 200, n_init=20)
-        cluster_labels = kmeans.fit_predict(combined_features)
+        cluster_labels = kmeans.fit_predict(combined_features_scaled)
 
         # Group classes by cluster
         clustered_groups = [[] for _ in range(self.num_experts)]
@@ -442,7 +449,7 @@ class FinalExperiment:
         
         # 클러스터링 결과 상세 출력
         print(f"       DEBUG: cluster_labels = {cluster_labels}")
-        print(f"       DEBUG: combined_features shape = {combined_features.shape}")
+        print(f"       DEBUG: combined_features shape = {combined_features_scaled.shape}")
         print(f"       DEBUG: frequency_features (first 5 classes) = {frequency_features[:5, 0]}")
         print(f"       DEBUG: class_centroids norm (first 5 classes) = {np.linalg.norm(class_centroids[:5], axis=1)}")
 
@@ -488,15 +495,13 @@ class FinalExperiment:
             
             if train_expert_samples:
                 train_unique, train_counts = np.unique(train_expert_samples, return_counts=True)
-                print(f"       DEBUG: Expert {expert_idx} TRAIN samples: {dict(zip(train_unique, train_counts))}")
-            else:
-                print(f"       DEBUG: Expert {expert_idx} TRAIN samples: NONE!")
+                # print(f"       DEBUG: Expert {expert_idx} TRAIN samples: {dict(zip(train_unique, train_counts))}")
+            
                 
             if test_expert_samples:
                 test_unique, test_counts = np.unique(test_expert_samples, return_counts=True)
-                print(f"       DEBUG: Expert {expert_idx} TEST samples: {dict(zip(test_unique, test_counts))}")
-            else:
-                print(f"       DEBUG: Expert {expert_idx} TEST samples: NONE!")
+                # print(f"       DEBUG: Expert {expert_idx} TEST samples: {dict(zip(test_unique, test_counts))}")
+         
 
         return clustered_groups
 
@@ -616,13 +621,13 @@ class FinalExperiment:
         all_targets = np.array(all_targets)
 
         # 디버깅 정보 출력 (훈련 과정에서만)
-        if len(all_predictions) > 0:
-            print(f"       DEBUG Expert {expert_classes}: {len(all_predictions)} samples")
-            print(f"         - predictions range: {all_predictions.min()}-{all_predictions.max()}, targets range: {all_targets.min()}-{all_targets.max()}")
-            print(f"         - unique predictions: {np.unique(all_predictions)}, unique targets: {np.unique(all_targets)}")
-            print(f"         - expert_classes length: {len(expert_classes)}")
-            print(f"         - prediction counts: {np.bincount(all_predictions)}")
-            print(f"         - target counts: {np.bincount(all_targets)}")
+        # if len(all_predictions) > 0:
+        #     print(f"       DEBUG Expert {expert_classes}: {len(all_predictions)} samples")
+        #     print(f"         - predictions range: {all_predictions.min()}-{all_predictions.max()}, targets range: {all_targets.min()}-{all_targets.max()}")
+        #     print(f"         - unique predictions: {np.unique(all_predictions)}, unique targets: {np.unique(all_targets)}")
+        #     print(f"         - expert_classes length: {len(expert_classes)}")
+        #     print(f"         - prediction counts: {np.bincount(all_predictions)}")
+        #     print(f"         - target counts: {np.bincount(all_targets)}")
 
         # 정확도 계산
         accuracy = (all_predictions == all_targets).mean()
@@ -632,28 +637,6 @@ class FinalExperiment:
         
         return accuracy, f1
 
-    def _evaluate_xgboost_epoch(self, xgb_model):
-        """XGBoost 모델의 epoch별 성능을 평가합니다."""
-        test_loader = DataLoader(
-            self.test_subset, batch_size=len(self.test_subset), shuffle=False, num_workers=0
-        )
-        
-        # Extract test data
-        for data, targets in test_loader:
-            X_test = data.numpy()
-            y_test = targets.numpy()
-            break
-        
-        # 예측
-        y_pred = xgb_model.predict(X_test)
-        
-        # 정확도 계산
-        accuracy = (y_pred == y_test).mean()
-        
-        # F1 점수 계산
-        f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
-        
-        return accuracy, f1
 
     def train_baseline(self, seed, epochs=100):
         """베이스라인 모델 학습"""
@@ -730,7 +713,7 @@ class FinalExperiment:
                 feature_dim=256, num_classes=len(group)
             ).to(self.device)
             expert_classifiers.append(expert_classifier)
-            print(f"       DEBUG: Expert {expert_idx} created with {len(group)} classes: {group}")
+            # print(f"       DEBUG: Expert {expert_idx} created with {len(group)} classes: {group}")
 
         router = FallbackRouter(num_experts=self.num_experts, feature_dim=256).to(
             self.device
@@ -852,116 +835,7 @@ class FinalExperiment:
         epoch_pbar.close()
         return shared_backbone, expert_classifiers, router, training_history, expert_history
 
-    def train_xgboost(self, seed, epochs=100):
-        """Train XGBoost model for comparison"""
-        if xgb is None:
-            print("   XGBoost not available. Skipping XGBoost training.")
-            return None, None
-            
-        print("   Training XGBoost model...")
-        
-        self.set_random_seed(seed + 400)  # Offset seed for XGBoost
-        
-        # Get training data
-        train_loader = DataLoader(
-            self.train_subset, batch_size=len(self.train_subset), shuffle=False, num_workers=0
-        )
-        
-        # Extract data
-        for data, targets in train_loader:
-            X_train = data.numpy()
-            y_train = targets.numpy()
-            break
-        
-        # 훈련 과정 추적을 위한 변수들
-        training_history = {
-            'epochs': [],
-            'accuracy': [],
-            'f1_score': []
-        }
-        
-        # XGBoost parameters
-        xgb_params = {
-            'objective': 'multi:softprob',
-            'num_class': len(np.unique(y_train)),
-            'max_depth': 6,
-            'learning_rate': 0.1,
-            'n_estimators': epochs,  # epochs 파라미터 반영
-            'subsample': 0.8,
-            'colsample_bytree': 0.8,
-            'random_state': seed + 400,
-            'n_jobs': 1,  # Windows multiprocessing issue 해결
-            'verbosity': 0
-        }
-        
-        # Train XGBoost with progress bar
-        print("     Training XGBoost...")
-        xgb_model = xgb.XGBClassifier(**xgb_params)
-        
-        # Progress bar를 위한 callback
-        from tqdm import tqdm
-        import time
-        
-        # 간단한 progress bar 시뮬레이션
-        with tqdm(total=100, desc="Training XGBoost", unit="%") as pbar:
-            xgb_model.fit(X_train, y_train)
-            pbar.update(100)
 
-        # 5에폭마다 성능 평가 (XGBoost는 내부적으로 n_estimators를 사용하므로 시뮬레이션)
-        for epoch in range(0, epochs, 5):
-            if epoch == 0:
-                # 초기 모델로 평가
-                temp_model = xgb.XGBClassifier(**{k: v for k, v in xgb_params.items() if k != 'n_estimators'})
-                temp_model.n_estimators = 1
-                temp_model.fit(X_train, y_train)
-            else:
-                # 부분적으로 훈련된 모델로 평가
-                temp_model = xgb.XGBClassifier(**{k: v for k, v in xgb_params.items() if k != 'n_estimators'})
-                temp_model.n_estimators = epoch
-                temp_model.fit(X_train, y_train)
-            
-            acc, f1 = self._evaluate_xgboost_epoch(temp_model)
-            training_history['epochs'].append(epoch + 1)
-            training_history['accuracy'].append(acc)
-            training_history['f1_score'].append(f1)
-
-        return xgb_model, training_history
-
-    def evaluate_xgboost(self, xgb_model):
-        """XGBoost 모델 평가 및 클래스별 성능 지표 계산"""
-        if xgb_model is None:
-            # XGBoost가 없을 때 더미 결과 반환
-            num_classes = len(self.label_encoder.classes_)
-            return 0.0, [0.0] * num_classes, [0.0] * num_classes, np.zeros((num_classes, num_classes))
-            
-        print("     Evaluating XGBoost model...")
-        
-        test_loader = DataLoader(
-            self.test_subset, batch_size=len(self.test_subset), shuffle=False, num_workers=0
-        )
-        
-        # Extract test data
-        for data, targets in test_loader:
-            X_test = data.numpy()
-            y_test = targets.numpy()
-            break
-        
-        # Predictions
-        y_pred = xgb_model.predict(X_test)
-        
-        # 전체 정확도
-        accuracy = (y_pred == y_test).mean()
-        
-        # 클래스별 성능 지표
-        num_classes = len(np.unique(y_test))
-        per_class_acc, per_class_f1 = self.compute_per_class_metrics(
-            y_pred, y_test, num_classes
-        )
-        
-        # 혼동 행렬
-        cm = confusion_matrix(y_test, y_pred)
-        
-        return accuracy, per_class_acc, per_class_f1, cm
 
     def compute_per_class_metrics(self, predictions, targets, num_classes):
         """클래스별 정확도와 F1 점수를 계산합니다."""
@@ -994,42 +868,48 @@ class FinalExperiment:
         plt.savefig(save_path)
         plt.close()
 
-    def plot_per_class_metrics(self, baseline_acc, baseline_f1, ensemble_acc, ensemble_f1, xgb_acc, xgb_f1, class_names, save_path):
+    def plot_per_class_metrics(self, baseline_acc, baseline_f1, ensemble_acc, ensemble_f1, class_names, save_path):
         """클래스별 성능 지표를 시각화합니다."""
         plt.figure(figsize=(20, 8))
         
         x = np.arange(len(class_names))
-        width = 0.25
+        width = 0.35
         
         plt.subplot(1, 2, 1)
-        bar_positions = []
         labels = []
+        all_acc_values = []
         if baseline_acc is not None and len(baseline_acc) > 0:
-            plt.bar(x - width, baseline_acc, width, label='Baseline MLP', alpha=0.8)
+            plt.bar(x - width/2, baseline_acc, width, label='Baseline MLP', alpha=0.8)
             labels.append('Baseline MLP')
+            all_acc_values.extend(baseline_acc)
         if ensemble_acc is not None and len(ensemble_acc) > 0:
-            plt.bar(x, ensemble_acc, width, label='Expert Ensemble', alpha=0.8)
+            plt.bar(x + width/2, ensemble_acc, width, label='Expert Ensemble', alpha=0.8)
             labels.append('Expert Ensemble')
-        if xgb_acc is not None and len(xgb_acc) > 0:
-            plt.bar(x + width, xgb_acc, width, label='XGBoost', alpha=0.8)
-            labels.append('XGBoost')
+            all_acc_values.extend(ensemble_acc)
         plt.title('Per-Class Accuracy')
         plt.xticks(x, class_names, rotation=45, ha='right')
-        plt.ylim(0.0, 1.1)
+        if all_acc_values:
+            y_min = max(0, min(all_acc_values) - 0.05)
+            y_max = min(1, max(all_acc_values) + 0.05)
+            plt.ylim(y_min, y_max)
         if labels:
             plt.legend()
         plt.grid(True, alpha=0.3)
         
         plt.subplot(1, 2, 2)
+        all_f1_values = []
         if baseline_f1 is not None and len(baseline_f1) > 0:
-            plt.bar(x - width, baseline_f1, width, label='Baseline MLP', alpha=0.8)
+            plt.bar(x - width/2, baseline_f1, width, label='Baseline MLP', alpha=0.8)
+            all_f1_values.extend(baseline_f1)
         if ensemble_f1 is not None and len(ensemble_f1) > 0:
-            plt.bar(x, ensemble_f1, width, label='Expert Ensemble', alpha=0.8)
-        if xgb_f1 is not None and len(xgb_f1) > 0:
-            plt.bar(x + width, xgb_f1, width, label='XGBoost', alpha=0.8)
+            plt.bar(x + width/2, ensemble_f1, width, label='Expert Ensemble', alpha=0.8)
+            all_f1_values.extend(ensemble_f1)
         plt.title('Per-Class F1 Score')
         plt.xticks(x, class_names, rotation=45, ha='right')
-        plt.ylim(0.0, 1.1)
+        if all_f1_values:
+            y_min = max(0, min(all_f1_values) - 0.05)
+            y_max = min(1, max(all_f1_values) + 0.05)
+            plt.ylim(y_min, y_max)
         if labels:
             plt.legend()
         plt.grid(True, alpha=0.3)
@@ -1065,7 +945,16 @@ class FinalExperiment:
         plt.title(f'Training Accuracy Curves{title_suffix}')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
-        plt.ylim(0.0, 1.1)
+        # 동적 y축 범위 설정
+        if training_history:
+            all_values = []
+            for model_name, history in training_history.items():
+                if 'accuracy' in history:
+                    all_values.extend(history['accuracy'])
+            if all_values:
+                y_min = max(0, min(all_values) - 0.05)
+                y_max = min(1, max(all_values) + 0.05)
+                plt.ylim(y_min, y_max)
         plt.legend()
         plt.grid(True, alpha=0.3)
         
@@ -1078,7 +967,16 @@ class FinalExperiment:
         plt.title(f'Training F1 Score Curves{title_suffix}')
         plt.xlabel('Epoch')
         plt.ylabel('F1 Score')
-        plt.ylim(0.0, 1.1)
+        # 동적 y축 범위 설정
+        if training_history:
+            all_values = []
+            for model_name, history in training_history.items():
+                if 'f1_score' in history:
+                    all_values.extend(history['f1_score'])
+            if all_values:
+                y_min = max(0, min(all_values) - 0.05)
+                y_max = min(1, max(all_values) + 0.05)
+                plt.ylim(y_min, y_max)
         plt.legend()
         plt.grid(True, alpha=0.3)
         
@@ -1115,44 +1013,14 @@ class FinalExperiment:
         df = pd.DataFrame(all_data)
         df.to_csv(save_path, index=False)
 
-    def plot_per_class_metrics_three_models(self, baseline_acc, baseline_f1, ensemble_acc, ensemble_f1, xgb_acc, xgb_f1, class_names, save_path):
-        """3개 모델의 클래스별 성능 지표를 시각화합니다."""
-        plt.figure(figsize=(20, 8))
-        
-        x = np.arange(len(class_names))
-        width = 0.25
-        
-        plt.subplot(1, 2, 1)
-        plt.bar(x - width, baseline_acc, width, label='Baseline MLP', alpha=0.8)
-        plt.bar(x, ensemble_acc, width, label='Expert Ensemble', alpha=0.8)
-        plt.bar(x + width, xgb_acc, width, label='XGBoost', alpha=0.8)
-        plt.title('Per-Class Accuracy Comparison', fontsize=14)
-        plt.xticks(x, class_names, rotation=45, ha='right')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        
-        plt.subplot(1, 2, 2)
-        plt.bar(x - width, baseline_f1, width, label='Baseline MLP', alpha=0.8)
-        plt.bar(x, ensemble_f1, width, label='Expert Ensemble', alpha=0.8)
-        plt.bar(x + width, xgb_f1, width, label='XGBoost', alpha=0.8)
-        plt.title('Per-Class F1 Score Comparison', fontsize=14)
-        plt.xticks(x, class_names, rotation=45, ha='right')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        plt.close()
 
-    def save_performance_metrics_three_models(self, baseline_acc, baseline_f1, ensemble_acc, ensemble_f1, xgb_acc, xgb_f1, class_names, save_path):
-        """3개 모델의 성능 지표를 CSV 파일로 저장합니다."""
+    def save_performance_metrics_two_models(self, baseline_acc, baseline_f1, ensemble_acc, ensemble_f1, class_names, save_path):
+        """2개 모델의 성능 지표를 CSV 파일로 저장합니다."""
         # 빈 배열인 경우 None으로 변환
         baseline_acc = baseline_acc if baseline_acc and len(baseline_acc) > 0 else None
         baseline_f1 = baseline_f1 if baseline_f1 and len(baseline_f1) > 0 else None
         ensemble_acc = ensemble_acc if ensemble_acc and len(ensemble_acc) > 0 else None
         ensemble_f1 = ensemble_f1 if ensemble_f1 and len(ensemble_f1) > 0 else None
-        xgb_acc = xgb_acc if xgb_acc and len(xgb_acc) > 0 else None
-        xgb_f1 = xgb_f1 if xgb_f1 and len(xgb_f1) > 0 else None
         
         # 데이터 딕셔너리 생성
         data_dict = {'Class': class_names}
@@ -1163,9 +1031,6 @@ class FinalExperiment:
         if ensemble_acc is not None:
             data_dict['Expert_Ensemble_Accuracy'] = ensemble_acc
             data_dict['Expert_Ensemble_F1'] = ensemble_f1
-        if xgb_acc is not None:
-            data_dict['XGBoost_Accuracy'] = xgb_acc
-            data_dict['XGBoost_F1'] = xgb_f1
         
         df = pd.DataFrame(data_dict)
         df.to_csv(save_path, index=False)
@@ -1278,7 +1143,7 @@ class FinalExperiment:
         
         return accuracy, per_class_acc, per_class_f1, cm
 
-    def run_single_experiment(self, seed, data_dir, epochs=100, models=['baseline', 'ensemble', 'xgboost']):
+    def run_single_experiment(self, seed, data_dir, epochs=100, models=['baseline', 'ensemble']):
         """단일 실험 실행 및 결과 저장"""
         print(f"\nExperiment with seed {seed}")
         print("=" * 50)
@@ -1308,11 +1173,6 @@ class FinalExperiment:
         ensemble_per_class_f1 = []
         ensemble_cm = None
         
-        xgb_model = None
-        xgb_acc = 0.0
-        xgb_per_class_acc = []
-        xgb_per_class_f1 = []
-        xgb_cm = None
 
         # 훈련 과정 추적을 위한 변수들
         training_history = {}
@@ -1335,15 +1195,9 @@ class FinalExperiment:
             )
             training_history['Ensemble'] = ensemble_history
 
-        # XGBoost 모델
-        if 'xgboost' in models:
-            xgb_model, xgb_history = self.train_xgboost(seed, epochs)
-            xgb_acc, xgb_per_class_acc, xgb_per_class_f1, xgb_cm = self.evaluate_xgboost(xgb_model)
-            training_history['XGBoost'] = xgb_history
 
         elapsed_time = (time.time() - start_time) / 60
         improvement_ensemble = ensemble_acc - baseline_acc
-        improvement_xgb = xgb_acc - baseline_acc
 
         # 결과 시각화 및 저장
         class_names = self.label_encoder.classes_
@@ -1360,12 +1214,6 @@ class FinalExperiment:
                 ensemble_cm, class_names,
                 "Expert Ensemble Confusion Matrix",
                 os.path.join(exp_dir, "ensemble_confusion_matrix.png")
-            )
-        if 'xgboost' in models and xgb_cm is not None:
-            self.plot_confusion_matrix(
-                xgb_cm, class_names,
-                "XGBoost Confusion Matrix",
-                os.path.join(exp_dir, "xgboost_confusion_matrix.png")
             )
         
         # 훈련 과정 시각화
@@ -1389,20 +1237,16 @@ class FinalExperiment:
             baseline_per_class_f1 if 'baseline' in models else None,
             ensemble_per_class_acc if 'ensemble' in models else None,
             ensemble_per_class_f1 if 'ensemble' in models else None,
-            xgb_per_class_acc if 'xgboost' in models else None,
-            xgb_per_class_f1 if 'xgboost' in models else None,
             class_names,
             os.path.join(exp_dir, "per_class_metrics.png")
         )
         
         # 성능 지표 CSV 저장
-        self.save_performance_metrics_three_models(
+        self.save_performance_metrics_two_models(
             baseline_per_class_acc if 'baseline' in models else None,
             baseline_per_class_f1 if 'baseline' in models else None,
             ensemble_per_class_acc if 'ensemble' in models else None,
             ensemble_per_class_f1 if 'ensemble' in models else None,
-            xgb_per_class_acc if 'xgboost' in models else None,
-            xgb_per_class_f1 if 'xgboost' in models else None,
             class_names,
             os.path.join(exp_dir, "performance_metrics.csv")
         )
@@ -1411,18 +1255,14 @@ class FinalExperiment:
             "seed": seed,
             "baseline_accuracy": baseline_acc,
             "ensemble_accuracy": ensemble_acc,
-            "xgboost_accuracy": xgb_acc,
             "improvement_ensemble": improvement_ensemble,
-            "improvement_xgb": improvement_xgb,
             "runtime_minutes": elapsed_time,
             "clustering_groups": clustering_groups,
             "timestamp": datetime.now().isoformat(),
             "baseline_per_class_acc": baseline_per_class_acc,
             "baseline_per_class_f1": baseline_per_class_f1,
             "ensemble_per_class_acc": ensemble_per_class_acc,
-            "ensemble_per_class_f1": ensemble_per_class_f1,
-            "xgboost_per_class_acc": xgb_per_class_acc,
-            "xgboost_per_class_f1": xgb_per_class_f1
+            "ensemble_per_class_f1": ensemble_per_class_f1
         }
 
         print(f"Results:")
@@ -1430,20 +1270,16 @@ class FinalExperiment:
             print(f"   Baseline MLP:                 {baseline_acc:.4f}")
         if 'ensemble' in models:
             print(f"   Expert Ensemble:              {ensemble_acc:.4f}")
-        if 'xgboost' in models:
-            print(f"   XGBoost:                      {xgb_acc:.4f}")
         
         if 'baseline' in models and 'ensemble' in models:
             print(f"   Ensemble Improvement:         {improvement_ensemble:+.4f}")
-        if 'baseline' in models and 'xgboost' in models:
-            print(f"   XGBoost Improvement:          {improvement_xgb:+.4f}")
             
         print(f"   Runtime:                      {elapsed_time:.1f} minutes")
         print(f"   Results saved to:             {exp_dir}")
 
         return results
 
-    def run_multiple_experiments(self, seeds, data_dir, epochs=100, models=['baseline', 'ensemble', 'xgboost']):
+    def run_multiple_experiments(self, seeds, data_dir, epochs=100, models=['baseline', 'ensemble']):
         """Run multiple experiments with different seeds"""
         print(f"\nRunning {len(seeds)} experiments with seeds: {seeds}")
         print("=" * 80)
@@ -1458,29 +1294,21 @@ class FinalExperiment:
         # Calculate statistics
         baseline_accs = [r["baseline_accuracy"] for r in all_results]
         ensemble_accs = [r["ensemble_accuracy"] for r in all_results]
-        xgb_accs = [r["xgboost_accuracy"] for r in all_results]
         improvements_ensemble = [r["improvement_ensemble"] for r in all_results]
-        improvements_xgb = [r["improvement_xgb"] for r in all_results]
 
         baseline_mean = np.mean(baseline_accs)
         baseline_std = np.std(baseline_accs)
         ensemble_mean = np.mean(ensemble_accs)
         ensemble_std = np.std(ensemble_accs)
-        xgb_mean = np.mean(xgb_accs)
-        xgb_std = np.std(xgb_accs)
         improvement_ensemble_mean = np.mean(improvements_ensemble)
         improvement_ensemble_std = np.std(improvements_ensemble)
-        improvement_xgb_mean = np.mean(improvements_xgb)
-        improvement_xgb_std = np.std(improvements_xgb)
 
         print(f"\n{'='*80}")
         print(f"FINAL RESULTS SUMMARY ({len(seeds)} trials)")
         print(f"{'='*80}")
         print(f"Baseline MLP:                 {baseline_mean:.2f}% ± {baseline_std:.2f}%")
         print(f"Expert Ensemble:              {ensemble_mean:.2f}% ± {ensemble_std:.2f}%")
-        print(f"XGBoost:                      {xgb_mean:.2f}% ± {xgb_std:.2f}%")
         print(f"Ensemble Improvement:         {improvement_ensemble_mean:+.2f}%p ± {improvement_ensemble_std:.2f}%p")
-        print(f"XGBoost Improvement:          {improvement_xgb_mean:+.2f}%p ± {improvement_xgb_std:.2f}%p")
 
         # Statistical significance check
         print(f"\nStatistical Significance:")
@@ -1490,13 +1318,6 @@ class FinalExperiment:
             print(f"Ensemble: POSITIVE IMPROVEMENT")
         else:
             print(f"Ensemble: NO SIGNIFICANT IMPROVEMENT")
-            
-        if improvement_xgb_mean > 2 * improvement_xgb_std and improvement_xgb_mean > 0:
-            print(f"XGBoost: SIGNIFICANT IMPROVEMENT (>2σ confidence)")
-        elif improvement_xgb_mean > 0:
-            print(f"XGBoost: POSITIVE IMPROVEMENT")
-        else:
-            print(f"XGBoost: NO SIGNIFICANT IMPROVEMENT")
 
         # Save detailed results
         summary_results = {
@@ -1507,12 +1328,8 @@ class FinalExperiment:
             "baseline_std": baseline_std,
             "ensemble_mean": ensemble_mean,
             "ensemble_std": ensemble_std,
-            "xgboost_mean": xgb_mean,
-            "xgboost_std": xgb_std,
             "improvement_ensemble_mean": improvement_ensemble_mean,
             "improvement_ensemble_std": improvement_ensemble_std,
-            "improvement_xgb_mean": improvement_xgb_mean,
-            "improvement_xgb_std": improvement_xgb_std,
             "individual_results": all_results,
             "timestamp": datetime.now().isoformat(),
         }
@@ -1566,8 +1383,8 @@ def main():
     parser.add_argument(
         "--models", 
         nargs='+', 
-        choices=['baseline', 'ensemble', 'xgboost'], 
-        default=['baseline', 'ensemble', 'xgboost'],
+        choices=['baseline', 'ensemble'], 
+        default=['baseline', 'ensemble'],
         help="Models to train and evaluate (default: all models)"
     )
 
@@ -1614,9 +1431,7 @@ def main():
         print(f"COMPARISON: FIXED vs RANDOM SEEDS")
         print(f"=" * 80)
         print(f"Fixed seed - Ensemble:       {fixed_result['improvement_ensemble']:+.2f}%p")
-        print(f"Fixed seed - XGBoost:        {fixed_result['improvement_xgb']:+.2f}%p")
         print(f"Random seeds - Ensemble:     {random_summary['improvement_ensemble_mean']:+.2f}%p ± {random_summary['improvement_ensemble_std']:.2f}%p")
-        print(f"Random seeds - XGBoost:      {random_summary['improvement_xgb_mean']:+.2f}%p ± {random_summary['improvement_xgb_std']:.2f}%p")
 
         # Save combined results
         combined_results = {
