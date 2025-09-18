@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-MLP + XGBoost Hybrid Expert Ensemble
-SharedBackbone (MLP) + ExpertXGBoostClassifier + FallbackRouter (MLP)
+XGBoost vs XGBoost Ensemble w/ different data distribution
+Simple frequency-based expert assignment
 """
 
 import torch
@@ -19,7 +19,6 @@ import time
 import json
 import argparse
 from datetime import datetime
-from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -92,29 +91,7 @@ class CICIDS2017Dataset(Dataset):
         return features, label
 
 
-class SharedBackbone(nn.Module):
-    """Shared backbone network for feature extraction - MLP version for tabular data"""
-
-    def __init__(self, input_dim, feature_dim=256):
-        super(SharedBackbone, self).__init__()
-        
-        self.feature_extractor = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.2),
-            nn.Linear(512, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.2),
-            nn.Linear(512, feature_dim),
-            nn.ReLU(inplace=True),
-            nn.BatchNorm1d(feature_dim),
-        )
-
-    def forward(self, x):
-        return self.feature_extractor(x)
-
-
-class ExpertXGBoostClassifier:
+class SimpleExpertXGBoostClassifier:
     """XGBoost-based expert classifier for a subset of classes"""
 
     def __init__(self, expert_classes, random_state=42):
@@ -190,26 +167,6 @@ class ExpertXGBoostClassifier:
         self.xgb_model.fit(valid_features, local_labels)
         print(f"       Expert {self.expert_classes} trained with {len(valid_features)} samples, {actual_num_classes} classes")
 
-    def predict_proba(self, features):
-        """예측 확률 반환"""
-        if len(self.expert_classes) == 0 or not hasattr(self.xgb_model, 'get_booster'):
-            return np.zeros((features.shape[0], 0))
-        
-        try:
-            # XGBoost 예측
-            proba = self.xgb_model.predict_proba(features)
-            
-            # 로컬 클래스 확률을 전역 클래스 확률로 변환
-            global_proba = np.zeros((features.shape[0], self.num_classes))
-            for local_idx, global_class in self.reverse_mapping.items():
-                if local_idx < proba.shape[1]:
-                    global_proba[:, local_idx] = proba[:, local_idx]
-            
-            return global_proba
-        except:
-            # 예측 실패 시 무작위 확률 반환
-            return np.random.rand(features.shape[0], self.num_classes)
-
     def predict(self, features):
         """예측 클래스 반환"""
         if len(self.expert_classes) == 0 or not hasattr(self.xgb_model, 'get_booster'):
@@ -228,77 +185,25 @@ class ExpertXGBoostClassifier:
             return np.random.randint(0, len(self.expert_classes), features.shape[0])
 
 
-class FallbackRouter(nn.Module):
-    """Fallback router using soft routing for robust ensemble"""
-
-    def __init__(self, num_experts=4, feature_dim=256):
-        super(FallbackRouter, self).__init__()
-        self.num_experts = num_experts
-        self.feature_dim = feature_dim
-
-        self.router = nn.Sequential(
-            nn.Linear(feature_dim, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.1),
-            nn.Linear(128, 64),
-            nn.ReLU(inplace=True),
-            nn.Linear(64, num_experts),
-            nn.Softmax(dim=1),
-        )
-
-    def forward(self, features):
-        routing_weights = self.router(features)
-        return routing_weights
-
-
-class BaselineModel(nn.Module):
-    """Simple baseline model for comparison - MLP version for tabular data"""
-
-    def __init__(self, input_dim, num_classes):
-        super(BaselineModel, self).__init__()
-        
-        self.classifier = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.2),
-            nn.Linear(512, 256),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.2),
-            nn.Linear(256, 128),
-            nn.ReLU(inplace=True),
-            nn.Linear(128, num_classes),
-        )
-
-    def forward(self, x):
-        return self.classifier(x)
-
-
-class FinalExperiment:
+class SimpleExperiment:
     """
-    Final comprehensive experiment class supporting both fixed and random seed modes
+    Simple frequency-based expert assignment experiment
     CICIDS-2017 Network Intrusion Detection Dataset Version with XGBoost Experts
     """
 
     def __init__(self, num_experts=4):
         self.num_experts = num_experts
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        print("Final Clustering-Based Expert Ensemble Experiment (XGBoost Experts)")
+        print("Simple Frequency-Based Expert Assignment Experiment (XGBoost Experts)")
         print(f"   Dataset: CICIDS-2017 Network Intrusion Detection")
         print(f"   Number of experts: {num_experts}")
         print(f"   Expert type: XGBoost")
-        print(f"   Using original data distribution (no artificial balancing)")
-        print(f"   Device: {self.device}")
+        print(f"   Assignment: Based on class sample frequency")
 
     def set_random_seed(self, seed):
         """Set all random seeds for reproducibility"""
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
         np.random.seed(seed)
         random.seed(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
 
     def load_cicids2017_data(self, data_dir):
         print("   Loading CICIDS-2017 dataset...")
@@ -426,7 +331,7 @@ class FinalExperiment:
         return X_final, y, label_encoder, None, feature_columns
 
     def setup_dataset(self, seed, data_dir):
-        """CICIDS-2017 데이터셋 설정 및 불균형 데이터 생성"""
+        """CICIDS-2017 데이터셋 설정"""
         self.set_random_seed(seed)
         
         # 데이터 로드
@@ -453,427 +358,220 @@ class FinalExperiment:
         print(f"     Final split: Train={total_train} samples, Test={total_test} samples")
         print(f"     Overall ratio: Train={total_train/(total_train+total_test):.1%}, Test={total_test/(total_train+total_test):.1%}")
         
+        # 데이터 저장
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
+        
         # 데이터셋 객체 생성
         self.train_subset = CICIDS2017Dataset(X_train, y_train)
         self.test_subset = CICIDS2017Dataset(X_test, y_test)
         
-        print(f"   Dataset: {len(self.train_subset)} train, {len(self.test_subset)} test")
+        print(f"   Dataset: {len(X_train)} train, {len(X_test)} test")
 
-    def get_clustering_groups(self, seed):
-        """클러스터링 기반 전문가 그룹 생성"""
-        print("   Executing 6-step clustering pipeline...")
-
-        # Step 1: Backbone warmup for feature extraction
-        self.set_random_seed(seed + 10)
+    def get_frequency_based_groups(self, seed):
+        """클래스별 샘플 수 기준으로 전문가 그룹 생성"""
+        print("   Creating frequency-based expert groups...")
         
-        input_dim = len(self.feature_columns)
-        warmup_model = BaselineModel(input_dim, self.num_classes).to(self.device)
-        train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=True, num_workers=0, persistent_workers=False
-        )
-
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(
-            warmup_model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4
-        )
-
-        warmup_model.train()
-        print("     Warming up backbone for feature extraction...")
+        # 훈련 데이터에서 클래스별 샘플 수 계산
+        unique_labels, counts = np.unique(self.y_train, return_counts=True)
+        class_counts = dict(zip(unique_labels, counts))
         
-        # Warmup 에포크에 대한 프로그레스 바
-        warmup_pbar = tqdm(range(1), desc="Backbone Warmup", unit="epoch")
+        # 클래스들을 샘플 수 기준으로 정렬 (내림차순)
+        sorted_classes = sorted(class_counts.items(), key=lambda x: x[1], reverse=True)
+        class_ids = [item[0] for item in sorted_classes]
+        class_sample_counts = [item[1] for item in sorted_classes]
         
-        for epoch in warmup_pbar: 
-            for data, targets in train_loader:
-                data, targets = data.to(self.device), targets.to(self.device)
-                optimizer.zero_grad()
-                outputs = warmup_model(data)
-                loss = criterion(outputs, targets)
-                loss.backward()
-                optimizer.step()
-    
-        warmup_pbar.close()
-
-        # Step 2: Extract class embeddings
-        feature_extractor = SharedBackbone(input_dim, feature_dim=256).to(self.device)
+        print(f"     Class sample counts (sorted): {class_sample_counts}")
         
-        # Load warmed-up weights (첫 번째 레이어만)
-        feature_extractor.feature_extractor[0].weight.data = warmup_model.classifier[0].weight.data
-        feature_extractor.feature_extractor[0].bias.data = warmup_model.classifier[0].bias.data
-
-        feature_extractor.eval()
-
-        # Collect class features
-        class_features = [[] for _ in range(self.num_classes)]
-        train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
-        )
-
-        with torch.no_grad():
-            for data, targets in train_loader:
-                data = data.to(self.device)
-                features = feature_extractor(data).detach().cpu().numpy()
-          
-                for i, target in enumerate(targets):
-                    class_features[target.item()].append(features[i])
-
-        # Calculate class centroids
-        class_centroids = []
-        for class_id in range(self.num_classes):
-            if len(class_features[class_id]) > 0:
-                centroid = np.mean(class_features[class_id], axis=0)
-                # inf/NaN 체크 및 처리
-                if np.isnan(centroid).any() or np.isinf(centroid).any():
-                    print(f"       WARNING: inf/NaN in class {class_id} centroid, replacing with zeros")
-                    centroid = np.nan_to_num(centroid, nan=0.0, posinf=0.0, neginf=0.0)
-                class_centroids.append(centroid)
+        # num_experts에 따라 분할점 계산
+        # 예: 3개 expert면 1/3, 2/3 지점에서 분할
+        split_points = []
+        for i in range(1, self.num_experts):
+            split_idx = int(len(class_ids) * i / self.num_experts)
+            split_points.append(split_idx)
+        
+        print(f"     Split points: {split_points}")
+        
+        # 각 expert에게 클래스 할당
+        expert_groups = [[] for _ in range(self.num_experts)]
+        start_idx = 0
+        
+        for expert_idx in range(self.num_experts):
+            if expert_idx == self.num_experts - 1:
+                # 마지막 expert는 남은 모든 클래스
+                end_idx = len(class_ids)
             else:
-                centroid = np.random.normal(0, 0.1, 256)
-                class_centroids.append(centroid)
-
-        class_centroids = np.array(class_centroids)
-        print(f"       DEBUG: class_centroids shape: {class_centroids.shape}, NaN count: {np.isnan(class_centroids).sum()}")
-
-        # Step 3: Clustering with [frequency (from TRAIN) + class embeddings]
-        train_labels = self.train_subset.labels.detach().cpu().numpy()
-        unique_labels, counts = np.unique(train_labels, return_counts=True)
-        samples_array = counts.astype(np.float32)
-        std_sa = np.std(samples_array)
-        if std_sa == 0:
-            frequency_zscore = np.zeros_like(samples_array)
-        else:
-            frequency_zscore = (samples_array - np.mean(samples_array)) / std_sa
-
-        frequency_weight = 10
-        frequency_features = np.repeat(
-            frequency_zscore.reshape(-1, 1), frequency_weight, axis=1
-        )
-        print(f"       DEBUG: frequency_features shape: {frequency_features.shape}, NaN count: {np.isnan(frequency_features).sum()}")
-
-        combined_features = np.concatenate([frequency_features, class_centroids], axis=1)
-        print(f"       DEBUG: combined_features shape: {combined_features.shape}, NaN count: {np.isnan(combined_features).sum()}")
+                end_idx = split_points[expert_idx]
+            
+            expert_groups[expert_idx] = class_ids[start_idx:end_idx]
+            start_idx = end_idx
         
-        # StandardScaler 적용 
-        clustering_scaler = StandardScaler()
-        combined_features_scaled = clustering_scaler.fit_transform(combined_features)
-        
-        # KMeans NaN 검증
-        if np.isnan(combined_features_scaled).any():
-            print(f"       WARNING: NaN found in clustering features, replacing with zeros")
-            combined_features_scaled = np.nan_to_num(combined_features_scaled, nan=0.0)
-
-        kmeans = KMeans(n_clusters=self.num_experts, random_state=seed + 200, n_init=20)
-        cluster_labels = kmeans.fit_predict(combined_features_scaled)
-
-        # Group classes by cluster
-        clustered_groups = [[] for _ in range(self.num_experts)]
-        for class_id, cluster_id in enumerate(cluster_labels):
-            clustered_groups[cluster_id].append(class_id)
-        
-        # 클러스터링 결과 상세 출력
-        print(f"       DEBUG: cluster_labels = {cluster_labels}")
-        print(f"       DEBUG: combined_features shape = {combined_features_scaled.shape}")
-        print(f"       DEBUG: frequency_features (first 5 classes) = {frequency_features[:5, 0]}")
-        print(f"       DEBUG: class_centroids norm (first 5 classes) = {np.linalg.norm(class_centroids[:5], axis=1)}")
-
-        # Print per-expert class membership and sample counts
-        train_labels = self.train_subset.labels.detach().cpu().numpy()
-        class_ids, class_counts = np.unique(train_labels, return_counts=True)
-        class_id_to_count = {int(cid): int(cnt) for cid, cnt in zip(class_ids, class_counts)}
-
-        print("       Expert clusters composition:")
-        for expert_idx, class_list in enumerate(clustered_groups):
-            total_samples = sum(class_id_to_count.get(int(cid), 0) for cid in class_list)
-            print(f"         - Expert {expert_idx}: {len(class_list)} classes, {total_samples} samples")
+        # 결과 출력
+        print("     Expert groups composition:")
+        for expert_idx, class_list in enumerate(expert_groups):
+            total_samples = sum(class_counts[cid] for cid in class_list)
+            print(f"       Expert {expert_idx}: {len(class_list)} classes, {total_samples} samples")
             if len(class_list) == 0:
-                print(f"             WARNING: Expert {expert_idx} has no classes assigned!")
+                print(f"         WARNING: Expert {expert_idx} has no classes assigned!")
             else:
-                for cid in sorted(class_list, key=lambda x: class_id_to_count.get(int(x), 0), reverse=True):
-                    cnt = class_id_to_count.get(int(cid), 0)
+                for cid in class_list:
+                    cnt = class_counts[cid]
                     class_name = self.label_encoder.inverse_transform([cid])[0]
-                    print(f"             · class {cid} ({class_name}): {cnt}")
+                    print(f"         · class {cid} ({class_name}): {cnt}")
         
-        # 클러스터링 결과 검증
-        empty_experts = [i for i, group in enumerate(clustered_groups) if len(group) == 0]
+        # 빈 expert 검증
+        empty_experts = [i for i, group in enumerate(expert_groups) if len(group) == 0]
         if empty_experts:
             print(f"       WARNING: Experts {empty_experts} have no classes assigned!")
-            print(f"       This will cause these experts to always return 0 accuracy.")
 
-        return clustered_groups
+        return expert_groups
 
-    def train_baseline(self, seed, epochs=100):
-        """베이스라인 모델 학습"""
-        print("   Training baseline model...")
+    def train_baseline(self, seed):
+        """베이스라인 XGBoost 모델 학습"""
+        print("   Training baseline XGBoost model...")
 
         self.set_random_seed(seed)
 
-        input_dim = len(self.feature_columns)
-        model = BaselineModel(input_dim, self.num_classes).to(self.device)
-        train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=True, num_workers=0, persistent_workers=False
+        # XGBoost 모델 생성
+        baseline_model = xgb.XGBClassifier(
+            n_estimators=100,
+            max_depth=6,
+            learning_rate=0.1,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=seed,
+            n_jobs=-1,
+            eval_metric='mlogloss',
+            objective='multi:softprob',
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            tree_method='hist'
         )
+        
+        # XGBoost 훈련
+        print("     Training XGBoost...")
+        baseline_model.fit(self.X_train, self.y_train)
+        
+        # 훈련 완료 후 성능 평가
+        print("     Evaluating baseline performance...")
+        baseline_acc, baseline_f1 = self._evaluate_baseline(baseline_model)
+        
 
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(
-            model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4
-        )
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
-
-        # 훈련 과정 추적을 위한 변수들
         training_history = {
-            'epochs': [],
-            'accuracy': [],
-            'f1_score': []
+            'accuracy': baseline_acc,
+            'f1_score': baseline_f1
         }
-
-        # 전체 에포크에 대한 프로그레스 바
-        epoch_pbar = tqdm(range(epochs), desc="Training Baseline", unit="epoch")
         
-        for epoch in epoch_pbar:
-            model.train()
-            total_loss = 0.0
-            num_batches = 0
-            
-            for data, targets in train_loader:
-                data, targets = data.to(self.device), targets.to(self.device)
-                optimizer.zero_grad()
-                outputs = model(data)
-                loss = criterion(outputs, targets)
-                loss.backward()
-                optimizer.step()
-                
-                total_loss += loss.item()
-                num_batches += 1
-            
-            scheduler.step()
-            
-            # 5에폭마다 성능 평가
-            if (epoch + 1) % 5 == 0 or epoch == 0:
-                acc, f1 = self._evaluate_model_epoch(model)
-                training_history['epochs'].append(epoch + 1)
-                training_history['accuracy'].append(acc)
-                training_history['f1_score'].append(f1)
-            
-            # 에포크별 진행 상황 업데이트
-            avg_loss = total_loss / num_batches
-            epoch_pbar.set_postfix_str(f"Loss: {avg_loss:.4f}")
-        
-        epoch_pbar.close()
-        return model, training_history
+        return baseline_model, training_history
 
     def train_expert_ensemble(self, expert_groups, seed):
-        """클러스터링 기반 전문가 앙상블 학습 (XGBoost Experts)"""
-        print("   Training clustering-based expert ensemble with XGBoost...")
+        """빈도 기반 전문가 앙상블 학습 (XGBoost Experts)"""
+        print("   Training frequency-based expert ensemble with XGBoost...")
 
         self.set_random_seed(seed + 300)
-
-        # Initialize models
-        input_dim = len(self.feature_columns)
-        shared_backbone = SharedBackbone(input_dim, feature_dim=256).to(self.device)
         
         # XGBoost Expert Classifiers 생성
         expert_classifiers = []
         for expert_idx, group in enumerate(expert_groups):
-            expert_classifier = ExpertXGBoostClassifier(
+            expert_classifier = SimpleExpertXGBoostClassifier(
                 expert_classes=group, random_state=seed + expert_idx
             )
             expert_classifiers.append(expert_classifier)
             print(f"       Expert {expert_idx} created with {len(group)} classes: {group}")
 
-        router = FallbackRouter(num_experts=self.num_experts, feature_dim=256).to(self.device)
-
-        # XGBoost Experts 훈련 (epochs 개념 없음)
+        # XGBoost Experts 훈련
         print("   Training XGBoost experts...")
-        self._train_xgboost_experts(shared_backbone, expert_classifiers, expert_groups)
-        
-        # 훈련 완료 후 최종 성능 평가
-        print("   Evaluating final performance...")
-        final_acc, final_f1 = self._evaluate_ensemble_epoch(shared_backbone, expert_classifiers, router, expert_groups)
-        
-        # 빈 히스토리 반환 (XGBoost는 epochs 개념 없음)
-        training_history = {
-            'epochs': [1],
-            'accuracy': [final_acc],
-            'f1_score': [final_f1]
-        }
-        
-        expert_history = {}
-        for expert_idx in range(len(expert_classifiers)):
-            expert_acc, expert_f1 = self._evaluate_expert_epoch(shared_backbone, expert_classifiers[expert_idx], expert_groups[expert_idx])
-            expert_history[expert_idx] = {
-                'epochs': [1],
-                'accuracy': [expert_acc],
-                'f1_score': [expert_f1]
-            }
-        
-        return shared_backbone, expert_classifiers, router, training_history, expert_history
-
-    def _train_xgboost_experts(self, shared_backbone, expert_classifiers, expert_groups):
-        """XGBoost Expert들을 훈련"""
-        shared_backbone.eval()
-        
-        # 훈련 데이터에서 features 추출
-        train_loader = DataLoader(
-            self.train_subset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
-        )
-        
-        all_features = []
-        all_labels = []
-        
-        with torch.no_grad():
-            for data, targets in train_loader:
-                data = data.to(self.device)
-                features = shared_backbone(data).detach().cpu().numpy()
-                all_features.append(features)
-                all_labels.extend(targets.detach().cpu().numpy())
-        
-        all_features = np.vstack(all_features)
-        all_labels = np.array(all_labels)
-        
-        # 각 Expert 훈련
         for expert_idx, (expert_classifier, expert_classes) in enumerate(
             zip(expert_classifiers, expert_groups)
         ):
             print(f"     Training XGBoost Expert {expert_idx}...")
-            expert_classifier.fit(all_features, all_labels)
+            expert_classifier.fit(self.X_train, self.y_train)
+        
+        # 훈련 완료 후 최종 성능 평가
+        print("   Evaluating final performance...")
+        final_acc, final_f1 = self._evaluate_ensemble(expert_classifiers, expert_groups)
+        
+       
+        training_history = {
+            'accuracy': final_acc,
+            'f1_score': final_f1
+        }
+        
+        expert_history = {}
+        for expert_idx in range(len(expert_classifiers)):
+            expert_acc, expert_f1 = self._evaluate_expert(expert_classifiers[expert_idx], expert_groups[expert_idx])
+            expert_history[expert_idx] = {
+                'accuracy': expert_acc,
+                'f1_score': expert_f1
+            }
+        
+        return expert_classifiers, training_history, expert_history
 
-    def _evaluate_model_epoch(self, model):
-        """단일 모델의 epoch별 성능을 평가합니다."""
-        test_loader = DataLoader(
-            self.test_subset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
-        )
-
-        all_predictions = []
-        all_targets = []
-
-        model.eval()
-        with torch.no_grad():
-            for data, targets in test_loader:
-                data, targets = data.to(self.device), targets.to(self.device)
-                outputs = model(data)
-                _, predicted = outputs.max(1)
-                all_predictions.extend(predicted.detach().cpu().numpy())
-                all_targets.extend(targets.detach().cpu().numpy())
-
-        all_predictions = np.array(all_predictions)
-        all_targets = np.array(all_targets)
+    def _evaluate_baseline(self, baseline_model):
+        """베이스라인 모델 성능 평가"""
+        predictions = baseline_model.predict(self.X_test)
 
         # 정확도 계산
-        accuracy = (all_predictions == all_targets).mean()
+        accuracy = (predictions == self.y_test).mean()
         
         # F1 점수 계산
-        f1 = f1_score(all_targets, all_predictions, average='weighted', zero_division=0)
+        f1 = f1_score(self.y_test, predictions, average='weighted', zero_division=0)
         
         return accuracy, f1
 
-    def _evaluate_ensemble_epoch(self, shared_backbone, expert_classifiers, router, expert_groups):
-        """앙상블 모델의 epoch별 성능을 평가합니다."""
-        test_loader = DataLoader(
-            self.test_subset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
-        )
-
-        all_predictions = []
-        all_targets = []
-
-        shared_backbone.eval()
-        router.eval()
-
-        with torch.no_grad():
-            for data, targets in test_loader:
-                data, targets = data.to(self.device), targets.to(self.device)
-
-                features = shared_backbone(data)
-                routing_weights = router(features)
-
-                final_logits = torch.zeros(data.size(0), self.num_classes, device=self.device)
-
-                for expert_idx, (expert_classifier, expert_classes) in enumerate(
-                    zip(expert_classifiers, expert_groups)
-                ):
-                    # XGBoost 예측 (CPU에서) - 훈련된 경우에만
-                    if hasattr(expert_classifier, 'xgb_model') and hasattr(expert_classifier.xgb_model, 'get_booster'):
-                        try:
-                            features_cpu = features.detach().cpu().numpy()
-                            expert_proba = expert_classifier.predict_proba(features_cpu)
-                            expert_pred = torch.from_numpy(expert_proba).to(self.device)
-                        except:
-                            # XGBoost가 훈련되지 않은 경우 무작위 예측
-                            expert_pred = torch.randn(data.size(0), len(expert_classes), device=self.device)
-                    else:
-                        # XGBoost가 훈련되지 않은 경우 무작위 예측
-                        expert_pred = torch.randn(data.size(0), len(expert_classes), device=self.device)
-
-                    for i, global_class in enumerate(expert_classes):
-                        final_logits[:, global_class] += (
-                            routing_weights[:, expert_idx] * expert_pred[:, i]
-                        )
-
-                _, predicted = final_logits.max(1)
-                all_predictions.extend(predicted.detach().cpu().numpy())
-                all_targets.extend(targets.detach().cpu().numpy())
-
-        all_predictions = np.array(all_predictions)
-        all_targets = np.array(all_targets)
+    def _evaluate_ensemble(self, expert_classifiers, expert_groups):
+        """앙상블 모델 성능 평가"""
+        predictions = []
+        
+        # 각 테스트 샘플에 대해 해당하는 expert 사용
+        for i, (features, target) in enumerate(zip(self.X_test, self.y_test)):
+            # 해당 클래스를 담당하는 expert 찾기
+            expert_idx = None
+            for idx, expert_classes in enumerate(expert_groups):
+                if target in expert_classes:
+                    expert_idx = idx
+                    break
+            
+            if expert_idx is not None:
+                # 해당 expert로 예측
+                expert_pred = expert_classifiers[expert_idx].predict([features])
+                predictions.append(expert_pred[0])
+            else:
+                # 담당 expert가 없는 경우 첫 번째 expert 사용
+                expert_pred = expert_classifiers[0].predict([features])
+                predictions.append(expert_pred[0])
+        
+        predictions = np.array(predictions)
 
         # 정확도 계산
-        accuracy = (all_predictions == all_targets).mean()
+        accuracy = (predictions == self.y_test).mean()
         
         # F1 점수 계산
-        f1 = f1_score(all_targets, all_predictions, average='weighted', zero_division=0)
+        f1 = f1_score(self.y_test, predictions, average='weighted', zero_division=0)
         
         return accuracy, f1
 
-    def _evaluate_expert_epoch(self, shared_backbone, expert_classifier, expert_classes):
-        """개별 expert의 epoch별 성능을 평가합니다."""
-        test_loader = DataLoader(
-            self.test_subset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
-        )
-
-        all_predictions = []
-        all_targets = []
-        expert_mask = []
-
-        shared_backbone.eval()
-
-        with torch.no_grad():
-            for data, targets in test_loader:
-                data, targets = data.to(self.device), targets.to(self.device)
-
-                features = shared_backbone(data)
-                # XGBoost 예측 (CPU에서) - 훈련된 경우에만
-                if hasattr(expert_classifier, 'xgb_model') and hasattr(expert_classifier.xgb_model, 'get_booster'):
-                    try:
-                        features_cpu = features.detach().cpu().numpy()
-                        expert_pred = expert_classifier.predict(features_cpu)
-                    except:
-                        # XGBoost가 훈련되지 않은 경우 무작위 예측
-                        expert_pred = np.random.randint(0, len(expert_classes), data.size(0))
-                else:
-                    # XGBoost가 훈련되지 않은 경우 무작위 예측
-                    expert_pred = np.random.randint(0, len(expert_classes), data.size(0))
-                
-                # 해당 expert가 담당하는 클래스에 속하는 샘플만 평가
-                for i, target in enumerate(targets):
-                    if target.item() in expert_classes:
-                        # Expert 내부 클래스 인덱스로 변환
-                        local_class_idx = expert_classes.index(target.item())
-                        all_predictions.append(expert_pred[i])
-                        all_targets.append(local_class_idx)
-                        expert_mask.append(True)
-                    else:
-                        expert_mask.append(False)
-
-        if len(all_predictions) == 0:
+    def _evaluate_expert(self, expert_classifier, expert_classes):
+        """개별 expert 성능 평가"""
+        # 해당 expert가 담당하는 클래스의 테스트 샘플만 필터링
+        expert_mask = np.isin(self.y_test, expert_classes)
+        
+        if not expert_mask.any():
             return 0.0, 0.0
 
-        all_predictions = np.array(all_predictions)
-        all_targets = np.array(all_targets)
+        X_expert = self.X_test[expert_mask]
+        y_expert = self.y_test[expert_mask]
+        
+        # 예측
+        predictions = expert_classifier.predict(X_expert)
 
         # 정확도 계산
-        accuracy = (all_predictions == all_targets).mean()
+        accuracy = (predictions == y_expert).mean()
         
         # F1 점수 계산
-        f1 = f1_score(all_targets, all_predictions, average='weighted', zero_division=0)
+        f1 = f1_score(y_expert, predictions, average='weighted', zero_division=0)
         
         return accuracy, f1
 
@@ -989,7 +687,7 @@ class FinalExperiment:
         logger = logging.getLogger('experiment')
         
         logger.info("=" * 80)
-        logger.info("EXPERIMENT RESULTS SUMMARY (XGBoost Experts)")
+        logger.info("EXPERIMENT RESULTS SUMMARY (Simple XGBoost Experts)")
         logger.info("=" * 80)
         
         # 기본 정보
@@ -1005,10 +703,10 @@ class FinalExperiment:
         if results['improvement_ensemble'] != 0:
             logger.info(f"Ensemble Improvement: {results['improvement_ensemble']:+.4f}")
         
-        # 클러스터링 그룹 정보
-        if results['clustering_groups']:
-            logger.info("\nClustering Groups:")
-            for expert_idx, group in enumerate(results['clustering_groups']):
+        # 전문가 그룹 정보
+        if results['expert_groups']:
+            logger.info("\nExpert Groups:")
+            for expert_idx, group in enumerate(results['expert_groups']):
                 logger.info(f"  Expert {expert_idx}: {group}")
         
         # 클래스별 성능 (상세)
@@ -1034,122 +732,64 @@ class FinalExperiment:
 
     def evaluate_model(self, model):
         """단일 모델 평가 및 클래스별 성능 지표 계산"""
-        test_loader = DataLoader(
-            self.test_subset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
-        )
-
-        all_predictions = []
-        all_targets = []
-
-        model.eval()
         print("     Evaluating baseline model...")
         
-        with torch.no_grad():
-            # 평가 진행 상황을 보여주는 프로그레스 바
-            eval_pbar = tqdm(test_loader, desc="Evaluating", unit="batch")
-            
-            for data, targets in eval_pbar:
-                data, targets = data.to(self.device), targets.to(self.device)
-                outputs = model(data)
-                _, predicted = outputs.max(1)
-                all_predictions.extend(predicted.detach().cpu().numpy())
-                all_targets.extend(targets.detach().cpu().numpy())
-                
-                # 진행 상황 업데이트
-                eval_pbar.set_postfix({
-                    'Samples': len(all_predictions)
-                })
-        
-        eval_pbar.close()
-
-        all_predictions = np.array(all_predictions)
-        all_targets = np.array(all_targets)
+        # XGBoost 예측
+        predictions = model.predict(self.X_test)
 
         # 전체 정확도
-        accuracy = (all_predictions == all_targets).mean()
+        accuracy = (predictions == self.y_test).mean()
         
         # 클래스별 성능 지표
         per_class_acc, per_class_f1 = self.compute_per_class_metrics(
-            all_predictions, all_targets, self.num_classes
+            predictions, self.y_test, self.num_classes
         )
         
         # 혼동 행렬
-        cm = confusion_matrix(all_targets, all_predictions)
+        cm = confusion_matrix(self.y_test, predictions)
         
         return accuracy, per_class_acc, per_class_f1, cm
 
-    def evaluate_expert_ensemble(
-        self, shared_backbone, expert_classifiers, router, expert_groups
-    ):
+    def evaluate_expert_ensemble(self, expert_classifiers, expert_groups):
         """전문가 앙상블 평가 및 클래스별 성능 지표 계산"""
-        test_loader = DataLoader(
-            self.test_subset, batch_size=128, shuffle=False, num_workers=0, persistent_workers=False
-        )
-
-        all_predictions = []
-        all_targets = []
-
-        shared_backbone.eval()
-        router.eval()
-
         print("     Evaluating expert ensemble (XGBoost)...")
         
-        with torch.no_grad():
-            # 평가 진행 상황을 보여주는 프로그레스 바
-            eval_pbar = tqdm(test_loader, desc="Evaluating Ensemble", unit="batch")
-            
-            for data, targets in eval_pbar:
-                data, targets = data.to(self.device), targets.to(self.device)
-
-                features = shared_backbone(data)
-                routing_weights = router(features)
-
-                final_logits = torch.zeros(data.size(0), self.num_classes, device=self.device)
-
-                for expert_idx, (expert_classifier, expert_classes) in enumerate(
-                    zip(expert_classifiers, expert_groups)
-                ):
-                    # XGBoost 예측 (CPU에서) - 훈련된 경우에만
-                    if hasattr(expert_classifier, 'xgb_model') and hasattr(expert_classifier.xgb_model, 'get_booster'):
-                        try:
-                            features_cpu = features.detach().cpu().numpy()
-                            expert_proba = expert_classifier.predict_proba(features_cpu)
-                            expert_pred = torch.from_numpy(expert_proba).to(self.device)
-                        except:
-                            # XGBoost가 훈련되지 않은 경우 무작위 예측
-                            expert_pred = torch.randn(data.size(0), len(expert_classes), device=self.device)
-                    else:
-                        # XGBoost가 훈련되지 않은 경우 무작위 예측
-                        expert_pred = torch.randn(data.size(0), len(expert_classes), device=self.device)
-
-                    for i, global_class in enumerate(expert_classes):
-                        final_logits[:, global_class] += (
-                            routing_weights[:, expert_idx] * expert_pred[:, i]
-                        )
-
-                _, predicted = final_logits.max(1)
-                all_predictions.extend(predicted.detach().cpu().numpy())
-                all_targets.extend(targets.detach().cpu().numpy())
+        predictions = []
         
-        eval_pbar.close()
-
-        all_predictions = np.array(all_predictions)
-        all_targets = np.array(all_targets)
+        # 각 테스트 샘플에 대해 해당하는 expert 사용
+        for i, (features, target) in enumerate(zip(self.X_test, self.y_test)):
+            # 해당 클래스를 담당하는 expert 찾기
+            expert_idx = None
+            for idx, expert_classes in enumerate(expert_groups):
+                if target in expert_classes:
+                    expert_idx = idx
+                    break
+            
+            if expert_idx is not None:
+                # 해당 expert로 예측
+                expert_pred = expert_classifiers[expert_idx].predict([features])
+                predictions.append(expert_pred[0])
+            else:
+                # 담당 expert가 없는 경우 첫 번째 expert 사용
+                expert_pred = expert_classifiers[0].predict([features])
+                predictions.append(expert_pred[0])
+        
+        predictions = np.array(predictions)
 
         # 전체 정확도
-        accuracy = (all_predictions == all_targets).mean()
+        accuracy = (predictions == self.y_test).mean()
         
         # 클래스별 성능 지표
         per_class_acc, per_class_f1 = self.compute_per_class_metrics(
-            all_predictions, all_targets, self.num_classes
+            predictions, self.y_test, self.num_classes
         )
         
         # 혼동 행렬
-        cm = confusion_matrix(all_targets, all_predictions)
+        cm = confusion_matrix(self.y_test, predictions)
         
         return accuracy, per_class_acc, per_class_f1, cm
 
-    def run_single_experiment(self, seed, data_dir, epochs=100, models=['baseline', 'ensemble']):
+    def run_single_experiment(self, seed, data_dir, models=['baseline', 'ensemble']):
         """단일 실험 실행 및 결과 저장"""
         print(f"\nExperiment with seed {seed}")
         print("=" * 50)
@@ -1157,14 +797,13 @@ class FinalExperiment:
         start_time = time.time()
 
         # 실험 디렉토리 생성
-        exp_dir = f"experiment_results_xgboost_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        exp_dir = f"experiment_results_simple_xgboost_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         os.makedirs(exp_dir, exist_ok=True)
         
         # 로깅 설정
         logger = setup_logging(exp_dir)
         logger.info(f"Starting experiment with seed {seed}")
         logger.info(f"Models to train: {models}")
-        logger.info(f"Epochs: {epochs}")
         logger.info(f"Data directory: {data_dir}")
 
         # 데이터셋 설정
@@ -1177,10 +816,8 @@ class FinalExperiment:
         baseline_per_class_f1 = []
         baseline_cm = None
         
-        shared_backbone = None
         expert_classifiers = None
-        router = None
-        clustering_groups = None
+        expert_groups = None
         ensemble_acc = 0.0
         ensemble_per_class_acc = []
         ensemble_per_class_f1 = []
@@ -1192,18 +829,18 @@ class FinalExperiment:
 
         # 베이스라인 모델
         if 'baseline' in models:
-            baseline_model, baseline_history = self.train_baseline(seed, epochs)
+            baseline_model, baseline_history = self.train_baseline(seed)
             baseline_acc, baseline_per_class_acc, baseline_per_class_f1, baseline_cm = self.evaluate_model(baseline_model)
             training_history['Baseline'] = baseline_history
 
         # 앙상블 모델
         if 'ensemble' in models:
-            clustering_groups = self.get_clustering_groups(seed)
-            shared_backbone, expert_classifiers, router, ensemble_history, expert_history = self.train_expert_ensemble(
-                clustering_groups, seed
+            expert_groups = self.get_frequency_based_groups(seed)
+            expert_classifiers, ensemble_history, expert_history = self.train_expert_ensemble(
+                expert_groups, seed
             )
             ensemble_acc, ensemble_per_class_acc, ensemble_per_class_f1, ensemble_cm = self.evaluate_expert_ensemble(
-                shared_backbone, expert_classifiers, router, clustering_groups
+                expert_classifiers, expert_groups
             )
             training_history['Ensemble'] = ensemble_history
 
@@ -1217,7 +854,7 @@ class FinalExperiment:
         if 'baseline' in models and baseline_cm is not None:
             self.plot_confusion_matrix(
                 baseline_cm, class_names,
-                "Baseline MLP Confusion Matrix",
+                "Baseline XGBoost Confusion Matrix",
                 os.path.join(exp_dir, "baseline_confusion_matrix.png")
             )
         if 'ensemble' in models and ensemble_cm is not None:
@@ -1247,23 +884,38 @@ class FinalExperiment:
             os.path.join(exp_dir, "performance_metrics.csv")
         )
 
+        # JSON 직렬화를 위해 numpy 타입을 Python 기본 타입으로 변환
+        def convert_numpy_types(obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, list):
+                return [convert_numpy_types(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {key: convert_numpy_types(value) for key, value in obj.items()}
+            else:
+                return obj
+
         results = {
-            "seed": seed,
-            "baseline_accuracy": baseline_acc,
-            "ensemble_accuracy": ensemble_acc,
-            "improvement_ensemble": improvement_ensemble,
-            "runtime_minutes": elapsed_time,
-            "clustering_groups": clustering_groups,
+            "seed": int(seed),
+            "baseline_accuracy": float(baseline_acc),
+            "ensemble_accuracy": float(ensemble_acc),
+            "improvement_ensemble": float(improvement_ensemble),
+            "runtime_minutes": float(elapsed_time),
+            "expert_groups": convert_numpy_types(expert_groups),
             "timestamp": datetime.now().isoformat(),
-            "baseline_per_class_acc": baseline_per_class_acc,
-            "baseline_per_class_f1": baseline_per_class_f1,
-            "ensemble_per_class_acc": ensemble_per_class_acc,
-            "ensemble_per_class_f1": ensemble_per_class_f1
+            "baseline_per_class_acc": convert_numpy_types(baseline_per_class_acc),
+            "baseline_per_class_f1": convert_numpy_types(baseline_per_class_f1),
+            "ensemble_per_class_acc": convert_numpy_types(ensemble_per_class_acc),
+            "ensemble_per_class_f1": convert_numpy_types(ensemble_per_class_f1)
         }
 
         print(f"Results:")
         if 'baseline' in models:
-            print(f"   Baseline MLP:                 {baseline_acc:.4f}")
+            print(f"   Baseline XGBoost:             {baseline_acc:.4f}")
         if 'ensemble' in models:
             print(f"   Expert Ensemble (XGBoost):     {ensemble_acc:.4f}")
         
@@ -1283,7 +935,7 @@ class FinalExperiment:
 def main():
     """Main function with argument parsing"""
     parser = argparse.ArgumentParser(
-        description="Final Clustering-Based Expert Ensemble Experiment - CICIDS-2017 Version with XGBoost Experts"
+        description="Simple Frequency-Based Expert Assignment Experiment - CICIDS-2017 Version with XGBoost Experts"
     )
     parser.add_argument(
         "--mode",
@@ -1310,12 +962,6 @@ def main():
         help="Directory containing CICIDS-2017 CSV files",
     )
     parser.add_argument(
-        "--epochs",
-        type=int,
-        default=50,
-        help="Number of training epochs for models",
-    )
-    parser.add_argument(
         "--models", 
         nargs='+', 
         choices=['baseline', 'ensemble'], 
@@ -1326,16 +972,16 @@ def main():
     args = parser.parse_args()
 
     # Initialize experiment
-    experiment = FinalExperiment(
+    experiment = SimpleExperiment(
         num_experts=args.num_experts
     )
 
     if args.mode == "fixed":
         print(f"\nRunning FIXED SEED experiment (seed={args.seed})")
-        result = experiment.run_single_experiment(args.seed, args.data_dir, args.epochs, args.models)
+        result = experiment.run_single_experiment(args.seed, args.data_dir, args.models)
 
         # Save single result
-        with open(f"final_experiment_xgboost_fixed_seed{args.seed}.json", "w") as f:
+        with open(f"simple_experiment_xgboost_fixed_seed{args.seed}.json", "w") as f:
             json.dump(result, f, indent=2)
 
     elif args.mode == "random":
@@ -1352,7 +998,7 @@ def main():
         print(f"\n" + "=" * 80)
         print(f"FIXED SEED EXPERIMENT")
         print(f"=" * 80)
-        fixed_result = experiment.run_single_experiment(args.seed, args.data_dir, args.epochs, args.models)
+        fixed_result = experiment.run_single_experiment(args.seed, args.data_dir, args.models)
 
         # Save combined results
         combined_results = {
@@ -1361,7 +1007,7 @@ def main():
         }
 
         with open(
-            f"final_experiment_xgboost_combined_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+            f"simple_experiment_xgboost_combined_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
             "w",
         ) as f:
             json.dump(combined_results, f, indent=2)
