@@ -122,8 +122,12 @@ class SimpleExpertXGBoostClassifier:
 
     def fit(self, features, labels):
         """XGBoost 모델 훈련 (샘플 수 제한 적용)"""
+        print(f"       Original data: {len(features)} samples")
+        
         # 샘플 수 제한을 적용한 데이터 생성
         limited_features, limited_labels = self._apply_sample_limit(features, labels)
+        
+        print(f"       After sample limit ({self.sample_limit}): {len(limited_labels)} samples")
         
         if len(limited_labels) == 0:
             print(f"       WARNING: Expert has no training samples after applying sample limit!")
@@ -179,11 +183,14 @@ class SimpleExpertXGBoostClassifier:
         limited_features = []
         limited_labels = []
         
+        print(f"         Applying sample limit {self.sample_limit} to each class:")
+        
         # 클래스별로 샘플 수 제한 적용
         for class_id in self.expert_classes:
             class_mask = (labels == class_id)
             class_features = features[class_mask]
             class_labels = labels[class_mask]
+            original_count = len(class_features)
             
             # 샘플 수 제한 적용
             if len(class_features) > self.sample_limit:
@@ -196,6 +203,11 @@ class SimpleExpertXGBoostClassifier:
                 )
                 class_features = class_features[selected_indices]
                 class_labels = class_labels[selected_indices]
+                final_count = len(class_features)
+                print(f"           Class {class_id}: {original_count} -> {final_count} samples")
+            else:
+                final_count = len(class_features)
+                print(f"           Class {class_id}: {original_count} samples")
             
             limited_features.append(class_features)
             limited_labels.append(class_labels)
@@ -447,12 +459,12 @@ class SimpleExperiment:
         sorted_class_samples = sorted(class_counts.items(), key=lambda x: x[1], reverse=True)
         sample_counts = [item[1] for item in sorted_class_samples]
         
-        # 4개 구간으로 나누어 각 구간의 경계값 계산
+        # k개 구간으로 나누어 각 구간의 경계값 계산
         num_classes = len(sample_counts)
         quartile_indices = []
-        for i in range(1, self.num_experts + 1):
-            # 1/4, 2/4, 3/4, 4/4 지점의 인덱스 계산
-            idx = int((i * num_classes) / self.num_experts) - 1
+        for i in range(self.num_experts):
+            # 0, 1/k, 2/k, ..., (k-1)/k 지점의 인덱스 계산
+            idx = int((i * num_classes) / self.num_experts)
             idx = max(0, min(idx, num_classes - 1))  # 범위 내로 제한
             quartile_indices.append(idx)
         
@@ -469,44 +481,19 @@ class SimpleExperiment:
         print(f"     Expert sample limits (based on quartile boundaries): {sample_limits}")
         print(f"     Quartile indices: {quartile_indices}")
         
-        # 각 구간별 클래스 분포 출력
-        print("     Quartile-based sample limit assignment:")
-        for expert_idx, (limit, quartile_idx) in enumerate(zip(sample_limits, quartile_indices)):
-            print(f"       Expert {expert_idx}: sample limit = {limit} (quartile {expert_idx + 1}/{self.num_experts})")
-            
-            # 해당 구간에 속하는 클래스들 찾기
-            if expert_idx == 0:
-                # 첫 번째 구간: 0부터 quartile_idx까지
-                start_idx = 0
-                end_idx = quartile_idx + 1
-            else:
-                # 나머지 구간: 이전 quartile_idx + 1부터 현재 quartile_idx까지
-                start_idx = quartile_indices[expert_idx - 1] + 1
-                end_idx = quartile_idx + 1
-            
-            for i in range(start_idx, end_idx):
-                if i < len(sorted_class_samples):
-                    class_id, count = sorted_class_samples[i]
-                    class_name = self.label_encoder.inverse_transform([class_id])[0]
-                    print(f"         · class {class_id} ({class_name}): {count} samples")
+        # 4분위 계산 상세 정보 출력
+        print("     Quartile calculation details:")
+        for i, (idx, limit) in enumerate(zip(quartile_indices, sample_limits)):
+            if idx < len(sorted_class_samples):
+                class_id, count = sorted_class_samples[idx]
+                class_name = self.label_encoder.inverse_transform([class_id])[0]
+                print(f"       Expert {i}: quartile {i}/{self.num_experts-1} -> index {idx} -> class {class_id} ({class_name}) -> {count} samples -> limit {limit}")
         
         # 모든 전문가가 모든 클래스를 담당 (샘플 수만 제한)
         expert_groups = []
         for expert_idx in range(self.num_experts):
             expert_classes = class_ids.copy()  # 모든 클래스 포함
             expert_groups.append(expert_classes)
-        
-        # 결과 출력 - 각 전문가별 샘플 수 제한 정보
-        print("     Expert groups composition (all experts have all classes):")
-        for expert_idx, class_list in enumerate(expert_groups):
-            print(f"       Expert {expert_idx}: {len(class_list)} classes, sample limit: {sample_limits[expert_idx]}")
-            
-            # 각 클래스별 샘플 수 제한 정보
-            for cid in class_list:
-                original_count = class_counts[cid]
-                limited_count = min(original_count, sample_limits[expert_idx])
-                class_name = self.label_encoder.inverse_transform([cid])[0]
-                print(f"         · class {cid} ({class_name}): {limited_count}/{original_count} samples")
         
         # 빈 expert 검증
         empty_experts = [i for i, group in enumerate(expert_groups) if len(group) == 0]
@@ -559,12 +546,12 @@ class SimpleExperiment:
         sorted_class_samples = sorted(class_counts.items(), key=lambda x: x[1], reverse=True)
         sample_counts = [item[1] for item in sorted_class_samples]
         
-        # 4개 구간으로 나누어 각 구간의 경계값 계산
+        # k개 구간으로 나누어 각 구간의 경계값 계산
         num_classes = len(sample_counts)
         quartile_indices = []
-        for i in range(1, self.num_experts + 1):
-            # 1/4, 2/4, 3/4, 4/4 지점의 인덱스 계산
-            idx = int((i * num_classes) / self.num_experts) - 1
+        for i in range(self.num_experts):
+            # 0, 1/k, 2/k, ..., (k-1)/k 지점의 인덱스 계산
+            idx = int((i * num_classes) / self.num_experts)
             idx = max(0, min(idx, num_classes - 1))  # 범위 내로 제한
             quartile_indices.append(idx)
         
@@ -806,17 +793,6 @@ class SimpleExperiment:
         logger.info(f"  Total Test Samples: {total_test}")
         
 
-        # 전문가 그룹 정보
-        if results['expert_groups']:
-            logger.info("\nExpert Groups Composition:")
-            class_names = self.label_encoder.classes_
-            for expert_idx, group in enumerate(results['expert_groups']):
-                logger.info(f"  Expert {expert_idx}:")
-                for class_id in group:
-                    class_name = class_names[class_id]
-                    # 해당 클래스의 훈련 샘플 수 계산
-                    class_count = np.sum(self.y_train == class_id)
-                    logger.info(f"    - {class_name} (ID: {class_id}, Train samples: {class_count})")
         
         
         if results:
