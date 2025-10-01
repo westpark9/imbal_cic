@@ -120,3 +120,4 @@ ssh username@server "du -sh /path/to/MachineLearningCVE/*.csv"
 3. **백그라운드 실행**: `nohup` 또는 `screen` 사용
 4. **체크섬 확인**: 전송 후 파일 무결성 확인
 5. **대안 데이터셋**: CICIDS-2017이 어려운 경우 UNSW-NB15 사용
+

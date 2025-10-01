@@ -1,0 +1,164 @@
+2025-10-01 11:37:39,090 - INFO - Starting experiment with seed 42
+2025-10-01 11:37:39,090 - INFO - Models to train: ['baseline', 'ensemble']
+2025-10-01 11:37:39,090 - INFO - Data directory: ./MachineLearningCVE
+2025-10-01 11:44:27,050 - INFO - Detailed performance metrics saved to: experiment_results_simple_xgboost_20251001_113739\detailed_performance_metrics.csv
+2025-10-01 11:44:27,051 - INFO - Saved detailed metrics for 15 classes
+2025-10-01 11:44:27,052 - INFO - ================================================================================
+2025-10-01 11:44:27,052 - INFO - EXPERIMENT RESULTS SUMMARY (Simple XGBoost Experts)
+2025-10-01 11:44:27,062 - INFO - ================================================================================
+2025-10-01 11:44:27,062 - INFO - Seed: 42
+2025-10-01 11:44:27,063 - INFO - Runtime: 6.7 minutes
+2025-10-01 11:44:27,063 - INFO - Timestamp: 2025-10-01T11:44:27.051313
+2025-10-01 11:44:27,063 - INFO - Results saved to: experiment_results_simple_xgboost_20251001_113739
+2025-10-01 11:44:27,066 - INFO - 
+Train/Test Data Distribution:
+2025-10-01 11:44:27,066 - INFO - Train Set:
+2025-10-01 11:44:27,082 - INFO -   BENIGN                   : 1817056 (80.32%)
+2025-10-01 11:44:27,083 - INFO -   Bot                      :    1564 (0.07%)
+2025-10-01 11:44:27,084 - INFO -   DDoS                     :  102420 (4.53%)
+2025-10-01 11:44:27,085 - INFO -   DoS GoldenEye            :    8234 (0.36%)
+2025-10-01 11:44:27,086 - INFO -   DoS Hulk                 :  184099 (8.14%)
+2025-10-01 11:44:27,088 - INFO -   DoS Slowhttptest         :    4399 (0.19%)
+2025-10-01 11:44:27,089 - INFO -   DoS slowloris            :    4636 (0.20%)
+2025-10-01 11:44:27,091 - INFO -   FTP-Patator              :    6348 (0.28%)
+2025-10-01 11:44:27,093 - INFO -   Heartbleed               :       8 (0.00%)
+2025-10-01 11:44:27,094 - INFO -   Infiltration             :      28 (0.00%)
+2025-10-01 11:44:27,096 - INFO -   PortScan                 :  127043 (5.62%)
+2025-10-01 11:44:27,096 - INFO -   SSH-Patator              :    4717 (0.21%)
+2025-10-01 11:44:27,097 - INFO -   Web Attack � Brute Force :    1205 (0.05%)
+2025-10-01 11:44:27,100 - INFO -   Web Attack � Sql Injection:      16 (0.00%)
+2025-10-01 11:44:27,102 - INFO -   Web Attack � XSS         :     521 (0.02%)
+2025-10-01 11:44:27,102 - INFO -   Total Train Samples: 2262294
+2025-10-01 11:44:27,103 - INFO - Test Set:
+2025-10-01 11:44:27,109 - INFO -   BENIGN                   :  454264 (80.32%)
+2025-10-01 11:44:27,110 - INFO -   Bot                      :     392 (0.07%)
+2025-10-01 11:44:27,112 - INFO -   DDoS                     :   25605 (4.53%)
+2025-10-01 11:44:27,113 - INFO -   DoS GoldenEye            :    2059 (0.36%)
+2025-10-01 11:44:27,113 - INFO -   DoS Hulk                 :   46025 (8.14%)
+2025-10-01 11:44:27,115 - INFO -   DoS Slowhttptest         :    1100 (0.19%)
+2025-10-01 11:44:27,116 - INFO -   DoS slowloris            :    1160 (0.21%)
+2025-10-01 11:44:27,118 - INFO -   FTP-Patator              :    1587 (0.28%)
+2025-10-01 11:44:27,118 - INFO -   Heartbleed               :       3 (0.00%)
+2025-10-01 11:44:27,119 - INFO -   Infiltration             :       8 (0.00%)
+2025-10-01 11:44:27,120 - INFO -   PortScan                 :   31761 (5.62%)
+2025-10-01 11:44:27,120 - INFO -   SSH-Patator              :    1180 (0.21%)
+2025-10-01 11:44:27,121 - INFO -   Web Attack � Brute Force :     302 (0.05%)
+2025-10-01 11:44:27,122 - INFO -   Web Attack � Sql Injection:       5 (0.00%)
+2025-10-01 11:44:27,123 - INFO -   Web Attack � XSS         :     131 (0.02%)
+2025-10-01 11:44:27,123 - INFO -   Total Test Samples: 565582
+2025-10-01 11:44:27,124 - INFO - 
+Expert Groups Composition:
+2025-10-01 11:44:27,124 - INFO -   Expert 0:
+2025-10-01 11:44:27,128 - INFO -     - BENIGN (ID: 0, Train samples: 1817056)
+2025-10-01 11:44:27,132 - INFO -     - DoS Hulk (ID: 4, Train samples: 184099)
+2025-10-01 11:44:27,137 - INFO -     - PortScan (ID: 10, Train samples: 127043)
+2025-10-01 11:44:27,139 - INFO -     - DDoS (ID: 2, Train samples: 102420)
+2025-10-01 11:44:27,143 - INFO -     - DoS GoldenEye (ID: 3, Train samples: 8234)
+2025-10-01 11:44:27,147 - INFO -     - FTP-Patator (ID: 7, Train samples: 6348)
+2025-10-01 11:44:27,150 - INFO -     - SSH-Patator (ID: 11, Train samples: 4717)
+2025-10-01 11:44:27,152 - INFO -     - DoS slowloris (ID: 6, Train samples: 4636)
+2025-10-01 11:44:27,156 - INFO -     - DoS Slowhttptest (ID: 5, Train samples: 4399)
+2025-10-01 11:44:27,160 - INFO -     - Bot (ID: 1, Train samples: 1564)
+2025-10-01 11:44:27,163 - INFO -     - Web Attack � Brute Force (ID: 12, Train samples: 1205)
+2025-10-01 11:44:27,167 - INFO -     - Web Attack � XSS (ID: 14, Train samples: 521)
+2025-10-01 11:44:27,170 - INFO -     - Infiltration (ID: 9, Train samples: 28)
+2025-10-01 11:44:27,173 - INFO -     - Web Attack � Sql Injection (ID: 13, Train samples: 16)
+2025-10-01 11:44:27,177 - INFO -     - Heartbleed (ID: 8, Train samples: 8)
+2025-10-01 11:44:27,177 - INFO -   Expert 1:
+2025-10-01 11:44:27,181 - INFO -     - BENIGN (ID: 0, Train samples: 1817056)
+2025-10-01 11:44:27,183 - INFO -     - DoS Hulk (ID: 4, Train samples: 184099)
+2025-10-01 11:44:27,187 - INFO -     - PortScan (ID: 10, Train samples: 127043)
+2025-10-01 11:44:27,191 - INFO -     - DDoS (ID: 2, Train samples: 102420)
+2025-10-01 11:44:27,194 - INFO -     - DoS GoldenEye (ID: 3, Train samples: 8234)
+2025-10-01 11:44:27,197 - INFO -     - FTP-Patator (ID: 7, Train samples: 6348)
+2025-10-01 11:44:27,202 - INFO -     - SSH-Patator (ID: 11, Train samples: 4717)
+2025-10-01 11:44:27,204 - INFO -     - DoS slowloris (ID: 6, Train samples: 4636)
+2025-10-01 11:44:27,209 - INFO -     - DoS Slowhttptest (ID: 5, Train samples: 4399)
+2025-10-01 11:44:27,212 - INFO -     - Bot (ID: 1, Train samples: 1564)
+2025-10-01 11:44:27,216 - INFO -     - Web Attack � Brute Force (ID: 12, Train samples: 1205)
+2025-10-01 11:44:27,220 - INFO -     - Web Attack � XSS (ID: 14, Train samples: 521)
+2025-10-01 11:44:27,223 - INFO -     - Infiltration (ID: 9, Train samples: 28)
+2025-10-01 11:44:27,227 - INFO -     - Web Attack � Sql Injection (ID: 13, Train samples: 16)
+2025-10-01 11:44:27,230 - INFO -     - Heartbleed (ID: 8, Train samples: 8)
+2025-10-01 11:44:27,231 - INFO -   Expert 2:
+2025-10-01 11:44:27,234 - INFO -     - BENIGN (ID: 0, Train samples: 1817056)
+2025-10-01 11:44:27,238 - INFO -     - DoS Hulk (ID: 4, Train samples: 184099)
+2025-10-01 11:44:27,242 - INFO -     - PortScan (ID: 10, Train samples: 127043)
+2025-10-01 11:44:27,245 - INFO -     - DDoS (ID: 2, Train samples: 102420)
+2025-10-01 11:44:27,249 - INFO -     - DoS GoldenEye (ID: 3, Train samples: 8234)
+2025-10-01 11:44:27,253 - INFO -     - FTP-Patator (ID: 7, Train samples: 6348)
+2025-10-01 11:44:27,258 - INFO -     - SSH-Patator (ID: 11, Train samples: 4717)
+2025-10-01 11:44:27,262 - INFO -     - DoS slowloris (ID: 6, Train samples: 4636)
+2025-10-01 11:44:27,266 - INFO -     - DoS Slowhttptest (ID: 5, Train samples: 4399)
+2025-10-01 11:44:27,270 - INFO -     - Bot (ID: 1, Train samples: 1564)
+2025-10-01 11:44:27,274 - INFO -     - Web Attack � Brute Force (ID: 12, Train samples: 1205)
+2025-10-01 11:44:27,278 - INFO -     - Web Attack � XSS (ID: 14, Train samples: 521)
+2025-10-01 11:44:27,282 - INFO -     - Infiltration (ID: 9, Train samples: 28)
+2025-10-01 11:44:27,286 - INFO -     - Web Attack � Sql Injection (ID: 13, Train samples: 16)
+2025-10-01 11:44:27,289 - INFO -     - Heartbleed (ID: 8, Train samples: 8)
+2025-10-01 11:44:27,290 - INFO -   Expert 3:
+2025-10-01 11:44:27,294 - INFO -     - BENIGN (ID: 0, Train samples: 1817056)
+2025-10-01 11:44:27,299 - INFO -     - DoS Hulk (ID: 4, Train samples: 184099)
+2025-10-01 11:44:27,303 - INFO -     - PortScan (ID: 10, Train samples: 127043)
+2025-10-01 11:44:27,307 - INFO -     - DDoS (ID: 2, Train samples: 102420)
+2025-10-01 11:44:27,312 - INFO -     - DoS GoldenEye (ID: 3, Train samples: 8234)
+2025-10-01 11:44:27,316 - INFO -     - FTP-Patator (ID: 7, Train samples: 6348)
+2025-10-01 11:44:27,321 - INFO -     - SSH-Patator (ID: 11, Train samples: 4717)
+2025-10-01 11:44:27,325 - INFO -     - DoS slowloris (ID: 6, Train samples: 4636)
+2025-10-01 11:44:27,329 - INFO -     - DoS Slowhttptest (ID: 5, Train samples: 4399)
+2025-10-01 11:44:27,333 - INFO -     - Bot (ID: 1, Train samples: 1564)
+2025-10-01 11:44:27,338 - INFO -     - Web Attack � Brute Force (ID: 12, Train samples: 1205)
+2025-10-01 11:44:27,342 - INFO -     - Web Attack � XSS (ID: 14, Train samples: 521)
+2025-10-01 11:44:27,346 - INFO -     - Infiltration (ID: 9, Train samples: 28)
+2025-10-01 11:44:27,350 - INFO -     - Web Attack � Sql Injection (ID: 13, Train samples: 16)
+2025-10-01 11:44:27,355 - INFO -     - Heartbleed (ID: 8, Train samples: 8)
+2025-10-01 11:44:27,355 - INFO - 
+Baseline XGBoost Performance:
+2025-10-01 11:44:27,355 - INFO -   Accuracy: 0.9990
+2025-10-01 11:44:27,356 - INFO -   Macro Accuracy: 0.7935
+2025-10-01 11:44:27,356 - INFO - 
+Baseline Per-Class Performance:
+2025-10-01 11:44:27,356 - INFO - Class                     Precision  Recall     F1-Score   Support 
+2025-10-01 11:44:27,357 - INFO - ----------------------------------------------------------------------
+2025-10-01 11:44:27,357 - INFO -   BENIGN                    0.9997     0.9994     0.9995     454264  
+2025-10-01 11:44:27,357 - INFO -   Bot                       0.9568     0.7347     0.8312     392     
+2025-10-01 11:44:27,357 - INFO -   DDoS                      0.9999     0.9996     0.9997     25605   
+2025-10-01 11:44:27,358 - INFO -   DoS GoldenEye             0.9947     0.9966     0.9956     2059    
+2025-10-01 11:44:27,358 - INFO -   DoS Hulk                  0.9985     0.9998     0.9991     46025   
+2025-10-01 11:44:27,359 - INFO -   DoS Slowhttptest          0.9945     0.9882     0.9913     1100    
+2025-10-01 11:44:27,359 - INFO -   DoS slowloris             0.9983     0.9931     0.9957     1160    
+2025-10-01 11:44:27,359 - INFO -   FTP-Patator               1.0000     0.9994     0.9997     1587    
+2025-10-01 11:44:27,359 - INFO -   Heartbleed                1.0000     0.6667     0.8000     3       
+2025-10-01 11:44:27,360 - INFO -   Infiltration              1.0000     0.5000     0.6667     8       
+2025-10-01 11:44:27,360 - INFO -   PortScan                  0.9941     0.9997     0.9969     31761   
+2025-10-01 11:44:27,360 - INFO -   SSH-Patator               1.0000     1.0000     1.0000     1180    
+2025-10-01 11:44:27,361 - INFO -   Web Attack � Brute Force  0.7081     0.9801     0.8222     302     
+2025-10-01 11:44:27,361 - INFO -   Web Attack � Sql Injection 0.0000     0.0000     0.0000     5       
+2025-10-01 11:44:27,362 - INFO -   Web Attack � XSS          0.4615     0.0458     0.0833     131     
+2025-10-01 11:44:27,362 - INFO - 
+Expert Ensemble Performance:
+2025-10-01 11:44:27,363 - INFO -   Accuracy: 0.9964
+2025-10-01 11:44:27,363 - INFO -   Macro Accuracy: 0.8683
+2025-10-01 11:44:27,363 - INFO - 
+Ensemble Per-Class Performance:
+2025-10-01 11:44:27,363 - INFO - Class                     Precision  Recall     F1-Score   Support 
+2025-10-01 11:44:27,364 - INFO - ----------------------------------------------------------------------
+2025-10-01 11:44:27,364 - INFO -   BENIGN                    0.9999     0.9962     0.9981     454264  
+2025-10-01 11:44:27,364 - INFO -   Bot                       0.3674     1.0000     0.5374     392     
+2025-10-01 11:44:27,365 - INFO -   DDoS                      0.9983     0.9988     0.9986     25605   
+2025-10-01 11:44:27,365 - INFO -   DoS GoldenEye             0.9519     0.9990     0.9749     2059    
+2025-10-01 11:44:27,365 - INFO -   DoS Hulk                  0.9901     0.9990     0.9945     46025   
+2025-10-01 11:44:27,366 - INFO -   DoS Slowhttptest          0.8802     0.9955     0.9343     1100    
+2025-10-01 11:44:27,366 - INFO -   DoS slowloris             0.9914     0.9931     0.9922     1160    
+2025-10-01 11:44:27,366 - INFO -   FTP-Patator               0.9677     0.9994     0.9833     1587    
+2025-10-01 11:44:27,367 - INFO -   Heartbleed                0.6000     1.0000     0.7500     3       
+2025-10-01 11:44:27,367 - INFO -   Infiltration              1.0000     0.7500     0.8571     8       
+2025-10-01 11:44:27,367 - INFO -   PortScan                  0.9927     0.9980     0.9953     31761   
+2025-10-01 11:44:27,368 - INFO -   SSH-Patator               0.9776     1.0000     0.9887     1180    
+2025-10-01 11:44:27,368 - INFO -   Web Attack � Brute Force  0.7104     0.9503     0.8130     302     
+2025-10-01 11:44:27,368 - INFO -   Web Attack � Sql Injection 0.3333     0.2000     0.2500     5       
+2025-10-01 11:44:27,369 - INFO -   Web Attack � XSS          0.1776     0.1450     0.1597     131     
+2025-10-01 11:44:27,369 - INFO - 
+Ensemble Improvement: -0.0025
+2025-10-01 11:44:27,369 - INFO - ================================================================================
+2025-10-01 11:44:27,370 - INFO - Experiment completed. Results saved to: experiment_results_simple_xgboost_20251001_113739
