@@ -29,7 +29,6 @@ import pandas as pd
 from collections import defaultdict
 import logging
 import xgboost as xgb
-
 # Windows multiprocessing 문제 해결
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -238,6 +237,32 @@ class SimpleExpertXGBoostClassifier:
         except:
             # 예측 실패 시 무작위 예측 반환
             return np.random.randint(0, len(self.expert_classes), features.shape[0])
+    
+    def predict_proba(self, features, global_num_classes):
+        if len(self.expert_classes) == 0 or not hasattr(self.xgb_model, 'get_booster'):
+            num_samples = features.shape[0]
+            return np.ones((num_samples, global_num_classes)) / global_num_classes
+        
+        try:
+            local_proba = self.xgb_model.predict_proba(features)
+            
+            num_samples = features.shape[0]
+            global_proba = np.zeros((num_samples, global_num_classes))
+            
+            for local_idx, global_class in self.reverse_mapping.items():
+                if local_idx < local_proba.shape[1]:  # 로컬 확률이 존재하는 경우
+                    global_proba[:, global_class] = local_proba[:, local_idx]
+            
+            row_sums = global_proba.sum(axis=1, keepdims=True)
+            row_sums[row_sums == 0] = 1  # 0으로 나누기 방지
+            global_proba = global_proba / row_sums
+            
+            return global_proba
+        except Exception as e:
+            print(f"       Expert predict_proba failed: {e}")
+            # 예측 실패 시 균등 확률 반환
+            num_samples = features.shape[0]
+            return np.ones((num_samples, global_num_classes)) / global_num_classes
 
 
 class SimpleExperiment:
@@ -896,35 +921,32 @@ class SimpleExperiment:
 
     def evaluate_expert_ensemble(self, expert_classifiers, expert_groups):
         """전문가 앙상블 평가 및 클래스별 성능 지표 계산"""
-        print("   Evaluating expert ensemble (all experts predict)...")
+        print("   Evaluating expert ensemble (collecting probabilities from all experts)...")
         
-        # 모든 전문가의 예측을 수집
-        all_expert_predictions = []
+        # 모든 전문가의 클래스별 확률을 수집하고 평균 내기
+        all_expert_probabilities = []
         for expert_idx, expert_classifier in enumerate(expert_classifiers):
-            print(f"     Expert {expert_idx} predicting...")
-            expert_pred = expert_classifier.predict(self.X_test)
-            all_expert_predictions.append(expert_pred)
-        
-        all_expert_predictions = np.array(all_expert_predictions)  # shape: (num_experts, num_samples)
-        
-        # 앙상블 예측 방법 1: 투표 방식 (Majority Voting)
-        predictions_voting = []
-        for sample_idx in range(len(self.X_test)):
-            # 각 샘플에 대해 모든 전문가의 예측을 수집
-            sample_predictions = all_expert_predictions[:, sample_idx]
-            
-            # 가장 많이 예측된 클래스 선택
-            unique, counts = np.unique(sample_predictions, return_counts=True)
-            majority_class = unique[np.argmax(counts)]
-            predictions_voting.append(majority_class)
-        
-        predictions_voting = np.array(predictions_voting)
-        
-        # Majority voting 사용
-        predictions = predictions_voting
-        
-        print(f"     Using majority voting for ensemble prediction")
+            print(f"     Expert {expert_idx} predicting probabilities...")
+            try:
+                expert_proba = expert_classifier.predict_proba(self.X_test, self.num_classes)
+                all_expert_probabilities.append(expert_proba)
+                print(f"       Expert {expert_idx} probability shape: {expert_proba.shape}")
+            except Exception as e:
+                print(f"       Expert {expert_idx} failed to predict probabilities: {e}")
+                # 실패한 경우 균등 확률 생성
+                num_samples = len(self.X_test)
+                uniform_proba = np.ones((num_samples, self.num_classes)) / self.num_classes
+                all_expert_probabilities.append(uniform_proba)
 
+        if all_expert_probabilities:
+            all_expert_probabilities = np.array(all_expert_probabilities)  # shape: (num_experts, num_samples, num_classes)
+            avg_probabilities = np.mean(all_expert_probabilities, axis=0)  # shape: (num_samples, num_classes)
+            
+            predictions = np.argmax(avg_probabilities, axis=1)  # shape: (num_samples,)
+        else:
+            predictions = np.random.randint(0, self.num_classes, len(self.X_test))
+
+        
         # 전체 정확도
         accuracy = (predictions == self.y_test).mean()
         
