@@ -2,7 +2,6 @@
 """
 TAILGUARD Ver.6.1: Explicit Taxonomy-Aware MoE
 - User-defined strict class mapping per dataset (unswnb15, cic2017, cic2018)
-- SMOTE applied to target classes, Negative Sampling applied
 - 3-Metric Hybrid Consensus via Grid Search
 """
 
@@ -19,8 +18,20 @@ import xgboost as xgb
 from scipy.special import logsumexp
 from sklearn.metrics import accuracy_score, classification_report, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
-from imblearn.over_sampling import SMOTE, RandomOverSampler
 import torch
+
+def infer_dataset_type(data_path, data=None):
+    """파일명 또는 pkl 내 dataset_type에서 추론"""
+    if data and 'dataset_type' in data:
+        return data['dataset_type']
+    name = os.path.basename(data_path).lower()
+    if 'unsw' in name or 'nb15' in name:
+        return 'unswnb15'
+    if '2017' in name:
+        return 'cic2017'
+    if '2018' in name:
+        return 'cic2018'
+    raise ValueError(f"Cannot infer dataset_type from '{data_path}'. Use unswnb15/cic2017/cic2018 in filename.")
 
 def get_device():
     return "cuda" if torch.cuda.is_available() else "cpu"
@@ -34,10 +45,13 @@ def setup_logging(exp_dir):
     return logging.getLogger("experiment")
 
 def calculate_energy(logits, T=1.0):
-    return -T * logsumexp(logits / T, axis=1)
+    # overflow 방지: XGBoost output_margin이 매우 큰 값일 수 있음
+    logits = np.clip(logits.astype(np.float64), -700, 700)
+    return (-T * logsumexp(logits / T, axis=1)).astype(np.float32)
 
 def calculate_entropy(probs):
-    return -np.sum(probs * np.log(probs + 1e-9), axis=1)
+    probs = np.clip(probs.astype(np.float64), 1e-12, 1.0)
+    return (-np.sum(probs * np.log(probs), axis=1)).astype(np.float32)
 
 def batch_iterator(X, batch_size=20000):
     for i in range(0, X.shape[0], batch_size):
@@ -49,13 +63,13 @@ class ExpertXGB:
         self.name = expert_name
         self.global_num_classes = global_num_classes
         self.device = device
-        self.seed = seed
+        self.seed = seed 
         self.model = None 
         self.local_classes = None     
         self.is_trained = False
         self.assigned_classes = [] 
 
-    def fit_with_smote_and_negative(self, X, y, expert_type="Global", target_classes=None, normal_classes=None, target_samples=5000):
+    def fit_expert(self, X, y, expert_type="Global", target_classes=None, normal_classes=None):
         if expert_type == "Global":
             self.assigned_classes = np.unique(y).tolist()
             X_tr, y_tr = X, y
@@ -64,58 +78,23 @@ class ExpertXGB:
         else:
             self.assigned_classes = normal_classes + target_classes
             logger = logging.getLogger("experiment")
-            logger.info(f"      [{self.name}] Applying SMOTE and Subsampling...")
+            logger.info(f"      [{self.name}] Subsampling (no augmentation)...")
             
             X_list, y_list = [], []
-            
-            # 1. Target Classes (SMOTE)
-            for cls in target_classes:
-                idx = np.where(y == cls)[0]
-                count = len(idx)
-                if count == 0: continue
-                
-                if count >= target_samples:
-                    np.random.seed(self.seed)
-                    sampled_idx = np.random.choice(count, target_samples, replace=False)
-                    X_list.append(X[idx[sampled_idx]])
-                    y_list.append(y[idx[sampled_idx]])
-                else:
-                    X_cls, y_cls = X[idx], y[idx]
-                    if count < 6:
-                        np.random.seed(self.seed)
-                        sampled_idx = np.random.choice(count, target_samples, replace=True)
-                        X_list.append(X_cls[sampled_idx])
-                        y_list.append(y_cls[sampled_idx])
-                    else:
-                        normal_idx = np.where(y == normal_classes[0])[0]
-                        dummy_normal_idx = np.random.choice(normal_idx, target_samples + 100, replace=True)
-                        X_pair = np.vstack([X_cls, X[dummy_normal_idx]])
-                        y_pair = np.concatenate([y_cls, y[dummy_normal_idx]])
-                        
-                        smote = SMOTE(sampling_strategy={cls: target_samples}, k_neighbors=min(5, count-1), random_state=self.seed)
-                        X_res, y_res = smote.fit_resample(X_pair, y_pair)
-                        
-                        res_idx = np.where(y_res == cls)[0]
-                        X_list.append(X_res[res_idx])
-                        y_list.append(y_res[res_idx])
-                        
-            # 2. Normal Classes (Undersampling)
             target_total = target_samples * len(target_classes)
-            for cls in normal_classes:
+            
+            for cls in self.assigned_classes:
                 idx = np.where(y == cls)[0]
                 if len(idx) == 0: continue
-                n_normal = min(len(idx), target_total)
-                if n_normal > 0:
-                    np.random.seed(self.seed)
-                    sampled_idx = np.random.choice(len(idx), n_normal, replace=False)
-                    X_list.append(X[idx[sampled_idx]])
-                    y_list.append(y[idx[sampled_idx]])
-                    
-            # 3. Negative Samples (타 도메인 공격 20% 투입)
+                n_take = min(len(idx), target_total)
+                np.random.seed(self.seed)
+                sampled_idx = np.random.choice(len(idx), n_take, replace=False)
+                X_list.append(X[idx[sampled_idx]])
+                y_list.append(y[idx[sampled_idx]])
+            
             mask_other = ~np.isin(y, self.assigned_classes)
             idx_other = np.where(mask_other)[0]
             n_other = min(len(idx_other), int(target_total * 0.2))
-            
             if n_other > 0:
                 np.random.seed(self.seed)
                 idx_other_sampled = np.random.choice(idx_other, n_other, replace=False)
@@ -124,11 +103,10 @@ class ExpertXGB:
 
             X_tr = np.vstack(X_list)
             y_tr = np.concatenate(y_list)
-            
             shuffle_idx = np.random.permutation(len(y_tr))
             X_tr = X_tr[shuffle_idx]
             y_tr = y_tr[shuffle_idx]
-            logger.info(f"      [{self.name}] Resampled data shape: {X_tr.shape}")
+            logger.info(f"      [{self.name}] Subsampled data shape: {X_tr.shape}")
 
         if len(X_tr) == 0:
             self.is_trained = False
@@ -251,10 +229,10 @@ class TaxonomyDrivenMoE:
 
     def train_single(self, X_train, y_train):
         exp_global = ExpertXGB(0, self.num_classes, expert_name="Baseline", device=self.device, seed=self.seed)
-        exp_global.fit_with_smote_and_negative(X_train, y_train, expert_type="Global")
+        exp_global.fit_expert(X_train, y_train, expert_type="Global")
         self.experts.append(exp_global)
 
-    def build_experts(self, X_train, y_train, logger, class_names, smote_target_samples=5000):
+    def build_experts(self, X_train, y_train, logger, class_names):
         groups = self.get_taxonomy_groups(class_names)
         normal_classes = groups['Normal']
         
@@ -263,10 +241,10 @@ class TaxonomyDrivenMoE:
             names = [class_names[c] for c in classes]
             logger.info(f"    [{group_name:12s}] : {names}")
 
-        logger.info("\n  [Phase 2] Training Domain Specialists (SMOTE + Negative Sampling)...")
+        logger.info("\n  [Phase 2] Training Domain Specialists...")
         
         exp_global = ExpertXGB(0, self.num_classes, expert_name="Global_Router", device=self.device, seed=self.seed)
-        exp_global.fit_with_smote_and_negative(X_train, y_train, expert_type="Global")
+        exp_global.fit_expert(X_train, y_train, expert_type="Global")
         self.experts.append(exp_global)
         
         specialist_configs = [
@@ -279,9 +257,9 @@ class TaxonomyDrivenMoE:
         for exp_id, name, target_group in specialist_configs:
             if target_group:
                 exp = ExpertXGB(exp_id, self.num_classes, expert_name=name, device=self.device, seed=self.seed)
-                exp.fit_with_smote_and_negative(
+                exp.fit_expert(
                     X_train, y_train, expert_type="Specialist", 
-                    target_classes=target_group, normal_classes=normal_classes, target_samples=smote_target_samples
+                    target_classes=target_group, normal_classes=normal_classes,
                 )
                 self.experts.append(exp)
 
@@ -307,6 +285,10 @@ class TaxonomyDrivenMoE:
         logger.info("\n  [Phase 3] Meta-Optimization: Grid Search for (Conf, Ent, Eng) Weights...")
         preds, conf, ent, eng = self.extract_metrics_batch(X_val)
         
+        # inf/nan 제거 후 정규화 (무한대 오류 방지)
+        conf = np.nan_to_num(conf, nan=0.0, posinf=1e10, neginf=-1e10)
+        ent = np.nan_to_num(ent, nan=0.0, posinf=1.0, neginf=0.0)
+        eng = np.nan_to_num(eng, nan=0.0, posinf=0.0, neginf=-1e10)
         self.norm_params = {
             'conf_mean': np.mean(conf), 'conf_std': np.std(conf) + 1e-9,
             'ent_mean': np.mean(ent), 'ent_std': np.std(ent) + 1e-9,
@@ -353,18 +335,23 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, required=True, help="Path to .pkl data")
-    parser.add_argument("--dataset_type", type=str, required=True, choices=["unswnb15", "cic2017", "cic2018"])
+    parser.add_argument("--model", "-m", type=int, default=2, choices=[0, 1, 2],
+                        help="0: baseline only, 1: proposed only, 2: both")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--batch_size", type=int, default=20000)
-    parser.add_argument("--smote_samples", type=int, default=5000)
     args = parser.parse_args()
 
-    exp_dir = f"logs_exact_taxonomy_moe_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    exp_dir = f"results/logs_exact_taxonomy_moe_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     os.makedirs(exp_dir, exist_ok=True)
     logger = setup_logging(exp_dir)
     
     with open(args.data, "rb") as f: data = pickle.load(f)
+    dataset_type = infer_dataset_type(args.data, data)
+    logger.info(f"Dataset type: {dataset_type}")
     X, y = data["X"].astype(np.float32), data["y"].astype(np.int32)
+    # inf/nan 처리 (무한대 오류 방지)
+    X = np.nan_to_num(X, nan=0.0, posinf=1e12, neginf=-1e12)
+    X = np.clip(X, -1e12, 1e12).astype(np.float32)
     class_names = data['label_encoder'].classes_ if 'label_encoder' in data else [f"Class_{i}" for i in range(len(np.unique(y)))]
     num_classes = len(np.unique(y))
     del data; gc.collect()
@@ -375,16 +362,26 @@ def main():
 
     models_dict = {}
 
-    logger.info("\n=== [Model S] Training Baseline ===")
-    moe_s = TaxonomyDrivenMoE(num_classes=num_classes, dataset_type=args.dataset_type, device=DEVICE, seed=args.seed)
-    moe_s.train_single(X_train, y_train)
-    models_dict['S'] = moe_s
+    # 0: baseline only, 1: proposed only, 2: both
+    run_baseline = args.model in (0, 2)
+    run_proposed = args.model in (1, 2)
 
-    logger.info(f"\n=== [Model T] Training Explicit Taxonomy MoE (Dataset: {args.dataset_type}) ===")
-    moe_t = TaxonomyDrivenMoE(num_classes=num_classes, dataset_type=args.dataset_type, device=DEVICE, seed=args.seed)
-    moe_t.build_experts(X_train, y_train, logger, class_names, smote_target_samples=args.smote_samples)
-    moe_t.fit_optimal_combination(X_val, y_val, logger)
-    models_dict['T'] = moe_t
+    if run_baseline:
+        t0 = time.time()
+        logger.info("\n=== [Model S] Training Baseline ===")
+        moe_s = TaxonomyDrivenMoE(num_classes=num_classes, dataset_type=dataset_type, device=DEVICE, seed=args.seed)
+        moe_s.train_single(X_train, y_train)
+        models_dict['S'] = moe_s
+        logger.info(f"  [Model S] Training time: {time.time() - t0:.2f}s")
+
+    if run_proposed:
+        t0 = time.time()
+        logger.info(f"\n=== [Model T] Training Explicit Taxonomy MoE (Dataset: {dataset_type}) ===")
+        moe_t = TaxonomyDrivenMoE(num_classes=num_classes, dataset_type=dataset_type, device=DEVICE, seed=args.seed)
+        moe_t.build_experts(X_train, y_train, logger, class_names)
+        moe_t.fit_optimal_combination(X_val, y_val, logger)
+        models_dict['T'] = moe_t
+        logger.info(f"  [Model T] Training time: {time.time() - t0:.2f}s")
     
     del X_train, y_train, X_val, y_val; gc.collect()
 
@@ -392,23 +389,32 @@ def main():
     logger.info("FINAL EVALUATION ON TEST SET")
     logger.info("="*60)
     
-    base_preds = models_dict['S'].predict_optimal(X_test)
-    acc_s = accuracy_score(y_test, base_preds)
-    logger.info(f"\n--- [Model S] Baseline (Global Router Only) ---")
-    logger.info(f"Accuracy: {acc_s:.4f}")
-    logger.info("\n" + classification_report(y_test, base_preds, target_names=class_names, digits=4, zero_division=0))
+    if run_baseline:
+        t0 = time.time()
+        base_preds = models_dict['S'].predict_optimal(X_test)
+        acc_s = accuracy_score(y_test, base_preds)
+        logger.info(f"\n--- [Model S] Baseline (Global Router Only) ---")
+        logger.info(f"Accuracy: {acc_s:.4f} (eval time: {time.time() - t0:.2f}s)")
+        logger.info("\n" + classification_report(y_test, base_preds, target_names=class_names, digits=4, zero_division=0))
 
-    prop_preds = models_dict['T'].predict_optimal(X_test)
-    acc_t = accuracy_score(y_test, prop_preds)
-    logger.info(f"\n--- [Model T] Explicit Taxonomy MoE ---")
-    logger.info(f"Accuracy: {acc_t:.4f}")
-    logger.info("\n" + classification_report(y_test, prop_preds, target_names=class_names, digits=4, zero_division=0))
+    if run_proposed:
+        t0 = time.time()
+        prop_preds = models_dict['T'].predict_optimal(X_test)
+        acc_t = accuracy_score(y_test, prop_preds)
+        logger.info(f"\n--- [Model T] Explicit Taxonomy MoE ---")
+        logger.info(f"Accuracy: {acc_t:.4f} (eval time: {time.time() - t0:.2f}s)")
+        logger.info("\n" + classification_report(y_test, prop_preds, target_names=class_names, digits=4, zero_division=0))
+
+    if not models_dict:
+        logger.error("No model trained. Check --model argument.")
+        return
 
     logger.info("\nConstructing Expert Metrics Matrix...")
     unique_classes = np.arange(num_classes)
     matrix_rows = []
     
-    for m_key in ['S', 'T']:
+    model_keys = sorted(models_dict.keys())
+    for m_key in model_keys:
         model_obj = models_dict[m_key]
         model_expert_metrics = {}
         preds_all, conf_all, ent_all, eng_all = model_obj.extract_metrics_batch(X_test, batch_size=args.batch_size)
@@ -435,42 +441,48 @@ def main():
             }
         model_obj.metrics_cache = model_expert_metrics
 
-    num_experts_t = len(models_dict['T'].experts)
+    ref_model = 'T' if 'T' in models_dict else 'S'
+    num_experts_ref = len(models_dict[ref_model].experts)
     
     for c_idx in unique_classes:
-        for e_idx in range(num_experts_t):
-            expert_name_t = models_dict['T'].metrics_cache[e_idx]['name']
+        for e_idx in range(num_experts_ref):
+            expert_name_ref = models_dict[ref_model].metrics_cache[e_idx]['name']
             row = {
                 "Class_ID": c_idx,
                 "Class_Name": class_names[c_idx] if c_idx < len(class_names) else f"Class_{c_idx}",
                 "Expert_ID": e_idx,
-                "Expert_Name": expert_name_t
+                "Expert_Name": expert_name_ref
             }
             
-            for m_key in ['S', 'T']:
-                if m_key == 'S' and e_idx > 0:
+            for m_key in model_keys:
+                model_obj = models_dict[m_key]
+                if m_key == 'S' and e_idx > 0 and len(model_obj.experts) == 1:
                     for k in ['P','R','F1','Conf','Ent','Eng']: row[f"{m_key}_{k}"] = "-"
                 else:
-                    actual_e_idx = 0 if m_key == 'S' else e_idx
-                    metrics = models_dict[m_key].metrics_cache[actual_e_idx]
-                    
-                    assigned_mark = "(NA)" if c_idx not in metrics['assigned'] else ""
-                    row[f"{m_key}_P"] = f"{metrics['p'][c_idx]:.2f}{assigned_mark}"
-                    row[f"{m_key}_R"] = f"{metrics['r'][c_idx]:.2f}"
-                    row[f"{m_key}_F1"] = f"{metrics['f1'][c_idx]:.2f}"
-                    row[f"{m_key}_Conf"] = f"{metrics['conf'][c_idx]:.2f}"
-                    row[f"{m_key}_Ent"] = f"{metrics['ent'][c_idx]:.2f}"
-                    row[f"{m_key}_Eng"] = f"{metrics['eng'][c_idx]:.2f}"
+                    actual_e_idx = 0 if (m_key == 'S' and len(model_obj.experts) == 1) else e_idx
+                    if actual_e_idx >= len(model_obj.experts):
+                        for k in ['P','R','F1','Conf','Ent','Eng']: row[f"{m_key}_{k}"] = "-"
+                    else:
+                        metrics = model_obj.metrics_cache[actual_e_idx]
+                        assigned_mark = "(NA)" if c_idx not in metrics['assigned'] else ""
+                        row[f"{m_key}_P"] = f"{metrics['p'][c_idx]:.2f}{assigned_mark}"
+                        row[f"{m_key}_R"] = f"{metrics['r'][c_idx]:.2f}"
+                        row[f"{m_key}_F1"] = f"{metrics['f1'][c_idx]:.2f}"
+                        row[f"{m_key}_Conf"] = f"{metrics['conf'][c_idx]:.2f}"
+                        row[f"{m_key}_Ent"] = f"{metrics['ent'][c_idx]:.2f}"
+                        row[f"{m_key}_Eng"] = f"{metrics['eng'][c_idx]:.2f}"
             
             matrix_rows.append(row)
 
     df = pd.DataFrame(matrix_rows)
-    metrics_cols = [f"{m}_{k}" for m in ['S','T'] for k in ['P','R','F1','Conf','Ent','Eng']]
+    metrics_cols = [f"{m}_{k}" for m in model_keys for k in ['P','R','F1','Conf','Ent','Eng']]
     df = df[["Class_ID", "Class_Name", "Expert_ID", "Expert_Name"] + metrics_cols]
     
     save_path = os.path.join(exp_dir, "exact_taxonomy_metrics.csv")
     df.to_csv(save_path, index=False)
     logger.info(f"Saved: {save_path}")
+
+    logger.info(f"\nTotal elapsed time: {time.time() - start_time:.2f}s")
 
 if __name__ == "__main__":
     main()

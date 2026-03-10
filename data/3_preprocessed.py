@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 """
-CIC-IDS / UNSW-NB15 데이터셋 전처리 스크립트 (0306 수정본)
-- [Fix] 빈 문자열 치환 버그 수정 (레이블 글자 쪼개짐 방지)
-- [Fix] Data Leakage 방지 (Train 셋 기준으로만 Frequency Encoding 수행)
-- [Fix] Infinity 처리 최적화 (불필요한 string 변환 제거로 메모리/정밀도 확보)
+CIC-IDS / UNSW-NB15 데이터셋 전처리 스크립트
+
+기본 전처리 항목 (순서):
+  1. 식별자 컬럼 삭제: Flow ID, Src/Dst IP, Src/Dst Port, Timestamp (또는 id)
+  2. NaN 포함 feature/샘플 삭제
+ 10. 중복 행 삭제
+  4. 중복 컬럼 삭제
+  8. 반복 헤더 행 제거
+  5. 클래스 이름 정제 (소문자, 공백→하이픈)
+
+  수치형 아닌 컬럼 동적 감지 후:
+  - string feature → 숫자 변환 (Frequency Encoding)
+  - 6. 무한대(Infinity) 처리, 7. 잘못된 값(Init Win Byts=-1 → 0)
+  9. 상수(zero-variance) 컬럼 삭제 (모두 수치형이므로 var() 전체 적용)
 """
 
 import os
@@ -39,10 +49,12 @@ def find_label_column(df, dataset_type=None):
     return None
 
 def remove_dataset_columns(X_df, dataset_type):
+    """식별자/비예측 컬럼 삭제. Flow ID, IP, Port, Timestamp 등."""
     columns_to_remove = {
-        'cic2017': ['Destination Port'],
-        'cic2018': ['Dst Port', 'Timestamp', 'Flow ID', 'Src IP', 'Src Port', 'Dst IP'],
-        'unswnb15': ['id', 'rate', 'label'] 
+        'cic2017': ['Flow ID', 'Source IP', 'Source Port', 'Destination IP', 'Timestamp'],
+        'cic2018': ['Flow ID', 'Src IP', 'Src Port', 'Dst IP', 'Timestamp'],
+        # UNSW: id=식별자, rate=분류에 불필요, label=0/1 정상구분(attack_cat 사용)
+        'unswnb15': ['id', 'rate', 'label']
     }
     removed_cols = []
     for col_to_remove in columns_to_remove.get(dataset_type, []):
@@ -62,6 +74,7 @@ def downcast_dtypes(df):
     return df
 
 def preprocess_data(df, dataset_type):
+    """순서: 4.중복컬럼, 8.헤더제거, 2.NaN삭제. (6,7은 combine 후 수행)"""
     df = df.copy()
     print(f"      Processing {len(df)} rows...")
     
@@ -69,46 +82,41 @@ def preprocess_data(df, dataset_type):
         df = df.replace(['-', ' -', '- '], np.nan)
     
     label_col = find_label_column(df, dataset_type)
-    if label_col and dataset_type in ['cic2017', 'cic2018']:
-        header_mask = df[label_col].astype(str).str.strip() == 'Label'
-        if header_mask.any():
-            df = df[~header_mask].copy()
-            print(f"      Removed {header_mask.sum()} 'Label' header row(s)")
     
+    # 4. 중복 컬럼 삭제
     if df.columns.duplicated().any():
         df = df.loc[:, ~df.columns.duplicated()]
         print(f"      Removed duplicated columns")
+    
+    # 8. 반복 헤더 행 제거
+    if label_col:
+        if dataset_type in ['cic2017', 'cic2018']:
+            header_mask = df[label_col].astype(str).str.strip().str.lower() == 'label'
+        else:
+            header_mask = df[label_col].astype(str).str.strip().str.lower() == 'attack_cat'
+        if header_mask.any():
+            df = df[~header_mask].copy()
+            print(f"      Removed {header_mask.sum()} header row(s)")
 
     target_columns = [col for col in df.columns if col != label_col]
-    unsw_nominal_cols = set(['proto', 'state', 'service']) if dataset_type == 'unswnb15' else set()
+    # 수치형이 아닌 컬럼 감지 (combine 단계에서 Frequency Encoding)
+    object_cols = [c for c in target_columns if pd.api.types.is_string_dtype(df[c])]
+    if object_cols:
+        print(f"      Non-numeric columns (will encode later): {object_cols}")
 
     for col in target_columns:
-        if dataset_type == 'unswnb15' and col in unsw_nominal_cols:
+        if col in object_cols:
             continue
-        
-        # [수정 1] 불필요한 string 변환 제거. pd.to_numeric이 'Infinity'를 알아서 np.inf로 변환함.
         if df[col].dtype == object:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # 변환 불가능한 문자열(NaN으로 바뀐 놈들) 행 제거
+    # 2. NaN 포함 행 제거 (수치형 컬럼만)
     numeric_df = df[target_columns].select_dtypes(include=[np.number])
-    cols_to_check = [c for c in numeric_df.columns if c not in unsw_nominal_cols]
-        
+    cols_to_check = list(numeric_df.columns)
     initial_len = len(df)
     df = df.dropna(subset=cols_to_check).copy()
     if len(df) < initial_len:
-        print(f"      Removed {initial_len - len(df)} rows with invalid non-numeric values")
-
-    # [수정 2] 무한대(np.inf)를 안전하게 처리
-    safe_cap = 1e12
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    if label_col:
-        numeric_cols = [col for col in numeric_cols if col != label_col]
-    
-    if len(numeric_cols) > 0:
-        # np.isinf를 찾아 safe_cap으로 클리핑
-        df[numeric_cols] = df[numeric_cols].clip(lower=-safe_cap, upper=safe_cap)
-        df[numeric_cols] = df[numeric_cols].fillna(0)
+        print(f"      Removed {initial_len - len(df)} rows with NaN")
     
     return df
 
@@ -135,11 +143,6 @@ def preprocess_cicids_dataset(data_dir, output_path):
             
             label_col = find_label_column(df, dataset_type)
             if label_col:
-                # [수정 3] '' -> '-' 치환 버그를 ' ' -> '-' 로 변경하여 정상 작동하게 함
-                df[label_col] = df[label_col].astype(str).str.lower().str.strip()
-                df[label_col] = df[label_col].str.replace(' ', '-', regex=False)
-                df[label_col] = df[label_col].str.replace('–', '-', regex=False)
-                
                 if dataset_type == 'unswnb15':
                     if 'training' in file_name.lower(): file_group = np.full(len(df), 0, dtype=np.int8)
                     elif 'testing' in file_name.lower(): file_group = np.full(len(df), 1, dtype=np.int8)
@@ -159,19 +162,67 @@ def preprocess_cicids_dataset(data_dir, output_path):
     file_groups = np.concatenate(file_groups)
     combined_df = downcast_dtypes(combined_df)
     
-    # [수정 4] Data Leakage 방지: Train 셋에서만 Frequency Encoding 계산 후 전체 매핑
-    if dataset_type == 'unswnb15':
-        cat_cols = ['proto', 'state', 'service']
-        train_mask = (file_groups == 0) # Train 데이터만 추출
-        for col in cat_cols:
-            if col in combined_df.columns:
-                print(f"Applying Frequency Encoding to '{col}' (Fitted on Train set only)...")
-                # Train 셋 기준으로 매핑 테이블 생성
-                freq_encoding = combined_df.loc[train_mask, col].value_counts(normalize=True)
-                # Test 셋에 적용 (Train에 없던 카테고리는 0으로 처리)
-                combined_df[col] = combined_df[col].map(freq_encoding).fillna(0.0).astype('float32')
-
     label_col = find_label_column(combined_df, dataset_type)
+    
+    # 10. 중복 행 삭제
+    before_dup = len(combined_df)
+    dup_mask = ~combined_df.duplicated()
+    combined_df = combined_df.loc[dup_mask].reset_index(drop=True)
+    file_groups = file_groups[dup_mask]
+    if before_dup - len(combined_df) > 0:
+        print(f"      Removed {before_dup - len(combined_df):,} duplicate rows")
+    
+    # 4. 중복 컬럼 (combined 기준)
+    if combined_df.columns.duplicated().any():
+        combined_df = combined_df.loc[:, ~combined_df.columns.duplicated()]
+        print(f"      Removed duplicated columns")
+    
+    # 8. 반복 헤더 행 (combined에서 혹시 남은 경우)
+    if label_col:
+        if dataset_type in ['cic2017', 'cic2018']:
+            header_mask = combined_df[label_col].astype(str).str.strip().str.lower() == 'label'
+        else:
+            header_mask = combined_df[label_col].astype(str).str.strip().str.lower() == 'attack_cat'
+        if header_mask.any():
+            combined_df = combined_df.loc[~header_mask].reset_index(drop=True)
+            file_groups = file_groups[~header_mask.values]
+            print(f"      Removed {header_mask.sum()} header row(s)")
+    
+    feature_columns = [c for c in combined_df.columns if c not in [label_col, 'Label_encoded']]
+    
+    # 5. 클래스 이름 정제
+    combined_df[label_col] = combined_df[label_col].astype(str).str.lower().str.strip()
+    combined_df[label_col] = combined_df[label_col].str.replace(' ', '-', regex=False)
+    combined_df[label_col] = combined_df[label_col].str.replace('–', '-', regex=False)
+    
+    # 수치형 아닌 컬럼 동적 감지 → Frequency Encoding
+    cat_cols = [c for c in feature_columns if c in combined_df.columns
+                and pd.api.types.is_string_dtype(combined_df[c])]
+    if cat_cols:
+        print(f"      Non-numeric columns (Frequency Encoding): {cat_cols}")
+        fit_mask = (file_groups == 0) if dataset_type == 'unswnb15' else np.ones(len(combined_df), dtype=bool)
+        for col in cat_cols:
+            freq_encoding = combined_df.loc[fit_mask, col].value_counts(normalize=True)
+            combined_df[col] = combined_df[col].map(freq_encoding).fillna(0.0).astype('float32')
+    
+    # 6. 무한대 처리, 7. 잘못된 값(-1) 처리
+    numeric_cols = combined_df[feature_columns].select_dtypes(include=[np.number]).columns
+    if len(numeric_cols) > 0:
+        safe_cap = 1e12
+        combined_df[numeric_cols] = combined_df[numeric_cols].clip(lower=-safe_cap, upper=safe_cap)
+        combined_df[numeric_cols] = combined_df[numeric_cols].fillna(0)
+    
+    # 9. 상수(zero-variance) 컬럼 삭제
+    # 혹시 남은 비수치형 컬럼 → pd.to_numeric (Frequency Encoding에서 놓친 경우)
+    for col in feature_columns:
+        if col in combined_df.columns and not pd.api.types.is_numeric_dtype(combined_df[col]):
+            combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce').fillna(0)
+    var_ser = combined_df[feature_columns].var()
+    zero_var_cols = var_ser[var_ser == 0].index.tolist()
+    if zero_var_cols:
+        feature_columns = [c for c in feature_columns if c not in zero_var_cols]
+        print(f"      Removed {len(zero_var_cols)} zero-variance columns: {zero_var_cols}")
+
     print("\nEncoding labels...")
     label_encoder = LabelEncoder()
     combined_df['Label_encoded'] = label_encoder.fit_transform(combined_df[label_col])
@@ -183,12 +234,13 @@ def preprocess_cicids_dataset(data_dir, output_path):
         pct = (count / len(combined_df)) * 100
         print(f"  {class_name:30s}: {count:8d} ({pct:6.2f}%)")
     
-    feature_columns = [col for col in combined_df.columns if col not in [label_col, 'Label_encoded']]
     X = combined_df[feature_columns].values
     y = combined_df['Label_encoded'].values.astype('int32')
     
+    init_win_cols = ['Init_Win_bytes_forward', 'Init_Win_bytes_backward',
+                     'Init Fwd Win Byts', 'Init Bwd Win Byts']
     for col_idx, col in enumerate(feature_columns):
-        if col in ['Init_Win_bytes_forward', 'Init_Win_bytes_backward']:
+        if col in init_win_cols:
             X[:, col_idx] = np.where(X[:, col_idx] == -1, 0, X[:, col_idx])
             
     print(f"\nFeature matrix shape: {X.shape}, dtype: {X.dtype}")
@@ -217,7 +269,7 @@ def main():
     
     if args.output is None:
         ds_name = os.path.basename(args.data_dir.rstrip('/\\'))
-        args.output = f"../{ds_name}_preprocessed_0306.pkl"
+        args.output = f"../{ds_name}_preprocessed.pkl"
         
     preprocess_cicids_dataset(args.data_dir, args.output)
 
