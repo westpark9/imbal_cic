@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-TAILGUARD Ver.6.1: Explicit Taxonomy-Aware MoE
-- User-defined strict class mapping per dataset (unswnb15, cic2017, cic2018)
-- 3-Metric Hybrid Consensus via Grid Search
+TAILGUARD Ver.6.1: Explicit Taxonomy-Aware MoE (Modified)
+- Pure Data Distribution (No Upsampling/Downsampling)
+- Dynamic Ensemble Selection via Logistic Regression (Meta-Classifier)
 """
 
 import os
@@ -18,6 +18,7 @@ import xgboost as xgb
 from scipy.special import logsumexp
 from sklearn.metrics import accuracy_score, classification_report, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
 import torch
 
 def infer_dataset_type(data_path, data=None):
@@ -45,7 +46,6 @@ def setup_logging(exp_dir):
     return logging.getLogger("experiment")
 
 def calculate_energy(logits, T=1.0):
-    # overflow 방지: XGBoost output_margin이 매우 큰 값일 수 있음
     logits = np.clip(logits.astype(np.float64), -700, 700)
     return (-T * logsumexp(logits / T, axis=1)).astype(np.float32)
 
@@ -78,35 +78,17 @@ class ExpertXGB:
         else:
             self.assigned_classes = normal_classes + target_classes
             logger = logging.getLogger("experiment")
-            logger.info(f"      [{self.name}] Subsampling (no augmentation)...")
+            logger.info(f"      [{self.name}] Filtering original data (No augmentation/subsampling)...")
             
-            X_list, y_list = [], []
-            target_total = target_samples * len(target_classes)
-            
-            for cls in self.assigned_classes:
-                idx = np.where(y == cls)[0]
-                if len(idx) == 0: continue
-                n_take = min(len(idx), target_total)
-                np.random.seed(self.seed)
-                sampled_idx = np.random.choice(len(idx), n_take, replace=False)
-                X_list.append(X[idx[sampled_idx]])
-                y_list.append(y[idx[sampled_idx]])
-            
-            mask_other = ~np.isin(y, self.assigned_classes)
-            idx_other = np.where(mask_other)[0]
-            n_other = min(len(idx_other), int(target_total * 0.2))
-            if n_other > 0:
-                np.random.seed(self.seed)
-                idx_other_sampled = np.random.choice(idx_other, n_other, replace=False)
-                X_list.append(X[idx_other_sampled])
-                y_list.append(y[idx_other_sampled])
+            # 인위적인 샘플링 없이 할당된 클래스만 원본에서 그대로 추출
+            mask = np.isin(y, self.assigned_classes)
+            X_tr = X[mask]
+            y_tr = y[mask]
 
-            X_tr = np.vstack(X_list)
-            y_tr = np.concatenate(y_list)
             shuffle_idx = np.random.permutation(len(y_tr))
             X_tr = X_tr[shuffle_idx]
             y_tr = y_tr[shuffle_idx]
-            logger.info(f"      [{self.name}] Subsampled data shape: {X_tr.shape}")
+            logger.info(f"      [{self.name}] Filtered original data shape: {X_tr.shape}")
 
         if len(X_tr) == 0:
             self.is_trained = False
@@ -173,15 +155,13 @@ class TaxonomyDrivenMoE:
         self.device = device
         self.seed = seed
         self.experts = []
-        self.optimal_weights = {'conf': 0.33, 'ent': 0.33, 'eng': 0.33}
         self.norm_params = {}
         self.metrics_cache = {}
+        self.meta_clf = None
 
     def get_taxonomy_groups(self, class_names):
-        """User defined strict mapping logic"""
         groups = {'Normal': [], 'Group1': [], 'Group2': [], 'Group3': [], 'Group4': []}
         
-        # 문자열 정규화 (소문자, 공백제거, 특수문자 제거)로 완벽 매칭 유도
         def normalize(s): return s.lower().replace("", "").replace("-", "").replace(" ", "")
         
         if self.dataset_type == "unswnb15":
@@ -282,13 +262,13 @@ class TaxonomyDrivenMoE:
         return preds_all, conf_all, ent_all, eng_all
 
     def fit_optimal_combination(self, X_val, y_val, logger):
-        logger.info("\n  [Phase 3] Meta-Optimization: Grid Search for (Conf, Ent, Eng) Weights...")
+        logger.info("\n  [Phase 3] Meta-Optimization: Logistic Regression for Dynamic Ensemble Selection...")
         preds, conf, ent, eng = self.extract_metrics_batch(X_val)
         
-        # inf/nan 제거 후 정규화 (무한대 오류 방지)
         conf = np.nan_to_num(conf, nan=0.0, posinf=1e10, neginf=-1e10)
         ent = np.nan_to_num(ent, nan=0.0, posinf=1.0, neginf=0.0)
         eng = np.nan_to_num(eng, nan=0.0, posinf=0.0, neginf=-1e10)
+        
         self.norm_params = {
             'conf_mean': np.mean(conf), 'conf_std': np.std(conf) + 1e-9,
             'ent_mean': np.mean(ent), 'ent_std': np.std(ent) + 1e-9,
@@ -299,35 +279,51 @@ class TaxonomyDrivenMoE:
         ent_norm = (ent - self.norm_params['ent_mean']) / self.norm_params['ent_std']
         eng_norm = (eng - self.norm_params['eng_mean']) / self.norm_params['eng_std']
 
-        best_acc, best_weights = 0.0, {}
-        weight_range = np.arange(0.0, 1.1, 0.1)
-        row_indices = np.arange(len(y_val))
+        N, num_experts = preds.shape
+        X_meta, y_meta = [], []
         
-        for w_c in weight_range:
-            for w_h in weight_range:
-                for w_e in weight_range:
-                    if w_c == 0 and w_h == 0 and w_e == 0: continue
-                    scores = (w_c * conf_norm) - (w_h * ent_norm) - (w_e * eng_norm)
-                    best_expert_indices = np.argmax(scores, axis=1)
-                    acc = np.mean(preds[row_indices, best_expert_indices] == y_val)
-                    if acc > best_acc:
-                        best_acc, best_weights = acc, {'conf': w_c, 'ent': w_h, 'eng': w_e}
+        for j in range(num_experts):
+            features_j = np.column_stack((conf_norm[:, j], ent_norm[:, j], eng_norm[:, j]))
+            labels_j = (preds[:, j] == y_val).astype(int)
+            X_meta.append(features_j)
+            y_meta.append(labels_j)
+            
+        X_meta = np.vstack(X_meta)
+        y_meta = np.concatenate(y_meta)
+        
+        self.meta_clf = LogisticRegression(class_weight='balanced', random_state=self.seed)
+        self.meta_clf.fit(X_meta, y_meta)
+        
+        coef = self.meta_clf.coef_[0]
+        logger.info(f"  => Learned Coefficients: Conf(a)={coef[0]:.4f}, Ent(b)={coef[1]:.4f}, Eng(r)={coef[2]:.4f}")
+        
+        best_expert_indices = self._select_best_expert(conf_norm, ent_norm, eng_norm)
+        best_acc = np.mean(preds[np.arange(N), best_expert_indices] == y_val)
+        logger.info(f"  => Validation Acc via LR DES: {best_acc:.4f}")
 
-        self.optimal_weights = best_weights
-        logger.info(f"  => Best Validation Acc: {best_acc:.4f}")
-        logger.info(f"  => Optimal Weights: Conf={best_weights['conf']:.1f}, Ent={best_weights['ent']:.1f}, Eng={best_weights['eng']:.1f}")
+    def _select_best_expert(self, conf_norm, ent_norm, eng_norm):
+        N, num_experts = conf_norm.shape
+        expert_reliability = np.zeros((N, num_experts))
+        
+        for j in range(num_experts):
+            features_j = np.column_stack((conf_norm[:, j], ent_norm[:, j], eng_norm[:, j]))
+            prob_correct = self.meta_clf.predict_proba(features_j)[:, 1]
+            expert_reliability[:, j] = prob_correct
+            
+        return np.argmax(expert_reliability, axis=1)
 
     def predict_optimal(self, X_test):
         if len(self.experts) == 1:
             return np.argmax(self.experts[0].predict_proba_batch(X_test), axis=1)
             
         preds, conf, ent, eng = self.extract_metrics_batch(X_test)
+        
         conf_norm = (conf - self.norm_params['conf_mean']) / self.norm_params['conf_std']
         ent_norm = (ent - self.norm_params['ent_mean']) / self.norm_params['ent_std']
         eng_norm = (eng - self.norm_params['eng_mean']) / self.norm_params['eng_std']
         
-        scores = (self.optimal_weights['conf'] * conf_norm) - (self.optimal_weights['ent'] * ent_norm) - (self.optimal_weights['eng'] * eng_norm)
-        return preds[np.arange(X_test.shape[0]), np.argmax(scores, axis=1)]
+        best_expert_indices = self._select_best_expert(conf_norm, ent_norm, eng_norm)
+        return preds[np.arange(X_test.shape[0]), best_expert_indices]
 
 def main():
     start_time = time.time()
@@ -341,7 +337,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=20000)
     args = parser.parse_args()
 
-    exp_dir = f"results/logs_exact_taxonomy_moe_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    exp_dir = f"logs_exact_taxonomy_moe_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     os.makedirs(exp_dir, exist_ok=True)
     logger = setup_logging(exp_dir)
     
@@ -349,7 +345,6 @@ def main():
     dataset_type = infer_dataset_type(args.data, data)
     logger.info(f"Dataset type: {dataset_type}")
     X, y = data["X"].astype(np.float32), data["y"].astype(np.int32)
-    # inf/nan 처리 (무한대 오류 방지)
     X = np.nan_to_num(X, nan=0.0, posinf=1e12, neginf=-1e12)
     X = np.clip(X, -1e12, 1e12).astype(np.float32)
     class_names = data['label_encoder'].classes_ if 'label_encoder' in data else [f"Class_{i}" for i in range(len(np.unique(y)))]
@@ -362,7 +357,6 @@ def main():
 
     models_dict = {}
 
-    # 0: baseline only, 1: proposed only, 2: both
     run_baseline = args.model in (0, 2)
     run_proposed = args.model in (1, 2)
 
