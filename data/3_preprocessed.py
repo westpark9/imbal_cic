@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-CIC-IDS / UNSW-NB15 데이터셋 전처리 스크립트
+CIC-IDS / UNSW-NB15 데이터셋 전처리 스크립트 (Fixed Version)
 
 기본 전처리 항목 (순서):
   1. 식별자 컬럼 삭제: Flow ID, Src/Dst IP, Src/Dst Port, Timestamp (또는 id)
-  2. NaN 포함 feature/샘플 삭제
+  2. NaN 포함 feature/샘플 삭제 (수치형 컬럼 기준)
  10. 중복 행 삭제
   4. 중복 컬럼 삭제
   8. 반복 헤더 행 제거
@@ -13,7 +13,7 @@ CIC-IDS / UNSW-NB15 데이터셋 전처리 스크립트
   수치형 아닌 컬럼 동적 감지 후:
   - string feature → 숫자 변환 (Frequency Encoding)
   - 6. 무한대(Infinity) 처리, 7. 잘못된 값(Init Win Byts=-1 → 0)
-  9. 상수(zero-variance) 컬럼 삭제 (모두 수치형이므로 var() 전체 적용)
+  9. 상수(zero-variance) 컬럼 삭제
 """
 
 import os
@@ -74,14 +74,15 @@ def downcast_dtypes(df):
     return df
 
 def preprocess_data(df, dataset_type):
-    """순서: 4.중복컬럼, 8.헤더제거, 2.NaN삭제. (6,7은 combine 후 수행)"""
     df = df.copy()
     print(f"      Processing {len(df)} rows...")
     
-    if dataset_type == 'unswnb15':
-        df = df.replace(['-', ' -', '- '], np.nan)
-    
     label_col = find_label_column(df, dataset_type)
+    
+    # [수정포인트 1] UNSW-NB15의 attack_cat 내 결측치(NaN) 및 '-' 기호는 정상(normal) 트래픽을 의미함
+    if dataset_type == 'unswnb15' and label_col:
+        df[label_col] = df[label_col].fillna('normal')
+        df[label_col] = df[label_col].replace(['-', ' -', '- '], 'normal')
     
     # 4. 중복 컬럼 삭제
     if df.columns.duplicated().any():
@@ -99,18 +100,24 @@ def preprocess_data(df, dataset_type):
             print(f"      Removed {header_mask.sum()} header row(s)")
 
     target_columns = [col for col in df.columns if col != label_col]
-    # 수치형이 아닌 컬럼 감지 (combine 단계에서 Frequency Encoding)
-    object_cols = [c for c in target_columns if pd.api.types.is_string_dtype(df[c])]
+    
+    # [수정포인트 2] 확실한 문자열(Categorical) 컬럼 감지
+    object_cols = list(df[target_columns].select_dtypes(include=['object', 'category']).columns)
     if object_cols:
         print(f"      Non-numeric columns (will encode later): {object_cols}")
 
     for col in target_columns:
         if col in object_cols:
+            # 문자열 피처의 결측치 및 '-' 기호를 'Unknown'으로 안전하게 매핑 (NaN 방지)
+            df[col] = df[col].replace(['-', ' -', '- '], 'Unknown')
+            df[col] = df[col].fillna('Unknown')
             continue
+            
+        # 숫자형이어야 하는데 object 형식으로 꼬인 경우만 강제 변환
         if df[col].dtype == object:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # 2. NaN 포함 행 제거 (수치형 컬럼만)
+    # 2. NaN 포함 행 제거 (수치형 컬럼들만 검사하여 애먼 문자열 데이터 삭제 방지)
     numeric_df = df[target_columns].select_dtypes(include=[np.number])
     cols_to_check = list(numeric_df.columns)
     initial_len = len(df)
@@ -121,7 +128,7 @@ def preprocess_data(df, dataset_type):
     return df
 
 def preprocess_cicids_dataset(data_dir, output_path):
-    print(f"\n{'='*80}\nNetwork Intrusion Dataset Preprocessing (0306 Fixed)\n{'='*80}")
+    print(f"\n{'='*80}\nNetwork Intrusion Dataset Preprocessing (Fixed)\n{'='*80}")
     
     dataset_type = detect_dataset_type(data_dir)
     csv_files = [f for f in os.listdir(data_dir) if f.endswith('.csv')]
@@ -164,13 +171,13 @@ def preprocess_cicids_dataset(data_dir, output_path):
     
     label_col = find_label_column(combined_df, dataset_type)
     
-    # 10. 중복 행 삭제
-    before_dup = len(combined_df)
-    dup_mask = ~combined_df.duplicated()
-    combined_df = combined_df.loc[dup_mask].reset_index(drop=True)
-    file_groups = file_groups[dup_mask]
-    if before_dup - len(combined_df) > 0:
-        print(f"      Removed {before_dup - len(combined_df):,} duplicate rows")
+    # # 10. 중복 행 삭제
+    # before_dup = len(combined_df)
+    # dup_mask = ~combined_df.duplicated()
+    # combined_df = combined_df.loc[dup_mask].reset_index(drop=True)
+    # file_groups = file_groups[dup_mask]
+    # if before_dup - len(combined_df) > 0:
+    #     print(f"      Removed {before_dup - len(combined_df):,} duplicate rows")
     
     # 4. 중복 컬럼 (combined 기준)
     if combined_df.columns.duplicated().any():
@@ -195,9 +202,8 @@ def preprocess_cicids_dataset(data_dir, output_path):
     combined_df[label_col] = combined_df[label_col].str.replace(' ', '-', regex=False)
     combined_df[label_col] = combined_df[label_col].str.replace('–', '-', regex=False)
     
-    # 수치형 아닌 컬럼 동적 감지 → Frequency Encoding
-    cat_cols = [c for c in feature_columns if c in combined_df.columns
-                and pd.api.types.is_string_dtype(combined_df[c])]
+    # [수정포인트 3] 안전한 수치형 변환 (Frequency Encoding)
+    cat_cols = list(combined_df[feature_columns].select_dtypes(include=['object', 'category']).columns)
     if cat_cols:
         print(f"      Non-numeric columns (Frequency Encoding): {cat_cols}")
         fit_mask = (file_groups == 0) if dataset_type == 'unswnb15' else np.ones(len(combined_df), dtype=bool)
@@ -205,7 +211,7 @@ def preprocess_cicids_dataset(data_dir, output_path):
             freq_encoding = combined_df.loc[fit_mask, col].value_counts(normalize=True)
             combined_df[col] = combined_df[col].map(freq_encoding).fillna(0.0).astype('float32')
     
-    # 6. 무한대 처리, 7. 잘못된 값(-1) 처리
+    # 6. 무한대 처리, 7. 잘못된 값 처리
     numeric_cols = combined_df[feature_columns].select_dtypes(include=[np.number]).columns
     if len(numeric_cols) > 0:
         safe_cap = 1e12
@@ -213,7 +219,6 @@ def preprocess_cicids_dataset(data_dir, output_path):
         combined_df[numeric_cols] = combined_df[numeric_cols].fillna(0)
     
     # 9. 상수(zero-variance) 컬럼 삭제
-    # 혹시 남은 비수치형 컬럼 → pd.to_numeric (Frequency Encoding에서 놓친 경우)
     for col in feature_columns:
         if col in combined_df.columns and not pd.api.types.is_numeric_dtype(combined_df[col]):
             combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce').fillna(0)

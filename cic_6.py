@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-TAILGUARD Ver.6.1: Explicit Taxonomy-Aware MoE (Modified)
-- Pure Data Distribution (No Upsampling/Downsampling)
+TAILGUARD Ver.6.2: Explicit Taxonomy-Aware MoE + Random Experts
 - Dynamic Ensemble Selection via Logistic Regression (Meta-Classifier)
+- 5 Additional Random Specialists (>= 3 random attack classes)
 """
 
 import os
@@ -20,6 +20,8 @@ from sklearn.metrics import accuracy_score, classification_report, precision_rec
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import torch
+import re
+import warnings
 
 def infer_dataset_type(data_path, data=None):
     """파일명 또는 pkl 내 dataset_type에서 추론"""
@@ -80,7 +82,6 @@ class ExpertXGB:
             logger = logging.getLogger("experiment")
             logger.info(f"      [{self.name}] Filtering original data (No augmentation/subsampling)...")
             
-            # 인위적인 샘플링 없이 할당된 클래스만 원본에서 그대로 추출
             mask = np.isin(y, self.assigned_classes)
             X_tr = X[mask]
             y_tr = y[mask]
@@ -162,7 +163,8 @@ class TaxonomyDrivenMoE:
     def get_taxonomy_groups(self, class_names):
         groups = {'Normal': [], 'Group1': [], 'Group2': [], 'Group3': [], 'Group4': []}
         
-        def normalize(s): return s.lower().replace("", "").replace("-", "").replace(" ", "")
+        def normalize(s): 
+            return re.sub(r'[^a-z0-9]', '', str(s).lower())
         
         if self.dataset_type == "unswnb15":
             type_groups = [
@@ -223,10 +225,12 @@ class TaxonomyDrivenMoE:
 
         logger.info("\n  [Phase 2] Training Domain Specialists...")
         
+        # 1. Global Router
         exp_global = ExpertXGB(0, self.num_classes, expert_name="Global_Router", device=self.device, seed=self.seed)
         exp_global.fit_expert(X_train, y_train, expert_type="Global")
         self.experts.append(exp_global)
         
+        # 2. Taxonomy-based Specialists (Group 1 ~ 4)
         specialist_configs = [
             (1, "Spec_Group1", groups['Group1']),
             (2, "Spec_Group2", groups['Group2']),
@@ -234,6 +238,26 @@ class TaxonomyDrivenMoE:
             (4, "Spec_Group4", groups['Group4'])
         ]
         
+        # 3. 5 Additional Random Experts (>= 3 random attack classes)
+        attack_classes = [c for c in range(self.num_classes) if c not in normal_classes]
+        
+        # 공격 클래스가 충분한지 확인 (만약 전체 공격 클래스가 3개 미만이면 전체를 다 넣도록 방어 코드)
+        max_possible_classes = max(3, len(attack_classes))
+        
+        np.random.seed(self.seed)
+        for i in range(5):
+            # 3개 이상 ~ 최대 공격 클래스 개수 사이에서 랜덤 선택
+            n_select = np.random.randint(3, max_possible_classes + 1) if len(attack_classes) >= 3 else len(attack_classes)
+            rand_classes = np.random.choice(attack_classes, size=n_select, replace=False).tolist()
+            
+            exp_id = len(specialist_configs) + 1
+            exp_name = f"Spec_Rand{i+1}"
+            specialist_configs.append((exp_id, exp_name, rand_classes))
+            
+            names = [class_names[c] for c in rand_classes]
+            logger.info(f"    [{exp_name:12s}] (Randomly assigned) : {names}")
+        
+        # 설정된 모든 Expert 학습 진행
         for exp_id, name, target_group in specialist_configs:
             if target_group:
                 exp = ExpertXGB(exp_id, self.num_classes, expert_name=name, device=self.device, seed=self.seed)
@@ -265,19 +289,20 @@ class TaxonomyDrivenMoE:
         logger.info("\n  [Phase 3] Meta-Optimization: Logistic Regression for Dynamic Ensemble Selection...")
         preds, conf, ent, eng = self.extract_metrics_batch(X_val)
         
-        conf = np.nan_to_num(conf, nan=0.0, posinf=1e10, neginf=-1e10)
+        conf = np.nan_to_num(conf, nan=0.0, posinf=1.0, neginf=0.0)
         ent = np.nan_to_num(ent, nan=0.0, posinf=1.0, neginf=0.0)
-        eng = np.nan_to_num(eng, nan=0.0, posinf=0.0, neginf=-1e10)
+        eng = np.nan_to_num(eng, nan=0.0, posinf=1000.0, neginf=-1000.0)
         
+        eps = 1e-6
         self.norm_params = {
-            'conf_mean': np.mean(conf), 'conf_std': np.std(conf) + 1e-9,
-            'ent_mean': np.mean(ent), 'ent_std': np.std(ent) + 1e-9,
-            'eng_mean': np.mean(eng), 'eng_std': np.std(eng) + 1e-9,
+            'conf_mean': np.mean(conf), 'conf_std': np.std(conf) + eps,
+            'ent_mean': np.mean(ent), 'ent_std': np.std(ent) + eps,
+            'eng_mean': np.mean(eng), 'eng_std': np.std(eng) + eps,
         }
         
-        conf_norm = (conf - self.norm_params['conf_mean']) / self.norm_params['conf_std']
-        ent_norm = (ent - self.norm_params['ent_mean']) / self.norm_params['ent_std']
-        eng_norm = (eng - self.norm_params['eng_mean']) / self.norm_params['eng_std']
+        conf_norm = np.clip((conf - self.norm_params['conf_mean']) / self.norm_params['conf_std'], -10.0, 10.0)
+        ent_norm = np.clip((ent - self.norm_params['ent_mean']) / self.norm_params['ent_std'], -10.0, 10.0)
+        eng_norm = np.clip((eng - self.norm_params['eng_mean']) / self.norm_params['eng_std'], -10.0, 10.0)
 
         N, num_experts = preds.shape
         X_meta, y_meta = [], []
@@ -288,12 +313,14 @@ class TaxonomyDrivenMoE:
             X_meta.append(features_j)
             y_meta.append(labels_j)
             
-        X_meta = np.vstack(X_meta)
+        X_meta = np.vstack(X_meta).astype(np.float64)
         y_meta = np.concatenate(y_meta)
         
-        self.meta_clf = LogisticRegression(class_weight='balanced', random_state=self.seed)
-        self.meta_clf.fit(X_meta, y_meta)
-        
+        self.meta_clf = LogisticRegression(class_weight='balanced', max_iter=1000, random_state=self.seed)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            self.meta_clf.fit(X_meta, y_meta)
+
         coef = self.meta_clf.coef_[0]
         logger.info(f"  => Learned Coefficients: Conf(a)={coef[0]:.4f}, Ent(b)={coef[1]:.4f}, Eng(r)={coef[2]:.4f}")
         
@@ -306,8 +333,10 @@ class TaxonomyDrivenMoE:
         expert_reliability = np.zeros((N, num_experts))
         
         for j in range(num_experts):
-            features_j = np.column_stack((conf_norm[:, j], ent_norm[:, j], eng_norm[:, j]))
-            prob_correct = self.meta_clf.predict_proba(features_j)[:, 1]
+            features_j = np.column_stack((conf_norm[:, j], ent_norm[:, j], eng_norm[:, j])).astype(np.float64)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                prob_correct = self.meta_clf.predict_proba(features_j)[:, 1]
             expert_reliability[:, j] = prob_correct
             
         return np.argmax(expert_reliability, axis=1)
@@ -318,9 +347,14 @@ class TaxonomyDrivenMoE:
             
         preds, conf, ent, eng = self.extract_metrics_batch(X_test)
         
-        conf_norm = (conf - self.norm_params['conf_mean']) / self.norm_params['conf_std']
-        ent_norm = (ent - self.norm_params['ent_mean']) / self.norm_params['ent_std']
-        eng_norm = (eng - self.norm_params['eng_mean']) / self.norm_params['eng_std']
+        conf = np.nan_to_num(conf, nan=0.0, posinf=1.0, neginf=0.0)
+        ent = np.nan_to_num(ent, nan=0.0, posinf=1.0, neginf=0.0)
+        eng = np.nan_to_num(eng, nan=0.0, posinf=1000.0, neginf=-1000.0)
+        
+        eps = 1e-6
+        conf_norm = np.clip((conf - self.norm_params['conf_mean']) / self.norm_params['conf_std'], -10.0, 10.0)
+        ent_norm = np.clip((ent - self.norm_params['ent_mean']) / self.norm_params['ent_std'], -10.0, 10.0)
+        eng_norm = np.clip((eng - self.norm_params['eng_mean']) / self.norm_params['eng_std'], -10.0, 10.0)
         
         best_expert_indices = self._select_best_expert(conf_norm, ent_norm, eng_norm)
         return preds[np.arange(X_test.shape[0]), best_expert_indices]
@@ -337,7 +371,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=20000)
     args = parser.parse_args()
 
-    exp_dir = f"logs_exact_taxonomy_moe_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    exp_dir = f"results/logs_exact_taxonomy_moe_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     os.makedirs(exp_dir, exist_ok=True)
     logger = setup_logging(exp_dir)
     
@@ -345,8 +379,8 @@ def main():
     dataset_type = infer_dataset_type(args.data, data)
     logger.info(f"Dataset type: {dataset_type}")
     X, y = data["X"].astype(np.float32), data["y"].astype(np.int32)
-    X = np.nan_to_num(X, nan=0.0, posinf=1e12, neginf=-1e12)
-    X = np.clip(X, -1e12, 1e12).astype(np.float32)
+    X = np.nan_to_num(X, nan=0.0, posinf=1e6, neginf=-1e6)
+    X = np.clip(X, -1e6, 1e6).astype(np.float32)
     class_names = data['label_encoder'].classes_ if 'label_encoder' in data else [f"Class_{i}" for i in range(len(np.unique(y)))]
     num_classes = len(np.unique(y))
     del data; gc.collect()

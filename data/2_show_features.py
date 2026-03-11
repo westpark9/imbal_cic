@@ -98,6 +98,9 @@ if cic2017_features and cic2018_features and unswnb15_features:
     print(f"  2017에만 있는 Feature: {len(only_2017)}개")
     print(f"  2018에만 있는 Feature: {len(only_2018)}개")
     
+    if common_cic:
+        print(f"  [공통]: {sorted(common_cic)}")
+        
     if only_2017:
         print(f"  [2017 전용]: {sorted(only_2017)}")
     

@@ -1,0 +1,106 @@
+2026-03-11 17:09:09,219 [INFO] Dataset type: cic2018
+2026-03-11 17:09:25,007 [INFO] 
+=== [Model S] Training Baseline ===
+2026-03-11 17:09:25,021 [INFO]       [Baseline] Training with original data shape: (10354621, 78)
+2026-03-11 17:14:16,502 [INFO]   [Model S] Training time: 291.49s
+2026-03-11 17:14:16,502 [INFO] 
+=== [Model T] Training Explicit Taxonomy MoE (Dataset: cic2018) ===
+2026-03-11 17:14:16,502 [INFO] 
+  [Phase 1] Strict Taxonomy Mapping for cic2018...
+2026-03-11 17:14:16,502 [INFO]     [Normal      ] : ['benign']
+2026-03-11 17:14:16,503 [INFO]     [Group1      ] : ['ddos-attack-hoic', 'ddos-attack-loic-udp', 'ddos-attacks-loic-http', 'dos-attacks-goldeneye', 'dos-attacks-hulk', 'dos-attacks-slowhttptest', 'dos-attacks-slowloris']
+2026-03-11 17:14:16,503 [INFO]     [Group2      ] : ['ftp-bruteforce', 'ssh-bruteforce']
+2026-03-11 17:14:16,503 [INFO]     [Group3      ] : ['bot', 'infilteration']
+2026-03-11 17:14:16,503 [INFO]     [Group4      ] : ['brute-force--web', 'brute-force--xss', 'sql-injection']
+2026-03-11 17:14:16,503 [INFO] 
+  [Phase 2] Training Domain Specialists...
+2026-03-11 17:14:16,533 [INFO]       [Global_Router] Training with original data shape: (10354621, 78)
+2026-03-11 17:19:11,953 [INFO]     [Spec_Rand1  ] (Randomly assigned) : ['dos-attacks-slowloris', 'infilteration', 'bot', 'ssh-bruteforce', 'ddos-attacks-loic-http', 'dos-attacks-slowhttptest', 'brute-force--xss', 'brute-force--web', 'dos-attacks-goldeneye']
+2026-03-11 17:19:11,953 [INFO]     [Spec_Rand2  ] (Randomly assigned) : ['ftp-bruteforce', 'sql-injection', 'bot', 'dos-attacks-slowhttptest', 'dos-attacks-slowloris', 'dos-attacks-goldeneye', 'infilteration', 'ddos-attack-hoic', 'ssh-bruteforce', 'brute-force--web']
+2026-03-11 17:19:11,953 [INFO]     [Spec_Rand3  ] (Randomly assigned) : ['brute-force--web', 'sql-injection', 'ddos-attack-loic-udp', 'ftp-bruteforce', 'ssh-bruteforce', 'dos-attacks-hulk', 'dos-attacks-goldeneye', 'ddos-attack-hoic', 'brute-force--xss', 'bot', 'dos-attacks-slowhttptest', 'infilteration', 'ddos-attacks-loic-http', 'dos-attacks-slowloris']
+2026-03-11 17:19:11,953 [INFO]     [Spec_Rand4  ] (Randomly assigned) : ['brute-force--xss', 'dos-attacks-hulk', 'ssh-bruteforce', 'bot', 'infilteration', 'ftp-bruteforce', 'ddos-attacks-loic-http', 'dos-attacks-slowloris', 'sql-injection']
+2026-03-11 17:19:11,953 [INFO]     [Spec_Rand5  ] (Randomly assigned) : ['ftp-bruteforce', 'dos-attacks-slowhttptest', 'ddos-attack-loic-udp', 'dos-attacks-slowloris']
+2026-03-11 17:19:11,953 [INFO]       [Spec_Group1] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:19:13,246 [INFO]       [Spec_Group1] Filtered original data shape: (9823424, 78)
+2026-03-11 17:21:45,133 [INFO]       [Spec_Group2] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:21:46,359 [INFO]       [Spec_Group2] Filtered original data shape: (8839558, 78)
+2026-03-11 17:22:39,648 [INFO]       [Spec_Group3] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:22:40,804 [INFO]       [Spec_Group3] Filtered original data shape: (8882555, 78)
+2026-03-11 17:23:49,558 [INFO]       [Spec_Group4] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:23:50,689 [INFO]       [Spec_Group4] Filtered original data shape: (8596349, 78)
+2026-03-11 17:24:54,579 [INFO]       [Spec_Rand1] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:24:55,801 [INFO]       [Spec_Rand1] Filtered original data shape: (9495041, 78)
+2026-03-11 17:27:58,737 [INFO]       [Spec_Rand2] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:28:00,333 [INFO]       [Spec_Rand2] Filtered original data shape: (9688981, 78)
+2026-03-11 17:31:23,328 [INFO]       [Spec_Rand3] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:31:24,641 [INFO]       [Spec_Rand3] Filtered original data shape: (10354621, 78)
+2026-03-11 17:36:23,577 [INFO]       [Spec_Rand4] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:36:25,035 [INFO]       [Spec_Rand4] Filtered original data shape: (9797981, 78)
+2026-03-11 17:39:33,643 [INFO]       [Spec_Rand5] Filtering original data (No augmentation/subsampling)...
+2026-03-11 17:39:34,798 [INFO]       [Spec_Rand5] Filtered original data shape: (8817172, 78)
+2026-03-11 17:40:52,275 [INFO] 
+  [Phase 3] Meta-Optimization: Logistic Regression for Dynamic Ensemble Selection...
+2026-03-11 17:41:49,335 [INFO]   => Learned Coefficients: Conf(a)=2.4740, Ent(b)=3.2275, Eng(r)=-1.8744
+2026-03-11 17:41:49,711 [INFO]   => Validation Acc via LR DES: 0.9891
+2026-03-11 17:41:49,717 [INFO]   [Model T] Training time: 1653.22s
+2026-03-11 17:41:49,769 [INFO] 
+============================================================
+2026-03-11 17:41:49,769 [INFO] FINAL EVALUATION ON TEST SET
+2026-03-11 17:41:49,769 [INFO] ============================================================
+2026-03-11 17:41:54,646 [INFO] 
+--- [Model S] Baseline (Global Router Only) ---
+2026-03-11 17:41:54,646 [INFO] Accuracy: 0.9909 (eval time: 4.88s)
+2026-03-11 17:41:55,008 [INFO] 
+                          precision    recall  f1-score   support
+
+                  benign     0.9894    0.9998    0.9946   2686174
+                     bot     1.0000    0.9998    0.9999     57238
+        brute-force--web     0.9649    0.4508    0.6145       122
+        brute-force--xss     0.9487    0.8043    0.8706        46
+        ddos-attack-hoic     1.0000    1.0000    1.0000    137203
+    ddos-attack-loic-udp     0.8206    0.8988    0.8579       346
+  ddos-attacks-loic-http     0.9997    0.9993    0.9995    115238
+   dos-attacks-goldeneye     0.9998    1.0000    0.9999      8302
+        dos-attacks-hulk     1.0000    1.0000    1.0000     92382
+dos-attacks-slowhttptest     1.0000    1.0000    1.0000     27978
+   dos-attacks-slowloris     1.0000    1.0000    1.0000      2198
+          ftp-bruteforce     0.9999    1.0000    0.9999     38671
+           infilteration     0.8865    0.1121    0.1991     32387
+           sql-injection     1.0000    0.3529    0.5217        17
+          ssh-bruteforce     1.0000    0.9998    0.9999     37518
+
+                accuracy                         0.9909   3235820
+               macro avg     0.9740    0.8412    0.8705   3235820
+            weighted avg     0.9900    0.9909    0.9874   3235820
+
+2026-03-11 17:42:57,286 [INFO] 
+--- [Model T] Explicit Taxonomy MoE ---
+2026-03-11 17:42:57,286 [INFO] Accuracy: 0.9892 (eval time: 62.28s)
+2026-03-11 17:42:57,642 [INFO] 
+                          precision    recall  f1-score   support
+
+                  benign     0.9872    0.9999    0.9935   2686174
+                     bot     1.0000    0.9992    0.9996     57238
+        brute-force--web     0.8116    0.4590    0.5864       122
+        brute-force--xss     0.9062    0.6304    0.7436        46
+        ddos-attack-hoic     1.0000    0.9962    0.9981    137203
+    ddos-attack-loic-udp     0.0000    0.0000    0.0000       346
+  ddos-attacks-loic-http     1.0000    0.9884    0.9941    115238
+   dos-attacks-goldeneye     1.0000    0.8327    0.9087      8302
+        dos-attacks-hulk     1.0000    1.0000    1.0000     92382
+dos-attacks-slowhttptest     1.0000    1.0000    1.0000     27978
+   dos-attacks-slowloris     0.9936    0.9891    0.9913      2198
+          ftp-bruteforce     0.9999    0.9702    0.9848     38671
+           infilteration     0.9402    0.0772    0.1427     32387
+           sql-injection     1.0000    0.4706    0.6400        17
+          ssh-bruteforce     1.0000    0.9990    0.9995     37518
+
+                accuracy                         0.9892   3235820
+               macro avg     0.9092    0.7608    0.7988   3235820
+            weighted avg     0.9887    0.9892    0.9852   3235820
+
+2026-03-11 17:42:57,642 [INFO] 
+Constructing Expert Metrics Matrix...
+2026-03-11 17:44:12,719 [INFO] Saved: results/logs_exact_taxonomy_moe_20260311_170908/exact_taxonomy_metrics.csv
+2026-03-11 17:44:12,719 [INFO] 
+Total elapsed time: 2103.87s
