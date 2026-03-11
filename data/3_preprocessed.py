@@ -5,15 +5,14 @@ CIC-IDS / UNSW-NB15 데이터셋 전처리 스크립트 (Fixed Version)
 기본 전처리 항목 (순서):
   1. 식별자 컬럼 삭제: Flow ID, Src/Dst IP, Src/Dst Port, Timestamp (또는 id)
   2. NaN 포함 feature/샘플 삭제 (수치형 컬럼 기준)
- 10. 중복 행 삭제
-  4. 중복 컬럼 삭제
-  8. 반복 헤더 행 제거
+  3. 중복 컬럼 삭제
+  4. 반복 헤더 행 제거
   5. 클래스 이름 정제 (소문자, 공백→하이픈)
 
   수치형 아닌 컬럼 동적 감지 후:
   - string feature → 숫자 변환 (Frequency Encoding)
   - 6. 무한대(Infinity) 처리, 7. 잘못된 값(Init Win Byts=-1 → 0)
-  9. 상수(zero-variance) 컬럼 삭제
+  8. 상수(zero-variance) 컬럼 삭제
 """
 
 import os
