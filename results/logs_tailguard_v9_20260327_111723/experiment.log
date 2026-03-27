@@ -1,0 +1,105 @@
+2026-03-27 11:17:23,244 [INFO] XGBoost device: cpu
+2026-03-27 11:17:23,973 [INFO] Dataset type: nfunswnb15
+2026-03-27 11:17:23,973 [INFO] X shape: (2390275, 41), num_classes: 10
+2026-03-27 11:17:23,974 [INFO] Class names: ['analysis', 'backdoor', 'dos', 'exploits', 'fuzzers', 'generic', 'normal', 'reconnaissance', 'shellcode', 'worms']
+2026-03-27 11:17:23,974 [INFO] Family IDs: {0: 'Normal', 1: 'Group1', 2: 'Group2', 3: 'Group3', 4: 'Group4'}
+2026-03-27 11:17:23,974 [INFO] NF-UNSW-NB15 detected: using stratified random split.
+2026-03-27 11:17:23,979 [WARNING] Skipping group-aware split via pickle['file_groups'] because only 1 unique group is available.
+2026-03-27 11:17:23,980 [INFO] Using chronological blocked split via pickle['timestamps'].
+2026-03-27 11:17:24,183 [INFO] Chronological split coverage check passed.
+2026-03-27 11:17:24,267 [INFO] 
+=== Training baseline single XGBoost ===
+2026-03-27 11:19:15,164 [INFO] 
+=== Training FAR-MoE ===
+2026-03-27 11:19:15,165 [WARNING] Feature view 'timing' is empty; falling back to all features for that view.
+2026-03-27 11:19:15,256 [INFO] Training coarse family router...
+2026-03-27 11:19:59,581 [INFO] Taxonomy groups:
+2026-03-27 11:19:59,582 [INFO]   Normal  : ['normal']
+2026-03-27 11:19:59,582 [INFO]   Group1  : ['dos', 'worms']
+2026-03-27 11:19:59,582 [INFO]   Group2  : ['analysis', 'reconnaissance']
+2026-03-27 11:19:59,582 [INFO]   Group3  : ['exploits', 'fuzzers', 'generic']
+2026-03-27 11:19:59,582 [INFO]   Group4  : ['backdoor', 'shellcode']
+2026-03-27 11:19:59,583 [INFO] Tail classes: ['worms', 'shellcode', 'analysis']
+2026-03-27 11:19:59,583 [INFO] Training expert [00] Anchor_Global | feature_dim=41 | target_classes=None | extra_negatives=[]
+2026-03-27 11:21:49,057 [INFO] Training expert [01] Balanced_Global | feature_dim=41 | target_classes=None | extra_negatives=[]
+2026-03-27 11:23:03,403 [INFO] Training expert [02] Tail_Expert | feature_dim=41 | target_classes=[9, 8, 0] | extra_negatives=[3, 4, 5]
+2026-03-27 11:23:50,998 [INFO] Training expert [03] Spec_Group1_volume | feature_dim=1 | target_classes=[2, 9] | extra_negatives=[0, 3, 4, 5, 7]
+2026-03-27 11:24:05,178 [INFO] Training expert [04] Spec_Group2_timing | feature_dim=41 | target_classes=[0, 7] | extra_negatives=[2, 3, 4, 5, 9]
+2026-03-27 11:25:49,604 [INFO] Training expert [05] Spec_Group3_packet | feature_dim=2 | target_classes=[3, 4, 5] | extra_negatives=[0, 2, 7, 9]
+2026-03-27 11:27:02,962 [INFO] Training expert [06] Spec_Group4_tcp | feature_dim=3 | target_classes=[1, 8] | extra_negatives=[0, 3, 4, 5, 7]
+2026-03-27 11:27:36,575 [INFO] Training expert [07] Rand_1_packet | feature_dim=2 | target_classes=[5, 7] | extra_negatives=[2, 9]
+2026-03-27 11:28:19,530 [INFO] Training expert [08] Rand_2_timing | feature_dim=41 | target_classes=[0, 2, 3, 4, 5, 7, 8, 9] | extra_negatives=[]
+2026-03-27 11:30:01,394 [INFO] Training expert [09] Rand_3_packet | feature_dim=2 | target_classes=[5, 7, 8] | extra_negatives=[2, 9]
+2026-03-27 11:30:54,372 [INFO] Final trained experts:
+2026-03-27 11:30:54,372 [INFO]   [00] Anchor_Global            | local_classes=['analysis', 'backdoor', 'dos', 'exploits', 'fuzzers', 'generic', 'normal', 'reconnaissance', 'shellcode', 'worms'] | train_size=1529776 | val_acc=0.9942
+2026-03-27 11:30:54,372 [INFO]   [01] Balanced_Global          | local_classes=['analysis', 'backdoor', 'dos', 'exploits', 'fuzzers', 'generic', 'normal', 'reconnaissance', 'shellcode', 'worms'] | train_size=1529776 | val_acc=0.9926
+2026-03-27 11:30:54,372 [INFO]   [02] Tail_Expert              | local_classes=['analysis', 'exploits', 'fuzzers', 'generic', 'normal', 'shellcode', 'worms'] | train_size=1522963 | val_acc=0.9957
+2026-03-27 11:30:54,373 [INFO]   [03] Spec_Group1_volume       | local_classes=['analysis', 'dos', 'exploits', 'fuzzers', 'generic', 'normal', 'reconnaissance', 'worms'] | train_size=1528572 | val_acc=0.0011
+2026-03-27 11:30:54,373 [INFO]   [04] Spec_Group2_timing       | local_classes=['analysis', 'dos', 'exploits', 'fuzzers', 'generic', 'normal', 'reconnaissance', 'worms'] | train_size=1528572 | val_acc=0.9936
+2026-03-27 11:30:54,373 [INFO]   [05] Spec_Group3_packet       | local_classes=['analysis', 'dos', 'exploits', 'fuzzers', 'generic', 'normal', 'reconnaissance', 'worms'] | train_size=1528572 | val_acc=0.9839
+2026-03-27 11:30:54,373 [INFO]   [06] Spec_Group4_tcp          | local_classes=['analysis', 'backdoor', 'exploits', 'fuzzers', 'generic', 'normal', 'reconnaissance', 'shellcode'] | train_size=1527815 | val_acc=0.7211
+2026-03-27 11:30:54,373 [INFO]   [07] Rand_1_packet            | local_classes=['dos', 'generic', 'normal', 'reconnaissance', 'worms'] | train_size=1508583 | val_acc=0.9890
+2026-03-27 11:30:54,373 [INFO]   [08] Rand_2_timing            | local_classes=['analysis', 'dos', 'exploits', 'fuzzers', 'generic', 'normal', 'reconnaissance', 'shellcode', 'worms'] | train_size=1529064 | val_acc=0.9935
+2026-03-27 11:30:54,373 [INFO]   [09] Rand_3_packet            | local_classes=['dos', 'generic', 'normal', 'reconnaissance', 'shellcode', 'worms'] | train_size=1509075 | val_acc=0.9887
+2026-03-27 11:30:54,373 [INFO] Routing semantics: always include 2 anchor/generalist experts, plus up to 3 additional specialists per sample after OOD filtering.
+2026-03-27 11:30:54,374 [INFO] Fitting expert-specific competence models...
+2026-03-27 11:31:13,711 [INFO]   [Anchor_Global] val_acc=0.9820 | coef(prior,margin,entropy,ood)=(-5.730, 0.368, -0.682, 0.028)
+2026-03-27 11:31:13,832 [INFO]   [Balanced_Global] val_acc=0.9775 | coef(prior,margin,entropy,ood)=(-7.197, -0.422, -1.099, -0.024)
+2026-03-27 11:31:13,948 [INFO]   [Tail_Expert] val_acc=0.9709 | coef(prior,margin,entropy,ood)=(-4.670, -2.610, -4.651, -0.188)
+2026-03-27 11:31:13,995 [INFO]   [Spec_Group1_volume] val_acc=0.0037 | coef(prior,margin,entropy,ood)=(21.530, -0.504, 0.504, -0.504)
+2026-03-27 11:31:14,165 [INFO]   [Spec_Group2_timing] val_acc=0.9769 | coef(prior,margin,entropy,ood)=(3.176, -2.047, -4.421, -0.124)
+2026-03-27 11:31:14,272 [INFO]   [Spec_Group3_packet] val_acc=0.9554 | coef(prior,margin,entropy,ood)=(-1.364, -0.393, -2.260, -1.127)
+2026-03-27 11:31:14,438 [INFO]   [Spec_Group4_tcp] val_acc=0.6897 | coef(prior,margin,entropy,ood)=(6.304, -13.619, -19.085, -1.550)
+2026-03-27 11:31:14,549 [INFO]   [Rand_1_packet] val_acc=0.9303 | coef(prior,margin,entropy,ood)=(-5.253, -1.758, -4.168, 0.367)
+2026-03-27 11:31:14,675 [INFO]   [Rand_2_timing] val_acc=0.9775 | coef(prior,margin,entropy,ood)=(-6.850, -0.397, -1.124, -0.253)
+2026-03-27 11:31:14,781 [INFO]   [Rand_3_packet] val_acc=0.9306 | coef(prior,margin,entropy,ood)=(-4.282, -2.092, -4.409, 0.135)
+2026-03-27 11:31:14,787 [INFO] 
+========================================================================
+2026-03-27 11:31:14,787 [INFO] FINAL EVALUATION ON TEST SET
+2026-03-27 11:31:14,788 [INFO] ========================================================================
+2026-03-27 11:31:19,437 [INFO] 
+--- Baseline Single XGBoost ---
+2026-03-27 11:31:19,437 [INFO] Accuracy: 0.9800 | eval time: 4.65s
+2026-03-27 11:31:19,517 [INFO] 
+                precision    recall  f1-score   support
+
+      analysis     0.1505    0.3127    0.2032      1004
+      backdoor     0.1620    0.2516    0.1971       759
+           dos     0.2859    0.2914    0.2886      2248
+      exploits     0.8468    0.8433    0.8451     11752
+       fuzzers     0.8393    0.8277    0.8334      7717
+       generic     0.9515    0.8013    0.8700      5894
+        normal     0.9966    0.9975    0.9971    443213
+reconnaissance     0.9122    0.7548    0.8260      4885
+     shellcode     0.8761    0.9286    0.9016       518
+         worms     0.8000    0.6154    0.6957        65
+
+      accuracy                         0.9800    478055
+     macro avg     0.6821    0.6624    0.6658    478055
+  weighted avg     0.9824    0.9800    0.9810    478055
+
+2026-03-27 11:31:44,123 [INFO] 
+--- FAR-MoE ---
+2026-03-27 11:31:44,123 [INFO] Accuracy: 0.9648 | eval time: 24.61s
+2026-03-27 11:31:44,192 [INFO] 
+                precision    recall  f1-score   support
+
+      analysis     0.1216    0.0090    0.0167      1004
+      backdoor     0.1863    0.0250    0.0441       759
+           dos     0.1337    0.9093    0.2331      2248
+      exploits     0.9252    0.4286    0.5858     11752
+       fuzzers     0.7387    0.8030    0.7695      7717
+       generic     0.9492    0.6780    0.7910      5894
+        normal     1.0000    0.9927    0.9963    443213
+reconnaissance     0.9263    0.7277    0.8151      4885
+     shellcode     0.7061    0.8069    0.7532       518
+         worms     0.1103    0.2308    0.1493        65
+
+      accuracy                         0.9648    478055
+     macro avg     0.5797    0.5611    0.5154    478055
+  weighted avg     0.9849    0.9648    0.9706    478055
+
+2026-03-27 11:31:44,204 [INFO] Saved expert selection summary to results/logs_tailguard_v9_20260327_111723\expert_selection_summary.csv
+2026-03-27 11:31:44,253 [INFO] Saved per-class comparison to results/logs_tailguard_v9_20260327_111723\baseline_vs_moe_per_class.csv
+2026-03-27 11:31:44,254 [INFO] 
+Total elapsed time: 861.01s
