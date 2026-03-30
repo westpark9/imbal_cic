@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import pdb
 import gc
 import logging
 import os
@@ -1176,6 +1177,20 @@ def make_splits(data: dict, X: np.ndarray, y: np.ndarray, seed: int, logger, cla
             )
         return ok
 
+    explicit_split_keys = ["train_indices", "val_indices", "test_indices"]
+    if all(key in data and data[key] is not None for key in explicit_split_keys):
+        logger.info("Using explicit train/val/test indices from pickle.")
+        train_idx = np.asarray(data["train_indices"], dtype=int)
+        val_idx = np.asarray(data["val_indices"], dtype=int)
+        test_idx = np.asarray(data["test_indices"], dtype=int)
+
+        X_train, y_train = X[train_idx], y[train_idx]
+        X_val, y_val = X[val_idx], y[val_idx]
+        X_test, y_test = X[test_idx], y[test_idx]
+
+        _log_coverage("Explicit-index", y_train, y_val, y_test)
+        return X_train, X_val, X_test, y_train, y_val, y_test
+
     if dataset_type == "unswnb15":
         logger.info("UNSW-NB15 detected: skipping file-aware split.")
 
@@ -1292,6 +1307,18 @@ def summarize_selection(info: dict, experts: List[ExpertXGB]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def log_split_distribution(logger, split_name: str, y_split: np.ndarray, class_names: List[str]):
+    y_split = np.asarray(y_split, dtype=int)
+    counts = np.bincount(y_split, minlength=len(class_names))
+    total = max(int(counts.sum()), 1)
+    logger.info(f"{split_name} distribution (n={total}):")
+    for class_id, count in enumerate(counts):
+        if count == 0:
+            continue
+        pct = 100.0 * float(count) / float(total)
+        logger.info(f"  [{class_id:02d}] {class_names[class_id]:30s}: {count:8d} ({pct:6.2f}%)")
+
+
 # -----------------------------
 # main
 # -----------------------------
@@ -1344,6 +1371,12 @@ def main():
     X_train, X_val, X_test, y_train, y_val, y_test = make_splits(
         data, X, y, args.seed, logger, class_to_family=class_to_family
     )
+    logger.info("\n=== Split Summary Before Training ===")
+    log_split_distribution(logger, "train", y_train, class_names)
+    log_split_distribution(logger, "val", y_val, class_names)
+    log_split_distribution(logger, "test", y_test, class_names)
+    logger.info("Entering pdb before training. Use `c` to continue.")
+    pdb.set_trace()
     del data, X, y
     gc.collect()
 
