@@ -1249,25 +1249,25 @@ def make_splits(data: dict, X: np.ndarray, y: np.ndarray, seed: int, logger, cla
             logger.warning("Unable to find a file-aware split with adequate class coverage; falling back.")
             break
 
-    for key in ts_keys:
-        if key in data and data[key] is not None and len(data[key]) == len(y):
-            logger.info(f"Using chronological blocked split via pickle['{key}'].")
-            ts = np.asarray(data[key])
-            order = np.argsort(ts)
-            X_sorted, y_sorted = X[order], y[order]
-            n = len(y_sorted)
-            n_train = int(0.64 * n)
-            n_val = int(0.16 * n)
-            X_train = X_sorted[:n_train]
-            y_train = y_sorted[:n_train]
-            X_val = X_sorted[n_train : n_train + n_val]
-            y_val = y_sorted[n_train : n_train + n_val]
-            X_test = X_sorted[n_train + n_val :]
-            y_test = y_sorted[n_train + n_val :]
-            if _log_coverage("Chronological", y_train, y_val, y_test):
-                return X_train, X_val, X_test, y_train, y_val, y_test
-            logger.warning("Chronological split did not preserve sufficient training/validation class coverage; falling back.")
-            break
+    # for key in ts_keys:
+    #     if key in data and data[key] is not None and len(data[key]) == len(y):
+    #         logger.info(f"Using chronological blocked split via pickle['{key}'].")
+    #         ts = np.asarray(data[key])
+    #         order = np.argsort(ts)
+    #         X_sorted, y_sorted = X[order], y[order]
+    #         n = len(y_sorted)
+    #         n_train = int(0.64 * n)
+    #         n_val = int(0.16 * n)
+    #         X_train = X_sorted[:n_train]
+    #         y_train = y_sorted[:n_train]
+    #         X_val = X_sorted[n_train : n_train + n_val]
+    #         y_val = y_sorted[n_train : n_train + n_val]
+    #         X_test = X_sorted[n_train + n_val :]
+    #         y_test = y_sorted[n_train + n_val :]
+    #         if _log_coverage("Chronological", y_train, y_val, y_test):
+    #             return X_train, X_val, X_test, y_train, y_val, y_test
+    #         logger.warning("Chronological split did not preserve sufficient training/validation class coverage; falling back.")
+    #         break
 
     logger.warning(
         "No valid scenario/group/timestamp split with adequate class/family coverage found. Falling back to stratified random split. For CICIDS papers, blocked or scenario-aware splits are preferred."
