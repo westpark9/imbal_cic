@@ -137,112 +137,26 @@ def preprocess_single_csv_frame(df: pd.DataFrame, dataset_type: str) -> pd.DataF
     return df.reset_index(drop=True)
 
 
-def ratio_counts_round(n: int) -> Tuple[int, int, int]:
-    if n <= 0:
-        return 0, 0, 0
-    n_train = int(round(0.6 * n))
-    n_val = int(round(0.2 * n))
-    n_test = n - n_train - n_val
-    if n_test < 0:
-        n_test = 0
-        n_val = max(0, n - n_train)
-    return n_train, n_val, n_test
+def compute_file_split_labels(n_files: int) -> np.ndarray:
+    if n_files < 3:
+        raise ValueError("Need at least 3 CSV files for file-level 6:2:2 split.")
 
+    n_train = max(1, int(np.floor(0.6 * n_files)))
+    n_val = max(1, int(np.floor(0.2 * n_files)))
+    if n_train + n_val >= n_files:
+        n_val = max(1, n_files - n_train - 1)
+    n_test = n_files - n_train - n_val
+    if n_test < 1:
+        n_test = 1
+        if n_train > n_val:
+            n_train -= 1
+        else:
+            n_val -= 1
 
-def normalize_labels_for_split(series: pd.Series) -> np.ndarray:
-    out = series.astype(str).str.lower().str.strip()
-    out = out.str.replace(" ", "-", regex=False)
-    out = out.str.replace("–", "-", regex=False)
-    out = out.replace({"benign": "normal", "-": "normal"})
-    return out.to_numpy(dtype=object)
-
-
-def assign_normal_ratio_split(labels_norm: np.ndarray) -> np.ndarray:
-    n = len(labels_norm)
-    split = np.full(n, "train", dtype=object)
-    normal_idx = np.where(labels_norm == "normal")[0]
-    n_norm = len(normal_idx)
-    if n_norm == 0:
-        return split
-    n_tr, n_va, n_te = ratio_counts_round(n_norm)
-    a = 0
-    b = min(n_norm, a + n_tr)
-    c = min(n_norm, b + n_va)
-    split[normal_idx[a:b]] = "train"
-    split[normal_idx[b:c]] = "val"
-    split[normal_idx[c:]] = "test"
-    return split
-
-
-def apply_attack_episode_ratio_split(local_split: np.ndarray, labels_norm: np.ndarray) -> np.ndarray:
-    split = local_split.copy()
-    n = len(labels_norm)
-    if n == 0:
-        return split
-
-    # Build contiguous attack episodes (normal 제외).
-    episodes = []
-    i = 0
-    while i < n:
-        if labels_norm[i] == "normal":
-            i += 1
-            continue
-        j = i + 1
-        while j < n and labels_norm[j] == labels_norm[i]:
-            j += 1
-        episodes.append((i, j, labels_norm[i], j - i))  # [start, end), label, length
-        i = j
-
-    if not episodes:
-        return split
-
-    # Per-attack-label processing in time order.
-    labels_order = sorted(set(ep[2] for ep in episodes))
-    for attack_label in labels_order:
-        eps = [ep for ep in episodes if ep[2] == attack_label]
-        short_eps = []
-
-        # Long episode: split within episode by 6:2:2.
-        for s, e, _, length in eps:
-            if length >= 5:
-                n_tr, n_va, n_te = ratio_counts_round(length)
-                a = s
-                b = min(e, a + n_tr)
-                c = min(e, b + n_va)
-                split[a:b] = "train"
-                split[b:c] = "val"
-                split[c:e] = "test"
-            else:
-                short_eps.append((s, e, length))
-
-        # Short episodes: group in time order and assign whole episodes by 6:2:2 quota.
-        if short_eps:
-            total = int(sum(x[2] for x in short_eps))
-            t_tr, t_va, t_te = ratio_counts_round(total)
-            a_tr = a_va = a_te = 0
-            for s, e, length in short_eps:
-                rem = {
-                    "train": t_tr - a_tr,
-                    "val": t_va - a_va,
-                    "test": t_te - a_te,
-                }
-                if rem["train"] > 0:
-                    chosen = "train"
-                elif rem["val"] > 0:
-                    chosen = "val"
-                elif rem["test"] > 0:
-                    chosen = "test"
-                else:
-                    chosen = "test"
-                split[s:e] = chosen
-                if chosen == "train":
-                    a_tr += length
-                elif chosen == "val":
-                    a_va += length
-                else:
-                    a_te += length
-
-    return split
+    labels = np.array(["test"] * n_files, dtype=object)
+    labels[:n_train] = "train"
+    labels[n_train : n_train + n_val] = "val"
+    return labels
 
 
 def load_and_preprocess_from_csv_dir(
@@ -259,7 +173,13 @@ def load_and_preprocess_from_csv_dir(
             f"CSV file-wise chronological split is intended for CIC2017/2018, got dataset_type={dataset_type}."
         )
 
-    logger.info("CSV split config: attack=episode 6:2:2, normal=chronological 6:2:2")
+    file_split_labels = compute_file_split_labels(len(csv_files))
+    logger.info(
+        f"CSV file-level split config (sorted filename order): "
+        f"train_files={int(np.sum(file_split_labels == 'train'))}, "
+        f"val_files={int(np.sum(file_split_labels == 'val'))}, "
+        f"test_files={int(np.sum(file_split_labels == 'test'))}"
+    )
 
     all_frames = []
     source_file_ids = []
@@ -285,11 +205,7 @@ def load_and_preprocess_from_csv_dir(
             logger.warning(f"Skipping {file_name}: no valid rows after preprocessing.")
             continue
 
-        # Base: normal rows only, chronological 6:2:2.
-        labels_norm = normalize_labels_for_split(df[label_col])
-        local_split = assign_normal_ratio_split(labels_norm)
-        # Attack rows: overwrite with episode-based 6:2:2 logic.
-        local_split = apply_attack_episode_ratio_split(local_split, labels_norm)
+        local_split = np.full(n_rows, file_split_labels[file_idx], dtype=object)
 
         train_n = int(np.sum(local_split == "train"))
         val_n = int(np.sum(local_split == "val"))
@@ -1620,7 +1536,7 @@ def main():
         "--data_dir",
         type=str,
         default=None,
-        help="Path to raw CSV directory. For CIC2017/2018 this uses episode-aware split.",
+        help="Path to raw CSV directory. Uses file-level chronological 6:2:2 split (unseen test files).",
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--batch_size", type=int, default=20000)
@@ -1672,7 +1588,7 @@ def main():
     logger.info(f"Family IDs: {family_id_to_name}")
 
     if "split_tags" in data and data["split_tags"] is not None and len(data["split_tags"]) == len(y):
-        logger.info("Using preassigned file-wise chronological split from split_tags.")
+        logger.info("Using preassigned file-level unseen split from split_tags.")
         X_train, X_val, X_test, y_train, y_val, y_test = split_by_preassigned_tags(X, y, data["split_tags"])
     else:
         X_train, X_val, X_test, y_train, y_val, y_test = make_splits(
