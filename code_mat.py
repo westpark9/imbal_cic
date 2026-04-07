@@ -1682,15 +1682,12 @@ def build_confusion_artifacts(
     attack_ids = [i for i in range(len(class_names)) if i not in normal_set]
     attack_names = [class_names[i] for i in attack_ids]
     if attack_ids:
-        cm_attack = cm[np.ix_(attack_ids, attack_ids)].astype(np.float64)
-        row_sums = cm_attack.sum(axis=1, keepdims=True)
-        row_sums[row_sums == 0] = 1.0
-        cm_attack_norm = cm_attack / row_sums
-        cm_attack_norm_df = pd.DataFrame(cm_attack_norm, index=attack_names, columns=attack_names)
+        cm_attack = cm[np.ix_(attack_ids, attack_ids)].astype(np.int64)
+        cm_attack_count_df = pd.DataFrame(cm_attack, index=attack_names, columns=attack_names)
     else:
-        cm_attack_norm_df = pd.DataFrame()
+        cm_attack_count_df = pd.DataFrame()
 
-    return cm_df, pairs_df, focus_classes, cm_attack_norm_df
+    return cm_df, pairs_df, focus_classes, cm_attack_count_df
 
 
 def save_confusion_heatmap(cm_df: pd.DataFrame, out_path: str, title: str, logger):
@@ -1707,14 +1704,24 @@ def save_confusion_heatmap(cm_df: pd.DataFrame, out_path: str, title: str, logge
     fig_w = max(8.0, min(28.0, 0.5 * n + 2.0))
     fig_h = max(6.0, min(24.0, 0.5 * n + 2.0))
     fig, ax = plt.subplots(figsize=(fig_w, fig_h))
-    im = ax.imshow(cm_df.values, cmap="Blues", aspect="auto", vmin=0.0, vmax=1.0)
+    vals = cm_df.values.astype(np.float64)
+    vmax = float(np.max(vals)) if vals.size > 0 else 1.0
+    im = ax.imshow(vals, cmap="Blues", aspect="auto", vmin=0.0, vmax=max(1.0, vmax))
     ax.set_title(title)
     ax.set_xticks(np.arange(n))
     ax.set_yticks(np.arange(n))
     ax.set_xticklabels(cm_df.columns.tolist(), rotation=90, fontsize=7)
     ax.set_yticklabels(cm_df.index.tolist(), fontsize=7)
+    # Annotate raw counts per cell.
+    threshold = 0.6 * max(1.0, vmax)
+    for i in range(n):
+        for j in range(n):
+            v = int(round(vals[i, j]))
+            color = "white" if vals[i, j] >= threshold else "black"
+            ax.text(j, i, f"{v}", ha="center", va="center", color=color, fontsize=6)
+
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label("Row-normalized confusion")
+    cbar.set_label("Confusion Count")
     fig.tight_layout()
     fig.savefig(out_path, dpi=220)
     plt.close(fig)
@@ -1826,7 +1833,7 @@ def main():
         if baseline_for_conf.is_trained:
             val_out = baseline_for_conf.extract_outputs(X_val, batch_size=args.batch_size)
             val_preds = val_out["pred"]
-            cm_df, conf_pairs_df, confusion_focus_classes, cm_attack_norm_df = build_confusion_artifacts(
+            cm_df, conf_pairs_df, confusion_focus_classes, cm_attack_count_df = build_confusion_artifacts(
                 y_true=y_val,
                 y_pred=val_preds,
                 class_names=class_names,
@@ -1835,21 +1842,21 @@ def main():
             )
             cm_path = os.path.join(exp_dir, "baseline_confusion_matrix_val.csv")
             pairs_path = os.path.join(exp_dir, "baseline_confusion_pairs_val.csv")
-            cm_attack_norm_csv_path = os.path.join(exp_dir, "baseline_confusion_matrix_val_attack_row_norm.csv")
-            cm_attack_norm_png_path = os.path.join(exp_dir, "baseline_confusion_matrix_val_attack_row_norm.png")
+            cm_attack_count_csv_path = os.path.join(exp_dir, "baseline_confusion_matrix_val_attack_count.csv")
+            cm_attack_count_png_path = os.path.join(exp_dir, "baseline_confusion_matrix_val_attack_count.png")
             cm_df.to_csv(cm_path, index=True)
             conf_pairs_df.to_csv(pairs_path, index=False)
-            cm_attack_norm_df.to_csv(cm_attack_norm_csv_path, index=True)
+            cm_attack_count_df.to_csv(cm_attack_count_csv_path, index=True)
             save_confusion_heatmap(
-                cm_attack_norm_df,
-                cm_attack_norm_png_path,
-                title="Baseline Confusion (Attack-Only, Row-Normalized)",
+                cm_attack_count_df,
+                cm_attack_count_png_path,
+                title="Baseline Confusion (Attack-Only, Raw Count)",
                 logger=logger,
             )
             logger.info(f"Saved baseline validation confusion matrix to {cm_path}")
             logger.info(f"Saved baseline validation confusion pairs to {pairs_path}")
-            logger.info(f"Saved attack-only row-normalized confusion csv to {cm_attack_norm_csv_path}")
-            logger.info(f"Saved attack-only row-normalized confusion png to {cm_attack_norm_png_path}")
+            logger.info(f"Saved attack-only count confusion csv to {cm_attack_count_csv_path}")
+            logger.info(f"Saved attack-only count confusion png to {cm_attack_count_png_path}")
             if len(conf_pairs_df) > 0:
                 logger.info("Top confusion pairs (val):")
                 for _, r in conf_pairs_df.head(min(10, len(conf_pairs_df))).iterrows():
