@@ -648,12 +648,26 @@ class ExpertXGB:
 # Confusion matrix helpers
 # ──────────────────────────────────────────────
 
-def build_confusion_artifacts(y_true, y_pred, class_names, normal_class_ids, top_k_pairs=8):
+def build_confusion_artifacts(y_true, y_pred, class_names, normal_class_ids,
+                              top_k_pairs=8, low_recall_threshold=None):
+    """
+    Returns
+    -------
+    cm_df            : full confusion matrix DataFrame
+    pairs_df         : sorted attack↔attack confusion pairs
+    focus_classes    : sorted list of class IDs selected for Stage 2
+                       (union of confusion-pair classes + low-recall classes)
+    cm_attack_df     : attack-only confusion matrix DataFrame
+    recall_per_class : dict {class_id: recall}
+    low_recall_classes: list of class IDs added via low-recall threshold
+    """
     labels = np.arange(len(class_names))
     cm = confusion_matrix(y_true, y_pred, labels=labels)
     cm_df = pd.DataFrame(cm, index=class_names, columns=class_names)
 
     normal_set = set(int(x) for x in normal_class_ids)
+
+    # ── attack↔attack confusion pairs ───────────────────────────────
     rows = []
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
@@ -671,13 +685,31 @@ def build_confusion_artifacts(y_true, y_pred, class_names, normal_class_ids, top
         if rows else pd.DataFrame(columns=["true_class_id", "true_class_name", "pred_class_id", "pred_class_name", "count"])
     )
 
-    focus_classes = []
+    focus_from_pairs: set = set()
     if len(pairs_df) > 0 and top_k_pairs > 0:
         top_df = pairs_df.head(int(top_k_pairs))
-        focus_classes = sorted(
-            set(top_df["true_class_id"].astype(int).tolist()) | set(top_df["pred_class_id"].astype(int).tolist())
+        focus_from_pairs = (
+            set(top_df["true_class_id"].astype(int).tolist())
+            | set(top_df["pred_class_id"].astype(int).tolist())
         )
 
+    # ── per-class recall (attack→normal misclassification 감지) ─────
+    _, recall_arr, _, support_arr = precision_recall_fscore_support(
+        y_true, y_pred, labels=labels, zero_division=0
+    )
+    recall_per_class = {int(i): float(recall_arr[i]) for i in range(len(class_names))}
+
+    low_recall_classes: List[int] = []
+    if low_recall_threshold is not None:
+        for i in range(len(class_names)):
+            if i in normal_set:
+                continue
+            if int(support_arr[i]) > 0 and recall_arr[i] < float(low_recall_threshold):
+                low_recall_classes.append(int(i))
+
+    focus_classes = sorted(focus_from_pairs | set(low_recall_classes))
+
+    # ── attack-only confusion matrix ─────────────────────────────────
     attack_ids = [i for i in range(len(class_names)) if i not in normal_set]
     attack_names = [class_names[i] for i in attack_ids]
     if attack_ids:
@@ -686,7 +718,7 @@ def build_confusion_artifacts(y_true, y_pred, class_names, normal_class_ids, top
     else:
         cm_attack_df = pd.DataFrame()
 
-    return cm_df, pairs_df, focus_classes, cm_attack_df
+    return cm_df, pairs_df, focus_classes, cm_attack_df, recall_per_class, low_recall_classes
 
 
 def save_confusion_heatmap(cm_df, out_path, title, logger):
@@ -718,6 +750,120 @@ def save_confusion_heatmap(cm_df, out_path, title, logger):
     fig.tight_layout()
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
+
+
+# ──────────────────────────────────────────────
+# Stage2MoE  ← 핵심 신규 코드
+# ──────────────────────────────────────────────
+
+class Stage2MoE:
+    """
+    Stage 2 Mixture-of-Experts (normal 제외).
+
+    구조:
+      - focus 클래스마다 전담 ExpertXGB 1개 학습
+      - 각 expert: target_classes=[해당 클래스], extra_negative_classes=[나머지 focus 클래스]
+        include_normal=False → normal 샘플을 훈련 데이터에서 완전히 제거
+      - 예측: 모든 expert의 predict_global() 출력을 평균 → focus 클래스 내 argmax
+
+    Stage 2 에 도달한 샘플은 Stage 1 이 이미 focus 클래스 중 하나로 예측한 샘플이므로,
+    Stage 2 는 focus 클래스 간 세밀한 구분만 담당.
+    normal 을 제외함으로써 극심한 클래스 불균형(normal 45만 vs xss 130)을 회피.
+    """
+
+    def __init__(self, focus_classes: List[int], class_names: List[str],
+                 num_classes: int, device: str = "cpu", seed: int = 42):
+        self.focus_classes = sorted(focus_classes)
+        self.class_names = list(class_names)
+        self.num_classes = num_classes
+        self.device = device
+        self.seed = seed
+        self.experts: Dict[int, ExpertXGB] = {}   # class_id → expert
+        self.is_trained = False
+
+    def fit(self, X_train: np.ndarray, y_train: np.ndarray,
+            normal_classes: List[int], logger,
+            min_samples: int = 10, target_boost: float = 5.0):
+        """
+        Parameters
+        ----------
+        min_samples : focus 클래스 샘플이 이보다 적으면 해당 expert 를 건너뜀.
+        target_boost: target 클래스 손실 가중치 배수.
+        """
+        n_features = X_train.shape[1]
+        self.experts = {}
+
+        for class_id in self.focus_classes:
+            class_name = self.class_names[class_id]
+            n_class = int(np.sum(y_train == class_id))
+            if n_class < min_samples:
+                logger.warning(
+                    f"[Stage2MoE] Skip expert for '{class_name}': "
+                    f"{n_class} samples < min_samples={min_samples}"
+                )
+                continue
+
+            # 이 expert 의 negatives = 나머지 focus 클래스들 (normal 제외)
+            extra_neg = [c for c in self.focus_classes if c != class_id]
+
+            cfg = ExpertConfig(
+                expert_id=class_id,
+                name=f"S2E_{class_name}",
+                target_classes=[class_id],
+                target_family_ids=[],
+                feature_indices=np.arange(n_features, dtype=int),
+                include_normal=False,                    # normal 완전 제외
+                extra_negative_classes=extra_neg,        # 나머지 focus 클래스
+                use_balanced_weights=True,
+                target_boost=target_boost,
+                normal_weight_scale=0.0,                 # include_normal=False 이므로 무의미
+                extra_negative_weight_scale=1.0,
+                always_include=False,
+                kind="specialist",
+            )
+            # normal_classes 를 빈 리스트로 넘겨야 _prepare_subset 이 normal 을 추가하지 않음
+            # (include_normal=False 로 이미 처리되지만, 명시적으로 빈 리스트 전달)
+            expert = ExpertXGB(cfg, global_num_classes=self.num_classes,
+                               device=self.device, seed=self.seed)
+            expert.fit(X_train, y_train, normal_classes=[], logger=logger)
+
+            if expert.is_trained:
+                self.experts[class_id] = expert
+                local_cls = [self.class_names[c] for c in expert.local_classes]
+                logger.info(
+                    f"[Stage2MoE] Expert '{class_name}': "
+                    f"train_size={expert.train_size:,}, val_acc={expert.val_acc:.4f}, "
+                    f"local_classes={local_cls}"
+                )
+            else:
+                logger.warning(f"[Stage2MoE] Expert '{class_name}': training failed.")
+
+        self.is_trained = len(self.experts) > 0
+        logger.info(
+            f"[Stage2MoE] {len(self.experts)}/{len(self.focus_classes)} experts trained. "
+            f"Trained for: {[self.class_names[c] for c in sorted(self.experts)]}"
+        )
+
+    def predict(self, X: np.ndarray, batch_size: int = 50000) -> np.ndarray:
+        """
+        각 expert 의 predict_global() 을 평균 → focus 클래스 내 argmax.
+        Returns global class IDs (shape (N,)).
+        """
+        N = len(X)
+        if not self.is_trained or not self.experts:
+            # fallback: 첫 번째 focus 클래스 반환 (사실상 도달 불가)
+            return np.full(N, self.focus_classes[0] if self.focus_classes else 0, dtype=np.int32)
+
+        avg_probs = np.zeros((N, self.num_classes), dtype=np.float64)
+        for expert in self.experts.values():
+            avg_probs += expert.predict_global(X, batch_size=batch_size).astype(np.float64)
+        avg_probs /= len(self.experts)
+
+        # focus 클래스 내에서만 argmax
+        focus_arr = np.array(self.focus_classes, dtype=np.int32)
+        focus_probs = avg_probs[:, focus_arr]           # (N, |focus|)
+        local_idx = np.argmax(focus_probs, axis=1)      # (N,)
+        return focus_arr[local_idx]                      # global class IDs
 
 
 # ──────────────────────────────────────────────
@@ -753,7 +899,7 @@ class CascadeClassifier:
         self.device = device
         self.seed = seed
         self.stage1: Optional[ExpertXGB] = None
-        self.stage2: Optional[ExpertXGB] = None
+        self.stage2: Optional[Stage2MoE] = None     # MoE: per-class expert, no normal
         self.focus_classes: List[int] = []
         self.normal_classes: List[int] = []
 
@@ -785,30 +931,18 @@ class CascadeClassifier:
         self.stage1.fit(X_train, y_train, normal_classes=normal_classes, logger=logger)
         logger.info(f"[Cascade] Stage 1 internal val_acc={self.stage1.val_acc:.4f}")
 
-        # ── Stage 2: focus 클래스 전문 모델 ───────────────────────────
+        # ── Stage 2: per-class MoE (normal 제외) ──────────────────────
         if len(self.focus_classes) >= 2:
             focus_names = [self.class_names[c] for c in self.focus_classes]
-            logger.info(f"[Cascade] Training Stage 2: focus={focus_names} + normal, balanced weights")
-            s2_cfg = ExpertConfig(
-                expert_id=1,
-                name="Stage2_ConfFocus",
-                target_classes=self.focus_classes,        # focus 클래스만
-                target_family_ids=[],
-                feature_indices=np.arange(n_features, dtype=int),
-                include_normal=True,                       # normal 을 negative 로 포함
-                extra_negative_classes=[],
-                use_balanced_weights=True,                 # 클래스 불균형 보정
-                target_boost=3.0,                          # focus 클래스 손실 가중치 강화
-                normal_weight_scale=0.3,                   # normal 가중치 억제
-                extra_negative_weight_scale=1.0,
-                always_include=False,
-                kind="specialist",
+            logger.info(f"[Cascade] Training Stage 2 MoE: focus={focus_names}, NO normal")
+            self.stage2 = Stage2MoE(
+                focus_classes=self.focus_classes,
+                class_names=self.class_names,
+                num_classes=self.num_classes,
+                device=self.device,
+                seed=self.seed,
             )
-            self.stage2 = ExpertXGB(s2_cfg, global_num_classes=self.num_classes,
-                                    device=self.device, seed=self.seed)
             self.stage2.fit(X_train, y_train, normal_classes=normal_classes, logger=logger)
-            logger.info(f"[Cascade] Stage 2 internal val_acc={self.stage2.val_acc:.4f}")
-            logger.info(f"[Cascade] Stage 2 local_classes={[self.class_names[c] for c in self.stage2.local_classes]}")
         else:
             logger.warning("[Cascade] focus_classes < 2; Stage 2 skipped. Cascade = single-stage.")
 
@@ -870,6 +1004,14 @@ def main():
     parser.add_argument("--batch_size", type=int, default=20000)
     parser.add_argument("--top_conf_pairs", type=int, default=8,
                         help="Stage 2 focus 클래스 선정에 쓸 top-K confusion 쌍 수")
+    parser.add_argument("--low_recall_threshold", type=float, default=0.9,
+                        help="이 값 미만의 recall 을 가진 attack 클래스를 "
+                             "focus 클래스로 추가 (attack→normal 오분류 보완). "
+                             "None 을 원하면 0.0 이하로 설정.")
+    parser.add_argument("--s2_target_boost", type=float, default=5.0,
+                        help="Stage2MoE 각 expert 의 target 클래스 손실 가중치 배수")
+    parser.add_argument("--s2_min_samples", type=int, default=10,
+                        help="Stage2MoE expert 학습에 필요한 최소 샘플 수")
     parser.add_argument("--model", type=int, default=2, choices=[0, 1, 2],
                         help="0: baseline only, 1: cascade only, 2: both")
     args = parser.parse_args()
@@ -963,13 +1105,20 @@ def main():
 
     if probe_model.is_trained:
         val_preds = probe_model.predict(X_val, batch_size=args.batch_size)
-        cm_df, conf_pairs_df, focus_classes, cm_attack_df = build_confusion_artifacts(
-            y_true=y_val,
-            y_pred=val_preds,
-            class_names=class_names,
-            normal_class_ids=normal_class_ids,
-            top_k_pairs=args.top_conf_pairs,
-        )
+
+        # low_recall_threshold: 0.0 이하이면 None 으로 취급 (기능 비활성화)
+        effective_lrt = args.low_recall_threshold if args.low_recall_threshold > 0.0 else None
+
+        cm_df, conf_pairs_df, focus_classes, cm_attack_df, recall_per_class, low_recall_classes = \
+            build_confusion_artifacts(
+                y_true=y_val,
+                y_pred=val_preds,
+                class_names=class_names,
+                normal_class_ids=normal_class_ids,
+                top_k_pairs=args.top_conf_pairs,
+                low_recall_threshold=effective_lrt,
+            )
+
         # 저장
         cm_df.to_csv(os.path.join(exp_dir, "probe_confusion_matrix_val.csv"), index=True)
         conf_pairs_df.to_csv(os.path.join(exp_dir, "probe_confusion_pairs_val.csv"), index=False)
@@ -980,11 +1129,34 @@ def main():
             title="Probe Confusion (Attack-Only, Val Set)",
             logger=logger,
         )
+
         logger.info("Top confusion pairs (val):")
         for _, r in conf_pairs_df.head(min(10, len(conf_pairs_df))).iterrows():
             logger.info(f"  {r['true_class_name']} -> {r['pred_class_name']} | count={int(r['count'])}")
-        logger.info(f"Stage 2 focus class IDs: {focus_classes}")
-        logger.info(f"Stage 2 focus class names: {[class_names[c] for c in focus_classes]}")
+
+        # per-class recall 로그 (attack 클래스만)
+        normal_set = set(normal_class_ids)
+        logger.info(f"Per-class recall (attack, val set) [threshold={effective_lrt}]:")
+        for i in range(len(class_names)):
+            if i in normal_set:
+                continue
+            tag = " ← [low-recall 추가]" if i in low_recall_classes else ""
+            logger.info(f"  {class_names[i]:40s} recall={recall_per_class[i]:.4f}{tag}")
+
+        # focus 클래스 선정 요약
+        focus_from_pairs = set()
+        if len(conf_pairs_df) > 0 and args.top_conf_pairs > 0:
+            top_df = conf_pairs_df.head(args.top_conf_pairs)
+            focus_from_pairs = (
+                set(top_df["true_class_id"].astype(int).tolist())
+                | set(top_df["pred_class_id"].astype(int).tolist())
+            )
+        logger.info(f"Focus from confusion pairs: {sorted(focus_from_pairs)} "
+                    f"= {[class_names[c] for c in sorted(focus_from_pairs)]}")
+        logger.info(f"Focus from low recall     : {sorted(low_recall_classes)} "
+                    f"= {[class_names[c] for c in low_recall_classes]}")
+        logger.info(f"Stage 2 focus class IDs   : {focus_classes}")
+        logger.info(f"Stage 2 focus class names : {[class_names[c] for c in focus_classes]}")
     else:
         logger.warning("Probe training failed; Stage 2 will be skipped.")
 
@@ -1015,29 +1187,21 @@ def main():
 
         if len(cascade.focus_classes) >= 2:
             focus_names = [class_names[c] for c in cascade.focus_classes]
-            logger.info(f"[Cascade] Stage 2 focus={focus_names} + normal, balanced weights")
-            s2_cfg = ExpertConfig(
-                expert_id=1,
-                name="Stage2_ConfFocus",
-                target_classes=cascade.focus_classes,
-                target_family_ids=[],
-                feature_indices=np.arange(X_train.shape[1], dtype=int),
-                include_normal=True,
-                extra_negative_classes=[],
-                use_balanced_weights=True,
-                target_boost=3.0,
-                normal_weight_scale=0.3,
-                extra_negative_weight_scale=1.0,
-                always_include=False,
-                kind="specialist",
+            logger.info(f"[Cascade] Stage 2 MoE focus={focus_names}, NO normal, "
+                        f"target_boost={args.s2_target_boost}, min_samples={args.s2_min_samples}")
+            cascade.stage2 = Stage2MoE(
+                focus_classes=cascade.focus_classes,
+                class_names=class_names,
+                num_classes=num_classes,
+                device=DEVICE,
+                seed=args.seed,
             )
-            cascade.stage2 = ExpertXGB(s2_cfg, global_num_classes=num_classes,
-                                       device=DEVICE, seed=args.seed)
-            cascade.stage2.fit(X_train, y_train, normal_classes=normal_class_ids, logger=logger)
-            logger.info(f"[Cascade] Stage 2 internal val_acc={cascade.stage2.val_acc:.4f}")
-            logger.info(
-                f"[Cascade] Stage 2 local_classes="
-                f"{[class_names[c] for c in cascade.stage2.local_classes]}"
+            cascade.stage2.fit(
+                X_train, y_train,
+                normal_classes=normal_class_ids,
+                logger=logger,
+                min_samples=args.s2_min_samples,
+                target_boost=args.s2_target_boost,
             )
         else:
             logger.warning("[Cascade] focus_classes < 2 → Stage 2 없이 단일 Stage 1 동일.")
