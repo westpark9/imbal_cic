@@ -846,23 +846,35 @@ class Stage2MoE:
 
     def predict(self, X: np.ndarray, batch_size: int = 50000) -> np.ndarray:
         """
-        각 expert 의 predict_global() 을 평균 → focus 클래스 내 argmax.
+        각 expert 가 자기 target 클래스에 부여한 확률만 직접 비교 → argmax.
+
+        평균 투표 방식의 문제점:
+          - 8개 expert 중 7개가 잘못된 클래스를 지지하면 전문가 신호가 희석됨.
+          - 예: xss expert p(xss)=0.8 vs 7명이 각자 p(자기)=0.5 → 평균에서 xss 패배.
+
+        max-target-prob 방식:
+          - 각 expert 는 오직 "내 target 클래스 확률" 하나만 경쟁에 올림.
+          - xss expert p(xss)=0.8 vs brute-force expert p(brute-force)=0.5 → xss 승리.
+          - Expert 전문화 신호가 그대로 전달됨.
+
         Returns global class IDs (shape (N,)).
         """
         N = len(X)
         if not self.is_trained or not self.experts:
-            # fallback: 첫 번째 focus 클래스 반환 (사실상 도달 불가)
             return np.full(N, self.focus_classes[0] if self.focus_classes else 0, dtype=np.int32)
 
-        avg_probs = np.zeros((N, self.num_classes), dtype=np.float64)
-        for expert in self.experts.values():
-            avg_probs += expert.predict_global(X, batch_size=batch_size).astype(np.float64)
-        avg_probs /= len(self.experts)
-
-        # focus 클래스 내에서만 argmax
         focus_arr = np.array(self.focus_classes, dtype=np.int32)
-        focus_probs = avg_probs[:, focus_arr]           # (N, |focus|)
-        local_idx = np.argmax(focus_probs, axis=1)      # (N,)
+        # target_probs[n, i] = expert for focus_classes[i] 가 샘플 n 에 대해
+        #                       자기 target 클래스에 부여한 확률 (expert 없으면 0)
+        target_probs = np.zeros((N, len(focus_arr)), dtype=np.float64)
+
+        for i, class_id in enumerate(focus_arr.tolist()):
+            if class_id in self.experts:
+                g_probs = self.experts[class_id].predict_global(X, batch_size=batch_size)
+                target_probs[:, i] = g_probs[:, class_id]
+            # expert 없으면 0 유지 → 해당 클래스 선택 안 됨
+
+        local_idx = np.argmax(target_probs, axis=1)     # (N,)
         return focus_arr[local_idx]                      # global class IDs
 
 
@@ -946,40 +958,74 @@ class CascadeClassifier:
         else:
             logger.warning("[Cascade] focus_classes < 2; Stage 2 skipped. Cascade = single-stage.")
 
-    def predict(self, X: np.ndarray, batch_size: int = 50000) -> Tuple[np.ndarray, dict]:
+    def predict(self, X: np.ndarray, batch_size: int = 50000,
+                soft_route_threshold: float = 0.0) -> Tuple[np.ndarray, dict]:
         """
+        Parameters
+        ----------
+        soft_route_threshold : float
+            0.0 = 비활성화 (기존 hard routing 만).
+            > 0 = Stage 1 이 non-focus 로 예측했더라도, Stage 1 의 focus 클래스 최대
+                  확률이 이 값을 초과하면 Stage 2 로 추가 라우팅 (soft routing).
+                  예: 0.1 → focus 클래스 중 하나에 10% 이상 확률이 있는 샘플 포함.
+                  bot/xss 처럼 Stage 1 이 normal 로 오분류한 샘플을 구제하는 목적.
+
         Returns
         -------
         final_preds : np.ndarray  (global class IDs, shape (N,))
         info        : dict
-            s1_preds     : Stage 1 predictions
-            route_mask   : bool array, True for samples routed to Stage 2
-            s2_preds     : Stage 2 predictions for routed samples (None if not routed)
-            changed_mask : bool array within routed samples where Stage 2 changed the prediction
+            s1_preds        : Stage 1 predictions (argmax)
+            s1_global_probs : Stage 1 전체 확률 행렬 (N × num_classes)
+            route_mask      : bool (hard + soft routing 합산)
+            hard_route_mask : bool (Stage 1 예측 ∈ focus)
+            soft_route_mask : bool (soft threshold 에 의한 추가 라우팅)
+            s2_preds        : Stage 2 예측 (라우팅된 위치, 나머지 -1)
+            changed_mask    : Stage 2 가 Stage 1 예측을 바꾼 위치
         """
-        # ── Stage 1 ─────────────────────────────────────────────────
-        s1_preds = self.stage1.predict(X, batch_size=batch_size)
+        N = len(X)
+
+        # ── Stage 1: 전체 확률 행렬 계산 ────────────────────────────
+        s1_global_probs = self.stage1.predict_global(X, batch_size=batch_size)  # (N, C)
+        s1_preds = np.argmax(s1_global_probs, axis=1).astype(np.int32)
         final_preds = s1_preds.copy()
 
-        route_mask = np.zeros(len(X), dtype=bool)
+        hard_route_mask = np.zeros(N, dtype=bool)
+        soft_route_mask = np.zeros(N, dtype=bool)
         s2_preds_full = None
-        changed_mask = np.zeros(len(X), dtype=bool)
+        changed_mask = np.zeros(N, dtype=bool)
 
-        # ── Stage 2 라우팅 ──────────────────────────────────────────
         if (self.stage2 is not None and self.stage2.is_trained
                 and len(self.focus_classes) > 0):
-            route_mask = np.isin(s1_preds, self.focus_classes)
+
+            focus_arr = np.array(self.focus_classes, dtype=np.int32)
+
+            # ── Hard routing: Stage 1 이 focus 클래스로 예측한 샘플 ─
+            hard_route_mask = np.isin(s1_preds, focus_arr)
+
+            # ── Soft routing: Stage 1 이 non-focus 로 예측했지만
+            #                  focus 클래스 최대 확률 > threshold 인 샘플 ─
+            if soft_route_threshold > 0.0:
+                focus_max_prob = s1_global_probs[:, focus_arr].max(axis=1)  # (N,)
+                soft_route_mask = (~hard_route_mask) & (focus_max_prob > soft_route_threshold)
+
+            route_mask = hard_route_mask | soft_route_mask
+
             if route_mask.any():
                 X_routed = X[route_mask]
                 s2_preds_routed = self.stage2.predict(X_routed, batch_size=batch_size)
                 final_preds[route_mask] = s2_preds_routed
-                s2_preds_full = np.full(len(X), -1, dtype=np.int32)
+                s2_preds_full = np.full(N, -1, dtype=np.int32)
                 s2_preds_full[route_mask] = s2_preds_routed
                 changed_mask[route_mask] = s2_preds_routed != s1_preds[route_mask]
+        else:
+            route_mask = hard_route_mask  # all-False
 
         return final_preds, {
             "s1_preds": s1_preds,
+            "s1_global_probs": s1_global_probs,
             "route_mask": route_mask,
+            "hard_route_mask": hard_route_mask,
+            "soft_route_mask": soft_route_mask,
             "s2_preds": s2_preds_full,
             "changed_mask": changed_mask,
         }
@@ -1012,6 +1058,10 @@ def main():
                         help="Stage2MoE 각 expert 의 target 클래스 손실 가중치 배수")
     parser.add_argument("--s2_min_samples", type=int, default=10,
                         help="Stage2MoE expert 학습에 필요한 최소 샘플 수")
+    parser.add_argument("--soft_route_threshold", type=float, default=0.0,
+                        help="Stage 1 이 non-focus 클래스로 예측했더라도, "
+                             "focus 클래스 최대 확률이 이 값 초과이면 Stage 2 로 추가 라우팅. "
+                             "0.0=비활성화. 추천 시작값: 0.1")
     parser.add_argument("--model", type=int, default=2, choices=[0, 1, 2],
                         help="0: baseline only, 1: cascade only, 2: both")
     args = parser.parse_args()
@@ -1227,37 +1277,52 @@ def main():
     cascade_preds = None
     if cascade is not None:
         t0 = time.time()
-        cascade_preds, route_info = cascade.predict(X_test, batch_size=args.batch_size)
+        cascade_preds, route_info = cascade.predict(
+            X_test, batch_size=args.batch_size,
+            soft_route_threshold=args.soft_route_threshold,
+        )
         acc = accuracy_score(y_test, cascade_preds)
+        n_hard = int(route_info["hard_route_mask"].sum())
+        n_soft = int(route_info["soft_route_mask"].sum())
         n_routed = int(route_info["route_mask"].sum())
         n_changed = int(route_info["changed_mask"].sum())
         logger.info(f"\n--- Cascade Classifier ---")
         logger.info(f"Accuracy: {acc:.4f} | eval time: {time.time() - t0:.2f}s")
         logger.info(
-            f"Routing | routed to Stage 2: {n_routed:,}/{len(y_test):,} "
-            f"({100*n_routed/len(y_test):.2f}%)"
+            f"Routing | hard={n_hard:,}  soft={n_soft:,}  "
+            f"total={n_routed:,}/{len(y_test):,} ({100*n_routed/len(y_test):.2f}%)"
         )
         logger.info(
             f"Routing | Stage 2 changed prediction: {n_changed:,}/{n_routed:,} "
             f"({100*n_changed/max(n_routed,1):.2f}% of routed)"
         )
 
-        # focus 클래스별 라우팅 정확도
+        # focus 클래스별 라우팅 분석
         if n_routed > 0:
-            logger.info("Routing accuracy per focus class (Stage 1 predicted → truth):")
-            route_mask = route_info["route_mask"]
-            s1_routed = route_info["s1_preds"][route_mask]
-            y_routed = y_test[route_mask]
+            logger.info("Routing analysis per focus class:")
+            s1_preds_all = route_info["s1_preds"]
+            final_preds_all = cascade_preds
             for fc in cascade.focus_classes:
-                s1_fc_mask = s1_routed == fc
-                if s1_fc_mask.sum() > 0:
-                    correct = (y_routed[s1_fc_mask] == fc).sum()
-                    logger.info(
-                        f"  Stage1 predicted '{class_names[fc]}': "
-                        f"{int(s1_fc_mask.sum())} samples, "
-                        f"truly '{class_names[fc]}'={correct} "
-                        f"({100*correct/s1_fc_mask.sum():.1f}%)"
-                    )
+                # Hard-routed (Stage 1 predicted fc)
+                hard_fc = (s1_preds_all == fc)
+                hard_n = int(hard_fc.sum())
+                hard_correct = int((y_test[hard_fc] == fc).sum()) if hard_n > 0 else 0
+                # True fc samples in test
+                true_n = int((y_test == fc).sum())
+                # How many true fc reached Stage 2 via hard route
+                true_hard_reached = int(((s1_preds_all == fc) & (y_test == fc)).sum())
+                # How many true fc reached Stage 2 via soft route
+                soft_mask = route_info["soft_route_mask"]
+                true_soft_reached = int((soft_mask & (y_test == fc)).sum()) if n_soft > 0 else 0
+                # Final predictions as fc
+                pred_as_fc = int((final_preds_all == fc).sum())
+                logger.info(
+                    f"  {class_names[fc]:35s} "
+                    f"true={true_n} | "
+                    f"hard_routed={hard_n}(precision={100*hard_correct/max(hard_n,1):.1f}%) | "
+                    f"true_reached=hard:{true_hard_reached}+soft:{true_soft_reached} | "
+                    f"final_pred_as={pred_as_fc}"
+                )
 
         logger.info("\n" + classification_report(
             y_test, cascade_preds,
