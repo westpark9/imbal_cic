@@ -1,0 +1,166 @@
+2026-04-09 14:54:10,013 [INFO] XGBoost device: cuda
+2026-04-09 14:54:10,013 [INFO] CSV split config: forced random split (6:2:2). For UNSW, training/testing file boundary is preserved.
+2026-04-09 14:54:10,014 [INFO] Loading [1/8]: 1_Monday-WorkingHours.pcap_ISCX.csv
+2026-04-09 14:54:12,127 [INFO] Loading [2/8]: 2_Tuesday-WorkingHours.pcap_ISCX.csv
+2026-04-09 14:54:13,957 [INFO] Loading [3/8]: 3_Wednesday-workingHours.pcap_ISCX.csv
+2026-04-09 14:54:16,616 [INFO] Loading [4/8]: 4_Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv
+2026-04-09 14:54:17,225 [INFO] Loading [5/8]: 5_Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv
+2026-04-09 14:54:18,296 [INFO] Loading [6/8]: 6_Friday-WorkingHours-Morning.pcap_ISCX.csv
+2026-04-09 14:54:19,016 [INFO] Loading [7/8]: 7_Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv
+2026-04-09 14:54:20,001 [INFO] Loading [8/8]: 8_Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv
+2026-04-09 14:54:24,051 [INFO] Removed 8 zero-variance feature columns.
+2026-04-09 14:54:25,468 [INFO] Per-file split rows | 1_Monday-WorkingHours.pcap_ISCX.csv: train=318509, val=105757, test=105588
+2026-04-09 14:54:25,480 [INFO] Per-file split rows | 2_Tuesday-WorkingHours.pcap_ISCX.csv: train=267427, val=89105, test=89176
+2026-04-09 14:54:25,499 [INFO] Per-file split rows | 3_Wednesday-workingHours.pcap_ISCX.csv: train=414862, val=138392, test=138441
+2026-04-09 14:54:25,504 [INFO] Per-file split rows | 4_Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv: train=102077, val=34159, test=34110
+2026-04-09 14:54:25,513 [INFO] Per-file split rows | 5_Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv: train=173395, val=57477, test=57712
+2026-04-09 14:54:25,519 [INFO] Per-file split rows | 6_Friday-WorkingHours-Morning.pcap_ISCX.csv: train=114337, val=38392, test=38276
+2026-04-09 14:54:25,527 [INFO] Per-file split rows | 7_Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv: train=171775, val=57356, test=57321
+2026-04-09 14:54:25,534 [INFO] Per-file split rows | 8_Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv: train=135249, val=45239, test=45253
+2026-04-09 14:54:26,205 [INFO] Dataset type: cic2017
+2026-04-09 14:54:26,205 [INFO] X shape: (2829385, 70), num_classes: 15
+2026-04-09 14:54:26,205 [INFO] Class names: ['benign', 'bot', 'ddos', 'dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'portscan', 'ssh-patator', 'web-attack-�-brute-force', 'web-attack-�-sql-injection', 'web-attack-�-xss']
+2026-04-09 14:54:26,205 [INFO] Family IDs: {0: 'Normal', 1: 'Group1', 2: 'Group2', 3: 'Group3', 4: 'Group4'}
+2026-04-09 14:54:26,205 [INFO] Using preassigned split_tags from loaded data.
+2026-04-09 14:54:26,449 [INFO] Split class coverage | missing_in_train=[] | missing_in_val=[] | missing_in_test=[]
+2026-04-09 14:54:26,487 [INFO] 
+=== Baseline Probe for Confusion Matrix (on validation set) ===
+2026-04-09 14:54:43,180 [INFO] Saved baseline validation confusion matrix to results/logs_tailguard_v9_20260409_145410/baseline_confusion_matrix_val.csv
+2026-04-09 14:54:43,180 [INFO] Saved baseline validation confusion pairs to results/logs_tailguard_v9_20260409_145410/baseline_confusion_pairs_val.csv
+2026-04-09 14:54:43,180 [INFO] Saved attack-only count confusion csv to results/logs_tailguard_v9_20260409_145410/baseline_confusion_matrix_val_attack_count.csv
+2026-04-09 14:54:43,180 [INFO] Saved attack-only count confusion png to results/logs_tailguard_v9_20260409_145410/baseline_confusion_matrix_val_attack_count.png
+2026-04-09 14:54:43,180 [INFO] Top confusion pairs (val):
+2026-04-09 14:54:43,181 [INFO]   web-attack-�-brute-force <-> web-attack-�-xss | score_norm=0.8362 | count_sum=131 (i->j=38, j->i=93)
+2026-04-09 14:54:43,181 [INFO]   dos-slowhttptest <-> dos-slowloris | score_norm=0.0026 | count_sum=3 (i->j=1, j->i=2)
+2026-04-09 14:54:43,181 [INFO]   dos-goldeneye <-> dos-hulk | score_norm=0.0020 | count_sum=7 (i->j=4, j->i=3)
+2026-04-09 14:54:43,181 [INFO]   dos-hulk <-> portscan | score_norm=0.0002 | count_sum=7 (i->j=1, j->i=6)
+2026-04-09 14:54:43,181 [INFO]   ddos <-> dos-hulk | score_norm=0.0001 | count_sum=2 (i->j=1, j->i=1)
+2026-04-09 14:54:43,181 [INFO]   portscan <-> web-attack-�-brute-force | score_norm=0.0000 | count_sum=1 (i->j=1, j->i=0)
+2026-04-09 14:54:43,181 [INFO] Confusion-focus class IDs for extra expert: [2, 3, 4, 5, 6, 10, 12, 14]
+2026-04-09 14:54:43,183 [INFO] Planned pair specialists: 2
+2026-04-09 14:54:43,183 [INFO] Planned low-recall rescue experts: 2
+2026-04-09 14:54:43,183 [INFO] Planned rare-bundle classes: [8, 9, 13, 14]
+2026-04-09 14:54:43,183 [INFO] 
+=== Training baseline single XGBoost ===
+2026-04-09 14:54:43,183 [INFO] Reusing baseline probe model for baseline evaluation.
+2026-04-09 14:54:43,183 [INFO] 
+=== Training FAR-MoE ===
+2026-04-09 14:54:43,280 [INFO] Training coarse family router...
+2026-04-09 14:54:48,456 [INFO] Pair specialist 1: targets=['portscan', 'web-attack-�-brute-force', 'web-attack-�-xss'] | hard_neg=[] | score_norm=0.8362
+2026-04-09 14:54:48,456 [INFO] Pair specialist 2: targets=['dos-slowhttptest', 'dos-slowloris'] | hard_neg=[] | score_norm=0.0026
+2026-04-09 14:54:48,457 [INFO] Low-recall rescue 1: targets=['web-attack-�-sql-injection'] | hard_neg=[] | min_recall=0.0000
+2026-04-09 14:54:48,457 [INFO] Low-recall rescue 2: targets=['web-attack-�-xss'] | hard_neg=['web-attack-�-brute-force'] | min_recall=0.2901
+2026-04-09 14:54:48,457 [INFO] Rare bundle classes: ['heartbleed', 'infiltration', 'web-attack-�-sql-injection', 'web-attack-�-xss']
+2026-04-09 14:54:48,457 [INFO] Training expert [00] Anchor_Global | feature_dim=70 | target_classes=None | extra_negatives=[]
+2026-04-09 14:55:03,979 [INFO] Training expert [01] Pair_1 | feature_dim=70 | target_classes=[10, 12, 14] | extra_negatives=[]
+2026-04-09 14:55:04,479 [INFO] Training expert [02] Pair_2 | feature_dim=70 | target_classes=[5, 6] | extra_negatives=[]
+2026-04-09 14:55:04,796 [INFO] Training expert [03] LowRecall_1 | feature_dim=70 | target_classes=[13] | extra_negatives=[]
+2026-04-09 14:55:04,800 [WARNING] [LowRecall_1] Only one class in subset; skipping expert.
+2026-04-09 14:55:04,800 [WARNING] Skipped expert LowRecall_1 because training was unsuccessful.
+2026-04-09 14:55:04,800 [INFO] Training expert [04] LowRecall_2 | feature_dim=70 | target_classes=[14] | extra_negatives=[12]
+2026-04-09 14:55:04,899 [INFO] Training expert [05] RareBundle | feature_dim=70 | target_classes=[8, 9, 13, 14] | extra_negatives=[]
+2026-04-09 14:55:05,186 [INFO] Final trained experts:
+2026-04-09 14:55:05,186 [INFO]   [00] Anchor_Global            | local_classes=['benign', 'bot', 'ddos', 'dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'portscan', 'ssh-patator', 'web-attack-�-brute-force', 'web-attack-�-sql-injection', 'web-attack-�-xss'] | train_size=1697631 | val_acc=0.9989
+2026-04-09 14:55:05,186 [INFO]   [01] Pair_1                   | local_classes=['portscan', 'web-attack-�-brute-force', 'web-attack-�-xss'] | train_size=96654 | val_acc=0.9961
+2026-04-09 14:55:05,186 [INFO]   [02] Pair_2                   | local_classes=['dos-slowhttptest', 'dos-slowloris'] | train_size=6777 | val_acc=0.9956
+2026-04-09 14:55:05,186 [INFO]   [03] LowRecall_2              | local_classes=['web-attack-�-brute-force', 'web-attack-�-xss'] | train_size=1296 | val_acc=0.6000
+2026-04-09 14:55:05,186 [INFO]   [04] RareBundle               | local_classes=['heartbleed', 'infiltration', 'web-attack-�-sql-injection', 'web-attack-�-xss'] | train_size=433 | val_acc=1.0000
+2026-04-09 14:55:05,186 [INFO] Routing semantics: always include 1 anchor/generalist experts, plus up to 3 additional specialists per sample after OOD filtering.
+2026-04-09 14:55:05,186 [INFO] Fitting expert-specific competence models...
+2026-04-09 14:55:08,016 [INFO] Expert per-class validation metrics:
+2026-04-09 14:55:08,065 [INFO]   [Anchor_Global] coverage_samples=565877
+2026-04-09 14:55:08,065 [INFO]     class=benign | precision=0.9998 | recall=0.9993 | f1=0.9995 | support=454538
+2026-04-09 14:55:08,065 [INFO]     class=bot | precision=0.8895 | recall=0.7990 | f1=0.8418 | support=393
+2026-04-09 14:55:08,065 [INFO]     class=ddos | precision=0.9998 | recall=0.9999 | f1=0.9999 | support=25605
+2026-04-09 14:55:08,065 [INFO]     class=dos-goldeneye | precision=0.9976 | recall=0.9981 | f1=0.9978 | support=2059
+2026-04-09 14:55:08,065 [INFO]     class=dos-hulk | precision=0.9982 | recall=0.9996 | f1=0.9989 | support=46025
+2026-04-09 14:55:08,065 [INFO]     class=dos-slowhttptest | precision=0.9918 | recall=0.9945 | f1=0.9932 | support=1100
+2026-04-09 14:55:08,065 [INFO]     class=dos-slowloris | precision=0.9983 | recall=0.9957 | f1=0.9970 | support=1159
+2026-04-09 14:55:08,065 [INFO]     class=ftp-patator | precision=1.0000 | recall=1.0000 | f1=1.0000 | support=1588
+2026-04-09 14:55:08,065 [INFO]     class=heartbleed | precision=1.0000 | recall=0.5000 | f1=0.6667 | support=2
+2026-04-09 14:55:08,065 [INFO]     class=infiltration | precision=1.0000 | recall=0.8571 | f1=0.9231 | support=7
+2026-04-09 14:55:08,065 [INFO]     class=portscan | precision=0.9936 | recall=0.9997 | f1=0.9966 | support=31786
+2026-04-09 14:55:08,065 [INFO]     class=ssh-patator | precision=1.0000 | recall=1.0000 | f1=1.0000 | support=1179
+2026-04-09 14:55:08,065 [INFO]     class=web-attack-�-brute-force | precision=0.7324 | recall=0.8638 | f1=0.7927 | support=301
+2026-04-09 14:55:08,065 [INFO]     class=web-attack-�-sql-injection | precision=0.0000 | recall=0.0000 | f1=0.0000 | support=4
+2026-04-09 14:55:08,065 [INFO]     class=web-attack-�-xss | precision=0.5000 | recall=0.2901 | f1=0.3671 | support=131
+2026-04-09 14:55:08,072 [INFO]   [Pair_1] coverage_samples=32218
+2026-04-09 14:55:08,072 [INFO]     class=portscan | precision=1.0000 | recall=1.0000 | f1=1.0000 | support=31786
+2026-04-09 14:55:08,072 [INFO]     class=web-attack-�-brute-force | precision=0.7227 | recall=0.9003 | f1=0.8018 | support=301
+2026-04-09 14:55:08,072 [INFO]     class=web-attack-�-xss | precision=0.4912 | recall=0.2137 | f1=0.2979 | support=131
+2026-04-09 14:55:08,074 [INFO]   [Pair_2] coverage_samples=2259
+2026-04-09 14:55:08,074 [INFO]     class=dos-slowhttptest | precision=0.9973 | recall=0.9991 | f1=0.9982 | support=1100
+2026-04-09 14:55:08,074 [INFO]     class=dos-slowloris | precision=0.9991 | recall=0.9974 | f1=0.9983 | support=1159
+2026-04-09 14:55:08,076 [INFO]   [LowRecall_2] coverage_samples=432
+2026-04-09 14:55:08,076 [INFO]     class=web-attack-�-brute-force | precision=0.8550 | recall=0.3721 | f1=0.5185 | support=301
+2026-04-09 14:55:08,076 [INFO]     class=web-attack-�-xss | precision=0.3721 | recall=0.8550 | f1=0.5185 | support=131
+2026-04-09 14:55:08,078 [INFO]   [RareBundle] coverage_samples=144
+2026-04-09 14:55:08,078 [INFO]     class=heartbleed | precision=1.0000 | recall=1.0000 | f1=1.0000 | support=2
+2026-04-09 14:55:08,078 [INFO]     class=infiltration | precision=1.0000 | recall=1.0000 | f1=1.0000 | support=7
+2026-04-09 14:55:08,078 [INFO]     class=web-attack-�-sql-injection | precision=0.8000 | recall=1.0000 | f1=0.8889 | support=4
+2026-04-09 14:55:08,078 [INFO]     class=web-attack-�-xss | precision=1.0000 | recall=0.9924 | f1=0.9962 | support=131
+2026-04-09 14:55:08,422 [INFO]   [Anchor_Global] val_acc_scoped=0.9990 | val_acc_global=0.9990 | coef(prior,margin,entropy,ood)=(-3.414, -1.975, -2.916, 2.189)
+2026-04-09 14:55:08,487 [INFO]   [Pair_1] val_acc_scoped=0.9958 | val_acc_global=0.0567 | coef(prior,margin,entropy,ood)=(1.090, -3.313, -7.844, -0.488)
+2026-04-09 14:55:08,505 [INFO]   [Pair_2] val_acc_scoped=0.9982 | val_acc_global=0.0040 | coef(prior,margin,entropy,ood)=(1.120, 0.491, -5.427, -0.001)
+2026-04-09 14:55:08,519 [INFO]   [LowRecall_2] val_acc_scoped=0.5185 | val_acc_global=0.0004 | coef(prior,margin,entropy,ood)=(-0.028, -0.765, -1.653, -0.079)
+2026-04-09 14:55:08,535 [INFO]   [RareBundle] val_acc_scoped=0.9931 | val_acc_global=0.0003 | coef(prior,margin,entropy,ood)=(0.060, 0.833, -3.240, -0.006)
+2026-04-09 14:55:08,535 [INFO] 
+========================================================================
+2026-04-09 14:55:08,535 [INFO] FINAL EVALUATION ON TEST SET
+2026-04-09 14:55:08,535 [INFO] ========================================================================
+2026-04-09 14:55:09,690 [INFO] 
+--- Baseline Single XGBoost ---
+2026-04-09 14:55:09,691 [INFO] Accuracy: 0.9989 | eval time: 1.16s
+2026-04-09 14:55:09,727 [INFO] 
+                            precision    recall  f1-score   support
+
+                    benign     0.9997    0.9994    0.9995    454538
+                       bot     0.9146    0.7634    0.8322       393
+                      ddos     1.0000    0.9998    0.9999     25606
+             dos-goldeneye     0.9976    0.9966    0.9971      2059
+                  dos-hulk     0.9983    0.9997    0.9990     46025
+          dos-slowhttptest     0.9855    0.9891    0.9873      1100
+             dos-slowloris     0.9965    0.9914    0.9939      1159
+               ftp-patator     1.0000    0.9994    0.9997      1588
+                heartbleed     1.0000    1.0000    1.0000         2
+              infiltration     1.0000    0.5714    0.7273         7
+                  portscan     0.9941    0.9995    0.9968     31786
+               ssh-patator     1.0000    1.0000    1.0000      1179
+  web-attack-�-brute-force     0.7291    0.8405    0.7809       301
+web-attack-�-sql-injection     0.0000    0.0000    0.0000         4
+          web-attack-�-xss     0.4286    0.2769    0.3364       130
+
+                  accuracy                         0.9989    565877
+                 macro avg     0.8696    0.8285    0.8433    565877
+              weighted avg     0.9989    0.9989    0.9989    565877
+
+2026-04-09 14:55:14,549 [INFO] 
+--- FAR-MoE ---
+2026-04-09 14:55:14,549 [INFO] Accuracy: 0.9370 | eval time: 4.82s
+2026-04-09 14:55:14,583 [INFO] 
+                            precision    recall  f1-score   support
+
+                    benign     1.0000    0.9962    0.9981    454538
+                       bot     1.0000    0.0051    0.0101       393
+                      ddos     1.0000    0.3605    0.5300     25606
+             dos-goldeneye     1.0000    0.6498    0.7878      2059
+                  dos-hulk     1.0000    0.6502    0.7880     46025
+          dos-slowhttptest     0.3094    0.9864    0.4710      1100
+             dos-slowloris     0.1702    0.9741    0.2897      1159
+               ftp-patator     1.0000    0.9805    0.9901      1588
+                heartbleed     1.0000    1.0000    1.0000         2
+              infiltration     0.5000    0.5714    0.5333         7
+                  portscan     0.6397    0.9998    0.7802     31786
+               ssh-patator     1.0000    0.9924    0.9962      1179
+  web-attack-�-brute-force     0.6552    0.1894    0.2938       301
+web-attack-�-sql-injection     0.1538    0.5000    0.2353         4
+          web-attack-�-xss     0.0130    0.9923    0.0257       130
+
+                  accuracy                         0.9370    565877
+                 macro avg     0.6961    0.7232    0.5820    565877
+              weighted avg     0.9763    0.9370    0.9430    565877
+
+2026-04-09 14:55:14,587 [INFO] Saved expert selection summary to results/logs_tailguard_v9_20260409_145410/expert_selection_summary.csv
+2026-04-09 14:55:14,611 [INFO] Saved per-class comparison to results/logs_tailguard_v9_20260409_145410/baseline_vs_moe_per_class.csv
+2026-04-09 14:55:14,611 [INFO] 
+Total elapsed time: 64.60s

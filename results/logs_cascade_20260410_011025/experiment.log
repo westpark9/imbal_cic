@@ -1,0 +1,131 @@
+2026-04-10 01:10:25,459 [INFO] XGBoost device: cuda
+2026-04-10 01:10:25,459 [INFO] random_split=True
+2026-04-10 01:10:25,459 [INFO] CSV split config: attack=episode 6:2:2, normal=chronological 6:2:2
+2026-04-10 01:10:25,459 [INFO] Loading [1/8]: 1_Monday-WorkingHours.pcap_ISCX.csv
+2026-04-10 01:10:27,628 [INFO] Loading [2/8]: 2_Tuesday-WorkingHours.pcap_ISCX.csv
+2026-04-10 01:10:29,372 [INFO] Loading [3/8]: 3_Wednesday-workingHours.pcap_ISCX.csv
+2026-04-10 01:10:32,538 [INFO] Loading [4/8]: 4_Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv
+2026-04-10 01:10:33,143 [INFO] Loading [5/8]: 5_Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv
+2026-04-10 01:10:34,160 [INFO] Loading [6/8]: 6_Friday-WorkingHours-Morning.pcap_ISCX.csv
+2026-04-10 01:10:34,844 [INFO] Loading [7/8]: 7_Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv
+2026-04-10 01:10:35,805 [INFO] Loading [8/8]: 8_Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv
+2026-04-10 01:10:36,648 [INFO] Per-file split rows | 1_Monday-WorkingHours.pcap_ISCX.csv: train=317912, val=105971, test=105971
+2026-04-10 01:10:36,648 [INFO] Per-file split rows | 2_Tuesday-WorkingHours.pcap_ISCX.csv: train=267529, val=89135, test=89044
+2026-04-10 01:10:36,648 [INFO] Per-file split rows | 3_Wednesday-workingHours.pcap_ISCX.csv: train=415098, val=138336, test=138261
+2026-04-10 01:10:36,648 [INFO] Per-file split rows | 4_Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv: train=102208, val=34068, test=34070
+2026-04-10 01:10:36,648 [INFO] Per-file split rows | 5_Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv: train=173151, val=57717, test=57716
+2026-04-10 01:10:36,648 [INFO] Per-file split rows | 6_Friday-WorkingHours-Morning.pcap_ISCX.csv: train=114605, val=38202, test=38198
+2026-04-10 01:10:36,648 [INFO] Per-file split rows | 7_Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv: train=171891, val=57301, test=57260
+2026-04-10 01:10:36,648 [INFO] Per-file split rows | 8_Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv: train=135445, val=45150, test=45146
+2026-04-10 01:10:38,397 [INFO] Removed 8 zero-variance feature columns.
+2026-04-10 01:10:38,833 [INFO] --random_split: 'split_tags' 제거 → stratified random split 사용
+2026-04-10 01:10:38,835 [INFO] --random_split: 'timestamps' 제거 → stratified random split 사용
+2026-04-10 01:10:39,477 [INFO] Dataset type: cic2017
+2026-04-10 01:10:39,477 [INFO] X shape: (2829385, 70), num_classes: 15
+2026-04-10 01:10:39,477 [INFO] Class names: ['bot', 'ddos', 'dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'portscan', 'ssh-patator', 'web-attack-�-brute-force', 'web-attack-�-sql-injection', 'web-attack-�-xss']
+2026-04-10 01:10:39,477 [INFO] Normal class IDs: [9] (['normal'])
+2026-04-10 01:10:39,477 [INFO] Using stratified random split (6:2:2).
+2026-04-10 01:10:41,605 [INFO] Split class coverage | missing_in_train=[] | missing_in_val=[] | missing_in_test=[]
+2026-04-10 01:10:41,647 [INFO] Split sizes | train=1,697,631, val=565,877, test=565,877
+2026-04-10 01:10:41,647 [INFO] 
+=== Baseline Probe: val confusion matrix 계산 ===
+2026-04-10 01:10:57,434 [WARNING] matplotlib unavailable, skipping heatmap: No module named 'matplotlib'
+2026-04-10 01:10:57,434 [INFO] Top confusion pairs (val):
+2026-04-10 01:10:57,434 [INFO]   web-attack-�-xss -> web-attack-�-brute-force | count=93
+2026-04-10 01:10:57,434 [INFO]   web-attack-�-brute-force -> web-attack-�-xss | count=33
+2026-04-10 01:10:57,434 [INFO]   portscan -> dos-hulk | count=12
+2026-04-10 01:10:57,434 [INFO]   dos-hulk -> dos-goldeneye | count=5
+2026-04-10 01:10:57,434 [INFO]   dos-goldeneye -> dos-hulk | count=4
+2026-04-10 01:10:57,434 [INFO]   dos-slowhttptest -> dos-slowloris | count=3
+2026-04-10 01:10:57,434 [INFO]   dos-goldeneye -> dos-slowhttptest | count=2
+2026-04-10 01:10:57,434 [INFO]   portscan -> web-attack-�-brute-force | count=2
+2026-04-10 01:10:57,434 [INFO]   dos-slowhttptest -> web-attack-�-brute-force | count=2
+2026-04-10 01:10:57,434 [INFO]   dos-hulk -> portscan | count=1
+2026-04-10 01:10:57,434 [INFO] Stage 2 focus class IDs: [2, 3, 4, 5, 10, 12, 14]
+2026-04-10 01:10:57,434 [INFO] Stage 2 focus class names: ['dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'portscan', 'web-attack-�-brute-force', 'web-attack-�-xss']
+2026-04-10 01:10:57,435 [INFO] 
+=== Baseline: single XGBoost ===
+2026-04-10 01:10:57,435 [INFO] Probe model 재사용 (baseline = probe).
+2026-04-10 01:10:57,435 [INFO] 
+=== Cascade Classifier ===
+2026-04-10 01:10:57,435 [INFO] [Cascade] Stage 2 focus=['dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'portscan', 'web-attack-�-brute-force', 'web-attack-�-xss'] + normal, balanced weights
+2026-04-10 01:11:04,764 [INFO] [Cascade] Stage 2 internal val_acc=0.9967
+2026-04-10 01:11:04,764 [INFO] [Cascade] Stage 2 local_classes=['dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'normal', 'portscan', 'web-attack-�-brute-force', 'web-attack-�-xss']
+2026-04-10 01:11:04,764 [INFO] 
+========================================================================
+2026-04-10 01:11:04,764 [INFO] FINAL EVALUATION ON TEST SET
+2026-04-10 01:11:04,764 [INFO] ========================================================================
+2026-04-10 01:11:05,171 [INFO] 
+--- Baseline Single XGBoost ---
+2026-04-10 01:11:05,171 [INFO] Accuracy: 0.9989 | eval time: 0.41s
+2026-04-10 01:11:05,250 [INFO] 
+                            precision    recall  f1-score   support
+
+                       bot     0.9058    0.7099    0.7960       393
+                      ddos     1.0000    0.9998    0.9999     25606
+             dos-goldeneye     0.9985    0.9966    0.9976      2059
+                  dos-hulk     0.9985    0.9999    0.9992     46025
+          dos-slowhttptest     0.9863    0.9836    0.9850      1100
+             dos-slowloris     0.9957    0.9940    0.9948      1159
+               ftp-patator     1.0000    0.9994    0.9997      1588
+                heartbleed     1.0000    1.0000    1.0000         2
+              infiltration     1.0000    0.7143    0.8333         7
+                    normal     0.9997    0.9993    0.9995    454538
+                  portscan     0.9939    0.9996    0.9967     31786
+               ssh-patator     1.0000    0.9992    0.9996      1179
+  web-attack-�-brute-force     0.7444    0.8804    0.8067       301
+web-attack-�-sql-injection     1.0000    0.7500    0.8571         4
+          web-attack-�-xss     0.5263    0.3077    0.3883       130
+
+                  accuracy                         0.9989    565877
+                 macro avg     0.9433    0.8889    0.9102    565877
+              weighted avg     0.9989    0.9989    0.9989    565877
+
+2026-04-10 01:11:05,703 [INFO] 
+--- Cascade Classifier ---
+2026-04-10 01:11:05,703 [INFO] Accuracy: 0.9989 | eval time: 0.45s
+2026-04-10 01:11:05,703 [INFO] Routing | routed to Stage 2: 82,798/565,877 (14.63%)
+2026-04-10 01:11:05,703 [INFO] Routing | Stage 2 changed prediction: 150/82,798 (0.18% of routed)
+2026-04-10 01:11:05,703 [INFO] Routing accuracy per focus class (Stage 1 predicted → truth):
+2026-04-10 01:11:05,705 [INFO]   Stage1 predicted 'dos-goldeneye': 2055 samples, truly 'dos-goldeneye'=2052 (99.9%)
+2026-04-10 01:11:05,705 [INFO]   Stage1 predicted 'dos-hulk': 46088 samples, truly 'dos-hulk'=46019 (99.9%)
+2026-04-10 01:11:05,705 [INFO]   Stage1 predicted 'dos-slowhttptest': 1097 samples, truly 'dos-slowhttptest'=1082 (98.6%)
+2026-04-10 01:11:05,705 [INFO]   Stage1 predicted 'dos-slowloris': 1157 samples, truly 'dos-slowloris'=1152 (99.6%)
+2026-04-10 01:11:05,706 [INFO]   Stage1 predicted 'portscan': 31969 samples, truly 'portscan'=31773 (99.4%)
+2026-04-10 01:11:05,706 [INFO]   Stage1 predicted 'web-attack-�-brute-force': 356 samples, truly 'web-attack-�-brute-force'=265 (74.4%)
+2026-04-10 01:11:05,706 [INFO]   Stage1 predicted 'web-attack-�-xss': 76 samples, truly 'web-attack-�-xss'=40 (52.6%)
+2026-04-10 01:11:05,785 [INFO] 
+                            precision    recall  f1-score   support
+
+                       bot     0.9058    0.7099    0.7960       393
+                      ddos     1.0000    0.9998    0.9999     25606
+             dos-goldeneye     0.9885    0.9981    0.9932      2059
+                  dos-hulk     0.9986    0.9994    0.9990     46025
+          dos-slowhttptest     0.9854    0.9845    0.9850      1100
+             dos-slowloris     0.9965    0.9940    0.9952      1159
+               ftp-patator     1.0000    0.9994    0.9997      1588
+                heartbleed     1.0000    1.0000    1.0000         2
+              infiltration     1.0000    0.7143    0.8333         7
+                    normal     0.9997    0.9993    0.9995    454538
+                  portscan     0.9939    0.9996    0.9967     31786
+               ssh-patator     1.0000    0.9992    0.9996      1179
+  web-attack-�-brute-force     0.8031    0.6910    0.7429       301
+web-attack-�-sql-injection     1.0000    0.7500    0.8571         4
+          web-attack-�-xss     0.4682    0.6231    0.5347       130
+
+                  accuracy                         0.9989    565877
+                 macro avg     0.9426    0.8974    0.9155    565877
+              weighted avg     0.9989    0.9989    0.9989    565877
+
+2026-04-10 01:11:05,858 [INFO] Saved per-class comparison to results/logs_cascade_20260410_011025/baseline_vs_cascade_per_class.csv
+2026-04-10 01:11:05,859 [INFO] 
+Focus class delta_f1 summary:
+2026-04-10 01:11:05,859 [INFO]   dos-goldeneye                            baseline_f1=0.9976 → cascade_f1=0.9932 delta=-0.0043 ↓
+2026-04-10 01:11:05,859 [INFO]   dos-hulk                                 baseline_f1=0.9992 → cascade_f1=0.9990 delta=-0.0002 ↓
+2026-04-10 01:11:05,859 [INFO]   dos-slowhttptest                         baseline_f1=0.9850 → cascade_f1=0.9850 delta=+0.0000 ↑
+2026-04-10 01:11:05,859 [INFO]   dos-slowloris                            baseline_f1=0.9948 → cascade_f1=0.9952 delta=+0.0004 ↑
+2026-04-10 01:11:05,859 [INFO]   portscan                                 baseline_f1=0.9967 → cascade_f1=0.9967 delta=-0.0000 ↓
+2026-04-10 01:11:05,859 [INFO]   web-attack-�-brute-force                 baseline_f1=0.8067 → cascade_f1=0.7429 delta=-0.0638 ↓
+2026-04-10 01:11:05,859 [INFO]   web-attack-�-xss                         baseline_f1=0.3883 → cascade_f1=0.5347 delta=+0.1463 ↑
+2026-04-10 01:11:05,859 [INFO] 
+Total elapsed time: 40.40s
