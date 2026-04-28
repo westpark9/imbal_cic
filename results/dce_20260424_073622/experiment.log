@@ -1,0 +1,395 @@
+2026-04-24 07:36:22,194 INFO     Results dir : results/dce_20260424_073622
+2026-04-24 07:36:22,194 INFO     Arguments   : {'datasets': ['cifar100tasks'], 'cic_pkl': 'data/cic2017_proc.pkl', 'unsw_pkl': 'data/unswnb15_proc.pkl', 'n_estimators': 200, 'max_depth': 6, 'learning_rate': 0.1, 'xgb_subsample': 0.8, 'colsample_bytree': 0.8, 'tail_power': 2.0, 'n_pseudo_per_class': 300, 'router_C': 1.0, 'imbalance_factor': 100, 'subsample_train': None, 'c100_n_balanced': 10, 'c100_ir_medium': 50, 'c100_ir_hard': 100, 'c100_pca': 256, 'tree_method': 'hist', 'device': 'cuda', 'seed': 42}
+2026-04-24 07:36:22,194 INFO     XGBoost ver : 3.2.0
+2026-04-24 07:36:22,194 INFO     
+############################################################
+2026-04-24 07:36:22,194 INFO     # Dataset: cifar100tasks
+2026-04-24 07:36:22,194 INFO     ############################################################
+2026-04-24 07:36:23,530 INFO     CIFAR-100 superclass task structure:
+2026-04-24 07:36:23,530 INFO       Task  0  aquatic_mammals                      [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,530 INFO       Task  1  fish                                 [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,530 INFO       Task  2  flowers                              [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:36:23,530 INFO       Task  3  food_containers                      [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,530 INFO       Task  4  fruit_and_vegetables                 [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:36:23,531 INFO       Task  5  household_electrical_devices         [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,531 INFO       Task  6  household_furniture                  [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:36:23,531 INFO       Task  7  insects                              [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:36:23,531 INFO       Task  8  large_carnivores                     [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,531 INFO       Task  9  large_outdoor_man_made               [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:36:23,531 INFO       Task 10  large_outdoor_natural                [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:36:23,531 INFO       Task 11  large_omnivores_herbivores           [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,531 INFO       Task 12  medium_mammals                       [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:36:23,531 INFO       Task 13  non_insect_invertebrates             [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:36:23,531 INFO       Task 14  people                               [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:36:23,531 INFO       Task 15  reptiles                             [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,531 INFO       Task 16  small_mammals                        [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,531 INFO       Task 17  trees                                [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,531 INFO       Task 18  vehicles_1                           [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:36:23,531 INFO       Task 19  vehicles_2                           [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:36:23,531 INFO       Total training samples : 32610
+2026-04-24 07:36:23,531 INFO       Balanced superclasses  : ['aquatic_mammals', 'trees', 'reptiles', 'fish', 'large_carnivores', 'household_electrical_devices', 'large_omnivores_herbivores', 'food_containers', 'vehicles_1', 'small_mammals']
+2026-04-24 07:36:23,531 INFO       IR=50 superclasses : ['non_insect_invertebrates', 'flowers', 'large_outdoor_man_made', 'vehicles_2', 'fruit_and_vegetables']
+2026-04-24 07:36:23,531 INFO       IR=100 superclasses : ['medium_mammals', 'insects', 'large_outdoor_natural', 'people', 'household_furniture']
+2026-04-24 07:36:23,609 INFO     Applying PCA(256)...
+2026-04-24 07:36:29,658 INFO     Task regimes (train split counts):
+2026-04-24 07:36:29,658 INFO       Task  0  aquatic_mammals                      [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,659 INFO       Task  1  fish                                 [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,659 INFO       Task  2  flowers                              [IR=50       ]  min=  8  max=400  total=635
+2026-04-24 07:36:29,659 INFO       Task  3  food_containers                      [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,659 INFO       Task  4  fruit_and_vegetables                 [IR=50       ]  min=  8  max=400  total=635
+2026-04-24 07:36:29,659 INFO       Task  5  household_electrical_devices         [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,659 INFO       Task  6  household_furniture                  [IR=100      ]  min=  4  max=400  total=582
+2026-04-24 07:36:29,659 INFO       Task  7  insects                              [IR=100      ]  min=  4  max=400  total=582
+2026-04-24 07:36:29,659 INFO       Task  8  large_carnivores                     [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,659 INFO       Task  9  large_outdoor_man_made               [IR=50       ]  min=  8  max=400  total=635
+2026-04-24 07:36:29,659 INFO       Task 10  large_outdoor_natural                [IR=100      ]  min=  4  max=400  total=583
+2026-04-24 07:36:29,659 INFO       Task 11  large_omnivores_herbivores           [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,659 INFO       Task 12  medium_mammals                       [IR=100      ]  min=  4  max=400  total=583
+2026-04-24 07:36:29,659 INFO       Task 13  non_insect_invertebrates             [IR=50       ]  min=  8  max=400  total=635
+2026-04-24 07:36:29,660 INFO       Task 14  people                               [IR=100      ]  min=  4  max=400  total=583
+2026-04-24 07:36:29,660 INFO       Task 15  reptiles                             [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,660 INFO       Task 16  small_mammals                        [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,660 INFO       Task 17  trees                                [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,660 INFO       Task 18  vehicles_1                           [balanced    ]  min=400  max=400  total=2000
+2026-04-24 07:36:29,660 INFO       Task 19  vehicles_2                           [IR=50       ]  min=  8  max=400  total=635
+2026-04-24 07:36:29,660 INFO     
+============================================================
+2026-04-24 07:36:29,660 INFO     Dataset : cifar100tasks
+2026-04-24 07:36:29,660 INFO     Train   : (26088, 256)  Val: (6522, 256)  Test: (10000, 256)
+2026-04-24 07:36:29,660 INFO     Classes : 100
+2026-04-24 07:36:29,660 INFO       apple: train=21
+2026-04-24 07:36:29,661 INFO       aquarium_fish: train=400
+2026-04-24 07:36:29,661 INFO       baby: train=4
+2026-04-24 07:36:29,661 INFO       bear: train=400
+2026-04-24 07:36:29,661 INFO       beaver: train=400
+2026-04-24 07:36:29,661 INFO       bed: train=12
+2026-04-24 07:36:29,661 INFO       bee: train=126
+2026-04-24 07:36:29,661 INFO       beetle: train=400
+2026-04-24 07:36:29,661 INFO       bicycle: train=400
+2026-04-24 07:36:29,661 INFO       bottle: train=400
+2026-04-24 07:36:29,661 INFO       bowl: train=400
+2026-04-24 07:36:29,661 INFO       boy: train=127
+2026-04-24 07:36:29,661 INFO       bridge: train=21
+2026-04-24 07:36:29,661 INFO       bus: train=400
+2026-04-24 07:36:29,661 INFO       butterfly: train=4
+2026-04-24 07:36:29,661 INFO       camel: train=400
+2026-04-24 07:36:29,661 INFO       can: train=400
+2026-04-24 07:36:29,661 INFO       castle: train=56
+2026-04-24 07:36:29,661 INFO       caterpillar: train=40
+2026-04-24 07:36:29,661 INFO       cattle: train=400
+2026-04-24 07:36:29,661 INFO       chair: train=400
+2026-04-24 07:36:29,661 INFO       chimpanzee: train=400
+2026-04-24 07:36:29,661 INFO       clock: train=400
+2026-04-24 07:36:29,661 INFO       cloud: train=40
+2026-04-24 07:36:29,661 INFO       cockroach: train=12
+2026-04-24 07:36:29,661 INFO       couch: train=40
+2026-04-24 07:36:29,661 INFO       crab: train=400
+2026-04-24 07:36:29,661 INFO       crocodile: train=400
+2026-04-24 07:36:29,661 INFO       cup: train=400
+2026-04-24 07:36:29,661 INFO       dinosaur: train=400
+2026-04-24 07:36:29,661 INFO       dolphin: train=400
+2026-04-24 07:36:29,661 INFO       elephant: train=400
+2026-04-24 07:36:29,661 INFO       flatfish: train=400
+2026-04-24 07:36:29,662 INFO       forest: train=4
+2026-04-24 07:36:29,662 INFO       fox: train=40
+2026-04-24 07:36:29,662 INFO       girl: train=12
+2026-04-24 07:36:29,662 INFO       hamster: train=400
+2026-04-24 07:36:29,662 INFO       house: train=400
+2026-04-24 07:36:29,662 INFO       kangaroo: train=400
+2026-04-24 07:36:29,662 INFO       keyboard: train=400
+2026-04-24 07:36:29,662 INFO       lamp: train=400
+2026-04-24 07:36:29,662 INFO       lawn_mower: train=8
+2026-04-24 07:36:29,662 INFO       leopard: train=400
+2026-04-24 07:36:29,662 INFO       lion: train=400
+2026-04-24 07:36:29,662 INFO       lizard: train=400
+2026-04-24 07:36:29,662 INFO       lobster: train=56
+2026-04-24 07:36:29,662 INFO       man: train=400
+2026-04-24 07:36:29,662 INFO       maple_tree: train=400
+2026-04-24 07:36:29,662 INFO       motorcycle: train=400
+2026-04-24 07:36:29,662 INFO       mountain: train=12
+2026-04-24 07:36:29,662 INFO       mouse: train=400
+2026-04-24 07:36:29,662 INFO       mushroom: train=150
+2026-04-24 07:36:29,662 INFO       oak_tree: train=400
+2026-04-24 07:36:29,662 INFO       orange: train=56
+2026-04-24 07:36:29,662 INFO       orchid: train=400
+2026-04-24 07:36:29,662 INFO       otter: train=400
+2026-04-24 07:36:29,662 INFO       palm_tree: train=400
+2026-04-24 07:36:29,662 INFO       pear: train=8
+2026-04-24 07:36:29,662 INFO       pickup_truck: train=400
+2026-04-24 07:36:29,662 INFO       pine_tree: train=400
+2026-04-24 07:36:29,662 INFO       plain: train=127
+2026-04-24 07:36:29,662 INFO       plate: train=400
+2026-04-24 07:36:29,662 INFO       poppy: train=8
+2026-04-24 07:36:29,662 INFO       porcupine: train=4
+2026-04-24 07:36:29,662 INFO       possum: train=400
+2026-04-24 07:36:29,662 INFO       rabbit: train=400
+2026-04-24 07:36:29,662 INFO       raccoon: train=127
+2026-04-24 07:36:29,663 INFO       ray: train=400
+2026-04-24 07:36:29,663 INFO       road: train=8
+2026-04-24 07:36:29,663 INFO       rocket: train=150
+2026-04-24 07:36:29,663 INFO       rose: train=150
+2026-04-24 07:36:29,663 INFO       sea: train=400
+2026-04-24 07:36:29,663 INFO       seal: train=400
+2026-04-24 07:36:29,663 INFO       shark: train=400
+2026-04-24 07:36:29,663 INFO       shrew: train=400
+2026-04-24 07:36:29,663 INFO       skunk: train=12
+2026-04-24 07:36:29,663 INFO       skyscraper: train=150
+2026-04-24 07:36:29,663 INFO       snail: train=150
+2026-04-24 07:36:29,663 INFO       snake: train=400
+2026-04-24 07:36:29,663 INFO       spider: train=8
+2026-04-24 07:36:29,663 INFO       squirrel: train=400
+2026-04-24 07:36:29,663 INFO       streetcar: train=400
+2026-04-24 07:36:29,663 INFO       sunflower: train=21
+2026-04-24 07:36:29,663 INFO       sweet_pepper: train=400
+2026-04-24 07:36:29,663 INFO       table: train=4
+2026-04-24 07:36:29,663 INFO       tank: train=56
+2026-04-24 07:36:29,663 INFO       telephone: train=400
+2026-04-24 07:36:29,663 INFO       television: train=400
+2026-04-24 07:36:29,663 INFO       tiger: train=400
+2026-04-24 07:36:29,663 INFO       tractor: train=21
+2026-04-24 07:36:29,663 INFO       train: train=400
+2026-04-24 07:36:29,663 INFO       trout: train=400
+2026-04-24 07:36:29,663 INFO       tulip: train=56
+2026-04-24 07:36:29,663 INFO       turtle: train=400
+2026-04-24 07:36:29,663 INFO       wardrobe: train=126
+2026-04-24 07:36:29,663 INFO       whale: train=400
+2026-04-24 07:36:29,663 INFO       willow_tree: train=400
+2026-04-24 07:36:29,663 INFO       wolf: train=400
+2026-04-24 07:36:29,663 INFO       woman: train=40
+2026-04-24 07:36:29,663 INFO       worm: train=21
+2026-04-24 07:36:29,663 INFO     
+[Baseline] Training XGBoost...
+2026-04-24 07:36:56,761 INFO     [Baseline] Trained in 27.1s
+2026-04-24 07:36:57,031 INFO     [Baseline] macro-F1  = 0.1459
+2026-04-24 07:36:57,031 INFO     [Baseline] wt-avg-F1 = 0.1459
+2026-04-24 07:36:57,031 INFO     
+[DCE-XGB] Training...
+2026-04-24 07:36:57,031 INFO       [DCE] Training three XGBoost experts...
+2026-04-24 07:37:24,369 INFO         Expert 'head' done.
+2026-04-24 07:37:51,540 INFO         Expert 'balanced' done.
+2026-04-24 07:38:18,064 INFO         Expert 'tail' done.
+2026-04-24 07:38:18,064 INFO       [DCE] Computing affinity matrix on val set...
+2026-04-24 07:38:18,922 INFO         class 0: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,922 INFO         class 1: best=balanced aff=[0.450, 0.480, 0.450]
+2026-04-24 07:38:18,922 INFO         class 2: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,922 INFO         class 3: best=head aff=[0.110, 0.110, 0.110]
+2026-04-24 07:38:18,922 INFO         class 4: best=head aff=[0.160, 0.130, 0.140]
+2026-04-24 07:38:18,922 INFO         class 5: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,922 INFO         class 6: best=head aff=[0.031, 0.000, 0.000]
+2026-04-24 07:38:18,922 INFO         class 7: best=balanced aff=[0.380, 0.390, 0.230]
+2026-04-24 07:38:18,922 INFO         class 8: best=head aff=[0.310, 0.280, 0.220]
+2026-04-24 07:38:18,922 INFO         class 9: best=balanced aff=[0.330, 0.360, 0.350]
+2026-04-24 07:38:18,922 INFO         class 10: best=balanced aff=[0.180, 0.190, 0.160]
+2026-04-24 07:38:18,922 INFO         class 11: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,922 INFO         class 12: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,922 INFO         class 13: best=balanced aff=[0.160, 0.170, 0.090]
+2026-04-24 07:38:18,923 INFO         class 14: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 15: best=tail aff=[0.150, 0.170, 0.220]
+2026-04-24 07:38:18,923 INFO         class 16: best=balanced aff=[0.230, 0.240, 0.220]
+2026-04-24 07:38:18,923 INFO         class 17: best=head aff=[0.071, 0.071, 0.000]
+2026-04-24 07:38:18,923 INFO         class 18: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 19: best=balanced aff=[0.150, 0.170, 0.130]
+2026-04-24 07:38:18,923 INFO         class 20: best=balanced aff=[0.600, 0.700, 0.620]
+2026-04-24 07:38:18,923 INFO         class 21: best=head aff=[0.450, 0.390, 0.370]
+2026-04-24 07:38:18,923 INFO         class 22: best=balanced aff=[0.150, 0.190, 0.160]
+2026-04-24 07:38:18,923 INFO         class 23: best=head aff=[0.100, 0.100, 0.100]
+2026-04-24 07:38:18,923 INFO         class 24: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 25: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 26: best=tail aff=[0.130, 0.190, 0.200]
+2026-04-24 07:38:18,923 INFO         class 27: best=tail aff=[0.150, 0.140, 0.170]
+2026-04-24 07:38:18,923 INFO         class 28: best=balanced aff=[0.350, 0.360, 0.360]
+2026-04-24 07:38:18,923 INFO         class 29: best=balanced aff=[0.200, 0.220, 0.170]
+2026-04-24 07:38:18,923 INFO         class 30: best=head aff=[0.420, 0.360, 0.380]
+2026-04-24 07:38:18,923 INFO         class 31: best=tail aff=[0.170, 0.170, 0.190]
+2026-04-24 07:38:18,923 INFO         class 32: best=balanced aff=[0.090, 0.110, 0.080]
+2026-04-24 07:38:18,923 INFO         class 33: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 34: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 35: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 36: best=head aff=[0.410, 0.340, 0.360]
+2026-04-24 07:38:18,923 INFO         class 37: best=balanced aff=[0.240, 0.280, 0.170]
+2026-04-24 07:38:18,923 INFO         class 38: best=tail aff=[0.150, 0.170, 0.200]
+2026-04-24 07:38:18,923 INFO         class 39: best=head aff=[0.280, 0.280, 0.240]
+2026-04-24 07:38:18,923 INFO         class 40: best=tail aff=[0.240, 0.230, 0.280]
+2026-04-24 07:38:18,923 INFO         class 41: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 42: best=tail aff=[0.230, 0.240, 0.260]
+2026-04-24 07:38:18,923 INFO         class 43: best=balanced aff=[0.350, 0.380, 0.300]
+2026-04-24 07:38:18,923 INFO         class 44: best=balanced aff=[0.060, 0.080, 0.040]
+2026-04-24 07:38:18,923 INFO         class 45: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 46: best=head aff=[0.210, 0.190, 0.200]
+2026-04-24 07:38:18,923 INFO         class 47: best=balanced aff=[0.370, 0.380, 0.380]
+2026-04-24 07:38:18,923 INFO         class 48: best=balanced aff=[0.290, 0.320, 0.260]
+2026-04-24 07:38:18,923 INFO         class 49: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 50: best=head aff=[0.050, 0.040, 0.050]
+2026-04-24 07:38:18,923 INFO         class 51: best=tail aff=[0.026, 0.026, 0.079]
+2026-04-24 07:38:18,923 INFO         class 52: best=tail aff=[0.550, 0.520, 0.570]
+2026-04-24 07:38:18,923 INFO         class 53: best=balanced aff=[0.071, 0.214, 0.143]
+2026-04-24 07:38:18,923 INFO         class 54: best=head aff=[0.540, 0.540, 0.510]
+2026-04-24 07:38:18,923 INFO         class 55: best=head aff=[0.090, 0.080, 0.090]
+2026-04-24 07:38:18,923 INFO         class 56: best=head aff=[0.320, 0.300, 0.260]
+2026-04-24 07:38:18,923 INFO         class 57: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 58: best=head aff=[0.250, 0.220, 0.230]
+2026-04-24 07:38:18,923 INFO         class 59: best=head aff=[0.240, 0.220, 0.160]
+2026-04-24 07:38:18,923 INFO         class 60: best=balanced aff=[0.387, 0.419, 0.387]
+2026-04-24 07:38:18,923 INFO         class 61: best=head aff=[0.650, 0.570, 0.560]
+2026-04-24 07:38:18,923 INFO         class 62: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 63: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 64: best=tail aff=[0.090, 0.060, 0.110]
+2026-04-24 07:38:18,923 INFO         class 65: best=head aff=[0.110, 0.060, 0.060]
+2026-04-24 07:38:18,923 INFO         class 66: best=tail aff=[0.000, 0.000, 0.032]
+2026-04-24 07:38:18,923 INFO         class 67: best=head aff=[0.320, 0.310, 0.300]
+2026-04-24 07:38:18,923 INFO         class 68: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 69: best=balanced aff=[0.211, 0.316, 0.184]
+2026-04-24 07:38:18,923 INFO         class 70: best=head aff=[0.289, 0.263, 0.158]
+2026-04-24 07:38:18,923 INFO         class 71: best=head aff=[0.680, 0.640, 0.650]
+2026-04-24 07:38:18,923 INFO         class 72: best=balanced aff=[0.050, 0.090, 0.070]
+2026-04-24 07:38:18,923 INFO         class 73: best=balanced aff=[0.320, 0.360, 0.360]
+2026-04-24 07:38:18,923 INFO         class 74: best=balanced aff=[0.230, 0.270, 0.210]
+2026-04-24 07:38:18,923 INFO         class 75: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 76: best=head aff=[0.158, 0.132, 0.079]
+2026-04-24 07:38:18,923 INFO         class 77: best=head aff=[0.053, 0.053, 0.000]
+2026-04-24 07:38:18,923 INFO         class 78: best=tail aff=[0.130, 0.120, 0.140]
+2026-04-24 07:38:18,923 INFO         class 79: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 80: best=balanced aff=[0.170, 0.230, 0.160]
+2026-04-24 07:38:18,923 INFO         class 81: best=balanced aff=[0.120, 0.130, 0.120]
+2026-04-24 07:38:18,923 INFO         class 82: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 83: best=head aff=[0.550, 0.510, 0.480]
+2026-04-24 07:38:18,923 INFO         class 84: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 85: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 86: best=head aff=[0.350, 0.320, 0.310]
+2026-04-24 07:38:18,923 INFO         class 87: best=head aff=[0.310, 0.190, 0.210]
+2026-04-24 07:38:18,923 INFO         class 88: best=balanced aff=[0.080, 0.160, 0.120]
+2026-04-24 07:38:18,923 INFO         class 89: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 90: best=balanced aff=[0.190, 0.230, 0.210]
+2026-04-24 07:38:18,923 INFO         class 91: best=balanced aff=[0.330, 0.380, 0.350]
+2026-04-24 07:38:18,923 INFO         class 92: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 93: best=head aff=[0.110, 0.090, 0.090]
+2026-04-24 07:38:18,923 INFO         class 94: best=head aff=[0.250, 0.250, 0.219]
+2026-04-24 07:38:18,923 INFO         class 95: best=balanced aff=[0.410, 0.420, 0.360]
+2026-04-24 07:38:18,923 INFO         class 96: best=head aff=[0.390, 0.330, 0.350]
+2026-04-24 07:38:18,923 INFO         class 97: best=balanced aff=[0.220, 0.250, 0.150]
+2026-04-24 07:38:18,923 INFO         class 98: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO         class 99: best=head aff=[0.000, 0.000, 0.000]
+2026-04-24 07:38:18,923 INFO       [DCE] Building Gaussian pseudo-dataset for router...
+2026-04-24 07:38:44,053 INFO       [DCE] Training Dynamic Expert Selector (LogisticRegression)...
+2026-04-24 07:38:44,257 INFO       [DCE] Router trained.
+2026-04-24 07:38:44,257 INFO     [DCE-XGB] Trained in 107.2s
+2026-04-24 07:38:44,643 INFO     [DCE-XGB] macro-F1  = 0.1525
+2026-04-24 07:38:44,643 INFO     [DCE-XGB] wt-avg-F1 = 0.1525
+2026-04-24 07:38:44,643 INFO     [Delta]   macro-F1 DCE - Base = +0.0066
+2026-04-24 07:38:44,643 INFO     
+Per-class F1 comparison (Baseline vs DCE-XGB):
+2026-04-24 07:38:44,643 INFO       apple                 support=    100  f1(B)=0.0583  f1(M)=0.0952  delta=+0.0370
+2026-04-24 07:38:44,643 INFO       aquarium_fish         support=    100  f1(B)=0.2891  f1(M)=0.3164  delta=+0.0273
+2026-04-24 07:38:44,643 INFO       baby                  support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,643 INFO       bear                  support=    100  f1(B)=0.1048  f1(M)=0.1063  delta=+0.0015
+2026-04-24 07:38:44,643 INFO       beaver                support=    100  f1(B)=0.1272  f1(M)=0.1527  delta=+0.0255
+2026-04-24 07:38:44,643 INFO       bed                   support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,643 INFO       bee                   support=    100  f1(B)=0.0926  f1(M)=0.1391  delta=+0.0465
+2026-04-24 07:38:44,643 INFO       beetle                support=    100  f1(B)=0.2361  f1(M)=0.2310  delta=-0.0051
+2026-04-24 07:38:44,643 INFO       bicycle               support=    100  f1(B)=0.2193  f1(M)=0.2259  delta=+0.0066
+2026-04-24 07:38:44,643 INFO       bottle                support=    100  f1(B)=0.3487  f1(M)=0.3200  delta=-0.0287
+2026-04-24 07:38:44,643 INFO       bowl                  support=    100  f1(B)=0.2075  f1(M)=0.1560  delta=-0.0516
+2026-04-24 07:38:44,643 INFO       boy                   support=    100  f1(B)=0.0196  f1(M)=0.0000  delta=-0.0196
+2026-04-24 07:38:44,643 INFO       bridge                support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,643 INFO       bus                   support=    100  f1(B)=0.1682  f1(M)=0.1735  delta=+0.0053
+2026-04-24 07:38:44,643 INFO       butterfly             support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,643 INFO       camel                 support=    100  f1(B)=0.1024  f1(M)=0.1071  delta=+0.0048
+2026-04-24 07:38:44,643 INFO       can                   support=    100  f1(B)=0.2743  f1(M)=0.2690  delta=-0.0053
+2026-04-24 07:38:44,643 INFO       castle                support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,643 INFO       caterpillar           support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,643 INFO       cattle                support=    100  f1(B)=0.1200  f1(M)=0.1400  delta=+0.0200
+2026-04-24 07:38:44,643 INFO       chair                 support=    100  f1(B)=0.4270  f1(M)=0.4397  delta=+0.0127
+2026-04-24 07:38:44,643 INFO       chimpanzee            support=    100  f1(B)=0.2719  f1(M)=0.3269  delta=+0.0550
+2026-04-24 07:38:44,644 INFO       clock                 support=    100  f1(B)=0.2222  f1(M)=0.2618  delta=+0.0396
+2026-04-24 07:38:44,644 INFO       cloud                 support=    100  f1(B)=0.0000  f1(M)=0.0566  delta=+0.0566
+2026-04-24 07:38:44,644 INFO       cockroach             support=    100  f1(B)=0.0000  f1(M)=0.0392  delta=+0.0392
+2026-04-24 07:38:44,644 INFO       couch                 support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       crab                  support=    100  f1(B)=0.1751  f1(M)=0.1963  delta=+0.0211
+2026-04-24 07:38:44,644 INFO       crocodile             support=    100  f1(B)=0.1237  f1(M)=0.1263  delta=+0.0026
+2026-04-24 07:38:44,644 INFO       cup                   support=    100  f1(B)=0.4167  f1(M)=0.4232  delta=+0.0066
+2026-04-24 07:38:44,644 INFO       dinosaur              support=    100  f1(B)=0.2210  f1(M)=0.2340  delta=+0.0130
+2026-04-24 07:38:44,644 INFO       dolphin               support=    100  f1(B)=0.3147  f1(M)=0.2737  delta=-0.0410
+2026-04-24 07:38:44,644 INFO       elephant              support=    100  f1(B)=0.1402  f1(M)=0.1462  delta=+0.0059
+2026-04-24 07:38:44,644 INFO       flatfish              support=    100  f1(B)=0.1538  f1(M)=0.1538  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       forest                support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       fox                   support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       girl                  support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       hamster               support=    100  f1(B)=0.2098  f1(M)=0.2657  delta=+0.0559
+2026-04-24 07:38:44,644 INFO       house                 support=    100  f1(B)=0.1368  f1(M)=0.1830  delta=+0.0462
+2026-04-24 07:38:44,644 INFO       kangaroo              support=    100  f1(B)=0.0977  f1(M)=0.0863  delta=-0.0114
+2026-04-24 07:38:44,644 INFO       keyboard              support=    100  f1(B)=0.2685  f1(M)=0.2488  delta=-0.0197
+2026-04-24 07:38:44,644 INFO       lamp                  support=    100  f1(B)=0.2190  f1(M)=0.1963  delta=-0.0228
+2026-04-24 07:38:44,644 INFO       lawn_mower            support=    100  f1(B)=0.0392  f1(M)=0.0769  delta=+0.0377
+2026-04-24 07:38:44,644 INFO       leopard               support=    100  f1(B)=0.1290  f1(M)=0.1193  delta=-0.0097
+2026-04-24 07:38:44,644 INFO       lion                  support=    100  f1(B)=0.2032  f1(M)=0.1905  delta=-0.0127
+2026-04-24 07:38:44,644 INFO       lizard                support=    100  f1(B)=0.0952  f1(M)=0.1043  delta=+0.0091
+2026-04-24 07:38:44,644 INFO       lobster               support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       man                   support=    100  f1(B)=0.1518  f1(M)=0.1193  delta=-0.0325
+2026-04-24 07:38:44,644 INFO       maple_tree            support=    100  f1(B)=0.2547  f1(M)=0.2857  delta=+0.0310
+2026-04-24 07:38:44,644 INFO       motorcycle            support=    100  f1(B)=0.3214  f1(M)=0.3364  delta=+0.0149
+2026-04-24 07:38:44,644 INFO       mountain              support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       mouse                 support=    100  f1(B)=0.1038  f1(M)=0.0887  delta=-0.0151
+2026-04-24 07:38:44,644 INFO       mushroom              support=    100  f1(B)=0.0541  f1(M)=0.0721  delta=+0.0180
+2026-04-24 07:38:44,644 INFO       oak_tree              support=    100  f1(B)=0.4556  f1(M)=0.4479  delta=-0.0077
+2026-04-24 07:38:44,644 INFO       orange                support=    100  f1(B)=0.2240  f1(M)=0.2609  delta=+0.0369
+2026-04-24 07:38:44,644 INFO       orchid                support=    100  f1(B)=0.2828  f1(M)=0.2920  delta=+0.0092
+2026-04-24 07:38:44,644 INFO       otter                 support=    100  f1(B)=0.0862  f1(M)=0.0631  delta=-0.0231
+2026-04-24 07:38:44,644 INFO       palm_tree             support=    100  f1(B)=0.2443  f1(M)=0.2575  delta=+0.0132
+2026-04-24 07:38:44,644 INFO       pear                  support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       pickup_truck          support=    100  f1(B)=0.1756  f1(M)=0.2178  delta=+0.0422
+2026-04-24 07:38:44,644 INFO       pine_tree             support=    100  f1(B)=0.2094  f1(M)=0.2264  delta=+0.0170
+2026-04-24 07:38:44,644 INFO       plain                 support=    100  f1(B)=0.4852  f1(M)=0.4859  delta=+0.0007
+2026-04-24 07:38:44,644 INFO       plate                 support=    100  f1(B)=0.4305  f1(M)=0.3755  delta=-0.0549
+2026-04-24 07:38:44,644 INFO       poppy                 support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       porcupine             support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       possum                support=    100  f1(B)=0.0855  f1(M)=0.0265  delta=-0.0589
+2026-04-24 07:38:44,644 INFO       rabbit                support=    100  f1(B)=0.1198  f1(M)=0.1345  delta=+0.0147
+2026-04-24 07:38:44,644 INFO       raccoon               support=    100  f1(B)=0.0196  f1(M)=0.0198  delta=+0.0002
+2026-04-24 07:38:44,644 INFO       ray                   support=    100  f1(B)=0.2332  f1(M)=0.2264  delta=-0.0068
+2026-04-24 07:38:44,644 INFO       road                  support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       rocket                support=    100  f1(B)=0.2628  f1(M)=0.3056  delta=+0.0428
+2026-04-24 07:38:44,644 INFO       rose                  support=    100  f1(B)=0.3012  f1(M)=0.3059  delta=+0.0047
+2026-04-24 07:38:44,644 INFO       sea                   support=    100  f1(B)=0.3698  f1(M)=0.3873  delta=+0.0175
+2026-04-24 07:38:44,644 INFO       seal                  support=    100  f1(B)=0.1000  f1(M)=0.0585  delta=-0.0415
+2026-04-24 07:38:44,644 INFO       shark                 support=    100  f1(B)=0.2750  f1(M)=0.2575  delta=-0.0175
+2026-04-24 07:38:44,644 INFO       shrew                 support=    100  f1(B)=0.1275  f1(M)=0.1279  delta=+0.0004
+2026-04-24 07:38:44,644 INFO       skunk                 support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       skyscraper            support=    100  f1(B)=0.2676  f1(M)=0.2837  delta=+0.0161
+2026-04-24 07:38:44,644 INFO       snail                 support=    100  f1(B)=0.0000  f1(M)=0.0196  delta=+0.0196
+2026-04-24 07:38:44,644 INFO       snake                 support=    100  f1(B)=0.1273  f1(M)=0.1115  delta=-0.0158
+2026-04-24 07:38:44,644 INFO       spider                support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       squirrel              support=    100  f1(B)=0.1094  f1(M)=0.1257  delta=+0.0163
+2026-04-24 07:38:44,644 INFO       streetcar             support=    100  f1(B)=0.1364  f1(M)=0.1488  delta=+0.0124
+2026-04-24 07:38:44,644 INFO       sunflower             support=    100  f1(B)=0.1441  f1(M)=0.0755  delta=-0.0687
+2026-04-24 07:38:44,644 INFO       sweet_pepper          support=    100  f1(B)=0.2081  f1(M)=0.1918  delta=-0.0162
+2026-04-24 07:38:44,644 INFO       table                 support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       tank                  support=    100  f1(B)=0.0388  f1(M)=0.0571  delta=+0.0183
+2026-04-24 07:38:44,644 INFO       telephone             support=    100  f1(B)=0.2349  f1(M)=0.2518  delta=+0.0169
+2026-04-24 07:38:44,644 INFO       television            support=    100  f1(B)=0.1818  f1(M)=0.2544  delta=+0.0726
+2026-04-24 07:38:44,644 INFO       tiger                 support=    100  f1(B)=0.0652  f1(M)=0.0876  delta=+0.0224
+2026-04-24 07:38:44,644 INFO       tractor               support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       train                 support=    100  f1(B)=0.1468  f1(M)=0.1595  delta=+0.0127
+2026-04-24 07:38:44,644 INFO       trout                 support=    100  f1(B)=0.2811  f1(M)=0.2857  delta=+0.0046
+2026-04-24 07:38:44,644 INFO       tulip                 support=    100  f1(B)=0.0194  f1(M)=0.0388  delta=+0.0194
+2026-04-24 07:38:44,644 INFO       turtle                support=    100  f1(B)=0.0829  f1(M)=0.1641  delta=+0.0812
+2026-04-24 07:38:44,644 INFO       wardrobe              support=    100  f1(B)=0.3704  f1(M)=0.4113  delta=+0.0410
+2026-04-24 07:38:44,644 INFO       whale                 support=    100  f1(B)=0.2587  f1(M)=0.2877  delta=+0.0290
+2026-04-24 07:38:44,644 INFO       willow_tree           support=    100  f1(B)=0.1533  f1(M)=0.2079  delta=+0.0546
+2026-04-24 07:38:44,644 INFO       wolf                  support=    100  f1(B)=0.1608  f1(M)=0.1320  delta=-0.0288
+2026-04-24 07:38:44,644 INFO       woman                 support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       worm                  support=    100  f1(B)=0.0000  f1(M)=0.0000  delta=+0.0000
+2026-04-24 07:38:44,644 INFO       [macro avg      ] support=  10000  f1(B)=0.1459  f1(M)=0.1525  delta=+0.0066
+2026-04-24 07:38:44,644 INFO       [weighted avg   ] support=  10000  f1(B)=0.1459  f1(M)=0.1525  delta=+0.0066
+2026-04-24 07:38:44,646 INFO     
+CSV saved: results/dce_20260424_073622/cifar100tasks_baseline_vs_dce.csv
+2026-04-24 07:38:46,203 INFO     PNG saved: results/dce_20260424_073622/cifar100tasks_baseline_vs_dce.png
+2026-04-24 07:38:46,205 INFO     Affinity CSV saved: results/dce_20260424_073622/cifar100tasks_expert_affinity.csv
+2026-04-24 07:38:46,814 INFO     
+============================================================
+2026-04-24 07:38:46,816 INFO     SUMMARY
+2026-04-24 07:38:46,816 INFO     ============================================================
+2026-04-24 07:38:46,816 INFO       cifar100tasks  baseline=0.1459  dce=0.1525  delta=+0.0066
+2026-04-24 07:38:46,827 INFO     
+Summary CSV: results/dce_20260424_073622/summary.csv
+2026-04-24 07:38:46,827 INFO     
+Done.

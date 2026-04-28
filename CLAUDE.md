@@ -123,6 +123,96 @@ Split strategy varies by script:
 
 Label columns: `"Label"` (CIC-IDS), `"attack_cat"` (UNSW-NB15), `"Attack"` (NF-UNSW-NB15). CIC labels may have leading/trailing spaces — preprocessing strips them.
 
+## Visualization Standards
+
+All main scripts must produce a **colored PNG comparison table** (saved to `results/<timestamp>/`) in addition to the plain-text log. Rules:
+
+### Table layout
+- Columns interleave Baseline and MoE for each metric in fixed order:
+  `prec(B) | prec(M) | recall(B) | recall(M) | f1(B) | f1(M) | support`
+- Rows are **descending by support** (majority class first, tail classes last).
+- Append `macro avg` and `weighted avg` footer rows.
+
+### Cell color coding (MoE cell vs. corresponding Baseline cell)
+| Condition | Color |
+|---|---|
+| MoE > Baseline + ε (ε = 0.001) | Blue (`#cce5ff`) |
+| MoE < Baseline − ε | Red (`#ffcccc`) |
+| Within ε (neutral) | Yellow (`#fff9cc`) |
+| Baseline column cell | White (no tint) |
+| support / avg rows | Light gray (`#f2f2f2`) |
+
+Only **MoE metric cells** are colored; Baseline cells stay white.
+
+### Implementation helper
+Use `matplotlib` + `matplotlib.table` or `pandas` + `matplotlib` to render the table as a PNG. A shared helper function `save_colored_table(df, path)` should be placed near the top of `results/` or inlined in each script. Minimum font size 9pt; save at 150 dpi. Example skeleton:
+
+```python
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
+BLUE   = "#cce5ff"
+RED    = "#ffcccc"
+YELLOW = "#fff9cc"
+GRAY   = "#f2f2f2"
+WHITE  = "#ffffff"
+EPS    = 0.001
+
+def save_colored_table(rows, col_headers, path, title=""):
+    """
+    rows  : list of dicts with keys matching col_headers.
+    Baseline metric cols end in '(B)', MoE cols in '(M)'.
+    """
+    import numpy as np
+    n_rows = len(rows)
+    n_cols = len(col_headers)
+    cell_text = []
+    cell_colors = []
+    for row in rows:
+        texts, colors = [], []
+        for col in col_headers:
+            val = row.get(col, "")
+            texts.append(f"{val:.4f}" if isinstance(val, float) else str(val))
+            # determine color
+            if col.endswith("(M)"):
+                base_col = col.replace("(M)", "(B)")
+                b_val = row.get(base_col, None)
+                m_val = row.get(col, None)
+                if isinstance(b_val, float) and isinstance(m_val, float):
+                    if m_val > b_val + EPS:
+                        colors.append(BLUE)
+                    elif m_val < b_val - EPS:
+                        colors.append(RED)
+                    else:
+                        colors.append(YELLOW)
+                else:
+                    colors.append(WHITE)
+            elif col in ("macro avg", "weighted avg", "support") or row.get("_footer"):
+                colors.append(GRAY)
+            else:
+                colors.append(WHITE)
+        cell_text.append(texts)
+        cell_colors.append(colors)
+
+    fig, ax = plt.subplots(figsize=(max(12, n_cols * 1.2), max(4, n_rows * 0.35)))
+    ax.axis("off")
+    tbl = ax.table(cellText=cell_text, colLabels=col_headers,
+                   cellColours=cell_colors, loc="center", cellLoc="center")
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(9)
+    tbl.auto_set_column_width(col=list(range(n_cols)))
+    if title:
+        ax.set_title(title, fontsize=11, pad=8)
+    plt.tight_layout()
+    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+```
+
+Also save the same data as a CSV (`baseline_vs_moe_per_class.csv`) with columns:
+`class_name, support, prec(B), prec(M), recall(B), recall(M), f1(B), f1(M), delta_f1`
+
 ## Open Research Problem
 
 The core unsolved problem: **no MoE variant has beaten the single XGBoost baseline on tail-class F1, particularly under non-random (chrono/file) splits.** See "Known failure modes" above. New approaches should directly address either (a) the unbiased expert design problem or (b) the routing error compounding problem.

@@ -1,0 +1,46 @@
+2026-04-24 07:35:57,376 INFO     Results dir : results/dce_20260424_073557
+2026-04-24 07:35:57,377 INFO     Arguments   : {'datasets': ['cifar100tasks'], 'cic_pkl': 'data/cic2017_proc.pkl', 'unsw_pkl': 'data/unswnb15_proc.pkl', 'n_estimators': 200, 'max_depth': 6, 'learning_rate': 0.1, 'xgb_subsample': 0.8, 'colsample_bytree': 0.8, 'tail_power': 2.0, 'n_pseudo_per_class': 300, 'router_C': 1.0, 'imbalance_factor': 100, 'subsample_train': None, 'c100_n_balanced': 10, 'c100_ir_medium': 50, 'c100_ir_hard': 100, 'c100_pca': 256, 'tree_method': 'hist', 'device': 'cuda', 'seed': 42}
+2026-04-24 07:35:57,377 INFO     XGBoost ver : 3.2.0
+2026-04-24 07:35:57,377 INFO     
+############################################################
+2026-04-24 07:35:57,377 INFO     # Dataset: cifar100tasks
+2026-04-24 07:35:57,377 INFO     ############################################################
+2026-04-24 07:35:58,701 INFO     CIFAR-100 superclass task structure:
+2026-04-24 07:35:58,702 INFO       Task  0  aquatic_mammals                      [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,702 INFO       Task  1  fish                                 [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,702 INFO       Task  2  flowers                              [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:35:58,702 INFO       Task  3  food_containers                      [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,702 INFO       Task  4  fruit_and_vegetables                 [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:35:58,702 INFO       Task  5  household_electrical_devices         [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,702 INFO       Task  6  household_furniture                  [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:35:58,702 INFO       Task  7  insects                              [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:35:58,702 INFO       Task  8  large_carnivores                     [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,702 INFO       Task  9  large_outdoor_man_made               [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:35:58,702 INFO       Task 10  large_outdoor_natural                [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:35:58,702 INFO       Task 11  large_omnivores_herbivores           [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,702 INFO       Task 12  medium_mammals                       [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:35:58,702 INFO       Task 13  non_insect_invertebrates             [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:35:58,702 INFO       Task 14  people                               [IR=100      ]  min=  5  max=500  total=728
+2026-04-24 07:35:58,703 INFO       Task 15  reptiles                             [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,703 INFO       Task 16  small_mammals                        [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,703 INFO       Task 17  trees                                [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,703 INFO       Task 18  vehicles_1                           [balanced    ]  min=500  max=500  total=2500
+2026-04-24 07:35:58,703 INFO       Task 19  vehicles_2                           [IR=50       ]  min= 10  max=500  total=794
+2026-04-24 07:35:58,703 INFO       Total training samples : 32610
+2026-04-24 07:35:58,703 INFO       Balanced superclasses  : ['aquatic_mammals', 'trees', 'reptiles', 'fish', 'large_carnivores', 'household_electrical_devices', 'large_omnivores_herbivores', 'food_containers', 'vehicles_1', 'small_mammals']
+2026-04-24 07:35:58,703 INFO       IR=50 superclasses : ['non_insect_invertebrates', 'flowers', 'large_outdoor_man_made', 'vehicles_2', 'fruit_and_vegetables']
+2026-04-24 07:35:58,703 INFO       IR=100 superclasses : ['medium_mammals', 'insects', 'large_outdoor_natural', 'people', 'household_furniture']
+2026-04-24 07:35:58,781 INFO     Applying PCA(256)...
+2026-04-24 07:36:03,897 INFO     Task regimes (train split counts):
+2026-04-24 07:36:03,897 ERROR    Error in dataset cifar100tasks: too many values to unpack (expected 4)
+Traceback (most recent call last):
+  File "/home/user/Desktop/imbal_cic/code_dce.py", line 841, in main
+    for t, regime, tcs, ir in task_meta:
+        ^^^^^^^^^^^^^^^^^^
+ValueError: too many values to unpack (expected 4)
+2026-04-24 07:36:03,898 INFO     
+============================================================
+2026-04-24 07:36:03,898 INFO     SUMMARY
+2026-04-24 07:36:03,898 INFO     ============================================================
+2026-04-24 07:36:03,898 INFO     
+Done.

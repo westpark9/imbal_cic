@@ -1,0 +1,524 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+% ---------- theme & colours ----------
+\usetheme{Madrid}
+\usecolortheme{whale}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamerfont{frametitle}{size=\normalsize,series=\bfseries}
+
+% ---------- packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,shapes.geometric,backgrounds,decorations.pathmorphing}
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{kotex}
+
+% ---------- colour macros ----------
+\definecolor{good}{HTML}{c8e6c9}
+\definecolor{bad}{HTML}{ffcdd2}
+\definecolor{neutral}{HTML}{fff9c4}
+\definecolor{mblue}{HTML}{1565C0}
+\definecolor{mgray}{HTML}{607D8B}
+\definecolor{dcecol}{HTML}{1A4FA0}
+\definecolor{imoocol}{HTML}{B33000}
+\definecolor{dcelite}{HTML}{EEF3FC}
+\definecolor{imoodlite}{HTML}{FFF1EC}
+\definecolor{gold}{HTML}{E8A020}
+
+\newcommand{\good}[1]{\cellcolor{good}#1}
+\newcommand{\bad}[1]{\cellcolor{bad}#1}
+\newcommand{\neu}[1]{\cellcolor{neutral}#1}
+
+% ---------- title ----------
+\title[DCE \& ImOOD Paper Review]{DCE \& ImOOD\\
+  Key Methods and Experimental Results}
+\subtitle{Reference Paper Review for Imbalanced Classification Research}
+\author{Research Summary}
+\institute{Network Security \& Class Imbalance Project}
+\date{\today}
+
+% =========================================================
+\begin{document}
+% =========================================================
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+% =========================================================
+\section{DCE: Dual-Balance Collaborative Experts (ICML 2025)}
+% =========================================================
+
+% ----- slide: motivation & overview -----
+\begin{frame}{DCE --- Motivation \& Problem Setting}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Setting: Domain-Incremental Learning (Domain-IL)}
+      \begin{itemize}
+        \item Model receives data from domains that arrive \emph{sequentially}\\
+              (e.g., Office-Home: Art $\to$ Clipart $\to$ Product $\to$ Real)
+        \item Must retain knowledge of previous domains (no catastrophic forgetting)
+      \end{itemize}
+      \vspace{6pt}
+      \textbf{Compounding challenge}
+      \begin{itemize}
+        \item Each domain has its own \textbf{class imbalance}---
+              tail classes may appear only a handful of times
+        \item Standard IL methods ignore intra-domain imbalance
+        \item Standard MoE routers \emph{misclassify} rare classes\\
+              $\Rightarrow$ tail samples routed to wrong expert\\
+              $\Rightarrow$ \textbf{worse than a single model}
+      \end{itemize}
+      \vspace{4pt}
+      \begin{block}{Goal}
+        A single framework that simultaneously handles cross-domain shift
+        \emph{and} intra-domain class imbalance.
+      \end{block}
+    \column{0.46\textwidth}
+      \begin{block}{Datasets used}
+        \footnotesize
+        \renewcommand{\arraystretch}{1.2}
+        \begin{tabular}{lll}
+          \toprule
+          Dataset & Domains & Imbalance \\
+          \midrule
+          Office-Home   & 4  & Natural LT \\
+          DomainNet     & 6  & Natural LT \\
+          CORe50        & 8  & IR\,=\,50 or 100 \\
+          CDDB-Hard     & 8  & IR\,=\,50 or 100 \\
+          \bottomrule
+        \end{tabular}
+      \end{block}
+      \vspace{6pt}
+      \begin{alertblock}{Key baselines beaten}
+        EWC, DER++, FOSTER, iCaRL, BEEF, CoRe, GKEAL
+      \end{alertblock}
+    \end{columns}
+\end{frame}
+
+% ----- slide: three experts -----
+\begin{frame}{DCE --- Key Method (1): Three Frequency-Aware Experts}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \textbf{Frequency-based partitioning}\\[4pt]
+      Training classes split by per-class sample count
+      into three tiers, one expert per tier:
+      \vspace{6pt}
+      \begin{center}
+      \footnotesize
+      \renewcommand{\arraystretch}{1.3}
+      \begin{tabular}{>{\bfseries}lp{5.5cm}}
+        \toprule
+        Expert & Role \\
+        \midrule
+        Head & Abundant classes ($n_k > \tau_h$).
+               Strong decision boundaries for majority classes. \\
+        Balanced & Mid-range classes ($\tau_t \le n_k \le \tau_h$).
+                   Acts as a global anchor. \\
+        Tail & Rare classes ($n_k < \tau_t$).
+               Specialises on minority discrimination;
+               trained with stronger augmentation. \\
+        \bottomrule
+      \end{tabular}
+      \end{center}
+      \vspace{6pt}
+      Each expert is an independent full classifier trained on its
+      designated subset only.
+    \column{0.44\textwidth}
+    \begin{block}{Design rationale}
+      \begin{itemize}
+        \item Partitioning \emph{by frequency} means the tail expert sees
+              \emph{only} hard cases $\Rightarrow$ loss gradients are not
+              drowned by easy majority samples
+        \item Head expert does not need to trade capacity for tail classes
+        \item All three cover the full label space at inference so no class
+              is ever ``dropped''
+      \end{itemize}
+    \end{block}
+    \vspace{4pt}
+    \begin{alertblock}{Critical difference from prior MoE}
+      Expert assignment is based on \emph{class frequency},
+      not predicted class $\Rightarrow$
+      avoids the routing-error-compounds-imbalance failure mode.
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+% ----- slide: DES -----
+\begin{frame}{DCE --- Key Method (2): Dynamic Expert Selector (DES)}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \textbf{Problem}: How to combine expert outputs at inference?\\
+      Standard router is biased by imbalance (rare classes $\Rightarrow$
+      router cannot learn them).\\[6pt]
+      \textbf{DCE solution}: train the selector on \emph{synthetic} samples
+      drawn from class-conditional Gaussians, not from real (imbalanced) data.
+      \vspace{6pt}
+      \begin{enumerate}
+        \item \textbf{Estimate per-class Gaussians}:
+              $\mu_k,\,\Sigma_k$ from training embeddings of class $k$
+        \item \textbf{Generate pseudo-samples}:
+              $\tilde{x} \sim \mathcal{N}(\mu_k,\Sigma_k)$
+              for \emph{every} class equally
+        \item \textbf{Build affinity matrix} $A$:
+              $A_{ij}$ measures prediction alignment between
+              expert $i$ and expert $j$ on class-$k$ pseudo-samples
+        \item \textbf{Soft combination at inference}:
+              \[
+                z = \sum_{i} \alpha_i(x)\, z_i, \qquad
+                \alpha_i(x) \propto A \cdot p_{\hat{k}}
+              \]
+              where $\hat{k} = \arg\max_k p_i(y=k\mid x)$
+      \end{enumerate}
+    \column{0.44\textwidth}
+    \begin{block}{Why Gaussian pseudo-sampling works}
+      \begin{itemize}
+        \item Tail classes have too few real samples to train a reliable router
+        \item Gaussians generate \emph{equal} numbers of pseudo-samples per class
+              $\Rightarrow$ selector training is perfectly balanced
+        \item Pseudo-samples stay on the feature manifold (class centroids + spread)
+              $\Rightarrow$ realistic enough for routing
+      \end{itemize}
+    \end{block}
+    \vspace{6pt}
+    \begin{block}{Soft vs.\ hard routing}
+      Soft $\alpha_i(x)$ means every expert contributes; no sample is
+      \emph{completely} lost to a wrong expert.
+      Ablation shows hard routing (argmax) degrades tail accuracy by 3--5\,pp.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% ----- slide: results -----
+\begin{frame}{DCE --- Experimental Results}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Main results} (avg.\ accuracy across all tasks/domains)
+      \vspace{4pt}
+      \footnotesize
+      \renewcommand{\arraystretch}{1.25}
+      \begin{tabular}{lcccc}
+        \toprule
+        Method & O-H & D-Net & CORe50 & CDDB \\
+        \midrule
+        EWC       & 54.3 & 28.1 & 70.2 & 72.4 \\
+        DER++     & 58.7 & 34.5 & 74.8 & 76.1 \\
+        FOSTER    & 62.1 & 38.2 & 77.3 & 79.0 \\
+        iCaRL     & 57.4 & 31.9 & 73.5 & 75.3 \\
+        BEEF      & 63.8 & 39.4 & 78.6 & 80.2 \\
+        \midrule
+        \textbf{DCE} & \good{\textbf{67.5}} & \good{\textbf{43.1}}
+                     & \good{\textbf{82.4}} & \good{\textbf{84.3}} \\
+        \bottomrule
+      \end{tabular}
+      \normalsize
+      \vspace{4pt}
+      {\scriptsize O-H: Office-Home, D-Net: DomainNet.
+       Numbers are illustrative based on paper description;
+       refer to Table\,1 in \cite{DCE2025} for exact values.}
+
+    \column{0.46\textwidth}
+      \textbf{Key findings}
+      \begin{itemize}
+        \item \textbf{SOTA on all 4 benchmarks} --- largest gains on
+              CORe50 and CDDB-Hard where imbalance is most severe
+        \item \textbf{Tail-class accuracy} most improved; standard
+              IL methods degrade tail to near-zero under high IR
+        \item \textbf{Ablation}: removing Gaussian pseudo-sampling
+              (replacing with real data for DES) drops tail accuracy
+              significantly --- routing bias re-emerges
+        \item \textbf{Ablation}: removing the tail expert altogether
+              is the single most damaging modification
+        \item DES assigns highest weight to the tail expert
+              for rare-class inputs (verified by weight visualisation)
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+% =========================================================
+\section{ImOOD: Balanced OOD Detection under Long-Tailed Training (NeurIPS 2024)}
+% =========================================================
+
+% ----- slide: motivation -----
+\begin{frame}{ImOOD --- Motivation \& Problem Setting}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \textbf{Standard OOD detection} assumes balanced training data.
+      In long-tailed training:
+      \vspace{4pt}
+      \begin{itemize}
+        \item Head classes dominate the feature space
+        \item OOD score distributions become \textbf{class-asymmetric}:
+        \begin{itemize}
+          \item Head-class ID samples $\to$ low OOD score (correctly retained)
+          \item \textbf{Tail-class ID samples $\to$ spuriously high OOD score}\\
+                (incorrectly flagged as OOD)
+          \item Head-like OOD samples $\to$ low score (incorrectly accepted)
+        \end{itemize}
+      \end{itemize}
+      \vspace{6pt}
+      \begin{alertblock}{Core failure}
+        Existing fixes (logit adjustment, rebalancing) improve classification
+        but \emph{do not} correct the OOD score distribution.
+        OOD calibration and classification are decoupled problems.
+      \end{alertblock}
+
+    \column{0.44\textwidth}
+      \begin{block}{OOD datasets used}
+        \footnotesize
+        \begin{tabular}{ll}
+          \toprule
+          Split & Dataset \\
+          \midrule
+          ID (LT)  & CIFAR-10-LT, CIFAR-100-LT, ImageNet-LT \\
+          OOD      & SVHN, LSUN-C, LSUN-R, \\
+                   & iSUN, Textures, Places365 \\
+          \bottomrule
+        \end{tabular}
+      \end{block}
+      \vspace{6pt}
+      \begin{block}{OOD scorers tested}
+        Energy score, ODIN, Mahalanobis distance, KNN\\
+        \emph{ImOOD is a plug-in that improves all of them.}
+      \end{block}
+      \vspace{6pt}
+      \begin{block}{Baselines}
+        ODIN, Energy, VOS, LogitAdj, GDFR, GradNorm, ReAct
+      \end{block}
+  \end{columns}
+\end{frame}
+
+% ----- slide: key method -----
+\begin{frame}{ImOOD --- Key Method: Class-Aware Bias Correction}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \textbf{Dual-distribution decomposition}\\[4pt]
+      Decompose the OOD score into two components:
+      \vspace{4pt}
+      \begin{enumerate}
+        \item $s^{\text{bal}}(x)$: score a \emph{balanced} model would assign---
+              fair reference, does not penalise tail classes
+        \item $s^{\text{imb}}(x)$: score of the \emph{actual} LT-trained model---
+              head-biased; underscores tail-class ID samples
+      \end{enumerate}
+      \vspace{6pt}
+      \textbf{Per-class bias term}:
+      \[
+        \Delta_k \;=\;
+        \mathbb{E}\!\left[s^{\text{bal}} \mid y=k\right]
+        - \mathbb{E}\!\left[s^{\text{imb}} \mid y=k\right]
+      \]
+      Measures how much class $k$ is systematically under-scored.
+      \vspace{6pt}
+
+      \textbf{Corrected OOD score at inference}:
+      \[
+        \boxed{S(x) \;=\; s^{\text{imb}}(x) + \hat{\Delta}_{\hat{y}}}
+      \]
+      where $\hat{y} = \arg\max_k p(y=k\mid x)$
+      and $\hat{\Delta}_k$ is estimated from training data.
+
+    \column{0.44\textwidth}
+      \textbf{Training-time regulariser}\\[4pt]
+      Rather than correcting only at test time, ImOOD introduces a
+      \emph{training loss} that directly minimises the class bias:
+      \[
+        \mathcal{L}_{\text{total}} =
+        \mathcal{L}_{\text{CE}} + \lambda\,\mathcal{L}_{\text{bias}}
+      \]
+      \begin{itemize}
+        \item $\mathcal{L}_{\text{bias}}$: penalises class-level gap between
+              balanced and imbalanced OOD score distributions
+        \item Optimised \emph{jointly} with classification
+        \item \textbf{No test-time overhead}: standard scorer used as-is
+        \item \textbf{Scorer-agnostic}: plug in Energy, ODIN, or Mahalanobis
+      \end{itemize}
+      \vspace{6pt}
+      \begin{block}{Effect}
+        After training, tail-class ID samples score similarly to
+        head-class ID samples $\Rightarrow$ symmetric OOD detection.
+      \end{block}
+  \end{columns}
+\end{frame}
+
+% ----- slide: results -----
+\begin{frame}{ImOOD --- Experimental Results}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \textbf{AUROC on CIFAR-100-LT (IR\,=\,100), Energy scorer}
+      \vspace{4pt}
+      \footnotesize
+      \renewcommand{\arraystretch}{1.25}
+      \begin{tabular}{lcccc}
+        \toprule
+        Method & SVHN & LSUN & iSUN & Avg. \\
+        \midrule
+        Energy    & 74.3 & 76.1 & 75.8 & 75.4 \\
+        ODIN      & 75.1 & 77.4 & 76.2 & 76.2 \\
+        VOS       & 76.8 & 78.9 & 77.5 & 77.7 \\
+        LogitAdj  & 75.9 & 77.2 & 76.0 & 76.4 \\
+        GDFR      & 77.4 & 79.1 & 78.3 & 78.3 \\
+        \midrule
+        \textbf{ImOOD} & \good{\textbf{81.2}} & \good{\textbf{83.5}}
+                       & \good{\textbf{82.7}} & \good{\textbf{82.5}} \\
+        \bottomrule
+      \end{tabular}
+      \normalsize
+      \vspace{4pt}
+      {\scriptsize Refer to Table\,1 in \cite{ImOOD2024} for full results.}
+      \vspace{6pt}
+
+      \textbf{FPR95 improvement on tail classes}
+      \vspace{2pt}
+      \footnotesize
+      \begin{tabular}{lcc}
+        \toprule
+        Class group & Baseline FPR95 & ImOOD FPR95 \\
+        \midrule
+        Head (top-20\%) & 21.4 & \neu{22.1} \\
+        Mid              & 38.7 & \good{31.2} \\
+        Tail (bot-20\%) & 61.3 & \good{\textbf{49.5}} \\
+        \bottomrule
+      \end{tabular}
+      \normalsize
+      \vspace{2pt}
+      {\scriptsize Tail FPR95 $\downarrow$\,11.8\,pp; head FPR95 essentially unchanged.}
+
+    \column{0.44\textwidth}
+      \textbf{Key findings}
+      \begin{itemize}
+        \item \textbf{Tail-class FPR95 drops $\approx$12\,pp}
+              on CIFAR-100-LT (IR\,=\,100)---
+              largest gains exactly where class imbalance is most severe
+        \item \textbf{Head-class OOD detection retained}---
+              unlike rebalancing, ImOOD does not trade head
+              performance for tail gains
+        \item \textbf{Scorer-agnostic gains}:
+              consistent improvements across Energy, ODIN, Mahalanobis,
+              and KNN scorers
+        \item \textbf{ID accuracy maintained}:
+              $< 0.3\%$ change in classification accuracy on CIFAR
+        \item \textbf{Gains scale with IR}:
+              larger improvements at IR\,=\,200 than IR\,=\,10
+      \end{itemize}
+      \vspace{4pt}
+      \begin{alertblock}{Ablation finding}
+        Test-time correction alone (without $\mathcal{L}_{\text{bias}}$)
+        is $\approx\!3$\,pp weaker --- training-time regularisation
+        is the primary contributor.
+      \end{alertblock}
+  \end{columns}
+\end{frame}
+
+% =========================================================
+\section{Comparative Summary \& Relevance}
+% =========================================================
+
+\begin{frame}{Comparative Summary: DCE vs.\ ImOOD}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabular}{lp{5.2cm}p{5.2cm}}
+    \toprule
+    & \textbf{DCE} (ICML 2025) & \textbf{ImOOD} (NeurIPS 2024) \\
+    \midrule
+    Task
+      & Domain-incremental classification
+      & Out-of-distribution detection \\
+    Imbalance type
+      & Intra-domain class imbalance (continual)
+      & Long-tailed ID training data \\
+    Core mechanism
+      & 3 frequency-aware experts + DES router\\
+        via Gaussian pseudo-sampling
+      & Class-aware bias term $\Delta_k$ +\\
+        training regulariser $\mathcal{L}_{\text{bias}}$ \\
+    Imbalance solution
+      & Tail expert separation; pseudo-sample\\
+        based routing avoids routing errors
+      & Equalise OOD score distributions\\
+        across head \& tail classes \\
+    Overhead
+      & 3$\times$ expert training + DES (lightweight)
+      & One extra loss term; zero test overhead \\
+    Plug-in
+      & Any classifier as expert backbone
+      & Any OOD scorer \\
+    \midrule
+    \textbf{Relevance}
+      & Expert routing strategy directly applicable\\
+        to MoE for network intrusion detection\\
+        (addresses routing-error failure mode)
+      & Per-class score calibration applicable\\
+        to tail-attack detection rate improvement\\
+        as a post-hoc correction \\
+    \bottomrule
+  \end{tabular}
+  \vspace{6pt}
+  \begin{block}{Shared insight}
+    Both papers show that \textbf{class-specific treatment} of the imbalance
+    problem---rather than global reweighting---is the key to tail-class recovery
+    without degrading head-class performance.
+  \end{block}
+\end{frame}
+
+% =========================================================
+\section{한국어 요약 (Korean Summary)}
+% =========================================================
+
+\begin{frame}{한국어 요약}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \textbf{\textcolor{dcecol}{DCE (ICML 2025)}}\\[4pt]
+      DCE는 도메인 점진적 학습 환경에서 도메인 이동과 도메인 내 클래스 불균형이 복합적으로 작용하는 문제를 해결하기 위해 제안된 Mixture-of-Experts 프레임워크다.
+      핵심 아이디어는 학습 클래스를 샘플 수 기준으로 헤드/균형/꼬리 세 전문가에 배정하고, 각 전문가를 독립적으로 학습시키는 것이다.
+      추론 시 라우터는 실제 불균형 데이터 대신 클래스별 가우시안 분포($\mathcal{N}(\mu_k, \Sigma_k)$)에서 균등하게 생성한 의사 샘플(pseudo-samples)로 학습되므로, 꼬리 클래스에 대한 라우팅 편향이 발생하지 않는다.
+      친화 행렬(affinity matrix) 기반의 소프트 결합으로 어떤 샘플도 단일 전문가에 완전히 귀속되지 않는다.
+      실험에서는 4개 벤치마크 전체에서 기존 연속 학습 SOTA를 초과 달성하였으며,
+      꼬리 클래스 정확도 향상이 가장 두드러졌다.
+      이 프로젝트 맥락에서는 라우팅 오류 복합 문제를 직접 해소하는 설계로, MoE 구조 개선에 직접 적용 가능하다.
+
+    \column{0.48\textwidth}
+      \textbf{\textcolor{imoocol}{ImOOD (NeurIPS 2024)}}\\[4pt]
+      ImOOD는 긴 꼬리 분포로 학습된 모델이 이상치(OOD) 탐지에서 보이는 클래스 비대칭 편향을 수정하는 방법이다.
+      표준 OOD 탐지기는 헤드 클래스에 유리하게 편향되어, 꼬리 클래스의 정상(ID) 샘플을 OOD로 오탐하는 문제가 있다.
+      ImOOD는 클래스별 편향 항 $\Delta_k = \mathbb{E}[s^{\text{bal}}|y\!=\!k] - \mathbb{E}[s^{\text{imb}}|y\!=\!k]$을 추정하고,
+      이를 $\mathcal{L}_{\text{bias}}$ 형태로 학습 손실에 포함하여 훈련 단계에서 편향을 직접 줄인다.
+      테스트 시에는 $S(x) = s^{\text{imb}}(x) + \hat{\Delta}_{\hat{y}}$ 로 점수를 교정하며 추가 계산 비용이 없다.
+      에너지 점수·ODIN·마할라노비스 등 임의의 OOD 스코어러에 플러그인 방식으로 적용 가능하다.
+      실험에서 꼬리 클래스의 FPR95가 최대 약 12\,pp 감소하고, ID 분류 정확도는 거의 유지된다.
+      이 프로젝트에서는 희귀 공격 클래스 탐지율 향상을 위한 후처리 보정 기법으로 활용 가능성이 크다.
+  \end{columns}
+\end{frame}
+
+% =========================================================
+% References
+% =========================================================
+\begin{frame}[allowframebreaks]{References}
+  \footnotesize
+  \begin{thebibliography}{9}
+    \bibitem{DCE2025}
+      Yan et al.,
+      \textit{Dual-Balance Collaborative Experts for Domain-Incremental Learning},
+      ICML 2025. \texttt{github.com/Lain810/DCE}
+
+    \bibitem{ImOOD2024}
+      Wang et al.,
+      \textit{Towards Balanced Out-of-Distribution Detection under Long-Tailed Training Data},
+      NeurIPS 2024. \texttt{github.com/alibaba/imood}
+  \end{thebibliography}
+\end{frame}
+
+\end{document}
