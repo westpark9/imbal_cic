@@ -1,0 +1,513 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+
+\definecolor{matiblue}{RGB}{75,130,195}
+\definecolor{imoodred}{RGB}{195,85,75}
+\definecolor{prlgreen}{RGB}{60,150,90}
+
+\setbeamercolor{title}{fg=white,bg=matiblue!90!black}
+\setbeamercolor{frametitle}{fg=white,bg=matiblue!80!black}
+\setbeamercolor{structure}{fg=matiblue!80!black}
+
+\title{Paper Review}
+\subtitle{MATI (WSDM 2026) \& ImOOD (NeurIPS 2024) \& PRL (NeurIPS 2024)}
+\author{}
+\date{}
+
+\begin{document}
+
+%% ============================================================
+%%  MATI
+%% ============================================================
+
+% --- Slide 1: MATI Overview ---
+\begin{frame}
+\frametitle{MATI: Mixture Experts w/ Test-Time Aggregation for Imbalanced Regression}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\vspace{0.3cm}
+{\small
+\textbf{Problem:} Tabular imbalanced regression\\[4pt]
+\begin{itemize}
+  \item Existing methods assume \textbf{balanced} test distribution
+  \item Real-world test distribution may differ significantly
+\end{itemize}
+\vspace{6pt}
+
+\textbf{Key Ideas:}
+\begin{itemize}
+  \item Decompose training label distribution via \textbf{GMM}
+  \item Generate region-specific synthetic data via \textbf{SMOGN}
+  \item Train \textbf{multiple experts}, each specialized in a region
+  \item At test-time: adjust aggregation weights \textbf{without labels}, based on perturbation stability
+\end{itemize}
+\vspace{4pt}
+Baseline model: TabNetRegressor
+}
+\end{column}
+\begin{column}{0.43\textwidth}
+\vspace{0.2cm}
+\includegraphics[width=\textwidth]{mati_fig1b.png}\\
+{\tiny Figure 1(b) from the paper}
+\end{column}
+\end{columns}
+\end{frame}
+
+% --- Slide 2: Method 1 ---
+\begin{frame}
+\frametitle{Method 1 --- Region-Aware Mixture Expert Training}
+\begin{columns}[T]
+\begin{column}{0.40\textwidth}
+\vspace{0.2cm}
+\includegraphics[width=\textwidth]{mati_fig2_left.png}\\
+{\tiny Figure 2 (left): Expert training pipeline}
+\end{column}
+\begin{column}{0.58\textwidth}
+\vspace{0.1cm}
+{\small
+\textbf{Step 1} --- Overall Synthesis (Eq.\,1)\\
+$D_S = \text{Synthesizer}(D_T, Y)$ \quad {\scriptsize SMOGN-based oversampling}\\[4pt]
+
+\textbf{Step 2} --- GMM Decomposition (Eq.\,2)\\
+$\text{GMM}(D_T) = \sum_{n=1}^{N} \pi_n \,\mathcal{N}(Y \mid \mu_n, \sigma_n)$\\
+{\scriptsize $N$ determined by AIC (Akaike Information Criterion)}\\[4pt]
+
+\textbf{Step 3} --- Data Assignment (Eq.\,3--4)\\
+$z_i = \arg\max_n \;\pi_n\,\mathcal{N}(y_i \mid \mu_n,\sigma_n)$, \quad
+$D_T = \bigcup_{n=1}^{N} D_{T_n}$\\[4pt]
+
+\textbf{Step 4} --- Per-Expert Synthesis (Eq.\,5)\\
+$D_{S_n} = \text{Synth}_{ex}\!\left(D_S,\;\mu_n \!-\! \alpha\sigma_n,\;\mu_n \!+\! \alpha\sigma_n\right)$\\
+{\scriptsize Oversample component $n$'s region from the balanced $D_S$}\\[4pt]
+
+\textbf{Step 5} --- Expert Training\\
+Each $\text{Expert}_n$ trained on $D_{S_n}$ with \textbf{MSE loss}
+}
+\end{column}
+\end{columns}
+\end{frame}
+
+% --- Slide 3: Method 2 ---
+\begin{frame}
+\frametitle{Method 2 --- Test-Time Self-Supervised Expert Aggregation}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\vspace{0.1cm}
+{\small
+All expert parameters \textbf{frozen}; only aggregation weight $\mathbf{w}$ is learned.\\[6pt]
+
+\textbf{Continuous Prediction Gap Minimization} (Eq.\,6):\\[3pt]
+\begin{enumerate}
+  \item Generate two perturbed views $x_1, x_2$ from test sample $x$ via \textbf{VIME}
+  \item Forward through each expert $\rightarrow$ logits $v_i^1,\; v_i^2$
+  \item Normalize via $\text{softmax}(\mathbf{w})$, compute weighted sums:\\
+        $\hat{y}^{(1)} = \textstyle\sum_i \sigma(w_i)\cdot v_i^1$, \quad
+        $\hat{y}^{(2)} = \textstyle\sum_i \sigma(w_i)\cdot v_i^2$
+  \item Minimize: \; $\displaystyle\min_{\mathbf{w}}\; S = \frac{1}{|D_t|}\!\sum_{x\in D_t}\!(\hat{y}^{(1)}\!-\!\hat{y}^{(2)})^2$
+\end{enumerate}
+
+\vspace{6pt}
+{\scriptsize
+\textbf{Intuition:} Expert proficient in a region $\rightarrow$ stable prediction under perturbation $\rightarrow$ naturally receives larger weight $\rightarrow$ adapts to current test distribution.\\[2pt]
+\textbf{Early stop:} if any $w_i \le 0.05$.
+}
+}
+\end{column}
+\begin{column}{0.43\textwidth}
+\vspace{0.2cm}
+\includegraphics[width=\textwidth]{mati_fig2_right.png}\\
+{\tiny Figure 2 (right): Test-time aggregation}
+\end{column}
+\end{columns}
+\end{frame}
+
+% --- Slide 4: MATI Experiments ---
+\begin{frame}
+\frametitle{Experiments}
+{\small
+\begin{columns}[T]
+\begin{column}{0.46\textwidth}
+\textbf{Datasets} {\scriptsize (tabular)}
+\begin{itemize}\setlength\itemsep{1pt}
+  \item Taiwan House (unavailable)
+  \item Abalone --- 4{,}117 samples, 8 features
+  \item Bike Sharing --- 17{,}389 samples, 13 features
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Test distributions:} balanced / normal / inverse\\[4pt]
+\textbf{Code:} Not available
+\end{column}
+\begin{column}{0.52\textwidth}
+\textbf{Key Results}
+{\scriptsize
+\begin{itemize}\setlength\itemsep{2pt}
+  \item Average MAE improvement: \textbf{7.1\%} over baselines
+  \item Each expert achieves low error on its assigned region\\
+        $\rightarrow$ GMM-based partitioning is \textbf{valid}
+  \item Existing methods: good only on balanced test;\\
+        degrade on normal / inverse
+  \item MATI: \textbf{consistent} across all three distributions
+\end{itemize}
+}
+\vspace{4pt}
+{\scriptsize
+\textbf{Ablations:} perturbation ratio effect; expert weight distribution
+}
+\end{column}
+\end{columns}
+\vspace{6pt}
+\begin{center}
+{\footnotesize \textit{[Tables 1, 2, 3 to be inserted]}}
+\end{center}
+}
+\end{frame}
+
+% --- Slide 5: MATI Discussion ---
+\begin{frame}
+\frametitle{Discussion}
+{\small
+\begin{enumerate}\setlength\itemsep{10pt}
+  \item Very small tabular datasets $\rightarrow$ could have tried \textbf{SMOGN} instead of SMOTE for our augmentation.\\
+        {\scriptsize SMOGN: regression-specific; Gaussian noise for rare regions + SMOTE-style interpolation for moderate regions.}
+
+  \item Expert aggregation weight mechanism is essentially \textbf{SADE extended to regression}.\\
+        {\scriptsize SADE: test-time expert weighting for discrete classes $\rightarrow$ MATI: continuous targets.}
+
+  \item GMM-based synthesis is likely too \textbf{heavy for image data}.\\
+        {\scriptsize GMM fitting in high-dimensional feature space is inefficient $\rightarrow$ best suited for tabular.}
+\end{enumerate}
+}
+\end{frame}
+
+
+%% ============================================================
+%%  ImOOD
+%% ============================================================
+
+\setbeamercolor{frametitle}{fg=white,bg=imoodred!80!black}
+\setbeamercolor{structure}{fg=imoodred!80!black}
+
+% --- Slide 6: ImOOD Overview ---
+\begin{frame}
+\frametitle{ImOOD: Rethinking OOD Detection on Imbalanced Data Distribution}
+\begin{columns}[T]
+\begin{column}{0.50\textwidth}
+\vspace{0.2cm}
+{\small
+\textbf{Problem:} OOD detection under imbalanced ID distribution\\[4pt]
+Theoretically identifies a \textbf{class-aware bias} $\beta(x)$ between balanced and imbalanced OOD detectors.
+Proposes \textbf{training-time loss} ($\mathcal{L}_\text{ood}+\mathcal{L}_\gamma$) to correct this bias.\\
+Applicable to various OOD detectors as a \textbf{unified framework}.\\[8pt]
+
+Common failures of existing methods:
+\begin{itemize}
+  \item \textbf{Tail-class ID} $\rightarrow$ misclassified as OOD
+  \item \textbf{OOD samples} $\rightarrow$ misclassified as head-class ID
+\end{itemize}
+\vspace{3pt}
+{\scriptsize $\rightarrow$ Head's large decision space \& tail's small decision space jointly damage OOD detection.}
+}
+\end{column}
+\begin{column}{0.48\textwidth}
+\vspace{0.1cm}
+\includegraphics[width=\textwidth]{imood_fig1a.png}\\
+{\tiny Figure 1(a): Class distribution of wrongly detected ID/OOD samples}
+\end{column}
+\end{columns}
+\end{frame}
+
+% --- Slide 7: ImOOD Method ---
+\begin{frame}
+\frametitle{Method --- Class-aware Bias Between Balanced / Imbalanced OOD Scores}
+{\small
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+\textbf{Eq.\,1:}\; $P(y|x) \propto P(x|y) \cdot P(y)$\\
+{\scriptsize Bayes rule. $P(y)$ is skewed in imbalanced setting.}\\[3pt]
+
+\textbf{Eq.\,3:}\; $P^\text{bal}(y|x) \propto P(y|x)\,/\,P(y)$\\
+{\scriptsize Class-balanced posterior (prior bias removed).}\\[3pt]
+
+\textbf{Eq.\,4:}\; $P(i|x) = \textstyle\sum_y P(y|x) = 1 - P(o|x)$\\
+{\scriptsize OOD detection as binary classification.}\\[3pt]
+
+\textbf{Thm.\,3.2:}\; $P^\text{bal}(i|x) = \beta(x) \cdot P(i|x)$\\
+{\scriptsize $\beta(x) = \textstyle\sum_y \gamma_y(x)\,\frac{P(y|x,i)}{P(y)}$}\\[2pt]
+{\scriptsize Tail sample $\rightarrow$ $\beta$ large $\rightarrow$ boosts ID score.}\\
+{\scriptsize OOD predicted as head $\rightarrow$ $\beta$ small $\rightarrow$ suppresses ID score.}\\[3pt]
+
+\textbf{Eq.\,5:}\; $\sigma(g^\text{bal}) = \beta(x)\cdot\sigma(g)$\\
+{\scriptsize Sigmoid form of the balanced/imbalanced relation.}
+\end{column}
+\begin{column}{0.46\textwidth}
+\textbf{Eq.\,7}\; ($\mathcal{L}_\text{ood}$):\\[2pt]
+$\mathcal{L}_\text{ood} = \text{BCE}\!\big(g(x) - \Delta(x),\; t\big)$\\[2pt]
+{\scriptsize $\Delta(x) = \log\!\big[\beta + (\beta\!-\!1)\,e^{g}\big]$}\\[2pt]
+{\scriptsize Train $g$ to directly estimate $g^\text{bal}$ by subtracting bias $\Delta$.}\\
+{\scriptsize $\gamma$ detached.\; ID: $\Delta\!\ge\!0$, \;OOD: $\Delta\!\le\!0$ \;(clamped).}\\[6pt]
+
+\textbf{Eq.\,8}\; ($\mathcal{L}_\gamma$):\\[2pt]
+$\mathcal{L}_\gamma = \max\!\big\{0,\;\beta(x)\!\cdot\!\sigma(g(x))-1\big\}$\\[2pt]
+{\scriptsize Probability constraint: $P^\text{bal}(i|x)\le 1$.}\\
+{\scriptsize $g$ detached.\; Only $\gamma_{y;\theta}$ is updated.}\\[8pt]
+
+\hrule\vspace{4pt}
+{\scriptsize At \textbf{test time}: use $g(x)$ only.\\
+No $\beta,\gamma,\Delta$ computation needed.}
+\end{column}
+\end{columns}
+}
+\end{frame}
+
+% --- Slide 8: ImOOD Experiments ---
+\begin{frame}
+\frametitle{Experiments}
+{\small
+\begin{columns}[T]
+\begin{column}{0.46\textwidth}
+\textbf{Datasets}
+\begin{itemize}\setlength\itemsep{1pt}
+  \item CIFAR10/100-LT {\scriptsize (IR=100)}\\
+        {\scriptsize OOD aux: TinyImages 300K}
+  \item ImageNet-LT\\
+        {\scriptsize OOD train: ImageNet-Extra}\\
+        {\scriptsize OOD test: ImageNet-1k-OOD}
+\end{itemize}
+\vspace{4pt}
+\textbf{Architecture}
+\begin{itemize}\setlength\itemsep{1pt}
+  \item CIFAR: ResNet18 / ImageNet: ResNet50
+  \item Detector $g$: shares backbone with classifier $f$;\\
+        {\scriptsize 1 additional output node attached}
+  \item $\gamma$ generation: 1 extra \texttt{nn.Linear}
+\end{itemize}
+\vspace{2pt}
+\textbf{Code:} \texttt{github.com/alibaba/imood}
+\end{column}
+\begin{column}{0.52\textwidth}
+\textbf{Key Results}
+{\scriptsize
+\begin{itemize}\setlength\itemsep{2pt}
+  \item CIFAR10-LT: AUROC +1.9\%, FPR95 $-$4.6\% (vs.\ PASCL)
+  \item ImageNet-LT: AUROC +6.7\%, FPR95 $-$13.2\%
+  \item Consistent improvement across OE, Energy, Maha detectors
+  \item Outperforms ClassPrior on its own benchmark setting
+\end{itemize}
+}
+\vspace{3pt}
+\textbf{Ablations}
+{\scriptsize
+\begin{itemize}\setlength\itemsep{2pt}
+  \item $\gamma_y$: const $<$ class-dep $<$ input-dep (matches theory)
+  \item $\beta,\Delta$ distributions: tail $\rightarrow\beta$ large, OOD $\rightarrow\beta$ small
+  \item Post-hoc ($\gamma\!=\!1$): marginal gain;\\
+        training-time regularization is much more effective\\
+        {\tiny (FPR95: 33.39 $\rightarrow$ 30.80 post-hoc vs.\ 29.95 training)}
+\end{itemize}
+}
+\end{column}
+\end{columns}
+\vspace{4pt}
+\begin{center}
+{\footnotesize \textit{[Tables 1, 2 to be inserted]}}
+\end{center}
+}
+\end{frame}
+
+% --- Slide 9: ImOOD Discussion ---
+\begin{frame}
+\frametitle{Discussion}
+{\small
+\begin{enumerate}\setlength\itemsep{12pt}
+  \item OOD detection is \textbf{binary} (ID vs.\ OOD) performance metric $\rightarrow$ does not directly tell whether \textbf{multi-class} classification improves.\\ Separate verification needed.
+
+  \item Opposite to MATI: image-based framework $\rightarrow$ \textbf{hard to apply on tabular} data.\\
+        {\scriptsize Relies on feature extractor (ResNet) + softmax classifier; tabular models have different backbone structures.}
+\end{enumerate}
+}
+\end{frame}
+
+
+%% ============================================================
+%%  PRL
+%% ============================================================
+
+\setbeamercolor{frametitle}{fg=white,bg=prlgreen!80!black}
+\setbeamercolor{structure}{fg=prlgreen!80!black}
+
+% --- Slide 10: PRL Overview ---
+\begin{frame}
+\frametitle{PRL: Controllable Long-Tailed Learning via Hypernetwork-Generated Experts}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\vspace{0.2cm}
+{\small
+\textbf{Problem:} Long-tailed classification\\[4pt]
+\begin{itemize}
+  \item Existing methods assume fixed test distribution $\rightarrow$ fail under \textbf{distribution shift}
+  \item No mechanism for users to control \textbf{head/tail trade-off}
+\end{itemize}
+\vspace{6pt}
+
+\textbf{Key Ideas:}
+\begin{itemize}
+  \item Generate diverse expert classifier heads via \textbf{hypernetwork} $h_\psi$
+  \item Sample from \textbf{Dirichlet distribution} to cover all possible distribution scenarios
+  \item \textbf{Preference vector} $\alpha^*$ at test-time $\rightarrow$ controllable head/tail trade-off \textbf{without retraining}
+\end{itemize}
+}
+\end{column}
+\begin{column}{0.50\textwidth}
+\vspace{0.1cm}
+\includegraphics[width=\textwidth]{prl_fig1.png}\\
+{\tiny Figure 1: (a) Traditional, (b) Multi-expert, (c) PRL with hypernetwork + preference control}
+\end{column}
+\end{columns}
+\end{frame}
+
+% --- Slide 11: PRL Theory ---
+\begin{frame}
+\frametitle{Theory --- Why Diverse Experts Help}
+{\small
+\textbf{Thm.\,1 (ERM Limitation):}\\[2pt]
+$R_\text{test}(f) = R_m(f) + \textstyle\sum_{i=1}^{K}(\pi_i^\text{test}-\pi_i^m)\cdot\mathbb{E}[\ell(f(x),i)]$\\[2pt]
+{\scriptsize Single-distribution ERM: test risk grows with class prior mismatch.}\\[8pt]
+
+\textbf{Def.\,2 (ETVD --- Environment Total Variation Distance):}\\[2pt]
+$\delta(E_i,E_j) = \frac{1}{2}\textstyle\sum_{k=1}^{K}|\pi_k^i - \pi_k^j|$, \quad
+$\Delta(E_1,\ldots,E_M) = \max_{i,j}\;\delta(E_i,E_j)$\\[8pt]
+
+\textbf{Thm.\,2 (Ensemble Bound):}\\[2pt]
+$R_\text{test}(\hat{f}) \;\le\; \dfrac{1}{N}\!\sum_{m=1}^{N}\!R_m(f_m) \;+\; 2M\!\left(\dfrac{1}{N}\!\sum_{m=1}^{N}\!\delta(E_m,E_\text{test}) + \dfrac{N\!-\!1}{N}\,\Delta\right)$\\[4pt]
+{\scriptsize Ensemble of $N$ experts $\rightarrow$ (1) avg.\ empirical risk + (2) avg.\ TV distance to test + (3) weighted ETVD.}\\
+{\scriptsize Diverse experts covering different distributions $\rightarrow$ smaller gap to any test distribution.}
+}
+\end{frame}
+
+% --- Slide 12: PRL Method ---
+\begin{frame}
+\frametitle{Method --- Hypernetwork + Stochastic Convex Ensemble + Preference Control}
+{\small
+\begin{columns}[T]
+\begin{column}{0.50\textwidth}
+\textbf{4.2 Diverse Experts}\\[2pt]
+$T\!=\!3$ experts share feature extractor $\phi_\theta$;\\
+classifier heads generated by hypernetwork:\\[2pt]
+$z_i \sim \text{Dir}(\alpha), \quad w_i = h_\psi(z_i)$\\[2pt]
+{\scriptsize $h_\psi$: 3-layer MLP with ReLU}\\[2pt]
+Losses (same as SADE):\\
+{\scriptsize $L_1$: standard CE, $L_2$: balanced softmax, $L_3$: inverse softmax}\\[8pt]
+
+\textbf{4.3 Stochastic Convex Ensemble (SCE)}\\[2pt]
+Promote expert diversity via worst-case loss:\\[2pt]
+$\min_\Theta\;\textstyle\sum_i L_i + \lambda\cdot\log\!\sum_i\exp(L_i/\lambda)$\\[2pt]
+{\scriptsize $\lambda\!\to\!0$: approaches $\min_\Theta\max_\mathbf{p}\sum p_i L_i$}\\
+{\scriptsize Second term penalizes any single expert dominating.}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{4.4 Preference-Controlled Trade-off}\\[2pt]
+At test time, user inputs $\alpha^*\!=\!(\alpha_1^*,\alpha_2^*,\alpha_3^*)$:\\[3pt]
+$\hat{r} = \dfrac{r \odot \alpha^*}{r^\top\!\alpha^*}$\\[4pt]
+$\hat{W}_i = h_\psi(\hat{r}) \quad\rightarrow$ new classifier heads\\[3pt]
+{\scriptsize $\alpha^*$ controls head/tail focus:}
+\begin{itemize}\setlength\itemsep{1pt}
+  \item {\scriptsize $R\!=\!(1.0,2.7)$: best on many-shot (head)}
+  \item {\scriptsize $R\!=\!(1.9,1.1)$: best on few-shot (tail)}
+  \item {\scriptsize $R\!=\!(0.5,2.5)$: best on medium-shot}
+\end{itemize}
+\vspace{4pt}
+{\scriptsize \textbf{No retraining needed} --- just change $\alpha^*$ and forward through $h_\psi$.}\\[6pt]
+
+\hrule\vspace{4pt}
+{\scriptsize Pareto-optimal set: covers all possible distribution scenarios; each preference maps to a dedicated solution on the Pareto front.}
+\end{column}
+\end{columns}
+}
+\end{frame}
+
+% --- Slide 13: PRL Experiments ---
+\begin{frame}
+\frametitle{Experiments}
+{\small
+\begin{columns}[T]
+\begin{column}{0.46\textwidth}
+\textbf{Datasets}
+\begin{itemize}\setlength\itemsep{1pt}
+  \item CIFAR100-LT {\scriptsize (IR=10, 50, 100)}
+  \item Places-LT, iNaturalist 2018
+  \item ImageNet-LT
+\end{itemize}
+\vspace{3pt}
+\textbf{Backbones}
+\begin{itemize}\setlength\itemsep{1pt}
+  \item ResNeXt-50 (ImageNet-LT)
+  \item ResNet-32 (CIFAR100-LT)
+  \item ResNet-152 (Places-LT)
+  \item ResNet-50 (iNaturalist)
+\end{itemize}
+\vspace{2pt}
+\textbf{Code:} \texttt{github.com/DataLab-atom/PRL}
+\end{column}
+\begin{column}{0.52\textwidth}
+\textbf{Standard LT Recognition} (Table 1)
+{\scriptsize
+\begin{itemize}\setlength\itemsep{2pt}
+  \item SOTA on all 4 datasets (uniform test)
+  \item CIFAR100-LT: +0.6--0.8\% vs.\ LSC/BalPoE
+  \item ImageNet-LT: \textbf{60.8\%} (vs.\ 60.2 LSC, 59.3 BalPoE)
+\end{itemize}
+}
+\vspace{3pt}
+\textbf{Distribution-Shift LT} (Table 2, 3)
+{\scriptsize
+\begin{itemize}\setlength\itemsep{2pt}
+  \item Forward-LT to Backward-LT: consistently best
+  \item Even under extreme backward dist., maintains performance
+\end{itemize}
+}
+\vspace{3pt}
+\textbf{Ablations}
+{\scriptsize
+\begin{itemize}\setlength\itemsep{2pt}
+  \item w/o hypernetwork $\rightarrow$ performance drops
+  \item w/o Chebyshev polynomial $\rightarrow$ performance drops
+  \item Both components essential for distribution adaptation
+\end{itemize}
+}
+\end{column}
+\end{columns}
+\vspace{4pt}
+\begin{center}
+{\footnotesize \textit{[Tables 1, 2, 3, 4 to be inserted]}}
+\end{center}
+}
+\end{frame}
+
+% --- Slide 14: PRL Discussion ---
+\begin{frame}
+\frametitle{Discussion}
+{\small
+\begin{enumerate}\setlength\itemsep{10pt}
+  \item Extends SADE paradigm: \textbf{expert diversity + test-time adaptation + preference control}.\\
+        {\scriptsize SADE: fixed experts $\rightarrow$ PRL: hypernetwork-generated experts with controllable trade-off.}
+
+  \item Hypernetwork generates only classifier heads $\rightarrow$ \textbf{shared backbone}, minimal extra cost.\\
+        {\scriptsize $h_\psi$: 3-layer MLP; classifier head $w_i \in \mathbb{R}^{d\times C}$ only.}
+
+  \item Preference vector semantics are intuitive: $\alpha^*$ directly maps to head/tail emphasis.\\
+        {\scriptsize Practical value: medical screening (favor tail) vs.\ routine classification (favor head).}
+
+  \item Classification + softmax-based $\rightarrow$ \textbf{not directly applicable to regression} (cf.\ MATI).
+\end{enumerate}
+}
+\end{frame}
+
+\end{document}
