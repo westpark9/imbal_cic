@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 """
-code_mati.py — MATI-inspired MoE for IDS imbalanced classification.
+code_tta.py — SADE-style TTA on taxonomy-based MoE for IDS imbalanced classification.
 
-Expert division  : CIC-IDS2017 attack family taxonomy (6 experts).
-                   Each expert trains on ALL data with balanced sample weights;
-                   focus classes receive an additional focus_weight multiplier.
-                   All experts output full n_classes probability vectors —
-                   no local→global mapping needed.
-Test-time agg.   : VIME perturbation → two views per sample →
-                   minimise Continuous Prediction Gap (MATI Eq. 6, adapted
-                   for class-prob vectors) → Adam update on scalar weights w.
-                   Tail expert weight is fixed at 1/E (excluded from TTA opt.).
-Baseline         : standard XGBoost with balanced sample weights.
+Expert design : CIC-IDS2017 attack family taxonomy (6 experts), same as code_mati.py.
+                Each expert trains on ALL data with balanced sample weights;
+                focus classes receive a focus_weight multiplier.
+                All experts output full n_classes probability vectors.
+
+Test-time agg.: SADE (NeurIPS 2022) prediction stability maximisation.
+                Two VIME-perturbed views per sample.
+                Maximise  S = (1/B) Σ_b ŷ¹_b · ŷ²_b
+                Theorem 1 (SADE): S ∝ I(Ŷ;Y) − H(Ŷ)
+                → maximising stability promotes correct (high MI) and
+                  confident (low entropy) ensemble predictions.
+                All E experts optimised freely — no fixed tail weight.
+
+Baseline       : standard XGBoost with balanced sample weights.
 
 Usage:
-  python src/code_mati.py --data cic2017_proc.pkl --model 2
+  python src/code_tta.py --data cic2017_proc.pkl --model 2
 """
 import argparse
 import gc
@@ -42,33 +46,49 @@ GRAY   = "#f2f2f2"
 WHITE  = "#ffffff"
 EPS    = 0.001
 
-# ─── CIC-IDS2017 family taxonomy ──────────────────────────────────────────────
-# Values are lowercase substrings matched against the already-normalised class
-# names in cic2017_proc.pkl (spaces → dashes, lower-cased by preprocessing).
-# "dos-" matches all DoS variants but NOT "ddos" (starts with 'dd').
-# "web-attack" matches all three Web Attack sub-variants.
-# "benign" → dedicated binary expert (benign vs all attacks).
-# "Tail"   → members determined by IR threshold, not name patterns.
-FAMILIES: dict[str, list[str]] = {
-    "Benign":     ["benign"],         # binary expert: benign(1) vs all attacks(0)
-    "DoS":        ["dos-"],           # dos-hulk, dos-goldeneye, dos-slowloris, dos-slowhttptest
+# ─── CIC-IDS2017 family taxonomy (주석 처리) ──────────────────────────────────
+FAMILIES_2017: dict[str, list[str]] = {
+    "Benign":     ["benign"],
+    "DoS":        ["dos-"],
     "DDoS_Scan":  ["ddos", "portscan"],
     "BruteForce": ["ftp-patator", "ssh-patator"],
     "WebBot":     ["web-attack", "bot"],
-    "Tail":       [],                 # members determined by IR threshold, not name patterns
+    "Tail":       [],
 }
 
-# Classes with IR >= this threshold are assigned to the Tail family first,
-# overriding taxonomy matching.  IR=5000 captures the natural break in CIC-IDS2017
-# (heartbleed: 206k, web-sql: 108k, infiltration: 63k) well above web-xss at 3.5k.
-TAIL_IR_THRESHOLD = 5000
+# ─── CIC-IDS2018 family taxonomy ──────────────────────────────────────────────
+# 정규화된 레이블 기준 (normalize_label: lowercase / space→hyphen / benign→normal)
+# Tail (IR ≥ 5000): ddos-attack-loic-udp, brute-force--web, brute-force--xss, sql-injection
+FAMILIES_2018: dict[str, list[str]] = {
+    "Benign":       ["normal"],
+    "DoS":          ["dos-attacks"],
+    "DDoS":         ["ddos-attack", "ddos-attacks"],
+    "BruteForce":   ["ftp-bruteforce", "ssh-bruteforce"],
+    "Bot":          ["bot"],
+    "Infiltration": ["infilteration"],
+    "Tail":         [],
+}
 
+
+def get_families(dataset_type: str) -> dict[str, list[str]]:
+    if dataset_type == "cic2018":
+        return FAMILIES_2018
+    elif dataset_type == "cic2017":
+        return FAMILIES_2017
+    raise ValueError(
+        f"Unknown dataset_type='{dataset_type}'. "
+        "Add a FAMILIES_<dataset> dict and register it here."
+    )
+    
+
+
+TAIL_IR_THRESHOLD = 5000
 
 
 # ─── logging ──────────────────────────────────────────────────────────────────
 
 def setup_logger(log_path: str) -> logging.Logger:
-    logger = logging.getLogger("mati")
+    logger = logging.getLogger("sade_tta")
     logger.setLevel(logging.DEBUG)
     fmt = logging.Formatter("%(asctime)s  %(levelname)s  %(message)s")
     for h in [logging.StreamHandler(), logging.FileHandler(log_path)]:
@@ -97,7 +117,8 @@ def load_data(path: str):
     X = np.asarray(d["X"], dtype=np.float32)
     y = np.asarray(d["y"], dtype=int)
     le = d["label_encoder"]
-    return X, y, le
+    dataset_type = d.get("dataset_type", "cic2017")
+    return X, y, le, dataset_type
 
 
 def split_data(X, y, seed: int):
@@ -114,22 +135,21 @@ def split_data(X, y, seed: int):
 # ─── family assignment ────────────────────────────────────────────────────────
 
 def compute_tail_ids(y: np.ndarray, threshold: int = TAIL_IR_THRESHOLD) -> set:
-    """Return class IDs whose IR (max_count / class_count) >= threshold."""
     counts = np.bincount(y)
     max_n = int(counts.max())
     ir = max_n / np.maximum(counts, 1)
     return {int(i) for i in np.where(ir >= threshold)[0]}
 
 
-def assign_family(class_name: str, class_id: int, tail_ids: set) -> str:
-    """IR-based Tail check first, then taxonomy substring match."""
+def assign_family(class_name: str, class_id: int, tail_ids: set,
+                  families: dict) -> str:
     if class_id in tail_ids:
         return "Tail"
     n = class_name.lower().strip()
-    for family, patterns in FAMILIES.items():
+    for family, patterns in families.items():
         if family == "Tail":
             continue
-        if any(pat in n for pat in patterns):
+        if any(n.startswith(pat) for pat in patterns):
             return family
     return "Other"
 
@@ -142,7 +162,6 @@ def softmax(w: np.ndarray) -> np.ndarray:
 
 
 def balanced_weights(y: np.ndarray) -> np.ndarray:
-    """Per-sample weight = n / (k · count_c).  Inverse-frequency rebalancing."""
     counts = np.maximum(np.bincount(y), 1)
     n, k = len(y), len(counts)
     return (n / (k * counts[y])).astype(np.float32)
@@ -152,15 +171,11 @@ def balanced_weights(y: np.ndarray) -> np.ndarray:
 
 def vime_perturb(X: np.ndarray, p_mask: float,
                  rng: np.random.Generator) -> np.ndarray:
-    """
-    Generate one perturbed view of X.
-    Each feature-value is independently replaced with a random value drawn
-    from the same column with probability p_mask.  Fully vectorised.
-    """
+    """Replace each feature independently with a column-random value with prob p_mask."""
     B, D = X.shape
-    mask = rng.random((B, D)) < p_mask          # [B, D] bool
-    ref_rows = rng.integers(0, B, size=(B, D))  # random row indices per cell
-    X_ref = X[ref_rows, np.arange(D)]           # [B, D] random column samples
+    mask = rng.random((B, D)) < p_mask
+    ref_rows = rng.integers(0, B, size=(B, D))
+    X_ref = X[ref_rows, np.arange(D)]
     return np.where(mask, X_ref, X)
 
 
@@ -191,7 +206,6 @@ def xgb_params(n_classes: int, n_estimators: int, device: str, seed: int) -> dic
 
 
 def predict_proba(model, X: np.ndarray, chunk: int = 50_000) -> np.ndarray:
-    """XGBoost predict_proba with chunking to control memory."""
     out = []
     for s in range(0, len(X), chunk):
         p = model.predict_proba(X[s:s + chunk])
@@ -215,22 +229,17 @@ def train_baseline(X_tr, y_tr, X_va, y_va,
     return model
 
 
-# ─── Family experts ───────────────────────────────────────────────────────────
+# ─── Family experts (identical to code_mati.py) ───────────────────────────────
 
 def train_expert(X_tr, y_tr, X_va, y_va,
                  focus_ids: list[int],
                  n_classes: int,
                  n_estimators: int, device: str, seed: int,
                  focus_weight: float, logger, name: str):
-    """Train on ALL data with balanced weights; up-weight focus classes.
-
-    Every expert outputs a full n_classes probability vector — no local→global
-    mapping needed, avoiding the sparse-expert domination failure mode.
-    """
+    """Train on ALL data; focus classes receive an additional sample-weight multiplier."""
     t0 = time.time()
     w = balanced_weights(y_tr)
-    focus_mask = np.isin(y_tr, focus_ids)
-    w[focus_mask] *= focus_weight
+    w[np.isin(y_tr, focus_ids)] *= focus_weight
 
     model = xgb.XGBClassifier(**xgb_params(n_classes, n_estimators, device, seed))
     with warnings.catch_warnings():
@@ -238,30 +247,23 @@ def train_expert(X_tr, y_tr, X_va, y_va,
         model.fit(X_tr, y_tr, sample_weight=w,
                   eval_set=[(X_va, y_va)], verbose=False)
 
-    logger.info(
-        f"  [{name}] trained in {time.time() - t0:.1f}s | "
-        f"focus classes: {focus_ids}"
-    )
+    logger.info(f"  [{name}] trained in {time.time() - t0:.1f}s | focus classes: {focus_ids}")
     return model
 
 
 def train_all_experts(X_tr, y_tr, X_va, y_va,
                       class_names, n_classes, n_estimators,
                       device, seed, logger,
-                      tail_ids: set, focus_weight: float):
-    """Return (models, fam_names, tail_idx)."""
+                      tail_ids: set, focus_weight: float,
+                      families: dict):
     models, fam_names = [], []
-
-    for fam in FAMILIES:
+    for fam in families:
         focus_ids = [i for i, c in enumerate(class_names)
-                     if assign_family(c, i, tail_ids) == fam]
+                     if assign_family(c, i, tail_ids, families) == fam]
         if not focus_ids:
             logger.warning(f"Family '{fam}' has no matched classes — skipped.")
             continue
-        logger.info(
-            f"Training expert '{fam}': "
-            f"{[class_names[i] for i in focus_ids]}"
-        )
+        logger.info(f"Training expert '{fam}': {[class_names[i] for i in focus_ids]}")
         m = train_expert(
             X_tr, y_tr, X_va, y_va,
             focus_ids, n_classes, n_estimators, device, seed,
@@ -269,73 +271,49 @@ def train_all_experts(X_tr, y_tr, X_va, y_va,
         )
         models.append(m)
         fam_names.append(fam)
-
-    tail_idx = fam_names.index("Tail") if "Tail" in fam_names else None
-    return models, fam_names, tail_idx
+    return models, fam_names
 
 
-# ─── Test-time aggregation ────────────────────────────────────────────────────
+# ─── SADE TTA ─────────────────────────────────────────────────────────────────
 
-def tta_aggregate(models, X_te: np.ndarray,
-                  n_epochs: int, lr: float, p_mask: float,
-                  batch_size: int, seed: int, logger,
-                  tail_idx: int | None = None) -> np.ndarray:
+def sade_tta(models, X_te: np.ndarray,
+             n_epochs: int, lr: float, p_mask: float,
+             batch_size: int, seed: int, logger,
+             early_stop_thr: float = 0.02) -> np.ndarray:
     """
-    MATI Algorithm 1 adapted for classification.
+    SADE (NeurIPS 2022) prediction stability TTA for tabular classification.
 
-    All experts output full n_classes probability vectors (no local→global
-    mapping).  Only the scalar weight vector w ∈ R^(E-1) is learned by
-    minimising the Continuous Prediction Gap:
+    Objective (maximise):
+        S = (1/B) Σ_b  ŷ¹_b · ŷ²_b
+    where ŷ^m = Σ_e w_e · v^m_e  (weighted ensemble on VIME view m).
 
-        S = (1/|B|) Σ_{x∈B} ‖ŷ¹ - ŷ²‖²
+    Gradient w.r.t. w_e  (before softmax chain rule):
+        g_e = ∂S/∂w_e = (1/B) Σ_b [v¹_{e,b} · ŷ²_b + ŷ¹_b · v²_{e,b}]
 
-    When tail_idx is given the Tail expert weight is fixed at 1/E and excluded
-    from gradient optimisation.  The E-1 free experts share (1 - 1/E) via a
-    softmax over w_free.  Gradient for free logit j (chain rule):
+    Gradient w.r.t. softmax logit j  (chain rule):
+        ∂S/∂logit_j = w_j · (g_j − Σ_k w_k g_k)
 
-        ∂S/∂w_j = (2/B)·(1-tail_w)·σ_j · Σ_{bc} diff_bc·[(v¹_j−ȳ¹_f)−(v²_j−ȳ²_f)]_bc
-
-    Returns the full weight vector s ∈ R^E (sums to 1).
+    Adam gradient ascent on S  (≡ descent on −S).
+    Early stop when any weight collapses below early_stop_thr.
     """
     E = len(models)
     rng = np.random.default_rng(seed)
+    logits = np.zeros(E, dtype=np.float64)
 
-    has_fixed_tail = tail_idx is not None
-    tail_w = 1.0 / E if has_fixed_tail else 0.0
-    free_idx = [i for i in range(E) if i != tail_idx] if has_fixed_tail else list(range(E))
-    E_free = len(free_idx)
-
-    w_free = np.zeros(E_free, dtype=np.float64)
-
-    m_adam = np.zeros(E_free)
-    v_adam = np.zeros(E_free)
+    m_adam = np.zeros(E)
+    v_adam = np.zeros(E)
     t_step = 0
     β1, β2, ε_adam = 0.9, 0.999, 1e-8
 
     N = len(X_te)
-    if has_fixed_tail:
-        logger.info(
-            f"TTA: {E} experts ({E_free} free + Tail fixed={tail_w:.3f}), "
-            f"{n_epochs} epochs, lr={lr}, p_mask={p_mask}, batch_size={batch_size}"
-        )
-    else:
-        logger.info(
-            f"TTA: {E} experts, {n_epochs} epochs, "
-            f"lr={lr}, p_mask={p_mask}, batch_size={batch_size}"
-        )
-
-    def _build_weights(w_f: np.ndarray) -> np.ndarray:
-        s_norm = softmax(w_f)
-        s = np.zeros(E)
-        for j, fi in enumerate(free_idx):
-            s[fi] = s_norm[j] * (1.0 - tail_w)
-        if has_fixed_tail:
-            s[tail_idx] = tail_w
-        return s
+    logger.info(
+        f"SADE TTA: {E} experts, {n_epochs} epochs, "
+        f"lr={lr}, p_mask={p_mask}, batch_size={batch_size}"
+    )
 
     for epoch in range(n_epochs):
         perm = rng.permutation(N)
-        epoch_loss = 0.0
+        epoch_S = 0.0
         n_batches = 0
 
         for start in range(0, N, batch_size):
@@ -346,64 +324,204 @@ def tta_aggregate(models, X_te: np.ndarray,
             x1 = vime_perturb(X_b, p_mask, rng)
             x2 = vime_perturb(X_b, p_mask, rng)
 
-            # Each expert outputs full n_classes probs: [E, B, C]
+            # [E, B, C] expert probability vectors for each view
             v1 = np.stack([predict_proba(m, x1, chunk=B) for m in models])
             v2 = np.stack([predict_proba(m, x2, chunk=B) for m in models])
 
-            s = _build_weights(w_free)
+            w = softmax(logits)
 
-            y1 = np.einsum("e,ebc->bc", s, v1)
-            y2 = np.einsum("e,ebc->bc", s, v2)
+            # Ensemble predictions [B, C]
+            y1 = np.einsum("e,ebc->bc", w, v1)
+            y2 = np.einsum("e,ebc->bc", w, v2)
 
-            diff = y1 - y2
-            loss = float(np.mean(diff ** 2))
-            epoch_loss += loss
+            # Prediction stability S = (1/B) Σ_b ŷ¹_b · ŷ²_b
+            S = float(np.mean(np.sum(y1 * y2, axis=1)))
+            epoch_S += S
             n_batches += 1
 
-            s_norm = softmax(w_free)
-            v1_free = v1[free_idx]
-            v2_free = v2[free_idx]
-
-            y1_free = np.einsum("f,fbc->bc", s_norm, v1_free)
-            y2_free = np.einsum("f,fbc->bc", s_norm, v2_free)
-
-            r1_free = v1_free - y1_free[None]
-            r2_free = v2_free - y2_free[None]
-
-            gap_free = np.einsum("bc,fbc->f", diff, r1_free - r2_free)
-            grad = (2.0 / B) * (1.0 - tail_w) * s_norm * gap_free
-
-            t_step += 1
-            m_adam = β1 * m_adam + (1 - β1) * grad
-            v_adam = β2 * v_adam + (1 - β2) * grad ** 2
-            m_hat  = m_adam / (1 - β1 ** t_step)
-            v_hat  = v_adam / (1 - β2 ** t_step)
-            w_free -= lr * m_hat / (np.sqrt(v_hat) + ε_adam)
-
-        if epoch % 10 == 0 or epoch == n_epochs - 1:
-            s_now = _build_weights(w_free)
-            logger.info(
-                f"  epoch {epoch + 1:3d}/{n_epochs} | "
-                f"loss={epoch_loss / max(n_batches, 1):.6f} | "
-                f"w={s_now.round(3)}"
+            # g_e = ∂S/∂w_e
+            dS_dw = (1.0 / B) * (
+                np.einsum("ebc,bc->e", v1, y2) +
+                np.einsum("bc,ebc->e", y1, v2)
             )
 
-    return _build_weights(w_free)
+            # ∂S/∂logit_j = w_j(g_j - Σ_k w_k g_k)
+            grad_logits = w * (dS_dw - np.dot(w, dS_dw))
+
+            # Ascend on S ≡ descend on −S → negate gradient for Adam
+            neg_grad = -grad_logits
+            t_step += 1
+            m_adam = β1 * m_adam + (1 - β1) * neg_grad
+            v_adam = β2 * v_adam + (1 - β2) * neg_grad ** 2
+            m_hat = m_adam / (1 - β1 ** t_step)
+            v_hat = v_adam / (1 - β2 ** t_step)
+            logits -= lr * m_hat / (np.sqrt(v_hat) + ε_adam)
+
+        w_now = softmax(logits)
+        if epoch % 10 == 0 or epoch == n_epochs - 1:
+            logger.info(
+                f"  epoch {epoch + 1:3d}/{n_epochs} | "
+                f"S={epoch_S / max(n_batches, 1):.6f} | "
+                f"w={w_now.round(3)}"
+            )
+
+        if early_stop_thr > 0 and np.any(w_now <= early_stop_thr):
+            logger.info(
+                f"  Early stop epoch {epoch + 1}: "
+                f"min_w={w_now.min():.4f} ≤ {early_stop_thr}"
+            )
+            break
+
+    return softmax(logits)
 
 
 def moe_predict(models, weights: np.ndarray,
                 X: np.ndarray, chunk: int = 50_000) -> np.ndarray:
-    """Weighted ensemble prediction; returns predicted class indices."""
-    probs = np.stack([predict_proba(m, X, chunk) for m in models])  # [E, N, C]
+    probs = np.stack([predict_proba(m, X, chunk) for m in models])
     ensemble = np.einsum("e,enc->nc", weights, probs)
     return np.argmax(ensemble, axis=1)
 
 
 # ─── output helpers ───────────────────────────────────────────────────────────
 
+def sorted_classification_report(y_true: np.ndarray, y_pred: np.ndarray,
+                                  class_names: list[str]) -> str:
+    """sklearn classification_report 대체 — test support 내림차순 정렬."""
+    n_cls = len(class_names)
+    counts = np.bincount(y_true, minlength=n_cls)
+    order = np.argsort(-counts)
+    p, r, f, s = precision_recall_fscore_support(
+        y_true, y_pred, labels=np.arange(n_cls), zero_division=0
+    )
+    name_w = max(len(c) for c in class_names) + 2
+    lines = [
+        f"{'':>{name_w}}  {'precision':>9}  {'recall':>9}  {'f1-score':>9}  {'support':>9}",
+        "",
+    ]
+    for ci in order:
+        if counts[ci] == 0:
+            continue
+        lines.append(
+            f"{class_names[ci]:>{name_w}}  {p[ci]:>9.4f}  {r[ci]:>9.4f}"
+            f"  {f[ci]:>9.4f}  {int(s[ci]):>9,}"
+        )
+    lines.append("")
+    for avg_key, avg_label in [("macro", "macro avg"), ("weighted", "weighted avg")]:
+        pa, ra, fa, _ = precision_recall_fscore_support(
+            y_true, y_pred, average=avg_key, zero_division=0
+        )
+        lines.append(
+            f"{avg_label:>{name_w}}  {pa:>9.4f}  {ra:>9.4f}"
+            f"  {fa:>9.4f}  {len(y_true):>9,}"
+        )
+    return "\n".join(lines)
+
+
+def save_expert_dist(models: list, fam_names: list[str], weights: np.ndarray,
+                     X_te: np.ndarray, y_te: np.ndarray,
+                     class_names: list[str], out_dir: str,
+                     logger) -> None:
+    """
+    Expert prediction distribution 히트맵.
+    - x축: expert  (열 합계 = 100%)
+    - y축: class   (행 레이블에 test support 표기)
+    - 셀:  pct%(count)  — pct = count / N_te * 100
+    - 색:  log10(pct) 스케일 (소수 클래스도 가시화)
+    - 로그: expert별 top-3 예측 클래스
+    - 저장: expert_pred_dist.png / .csv
+    """
+    n_cls = len(class_names)
+    N_te  = len(X_te)
+    E     = len(models)
+    counts_te = np.bincount(y_te, minlength=n_cls)
+    cls_order = np.argsort(-counts_te)          # test support 내림차순
+
+    # pred_counts[c, e] = expert e가 class c로 예측한 test sample 수
+    pred_counts = np.zeros((n_cls, E), dtype=np.int64)
+    for e, model in enumerate(models):
+        preds = np.argmax(predict_proba(model, X_te), axis=1)
+        pred_counts[:, e] = np.bincount(preds, minlength=n_cls)
+
+    # 행을 support 내림차순으로 재정렬
+    pc   = pred_counts[cls_order, :]          # [n_cls, E]  counts
+    pct  = pc / N_te * 100                    # [n_cls, E]  %  (열 합계 = 100%)
+
+    # ── log ─────────────────────────────────────────────────────────────────
+    logger.info("\n── Expert prediction distribution (top-3 per expert) ──")
+    for e, fam in enumerate(fam_names):
+        top3 = np.argsort(-pred_counts[:, e])[:3]
+        detail = ", ".join(
+            f"{class_names[i]}={pred_counts[i,e]/N_te*100:.2f}%"
+            f"({pred_counts[i,e]:,})" for i in top3
+        )
+        logger.info(f"  [{fam:15s}]  SADE_w={weights[e]:.4f}  {detail}")
+
+    # ── PNG ─────────────────────────────────────────────────────────────────
+    fig, ax = plt.subplots(
+        figsize=(max(8, E * 2.0), max(6, n_cls * 0.62 + 2))
+    )
+    im = ax.imshow(pct, aspect="auto", cmap="Blues", vmin=0, vmax=100)
+
+    # x축: expert 이름 + SADE weight (수평 표기)
+    ax.set_xticks(range(E))
+    ax.set_xticklabels(
+        [f"{fam}\n(w={weights[e]:.4f})" for e, fam in enumerate(fam_names)],
+        fontsize=8
+    )
+
+    # y축: class 이름 + test support count (수평 표기, 대각선 없음)
+    sorted_cnt = counts_te[cls_order]
+    ax.set_yticks(range(n_cls))
+    ax.set_yticklabels(
+        [f"{class_names[cls_order[i]]}  (n={sorted_cnt[i]:,})"
+         for i in range(n_cls)],
+        fontsize=8
+    )
+
+    ax.set_xlabel("Expert  (SADE weight)", fontsize=9)
+    ax.set_ylabel("Predicted class  (sorted by test support ↓)", fontsize=9)
+    ax.set_title("Expert argmax prediction distribution on test set", fontsize=11)
+
+    # 셀 annotation: count > 0 이면 전부 표기  →  "X.XX%\n(count)"
+    for ci in range(n_cls):
+        for e in range(E):
+            cnt = int(pc[ci, e])
+            if cnt == 0:
+                continue
+            p = pct[ci, e]
+            txt = f"{p:.2f}%\n({cnt:,})"
+            fg  = "white" if p > 30 else "black"
+            ax.text(e, ci, txt, ha="center", va="center",
+                    fontsize=6, color=fg, linespacing=1.3)
+
+    cbar = plt.colorbar(im, ax=ax, fraction=0.015, pad=0.01)
+    cbar.set_label("% of test samples", fontsize=8)
+
+    plt.tight_layout()
+    png_path = os.path.join(out_dir, "expert_pred_dist.png")
+    plt.savefig(png_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    logger.info(f"Expert dist PNG → {png_path}")
+
+    # ── CSV ─────────────────────────────────────────────────────────────────
+    row_labels = [
+        f"{class_names[cls_order[i]]}(n={sorted_cnt[i]:,})"
+        for i in range(n_cls)
+    ]
+    records = {}
+    for e, fam in enumerate(fam_names):
+        records[f"{fam}(w={weights[e]:.4f})"] = [
+            f"{pct[ci,e]:.2f}%({int(pc[ci,e]):,})" for ci in range(n_cls)
+        ]
+    df_out = pd.DataFrame(records, index=row_labels)
+    df_out.index.name = "class(test_n)"
+    csv_path = os.path.join(out_dir, "expert_pred_dist.csv")
+    df_out.to_csv(csv_path)
+    logger.info(f"Expert dist CSV → {csv_path}")
+
+
 def save_colored_table(rows: list[dict], col_headers: list[str],
                        path: str, title: str = "") -> None:
-    """Render and save a comparison table as PNG (CLAUDE.md spec)."""
     cell_text, cell_colors = [], []
     for row in rows:
         texts, colors = [], []
@@ -427,9 +545,7 @@ def save_colored_table(rows: list[dict], col_headers: list[str],
         cell_colors.append(colors)
 
     n_rows, n_cols = len(rows), len(col_headers)
-    fig, ax = plt.subplots(
-        figsize=(max(14, n_cols * 1.3), max(4, n_rows * 0.35))
-    )
+    fig, ax = plt.subplots(figsize=(max(14, n_cols * 1.3), max(4, n_rows * 0.35)))
     ax.axis("off")
     tbl = ax.table(
         cellText=cell_text, colLabels=col_headers,
@@ -446,11 +562,10 @@ def save_colored_table(rows: list[dict], col_headers: list[str],
 
 
 def build_report_rows(y_true, y_pred_b, y_pred_m, class_names):
-    """Return (rows, col_headers) sorted by descending support."""
     n_cls = len(class_names)
     labels = np.arange(n_cls)
     counts = np.bincount(y_true, minlength=n_cls)
-    order  = np.argsort(-counts)
+    order = np.argsort(-counts)
 
     p_b, r_b, f_b, _ = precision_recall_fscore_support(
         y_true, y_pred_b, labels=labels, zero_division=0
@@ -506,20 +621,23 @@ def build_report_rows(y_true, y_pred_b, y_pred_m, class_names):
 # ─── main ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="MATI-IDS: family MoE + TTA")
+    parser = argparse.ArgumentParser(
+        description="SADE-TTA IDS: taxonomy MoE + prediction-stability TTA"
+    )
     parser.add_argument("--data", required=True,
                         help="Path to pre-processed .pkl (e.g. cic2017_proc.pkl)")
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--n_estimators", type=int, default=300,
+    parser.add_argument("--seed",         type=int,   default=42)
+    parser.add_argument("--n_estimators", type=int,   default=300,
                         help="Trees per XGBoost model")
     parser.add_argument("--focus_weight", type=float, default=10.0,
-                        help="Sample-weight multiplier for focus classes in each expert")
-    parser.add_argument("--tta_epochs",  type=int,   default=50)
-    parser.add_argument("--tta_lr",      type=float, default=0.01)
-    parser.add_argument("--tta_p_mask",  type=float, default=0.1,
+                        help="Sample-weight multiplier for focus classes")
+    parser.add_argument("--tta_epochs",   type=int,   default=50)
+    parser.add_argument("--tta_lr",       type=float, default=0.01)
+    parser.add_argument("--tta_p_mask",   type=float, default=0.1,
                         help="VIME feature-mask probability")
-    parser.add_argument("--tta_batch",   type=int,   default=4096,
-                        help="Mini-batch size for TTA gradient updates")
+    parser.add_argument("--tta_batch",    type=int,   default=4096)
+    parser.add_argument("--tta_early_stop", type=float, default=0.02,
+                        help="Stop TTA when any weight ≤ threshold (0 = disable)")
     parser.add_argument("--model", type=int, default=2, choices=[0, 1, 2],
                         help="0=baseline only  1=MoE+TTA only  2=both")
     args = parser.parse_args()
@@ -534,32 +652,28 @@ def main() -> None:
     device = detect_device()
     logger.info(f"Device: {device}")
 
-    # ── data ──────────────────────────────────────────────────────────────────
-    X, y, le = load_data(args.data)
+    X, y, le, dataset_type = load_data(args.data)
     class_names = list(le.classes_)
-    n_classes   = len(class_names)
+    n_classes = len(class_names)
+    families = get_families(dataset_type)
     logger.info(
         f"Loaded {X.shape[0]:,} samples | "
-        f"{X.shape[1]} features | {n_classes} classes"
+        f"{X.shape[1]} features | {n_classes} classes | dataset={dataset_type}"
     )
+    logger.info(f"Families: {list(families.keys())}")
 
-    # Compute IR-based Tail IDs from the full dataset (stable class counts)
     tail_ids = compute_tail_ids(y, TAIL_IR_THRESHOLD)
     logger.info(
         f"Tail IR threshold: {TAIL_IR_THRESHOLD:,} — "
         f"Tail class IDs: {sorted(tail_ids)}"
     )
-
-    # Log family assignment for transparency
-    for i, c in enumerate(class_names):
-        fam = assign_family(c, i, tail_ids)
-        cnt = int(np.sum(y == i))
-        logger.info(f"  [{i:2d}] {c:40s} family={fam:12s} n={cnt:,}")
+    _counts_all = np.bincount(y, minlength=len(class_names))
+    for i in np.argsort(-_counts_all):
+        fam = assign_family(class_names[i], i, tail_ids, families)
+        logger.info(f"  [{i:2d}] {class_names[i]:40s} family={fam:12s} n={int(_counts_all[i]):,}")
 
     X_tr, X_va, X_te, y_tr, y_va, y_te = split_data(X, y, args.seed)
-    logger.info(
-        f"Split: train={len(y_tr):,}  val={len(y_va):,}  test={len(y_te):,}"
-    )
+    logger.info(f"Split: train={len(y_tr):,}  val={len(y_va):,}  test={len(y_te):,}")
 
     # ── baseline ──────────────────────────────────────────────────────────────
     y_pred_b = None
@@ -570,48 +684,42 @@ def main() -> None:
         )
         y_pred_b = np.asarray(baseline.predict(X_te), dtype=int)
         logger.info("\n── Baseline classification report ──")
-        logger.info(
-            "\n" + classification_report(
-                y_te, y_pred_b, target_names=class_names, zero_division=0
-            )
-        )
+        logger.info("\n" + sorted_classification_report(y_te, y_pred_b, class_names))
         del baseline
         gc.collect()
 
-    # ── MoE + TTA ─────────────────────────────────────────────────────────────
+    # ── MoE + SADE TTA ────────────────────────────────────────────────────────
     y_pred_m = None
     if args.model in (1, 2):
         t_train = time.time()
-        models, fam_names, tail_idx = train_all_experts(
+        models, fam_names = train_all_experts(
             X_tr, y_tr, X_va, y_va,
             class_names, n_classes, args.n_estimators,
             device, args.seed, logger, tail_ids, args.focus_weight,
+            families=families,
         )
         logger.info(
             f"All experts trained in {time.time() - t_train:.1f}s  "
             f"({len(models)} experts: {fam_names})"
         )
-        if tail_idx is not None:
-            logger.info(f"Tail expert index in ensemble: {tail_idx} (fixed weight=1/{len(models)})")
 
         t_tta = time.time()
-        weights = tta_aggregate(
+        weights = sade_tta(
             models, X_te,
             n_epochs=args.tta_epochs, lr=args.tta_lr,
             p_mask=args.tta_p_mask, batch_size=args.tta_batch,
-            seed=args.seed, logger=logger, tail_idx=tail_idx,
+            seed=args.seed, logger=logger,
+            early_stop_thr=args.tta_early_stop,
         )
-        logger.info(f"TTA done in {time.time() - t_tta:.1f}s")
+        logger.info(f"SADE TTA done in {time.time() - t_tta:.1f}s")
         for fam, w_val in zip(fam_names, weights):
             logger.info(f"  Weight [{fam}] = {w_val:.4f}")
 
+        save_expert_dist(models, fam_names, weights, X_te, y_te, class_names, out_dir, logger)
+
         y_pred_m = moe_predict(models, weights, X=X_te)
-        logger.info("\n── MoE + TTA classification report ──")
-        logger.info(
-            "\n" + classification_report(
-                y_te, y_pred_m, target_names=class_names, zero_division=0
-            )
-        )
+        logger.info("\n── MoE + SADE TTA classification report ──")
+        logger.info("\n" + sorted_classification_report(y_te, y_pred_m, class_names))
 
     # ── comparison table ──────────────────────────────────────────────────────
     if args.model == 2 and y_pred_b is not None and y_pred_m is not None:
@@ -620,7 +728,7 @@ def main() -> None:
         png_path = os.path.join(out_dir, "baseline_vs_moe_per_class.png")
         save_colored_table(
             rows, col_headers, png_path,
-            title=f"MATI-IDS | Baseline vs MoE+TTA  (seed={args.seed})",
+            title=f"SADE-TTA IDS | Baseline vs MoE+SADE-TTA  (seed={args.seed})",
         )
         logger.info(f"PNG table → {png_path}")
 

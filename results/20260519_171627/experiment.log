@@ -1,0 +1,106 @@
+2026-05-19 17:16:27,981  INFO  Args: {'data': 'data/cic2017_proc.pkl', 'seed': 42, 'n_estimators': 300, 'focus_weight': 10.0, 'tta_epochs': 50, 'tta_lr': 0.01, 'tta_p_mask': 0.1, 'tta_batch': 4096, 'tta_early_stop': 0.02, 'model': 2}
+2026-05-19 17:16:28,483  INFO  Device: cuda
+2026-05-19 17:16:29,020  INFO  Loaded 2,829,385 samples | 70 features | 15 classes | dataset=cic2017
+2026-05-19 17:16:29,021  INFO  Families: ['Benign', 'DoS', 'DDoS_Scan', 'BruteForce', 'WebBot', 'Tail']
+2026-05-19 17:16:29,025  INFO  Tail IR threshold: 5,000 — Tail class IDs: [8, 9, 13]
+2026-05-19 17:16:29,030  INFO    [ 0] benign                                   family=Benign       n=2,272,688
+2026-05-19 17:16:29,030  INFO    [ 4] dos-hulk                                 family=DoS          n=230,124
+2026-05-19 17:16:29,030  INFO    [10] portscan                                 family=DDoS_Scan    n=158,930
+2026-05-19 17:16:29,030  INFO    [ 2] ddos                                     family=DDoS_Scan    n=128,027
+2026-05-19 17:16:29,030  INFO    [ 3] dos-goldeneye                            family=DoS          n=10,293
+2026-05-19 17:16:29,030  INFO    [ 7] ftp-patator                              family=BruteForce   n=7,938
+2026-05-19 17:16:29,031  INFO    [11] ssh-patator                              family=BruteForce   n=5,897
+2026-05-19 17:16:29,031  INFO    [ 6] dos-slowloris                            family=DoS          n=5,796
+2026-05-19 17:16:29,031  INFO    [ 5] dos-slowhttptest                         family=DoS          n=5,499
+2026-05-19 17:16:29,031  INFO    [ 1] bot                                      family=WebBot       n=1,966
+2026-05-19 17:16:29,031  INFO    [12] web-attack-�-brute-force                 family=WebBot       n=1,507
+2026-05-19 17:16:29,031  INFO    [14] web-attack-�-xss                         family=WebBot       n=652
+2026-05-19 17:16:29,031  INFO    [ 9] infiltration                             family=Tail         n=36
+2026-05-19 17:16:29,031  INFO    [13] web-attack-�-sql-injection               family=Tail         n=21
+2026-05-19 17:16:29,031  INFO    [ 8] heartbleed                               family=Tail         n=11
+2026-05-19 17:16:30,893  INFO  Split: train=1,697,631  val=565,877  test=565,877
+2026-05-19 17:16:30,893  INFO  Training baseline XGBoost …
+2026-05-19 17:16:46,456  INFO  Baseline ready in 15.6s
+2026-05-19 17:16:46,783  INFO  
+── Baseline classification report ──
+2026-05-19 17:16:46,896  INFO  
+                              precision     recall   f1-score    support
+
+                      benign     1.0000     0.9987     0.9993    454,537
+                    dos-hulk     0.9979     0.9994     0.9986     46,025
+                    portscan     0.9936     0.9997     0.9966     31,786
+                        ddos     0.9993     1.0000     0.9996     25,606
+               dos-goldeneye     0.9804     0.9985     0.9894      2,059
+                 ftp-patator     0.9994     0.9994     0.9994      1,588
+                 ssh-patator     0.9992     1.0000     0.9996      1,179
+               dos-slowloris     0.9813     0.9965     0.9889      1,159
+            dos-slowhttptest     0.9838     0.9909     0.9873      1,100
+                         bot     0.6582     0.9898     0.7907        393
+    web-attack-�-brute-force     0.7599     0.7020     0.7298        302
+            web-attack-�-xss     0.3842     0.5231     0.4430        130
+                infiltration     0.8750     1.0000     0.9333          7
+  web-attack-�-sql-injection     0.2500     0.2500     0.2500          4
+                  heartbleed     1.0000     1.0000     1.0000          2
+
+                   macro avg     0.8575     0.8965     0.8737    565,877
+                weighted avg     0.9988     0.9986     0.9986    565,877
+2026-05-19 17:16:46,969  INFO  Training expert 'Benign': ['benign']
+2026-05-19 17:17:02,103  INFO    [Benign] trained in 15.1s | focus classes: [0]
+2026-05-19 17:17:02,103  INFO  Training expert 'DoS': ['dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris']
+2026-05-19 17:17:17,532  INFO    [DoS] trained in 15.4s | focus classes: [3, 4, 5, 6]
+2026-05-19 17:17:17,532  INFO  Training expert 'DDoS_Scan': ['ddos', 'portscan']
+2026-05-19 17:17:32,788  INFO    [DDoS_Scan] trained in 15.3s | focus classes: [2, 10]
+2026-05-19 17:17:32,788  INFO  Training expert 'BruteForce': ['ftp-patator', 'ssh-patator']
+2026-05-19 17:17:48,275  INFO    [BruteForce] trained in 15.5s | focus classes: [7, 11]
+2026-05-19 17:17:48,275  INFO  Training expert 'WebBot': ['bot', 'web-attack-�-brute-force', 'web-attack-�-xss']
+2026-05-19 17:18:03,990  INFO    [WebBot] trained in 15.7s | focus classes: [1, 12, 14]
+2026-05-19 17:18:03,990  INFO  Training expert 'Tail': ['heartbleed', 'infiltration', 'web-attack-�-sql-injection']
+2026-05-19 17:18:19,149  INFO    [Tail] trained in 15.2s | focus classes: [8, 9, 13]
+2026-05-19 17:18:19,150  INFO  All experts trained in 92.2s  (6 experts: ['Benign', 'DoS', 'DDoS_Scan', 'BruteForce', 'WebBot', 'Tail'])
+2026-05-19 17:18:19,150  INFO  SADE TTA: 6 experts, 50 epochs, lr=0.01, p_mask=0.1, batch_size=4096
+2026-05-19 17:18:34,387  INFO    epoch   1/50 | S=0.965257 | w=[0.036 0.036 0.412 0.137 0.034 0.346]
+2026-05-19 17:18:49,373  INFO    Early stop epoch 2: min_w=0.0102 ≤ 0.02
+2026-05-19 17:18:49,373  INFO  SADE TTA done in 30.2s
+2026-05-19 17:18:49,373  INFO    Weight [Benign] = 0.0118
+2026-05-19 17:18:49,373  INFO    Weight [DoS] = 0.0114
+2026-05-19 17:18:49,373  INFO    Weight [DDoS_Scan] = 0.7014
+2026-05-19 17:18:49,373  INFO    Weight [BruteForce] = 0.0345
+2026-05-19 17:18:49,373  INFO    Weight [WebBot] = 0.0102
+2026-05-19 17:18:49,373  INFO    Weight [Tail] = 0.2308
+2026-05-19 17:18:51,126  INFO  
+── Expert prediction distribution (top-3 per expert) ──
+2026-05-19 17:18:51,126  INFO    [Benign         ]  SADE_w=0.0118  benign=80.24%(454,082), dos-hulk=8.14%(46,073), portscan=5.65%(31,977)
+2026-05-19 17:18:51,126  INFO    [DoS            ]  SADE_w=0.0114  benign=80.20%(453,810), dos-hulk=8.15%(46,132), portscan=5.65%(31,981)
+2026-05-19 17:18:51,126  INFO    [DDoS_Scan      ]  SADE_w=0.7014  benign=80.22%(453,923), dos-hulk=8.14%(46,089), portscan=5.65%(31,994)
+2026-05-19 17:18:51,126  INFO    [BruteForce     ]  SADE_w=0.0345  benign=80.23%(453,975), dos-hulk=8.15%(46,095), portscan=5.65%(31,979)
+2026-05-19 17:18:51,126  INFO    [WebBot         ]  SADE_w=0.0102  benign=80.21%(453,898), dos-hulk=8.15%(46,098), portscan=5.65%(31,979)
+2026-05-19 17:18:51,126  INFO    [Tail           ]  SADE_w=0.2308  benign=80.22%(453,942), dos-hulk=8.15%(46,101), portscan=5.65%(31,978)
+2026-05-19 17:18:51,403  INFO  Expert dist PNG → results/20260519_171627/expert_pred_dist.png
+2026-05-19 17:18:51,405  INFO  Expert dist CSV → results/20260519_171627/expert_pred_dist.csv
+2026-05-19 17:18:53,138  INFO  
+── MoE + SADE TTA classification report ──
+2026-05-19 17:18:53,251  INFO  
+                              precision     recall   f1-score    support
+
+                      benign     1.0000     0.9987     0.9993    454,537
+                    dos-hulk     0.9979     0.9995     0.9987     46,025
+                    portscan     0.9935     0.9998     0.9966     31,786
+                        ddos     0.9985     1.0000     0.9992     25,606
+               dos-goldeneye     0.9842     0.9985     0.9913      2,059
+                 ftp-patator     0.9994     0.9994     0.9994      1,588
+                 ssh-patator     0.9992     1.0000     0.9996      1,179
+               dos-slowloris     0.9863     0.9957     0.9910      1,159
+            dos-slowhttptest     0.9847     0.9918     0.9882      1,100
+                         bot     0.6527     0.9898     0.7867        393
+    web-attack-�-brute-force     0.7517     0.7219     0.7365        302
+            web-attack-�-xss     0.4083     0.5308     0.4615        130
+                infiltration     0.7778     1.0000     0.8750          7
+  web-attack-�-sql-injection     0.1667     0.2500     0.2000          4
+                  heartbleed     1.0000     1.0000     1.0000          2
+
+                   macro avg     0.8467     0.8984     0.8682    565,877
+                weighted avg     0.9987     0.9986     0.9986    565,877
+2026-05-19 17:18:53,725  INFO  PNG table → results/20260519_171627/baseline_vs_moe_per_class.png
+2026-05-19 17:18:53,727  INFO  CSV       → results/20260519_171627/baseline_vs_moe_per_class.csv
+2026-05-19 17:18:53,727  INFO  
+Results directory: results/20260519_171627

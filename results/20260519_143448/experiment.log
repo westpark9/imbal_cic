@@ -1,0 +1,45 @@
+2026-05-19 14:34:48,530  INFO  Args: {'data': 'data/unswnb15_proc.pkl', 'seed': 42, 'n_estimators': 300, 'focus_weight': 10.0, 'tta_epochs': 50, 'tta_lr': 0.01, 'tta_p_mask': 0.1, 'tta_batch': 4096, 'tta_early_stop': 0.02, 'model': 2}
+2026-05-19 14:34:49,042  INFO  Device: cuda
+2026-05-19 14:34:49,100  INFO  Loaded 257,673 samples | 41 features | 10 classes
+2026-05-19 14:34:49,101  INFO  Tail IR threshold: 5,000 — Tail class IDs: []
+2026-05-19 14:34:49,101  INFO    [ 0] analysis                                 family=Other        n=2,677
+2026-05-19 14:34:49,101  INFO    [ 1] backdoor                                 family=Other        n=2,329
+2026-05-19 14:34:49,101  INFO    [ 2] dos                                      family=Other        n=16,353
+2026-05-19 14:34:49,101  INFO    [ 3] exploits                                 family=Other        n=44,525
+2026-05-19 14:34:49,101  INFO    [ 4] fuzzers                                  family=Other        n=24,246
+2026-05-19 14:34:49,102  INFO    [ 5] generic                                  family=Other        n=58,871
+2026-05-19 14:34:49,102  INFO    [ 6] normal                                   family=Other        n=93,000
+2026-05-19 14:34:49,102  INFO    [ 7] reconnaissance                           family=Other        n=13,987
+2026-05-19 14:34:49,102  INFO    [ 8] shellcode                                family=Other        n=1,511
+2026-05-19 14:34:49,102  INFO    [ 9] worms                                    family=Other        n=174
+2026-05-19 14:34:49,188  INFO  Split: train=154,603  val=51,535  test=51,535
+2026-05-19 14:34:49,188  INFO  Training baseline XGBoost …
+2026-05-19 14:34:52,189  INFO  Baseline ready in 3.0s
+2026-05-19 14:34:52,229  INFO  
+── Baseline classification report ──
+2026-05-19 14:34:52,241  INFO  
+                precision    recall  f1-score   support
+
+      analysis       0.06      0.26      0.10       536
+      backdoor       0.06      0.32      0.10       466
+           dos       0.37      0.45      0.40      3270
+      exploits       0.88      0.52      0.65      8905
+       fuzzers       0.52      0.82      0.64      4849
+       generic       1.00      0.98      0.99     11775
+        normal       0.99      0.77      0.86     18600
+reconnaissance       0.83      0.82      0.82      2797
+     shellcode       0.36      0.95      0.52       302
+         worms       0.48      0.89      0.63        35
+
+      accuracy                           0.75     51535
+     macro avg       0.55      0.68      0.57     51535
+  weighted avg       0.86      0.75      0.79     51535
+
+2026-05-19 14:34:52,302  WARNING  Family 'Benign' has no matched classes — skipped.
+2026-05-19 14:34:52,302  WARNING  Family 'DoS' has no matched classes — skipped.
+2026-05-19 14:34:52,303  WARNING  Family 'DDoS_Scan' has no matched classes — skipped.
+2026-05-19 14:34:52,303  WARNING  Family 'BruteForce' has no matched classes — skipped.
+2026-05-19 14:34:52,303  WARNING  Family 'WebBot' has no matched classes — skipped.
+2026-05-19 14:34:52,303  WARNING  Family 'Tail' has no matched classes — skipped.
+2026-05-19 14:34:52,303  INFO  All experts trained in 0.0s  (0 experts: [])
+2026-05-19 14:34:52,303  INFO  SADE TTA: 0 experts, 50 epochs, lr=0.01, p_mask=0.1, batch_size=4096

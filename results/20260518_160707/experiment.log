@@ -1,0 +1,239 @@
+2026-05-18 16:07:07,764  INFO  Args: {'data': 'data/cic2017_proc.pkl', 'seed': 42, 'n_estimators': 300, 'smote_floor': 5000, 'gmm_max_components': 8, 'tta_epochs': 50, 'tta_lr': 0.01, 'tta_p_mask': 0.1, 'tta_batch': 4096, 'tta_early_stop': 0.05, 'model': 2}
+2026-05-18 16:07:10,626  INFO  Device: cpu
+2026-05-18 16:07:11,443  INFO  Loaded 2,829,385 samples | 70 features | 15 classes
+2026-05-18 16:07:13,309  INFO  Split: train=1,697,631  val=565,877  test=565,877
+2026-05-18 16:07:13,318  INFO    [ 0] benign                                   n_train=1,363,613
+2026-05-18 16:07:13,319  INFO    [ 1] bot                                      n_train=1,179
+2026-05-18 16:07:13,320  INFO    [ 2] ddos                                     n_train=76,816
+2026-05-18 16:07:13,321  INFO    [ 3] dos-goldeneye                            n_train=6,176
+2026-05-18 16:07:13,321  INFO    [ 4] dos-hulk                                 n_train=138,074
+2026-05-18 16:07:13,322  INFO    [ 5] dos-slowhttptest                         n_train=3,299
+2026-05-18 16:07:13,322  INFO    [ 6] dos-slowloris                            n_train=3,478
+2026-05-18 16:07:13,323  INFO    [ 7] ftp-patator                              n_train=4,763
+2026-05-18 16:07:13,324  INFO    [ 8] heartbleed                               n_train=7
+2026-05-18 16:07:13,324  INFO    [ 9] infiltration                             n_train=22
+2026-05-18 16:07:13,325  INFO    [10] portscan                                 n_train=95,358
+2026-05-18 16:07:13,325  INFO    [11] ssh-patator                              n_train=3,538
+2026-05-18 16:07:13,326  INFO    [12] web-attack-�-brute-force                 n_train=904
+2026-05-18 16:07:13,327  INFO    [13] web-attack-�-sql-injection               n_train=13
+2026-05-18 16:07:13,327  INFO    [14] web-attack-�-xss                         n_train=391
+2026-05-18 16:07:13,327  INFO  Training baseline XGBoost (balanced sample weights) …
+2026-05-18 16:10:34,617  INFO  Baseline ready in 201.3s
+2026-05-18 16:10:34,620  INFO  Stage-1 SMOTE: floor=5000, k_neighbors=5, classes to oversample: [1, 5, 6, 7, 8, 9, 11, 12, 13, 14]
+2026-05-18 16:10:34,903  INFO    Stage-1 done in 0.3s | 1,697,631 → 1,730,037 samples
+2026-05-18 16:11:14,993  INFO  GMM: selected N=6 components (AIC=-17919266.7)
+2026-05-18 16:11:14,997  INFO    Component 0: 138,074 samples | classes=[4]
+2026-05-18 16:11:15,015  INFO    Component 1: 1,363,613 samples | classes=[0]
+2026-05-18 16:11:15,017  INFO    Component 2: 50,000 samples | classes=[1, 5, 6, 7, 8, 9, 11, 12, 13, 14]
+2026-05-18 16:11:15,021  INFO    Component 3: 95,358 samples | classes=[10]
+2026-05-18 16:11:15,024  INFO    Component 4: 76,816 samples | classes=[2]
+2026-05-18 16:11:15,025  INFO    Component 5: 6,176 samples | classes=[3]
+2026-05-18 16:11:15,025  INFO  Training 6 expert(s) …
+2026-05-18 16:11:15,040  INFO  Component 0: 138,074 samples | classes=[4]
+2026-05-18 16:11:15,041  WARNING    [Expert_0] only 1 class ([4]) — skipping expert.
+2026-05-18 16:11:15,114  INFO  Component 1: 1,363,613 samples | classes=[0]
+2026-05-18 16:11:15,127  WARNING    [Expert_1] only 1 class ([0]) — skipping expert.
+2026-05-18 16:11:15,132  INFO  Component 2: 50,000 samples | classes=[1, 5, 6, 7, 8, 9, 11, 12, 13, 14]
+2026-05-18 16:11:15,137  INFO    [Expert_2] Stage-2 SMOTE: 50,000 → 50,000 samples in 0.0s
+2026-05-18 16:11:17,921  INFO    [Expert_2] trained in 2.8s | k=10 local classes: [1, 5, 6, 7, 8, 9, 11, 12, 13, 14]
+2026-05-18 16:11:17,933  INFO  Component 3: 95,358 samples | classes=[10]
+2026-05-18 16:11:17,934  WARNING    [Expert_3] only 1 class ([10]) — skipping expert.
+2026-05-18 16:11:17,943  INFO  Component 4: 76,816 samples | classes=[2]
+2026-05-18 16:11:17,943  WARNING    [Expert_4] only 1 class ([2]) — skipping expert.
+2026-05-18 16:11:17,947  INFO  Component 5: 6,176 samples | classes=[3]
+2026-05-18 16:11:17,947  WARNING    [Expert_5] only 1 class ([3]) — skipping expert.
+2026-05-18 16:11:17,947  INFO  1 expert(s) trained in 2.9s
+2026-05-18 16:11:18,137  INFO  Test [Normal]: 565,877 samples | per-class counts: [454537, 393, 25606, 2059, 46025, 1100, 1159, 1588, 2, 7, 31786, 1179, 302, 4, 130]
+2026-05-18 16:11:18,137  INFO  Test [Balanced]: 30 samples | per-class counts: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+2026-05-18 16:11:18,137  INFO  Test [Inverse]: 565,877 samples | per-class counts: [37693, 37694, 37809, 37491, 37982, 37514, 37784, 37785, 37764, 37762, 37813, 37648, 37703, 37598, 37837]
+2026-05-18 16:11:18,138  INFO  
+============================================================
+2026-05-18 16:11:18,138  INFO  Test distribution: Normal  (565,877 samples)
+2026-05-18 16:11:22,171  INFO  
+── Baseline [Normal] ──
+2026-05-18 16:11:22,254  INFO  
+                            precision    recall  f1-score   support
+
+                    benign       1.00      1.00      1.00    454537
+                       bot       0.66      0.99      0.79       393
+                      ddos       1.00      1.00      1.00     25606
+             dos-goldeneye       0.98      1.00      0.99      2059
+                  dos-hulk       1.00      1.00      1.00     46025
+          dos-slowhttptest       0.98      0.99      0.99      1100
+             dos-slowloris       0.98      1.00      0.99      1159
+               ftp-patator       1.00      1.00      1.00      1588
+                heartbleed       1.00      1.00      1.00         2
+              infiltration       0.88      1.00      0.93         7
+                  portscan       0.99      1.00      1.00     31786
+               ssh-patator       1.00      1.00      1.00      1179
+  web-attack-�-brute-force       0.76      0.71      0.74       302
+web-attack-�-sql-injection       0.25      0.25      0.25         4
+          web-attack-�-xss       0.39      0.53      0.45       130
+
+                  accuracy                           1.00    565877
+                 macro avg       0.86      0.90      0.87    565877
+              weighted avg       1.00      1.00      1.00    565877
+
+2026-05-18 16:11:22,254  INFO  TTA: E=1 experts | epochs=50 | lr=0.01 | p_mask=0.1 | batch=4096 | early_stop_thr=0.05
+2026-05-18 16:11:25,468  INFO    epoch   1/50 | loss=0.016201 | w=[1.]
+2026-05-18 16:11:56,905  INFO    epoch  11/50 | loss=0.016150 | w=[1.]
+2026-05-18 16:12:28,618  INFO    epoch  21/50 | loss=0.016197 | w=[1.]
+2026-05-18 16:13:00,271  INFO    epoch  31/50 | loss=0.016239 | w=[1.]
+2026-05-18 16:13:32,089  INFO    epoch  41/50 | loss=0.016263 | w=[1.]
+2026-05-18 16:14:00,463  INFO    epoch  50/50 | loss=0.016177 | w=[1.]
+2026-05-18 16:14:00,463  INFO    Weight [Expert_0 | classes=[1, 5, 6, 7, 8, 9, 11, 12, 13, 14]] = 1.0000
+2026-05-18 16:14:01,825  INFO  
+── MoE+TTA [Normal] ──
+2026-05-18 16:14:01,910  INFO  
+                            precision    recall  f1-score   support
+
+                    benign       0.00      0.00      0.00    454537
+                       bot       0.00      1.00      0.01       393
+                      ddos       0.00      0.00      0.00     25606
+             dos-goldeneye       0.00      0.00      0.00      2059
+                  dos-hulk       0.00      0.00      0.00     46025
+          dos-slowhttptest       0.02      0.99      0.04      1100
+             dos-slowloris       0.02      1.00      0.04      1159
+               ftp-patator       0.45      1.00      0.62      1588
+                heartbleed       0.67      1.00      0.80         2
+              infiltration       0.00      1.00      0.00         7
+                  portscan       0.00      0.00      0.00     31786
+               ssh-patator       0.01      1.00      0.01      1179
+  web-attack-�-brute-force       0.01      0.64      0.01       302
+web-attack-�-sql-injection       0.00      0.75      0.01         4
+          web-attack-�-xss       0.00      0.67      0.01       130
+
+                  accuracy                           0.01    565877
+                 macro avg       0.08      0.60      0.10    565877
+              weighted avg       0.00      0.01      0.00    565877
+
+2026-05-18 16:14:02,419  INFO  PNG → results/20260518_160707/baseline_vs_moe_normal.png
+2026-05-18 16:14:02,419  INFO  CSV → results/20260518_160707/baseline_vs_moe_normal.csv
+2026-05-18 16:14:02,419  INFO  
+============================================================
+2026-05-18 16:14:02,419  INFO  Test distribution: Balanced  (30 samples)
+2026-05-18 16:14:02,421  INFO  
+── Baseline [Balanced] ──
+2026-05-18 16:14:02,423  INFO  
+                            precision    recall  f1-score   support
+
+                    benign       0.67      1.00      0.80         2
+                       bot       1.00      0.50      0.67         2
+                      ddos       1.00      1.00      1.00         2
+             dos-goldeneye       1.00      1.00      1.00         2
+                  dos-hulk       1.00      1.00      1.00         2
+          dos-slowhttptest       1.00      1.00      1.00         2
+             dos-slowloris       1.00      1.00      1.00         2
+               ftp-patator       1.00      1.00      1.00         2
+                heartbleed       1.00      1.00      1.00         2
+              infiltration       1.00      1.00      1.00         2
+                  portscan       1.00      1.00      1.00         2
+               ssh-patator       1.00      1.00      1.00         2
+  web-attack-�-brute-force       0.25      0.50      0.33         2
+web-attack-�-sql-injection       1.00      0.50      0.67         2
+          web-attack-�-xss       0.00      0.00      0.00         2
+
+                  accuracy                           0.83        30
+                 macro avg       0.86      0.83      0.83        30
+              weighted avg       0.86      0.83      0.83        30
+
+2026-05-18 16:14:02,423  INFO  TTA: E=1 experts | epochs=50 | lr=0.01 | p_mask=0.1 | batch=4096 | early_stop_thr=0.05
+2026-05-18 16:14:02,425  INFO    epoch   1/50 | loss=0.018425 | w=[1.]
+2026-05-18 16:14:02,437  INFO    epoch  11/50 | loss=0.003891 | w=[1.]
+2026-05-18 16:14:02,449  INFO    epoch  21/50 | loss=0.026199 | w=[1.]
+2026-05-18 16:14:02,461  INFO    epoch  31/50 | loss=0.005400 | w=[1.]
+2026-05-18 16:14:02,473  INFO    epoch  41/50 | loss=0.012381 | w=[1.]
+2026-05-18 16:14:02,484  INFO    epoch  50/50 | loss=0.009316 | w=[1.]
+2026-05-18 16:14:02,484  INFO    Weight [Expert_0 | classes=[1, 5, 6, 7, 8, 9, 11, 12, 13, 14]] = 1.0000
+2026-05-18 16:14:02,484  INFO  
+── MoE+TTA [Balanced] ──
+2026-05-18 16:14:02,487  INFO  
+                            precision    recall  f1-score   support
+
+                    benign       0.00      0.00      0.00         2
+                       bot       0.50      1.00      0.67         2
+                      ddos       0.00      0.00      0.00         2
+             dos-goldeneye       0.00      0.00      0.00         2
+                  dos-hulk       0.00      0.00      0.00         2
+          dos-slowhttptest       0.67      1.00      0.80         2
+             dos-slowloris       0.50      1.00      0.67         2
+               ftp-patator       1.00      1.00      1.00         2
+                heartbleed       1.00      1.00      1.00         2
+              infiltration       1.00      1.00      1.00         2
+                  portscan       0.00      0.00      0.00         2
+               ssh-patator       0.50      1.00      0.67         2
+  web-attack-�-brute-force       0.50      0.50      0.50         2
+web-attack-�-sql-injection       1.00      0.50      0.67         2
+          web-attack-�-xss       0.33      1.00      0.50         2
+
+                  accuracy                           0.60        30
+                 macro avg       0.47      0.60      0.50        30
+              weighted avg       0.47      0.60      0.50        30
+
+2026-05-18 16:14:02,729  INFO  PNG → results/20260518_160707/baseline_vs_moe_balanced.png
+2026-05-18 16:14:02,729  INFO  CSV → results/20260518_160707/baseline_vs_moe_balanced.csv
+2026-05-18 16:14:02,729  INFO  
+============================================================
+2026-05-18 16:14:02,729  INFO  Test distribution: Inverse  (565,877 samples)
+2026-05-18 16:14:06,782  INFO  
+── Baseline [Inverse] ──
+2026-05-18 16:14:06,898  INFO  
+                            precision    recall  f1-score   support
+
+                    benign       0.97      1.00      0.99     37693
+                       bot       1.00      0.99      0.99     37694
+                      ddos       1.00      1.00      1.00     37809
+             dos-goldeneye       0.66      1.00      0.80     37491
+                  dos-hulk       1.00      1.00      1.00     37982
+          dos-slowhttptest       1.00      0.99      0.99     37514
+             dos-slowloris       0.99      1.00      0.99     37784
+               ftp-patator       1.00      1.00      1.00     37785
+                heartbleed       1.00      1.00      1.00     37764
+              infiltration       1.00      1.00      1.00     37762
+                  portscan       1.00      1.00      1.00     37813
+               ssh-patator       1.00      1.00      1.00     37648
+  web-attack-�-brute-force       0.50      0.71      0.58     37703
+web-attack-�-sql-injection       1.00      0.25      0.40     37598
+          web-attack-�-xss       0.64      0.53      0.58     37837
+
+                  accuracy                           0.90    565877
+                 macro avg       0.92      0.90      0.89    565877
+              weighted avg       0.92      0.90      0.89    565877
+
+2026-05-18 16:14:06,899  INFO  TTA: E=1 experts | epochs=50 | lr=0.01 | p_mask=0.1 | batch=4096 | early_stop_thr=0.05
+2026-05-18 16:14:10,056  INFO    epoch   1/50 | loss=0.012273 | w=[1.]
+2026-05-18 16:14:42,226  INFO    epoch  11/50 | loss=0.012266 | w=[1.]
+2026-05-18 16:15:13,643  INFO    epoch  21/50 | loss=0.012304 | w=[1.]
+2026-05-18 16:15:45,378  INFO    epoch  31/50 | loss=0.012289 | w=[1.]
+2026-05-18 16:16:17,045  INFO    epoch  41/50 | loss=0.012262 | w=[1.]
+2026-05-18 16:16:45,655  INFO    epoch  50/50 | loss=0.012277 | w=[1.]
+2026-05-18 16:16:45,655  INFO    Weight [Expert_0 | classes=[1, 5, 6, 7, 8, 9, 11, 12, 13, 14]] = 1.0000
+2026-05-18 16:16:47,037  INFO  
+── MoE+TTA [Inverse] ──
+2026-05-18 16:16:47,160  INFO  
+                            precision    recall  f1-score   support
+
+                    benign       0.00      0.00      0.00     37693
+                       bot       0.50      1.00      0.67     37694
+                      ddos       0.00      0.00      0.00     37809
+             dos-goldeneye       0.00      0.00      0.00     37491
+                  dos-hulk       0.00      0.00      0.00     37982
+          dos-slowhttptest       0.48      0.99      0.65     37514
+             dos-slowloris       0.42      1.00      0.59     37784
+               ftp-patator       0.98      1.00      0.99     37785
+                heartbleed       1.00      1.00      1.00     37764
+              infiltration       0.66      1.00      0.79     37762
+                  portscan       0.00      0.00      0.00     37813
+               ssh-patator       0.69      1.00      0.82     37648
+  web-attack-�-brute-force       0.46      0.64      0.54     37703
+web-attack-�-sql-injection       0.93      0.75      0.83     37598
+          web-attack-�-xss       0.46      0.67      0.55     37837
+
+                  accuracy                           0.60    565877
+                 macro avg       0.44      0.60      0.50    565877
+              weighted avg       0.44      0.60      0.50    565877
+
+2026-05-18 16:16:47,694  INFO  PNG → results/20260518_160707/baseline_vs_moe_inverse.png
+2026-05-18 16:16:47,694  INFO  CSV → results/20260518_160707/baseline_vs_moe_inverse.csv
+2026-05-18 16:16:47,694  INFO  
+Results directory: results/20260518_160707
