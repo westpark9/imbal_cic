@@ -1,0 +1,114 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\definecolor{ownerblue}{RGB}{100,160,220}
+\definecolor{wrongred}{RGB}{220,100,100}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamerfont{footnote}{size=\tiny}
+
+\title{TTA-based Expert Routing for Imbalanced Network IDS}
+\subtitle{Diagnostic Study: Why Stability-based Routing Fails}
+\author{Lab Meeting}
+\date{2026-05-29}
+\institute{Dataset: CIC-IDS2017 \quad (2.8M samples, 15 classes)}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ── Last Meeting ──────────────────────────────────────────────────────────────
+\begin{frame}{Last Meeting}
+  \begin{enumerate}
+    \item \textbf{Extreme class imbalance}\\
+      Tail attack classes: Heartbleed, Infiltration, SQL Injection
+    \vspace{0.4em}
+    \item \textbf{Domain shift}\\
+      Different classes are collected by days
+    \vspace{0.4em}
+    \item \textbf{OOD overconfidence}
+  \end{enumerate}
+
+  \vspace{0.6em}
+  \begin{block}{}
+    $\Rightarrow$ MoE + TTA (Test-Time Aggregation) and OOD detection to mitigate
+  \end{block}
+\end{frame}
+
+% ── Limitation of Adopting MATI ───────────────────────────────────────────────
+\begin{frame}{Limitation of Adopting MATI}
+  \begin{itemize}
+    \item \textbf{SADE}: introduced the test-time aggregation (TTA) framework
+    \item \textbf{MATI}: extends SADE; one benchmark dataset is
+          \textit{real estate price prediction}
+          \quad ($y \in \mathbb{R}$, continuous)
+  \end{itemize}
+
+  \vspace{0.3em}
+  Our $y$: class labels $\{0, 1, \ldots, 14\}$ --- \textbf{nominal categorical}\\
+  $\rightarrow$ No meaningful L2 distance between class labels
+
+  \vspace{0.4em}
+  \textbf{Alternative:} use prediction stability under perturbation as a routing signal
+
+  \vspace{0.3em}
+  \[
+    s_e(x) = \frac{1}{1 + \mathrm{JS}\!\left(P_e(x) \,\|\, P_e(x')\right)},
+    \qquad
+    w_e = \frac{s_e}{\displaystyle\sum_{e'} s_{e'}}
+  \]
+
+  \vspace{0.3em}
+  \begin{alertblock}{Result}
+    TTA weights collapse to near-uniform ($w_e \approx 0.15$--$0.18 \approx 1/E$):
+    stability is not a discriminative routing signal.
+    \textbf{A different objective loss is needed.}
+  \end{alertblock}
+\end{frame}
+
+% ── TTA Formulation: Perturbation ─────────────────────────────────────────────
+\begin{frame}{TTA Formulation --- Perturbation}
+  Two perturbation methods to generate $x'$ from $x$:
+
+  \vspace{0.5em}
+  \textbf{(1) Gaussian noise}
+  \[
+    x'_d = x_d + \varepsilon_d,
+    \qquad
+    \varepsilon_d \sim \mathcal{N}\!\left(0,\; \sigma \cdot \hat{\sigma}_d\right)
+  \]
+  $\hat{\sigma}_d$: per-feature std from training data;\quad
+  $\sigma$ (noise\_std): strength parameter
+
+  \vspace{0.5em}
+  \textbf{(2) Feature masking} (BERT-style)
+  \[
+    x'_d =
+    \begin{cases}
+      \hat{\mu}_d & \text{with probability } p_{\text{mask}} \\
+      x_d         & \text{otherwise}
+    \end{cases}
+  \]
+  Replace each feature independently with its column mean at random
+
+  \vspace{0.5em}
+  \begin{block}{}
+    Currently examining numerical behavior across a range of $\sigma$ and
+    $p_{\text{mask}}$ values to validate that these perturbations produce
+    meaningful variation in expert predictions.
+  \end{block}
+\end{frame}
+
+\end{document}

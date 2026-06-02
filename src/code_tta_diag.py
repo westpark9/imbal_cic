@@ -63,6 +63,11 @@ PARTITIONS_2018 = [
 ]
 TAIL_IR_THRESHOLD = 5_000
 
+SWEEP_LEVELS = {
+    "gaussian": [0.01, 0.05, 0.10, 0.20, 0.50, 1.00, 2.00],
+    "mask":     [0.05, 0.10, 0.20, 0.30, 0.50, 0.70],
+}
+
 
 @dataclass
 class ExpertConfig:
@@ -173,26 +178,15 @@ def make_perturb_fn(mode, p_mask, noise_std, col_means, col_stds):
     """
     Returns a perturbation function  f(X, rng) → X_perturbed.
 
-    mode="vime"
-        Replace each feature independently with a value from a random row
-        (VIME-style column-wise corruption).  p_mask = masking probability.
-
     mode="gaussian"
         Add zero-mean Gaussian noise scaled per-feature:
         noise_std × col_std_d  for each dimension d.
-        p_mask is ignored; use --noise_std to control magnitude.
 
     mode="mask"
-        Zero-out each feature independently with probability p_mask,
-        replacing with the column mean (BERT-style masked-feature imputation).
+        Replace each feature independently with probability p_mask
+        with the column mean (BERT-style masked-feature imputation).
     """
-    if mode == "vime":
-        def fn(X, rng):
-            B, D = X.shape
-            mask = rng.random((B, D)) < p_mask
-            ref  = rng.integers(0, B, (B, D))
-            return np.where(mask, X[ref, np.arange(D)], X)
-    elif mode == "gaussian":
+    if mode == "gaussian":
         scale = (col_stds * noise_std).astype(np.float32)   # [D]
         def fn(X, rng):
             return X + (rng.standard_normal(X.shape).astype(np.float32) * scale)
@@ -204,7 +198,7 @@ def make_perturb_fn(mode, p_mask, noise_std, col_means, col_stds):
             return np.where(mask, means, X)
     else:
         raise ValueError(f"Unknown perturb mode '{mode}'. "
-                         "Choose from: vime, gaussian, mask")
+                         "Choose from: gaussian, mask")
     return fn
 
 
@@ -658,6 +652,336 @@ def plot_C_stability_gap(stab, y_te, configs, class_names, out_dir, log):
     log.info("(C) saved C_stability_gap.png / .csv")
 
 
+# ── (D) noise-sensitivity sweep ──────────────────────────────────────────────
+
+def sweep_noise_sensitivity(models, configs, X_te, y_te, n_global, class_names,
+                             rep_classes, col_means, col_stds, n_trials, sweep_sample, log):
+    """
+    For each (mode, level, rep_class, expert): collect pred(x'), conf(x'), flip_rate
+    averaged over n_trials random perturbations.  Returns a per-row DataFrame
+    matching the structure of compute_behavior so plot_D can draw B-style tables.
+    """
+    n_cls = len(class_names)
+
+    if len(X_te) > sweep_sample:
+        idx = np.random.default_rng(0).choice(len(X_te), sweep_sample, replace=False)
+        Xs, ys = X_te[idx], y_te[idx]
+    else:
+        Xs, ys = X_te, y_te
+
+    counts = np.bincount(ys, minlength=n_cls)
+
+    log.info(f"  Precomputing base predictions on {len(Xs):,} samples …")
+    base_preds, base_confs, base_proba_local = [], [], []
+    for m, cfg in zip(models, configs):
+        lp = _predict_proba(m, Xs)
+        base_preds.append(np.argmax(zero_pad(lp, cfg, n_global), axis=1))
+        base_confs.append(lp.max(axis=1))
+        base_proba_local.append(lp)   # full local-space proba for JS computation
+
+    rows = []
+    for mode in ["gaussian", "mask"]:
+        levels = SWEEP_LEVELS[mode]
+        log.info(f"  [{mode}] {len(levels)} levels × {n_trials} trials …")
+        for level in levels:
+            # accumulate per-trial perturbed predictions, confidences, and full probas
+            trial_preds  = {cfg.name: [] for cfg in configs}
+            trial_confs  = {cfg.name: [] for cfg in configs}
+            trial_probas = {cfg.name: [] for cfg in configs}
+            for trial in range(n_trials):
+                rng = np.random.default_rng(trial * 1009 + abs(hash(mode)) % 997)
+                if mode == "gaussian":
+                    pfn = make_perturb_fn(mode, 0.0, level, col_means, col_stds)
+                else:
+                    pfn = make_perturb_fn(mode, level, 0.0, col_means, col_stds)
+                Xa = pfn(Xs, rng)
+                for e, (m, cfg) in enumerate(zip(models, configs)):
+                    lpa = _predict_proba(m, Xa)
+                    trial_preds[cfg.name].append(np.argmax(zero_pad(lpa, cfg, n_global), axis=1))
+                    trial_confs[cfg.name].append(lpa.max(axis=1))
+                    trial_probas[cfg.name].append(lpa)
+
+            # compute per-sample JS stability and TTA weights for this level
+            js_means = {}
+            for e, cfg in enumerate(configs):
+                js_sum = np.zeros(len(Xs), dtype=np.float64)
+                for t in range(n_trials):
+                    js_sum += _js_batch(base_proba_local[e], trial_probas[cfg.name][t])
+                js_means[cfg.name] = js_sum / n_trials
+            stab_arr = np.stack(
+                [1.0 / (1.0 + js_means[cfg.name]) for cfg in configs], axis=1)  # [Ns, E]
+            tta_w_arr = stab_arr / stab_arr.sum(axis=1, keepdims=True)           # [Ns, E]
+
+            for cls_name in rep_classes:
+                c = class_names.index(cls_name)
+                mask_c = ys == c
+                if not mask_c.any():
+                    continue
+                for e, cfg in enumerate(configs):
+                    is_owner = c in cfg.global_class_ids
+
+                    pred_x = class_names[
+                        np.bincount(base_preds[e][mask_c], minlength=n_cls).argmax()]
+                    conf_x = float(base_confs[e][mask_c].mean())
+
+                    all_xa = np.concatenate(
+                        [trial_preds[cfg.name][t][mask_c] for t in range(n_trials)])
+                    pred_xa = class_names[np.bincount(all_xa, minlength=n_cls).argmax()]
+                    conf_xa = float(np.mean(
+                        [trial_confs[cfg.name][t][mask_c].mean() for t in range(n_trials)]))
+                    flip_rate = float(np.mean(
+                        [(trial_preds[cfg.name][t][mask_c] != base_preds[e][mask_c]).mean()
+                         for t in range(n_trials)]))
+
+                    rows.append({
+                        "mode":       mode,
+                        "level":      level,
+                        "true_class": cls_name,
+                        "support":    int(counts[c]),
+                        "expert":     cfg.name,
+                        "owner":      is_owner,
+                        "pred_x":     pred_x,
+                        "conf_x":     conf_x,
+                        "pred_xa":    pred_xa,
+                        "conf_xa":    conf_xa,
+                        "flip_rate":  flip_rate,
+                        "stability":  float(stab_arr[mask_c, e].mean()),
+                        "tta_weight": float(tta_w_arr[mask_c, e].mean()),
+                    })
+
+            avg = np.mean([
+                (trial_preds[cfg.name][t] != base_preds[e]).mean()
+                for e, cfg in enumerate(configs) for t in range(n_trials)])
+            log.info(f"    {mode} level={level:.2f}  avg_flip={avg:.4f}")
+
+    return pd.DataFrame(rows)
+
+
+def plot_B_sweep_per_level(sweep_df, configs, rep_classes, out_dir, log):
+    """
+    For each (mode, level) in sweep_df, save a standalone B-style PNG.
+    Columns: Expert | Pred(x) | Conf(x) | Pred(x') | Conf(x') | Flip%
+    Color scheme identical to plot_B_expert_behavior.
+    """
+    COLS  = ["expert", "pred_x", "conf_x", "pred_xa", "conf_xa",
+             "stability", "tta_weight", "flip_rate"]
+    HEADS = ["Expert", "Pred (x)", "Conf(x)", "Pred (x')", "Conf(x')",
+             "Stability", "TTA weight", "Flip%"]
+    OWNER_BG   = "#c6dcf7"
+    OWNER_TEXT = "#0a3d6b"
+    HEADER_BG  = "#404040"
+    HEADER_FG  = "white"
+    param_name = {"gaussian": "noise_std", "mask": "p_mask"}
+
+    for mode in ["gaussian", "mask"]:
+        mode_sub = sweep_df[sweep_df["mode"] == mode]
+        for level in sorted(mode_sub["level"].unique()):
+            level_sub = mode_sub[mode_sub["level"] == level]
+            n_rep = len(rep_classes)
+
+            fig, axes = plt.subplots(n_rep, 1,
+                                     figsize=(14, 2.1 * n_rep + 1.2),
+                                     gridspec_kw={"hspace": 0.6})
+            if n_rep == 1:
+                axes = [axes]
+
+            for ax, cls_name in zip(axes, rep_classes):
+                ax.axis("off")
+                sub = level_sub[level_sub["true_class"] == cls_name]
+                if sub.empty:
+                    continue
+                support = int(sub["support"].iloc[0])
+
+                cell_text, cell_colors = [], []
+                for _, row in sub.iterrows():
+                    is_own = bool(row["owner"])
+                    conf   = float(row["conf_xa"])
+                    texts = [
+                        ("✓ " if is_own else "✗ ") + row["expert"],
+                        row["pred_x"],
+                        f"{row['conf_x']:.4f}",
+                        row["pred_xa"],
+                        f"{row['conf_xa']:.4f}",
+                        f"{row['stability']:.4f}",
+                        f"{row['tta_weight']:.4f}",
+                        f"{row['flip_rate']:.1%}",
+                    ]
+                    cell_text.append(texts)
+                    if is_own:
+                        colors = [OWNER_BG] * len(COLS)
+                    else:
+                        t = max(0.0, min(1.0, (conf - 0.80) / 0.20))
+                        g = int(240 - t * 100)
+                        colors = [f"#ff{g:02x}{g:02x}"] * len(COLS)
+                    cell_colors.append(colors)
+
+                tbl = ax.table(cellText=cell_text, colLabels=HEADS,
+                               cellColours=cell_colors,
+                               loc="center", cellLoc="center")
+                tbl.auto_set_font_size(False)
+                tbl.set_fontsize(8.5)
+                tbl.auto_set_column_width(list(range(len(COLS))))
+
+                for col_idx in range(len(COLS)):
+                    cell = tbl[0, col_idx]
+                    cell.set_facecolor(HEADER_BG)
+                    cell.set_text_props(color=HEADER_FG, fontweight="bold")
+                for row_idx, (_, row) in enumerate(sub.iterrows(), start=1):
+                    if row["owner"]:
+                        for col_idx in range(len(COLS)):
+                            tbl[row_idx, col_idx].set_text_props(
+                                color=OWNER_TEXT, fontweight="bold")
+
+                ax.set_title(
+                    f'True class: "{cls_name}"  (n={support:,})  '
+                    f'{param_name[mode]}={level:.2f}'
+                    f'  — Blue=owning expert  Red=non-owning (deeper=more confident)',
+                    fontsize=9, loc="left", pad=4,
+                )
+
+            fig.suptitle(
+                f"(B) Expert behavior at {param_name[mode]}={level:.2f}\n"
+                f"Blue=owning expert  Red=non-owning — key observation: "
+                f"non-owning experts predict wrong with nearly identical confidence & flip rate",
+                fontsize=10, y=1.0,
+            )
+            safe_lv = f"{level:.2f}".replace(".", "_")
+            out_path = os.path.join(out_dir, f"B_sweep_{mode}_{safe_lv}.png")
+            plt.savefig(out_path, dpi=150, bbox_inches="tight")
+            plt.close(fig)
+            log.info(f"(B) saved B_sweep_{mode}_{safe_lv}.png")
+
+
+def plot_D_noise_sweep(sweep_df, configs, rep_classes, n_trials, out_dir, log):
+    """
+    B-style sweep table.  Rows: for each expert, three sub-rows:
+      pred(x') / conf(x') / flip%
+    Columns: noise levels.  One value per cell — no multi-line cramming.
+    """
+    OWNER_BG   = "#c6dcf7"
+    OWNER_TEXT = "#0a3d6b"
+    HEADER_BG  = "#404040"
+    HEADER_FG  = "white"
+    param_name = {"gaussian": "noise_std", "mask": "p_mask"}
+
+    for mode in ["gaussian", "mask"]:
+        mode_sub = sweep_df[sweep_df["mode"] == mode]
+        levels   = sorted(mode_sub["level"].unique())
+        col_hdrs = [f"{param_name[mode]}={lv:.2f}" for lv in levels]
+        n_rep    = len(rep_classes)
+
+        fig, axes = plt.subplots(
+            n_rep, 1,
+            figsize=(max(14, len(levels) * 2.2), 5.5 * n_rep + 1.2),
+            gridspec_kw={"hspace": 0.65},
+        )
+        if n_rep == 1:
+            axes = [axes]
+
+        for ax, cls_name in zip(axes, rep_classes):
+            ax.axis("off")
+            cls_sub = mode_sub[mode_sub["true_class"] == cls_name]
+            if cls_sub.empty:
+                continue
+            support = int(cls_sub["support"].iloc[0])
+
+            cell_text   = []
+            cell_colors = []
+            row_labels  = []
+
+            for cfg in configs:
+                exp_sub = cls_sub[cls_sub["expert"] == cfg.name]
+                if exp_sub.empty:
+                    continue
+                is_owner = bool(exp_sub["owner"].iloc[0])
+                prefix   = "✓ " if is_owner else "✗ "
+
+                pred_row, conf_row, stab_row, tta_row, flip_row = [], [], [], [], []
+                pred_col, conf_col, stab_col, tta_col, flip_col = [], [], [], [], []
+
+                for level in levels:
+                    r = exp_sub[exp_sub["level"] == level]
+                    if r.empty:
+                        for lst in [pred_row, conf_row, stab_row, tta_row, flip_row]:
+                            lst.append("")
+                        for lst in [pred_col, conf_col, stab_col, tta_col, flip_col]:
+                            lst.append("#ffffff")
+                        continue
+                    r = r.iloc[0]
+                    pred_row.append(r["pred_xa"])
+                    conf_row.append(f"{r['conf_xa']:.4f}")
+                    stab_row.append(f"{r['stability']:.4f}")
+                    tta_row.append(f"{r['tta_weight']:.4f}")
+                    flip_row.append(f"{r['flip_rate']:.1%}")
+
+                    if is_owner:
+                        c = OWNER_BG
+                    else:
+                        t = max(0.0, min(1.0, (float(r["conf_xa"]) - 0.80) / 0.20))
+                        g = int(240 - t * 100)
+                        c = f"#ff{g:02x}{g:02x}"
+                    for lst in [pred_col, conf_col, stab_col, tta_col, flip_col]:
+                        lst.append(c)
+
+                row_labels.extend([
+                    f"{prefix}{cfg.name}  pred(x')",
+                    f"{prefix}{cfg.name}  conf(x')",
+                    f"{prefix}{cfg.name}  stability",
+                    f"{prefix}{cfg.name}  TTA weight",
+                    f"{prefix}{cfg.name}  flip%",
+                ])
+                cell_text.extend([pred_row, conf_row, stab_row, tta_row, flip_row])
+                cell_colors.extend([pred_col, conf_col, stab_col, tta_col, flip_col])
+
+            tbl = ax.table(
+                cellText=cell_text, rowLabels=row_labels,
+                colLabels=col_hdrs, cellColours=cell_colors,
+                loc="center", cellLoc="center",
+            )
+            tbl.auto_set_font_size(False)
+            tbl.set_fontsize(8)
+            tbl.auto_set_column_width(list(range(len(col_hdrs))))
+
+            for col_idx in range(len(col_hdrs)):
+                cell = tbl[0, col_idx]
+                cell.set_facecolor(HEADER_BG)
+                cell.set_text_props(color=HEADER_FG, fontweight="bold")
+
+            # bold text for owning expert sub-rows (5 sub-rows per expert)
+            data_row = 1
+            for cfg in configs:
+                exp_sub = cls_sub[cls_sub["expert"] == cfg.name]
+                if exp_sub.empty:
+                    continue
+                is_owner = bool(exp_sub["owner"].iloc[0])
+                for _ in range(5):
+                    if is_owner:
+                        for col_idx in range(len(col_hdrs)):
+                            tbl[data_row, col_idx].set_text_props(
+                                color=OWNER_TEXT, fontweight="bold")
+                    data_row += 1
+
+            ax.set_title(
+                f'True class: "{cls_name}"  (n={support:,})\n'
+                f'Blue=owning expert  Red=non-owning (deeper=more confident)  '
+                f'(mean over {n_trials} trials)',
+                fontsize=8, loc="left", pad=4,
+            )
+
+        fig.suptitle(
+            f"(D) Expert behavior across {mode} noise levels\n"
+            f"Each expert: 5 rows — pred(x') / conf(x') / stability / TTA weight / flip%",
+            fontsize=10, y=1.0,
+        )
+        out_path = os.path.join(out_dir, f"D_sweep_{mode}.png")
+        plt.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        log.info(f"(D) saved D_sweep_{mode}.png")
+
+    sweep_df.to_csv(os.path.join(out_dir, "D_noise_sweep.csv"), index=False)
+    log.info("(D) saved D_noise_sweep.csv")
+
+
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -666,16 +990,19 @@ def main():
     parser.add_argument("--seed",         type=int,   default=42)
     parser.add_argument("--n_estimators", type=int,   default=300)
     parser.add_argument("--n_views",      type=int,   default=5)
-    parser.add_argument("--perturb",      default="vime",
-                        choices=["vime", "gaussian", "mask"],
+    parser.add_argument("--perturb",      default="gaussian",
+                        choices=["gaussian", "mask"],
                         help="Perturbation mode for TTA views "
-                             "(vime: column-shuffle, gaussian: scaled noise, "
-                             "mask: column-mean imputation)")
+                             "(gaussian: scaled noise, mask: column-mean imputation)")
     parser.add_argument("--p_mask",       type=float, default=0.3,
-                        help="Masking probability (vime / mask modes)")
+                        help="Masking probability (mask mode)")
     parser.add_argument("--noise_std",    type=float, default=0.1,
                         help="Noise magnitude as fraction of per-feature std "
                              "(gaussian mode only)")
+    parser.add_argument("--n_sweep_trials", type=int, default=10,
+                        help="Number of random trials per (method, level) in sweep (D)")
+    parser.add_argument("--sweep_sample",   type=int, default=5_000,
+                        help="Max test samples used in sweep (subsampled for speed)")
     args = parser.parse_args()
 
     ts      = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -742,6 +1069,15 @@ def main():
 
     log.info("\n═══ (C) Stability gap distribution ═══")
     plot_C_stability_gap(stab, y_te, configs, class_names, out_dir, log)
+
+    log.info("\n═══ (D) Noise-sensitivity sweep ═══")
+    sweep_df = sweep_noise_sensitivity(
+        models, configs, X_te, y_te, n_cls, class_names,
+        rep_classes, col_means, col_stds, args.n_sweep_trials, args.sweep_sample, log)
+    plot_D_noise_sweep(sweep_df, configs, rep_classes, args.n_sweep_trials, out_dir, log)
+
+    log.info("\n═══ (B) per noise level ═══")
+    plot_B_sweep_per_level(sweep_df, configs, rep_classes, out_dir, log)
 
     log.info(f"\nResults: {out_dir}")
 
