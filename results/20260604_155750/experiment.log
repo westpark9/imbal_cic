@@ -1,0 +1,53 @@
+2026-06-04 15:57:50,957  INFO  Args: {'data': 'data/cic2017_proc.pkl', 'num_experts': 4, 'seed': 42, 'n_estimators': 300, 'n_views': 5, 'perturb': 'gaussian', 'p_mask': 0.3, 'noise_std': 0.1}
+2026-06-04 15:57:51,443  INFO  Device: cuda
+2026-06-04 15:57:51,990  INFO  Loaded 2,829,385 samples | 70 features | 15 classes | dataset=cic2017
+2026-06-04 15:57:53,904  INFO  Split: train=1,697,631  val=565,877  test=565,877
+2026-06-04 15:57:53,969  INFO  Perturbation: mode=gaussian  p_mask=0.3  noise_std=0.1
+2026-06-04 15:57:53,972  INFO  Inclusive caps for 4 experts:
+2026-06-04 15:57:53,972  INFO    Expert 0: cap=1,363,613  (boundary rank=0)
+2026-06-04 15:57:53,972  INFO    Expert 1: cap=6,176  (boundary rank=4)
+2026-06-04 15:57:53,972  INFO    Expert 2: cap=3,299  (boundary rank=8)
+2026-06-04 15:57:53,972  INFO    Expert 3: cap=22  (boundary rank=12)
+2026-06-04 15:57:53,972  INFO  Training baseline …
+2026-06-04 16:00:06,699  INFO  Baseline ready in 132.7s
+2026-06-04 16:00:07,446  INFO    Expert 0: cap=1,363,613  train_size=1,697,631  class_dist=[1363613, 1179, 76816, 6176, 138074, 3299, 3478, 4763, 7, 22, 95358, 3538, 904, 13, 391]
+2026-06-04 16:02:19,913  INFO    Expert 1: cap=6,176  train_size=48,474  class_dist=[6176, 1179, 6176, 6176, 6176, 3299, 3478, 4763, 7, 22, 6176, 3538, 904, 13, 391]
+2026-06-04 16:03:33,486  INFO    Expert 2: cap=3,299  train_size=32,207  class_dist=[3299, 1179, 3299, 3299, 3299, 3299, 3299, 3299, 7, 22, 3299, 3299, 904, 13, 391]
+2026-06-04 16:05:18,254  INFO    Expert 3: cap=22  train_size=306  class_dist=[22, 22, 22, 22, 22, 22, 22, 22, 7, 22, 22, 22, 22, 13, 22]
+2026-06-04 16:06:52,332  INFO  All 4 inclusive experts in 405.0s
+2026-06-04 16:06:52,332  INFO  Oracle routing …
+2026-06-04 16:06:54,841  INFO  Oracle expert selection distribution: [539324, 15484, 10541, 528]
+2026-06-04 16:06:54,841  INFO  JS-TTA (n_views=5, perturb=gaussian, JSD=global-space) …
+2026-06-04 16:07:12,218  INFO    Mean per-expert TTA weight: [0.2637, 0.2582, 0.2557, 0.2224]
+2026-06-04 16:07:12,225  INFO  JS-TTA done in 17.4s
+2026-06-04 16:07:12,227  INFO  
+═══ (A) Performance ═══
+2026-06-04 16:07:12,599  INFO  (A) Macro F1 — Baseline=0.8737  Oracle=0.9221  JS-TTA=0.7754
+2026-06-04 16:07:12,599  INFO      Oracle−TTA gap = 0.1467
+2026-06-04 16:07:12,601  INFO  (A) saved A_f1_comparison.png / .csv
+2026-06-04 16:07:12,601  INFO  
+═══ (B) Expert behavior ═══
+2026-06-04 16:07:20,227  INFO  (B) Representative classes per expert: ['benign', 'portscan', 'ddos', 'web-attack-�-xss']
+2026-06-04 16:07:20,619  INFO  (B) saved B_expert_behavior.png / .csv
+2026-06-04 16:07:20,620  INFO  
+═══ (C) Stability gap ═══
+2026-06-04 16:07:20,841  INFO  (C) Global mean Δ = 0.0375  (0.0% samples Δ < 0)
+2026-06-04 16:07:20,841  INFO  (C) Per-class mean stability gap:
+2026-06-04 16:07:20,842  INFO    benign                                    Δ=+0.0323  ← TTA signal
+2026-06-04 16:07:20,843  INFO    dos-hulk                                  Δ=+0.0679  ← TTA signal
+2026-06-04 16:07:20,844  INFO    portscan                                  Δ=+0.0642  ← TTA signal
+2026-06-04 16:07:20,844  INFO    ddos                                      Δ=+0.0295  ← TTA signal
+2026-06-04 16:07:20,844  INFO    dos-goldeneye                             Δ=+0.0980  ← TTA signal
+2026-06-04 16:07:20,845  INFO    ftp-patator                               Δ=+0.1155  ← TTA signal
+2026-06-04 16:07:20,845  INFO    ssh-patator                               Δ=+0.0175  ← TTA signal
+2026-06-04 16:07:20,845  INFO    dos-slowloris                             Δ=+0.0525  ← TTA signal
+2026-06-04 16:07:20,845  INFO    dos-slowhttptest                          Δ=+0.0665  ← TTA signal
+2026-06-04 16:07:20,845  INFO    bot                                       Δ=+0.1913  ← TTA signal
+2026-06-04 16:07:20,845  INFO    web-attack-�-brute-force                  Δ=+0.0588  ← TTA signal
+2026-06-04 16:07:20,846  INFO    web-attack-�-xss                          Δ=+0.0545  ← TTA signal
+2026-06-04 16:07:20,846  INFO    infiltration                              Δ=+0.0722  ← TTA signal
+2026-06-04 16:07:20,846  INFO    web-attack-�-sql-injection                Δ=+0.0501  ← TTA signal
+2026-06-04 16:07:20,846  INFO    heartbleed                                Δ=+0.1174  ← TTA signal
+2026-06-04 16:07:20,856  INFO  (C) saved C_stability_gap.png / .csv
+2026-06-04 16:07:20,856  INFO  
+Results: results/20260604_155750

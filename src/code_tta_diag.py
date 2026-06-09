@@ -26,6 +26,7 @@ Usage
   python src/code_tta_diag.py --data data/cic2017_proc.pkl
 """
 import argparse
+import gc
 import logging
 import os
 import pickle
@@ -37,31 +38,20 @@ from datetime import datetime
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from sklearn.metrics import precision_recall_fscore_support, f1_score
+from sklearn.metrics import (precision_recall_fscore_support, f1_score,
+                             precision_score, recall_score)
 from sklearn.model_selection import train_test_split
 
-PARTITIONS_2017 = [
-    ("Benign",     ["benign"]),
-    ("DoS",        ["dos-"]),
-    ("DDoS_Scan",  ["ddos", "portscan"]),
-    ("BruteForce", ["ftp-patator", "ssh-patator"]),
-    ("WebBot",     ["web-attack", "bot"]),
-    ("Tail",       []),
-]
-PARTITIONS_2018 = [
-    ("Benign",       ["normal"]),
-    ("DoS",          ["dos-attacks"]),
-    ("DDoS",         ["ddos-attack", "ddos-attacks"]),
-    ("BruteForce",   ["ftp-bruteforce", "ssh-bruteforce"]),
-    ("Bot",          ["bot"]),
-    ("Infiltration", ["infilteration"]),
-    ("Tail",         []),
-]
-TAIL_IR_THRESHOLD = 5_000
+BLUE   = "#cce5ff"
+RED    = "#ffcccc"
+YELLOW = "#fff9cc"
+GRAY   = "#f2f2f2"
+WHITE  = "#ffffff"
+EPS    = 0.001
 
 SWEEP_LEVELS = {
     "gaussian": [0.01, 0.05, 0.10, 0.20, 0.50, 1.00, 2.00],
@@ -98,6 +88,102 @@ def detect_device():
     return "cpu"
 
 
+# ── per-class results table ──────────────────────────────────────────────────
+
+def save_colored_table(rows, col_headers, path, title=""):
+    n_rows, n_cols = len(rows), len(col_headers)
+    cell_text, cell_colors = [], []
+    for row in rows:
+        texts, colors = [], []
+        for col in col_headers:
+            val = row.get(col, "")
+            texts.append(f"{val:.4f}" if isinstance(val, float) else str(val))
+            if col.endswith("(M)"):
+                b = row.get(col.replace("(M)", "(B)"))
+                m = row.get(col)
+                if isinstance(b, float) and isinstance(m, float):
+                    colors.append(BLUE if m > b + EPS else RED if m < b - EPS else YELLOW)
+                else:
+                    colors.append(WHITE)
+            elif row.get("_footer") or col == "support":
+                colors.append(GRAY)
+            else:
+                colors.append(WHITE)
+        cell_text.append(texts)
+        cell_colors.append(colors)
+
+    fig, ax = plt.subplots(figsize=(max(12, n_cols * 1.2), max(4, n_rows * 0.35)))
+    ax.axis("off")
+    tbl = ax.table(cellText=cell_text, colLabels=col_headers,
+                   cellColours=cell_colors, loc="center", cellLoc="center")
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(9)
+    tbl.auto_set_column_width(col=list(range(n_cols)))
+    if title:
+        ax.set_title(title, fontsize=11, pad=8)
+    plt.tight_layout()
+    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
+def save_per_class_results(y_te, y_pred_base, y_pred_tta, class_names, out_dir, log):
+    n_cls = len(class_names)
+    prec_b, rec_b, f1_b, sup = precision_recall_fscore_support(
+        y_te, y_pred_base, labels=np.arange(n_cls), zero_division=0)
+    prec_m, rec_m, f1_m, _   = precision_recall_fscore_support(
+        y_te, y_pred_tta,  labels=np.arange(n_cls), zero_division=0)
+
+    order = [i for i in np.argsort(-sup) if sup[i] > 0]
+    COL_HEADERS = ["class", "support",
+                   "prec(B)", "prec(M)", "recall(B)", "recall(M)",
+                   "f1(B)", "f1(M)", "delta_f1"]
+
+    rows = []
+    for i in order:
+        rows.append({
+            "class":     class_names[i],
+            "support":   int(sup[i]),
+            "prec(B)":   float(prec_b[i]),  "prec(M)":   float(prec_m[i]),
+            "recall(B)": float(rec_b[i]),   "recall(M)": float(rec_m[i]),
+            "f1(B)":     float(f1_b[i]),    "f1(M)":     float(f1_m[i]),
+            "delta_f1":  float(f1_m[i] - f1_b[i]),
+        })
+
+    for avg_name in ["macro avg", "weighted avg"]:
+        avg = avg_name.split()[0]
+        fb = float(f1_score(y_te, y_pred_base, average=avg, zero_division=0))
+        fm = float(f1_score(y_te, y_pred_tta,  average=avg, zero_division=0))
+        rows.append({
+            "class": avg_name, "_footer": True,
+            "support":   int(sup.sum()),
+            "prec(B)":   float(precision_score(y_te, y_pred_base, average=avg, zero_division=0)),
+            "prec(M)":   float(precision_score(y_te, y_pred_tta,  average=avg, zero_division=0)),
+            "recall(B)": float(recall_score(y_te, y_pred_base, average=avg, zero_division=0)),
+            "recall(M)": float(recall_score(y_te, y_pred_tta,  average=avg, zero_division=0)),
+            "f1(B)": fb, "f1(M)": fm, "delta_f1": fm - fb,
+        })
+
+    hdr = (f"{'class':40s} {'sup':>8} {'prec(B)':>8} {'prec(M)':>8} "
+           f"{'rec(B)':>8} {'rec(M)':>8} {'f1(B)':>8} {'f1(M)':>8} {'Δf1':>8}")
+    log.info(hdr)
+    log.info("─" * len(hdr))
+    for r in rows:
+        mark = "↑" if r["delta_f1"] > EPS else ("↓" if r["delta_f1"] < -EPS else "=")
+        log.info(f"{r['class']:40s} {str(r.get('support','')):>8} "
+                 f"{r['prec(B)']:>8.4f} {r['prec(M)']:>8.4f} "
+                 f"{r['recall(B)']:>8.4f} {r['recall(M)']:>8.4f} "
+                 f"{r['f1(B)']:>8.4f} {r['f1(M)']:>8.4f} "
+                 f"{r['delta_f1']:>+8.4f} {mark}")
+
+    pd.DataFrame([{k: v for k, v in r.items() if k != "_footer"}
+                  for r in rows]).to_csv(
+        os.path.join(out_dir, "baseline_vs_moe_per_class.csv"), index=False)
+    save_colored_table(rows, COL_HEADERS,
+                       os.path.join(out_dir, "baseline_vs_moe_per_class.png"),
+                       title="Per-class results: Baseline vs TTA-MoE (exclusive experts)")
+    log.info("saved baseline_vs_moe_per_class.png / .csv")
+
+
 # ── data ─────────────────────────────────────────────────────────────────────
 
 def load_data(path):
@@ -119,31 +205,32 @@ def split_data(X, y, seed):
 
 # ── expert config ─────────────────────────────────────────────────────────────
 
-def _tail_ids(y):
-    counts = np.bincount(y)
-    ir = counts.max() / np.maximum(counts, 1)
-    return {int(i) for i in np.where(ir >= TAIL_IR_THRESHOLD)[0]}
+def build_exclusive_configs(y_tr, n_cls, k, class_names, log):
+    """
+    Sort classes by training-set count descending, then split into k
+    contiguous groups with np.array_split (last group absorbs the remainder).
+    Each class belongs to exactly one expert — exclusive partition.
 
+    Dividing by count rather than by taxonomy avoids the single-class-expert
+    problem (e.g. Benign-only) that makes TTA stability meaningless.
 
-def build_expert_configs(class_names, y, dataset_type):
-    parts = PARTITIONS_2017 if "2017" in dataset_type else PARTITIONS_2018
-    tids = _tail_ids(y)
-    cid_to_part = {}
-    for cid, cname in enumerate(class_names):
-        if cid in tids:
-            cid_to_part[cid] = "Tail"; continue
-        cn = cname.lower().strip()
-        assigned = "Other"
-        for pname, pats in parts:
-            if pname == "Tail": continue
-            if any(cn.startswith(p) or p in cn for p in pats):
-                assigned = pname; break
-        cid_to_part[cid] = assigned
+    Example  k=4, n_cls=15:
+      sorted: benign(454k) > dos-hulk(46k) > portscan(31k) > ... > heartbleed(2)
+      E0: benign, dos-hulk, portscan, ddos          (top-4 by count)
+      E1: dos-goldeneye, ftp-patator, ssh-patator, dos-slowloris
+      E2: dos-slowhttptest, bot, web-attack-brute-force, web-attack-xss
+      E3: infiltration, web-attack-sql-injection, heartbleed
+    """
+    counts  = np.bincount(y_tr, minlength=n_cls)
+    sorted_ids = np.argsort(-counts)                    # descending by count
+    groups  = np.array_split(sorted_ids, k)
     configs = []
-    for pname in [p for p, _ in parts] + ["Other"]:
-        gids = sorted(c for c, p in cid_to_part.items() if p == pname)
-        if gids:
-            configs.append(ExpertConfig(pname, gids, len(gids) == 1))
+    for i, gids in enumerate(groups):
+        gids = sorted(int(g) for g in gids)
+        cfg  = ExpertConfig(f"E{i}", gids, len(gids) == 1)
+        configs.append(cfg)
+        log.info(f"  [E{i}] {[class_names[g] for g in gids]}"
+                 f"  counts={[int(counts[g]) for g in gids]}")
     return configs
 
 
@@ -279,17 +366,21 @@ def _js_batch(p, q, eps=1e-10):
 def js_tta_predict(models, configs, X_te, n_global, n_views, perturb_fn, seed):
     rng = np.random.default_rng(seed)
     N, E = len(X_te), len(models)
-    base = [_predict_proba(m, X_te) for m in models]
+    # project each expert's output to global class space so JSD is comparable
+    # across experts regardless of how many classes they own
+    base = [zero_pad(_predict_proba(m, X_te), cfg, n_global)
+            for m, cfg in zip(models, configs)]          # [E][N, n_global]
     js_sum = np.zeros((N, E), dtype=np.float64)
     for _ in range(n_views):
         Xa = perturb_fn(X_te, rng)
-        for e, m in enumerate(models):
-            js_sum[:, e] += _js_batch(base[e], _predict_proba(m, Xa))
+        for e, (m, cfg) in enumerate(zip(models, configs)):
+            aug_g = zero_pad(_predict_proba(m, Xa), cfg, n_global)
+            js_sum[:, e] += _js_batch(base[e], aug_g)   # JSD in global space
     stab = 1.0 / (1.0 + js_sum / n_views)
     w = stab / stab.sum(axis=1, keepdims=True)
     gp = np.zeros((N, n_global), dtype=np.float32)
-    for e, (cfg, lp) in enumerate(zip(configs, base)):
-        gp += w[:, e:e + 1] * zero_pad(lp, cfg, n_global)
+    for e in range(E):
+        gp += w[:, e:e + 1] * base[e]                   # base[e] already global
     return np.argmax(gp, axis=1), stab, base
 
 
@@ -363,7 +454,6 @@ def compute_behavior(models, configs, X_te, y_te, stab, n_global, class_names, p
     rng = np.random.default_rng(seed + 999)
     Xa  = perturb_fn(X_te, rng)                    # one representative perturbed view
     n_cls = len(class_names)
-    E     = len(configs)
 
     # per-expert predictions & confidence on x and x'
     pred_x_all  = []   # [E][N]
@@ -448,14 +538,10 @@ def plot_B_expert_behavior(behavior_df, rep_classes, configs, out_dir, log):
     if n_rep == 1:
         axes = [axes]
 
-    OWNER_BG    = "#c6dcf7"   # blue
-    OWNER_TEXT  = "#0a3d6b"
-    WRONG_LIGHT = "#fff0f0"   # near-white red (confidence ~0.8)
-    WRONG_DEEP  = "#ffaaaa"   # deep red       (confidence ~0.999)
-    HEADER_BG   = "#404040"
-    HEADER_FG   = "white"
-
-    E = len(configs)
+    OWNER_BG   = "#c6dcf7"
+    OWNER_TEXT = "#0a3d6b"
+    HEADER_BG  = "#404040"
+    HEADER_FG  = "white"
 
     for ax, cls_name in zip(axes, rep_classes):
         ax.axis("off")
@@ -672,12 +758,13 @@ def sweep_noise_sensitivity(models, configs, X_te, y_te, n_global, class_names,
     counts = np.bincount(ys, minlength=n_cls)
 
     log.info(f"  Precomputing base predictions on {len(Xs):,} samples …")
-    base_preds, base_confs, base_proba_local = [], [], []
+    base_preds, base_confs, base_proba_global = [], [], []
     for m, cfg in zip(models, configs):
         lp = _predict_proba(m, Xs)
-        base_preds.append(np.argmax(zero_pad(lp, cfg, n_global), axis=1))
-        base_confs.append(lp.max(axis=1))
-        base_proba_local.append(lp)   # full local-space proba for JS computation
+        gp = zero_pad(lp, cfg, n_global)
+        base_preds.append(np.argmax(gp, axis=1))
+        base_confs.append(lp.max(axis=1))        # local conf kept for display
+        base_proba_global.append(gp)             # global-space proba for JSD
 
     rows = []
     for mode in ["gaussian", "mask"]:
@@ -697,16 +784,17 @@ def sweep_noise_sensitivity(models, configs, X_te, y_te, n_global, class_names,
                 Xa = pfn(Xs, rng)
                 for e, (m, cfg) in enumerate(zip(models, configs)):
                     lpa = _predict_proba(m, Xa)
-                    trial_preds[cfg.name].append(np.argmax(zero_pad(lpa, cfg, n_global), axis=1))
-                    trial_confs[cfg.name].append(lpa.max(axis=1))
-                    trial_probas[cfg.name].append(lpa)
+                    gpa = zero_pad(lpa, cfg, n_global)
+                    trial_preds[cfg.name].append(np.argmax(gpa, axis=1))
+                    trial_confs[cfg.name].append(lpa.max(axis=1))   # local conf for display
+                    trial_probas[cfg.name].append(gpa)              # global-space for JSD
 
             # compute per-sample JS stability and TTA weights for this level
             js_means = {}
             for e, cfg in enumerate(configs):
                 js_sum = np.zeros(len(Xs), dtype=np.float64)
                 for t in range(n_trials):
-                    js_sum += _js_batch(base_proba_local[e], trial_probas[cfg.name][t])
+                    js_sum += _js_batch(base_proba_global[e], trial_probas[cfg.name][t])  # global JSD
                 js_means[cfg.name] = js_sum / n_trials
             stab_arr = np.stack(
                 [1.0 / (1.0 + js_means[cfg.name]) for cfg in configs], axis=1)  # [Ns, E]
@@ -754,10 +842,16 @@ def sweep_noise_sensitivity(models, configs, X_te, y_te, n_global, class_names,
                 for e, cfg in enumerate(configs) for t in range(n_trials)])
             log.info(f"    {mode} level={level:.2f}  avg_flip={avg:.4f}")
 
+            # free large per-trial arrays immediately — global-space arrays
+            # (15-dim) use ~5× more memory than local-space; without this,
+            # memory pressure at plot time causes a segfault in matplotlib's C code
+            del trial_preds, trial_confs, trial_probas, js_means, stab_arr, tta_w_arr
+            gc.collect()
+
     return pd.DataFrame(rows)
 
 
-def plot_B_sweep_per_level(sweep_df, configs, rep_classes, out_dir, log):
+def plot_B_sweep_per_level(sweep_df, _configs, rep_classes, out_dir, log):
     """
     For each (mode, level) in sweep_df, save a standalone B-style PNG.
     Columns: Expert | Pred(x) | Conf(x) | Pred(x') | Conf(x') | Flip%
@@ -854,9 +948,12 @@ def plot_B_sweep_per_level(sweep_df, configs, rep_classes, out_dir, log):
 
 def plot_D_noise_sweep(sweep_df, configs, rep_classes, n_trials, out_dir, log):
     """
-    B-style sweep table.  Rows: for each expert, three sub-rows:
-      pred(x') / conf(x') / flip%
-    Columns: noise levels.  One value per cell — no multi-line cramming.
+    Save one figure per (mode, representative_class) to avoid allocating a
+    single oversized figure (n_rep subplots × many table rows) that causes
+    a segfault in matplotlib's C renderer under memory pressure.
+
+    CSV is saved in main() before this function is called, so diagnostic
+    data survives even if a specific figure fails.
     """
     OWNER_BG   = "#c6dcf7"
     OWNER_TEXT = "#0a3d6b"
@@ -868,18 +965,8 @@ def plot_D_noise_sweep(sweep_df, configs, rep_classes, n_trials, out_dir, log):
         mode_sub = sweep_df[sweep_df["mode"] == mode]
         levels   = sorted(mode_sub["level"].unique())
         col_hdrs = [f"{param_name[mode]}={lv:.2f}" for lv in levels]
-        n_rep    = len(rep_classes)
 
-        fig, axes = plt.subplots(
-            n_rep, 1,
-            figsize=(max(14, len(levels) * 2.2), 5.5 * n_rep + 1.2),
-            gridspec_kw={"hspace": 0.65},
-        )
-        if n_rep == 1:
-            axes = [axes]
-
-        for ax, cls_name in zip(axes, rep_classes):
-            ax.axis("off")
+        for cls_name in rep_classes:
             cls_sub = mode_sub[mode_sub["true_class"] == cls_name]
             if cls_sub.empty:
                 continue
@@ -915,13 +1002,13 @@ def plot_D_noise_sweep(sweep_df, configs, rep_classes, n_trials, out_dir, log):
                     flip_row.append(f"{r['flip_rate']:.1%}")
 
                     if is_owner:
-                        c = OWNER_BG
+                        clr = OWNER_BG
                     else:
-                        t = max(0.0, min(1.0, (float(r["conf_xa"]) - 0.80) / 0.20))
-                        g = int(240 - t * 100)
-                        c = f"#ff{g:02x}{g:02x}"
+                        t   = max(0.0, min(1.0, (float(r["conf_xa"]) - 0.80) / 0.20))
+                        g   = int(240 - t * 100)
+                        clr = f"#ff{g:02x}{g:02x}"
                     for lst in [pred_col, conf_col, stab_col, tta_col, flip_col]:
-                        lst.append(c)
+                        lst.append(clr)
 
                 row_labels.extend([
                     f"{prefix}{cfg.name}  pred(x')",
@@ -932,6 +1019,11 @@ def plot_D_noise_sweep(sweep_df, configs, rep_classes, n_trials, out_dir, log):
                 ])
                 cell_text.extend([pred_row, conf_row, stab_row, tta_row, flip_row])
                 cell_colors.extend([pred_col, conf_col, stab_col, tta_col, flip_col])
+
+            n_rows = len(cell_text)
+            fig, ax = plt.subplots(
+                figsize=(max(14, len(levels) * 2.2), 0.55 * n_rows + 1.8))
+            ax.axis("off")
 
             tbl = ax.table(
                 cellText=cell_text, rowLabels=row_labels,
@@ -947,7 +1039,6 @@ def plot_D_noise_sweep(sweep_df, configs, rep_classes, n_trials, out_dir, log):
                 cell.set_facecolor(HEADER_BG)
                 cell.set_text_props(color=HEADER_FG, fontweight="bold")
 
-            # bold text for owning expert sub-rows (5 sub-rows per expert)
             data_row = 1
             for cfg in configs:
                 exp_sub = cls_sub[cls_sub["expert"] == cfg.name]
@@ -962,24 +1053,19 @@ def plot_D_noise_sweep(sweep_df, configs, rep_classes, n_trials, out_dir, log):
                     data_row += 1
 
             ax.set_title(
-                f'True class: "{cls_name}"  (n={support:,})\n'
-                f'Blue=owning expert  Red=non-owning (deeper=more confident)  '
-                f'(mean over {n_trials} trials)',
-                fontsize=8, loc="left", pad=4,
+                f'(D) {param_name[mode]} sweep  —  True class: "{cls_name}"  '
+                f'(n={support:,})\n'
+                f'Blue=owning expert  Red=non-owning  (mean over {n_trials} trials)',
+                fontsize=9, loc="left", pad=6,
             )
 
-        fig.suptitle(
-            f"(D) Expert behavior across {mode} noise levels\n"
-            f"Each expert: 5 rows — pred(x') / conf(x') / stability / TTA weight / flip%",
-            fontsize=10, y=1.0,
-        )
-        out_path = os.path.join(out_dir, f"D_sweep_{mode}.png")
-        plt.savefig(out_path, dpi=150, bbox_inches="tight")
-        plt.close(fig)
-        log.info(f"(D) saved D_sweep_{mode}.png")
-
-    sweep_df.to_csv(os.path.join(out_dir, "D_noise_sweep.csv"), index=False)
-    log.info("(D) saved D_noise_sweep.csv")
+            safe_cls = cls_name.replace(" ", "_").replace("/", "-")[:30]
+            out_path = os.path.join(out_dir, f"D_sweep_{mode}_{safe_cls}.png")
+            plt.tight_layout()
+            plt.savefig(out_path, dpi=150, bbox_inches="tight")
+            plt.close(fig)
+            gc.collect()
+            log.info(f"(D) saved D_sweep_{mode}_{safe_cls}.png")
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
@@ -987,6 +1073,8 @@ def plot_D_noise_sweep(sweep_df, configs, rep_classes, n_trials, out_dir, log):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data",         required=True)
+    parser.add_argument("--num_experts",  type=int,   default=6,
+                        help="Number of exclusive experts (classes divided by count)")
     parser.add_argument("--seed",         type=int,   default=42)
     parser.add_argument("--n_estimators", type=int,   default=300)
     parser.add_argument("--n_views",      type=int,   default=5)
@@ -1020,13 +1108,11 @@ def main():
     log.info(f"Loaded {X.shape[0]:,} samples | {X.shape[1]} features | "
              f"{n_cls} classes | dataset={dataset_type}")
 
-    configs = build_expert_configs(class_names, y, dataset_type)
-    log.info(f"Expert partition ({len(configs)} experts):")
-    for c in configs:
-        log.info(f"  [{c.name:12s}] {[class_names[i] for i in c.global_class_ids]}")
-
     X_tr, X_va, X_te, y_tr, y_va, y_te = split_data(X, y, args.seed)
     log.info(f"Split: train={len(y_tr):,}  val={len(y_va):,}  test={len(y_te):,}")
+
+    log.info(f"Exclusive expert partition ({args.num_experts} experts, by count):")
+    configs = build_exclusive_configs(y_tr, n_cls, args.num_experts, class_names, log)
 
     # ── perturbation function ─────────────────────────────────────────────────
     col_means = X_te.mean(axis=0)
@@ -1049,9 +1135,9 @@ def main():
     y_pred_oracle = oracle_predict(models, configs, X_te, y_te, n_cls)
 
     # ── JS-TTA + stability matrix ─────────────────────────────────────────────
-    log.info(f"JS-TTA (n_views={args.n_views}, perturb={args.perturb}) …")
+    log.info(f"JS-TTA (n_views={args.n_views}, perturb={args.perturb}, JSD=global-space) …")
     t0 = time.time()
-    y_pred_tta, stab, base_probs = js_tta_predict(
+    y_pred_tta, stab, _ = js_tta_predict(
         models, configs, X_te, n_cls, args.n_views, perturb_fn, args.seed)
     log.info(f"JS-TTA done in {time.time() - t0:.1f}s")
 
@@ -1074,10 +1160,17 @@ def main():
     sweep_df = sweep_noise_sensitivity(
         models, configs, X_te, y_te, n_cls, class_names,
         rep_classes, col_means, col_stds, args.n_sweep_trials, args.sweep_sample, log)
+    # save CSV immediately before any plotting so diagnostic data is always preserved
+    sweep_df.to_csv(os.path.join(out_dir, "D_noise_sweep.csv"), index=False)
+    log.info("(D) saved D_noise_sweep.csv")
+    gc.collect()
     plot_D_noise_sweep(sweep_df, configs, rep_classes, args.n_sweep_trials, out_dir, log)
 
     log.info("\n═══ (B) per noise level ═══")
     plot_B_sweep_per_level(sweep_df, configs, rep_classes, out_dir, log)
+
+    log.info("\n═══ Per-class results (Baseline vs TTA-MoE) ═══")
+    save_per_class_results(y_te, y_pred_base, y_pred_tta, class_names, out_dir, log)
 
     log.info(f"\nResults: {out_dir}")
 

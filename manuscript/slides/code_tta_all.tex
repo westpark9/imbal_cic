@@ -1,0 +1,593 @@
+% ============================================================
+%  code_tta_all.py 구조 설명 슬라이드
+%  저장 위치: manuscript/slides/code_tta_all.tex
+%  컴파일: pdflatex code_tta_all.tex  (twice)
+% ============================================================
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit,
+                decorations.pathreplacing, calc, backgrounds}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\setCJKmainfont[AutoFakeSlant=0.2, AutoFakeBold=2]{Noto Sans CJK KR}
+\setCJKsansfont[AutoFakeSlant=0.2, AutoFakeBold=2]{Noto Sans CJK KR}
+\setCJKmonofont{Noto Sans CJK KR}
+
+% ── 색상 정의 ────────────────────────────────────────────────
+\definecolor{expblue}{RGB}{70,130,200}
+\definecolor{exporange}{RGB}{220,140,40}
+\definecolor{expgreen}{RGB}{60,160,80}
+\definecolor{exppurple}{RGB}{160,80,200}
+\definecolor{lightgray}{RGB}{240,240,240}
+\definecolor{attred}{RGB}{200,60,60}
+\definecolor{benignblue}{RGB}{60,100,200}
+\definecolor{jsdcolor}{RGB}{180,60,180}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamerfont{footnote}{size=\tiny}
+
+\title{\texttt{code\_tta\_all.py} 구조 분석}
+\subtitle{Inclusive Expert + MATI/SADE 기반 TTA 설계}
+\author{westpark}
+\date{2026-06-05}
+\institute{CIC-IDS2017 \quad (2.83M samples, 15 classes)}
+
+% ============================================================
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ── 목차 ─────────────────────────────────────────────────────
+\begin{frame}{목차}
+  \tableofcontents
+\end{frame}
+
+% ============================================================
+\section{전체 파이프라인}
+% ============================================================
+
+\begin{frame}{전체 파이프라인 개요}
+\begin{center}
+\begin{tikzpicture}[
+  node distance=0.55cm and 0.7cm,
+  box/.style={draw, rounded corners=3pt, minimum width=2.2cm,
+              minimum height=0.7cm, font=\small, align=center,
+              fill=lightgray},
+  arr/.style={-{Stealth[scale=0.8]}, thick},
+  phase/.style={draw=none, font=\scriptsize\bfseries, align=center}
+]
+
+% ─ Phase 1: 데이터 ─
+\node[box, fill=blue!10] (data) {원시 데이터\\{\scriptsize CIC-IDS2017}};
+
+\node[box, fill=blue!10, right=of data] (split)
+  {Train/Val/Test 분리\\{\scriptsize 60/20/20, stratified}};
+
+% ─ Phase 2: 학습 ─
+\node[box, fill=green!15, right=of split] (caps)
+  {Inclusive Caps\\계산\\{\scriptsize $k$개 경계값}};
+
+\node[box, fill=green!15, right=of caps] (train)
+  {Expert 학습\\{\scriptsize XGBoost $\times k$}\\{\scriptsize val도 동일 cap}};
+
+\node[box, fill=green!15, right=of train] (base)
+  {Baseline\\학습\\{\scriptsize XGBoost}};
+
+% ─ Phase 3: TTA ─
+\node[box, fill=orange!15, below=1.2cm of caps] (distbuild)
+  {테스트 분포\\생성\\{\scriptsize natural/moderate/}\\{\scriptsize attack\_parity}};
+
+\node[box, fill=orange!15, right=of distbuild] (tta)
+  {TTA 가중치\\학습\\{\scriptsize Adam, JSD loss}};
+
+\node[box, fill=orange!15, right=of tta] (pred)
+  {예측\\{\scriptsize $\sum_e w_e \cdot \ell_e(x)$}\\{\scriptsize argmax}};
+
+% ─ Phase 4: 평가 ─
+\node[box, fill=red!10, right=of pred] (eval)
+  {평가 \& 시각화\\{\scriptsize A/B/C 플롯}\\{\scriptsize per-class CSV}};
+
+% ─ Oracle ─
+\node[box, fill=purple!10, below=0.4cm of train] (oracle)
+  {Oracle 예측\\{\scriptsize 상한선}};
+
+% ─ 화살표 ─
+\draw[arr] (data)  -- (split);
+\draw[arr] (split) -- (caps);
+\draw[arr] (caps)  -- (train);
+\draw[arr] (train) -- (base);
+
+\draw[arr] (split.south) -- ++(0,-0.35) -| (distbuild.north);
+\draw[arr] (distbuild)   -- (tta);
+\draw[arr] (tta)         -- (pred);
+\draw[arr] (pred)        -- (eval);
+\draw[arr] (base.south)  |- (eval.north);
+
+\draw[arr] (train.south) -- (oracle.north);
+\draw[arr] (oracle.east) -| (eval.south);
+
+% ─ Phase 레이블 ─
+\node[phase, above=0.05cm of data, xshift=0.6cm]
+  {\textcolor{blue!60}{Phase 1: 데이터}};
+\node[phase, above=0.05cm of caps, xshift=0.8cm]
+  {\textcolor{green!50!black}{Phase 2: 학습}};
+\node[phase, left=0.1cm of distbuild, yshift=0.1cm]
+  {\textcolor{orange!70!black}{Phase 3: TTA}};
+
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+% ============================================================
+\section{Inclusive Expert 설계}
+% ============================================================
+
+\begin{frame}{Inclusive Expert: Cap 기반 설계}
+
+\begin{columns}[T]
+\column{0.52\textwidth}
+\textbf{설계 원리}
+\begin{itemize}
+  \item 모든 Expert가 \textbf{전체 15개 클래스}를 분류
+  \item Expert $i$의 학습 데이터: 각 클래스 샘플 수를 \\
+        $\text{cap}_i$로 제한
+  \item $\text{cap}_i$ = 학습셋 클래스 수를 내림차순 정렬 후\\
+        $\lceil n_\text{cls} \cdot i / k \rceil$ 번째 클래스의 샘플 수
+  \item Expert 0: cap 없음 (자연 불균형 유지)
+  \item Expert $k{-}1$: 가장 균등한 분포
+\end{itemize}
+
+\vspace{0.4em}
+\textbf{Val set도 동일 cap 적용}\\
+{\small → early stopping이 해당 expert의 실제 학습 분포에 맞게 동작}
+
+\vspace{0.4em}
+\textbf{CIC-IDS2017 예시 ($k=4$)}\\
+\begin{tabular}{ccc}
+\toprule
+Expert & Cap & 학습 데이터 성격 \\
+\midrule
+E0 & 없음    & 자연 불균형 (benign 454k) \\
+E1 & $\sim$25k & 상위 클래스만 균등화 \\
+E2 & $\sim$1k  & 대부분 균등 \\
+E3 & $\sim$130 & 거의 완전 균등 \\
+\bottomrule
+\end{tabular}
+
+\column{0.46\textwidth}
+\begin{tikzpicture}[scale=0.78]
+% 막대 그래프: 클래스별 샘플 수 vs cap
+\begin{axis}[
+  ybar, bar width=5pt,
+  width=7.5cm, height=5.5cm,
+  xlabel={\small 클래스 (지지도 내림차순)},
+  ylabel={\small 샘플 수 (log)},
+  ymode=log,
+  ymin=1, ymax=600000,
+  xtick={1,2,3,4,5,6,7},
+  xticklabels={benign, dos-hulk, portscan, ddos, ftp-pat, ssh-pat, \ldots},
+  xticklabel style={font=\tiny, rotate=35, anchor=east},
+  ytick={10,100,1000,10000,100000},
+  yticklabels={10,100,1k,10k,100k},
+  legend style={font=\tiny, at={(0.98,0.98)}, anchor=north east},
+  grid=major, grid style={dashed, gray!40},
+  title={\small 클래스별 샘플 수와 Cap 수준},
+  title style={font=\small},
+]
+% 실제 샘플 수
+\addplot[fill=blue!40] coordinates {
+  (1,454537)(2,46025)(3,31786)(4,25606)(5,1588)(6,1179)(7,1100)};
+% E1 cap
+\addplot[fill=orange!60, opacity=0.7] coordinates {
+  (1,25000)(2,25000)(3,25000)(4,25000)(5,1588)(6,1179)(7,1100)};
+% E3 cap
+\addplot[fill=green!60, opacity=0.7] coordinates {
+  (1,130)(2,130)(3,130)(4,130)(5,130)(6,130)(7,130)};
+\legend{자연 분포, E1 cap ($\sim$25k), E3 cap ($\sim$130)}
+\end{axis}
+\end{tikzpicture}
+\end{columns}
+\end{frame}
+
+% ============================================================
+\section{테스트 분포 구성}
+% ============================================================
+
+\begin{frame}{테스트 분포 구성: Benign 수 조절}
+
+\begin{columns}[T]
+\column{0.45\textwidth}
+\textbf{설계 배경}
+\begin{itemize}
+  \item 공격 클래스 샘플은 고정 (heartbleed 2개 등)
+  \item Benign만 다운샘플링으로 조절 가능
+  \item Anchor = 두 번째 최다 클래스 (dos-hulk, $\sim$9k in test)
+\end{itemize}
+
+\vspace{0.5em}
+\begin{tabular}{lrr}
+\toprule
+분포 & Benign 수 & Benign:Anchor \\
+\midrule
+\texttt{natural}       & $\sim$91k & 10:1 \\
+\texttt{moderate}      & $\sim$27k & 3:1  \\
+\texttt{attack\_parity}& $\sim$9k  & 1:1  \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+{\small TTA 가중치 학습은 각 분포로,\\
+\textbf{최종 평가는 항상 natural 전체 test set}}
+
+\column{0.53\textwidth}
+\begin{tikzpicture}[scale=0.82]
+\begin{axis}[
+  xbar, bar width=9pt,
+  width=8cm, height=5.8cm,
+  xlabel={\small 샘플 수},
+  symbolic y coords={attack\_parity, moderate, natural},
+  ytick=data,
+  yticklabel style={font=\small},
+  xmin=0, xmax=115000,
+  xtick={0,20000,40000,60000,80000,100000},
+  xticklabels={0,20k,40k,60k,80k,100k},
+  legend style={font=\scriptsize, at={(0.98,0.05)}, anchor=south east},
+  grid=major, grid style={dashed, gray!40},
+  title={\small 분포별 클래스 구성},
+  title style={font=\small},
+]
+\addplot[fill=benignblue!70] coordinates {
+  (91000,natural)(27000,moderate)(9000,attack\_parity)};
+\addplot[fill=attred!70] coordinates {
+  (22000,natural)(22000,moderate)(22000,attack\_parity)};
+\legend{Benign, 공격 클래스 (고정)}
+\end{axis}
+\end{tikzpicture}
+\end{columns}
+
+\vspace{0.3em}
+\small
+\textbf{기대 효과}: natural → E0(unbalanced) 선호 / attack\_parity → E3(balanced) 선호\\
+이 패턴이 관찰되면 \textbf{분포 변화에 따라 가중치가 의미 있게 달라진다} = TTA 설계 작동 검증
+\end{frame}
+
+% ============================================================
+\section{TTA 가중치 학습}
+% ============================================================
+
+\begin{frame}{TTA 가중치 학습: MATI/SADE 하이브리드}
+
+\begin{columns}[T]
+\column{0.48\textwidth}
+\textbf{이론적 배경}
+
+\begin{tabular}{p{1.8cm}p{3.2cm}}
+\toprule
+SADE (이미지) & cosine similarity 최대화,\newline global weight, 분류 \\
+\midrule
+MATI (회귀) & MSE$(y^{(1)}, y^{(2)})$ 최소화,\newline global weight, 회귀 \\
+\midrule
+\textbf{우리 (분류)} & \textbf{JSD$(p^{(1)}, p^{(2)})$ 최소화},\newline \textbf{global weight}, \textbf{logits 집계} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\textbf{손실 함수}
+\[
+  \mathcal{L} = \frac{1}{|D_t|}\sum_{x\in D_t}
+  \operatorname{JSD}\!\bigl(p^{(1)}_x,\; p^{(2)}_x\bigr)
+\]
+\[
+  p^{(k)}_x = \operatorname{softmax}\!\Bigl(\sum_e \sigma(w_e)\cdot\ell_e(x^{(k)})\Bigr)
+\]
+\[
+  \operatorname{JSD}(p,q)=\tfrac{1}{2}\operatorname{KL}(p\|m)+
+  \tfrac{1}{2}\operatorname{KL}(q\|m),\quad m=\tfrac{p+q}{2}
+\]
+
+\column{0.50\textwidth}
+\begin{center}
+\begin{tikzpicture}[
+  node distance=0.4cm and 0.5cm,
+  box/.style={draw, rounded corners=3pt, minimum width=2cm,
+              minimum height=0.55cm, font=\scriptsize, align=center},
+  arr/.style={-{Stealth[scale=0.7]}, thick},
+]
+
+% 입력 샘플
+\node[box, fill=gray!20] (x) {$x$ (mini-batch)};
+
+% 두 view
+\node[box, fill=yellow!30, below left=0.7cm and 0.6cm of x] (v0)
+  {$x^{(1)}$\\perturbation};
+\node[box, fill=yellow!30, below right=0.7cm and 0.6cm of x] (v1)
+  {$x^{(2)}$\\perturbation};
+
+\draw[arr] (x) -- (v0);
+\draw[arr] (x) -- (v1);
+
+% Expert logits
+\node[box, fill=expblue!30, below=0.5cm of v0] (l0)
+  {$\ell_e(x^{(1)})$\\{\tiny $E$개 expert logit}};
+\node[box, fill=expblue!30, below=0.5cm of v1] (l1)
+  {$\ell_e(x^{(2)})$\\{\tiny $E$개 expert logit}};
+
+\draw[arr] (v0) -- (l0);
+\draw[arr] (v1) -- (l1);
+
+% Aggregation
+\node[box, fill=expgreen!30, below=0.5cm of l0] (a0)
+  {$\text{agg}^{(1)}=\sum_e\sigma(w_e)\ell_e^{(1)}$};
+\node[box, fill=expgreen!30, below=0.5cm of l1] (a1)
+  {$\text{agg}^{(2)}=\sum_e\sigma(w_e)\ell_e^{(2)}$};
+
+\draw[arr] (l0) -- (a0);
+\draw[arr] (l1) -- (a1);
+
+% JSD
+\node[box, fill=jsdcolor!25,
+      below=0.45cm of $(a0)!0.5!(a1)$] (jsd)
+  {$\mathcal{L}=\operatorname{JSD}(p^{(1)},p^{(2)})$};
+
+\draw[arr] (a0.south) -- (jsd.north west);
+\draw[arr] (a1.south) -- (jsd.north east);
+
+% Adam
+\node[box, fill=red!20, below=0.4cm of jsd] (adam)
+  {Adam: $w \leftarrow w - \eta\nabla_w\mathcal{L}$\\
+   {\tiny 모델 파라미터 frozen}};
+
+\draw[arr] (jsd) -- (adam);
+
+% w 화살표 돌아오기
+\draw[arr, dashed, bend left=50] (adam.west)
+  to node[left, font=\tiny]{update $w$} (a0.west);
+
+% XGBoost 고정 표시
+\node[draw=none, font=\tiny, text=gray,
+      right=0.05cm of l0] {(XGBoost, frozen)};
+
+\end{tikzpicture}
+\end{center}
+\end{columns}
+\end{frame}
+
+% ── TTA 알고리즘 상세 ─────────────────────────────────────────
+\begin{frame}{TTA 학습 알고리즘 상세}
+
+\begin{columns}[T]
+\column{0.50\textwidth}
+\textbf{알고리즘 흐름 (\texttt{learn\_aggregation\_weights})}
+
+\begin{itemize}
+  \item \textbf{Step 1.} $w \leftarrow \mathbf{0}_E$ 초기화 (softmax 후 균등)
+  \item \textbf{Step 2.} For each epoch:
+        $D_t$ mini-batch 추출
+        $\to$ 두 독립 perturbation $x^{(1)}, x^{(2)}$
+        $\to$ 각 Expert logit 추출 (\texttt{output\_margin})
+        $\to$ JSD loss 계산 \& Adam step
+  \item \textbf{Step 3.} Early stop: $\min_e w_e < 0.05$
+  \item \textbf{Step 4.} 학습된 $w$를 natural test set에 적용
+\end{itemize}
+
+\vspace{0.3em}
+\textbf{역전파 경로}\\
+$\mathcal{L} \to p^{(1,2)} \to \text{agg} \xrightarrow{\partial/\partial w} w$\\
+{\small XGBoost logit은 \textbf{상수 텐서}로 취급\\
+→ XGBoost 역전파 불필요}
+
+\column{0.48\textwidth}
+\textbf{예측 (\texttt{predict\_with\_weights})}
+
+\[
+  \hat{y} = \arg\max_c \sum_{e=1}^{E} w_e \cdot \ell_e(x)_c
+\]
+
+softmax 이전 logit을 가중합 → argmax\\
+(확률을 가중합하는 것보다 이론적으로 타당)
+
+\vspace{0.6em}
+\textbf{하이퍼파라미터 (CLI)}
+
+\begin{tabular}{ll}
+\toprule
+\texttt{--tta\_epochs} & 5 \\
+\texttt{--tta\_lr}     & 0.01 \\
+\texttt{--tta\_batch}  & 256 \\
+\texttt{--num\_experts}& 4 \\
+\texttt{--noise\_std}  & 0.1 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\textbf{MATI vs 우리 설정 차이점}\\
+\begin{itemize}\small
+  \item MATI: regression 스칼라 $\to$ MSE
+  \item 우리: 분류 확률 벡터 $\to$ JSD\\
+        (대칭, bounded, 정보이론적 근거)
+  \item MATI: GMM region별 전문화\\
+  \item 우리: cap 수준별 전문화
+\end{itemize}
+\end{columns}
+\end{frame}
+
+% ============================================================
+\section{평가 및 출력}
+% ============================================================
+
+\begin{frame}{평가 파이프라인 및 출력물}
+
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{평가 구조}
+
+\begin{tikzpicture}[
+  node distance=0.3cm and 0.4cm,
+  box/.style={draw, rounded corners=3pt, minimum width=3.4cm,
+              minimum height=0.6cm, font=\scriptsize, align=center,
+              fill=lightgray},
+  arr/.style={-{Stealth[scale=0.7]}, thick},
+]
+
+\node[box, fill=blue!10] (te)
+  {Natural test set ($X_\text{te}$, $y_\text{te}$)};
+
+\node[box, fill=green!10, below=0.3cm of te] (base)
+  {Baseline 예측 (\texttt{baseline.predict})};
+
+\node[box, fill=purple!10, below=0.3cm of base] (orc)
+  {Oracle 예측 (true class 최고확률 expert)};
+
+\node[box, fill=orange!10, below=0.5cm of orc] (tta_nat)
+  {TTA-natural 예측};
+\node[box, fill=orange!10, below=0.3cm of tta_nat] (tta_mod)
+  {TTA-moderate 예측};
+\node[box, fill=orange!10, below=0.3cm of tta_mod] (tta_att)
+  {TTA-attack\_parity 예측};
+
+\draw[arr] (te)   -- (base);
+\draw[arr] (te)   -- (orc);
+\draw[arr] (te)   -- (tta_nat);
+\draw[arr] (te)   -- (tta_mod);
+\draw[arr] (te)   -- (tta_att);
+
+\node[box, fill=red!10, right=0.5cm of orc] (eval)
+  {비교 평가\\(Macro/Weighted F1)};
+
+\draw[arr] (base)    -- (eval);
+\draw[arr] (orc)     -- (eval);
+\draw[arr] (tta_nat) -- (eval);
+\draw[arr] (tta_mod) -- (eval);
+\draw[arr] (tta_att) -- (eval);
+
+\end{tikzpicture}
+
+\column{0.48\textwidth}
+\textbf{출력 파일}
+
+\begin{tabular}{ll}
+\toprule
+파일 & 내용 \\
+\midrule
+\texttt{A\_f1\_comparison.png} & 클래스별 F1 비교 막대 \\
+\texttt{A\_f1\_\{dist\}.csv}   & 분포별 클래스 F1 수치 \\
+\texttt{B\_expert\_behavior.png} & Expert 예측 테이블\\
+                                 & + 분포별 가중치 열 \\
+\texttt{B\_expert\_behavior.csv} & 위 수치 \\
+\texttt{C\_global\_weights.png}  & 분포별 학습 가중치\\
+                                 & 막대 그래프 \\
+\texttt{C\_global\_weights.csv}  & 위 수치 \\
+\texttt{baseline\_vs\_moe}       & Baseline vs TTA \\
+\texttt{\_per\_class\_\{dist\}} & 클래스별 정밀/재현/F1 \\
+\texttt{.png/.csv}               & 컬러 표 + CSV \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.3em}
+{\small 분포별로 별도 결과 파일 생성 (\texttt{\_natural},\\
+\texttt{\_moderate}, \texttt{\_attack\_parity} suffix)}
+\end{columns}
+\end{frame}
+
+% ============================================================
+\section{현재 한계 및 관찰}
+% ============================================================
+
+\begin{frame}{현재 한계 및 관찰 (실험 결과 기준)}
+
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{관찰된 문제}
+
+\begin{itemize}
+  \item \textbf{Early stop이 epoch 1에서 발생}\\
+        E0 가중치 $\approx 0.9$ → 나머지 $< 0.05$\\
+        원인: \texttt{tta\_lr=0.01}이 너무 큼
+
+  \item \textbf{E0가 모든 분포에서 지배적}\\
+        E0 = 가장 많은 데이터 → logit이 perturbation에\\
+        가장 안정적 → JSD 최소화 = E0 선택\\
+        {\small(올바른 최적화지만 원하는 결과 아님)}
+
+  \item \textbf{Tail 클래스 미개선}\\
+        bot, web-attack-xss, sql-injection\\
+        Expert 예측 자체가 benign으로 수렴
+\end{itemize}
+
+\column{0.48\textwidth}
+\textbf{근본 원인 분석}
+
+\begin{tabular}{p{2cm}p{3.5cm}}
+\toprule
+문제 & 원인 \\
+\midrule
+Epoch 1 stop & lr=0.01 → 첫 배치에서\\
+             & weight collapse \\
+\midrule
+E0 지배      & Generalist expert는\\
+             & 항상 안정적 → 분포에\\
+             & 무관하게 선택됨 \\
+\midrule
+Tail 미개선  & Expert 설계 문제:\\
+             & 모든 expert가\\
+             & benign으로 수렴 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.4em}
+\textbf{제안 수정}\\
+{\small
+• \texttt{tta\_lr}: 0.01 → 0.0001\\
+• Early stop threshold: 0.05 → 0.01\\
+• Entropy 정규화 추가:\\
+  $\mathcal{L} = \text{JSD} - \lambda H(\mathbf{w})$
+}
+\end{columns}
+
+\vspace{0.3em}
+\begin{alertblock}{\small 핵심 한계}
+\small TTA는 Expert 품질이 서로 달라야 작동함.
+Expert들이 모두 benign으로 수렴하면 어떤 routing도 의미 없음.
+\textbf{선결 과제: Expert 학습 자체의 tail-class 성능 개선.}
+\end{alertblock}
+\end{frame}
+
+% ── 요약 ─────────────────────────────────────────────────────
+\begin{frame}{요약}
+
+\begin{block}{설계 요소}
+\begin{itemize}
+  \item \colorbox{blue!15}{(1)} \textbf{Inclusive Expert}: $k$개 전문가, 각자 다른 cap으로 균형 수준 차별화
+  \item \colorbox{green!20}{(2)} \textbf{Val set cap 적용}: early stopping이 학습 분포 기준으로 동작
+  \item \colorbox{orange!20}{(3)} \textbf{테스트 분포 3종}: natural / moderate / attack\_parity (benign 수 조절)
+  \item \colorbox{purple!15}{(4)} \textbf{TTA}: JSD 최소화로 global $\mathbf{w}[E]$ 학습 (MATI 원리 + 분류용 JSD)
+  \item \colorbox{red!15}{(5)} \textbf{예측}: logit 가중합 후 argmax (softmax 이전 집계)
+\end{itemize}
+\end{block}
+
+\vspace{0.5em}
+\begin{tabular}{lll}
+\toprule
+방법  & 핵심 설계 & 우리와의 관계 \\
+\midrule
+MATI  & 다중 분포 + MSE 일관성, 회귀  & 다중 분포 설계 차용 \\
+SADE  & global 스칼라 weight, 분류  & 가중치 학습 방식 차용 \\
+\textbf{우리} & \textbf{다중 분포 + JSD 일관성, 분류} & MATI + SADE 혼합 \\
+\bottomrule
+\end{tabular}
+
+\end{frame}
+
+\end{document}
