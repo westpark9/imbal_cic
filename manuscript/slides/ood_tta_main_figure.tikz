@@ -1,0 +1,61 @@
+\begin{tikzpicture}[
+  font=\small,
+  node distance=0.7cm and 0.9cm,
+  data/.style={draw, rounded corners=3pt, fill=blue!8, minimum width=2.5cm, minimum height=0.72cm, align=center},
+  proc/.style={draw, rounded corners=3pt, fill=green!10, minimum width=2.7cm, minimum height=0.72cm, align=center},
+  gate/.style={draw, rounded corners=3pt, fill=orange!12, minimum width=2.7cm, minimum height=0.72cm, align=center},
+  eval/.style={draw, rounded corners=3pt, fill=red!8, minimum width=2.7cm, minimum height=0.72cm, align=center},
+  expert/.style={draw, rounded corners=3pt, fill=gray!10, minimum width=2.55cm, minimum height=0.62cm, align=center},
+  arr/.style={-{Stealth[length=2.2mm]}, thick},
+  dashedarr/.style={-{Stealth[length=2.2mm]}, thick, dashed},
+  lab/.style={font=\scriptsize\bfseries, align=center}
+]
+
+\node[data] (id) {ID 데이터\\CIC-IDS2017};
+\node[proc, right=of id] (split) {Train / Val / Test\\stratified split};
+\node[proc, right=of split] (partition) {공격 클래스 분할\\Benign 제외};
+
+\node[data, below=1.0cm of id] (aux) {Auxiliary OOD\\예: CIC2018 train};
+\node[data, below=1.0cm of split] (sc) {SC-OOD 평가셋\\예: CIC2018 test};
+
+\node[expert, right=1.1cm of partition, yshift=0.8cm] (e1) {Expert 1\\DoS / DDoS};
+\node[expert, below=0.18cm of e1] (e2) {Expert 2\\Scan / Brute};
+\node[expert, below=0.18cm of e2] (e3) {Expert 3\\Web / Bot / Rare};
+
+\node[gate, right=1.1cm of e2] (local) {Local XGBoost\\owned attack 분류};
+\node[gate, above=0.55cm of local] (oodgate) {OE Gate\\ID vs OOD};
+\node[gate, below=0.55cm of local] (sweep) {Expert별 threshold\\validation sweep};
+
+\node[eval, right=1.1cm of local] (predict) {Test-time decision\\accept $\rightarrow$ select};
+\node[eval, above=0.52cm of predict] (benign) {all reject\\$\Rightarrow$ Benign};
+\node[eval, below=0.52cm of predict] (diag) {진단 CSV\\병목 / OOD accept};
+
+\draw[arr] (id) -- (split);
+\draw[arr] (split) -- (partition);
+\draw[arr] (partition) -- (e1.west);
+\draw[arr] (partition) -- (e2.west);
+\draw[arr] (partition) -- (e3.west);
+
+\draw[dashedarr] (aux) -| node[pos=0.23, left, font=\scriptsize] {negative} (oodgate.south west);
+\draw[dashedarr] (sc) -| node[pos=0.22, right, font=\scriptsize] {평가 전용} (diag.south west);
+
+\draw[arr] (e1.east) -- (oodgate.west);
+\draw[arr] (e2.east) -- (local.west);
+\draw[arr] (e3.east) -- (sweep.west);
+\draw[arr] (oodgate) -- (predict);
+\draw[arr] (local) -- (predict);
+\draw[arr] (sweep) -- (predict);
+\draw[arr] (predict) -- (benign);
+\draw[arr] (predict) -- (diag);
+
+\begin{scope}[on background layer]
+  \node[draw=green!45!black, rounded corners=4pt, fit=(e1)(e2)(e3), inner sep=0.18cm,
+        label={[lab, text=green!35!black]above:Disjoint attack experts}] {};
+  \node[draw=orange!70!black, rounded corners=4pt, fit=(oodgate)(local)(sweep), inner sep=0.22cm,
+        label={[lab, text=orange!60!black]below:gate calibration}] {};
+\end{scope}
+
+\node[lab, above=0.15cm of id, text=blue!55!black] {ID 학습/평가};
+\node[lab, left=0.12cm of aux, text=orange!70!black] {외부 OOD};
+
+\end{tikzpicture}

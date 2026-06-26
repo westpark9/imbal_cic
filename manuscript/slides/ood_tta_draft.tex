@@ -1,0 +1,250 @@
+% ============================================================
+%  OOD-gated TTA MoE 방법 정리 슬라이드 초고
+%  컴파일: xelatex ood_tta_draft.tex
+% ============================================================
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit, calc, backgrounds}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\setCJKmainfont[AutoFakeSlant=0.2, AutoFakeBold=2]{Noto Sans CJK KR}
+\setCJKsansfont[AutoFakeSlant=0.2, AutoFakeBold=2]{Noto Sans CJK KR}
+\setCJKmonofont{Noto Sans CJK KR}
+
+\definecolor{mainblue}{RGB}{55,105,180}
+\definecolor{maingreen}{RGB}{45,145,85}
+\definecolor{mainorange}{RGB}{205,125,30}
+\definecolor{mainred}{RGB}{185,55,55}
+\definecolor{lightgray}{RGB}{245,245,245}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamerfont{footnote}{size=\tiny}
+
+\title{OOD-aware Stability-gated Expert MoE}
+\subtitle{CIC-IDS2017 불균형 공격 분류를 위한 Expert Gate, 외부 OOD 학습, 진단 체계}
+\author{westpark}
+\date{2026-06-17}
+\institute{CIC-IDS2017 \quad / \quad Auxiliary OOD: CIC2018 후보}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{문제의식}
+\begin{itemize}
+  \item 기존 MoE/TTA 실험은 rare attack recall 개선 가능성을 보였지만, expert 선택 실패 원인 해석이 어려웠다.
+  \item 새 구조에서는 benign을 expert에 배정하지 않고, 공격 클래스만 disjoint expert로 분할한다.
+  \item 핵심 질문은 세 가지다.
+\end{itemize}
+
+\vspace{0.4em}
+\begin{block}{진단해야 할 병목}
+\begin{enumerate}
+  \item expert가 자기 공격 샘플을 OOD로 reject하는가?
+  \item OOD 또는 benign이 특정 expert로 잘못 accept되는가?
+  \item expert가 선택된 뒤 local classifier가 내부 공격 클래스를 구분하지 못하는가?
+\end{enumerate}
+\end{block}
+\end{frame}
+
+\begin{frame}{제안 방법: 전체 구조}
+\begin{center}
+\resizebox{0.96\textwidth}{!}{\input{ood_tta_main_figure.tikz}}
+\end{center}
+\end{frame}
+
+\begin{frame}{모델 메커니즘}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\textbf{학습 단계}
+\begin{itemize}
+  \item ID 데이터: CIC-IDS2017
+  \item Benign은 expert에 배정하지 않음
+  \item 공격 클래스만 taxonomy 기반으로 분할
+  \item 각 expert는 owned attack class만 local classifier로 학습
+  \item OE gate는 owned class vs negative를 binary로 학습
+\end{itemize}
+
+\column{0.48\textwidth}
+\textbf{추론 단계}
+\begin{itemize}
+  \item 각 expert가 독립적으로 accept/reject 수행
+  \item 모든 expert가 reject하면 benign 예측
+  \item 하나만 accept하면 해당 expert 선택
+  \item 여러 expert가 accept하면 gate margin과 TTA stability로 선택
+  \item 선택된 expert의 local 예측을 global label로 변환
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{OOD 학습 재정의}
+\begin{block}{기존 OE gate의 한계}
+기존 negative는 같은 데이터셋 내부의 non-owning class였다. 따라서 엄밀한 open-set OOD라기보다 \textbf{owning class vs not}에 가까웠다.
+\end{block}
+
+\vspace{0.4em}
+\begin{block}{수정된 방향}
+ImOOD에서 TinyImages80M을 auxiliary OOD training data로 쓰는 위치에 대응하여, IDS 실험에서는 feature-aligned 외부 트래픽 데이터셋을 OE gate negative로 추가한다.
+\end{block}
+
+\vspace{0.4em}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+역할 & 이미지 OOD 예시 & IDS 실험 대응 \\
+\midrule
+ID train/test & CIFAR/ImageNet & CIC-IDS2017 \\
+Auxiliary OOD train & TinyImages80M & CIC2018 train split \\
+SC-OOD eval & SVHN/LSUN/Places & CIC2018 test split 또는 다른 IDS \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{OOD 데이터 준비}
+\textbf{새 준비 스크립트}
+\begin{itemize}
+  \item \texttt{data/prepare\_external\_ood.py}
+  \item ID 데이터셋 feature schema를 기준으로 source OOD feature를 재정렬
+  \item CICFlowMeter 2017/2018 컬럼명 차이를 alias rule로 보정
+  \item CIC2017 기준 CIC2018 feature alignment: 70/70 matched 확인
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{생성 예시}
+\begin{verbatim}
+python src/prepare_external_ood.py \
+  --id-data data/cic2017_proc.pkl \
+  --source-data data/cic2018_proc.pkl \
+  --out data/cic2018_ood_for_cic2017.pkl \
+  --max-samples 500000
+\end{verbatim}
+\end{frame}
+
+\begin{frame}{Expert별 Threshold Sweep}
+\begin{itemize}
+  \item 기존 방식: 모든 expert가 같은 \texttt{threshold\_quantile} 사용
+  \item 문제: DoS/Scan은 낮은 threshold가 유리하지만, WebBot/Rare는 낮추면 precision이 크게 붕괴
+  \item 수정: validation split에서 expert마다 threshold 후보를 sweep
+\end{itemize}
+
+\vspace{0.3em}
+\begin{block}{목적함수 직관}
+\[
+  \text{score}
+  = \text{owned accept}
+  - \lambda_b \cdot \text{benign accept}
+  - \lambda_o \cdot \text{non-owned attack accept}
+\]
+\end{block}
+
+\vspace{0.3em}
+\textbf{저장 파일}
+\begin{itemize}
+  \item \texttt{expert\_threshold\_sweep.csv}: 모든 후보 threshold 결과
+  \item \texttt{expert\_threshold\_selected.csv}: expert별 최종 선택 threshold
+\end{itemize}
+\end{frame}
+
+\begin{frame}{SC-OOD Accept-rate 평가}
+\begin{itemize}
+  \item \texttt{external\_ood\_data}: gate 학습에 들어가는 auxiliary OOD
+  \item \texttt{sc\_ood\_data}: 학습 후 accept/reject 성능만 보는 평가용 OOD
+  \item 같은 파일을 둘 다 쓰면 sanity check이고, 논문식 평가는 train/test 또는 dataset 분리가 필요하다.
+\end{itemize}
+
+\vspace{0.4em}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+파일 & 해석 \\
+\midrule
+\texttt{sc\_ood\_accept\_summary.csv} & 전체 OOD all-reject / any-accept \\
+\texttt{sc\_ood\_expert\_accept.csv} & expert별 OOD accept, selected, margin 분포 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{결과 파일 해석 체계}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+파일 & 주요 컬럼 & 용도 \\
+\midrule
+\texttt{run\_summary.csv} & macro-F1, all-reject, threshold & 실험 전체 요약 \\
+\texttt{bottleneck\_by\_class.csv} & primary\_bottleneck & class별 병목 식별 \\
+\texttt{expert\_summary.csv} & owned/benign/non-owned accept & expert 단위 gate 해석 \\
+\texttt{activation\_matrix.csv} & class별 expert accept/selected & 상세 activation 확인 \\
+\texttt{selection\_reason.csv} & all\_reject/only\_accept/tiebreak & TTA 선택 개입 여부 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.6em}
+\begin{block}{핵심 판독법}
+\begin{itemize}
+  \item \texttt{gate\_reject}: threshold가 너무 보수적
+  \item \texttt{local\_classifier}: expert는 맞게 선택됐지만 내부 분류 실패
+  \item \texttt{benign\_false\_accept}: threshold가 너무 느슨하거나 OOD gate 약함
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{실험 명령 예시}
+\textbf{1단계: CIC2018 OOD 준비}
+\begin{verbatim}
+python src/prepare_external_ood.py \
+  --id-data data/cic2017_proc.pkl \
+  --source-data data/cic2018_proc.pkl \
+  --out data/cic2018_ood_for_cic2017.pkl \
+  --max-samples 500000
+\end{verbatim}
+
+\vspace{0.3em}
+\textbf{2단계: Expert threshold sweep + auxiliary OOD 학습}
+\begin{verbatim}
+python src/code_ood_tta.py \
+  --data data/cic2017_proc.pkl \
+  --ood_gate oe \
+  --threshold_mode expert_sweep \
+  --external_ood_data data/cic2018_ood_train_for_cic2017.pkl \
+  --sc_ood_data data/cic2018_ood_test_for_cic2017.pkl
+\end{verbatim}
+\end{frame}
+
+\begin{frame}{현재까지의 결론}
+\begin{itemize}
+  \item 기존 q=0.05 결과의 주된 성능 하락은 TTA가 아니라 gate reject였다.
+  \item q=0.01은 attack recall을 회복하지만, q=0.001은 WebBot/Rare precision 붕괴를 유발했다.
+  \item 따라서 공통 threshold가 아니라 expert별 threshold가 필요하다.
+  \item OOD 학습도 in-dataset non-owning class만으로는 부족하므로 external auxiliary OOD를 negative로 추가했다.
+  \item 앞으로는 ID 성능, SC-OOD reject, class별 병목을 동시에 보고 개선해야 한다.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{다음 실험 체크리스트}
+\begin{enumerate}
+  \item CIC2018 OOD를 train/test artifact로 분리
+  \item \texttt{expert\_sweep + external\_ood\_data} run 실행
+  \item \texttt{run\_summary.csv}에서 macro-F1과 all-reject 확인
+  \item \texttt{expert\_threshold\_selected.csv}에서 expert별 threshold 확인
+  \item \texttt{sc\_ood\_accept\_summary.csv}에서 SC-OOD reject 확인
+  \item WebBot/Rare가 OOD sink가 되는지 \texttt{sc\_ood\_expert\_accept.csv}로 확인
+\end{enumerate}
+\end{frame}
+
+\end{document}

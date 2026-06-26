@@ -1,0 +1,34 @@
+2026-06-24 16:16:58,628  INFO  Args: {'data': 'data/cic2017_proc.pkl', 'seed': 42, 'n_estimators': 150, 'gate_n_estimators': 200, 'binary_n_estimators': 150, 'binary_threshold': 0.1, 'partition': 'taxonomy_cic', 'ood_gate': 'energy', 'threshold_mode': 'per_class_min', 'threshold_quantile': 0.05, 'sweep_quantiles': '0.001,0.002,0.005,0.01,0.02,0.05', 'sweep_benign_penalty': 3.0, 'sweep_non_owned_penalty': 1.0, 'sweep_min_owned_accept': 0.95, 'sweep_min_owned_penalty': 5.0, 'imood_alpha': 1.0, 'oe_neg_ratio': 2.0, 'external_ood_data': None, 'external_ood_ratio': 1.0, 'sc_ood_data': None, 'sc_ood_name': 'sc_ood', 'sc_ood_max_samples': 200000, 'select_mode': 'meta_router', 'id_margin': 0.25, 'stability_lambda': 0.2, 'perturb': 'feature_group_mask', 'n_views': 5, 'p_mask': 0.3, 'noise_std': 0.05}
+2026-06-24 16:16:59,152  INFO  Device: cuda
+2026-06-24 16:16:59,740  INFO  Loaded 2,829,385 samples | 70 features | dataset=cic2017
+2026-06-24 16:16:59,741  INFO  Benign class: benign (id=0)
+2026-06-24 16:17:01,993  INFO  Split: train=1,697,631 val=565,877 test=565,877
+2026-06-24 16:17:02,237  INFO  Perturbation feature groups: {'volume': 31, 'timing': 23, 'tcp': 34}
+2026-06-24 16:17:02,238  INFO  Training global XGBoost baseline
+2026-06-24 16:17:11,249  INFO  Baseline trained in 9.0s
+2026-06-24 16:17:11,249  INFO  Training expert0 binary benign/attack gate
+2026-06-24 16:17:13,750  INFO  Attack-only disjoint expert partition:
+2026-06-24 16:17:13,750  INFO    DoS_DDoS: ddos, dos-goldeneye, dos-hulk, dos-slowhttptest, dos-slowloris
+2026-06-24 16:17:13,750  INFO    Scan_Brute: ftp-patator, portscan, ssh-patator
+2026-06-24 16:17:13,750  INFO    WebBot_Rare: bot, heartbleed, infiltration, web-attack-�-brute-force, web-attack-�-sql-injection, web-attack-�-xss
+2026-06-24 16:17:13,750  INFO  Training expert 0: DoS_DDoS (5 classes)
+2026-06-24 16:17:14,885  INFO    threshold(q=0.0500, mode=per_class_min)=3.1397, score_scale=0.1873
+2026-06-24 16:17:14,885  INFO  Training expert 1: Scan_Brute (3 classes)
+2026-06-24 16:17:15,298  INFO    threshold(q=0.0500, mode=per_class_min)=4.3835, score_scale=0.1175
+2026-06-24 16:17:15,298  INFO  Training expert 2: WebBot_Rare (6 classes)
+2026-06-24 16:17:15,757  INFO    threshold(q=0.0500, mode=per_class_min)=1.5572, score_scale=1.1971
+2026-06-24 16:17:15,757  INFO  Training stability meta-router on validation split
+2026-06-24 16:17:19,270  INFO  Meta-router: 202440 candidate rows (owner-positive=110474); standardized coef [margin=+0.613, stability=-0.474, conf=+12.186]
+2026-06-24 16:17:19,373  INFO  Oracle attack-expert macro-F1: 1.0000
+2026-06-24 16:17:19,373  INFO  Predicting OOD-gated TTA MoE
+2026-06-24 16:17:19,495  INFO  Binary gate: attack-predicted 0.2029 (114,826/565,877)
+2026-06-24 16:17:29,308  INFO  Benign-by-binary-gate rate: 0.7971
+2026-06-24 16:17:29,311  INFO  All-reject (attack-gated) rate: 0.0015
+2026-06-24 16:17:29,349  INFO  Baseline macro-F1: 0.8259
+2026-06-24 16:17:29,386  INFO  MoE macro-F1:      0.7426
+2026-06-24 16:17:30,206  INFO  Saved baseline_vs_moe_per_class.csv/png
+2026-06-24 16:17:30,861  INFO  Saved bottleneck_by_class.csv/png and expert_summary.csv/png
+2026-06-24 16:17:31,653  INFO  Saved gate_stability_dashboard.png
+2026-06-24 16:17:31,792  INFO  Saved pipeline_funnel.png
+2026-06-24 16:17:31,907  INFO  Saved precision_funnel.png
+2026-06-24 16:17:32,077  INFO  Results: results/20260624_161658
