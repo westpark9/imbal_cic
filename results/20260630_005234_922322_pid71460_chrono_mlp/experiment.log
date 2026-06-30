@@ -1,0 +1,59 @@
+2026-06-30 00:52:34,922  INFO  Args: {'data': 'data/cic2017_chrono_v2.pkl', 'seed': 42, 'n_estimators': 300, 'gate_n_estimators': 200, 'binary_n_estimators': 300, 'binary_threshold': 0.1, 'ood_gate': 'energy', 'threshold_mode': 'hard_negative', 'threshold_quantile': 0.05, 'sweep_quantiles': '0.001,0.002,0.005,0.01,0.02,0.05', 'sweep_benign_penalty': 3.0, 'sweep_non_owned_penalty': 1.0, 'sweep_min_owned_accept': 0.95, 'sweep_min_owned_penalty': 5.0, 'imood_alpha': 1.0, 'oe_neg_ratio': 2.0, 'mlp_hidden': '256,128', 'mlp_dropout': 0.2, 'mlp_lr': 0.001, 'mlp_weight_decay': 0.0001, 'mlp_batch_size': 4096, 'mlp_epochs': 50, 'mlp_patience': 6, 'id_margin': 0.25, 'stability_lambda': 0.2, 'fallback_margin_gap': 0.0, 'perturb': 'feature_group_mask', 'n_views': 5, 'p_mask': 0.3, 'noise_std': 0.05, 'disable_exp0_ood': False, 'exp0_ood_quantile': 0.05, 'exp0_attack_override_threshold': 0.5, 'skip_expert_threshold_retune': False, 'skip_source_val_eval': False, 'external_ood_data': None, 'sc_ood_data': None, 'select_mode': 'tta_confidence_v2'}
+2026-06-30 00:52:34,922  INFO  Running chronological original-label MLP
+2026-06-30 00:52:35,678  INFO  Device: cuda
+2026-06-30 00:52:35,678  INFO  Loaded chrono MLP data: train=1,275,094 val=425,032 test_known=425,032 test_ood=702,718
+2026-06-30 00:52:35,678  INFO  Source-train labels: ['dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'ssh-patator', 'web-attack-brute-force', 'web-attack-sql-injection', 'web-attack-xss']
+2026-06-30 00:52:35,678  INFO  Original eval labels: ['bot', 'ddos', 'dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'portscan', 'ssh-patator', 'web-attack-brute-force', 'web-attack-sql-injection', 'web-attack-xss']
+2026-06-30 00:52:35,678  INFO  Benign source id=7, benign original id=9
+2026-06-30 00:52:35,823  INFO  Perturbation feature groups: {'volume': 31, 'timing': 23, 'tcp': 34}
+2026-06-30 00:52:35,823  INFO  Training MLP baseline: n_cls=12, hidden=256,128
+2026-06-30 00:54:01,190  INFO  Baseline trained in 85.4s
+2026-06-30 00:54:01,290  INFO  Exp0 energy OOD threshold calibrated: q=0.0500, threshold=1.7044, scale=2.4718
+2026-06-30 00:54:01,292  INFO  Training MLP binary_attack_gate: n_cls=2, hidden=256,128
+2026-06-30 00:55:01,077  INFO  Chronological v2 known-attack experts:
+2026-06-30 00:55:01,077  INFO    DoS_Like_Known: dos-goldeneye, dos-hulk, dos-slowhttptest, dos-slowloris
+2026-06-30 00:55:01,077  INFO    Credential_Web_Like_Known: ftp-patator, ssh-patator, web-attack-brute-force, web-attack-xss
+2026-06-30 00:55:01,077  INFO    Rare_Fallback_Known: heartbleed, infiltration, web-attack-sql-injection
+2026-06-30 00:55:01,078  INFO  Training MLP expert 0: DoS_Like_Known (4 classes)
+2026-06-30 00:55:01,099  INFO  Training MLP DoS_Like_Known: n_cls=4, hidden=256,128
+2026-06-30 00:55:17,689  INFO    threshold(q=0.0500, mode=hard_negative)=5.2900, score_scale=0.5475
+2026-06-30 00:55:17,689  INFO  Training MLP expert 1: Credential_Web_Like_Known (4 classes)
+2026-06-30 00:55:17,697  INFO  Training MLP Credential_Web_Like_Known: n_cls=4, hidden=256,128
+2026-06-30 00:55:19,585  INFO    threshold(q=0.0500, mode=hard_negative)=3.7867, score_scale=0.4881
+2026-06-30 00:55:19,585  INFO  Training MLP expert 2: Rare_Fallback_Known (3 classes)
+2026-06-30 00:55:19,592  INFO  Training MLP Rare_Fallback_Known: n_cls=3, hidden=256,128
+2026-06-30 00:55:19,826  INFO    threshold(q=0.0500, mode=hard_negative)=3.7874, score_scale=0.1554
+2026-06-30 00:55:19,826  INFO  Retuning expert OOD thresholds on owned/benign/non-owned validation split
+2026-06-30 00:55:20,024  INFO    retuned DoS_Like_Known: threshold 5.2900->5.2900, owned=0.9951, owned_class_mean=0.9763, owned_class_min=0.9603, benign=0.0349, non_owned=0.0044
+2026-06-30 00:55:20,215  INFO    retuned Credential_Web_Like_Known: threshold 3.7867->3.7867, owned=0.9897, owned_class_mean=0.9666, owned_class_min=0.9077, benign=0.0034, non_owned=0.0002
+2026-06-30 00:55:20,395  INFO    retuned Rare_Fallback_Known: threshold 3.7874->3.7874, owned=0.9231, owned_class_mean=0.9524, owned_class_min=0.8571, benign=0.0593, non_owned=0.0589
+2026-06-30 00:55:20,398  INFO  Using v2 router: expert OOD gates define candidates; TTA stability + local confidence select among accepted primary experts
+2026-06-30 00:55:20,398  INFO  Evaluating source Mon-Thu validation classification
+2026-06-30 00:55:20,686  INFO  Exp0 energy gate: in-distribution 0.9885; binary override 0.1380; downstream 0.9892 (420,460/425,032) | energy_threshold=1.7044, override_attack_threshold=0.5000
+2026-06-30 00:55:20,792  INFO  Binary gate: attack-predicted 0.1493 (62,772/420,460)
+2026-06-30 00:55:22,398  INFO  Benign-by-binary-gate rate: 0.8507
+2026-06-30 00:55:22,400  INFO  All-reject (attack-gated) rate: 0.0163
+2026-06-30 00:55:22,400  INFO  v2 expert selection: OOD gates filter candidates; TTA stability + confidence selects among candidates
+2026-06-30 00:55:22,685  INFO  Evaluating known Mon-Thu held-out classification
+2026-06-30 00:55:22,974  INFO  Exp0 energy gate: in-distribution 0.9884; binary override 0.1379; downstream 0.9891 (420,399/425,032) | energy_threshold=1.7044, override_attack_threshold=0.5000
+2026-06-30 00:55:23,079  INFO  Binary gate: attack-predicted 0.1490 (62,652/420,399)
+2026-06-30 00:55:24,674  INFO  Benign-by-binary-gate rate: 0.8510
+2026-06-30 00:55:24,677  INFO  All-reject (attack-gated) rate: 0.0159
+2026-06-30 00:55:24,677  INFO  v2 expert selection: OOD gates filter candidates; TTA stability + confidence selects among candidates
+2026-06-30 00:55:24,697  INFO  Evaluating Friday OOD rejection
+2026-06-30 00:55:25,166  INFO  Exp0 energy gate: in-distribution 0.9935; binary override 0.1218; downstream 0.9937 (698,315/702,718) | energy_threshold=1.7044, override_attack_threshold=0.5000
+2026-06-30 00:55:25,338  INFO  Binary gate: attack-predicted 0.1312 (91,596/698,315)
+2026-06-30 00:55:27,708  INFO  Benign-by-binary-gate rate: 0.8688
+2026-06-30 00:55:27,712  INFO  All-reject (attack-gated) rate: 0.0136
+2026-06-30 00:55:27,712  INFO  v2 expert selection: OOD gates filter candidates; TTA stability + confidence selects among candidates
+2026-06-30 00:55:27,776  INFO  Baseline known macro-F1: 0.3982
+2026-06-30 00:55:27,804  INFO  MoE known macro-F1:      0.1641
+2026-06-30 00:55:27,818  INFO  Friday OOD detect rate: 0.0198 (exp0=0.0063, expert_all_reject=0.0135)
+2026-06-30 00:55:28,853  INFO  Saved confusion_matrix_moe_known.png / .csv
+2026-06-30 00:55:29,052  INFO  Saved confusion_matrix_baseline_known.png / .csv
+2026-06-30 00:55:29,162  INFO  Saved pipeline_funnel.png
+2026-06-30 00:55:29,256  INFO  Saved precision_funnel.png
+2026-06-30 00:55:29,691  INFO  Saved gate_stability_dashboard.png
+2026-06-30 00:55:30,028  INFO  Saved 2b_ood_per_class_funnel.csv/png
+2026-06-30 00:55:30,309  INFO  Saved 2e_ood_gate_tta_dashboard.csv/png
+2026-06-30 00:55:30,535  INFO  Results: results/20260630_005234_922322_pid71460_chrono_mlp

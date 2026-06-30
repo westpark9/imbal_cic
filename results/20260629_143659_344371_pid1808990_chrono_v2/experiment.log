@@ -1,0 +1,50 @@
+2026-06-29 14:36:59,344  INFO  Args: {'data': 'data/cic2017_chrono_v2.pkl', 'seed': 42, 'n_estimators': 300, 'gate_n_estimators': 200, 'binary_n_estimators': 300, 'binary_threshold': 0.1, 'ood_gate': 'energy', 'threshold_mode': 'hard_negative', 'threshold_quantile': 0.05, 'sweep_quantiles': '0.001,0.002,0.005,0.01,0.02,0.05', 'sweep_benign_penalty': 3.0, 'sweep_non_owned_penalty': 1.0, 'sweep_min_owned_accept': 0.95, 'sweep_min_owned_penalty': 5.0, 'imood_alpha': 1.0, 'oe_neg_ratio': 2.0, 'select_mode': 'meta_router', 'id_margin': 0.25, 'stability_lambda': 0.2, 'fallback_margin_gap': 0.0, 'perturb': 'feature_group_mask', 'n_views': 5, 'p_mask': 0.3, 'noise_std': 0.05, 'disable_exp0_ood': False, 'exp0_ood_quantile': 0.05, 'skip_source_val_eval': False, 'external_ood_data': None, 'sc_ood_data': None}
+2026-06-29 14:36:59,344  INFO  Running chronological original-label v2
+2026-06-29 14:37:00,548  INFO  Device: cuda
+2026-06-29 14:37:00,548  INFO  Loaded v2 data: train=1,275,094 val=425,032 test_known=425,032 test_ood=702,718
+2026-06-29 14:37:00,548  INFO  Source-train labels: ['dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'ssh-patator', 'web-attack-brute-force', 'web-attack-sql-injection', 'web-attack-xss']
+2026-06-29 14:37:00,548  INFO  Original eval labels: ['bot', 'ddos', 'dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'portscan', 'ssh-patator', 'web-attack-brute-force', 'web-attack-sql-injection', 'web-attack-xss']
+2026-06-29 14:37:00,548  INFO  Benign source id=7, benign original id=9
+2026-06-29 14:37:00,702  INFO  Perturbation feature groups: {'volume': 31, 'timing': 23, 'tcp': 34}
+2026-06-29 14:37:00,702  INFO  Training global XGBoost baseline
+2026-06-29 14:37:10,528  INFO  Baseline trained in 9.8s
+2026-06-29 14:37:10,749  INFO  Exp0 energy OOD threshold calibrated: q=0.0500, threshold=-1.0504, scale=0.9564
+2026-06-29 14:37:10,749  INFO  Training expert0 binary benign/attack gate
+2026-06-29 14:37:12,902  INFO  Chronological v2 known-attack experts:
+2026-06-29 14:37:12,902  INFO    Brute_Known: ftp-patator, ssh-patator
+2026-06-29 14:37:12,902  INFO    DoS_Known: dos-goldeneye, dos-hulk, dos-slowhttptest, dos-slowloris, heartbleed
+2026-06-29 14:37:12,902  INFO    Web_Infiltration_Known: infiltration, web-attack-brute-force, web-attack-sql-injection, web-attack-xss
+2026-06-29 14:37:12,902  INFO  Training expert 0: Brute_Known (2 classes)
+2026-06-29 14:37:13,386  INFO    threshold(q=0.0500, mode=hard_negative)=4.3776, score_scale=0.2147
+2026-06-29 14:37:13,386  INFO  Training expert 1: DoS_Known (5 classes)
+2026-06-29 14:37:14,931  INFO    threshold(q=0.0500, mode=hard_negative)=4.8337, score_scale=0.4569
+2026-06-29 14:37:14,931  INFO  Training expert 2: Web_Infiltration_Known (4 classes)
+2026-06-29 14:37:15,764  INFO    threshold(q=0.0500, mode=hard_negative)=0.1272, score_scale=0.6539
+2026-06-29 14:37:15,764  INFO  Training stability meta-router on source validation split
+2026-06-29 14:37:17,454  INFO  Meta-router: 97441 candidate rows (owner-positive=52955); standardized coef [margin=-0.415, stability=+1.236, conf=+9.519]
+2026-06-29 14:37:17,454  INFO  Evaluating source Mon-Thu validation classification
+2026-06-29 14:37:17,870  INFO  Exp0 energy gate: in-distribution 1.0000 (425,020/425,032) | threshold=-1.0504
+2026-06-29 14:37:17,985  INFO  Binary gate: attack-predicted 0.1269 (53,931/425,020)
+2026-06-29 14:37:22,732  INFO  Benign-by-binary-gate rate: 0.8731
+2026-06-29 14:37:22,735  INFO  All-reject (attack-gated) rate: 0.0006
+2026-06-29 14:37:23,019  INFO  Evaluating known Mon-Thu held-out classification
+2026-06-29 14:37:23,417  INFO  Exp0 energy gate: in-distribution 1.0000 (425,021/425,032) | threshold=-1.0504
+2026-06-29 14:37:23,540  INFO  Binary gate: attack-predicted 0.1268 (53,894/425,021)
+2026-06-29 14:37:28,317  INFO  Benign-by-binary-gate rate: 0.8732
+2026-06-29 14:37:28,319  INFO  All-reject (attack-gated) rate: 0.0007
+2026-06-29 14:37:28,337  INFO  Evaluating Friday OOD rejection
+2026-06-29 14:37:29,005  INFO  Exp0 energy gate: in-distribution 1.0000 (702,709/702,718) | threshold=-1.0504
+2026-06-29 14:37:29,197  INFO  Binary gate: attack-predicted 0.1176 (82,625/702,709)
+2026-06-29 14:37:37,463  INFO  Benign-by-binary-gate rate: 0.8824
+2026-06-29 14:37:37,467  INFO  All-reject (attack-gated) rate: 0.0002
+2026-06-29 14:37:37,526  INFO  Baseline known macro-F1: 0.8695
+2026-06-29 14:37:37,553  INFO  MoE known macro-F1:      0.7886
+2026-06-29 14:37:37,567  INFO  Friday OOD detect rate: 0.0002 (exp0=0.0000, expert_all_reject=0.0002)
+2026-06-29 14:37:38,603  INFO  Saved confusion_matrix_moe_known.png / .csv
+2026-06-29 14:37:38,788  INFO  Saved confusion_matrix_baseline_known.png / .csv
+2026-06-29 14:37:38,898  INFO  Saved pipeline_funnel.png
+2026-06-29 14:37:38,993  INFO  Saved precision_funnel.png
+2026-06-29 14:37:39,478  INFO  Saved gate_stability_dashboard.png
+2026-06-29 14:37:39,810  INFO  Saved 2b_ood_per_class_funnel.csv/png
+2026-06-29 14:37:40,098  INFO  Saved 2e_ood_gate_tta_dashboard.csv/png
+2026-06-29 14:37:40,312  INFO  Results: results/20260629_143659_344371_pid1808990_chrono_v2

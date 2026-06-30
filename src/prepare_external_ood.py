@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Prepare feature-aligned auxiliary OOD data for code_ood_tta.py.
+"""Prepare feature-aligned auxiliary OOD data for code_ood_v1.py.
 
 This creates a pickle that can be passed to:
-  python src/code_ood_tta.py --external_ood_data data/cic2018_as_ood_for_cic2017.pkl
+  python src/code_ood_v1.py --external_ood_data data/cic2018_as_ood_for_cic2017.pkl
 
 The source dataset must already be preprocessed into a dict with X and
 feature_columns/feature_names. Columns are aligned to the ID dataset schema by
