@@ -8,7 +8,7 @@ Expected pickle:
 
 Run:
   python src/code_ood_mlp.py --data data/cic2017_chrono_v2.pkl \
-    --ood_gate energy --threshold_mode hard_negative
+    --threshold_mode hard_negative --disable_exp0_ood
 
 Evaluation label space:
   known/source classes from Mon-Thu are evaluated on a held-out known test set.
@@ -242,13 +242,12 @@ def train_mlp_model(X_tr, y_tr, X_va, y_va, n_cls, args, device, seed, log, name
     return model
 
 
-def train_baseline(X_tr, y_tr, X_va, y_va, n_cls, n_est, device, seed, log):
+def train_baseline(X_tr, y_tr, X_va, y_va, n_cls, device, seed, log):
     return train_mlp_model(X_tr, y_tr, X_va, y_va, n_cls, CURRENT_ARGS,
                            device, seed, log, "baseline")
 
 
-def train_binary_attack_gate(X_tr, y_tr, X_va, y_va, benign_id, n_est,
-                             device, seed, log):
+def train_binary_attack_gate(X_tr, y_tr, X_va, y_va, benign_id, device, seed, log):
     yb_tr = (y_tr != benign_id).astype(int)
     yb_va = (y_va != benign_id).astype(int)
     return train_mlp_model(X_tr, yb_tr, X_va, yb_va, 2, CURRENT_ARGS,
@@ -269,8 +268,8 @@ def train_local_classifier(X_tr, y_tr, X_va, y_va, global_classes,
     return model, prior.astype(np.float32)
 
 
-def train_experts(X_tr, y_tr, X_va, y_va, partitions, n_est, gate_n_est, device,
-                  seed, gate, q, alpha, neg_ratio, log, threshold_mode="fixed_quantile",
+def train_experts(X_tr, y_tr, X_va, y_va, partitions, device,
+                  seed, gate, q, alpha, log, threshold_mode="fixed_quantile",
                   X_ood_tr=None, X_ood_va=None, external_ood_ratio=0.0,
                   benign_id=None, args=None):
     if gate not in ("energy", "imood_energy"):
@@ -1082,10 +1081,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", default="data/cic2017_chrono_v2.pkl")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--n_estimators", type=int, default=300)
-    parser.add_argument("--gate_n_estimators", type=int, default=200)
-    parser.add_argument("--binary_n_estimators", type=int, default=300)
-    parser.add_argument("--binary_threshold", type=float, default=0.1)
+    parser.add_argument("--binary_threshold", type=float, default=0.05)
     parser.add_argument("--ood_gate", default="energy",
                         choices=["energy", "imood_energy"])
     parser.add_argument("--threshold_mode", default="hard_negative",
@@ -1093,23 +1089,22 @@ def parse_args():
                                  "expert_sweep", "hard_negative"])
     parser.add_argument("--threshold_quantile", type=float, default=0.05)
     parser.add_argument("--sweep_quantiles",
-                        default="0.001,0.002,0.005,0.01,0.02,0.05")
-    parser.add_argument("--sweep_benign_penalty", type=float, default=3.0)
-    parser.add_argument("--sweep_non_owned_penalty", type=float, default=1.0)
-    parser.add_argument("--sweep_min_owned_accept", type=float, default=0.95)
-    parser.add_argument("--sweep_min_owned_penalty", type=float, default=5.0)
+                        default="0.01,0.02,0.05,0.1")
+    parser.add_argument("--sweep_benign_penalty", type=float, default=2.0)
+    parser.add_argument("--sweep_non_owned_penalty", type=float, default=2.0)
+    parser.add_argument("--sweep_min_owned_accept", type=float, default=0.90)
+    parser.add_argument("--sweep_min_owned_penalty", type=float, default=3.0)
     parser.add_argument("--imood_alpha", type=float, default=1.0)
-    parser.add_argument("--oe_neg_ratio", type=float, default=2.0)
-    parser.add_argument("--mlp_hidden", default="256,128")
-    parser.add_argument("--mlp_dropout", type=float, default=0.2)
-    parser.add_argument("--mlp_lr", type=float, default=1e-3)
-    parser.add_argument("--mlp_weight_decay", type=float, default=1e-4)
-    parser.add_argument("--mlp_batch_size", type=int, default=4096)
-    parser.add_argument("--mlp_epochs", type=int, default=50)
-    parser.add_argument("--mlp_patience", type=int, default=6)
+    parser.add_argument("--mlp_hidden", default="512,256,128")
+    parser.add_argument("--mlp_dropout", type=float, default=0.1)
+    parser.add_argument("--mlp_lr", type=float, default=5e-4)
+    parser.add_argument("--mlp_weight_decay", type=float, default=5e-5)
+    parser.add_argument("--mlp_batch_size", type=int, default=2048)
+    parser.add_argument("--mlp_epochs", type=int, default=200)
+    parser.add_argument("--mlp_patience", type=int, default=15)
     parser.add_argument("--id_margin", type=float, default=0.25)
-    parser.add_argument("--stability_lambda", type=float, default=0.2)
-    parser.add_argument("--fallback_margin_gap", type=float, default=0.0)
+    parser.add_argument("--stability_lambda", type=float, default=0.1)
+    parser.add_argument("--fallback_margin_gap", type=float, default=0.05)
     parser.add_argument("--perturb", default="feature_group_mask",
                         choices=["feature_group_mask", "gaussian", "mask"])
     parser.add_argument("--n_views", type=int, default=5)
@@ -1174,7 +1169,7 @@ def main():
 
     t0 = time.time()
     baseline = train_baseline(X_tr, y_tr, X_va, y_va, n_source_cls,
-                              args.n_estimators, device, args.seed, log)
+                              device, args.seed, log)
     log.info(f"Baseline trained in {time.time() - t0:.1f}s")
 
     exp0_threshold = exp0_scale = None
@@ -1187,14 +1182,12 @@ def main():
             f"scale={exp0_scale:.4f}")
 
     binary_gate = train_binary_attack_gate(
-        X_tr, y_tr, X_va, y_va, benign_id, args.binary_n_estimators,
-        device, args.seed + 7, log)
+        X_tr, y_tr, X_va, y_va, benign_id, device, args.seed + 7, log)
 
     partitions = build_chrono_partitions(source_class_names, benign_id, log)
     experts = train_experts(
-        X_tr, y_tr, X_va, y_va, partitions, args.n_estimators,
-        args.gate_n_estimators, device, args.seed, args.ood_gate,
-        args.threshold_quantile, args.imood_alpha, args.oe_neg_ratio,
+        X_tr, y_tr, X_va, y_va, partitions, device, args.seed,
+        args.ood_gate, args.threshold_quantile, args.imood_alpha,
         log, args.threshold_mode, None, None, 0.0, benign_id, args)
 
     if not args.skip_expert_threshold_retune:
