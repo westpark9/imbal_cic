@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 CIFAR10/SVHN ResNet18 reproduction of the code_ood_v2 routing idea.
-
+did
 Purpose:
   Check whether the v2 structure itself works when the base model/ID-OOD pair
   is known to support energy OOD reasonably well.
