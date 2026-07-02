@@ -10,9 +10,9 @@ Scenario:
   - ID/source: CIFAR10 all 10 classes
   - OOD target: SVHN test
   - Train split: optional long-tail CIFAR10 subsampling
-  - exp0: global CIFAR10 ResNet18 energy gate
-  - experts: disjoint CIFAR10 class partitions, each with local ResNet18
-  - routing: exp0 OOD -> expert OOD candidates -> confidence + TTA stability
+  - exp0..exp{k-2}: primary disjoint CIFAR10 family experts
+  - exp{k-1}: rare fallback expert
+  - routing: expert OOD candidates -> confidence + TTA stability -> fallback/all-reject
 """
 import argparse
 import os
@@ -419,13 +419,17 @@ def compute_expert_signals(experts, x, args, device):
     }
 
 
-def route_v2(exp0, exp0_threshold, exp0_scale, experts, loader, args, device, log):
+def route_v2(experts, loader, args, device, log):
+    """Expert-only v2 router.
+
+    There is no global exp0 and no benign/attack binary gate in CIFAR.
+    exp0..exp{k-2} are primary disjoint experts, and exp{k-1} can be a rare
+    fallback expert. All experts first act as OOD gates; accepted primary
+    experts are selected by local confidence + TTA stability.
+    """
     primary_experts, fallback_expert = split_primary_fallback(experts)
     y_true_all = []
-    exp0_pred_all = []
     y_pred_all = []
-    exp0_scores_all = []
-    exp0_in_all = []
     reason_all = []
     selected_all = []
     accepted_all = []
@@ -433,70 +437,51 @@ def route_v2(exp0, exp0_threshold, exp0_scale, experts, loader, args, device, lo
     stability_all = []
     local_conf_all = []
 
-    exp0.eval()
     with torch.no_grad():
         for x, y in loader:
             x = x.to(device, non_blocking=True)
-            logits0 = exp0(x)
-            proba0 = F.softmax(logits0, dim=1)
-            exp0_conf, exp0_pred = proba0.max(dim=1)
-            exp0_scores = logits_to_energy(logits0, args.temperature)
-            exp0_in = exp0_scores >= exp0_threshold
-
             n = len(y)
             y_pred = np.full(n, UNKNOWN_ID, dtype=np.int64)
             selected = np.full(n, -1, dtype=np.int64)
-            reason = np.full(n, "exp0_ood", dtype=object)
-            accepted = np.zeros((n, len(experts)), dtype=bool)
-            margins = np.zeros((n, len(experts)), dtype=np.float32)
-            stability = np.zeros((n, len(experts)), dtype=np.float32)
-            local_conf = np.zeros((n, len(experts)), dtype=np.float32)
+            reason = np.full(n, "all_reject", dtype=object)
 
-            in_idx = torch.where(exp0_in)[0]
-            if len(in_idx) > 0:
-                sig = compute_expert_signals(experts, x[in_idx], args, device)
-                accepted[in_idx.cpu().numpy()] = sig["accepted"]
-                margins[in_idx.cpu().numpy()] = sig["margins"]
-                stability[in_idx.cpu().numpy()] = sig["stability"]
-                local_conf[in_idx.cpu().numpy()] = sig["local_conf"]
-                for jj, original_idx in enumerate(in_idx.cpu().numpy()):
-                    active_primary = primary_experts[sig["accepted"][jj, primary_experts]]
-                    if len(active_primary) > 0:
-                        combo = (sig["local_conf"][jj, active_primary]
-                                 + args.stability_lambda
-                                 * sig["stability"][jj, active_primary])
-                        chosen = int(active_primary[np.argmax(combo)])
-                        y_pred[original_idx] = int(sig["global_preds"][jj, chosen])
-                        selected[original_idx] = chosen
-                        reason[original_idx] = (
-                            "only_accept" if len(active_primary) == 1
-                            else "tta_confidence"
-                        )
-                    else:
-                        best_primary_margin = (
-                            float(np.max(sig["margins"][jj, primary_experts]))
-                            if len(primary_experts) else float("-inf")
-                        )
-                        fallback_ok = False
-                        if fallback_expert is not None:
-                            fallback_ok = (
-                                sig["accepted"][jj, fallback_expert]
-                                and sig["margins"][jj, fallback_expert]
-                                >= best_primary_margin + args.fallback_margin_gap
-                            )
-                        if fallback_ok:
-                            chosen = int(fallback_expert)
-                            y_pred[original_idx] = int(sig["global_preds"][jj, chosen])
-                            selected[original_idx] = chosen
-                            reason[original_idx] = "fallback_accept"
-                        else:
-                            reason[original_idx] = "all_reject"
+            sig = compute_expert_signals(experts, x, args, device)
+            accepted = sig["accepted"]
+            margins = sig["margins"]
+            stability = sig["stability"]
+            local_conf = sig["local_conf"]
+
+            for i in range(n):
+                active_primary = primary_experts[accepted[i, primary_experts]]
+                if len(active_primary) > 0:
+                    combo = (local_conf[i, active_primary]
+                             + args.stability_lambda
+                             * stability[i, active_primary])
+                    chosen = int(active_primary[np.argmax(combo)])
+                    y_pred[i] = int(sig["global_preds"][i, chosen])
+                    selected[i] = chosen
+                    reason[i] = "only_accept" if len(active_primary) == 1 else "tta_confidence"
+                    continue
+
+                best_primary_margin = (
+                    float(np.max(margins[i, primary_experts]))
+                    if len(primary_experts) else float("-inf")
+                )
+                fallback_ok = False
+                if fallback_expert is not None:
+                    fallback_ok = (
+                        accepted[i, fallback_expert]
+                        and margins[i, fallback_expert]
+                        >= best_primary_margin + args.fallback_margin_gap
+                    )
+                if fallback_ok:
+                    chosen = int(fallback_expert)
+                    y_pred[i] = int(sig["global_preds"][i, chosen])
+                    selected[i] = chosen
+                    reason[i] = "fallback_accept"
 
             y_true_all.append(y.numpy().astype(np.int64))
-            exp0_pred_all.append(exp0_pred.detach().cpu().numpy().astype(np.int64))
             y_pred_all.append(y_pred)
-            exp0_scores_all.append(exp0_scores.detach().cpu().numpy().astype(np.float32))
-            exp0_in_all.append(exp0_in.detach().cpu().numpy().astype(bool))
             reason_all.append(reason)
             selected_all.append(selected)
             accepted_all.append(accepted)
@@ -505,9 +490,6 @@ def route_v2(exp0, exp0_threshold, exp0_scale, experts, loader, args, device, lo
             local_conf_all.append(local_conf)
 
     diag = {
-        "exp0_scores": np.concatenate(exp0_scores_all),
-        "exp0_in": np.concatenate(exp0_in_all),
-        "exp0_pred": np.concatenate(exp0_pred_all),
         "reason": np.concatenate(reason_all),
         "selected": np.concatenate(selected_all),
         "accepted": np.concatenate(accepted_all, axis=0),
@@ -517,12 +499,14 @@ def route_v2(exp0, exp0_threshold, exp0_scale, experts, loader, args, device, lo
     }
     y_true = np.concatenate(y_true_all)
     y_pred = np.concatenate(y_pred_all)
+    max_primary_margin = np.max(diag["margins"][:, primary_experts], axis=1)
+    diag["max_primary_margin"] = max_primary_margin.astype(np.float32)
     log.info(
-        f"v2 route: exp0_in={diag['exp0_in'].mean():.4f}, "
-        f"all_reject={(diag['reason'] == 'all_reject').mean():.4f}, "
-        f"known_accept={(diag['selected'] >= 0).mean():.4f}")
+        f"v2 expert-only route: all_reject={(diag['reason'] == 'all_reject').mean():.4f}, "
+        f"fallback_accept={(diag['reason'] == 'fallback_accept').mean():.4f}, "
+        f"known_accept={(diag['selected'] >= 0).mean():.4f}, "
+        f"multi_accept={(diag['accepted'].sum(axis=1) > 1).mean():.4f}")
     return y_true, y_pred, diag
-
 
 def ood_metrics(id_ood_score, ood_ood_score, ood_detect):
     y_true = np.concatenate([
@@ -611,20 +595,21 @@ def save_pipeline_funnel(y_true, diag, class_names, out_dir, prefix, title):
         rows.append({
             "class": label,
             "support": int(mask.sum()),
-            "exp0_ood_rate": float((diag["reason"][mask] == "exp0_ood").mean()),
-            "expert_all_reject_rate": float((diag["reason"][mask] == "all_reject").mean()),
-            "known_accept_rate": float((diag["selected"][mask] >= 0).mean()),
+            "all_reject_rate": float((diag["reason"][mask] == "all_reject").mean()),
+            "primary_accept_rate": float(np.isin(
+                diag["reason"][mask], ["only_accept", "tta_confidence"]).mean()),
+            "fallback_accept_rate": float((diag["reason"][mask] == "fallback_accept").mean()),
             "multi_accept_rate": float((diag["accepted"][mask].sum(axis=1) > 1).mean()),
         })
     df = pd.DataFrame(rows)
     df.to_csv(os.path.join(out_dir, f"{prefix}_pipeline_funnel.csv"), index=False)
     if len(df) == 0:
         return
-    mat = df[["exp0_ood_rate", "expert_all_reject_rate", "known_accept_rate"]].values
+    mat = df[["all_reject_rate", "primary_accept_rate", "fallback_accept_rate"]].values
     fig, ax = plt.subplots(figsize=(10, max(3, len(df) * 0.45)))
     left = np.zeros(len(df))
-    colors = ["#2e7d32", "#81c784", "#f44336"]
-    names = ["exp0 OOD", "expert all reject", "known accept"]
+    colors = ["#2e7d32", "#f44336", "#ff9800"]
+    names = ["all reject", "primary accept", "fallback accept"]
     yidx = np.arange(len(df))
     for i in range(mat.shape[1]):
         ax.barh(yidx, mat[:, i], left=left, color=colors[i], label=names[i])
@@ -699,61 +684,64 @@ def save_dashboard(y_true, diag, experts, class_names, out_dir, prefix, title):
     plt.close(fig)
 
 
-def save_ood_summary(id_diag, ood_diag, exp0_threshold, experts, args, out_dir):
-    exp0_id_ood_score = -id_diag["exp0_scores"]
-    exp0_ood_ood_score = -ood_diag["exp0_scores"]
-    total_ood_detect = np.isin(ood_diag["reason"], ["exp0_ood", "all_reject"])
-    metrics = ood_metrics(exp0_id_ood_score, exp0_ood_ood_score, total_ood_detect)
+def save_ood_summary(id_diag, ood_diag, experts, args, out_dir):
+    id_ood_score = -id_diag["max_primary_margin"]
+    ood_ood_score = -ood_diag["max_primary_margin"]
+    ood_detect = ood_diag["reason"] == "all_reject"
+    metrics = ood_metrics(id_ood_score, ood_ood_score, ood_detect)
     rows = [
-        {"metric": "exp0_threshold", "value": float(exp0_threshold)},
-        {"metric": "known_exp0_ood_rate", "value": float((id_diag["reason"] == "exp0_ood").mean())},
         {"metric": "known_all_reject_rate", "value": float((id_diag["reason"] == "all_reject").mean())},
-        {"metric": "known_accept_rate", "value": float((id_diag["selected"] >= 0).mean())},
-        {"metric": "svhn_exp0_ood_rate", "value": float((ood_diag["reason"] == "exp0_ood").mean())},
+        {"metric": "known_fallback_accept_rate", "value": float((id_diag["reason"] == "fallback_accept").mean())},
+        {"metric": "known_primary_accept_rate", "value": float(np.isin(id_diag["reason"], ["only_accept", "tta_confidence"]).mean())},
+        {"metric": "known_multi_accept_rate", "value": float((id_diag["accepted"].sum(axis=1) > 1).mean())},
         {"metric": "svhn_all_reject_rate", "value": float((ood_diag["reason"] == "all_reject").mean())},
+        {"metric": "svhn_fallback_accept_rate", "value": float((ood_diag["reason"] == "fallback_accept").mean())},
         {"metric": "svhn_known_accept_rate", "value": float((ood_diag["selected"] >= 0).mean())},
+        {"metric": "svhn_multi_accept_rate", "value": float((ood_diag["accepted"].sum(axis=1) > 1).mean())},
     ]
     rows.extend({"metric": key, "value": float(value)} for key, value in metrics.items())
     for i, expert in enumerate(experts):
         rows.append({"metric": f"expert_{i}_name", "value": expert.name})
+        rows.append({"metric": f"expert_{i}_classes", "value": "|".join(map(str, expert.classes))})
         rows.append({"metric": f"expert_{i}_threshold", "value": float(expert.threshold)})
     rows.append({"metric": "args", "value": repr(vars(args))})
     df = pd.DataFrame(rows)
     df.to_csv(os.path.join(out_dir, "2a_ood_summary.csv"), index=False)
     render_table_png(df, os.path.join(out_dir, "2a_ood_summary.png"),
-                     title="CIFAR v2 SVHN OOD summary")
+                     title="CIFAR expert-only v2 SVHN OOD summary")
 
 
-def save_exp0_energy_hist(id_diag, ood_diag, exp0_threshold, out_dir):
+def save_max_margin_hist(id_diag, ood_diag, out_dir):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.hist(id_diag["exp0_scores"], bins=80, alpha=0.35, density=True,
+    ax.hist(id_diag["max_primary_margin"], bins=80, alpha=0.35, density=True,
             label="cifar10_test_id")
-    ax.hist(ood_diag["exp0_scores"], bins=80, alpha=0.35, density=True,
+    ax.hist(ood_diag["max_primary_margin"], bins=80, alpha=0.35, density=True,
             label="svhn_ood")
-    ax.axvline(exp0_threshold, color="black", linestyle="--",
-               label=f"tau={exp0_threshold:.4f}")
-    ax.set_xlabel("exp0 energy = T logsumexp(logits / T); ID expected high")
+    ax.axvline(0.0, color="black", linestyle="--", label="accept boundary")
+    ax.set_xlabel("max primary expert gate margin; ID expected high")
     ax.set_ylabel("density")
-    ax.set_title("Exp0 energy distribution")
+    ax.set_title("Expert gate max-margin distribution")
     ax.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, "2b_exp0_energy_histogram.png"), dpi=150)
+    plt.savefig(os.path.join(out_dir, "2b_max_expert_margin_histogram.png"), dpi=150)
     plt.close(fig)
 
 
-def save_baseline_absorption(y_ood, exp0_pred, class_names, out_dir):
+def save_baseline_absorption(y_ood, pred_ood, class_names, out_dir):
     rows = []
-    for pred in sorted(np.unique(exp0_pred).tolist()):
+    names = class_names + ["unknown"]
+    pred_for_count = pred_ood.copy()
+    pred_for_count[pred_for_count < 0] = len(class_names)
+    for pred in sorted(np.unique(pred_for_count).tolist()):
         rows.append({
-            "exp0_closed_set_pred": class_names[int(pred)],
-            "count": int((exp0_pred == pred).sum()),
-            "rate": float((exp0_pred == pred).mean()),
+            "v2_pred_class": names[int(pred)],
+            "count": int((pred_for_count == pred).sum()),
+            "rate": float((pred_for_count == pred).mean()),
         })
     df = pd.DataFrame(rows).sort_values("count", ascending=False)
     df.to_csv(os.path.join(out_dir, "2c_baseline_absorption.csv"), index=False)
     render_table_png(df, os.path.join(out_dir, "2c_baseline_absorption.png"),
-                     title="Exp0 closed-set absorption of SVHN")
-
+                     title="Expert-only v2 absorption of SVHN")
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -800,19 +788,8 @@ def main():
         load_cifar10_svhn(args, log))
     train_set = Subset(train_aug_full, train_idx.tolist())
     val_set = Subset(train_eval_full, val_idx.tolist())
-    train_loader = make_loader(train_set, args.batch_size, True, args.workers)
-    val_loader = make_loader(val_set, args.test_batch_size, False, args.workers)
     test_id_loader = make_loader(test_id_set, args.test_batch_size, False, args.workers)
     test_ood_loader = make_loader(test_ood_set, args.test_batch_size, False, args.workers)
-
-    log.info("Training exp0 global ResNet18")
-    exp0 = build_resnet18(len(class_names))
-    exp0 = train_resnet(exp0, train_loader, val_loader, args, device, log, "exp0_global")
-    val_scores, _, y_val, _ = collect_scores_preds_labels(
-        exp0, val_loader, device, args.temperature, need_preds=True)
-    exp0_threshold, exp0_scale = calibrate_energy_threshold(
-        val_scores, y_val, args.ood_quantile)
-    log.info(f"exp0 threshold={exp0_threshold:.4f}, scale={exp0_scale:.4f}")
 
     train_labels = np.asarray(train_aug_full.targets)[train_idx]
     partitions = build_partitions(class_names, train_labels, args, log)
@@ -822,14 +799,12 @@ def main():
 
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    log.info("Evaluating v2 router on CIFAR10 known test")
+    log.info("Evaluating expert-only v2 router on CIFAR10 known test")
     y_known, pred_known, diag_known = route_v2(
-        exp0, exp0_threshold, exp0_scale, experts,
-        test_id_loader, args, device, log)
-    log.info("Evaluating v2 router on SVHN OOD test")
+        experts, test_id_loader, args, device, log)
+    log.info("Evaluating expert-only v2 router on SVHN OOD test")
     y_ood, pred_ood, diag_ood = route_v2(
-        exp0, exp0_threshold, exp0_scale, experts,
-        test_ood_loader, args, device, log)
+        experts, test_ood_loader, args, device, log)
 
     known_pred_for_f1 = pred_known.copy()
     known_pred_for_f1[known_pred_for_f1 < 0] = len(class_names)
@@ -837,29 +812,29 @@ def main():
         y_known, known_pred_for_f1, labels=np.arange(len(class_names)),
         average="macro", zero_division=0)
     known_acc = float((pred_known == y_known).mean())
-    ood_detect = np.isin(diag_ood["reason"], ["exp0_ood", "all_reject"])
+    ood_detect = diag_ood["reason"] == "all_reject"
     log.info(
         f"Known accuracy={known_acc:.4f}, macro-F1={known_macro_f1:.4f}; "
         f"SVHN OOD detect={ood_detect.mean():.4f} "
-        f"(exp0={(diag_ood['reason'] == 'exp0_ood').mean():.4f}, "
-        f"all_reject={(diag_ood['reason'] == 'all_reject').mean():.4f})")
+        f"(all_reject={(diag_ood['reason'] == 'all_reject').mean():.4f}, "
+        f"known_accept={(diag_ood['selected'] >= 0).mean():.4f})")
 
     save_known_classification(y_known, pred_known, class_names, out_dir)
     save_pipeline_funnel(
         y_known, diag_known, class_names, out_dir, "1c_known",
-        "CIFAR known routing funnel")
+        "CIFAR known expert-only routing funnel")
     save_dashboard(
         y_known, diag_known, experts, class_names, out_dir, "1d_known",
         "CIFAR known expert gate/TTA dashboard")
-    save_ood_summary(diag_known, diag_ood, exp0_threshold, experts, args, out_dir)
-    save_exp0_energy_hist(diag_known, diag_ood, exp0_threshold, out_dir)
+    save_ood_summary(diag_known, diag_ood, experts, args, out_dir)
+    save_max_margin_hist(diag_known, diag_ood, out_dir)
     save_pipeline_funnel(
         y_ood, diag_ood, class_names, out_dir, "2d_ood",
-        "SVHN OOD routing funnel")
+        "SVHN OOD expert-only routing funnel")
     save_dashboard(
         y_ood, diag_ood, experts, class_names, out_dir, "2e_ood",
         "SVHN OOD expert gate/TTA dashboard")
-    save_baseline_absorption(y_ood, diag_ood["exp0_pred"], class_names, out_dir)
+    save_baseline_absorption(y_ood, pred_ood, class_names, out_dir)
     log.info(f"Results: {out_dir}")
 
 

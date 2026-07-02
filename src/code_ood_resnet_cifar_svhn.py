@@ -79,6 +79,38 @@ def maybe_subset(dataset, max_samples, seed):
     return Subset(dataset, idx.tolist())
 
 
+def make_long_tail_train_indices(labels, train_idx, imbalance_factor,
+                                 min_per_class, seed, log):
+    labels = np.asarray(labels)
+    train_idx = np.asarray(train_idx, dtype=int)
+    if imbalance_factor is None or imbalance_factor >= 1.0:
+        counts = {
+            int(cls): int((labels[train_idx] == cls).sum())
+            for cls in np.sort(np.unique(labels[train_idx]))
+        }
+        log.info(f"Balanced train class counts: {counts}")
+        return train_idx
+
+    rng = np.random.default_rng(seed)
+    classes = np.sort(np.unique(labels[train_idx]))
+    max_count = max(int((labels[train_idx] == cls).sum()) for cls in classes)
+    selected = []
+    counts = {}
+    for rank, cls in enumerate(classes):
+        cls_idx = train_idx[labels[train_idx] == cls]
+        keep = int(round(max_count * (imbalance_factor ** (
+            rank / max(len(classes) - 1, 1)))))
+        keep = max(min_per_class, min(keep, len(cls_idx)))
+        chosen = np.sort(rng.choice(cls_idx, keep, replace=False))
+        selected.extend(chosen.tolist())
+        counts[int(cls)] = int(keep)
+    selected = np.asarray(sorted(selected), dtype=int)
+    log.info(
+        f"Long-tail train enabled: lt={imbalance_factor}, "
+        f"rows={len(selected):,}/{len(train_idx):,}, counts={counts}")
+    return selected
+
+
 def load_cifar10_svhn(args, log):
     train_transform = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -111,8 +143,13 @@ def load_cifar10_svhn(args, log):
         train_idx.extend(cls_idx[n_val:].tolist())
     train_idx = np.asarray(train_idx, dtype=int)
     val_idx = np.asarray(val_idx, dtype=int)
+    train_idx = make_long_tail_train_indices(
+        labels, train_idx, args.lt, args.lt_min_per_class, args.seed + 10, log)
 
     if args.max_train and args.max_train > 0 and args.max_train < len(train_idx):
+        log.info(
+            f"Applying --max_train={args.max_train} after LT/balanced split; "
+            "use max_train=0 for full LT experiment.")
         train_idx = np.sort(rng.choice(train_idx, int(args.max_train), replace=False))
     if args.max_val and args.max_val > 0 and args.max_val < len(val_idx):
         val_idx = np.sort(rng.choice(val_idx, int(args.max_val), replace=False))
@@ -395,6 +432,9 @@ def parse_args():
     parser.add_argument("--data_root", default=os.path.expanduser("~/.cache/torchvision"))
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--val_ratio", type=float, default=0.1)
+    parser.add_argument("--lt", type=float, default=1.0,
+                        help="CIFAR10 long-tail imbalance factor; 1.0 keeps balanced train")
+    parser.add_argument("--lt_min_per_class", type=int, default=50)
     parser.add_argument("--ood_quantile", type=float, default=0.05)
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--epochs", type=int, default=120)
