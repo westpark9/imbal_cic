@@ -1,0 +1,47 @@
+2026-07-02 14:02:54,908  INFO  Args: {'data': 'data/cic2017_chrono_v2.pkl', 'seed': 42, 'threshold_strategy': 'per_class_min', 'ood_quantile': 0.05, 'temperature': 1.0, 'epochs': 80, 'patience': 10, 'batch_size': 4096, 'test_batch_size': 8192, 'lr': 0.001, 'weight_decay': 0.0001, 'mlp_hidden': '256,128,64', 'mlp_dropout': 0.1, 'class_weight': 'sqrt_balanced', 'external_ood_data': 'data/cic2018_ood_for_cic2017.pkl', 'max_external_ood': 500000, 'energy_margin_weight': 0.1, 'energy_margin_in': -8.0, 'energy_margin_out': -4.0, 'scaler_chunk_size': 200000, 'workers': 0, 'max_train': 0, 'max_val': 0, 'max_test_known': 0, 'max_friday': 0, 'skip_score_dump': True, 'out_root': 'results'}
+2026-07-02 14:02:54,979  INFO  Device: cuda
+2026-07-02 14:02:55,211  INFO  Loaded CIC chrono data: train=1,275,094 val=425,032 test_known=425,032 friday=702,718
+2026-07-02 14:02:55,211  INFO  Source classes: ['dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'ssh-patator', 'web-attack-brute-force', 'web-attack-sql-injection', 'web-attack-xss']
+2026-07-02 14:02:55,211  INFO  Original classes: ['bot', 'ddos', 'dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'portscan', 'ssh-patator', 'web-attack-brute-force', 'web-attack-sql-injection', 'web-attack-xss']
+2026-07-02 14:02:55,211  INFO  Using rows after optional subsampling: train=1,275,094 val=425,032 test_known=425,032 friday=702,718
+2026-07-02 14:02:55,649  INFO  StandardScaler fitted on 1,275,094 train rows
+2026-07-02 14:02:55,682  INFO  Loaded auxiliary OOD: data/cic2018_ood_for_cic2017.pkl | rows=500,000/500,000, dim=70
+2026-07-02 14:02:55,691  INFO  Class weights (sqrt_balanced): [0.147599995136261, 0.031199999153614044, 0.20200000703334808, 0.19670000672340393, 0.1680999994277954, 4.3850998878479, 2.4735000133514404, 0.010999999940395355, 0.19509999454021454, 0.38589999079704285, 3.2177999019622803, 0.5860000252723694]
+2026-07-02 14:02:56,122  INFO  Stage2 energy margin enabled: aux_ood=data/cic2018_ood_for_cic2017.pkl, weight=0.1, m_in=-8.0, m_out=-4.0
+2026-07-02 14:03:02,881  INFO  epoch=001 train_loss=1.1694 ce=0.3910 margin=7.7840 train_acc=0.9610 val_loss=0.0021 val_acc=0.9721 val_macro_f1=0.5133 lr=0.001000 time=6.8s
+2026-07-02 14:03:09,394  INFO  epoch=002 train_loss=0.4844 ce=0.1217 margin=3.6267 train_acc=0.9750 val_loss=0.0016 val_acc=0.9759 val_macro_f1=0.5994 lr=0.000998 time=6.5s
+2026-07-02 14:03:15,932  INFO  epoch=003 train_loss=0.3842 ce=0.1025 margin=2.8163 train_acc=0.9769 val_loss=0.0015 val_acc=0.9771 val_macro_f1=0.6188 lr=0.000997 time=6.5s
+2026-07-02 14:03:22,457  INFO  epoch=004 train_loss=0.3427 ce=0.0923 margin=2.5037 train_acc=0.9780 val_loss=0.0014 val_acc=0.9789 val_macro_f1=0.6154 lr=0.000994 time=6.5s
+2026-07-02 14:03:29,022  INFO  epoch=005 train_loss=0.3225 ce=0.0884 margin=2.3405 train_acc=0.9785 val_loss=0.0013 val_acc=0.9803 val_macro_f1=0.6276 lr=0.000990 time=6.6s
+2026-07-02 14:03:35,569  INFO  epoch=006 train_loss=0.3076 ce=0.0870 margin=2.2058 train_acc=0.9795 val_loss=0.0013 val_acc=0.9796 val_macro_f1=0.6213 lr=0.000986 time=6.5s
+2026-07-02 14:03:42,077  INFO  epoch=007 train_loss=0.3004 ce=0.0839 margin=2.1655 train_acc=0.9804 val_loss=0.0014 val_acc=0.9809 val_macro_f1=0.6397 lr=0.000981 time=6.5s
+2026-07-02 14:03:48,615  INFO  epoch=008 train_loss=0.2877 ce=0.0819 margin=2.0580 train_acc=0.9813 val_loss=0.0013 val_acc=0.9806 val_macro_f1=0.6732 lr=0.000976 time=6.5s
+2026-07-02 14:03:55,056  INFO  epoch=009 train_loss=0.2803 ce=0.0776 margin=2.0266 train_acc=0.9822 val_loss=0.0013 val_acc=0.9807 val_macro_f1=0.6683 lr=0.000969 time=6.4s
+2026-07-02 14:04:01,644  INFO  epoch=010 train_loss=0.2691 ce=0.0756 margin=1.9341 train_acc=0.9835 val_loss=0.0012 val_acc=0.9868 val_macro_f1=0.6825 lr=0.000962 time=6.6s
+2026-07-02 14:04:08,086  INFO  epoch=011 train_loss=0.2680 ce=0.0745 margin=1.9346 train_acc=0.9840 val_loss=0.0013 val_acc=0.9869 val_macro_f1=0.6740 lr=0.000954 time=6.4s
+2026-07-02 14:04:14,702  INFO  epoch=012 train_loss=0.2604 ce=0.0738 margin=1.8661 train_acc=0.9842 val_loss=0.0012 val_acc=0.9813 val_macro_f1=0.6316 lr=0.000946 time=6.6s
+2026-07-02 14:04:21,115  INFO  epoch=013 train_loss=0.2538 ce=0.0715 margin=1.8230 train_acc=0.9856 val_loss=0.0011 val_acc=0.9883 val_macro_f1=0.6073 lr=0.000936 time=6.4s
+2026-07-02 14:04:27,451  INFO  epoch=014 train_loss=0.2529 ce=0.0720 margin=1.8093 train_acc=0.9854 val_loss=0.0012 val_acc=0.9861 val_macro_f1=0.6338 lr=0.000926 time=6.3s
+2026-07-02 14:04:33,828  INFO  epoch=015 train_loss=0.2482 ce=0.0709 margin=1.7733 train_acc=0.9855 val_loss=0.0011 val_acc=0.9856 val_macro_f1=0.6704 lr=0.000916 time=6.4s
+2026-07-02 14:04:40,402  INFO  epoch=016 train_loss=0.2434 ce=0.0662 margin=1.7720 train_acc=0.9870 val_loss=0.0011 val_acc=0.9893 val_macro_f1=0.6464 lr=0.000905 time=6.6s
+2026-07-02 14:04:46,916  INFO  epoch=017 train_loss=0.2363 ce=0.0673 margin=1.6896 train_acc=0.9872 val_loss=0.0011 val_acc=0.9890 val_macro_f1=0.6846 lr=0.000893 time=6.5s
+2026-07-02 14:04:53,362  INFO  epoch=018 train_loss=0.2335 ce=0.0644 margin=1.6910 train_acc=0.9876 val_loss=0.0011 val_acc=0.9897 val_macro_f1=0.6983 lr=0.000880 time=6.4s
+2026-07-02 14:04:59,890  INFO  epoch=019 train_loss=0.2310 ce=0.0657 margin=1.6527 train_acc=0.9881 val_loss=0.0011 val_acc=0.9888 val_macro_f1=0.6949 lr=0.000867 time=6.5s
+2026-07-02 14:05:06,330  INFO  epoch=020 train_loss=0.2311 ce=0.0640 margin=1.6707 train_acc=0.9881 val_loss=0.0011 val_acc=0.9866 val_macro_f1=0.6897 lr=0.000854 time=6.4s
+2026-07-02 14:05:12,838  INFO  epoch=021 train_loss=0.2267 ce=0.0623 margin=1.6447 train_acc=0.9884 val_loss=0.0011 val_acc=0.9897 val_macro_f1=0.6964 lr=0.000839 time=6.5s
+2026-07-02 14:05:19,222  INFO  epoch=022 train_loss=0.2230 ce=0.0624 margin=1.6060 train_acc=0.9881 val_loss=0.0012 val_acc=0.9844 val_macro_f1=0.6817 lr=0.000825 time=6.4s
+2026-07-02 14:05:25,729  INFO  epoch=023 train_loss=0.2225 ce=0.0621 margin=1.6043 train_acc=0.9884 val_loss=0.0010 val_acc=0.9895 val_macro_f1=0.6934 lr=0.000810 time=6.5s
+2026-07-02 14:05:32,122  INFO  epoch=024 train_loss=0.2210 ce=0.0638 margin=1.5717 train_acc=0.9880 val_loss=0.0011 val_acc=0.9895 val_macro_f1=0.6786 lr=0.000794 time=6.4s
+2026-07-02 14:05:38,510  INFO  epoch=025 train_loss=0.2180 ce=0.0599 margin=1.5817 train_acc=0.9888 val_loss=0.0010 val_acc=0.9922 val_macro_f1=0.6950 lr=0.000778 time=6.4s
+2026-07-02 14:05:44,845  INFO  epoch=026 train_loss=0.2147 ce=0.0585 margin=1.5621 train_acc=0.9892 val_loss=0.0010 val_acc=0.9898 val_macro_f1=0.6873 lr=0.000761 time=6.3s
+2026-07-02 14:05:51,406  INFO  epoch=027 train_loss=0.2110 ce=0.0593 margin=1.5171 train_acc=0.9890 val_loss=0.0011 val_acc=0.9892 val_macro_f1=0.6961 lr=0.000744 time=6.6s
+2026-07-02 14:05:57,734  INFO  epoch=028 train_loss=0.2149 ce=0.0591 margin=1.5578 train_acc=0.9892 val_loss=0.0010 val_acc=0.9897 val_macro_f1=0.6913 lr=0.000727 time=6.3s
+2026-07-02 14:05:57,734  INFO  Early stopping at epoch=28; best_epoch=18
+2026-07-02 14:05:57,734  INFO  Best validation macro-F1=0.6983 at epoch=18
+2026-07-02 14:05:57,737  INFO  Training completed in 182.0s
+2026-07-02 14:05:57,738  INFO  Collecting streaming energy scores for CIC ID/Friday splits
+2026-07-02 14:06:00,855  INFO  Energy threshold calibrated: strategy=per_class_min, q=0.0500, threshold=3.9342, scale=1.7949
+2026-07-02 14:06:00,856  INFO  Energy gate: source known in-distribution=0.9970, Friday unseen attack detected=0.1958, Friday benign false-OOD=0.0031
+2026-07-02 14:06:00,856  INFO  CIC known test accuracy=0.9897, macro-F1=0.7081, weighted-F1=0.9909
+2026-07-02 14:06:00,856  INFO  OOD AUROC=0.5137, AUPR=0.5515, FPR95=0.9399, unseen_detect@tau=0.1958
+2026-07-02 14:06:01,944  INFO  Results: results/20260702_140254_908597_pid10240_cic2017_mlp_energy

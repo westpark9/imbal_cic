@@ -1,0 +1,16 @@
+2026-07-01 13:46:21,485  INFO  Args: {'data_root': '/home/user/.cache/torchvision', 'seed': 42, 'val_ratio': 0.1, 'ood_quantile': 0.05, 'temperature': 1.0, 'epochs': 5, 'patience': 0, 'batch_size': 128, 'test_batch_size': 256, 'lr': 0.1, 'momentum': 0.9, 'weight_decay': 0.0005, 'workers': 2, 'max_train': 5000, 'max_val': 1000, 'max_test': 1000, 'max_ood': 1000, 'out_root': 'results'}
+2026-07-01 13:46:21,546  INFO  Device: cuda
+2026-07-01 13:46:36,397  INFO  Loaded CIFAR-10/SVHN: train=5,000 val=1,000 test_id=1,000 test_ood=1,000
+2026-07-01 13:46:39,357  INFO  epoch=001 train_loss=3.4669 train_acc=0.1230 val_loss=3.6351 val_acc=0.1410 lr=0.090451 time=2.8s
+2026-07-01 13:46:40,019  INFO  epoch=002 train_loss=2.1250 train_acc=0.2062 val_loss=2.3471 val_acc=0.1710 lr=0.065451 time=0.6s
+2026-07-01 13:46:40,681  INFO  epoch=003 train_loss=2.0211 train_acc=0.2268 val_loss=2.4622 val_acc=0.1800 lr=0.034549 time=0.6s
+2026-07-01 13:46:41,324  INFO  epoch=004 train_loss=1.9678 train_acc=0.2508 val_loss=2.1212 val_acc=0.2310 lr=0.009549 time=0.6s
+2026-07-01 13:46:41,983  INFO  epoch=005 train_loss=1.8526 train_acc=0.2978 val_loss=1.8822 val_acc=0.3040 lr=0.000000 time=0.6s
+2026-07-01 13:46:42,006  INFO  Best validation accuracy=0.3040 at epoch=5
+2026-07-01 13:46:42,008  INFO  Training completed in 5.6s
+2026-07-01 13:46:42,008  INFO  Collecting logits for ID/OOD splits
+2026-07-01 13:46:42,778  INFO  Energy threshold calibrated: q=0.0500, threshold=2.3998, scale=0.8130
+2026-07-01 13:46:42,778  INFO  Energy gate: test_id in-distribution=0.9870, svhn in-distribution=0.9930
+2026-07-01 13:46:42,778  INFO  CIFAR-10 test accuracy=0.3170, macro-F1=0.2927, weighted-F1=0.2915
+2026-07-01 13:46:42,778  INFO  OOD AUROC=0.5092, AUPR=0.4767, FPR95=0.8450, OOD_detect@tau=0.0070
+2026-07-01 13:46:43,356  INFO  Results: results/20260701_134621_484866_pid222900_cifar10_svhn_resnet18_energy

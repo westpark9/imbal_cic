@@ -1,0 +1,86 @@
+2026-07-02 13:57:53,072  INFO  Args: {'data': 'data/cic2017_chrono_v2.pkl', 'seed': 42, 'threshold_strategy': 'per_class_min', 'ood_quantile': 0.05, 'temperature': 1.0, 'epochs': 80, 'patience': 10, 'batch_size': 4096, 'test_batch_size': 8192, 'lr': 0.001, 'weight_decay': 0.0001, 'mlp_hidden': '256,128,64', 'mlp_dropout': 0.1, 'class_weight': 'sqrt_balanced', 'external_ood_data': '', 'max_external_ood': 500000, 'energy_margin_weight': 0.0, 'energy_margin_in': -8.0, 'energy_margin_out': -4.0, 'scaler_chunk_size': 200000, 'workers': 0, 'max_train': 0, 'max_val': 0, 'max_test_known': 0, 'max_friday': 0, 'skip_score_dump': True, 'out_root': 'results'}
+2026-07-02 13:57:53,144  INFO  Device: cuda
+2026-07-02 13:57:53,374  INFO  Loaded CIC chrono data: train=1,275,094 val=425,032 test_known=425,032 friday=702,718
+2026-07-02 13:57:53,374  INFO  Source classes: ['dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'ssh-patator', 'web-attack-brute-force', 'web-attack-sql-injection', 'web-attack-xss']
+2026-07-02 13:57:53,374  INFO  Original classes: ['bot', 'ddos', 'dos-goldeneye', 'dos-hulk', 'dos-slowhttptest', 'dos-slowloris', 'ftp-patator', 'heartbleed', 'infiltration', 'normal', 'portscan', 'ssh-patator', 'web-attack-brute-force', 'web-attack-sql-injection', 'web-attack-xss']
+2026-07-02 13:57:53,374  INFO  Using rows after optional subsampling: train=1,275,094 val=425,032 test_known=425,032 friday=702,718
+2026-07-02 13:57:53,810  INFO  StandardScaler fitted on 1,275,094 train rows
+2026-07-02 13:57:53,819  INFO  Class weights (sqrt_balanced): [0.147599995136261, 0.031199999153614044, 0.20200000703334808, 0.19670000672340393, 0.1680999994277954, 4.3850998878479, 2.4735000133514404, 0.010999999940395355, 0.19509999454021454, 0.38589999079704285, 3.2177999019622803, 0.5860000252723694]
+2026-07-02 13:57:58,492  INFO  epoch=001 train_loss=0.2987 ce=0.2987 margin=0.0000 train_acc=0.9594 val_loss=0.0020 val_acc=0.9674 val_macro_f1=0.5213 lr=0.001000 time=4.2s
+2026-07-02 13:58:02,590  INFO  epoch=002 train_loss=0.1147 ce=0.1147 margin=0.0000 train_acc=0.9750 val_loss=0.0017 val_acc=0.9748 val_macro_f1=0.6243 lr=0.000998 time=4.1s
+2026-07-02 13:58:06,756  INFO  epoch=003 train_loss=0.0994 ce=0.0994 margin=0.0000 train_acc=0.9769 val_loss=0.0014 val_acc=0.9781 val_macro_f1=0.6188 lr=0.000997 time=4.2s
+2026-07-02 13:58:11,025  INFO  epoch=004 train_loss=0.0891 ce=0.0891 margin=0.0000 train_acc=0.9793 val_loss=0.0014 val_acc=0.9783 val_macro_f1=0.6511 lr=0.000994 time=4.3s
+2026-07-02 13:58:15,272  INFO  epoch=005 train_loss=0.0857 ce=0.0857 margin=0.0000 train_acc=0.9807 val_loss=0.0016 val_acc=0.9795 val_macro_f1=0.6616 lr=0.000990 time=4.2s
+2026-07-02 13:58:19,445  INFO  epoch=006 train_loss=0.0834 ce=0.0834 margin=0.0000 train_acc=0.9807 val_loss=0.0013 val_acc=0.9849 val_macro_f1=0.6706 lr=0.000986 time=4.2s
+2026-07-02 13:58:23,719  INFO  epoch=007 train_loss=0.0826 ce=0.0826 margin=0.0000 train_acc=0.9807 val_loss=0.0013 val_acc=0.9774 val_macro_f1=0.6450 lr=0.000981 time=4.3s
+2026-07-02 13:58:27,999  INFO  epoch=008 train_loss=0.0802 ce=0.0802 margin=0.0000 train_acc=0.9817 val_loss=0.0012 val_acc=0.9850 val_macro_f1=0.6647 lr=0.000976 time=4.3s
+2026-07-02 13:58:32,179  INFO  epoch=009 train_loss=0.0781 ce=0.0781 margin=0.0000 train_acc=0.9822 val_loss=0.0013 val_acc=0.9811 val_macro_f1=0.6466 lr=0.000969 time=4.2s
+2026-07-02 13:58:36,338  INFO  epoch=010 train_loss=0.0759 ce=0.0759 margin=0.0000 train_acc=0.9830 val_loss=0.0013 val_acc=0.9804 val_macro_f1=0.6834 lr=0.000962 time=4.2s
+2026-07-02 13:58:40,533  INFO  epoch=011 train_loss=0.0741 ce=0.0741 margin=0.0000 train_acc=0.9832 val_loss=0.0012 val_acc=0.9843 val_macro_f1=0.6718 lr=0.000954 time=4.2s
+2026-07-02 13:58:44,700  INFO  epoch=012 train_loss=0.0744 ce=0.0744 margin=0.0000 train_acc=0.9830 val_loss=0.0012 val_acc=0.9810 val_macro_f1=0.6850 lr=0.000946 time=4.2s
+2026-07-02 13:58:48,856  INFO  epoch=013 train_loss=0.0758 ce=0.0758 margin=0.0000 train_acc=0.9827 val_loss=0.0012 val_acc=0.9821 val_macro_f1=0.6711 lr=0.000936 time=4.2s
+2026-07-02 13:58:53,010  INFO  epoch=014 train_loss=0.0726 ce=0.0726 margin=0.0000 train_acc=0.9831 val_loss=0.0012 val_acc=0.9862 val_macro_f1=0.6713 lr=0.000926 time=4.2s
+2026-07-02 13:58:57,266  INFO  epoch=015 train_loss=0.0724 ce=0.0724 margin=0.0000 train_acc=0.9834 val_loss=0.0012 val_acc=0.9852 val_macro_f1=0.6715 lr=0.000916 time=4.3s
+2026-07-02 13:59:01,458  INFO  epoch=016 train_loss=0.0708 ce=0.0708 margin=0.0000 train_acc=0.9851 val_loss=0.0012 val_acc=0.9847 val_macro_f1=0.6628 lr=0.000905 time=4.2s
+2026-07-02 13:59:05,713  INFO  epoch=017 train_loss=0.0701 ce=0.0701 margin=0.0000 train_acc=0.9846 val_loss=0.0012 val_acc=0.9887 val_macro_f1=0.7001 lr=0.000893 time=4.3s
+2026-07-02 13:59:09,981  INFO  epoch=018 train_loss=0.0671 ce=0.0671 margin=0.0000 train_acc=0.9856 val_loss=0.0012 val_acc=0.9885 val_macro_f1=0.6747 lr=0.000880 time=4.3s
+2026-07-02 13:59:14,255  INFO  epoch=019 train_loss=0.0675 ce=0.0675 margin=0.0000 train_acc=0.9852 val_loss=0.0011 val_acc=0.9871 val_macro_f1=0.6796 lr=0.000867 time=4.3s
+2026-07-02 13:59:18,529  INFO  epoch=020 train_loss=0.0696 ce=0.0696 margin=0.0000 train_acc=0.9845 val_loss=0.0013 val_acc=0.9806 val_macro_f1=0.6658 lr=0.000854 time=4.3s
+2026-07-02 13:59:22,801  INFO  epoch=021 train_loss=0.0648 ce=0.0648 margin=0.0000 train_acc=0.9862 val_loss=0.0012 val_acc=0.9845 val_macro_f1=0.7094 lr=0.000839 time=4.3s
+2026-07-02 13:59:27,067  INFO  epoch=022 train_loss=0.0695 ce=0.0695 margin=0.0000 train_acc=0.9843 val_loss=0.0012 val_acc=0.9822 val_macro_f1=0.6627 lr=0.000825 time=4.3s
+2026-07-02 13:59:31,331  INFO  epoch=023 train_loss=0.0656 ce=0.0656 margin=0.0000 train_acc=0.9857 val_loss=0.0012 val_acc=0.9871 val_macro_f1=0.6736 lr=0.000810 time=4.3s
+2026-07-02 13:59:35,584  INFO  epoch=024 train_loss=0.0639 ce=0.0639 margin=0.0000 train_acc=0.9867 val_loss=0.0012 val_acc=0.9823 val_macro_f1=0.6742 lr=0.000794 time=4.3s
+2026-07-02 13:59:39,830  INFO  epoch=025 train_loss=0.0645 ce=0.0645 margin=0.0000 train_acc=0.9862 val_loss=0.0011 val_acc=0.9867 val_macro_f1=0.6883 lr=0.000778 time=4.2s
+2026-07-02 13:59:44,011  INFO  epoch=026 train_loss=0.0633 ce=0.0633 margin=0.0000 train_acc=0.9865 val_loss=0.0012 val_acc=0.9843 val_macro_f1=0.6839 lr=0.000761 time=4.2s
+2026-07-02 13:59:48,189  INFO  epoch=027 train_loss=0.0626 ce=0.0626 margin=0.0000 train_acc=0.9870 val_loss=0.0011 val_acc=0.9857 val_macro_f1=0.6917 lr=0.000744 time=4.2s
+2026-07-02 13:59:52,453  INFO  epoch=028 train_loss=0.0618 ce=0.0618 margin=0.0000 train_acc=0.9868 val_loss=0.0011 val_acc=0.9881 val_macro_f1=0.6814 lr=0.000727 time=4.3s
+2026-07-02 13:59:56,733  INFO  epoch=029 train_loss=0.0612 ce=0.0612 margin=0.0000 train_acc=0.9878 val_loss=0.0012 val_acc=0.9815 val_macro_f1=0.6780 lr=0.000709 time=4.3s
+2026-07-02 14:00:01,000  INFO  epoch=030 train_loss=0.0613 ce=0.0613 margin=0.0000 train_acc=0.9869 val_loss=0.0011 val_acc=0.9894 val_macro_f1=0.6964 lr=0.000691 time=4.3s
+2026-07-02 14:00:05,257  INFO  epoch=031 train_loss=0.0603 ce=0.0603 margin=0.0000 train_acc=0.9873 val_loss=0.0011 val_acc=0.9890 val_macro_f1=0.7105 lr=0.000673 time=4.3s
+2026-07-02 14:00:09,532  INFO  epoch=032 train_loss=0.0603 ce=0.0603 margin=0.0000 train_acc=0.9874 val_loss=0.0011 val_acc=0.9877 val_macro_f1=0.7045 lr=0.000655 time=4.3s
+2026-07-02 14:00:13,778  INFO  epoch=033 train_loss=0.0582 ce=0.0582 margin=0.0000 train_acc=0.9878 val_loss=0.0010 val_acc=0.9882 val_macro_f1=0.6995 lr=0.000636 time=4.2s
+2026-07-02 14:00:18,033  INFO  epoch=034 train_loss=0.0575 ce=0.0575 margin=0.0000 train_acc=0.9886 val_loss=0.0010 val_acc=0.9885 val_macro_f1=0.6950 lr=0.000617 time=4.3s
+2026-07-02 14:00:22,252  INFO  epoch=035 train_loss=0.0574 ce=0.0574 margin=0.0000 train_acc=0.9883 val_loss=0.0011 val_acc=0.9905 val_macro_f1=0.7053 lr=0.000598 time=4.2s
+2026-07-02 14:00:26,502  INFO  epoch=036 train_loss=0.0565 ce=0.0565 margin=0.0000 train_acc=0.9884 val_loss=0.0012 val_acc=0.9818 val_macro_f1=0.6694 lr=0.000578 time=4.2s
+2026-07-02 14:00:30,723  INFO  epoch=037 train_loss=0.0582 ce=0.0582 margin=0.0000 train_acc=0.9876 val_loss=0.0010 val_acc=0.9895 val_macro_f1=0.7117 lr=0.000559 time=4.2s
+2026-07-02 14:00:34,898  INFO  epoch=038 train_loss=0.0561 ce=0.0561 margin=0.0000 train_acc=0.9888 val_loss=0.0011 val_acc=0.9877 val_macro_f1=0.6889 lr=0.000539 time=4.2s
+2026-07-02 14:00:39,075  INFO  epoch=039 train_loss=0.0556 ce=0.0556 margin=0.0000 train_acc=0.9892 val_loss=0.0010 val_acc=0.9898 val_macro_f1=0.7052 lr=0.000520 time=4.2s
+2026-07-02 14:00:43,249  INFO  epoch=040 train_loss=0.0554 ce=0.0554 margin=0.0000 train_acc=0.9888 val_loss=0.0010 val_acc=0.9888 val_macro_f1=0.6998 lr=0.000500 time=4.2s
+2026-07-02 14:00:47,506  INFO  epoch=041 train_loss=0.0562 ce=0.0562 margin=0.0000 train_acc=0.9884 val_loss=0.0010 val_acc=0.9902 val_macro_f1=0.6948 lr=0.000480 time=4.3s
+2026-07-02 14:00:51,694  INFO  epoch=042 train_loss=0.0529 ce=0.0529 margin=0.0000 train_acc=0.9898 val_loss=0.0011 val_acc=0.9842 val_macro_f1=0.6852 lr=0.000461 time=4.2s
+2026-07-02 14:00:55,904  INFO  epoch=043 train_loss=0.0535 ce=0.0535 margin=0.0000 train_acc=0.9895 val_loss=0.0011 val_acc=0.9882 val_macro_f1=0.7117 lr=0.000441 time=4.2s
+2026-07-02 14:01:00,148  INFO  epoch=044 train_loss=0.0518 ce=0.0518 margin=0.0000 train_acc=0.9901 val_loss=0.0010 val_acc=0.9906 val_macro_f1=0.7005 lr=0.000422 time=4.2s
+2026-07-02 14:01:04,400  INFO  epoch=045 train_loss=0.0535 ce=0.0535 margin=0.0000 train_acc=0.9898 val_loss=0.0010 val_acc=0.9888 val_macro_f1=0.7048 lr=0.000402 time=4.3s
+2026-07-02 14:01:08,678  INFO  epoch=046 train_loss=0.0536 ce=0.0536 margin=0.0000 train_acc=0.9898 val_loss=0.0010 val_acc=0.9891 val_macro_f1=0.7115 lr=0.000383 time=4.3s
+2026-07-02 14:01:12,942  INFO  epoch=047 train_loss=0.0505 ce=0.0505 margin=0.0000 train_acc=0.9905 val_loss=0.0010 val_acc=0.9899 val_macro_f1=0.7138 lr=0.000364 time=4.3s
+2026-07-02 14:01:17,182  INFO  epoch=048 train_loss=0.0523 ce=0.0523 margin=0.0000 train_acc=0.9899 val_loss=0.0010 val_acc=0.9921 val_macro_f1=0.7086 lr=0.000345 time=4.2s
+2026-07-02 14:01:21,431  INFO  epoch=049 train_loss=0.0531 ce=0.0531 margin=0.0000 train_acc=0.9901 val_loss=0.0010 val_acc=0.9913 val_macro_f1=0.7028 lr=0.000327 time=4.2s
+2026-07-02 14:01:25,683  INFO  epoch=050 train_loss=0.0507 ce=0.0507 margin=0.0000 train_acc=0.9905 val_loss=0.0010 val_acc=0.9912 val_macro_f1=0.7095 lr=0.000309 time=4.3s
+2026-07-02 14:01:29,931  INFO  epoch=051 train_loss=0.0493 ce=0.0493 margin=0.0000 train_acc=0.9908 val_loss=0.0010 val_acc=0.9917 val_macro_f1=0.7177 lr=0.000291 time=4.2s
+2026-07-02 14:01:34,181  INFO  epoch=052 train_loss=0.0491 ce=0.0491 margin=0.0000 train_acc=0.9908 val_loss=0.0009 val_acc=0.9925 val_macro_f1=0.7025 lr=0.000273 time=4.2s
+2026-07-02 14:01:38,395  INFO  epoch=053 train_loss=0.0488 ce=0.0488 margin=0.0000 train_acc=0.9911 val_loss=0.0010 val_acc=0.9911 val_macro_f1=0.7148 lr=0.000256 time=4.2s
+2026-07-02 14:01:42,574  INFO  epoch=054 train_loss=0.0481 ce=0.0481 margin=0.0000 train_acc=0.9913 val_loss=0.0010 val_acc=0.9912 val_macro_f1=0.7120 lr=0.000239 time=4.2s
+2026-07-02 14:01:46,740  INFO  epoch=055 train_loss=0.0475 ce=0.0475 margin=0.0000 train_acc=0.9916 val_loss=0.0010 val_acc=0.9912 val_macro_f1=0.7194 lr=0.000222 time=4.2s
+2026-07-02 14:01:50,900  INFO  epoch=056 train_loss=0.0478 ce=0.0478 margin=0.0000 train_acc=0.9914 val_loss=0.0010 val_acc=0.9912 val_macro_f1=0.7240 lr=0.000206 time=4.2s
+2026-07-02 14:01:55,057  INFO  epoch=057 train_loss=0.0475 ce=0.0475 margin=0.0000 train_acc=0.9914 val_loss=0.0010 val_acc=0.9908 val_macro_f1=0.7292 lr=0.000190 time=4.2s
+2026-07-02 14:01:59,212  INFO  epoch=058 train_loss=0.0468 ce=0.0468 margin=0.0000 train_acc=0.9915 val_loss=0.0009 val_acc=0.9918 val_macro_f1=0.7315 lr=0.000175 time=4.2s
+2026-07-02 14:02:03,443  INFO  epoch=059 train_loss=0.0460 ce=0.0460 margin=0.0000 train_acc=0.9919 val_loss=0.0010 val_acc=0.9911 val_macro_f1=0.7454 lr=0.000161 time=4.2s
+2026-07-02 14:02:07,623  INFO  epoch=060 train_loss=0.0462 ce=0.0462 margin=0.0000 train_acc=0.9920 val_loss=0.0010 val_acc=0.9928 val_macro_f1=0.7268 lr=0.000146 time=4.2s
+2026-07-02 14:02:11,855  INFO  epoch=061 train_loss=0.0456 ce=0.0456 margin=0.0000 train_acc=0.9921 val_loss=0.0009 val_acc=0.9915 val_macro_f1=0.7218 lr=0.000133 time=4.2s
+2026-07-02 14:02:16,035  INFO  epoch=062 train_loss=0.0453 ce=0.0453 margin=0.0000 train_acc=0.9923 val_loss=0.0009 val_acc=0.9918 val_macro_f1=0.7281 lr=0.000120 time=4.2s
+2026-07-02 14:02:20,251  INFO  epoch=063 train_loss=0.0448 ce=0.0448 margin=0.0000 train_acc=0.9924 val_loss=0.0010 val_acc=0.9925 val_macro_f1=0.7316 lr=0.000107 time=4.2s
+2026-07-02 14:02:24,425  INFO  epoch=064 train_loss=0.0449 ce=0.0449 margin=0.0000 train_acc=0.9926 val_loss=0.0010 val_acc=0.9929 val_macro_f1=0.7224 lr=0.000095 time=4.2s
+2026-07-02 14:02:28,601  INFO  epoch=065 train_loss=0.0442 ce=0.0442 margin=0.0000 train_acc=0.9926 val_loss=0.0010 val_acc=0.9929 val_macro_f1=0.7284 lr=0.000084 time=4.2s
+2026-07-02 14:02:32,824  INFO  epoch=066 train_loss=0.0446 ce=0.0446 margin=0.0000 train_acc=0.9927 val_loss=0.0009 val_acc=0.9930 val_macro_f1=0.7294 lr=0.000074 time=4.2s
+2026-07-02 14:02:37,050  INFO  epoch=067 train_loss=0.0437 ce=0.0437 margin=0.0000 train_acc=0.9929 val_loss=0.0010 val_acc=0.9921 val_macro_f1=0.7305 lr=0.000064 time=4.2s
+2026-07-02 14:02:41,237  INFO  epoch=068 train_loss=0.0434 ce=0.0434 margin=0.0000 train_acc=0.9930 val_loss=0.0010 val_acc=0.9930 val_macro_f1=0.7281 lr=0.000054 time=4.2s
+2026-07-02 14:02:45,411  INFO  epoch=069 train_loss=0.0430 ce=0.0430 margin=0.0000 train_acc=0.9932 val_loss=0.0009 val_acc=0.9938 val_macro_f1=0.7300 lr=0.000046 time=4.2s
+2026-07-02 14:02:45,412  INFO  Early stopping at epoch=69; best_epoch=59
+2026-07-02 14:02:45,412  INFO  Best validation macro-F1=0.7454 at epoch=59
+2026-07-02 14:02:45,412  INFO  Training completed in 291.6s
+2026-07-02 14:02:45,413  INFO  Collecting streaming energy scores for CIC ID/Friday splits
+2026-07-02 14:02:48,660  INFO  Energy threshold calibrated: strategy=per_class_min, q=0.0500, threshold=2.2046, scale=1.1442
+2026-07-02 14:02:48,660  INFO  Energy gate: source known in-distribution=0.9991, Friday unseen attack detected=0.0002, Friday benign false-OOD=0.0006
+2026-07-02 14:02:48,660  INFO  CIC known test accuracy=0.9910, macro-F1=0.7248, weighted-F1=0.9920
+2026-07-02 14:02:48,660  INFO  OOD AUROC=0.7054, AUPR=0.6802, FPR95=0.9317, unseen_detect@tau=0.0002
+2026-07-02 14:02:49,660  INFO  Results: results/20260702_135753_072684_pid9382_cic2017_mlp_energy
