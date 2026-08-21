@@ -584,6 +584,30 @@ macro <b>0.964</b>(exp10)로 이미 측정되어 있다 — 남은 문제는 분
 패자부활로 web·inf precision을 직접 겨냥.</p>
 </div>
 
+<h3>후속 원노브의 클래스별 F1 — exp15(표현 번들) · exp16(train dedup)</h3>
+
+<p>각 실험은 자기 run에서 같은 조건으로 재-fit한 global과 짝으로 판정한다
+(§12n 원칙). 기준은 exp12c(원시 표현·원시 풀):</p>
+
+<div class="tw"><table>
+<tr><th rowspan="2">class</th><th colspan="2">exp12c (기준)</th><th colspan="2">exp15 표현 번들</th><th colspan="2">exp16 dedup</th></tr>
+<tr><th class="n">시스템</th><th class="n">global</th><th class="n">시스템</th><th class="n">global</th><th class="n">시스템</th><th class="n">global</th></tr>
+<tr><td>benign</td><td class="n">0.9741</td><td class="n">0.9918</td><td class="n">0.9784</td><td class="n no">0.7845</td><td class="n no">0.7782</td><td class="n">0.9104</td></tr>
+<tr><td>bot</td><td class="n">0.9963</td><td class="n">0.9984</td><td class="n">0.9962</td><td class="n">0.9984</td><td class="n">0.9924</td><td class="n">0.9984</td></tr>
+<tr><td>brute_force</td><td class="n">0.9159</td><td class="n">0.9159</td><td class="n">0.9160</td><td class="n">0.9158</td><td class="n no">0.4920</td><td class="n no">0.4934</td></tr>
+<tr><td>ddos</td><td class="n">0.9939</td><td class="n">0.9627</td><td class="n">0.9953</td><td class="n">0.9763</td><td class="n">0.9844</td><td class="n">0.9879</td></tr>
+<tr><td>dos</td><td class="n">0.7805</td><td class="n">0.7827</td><td class="n">0.7489</td><td class="n">0.7765</td><td class="n">0.6810</td><td class="n">0.7275</td></tr>
+<tr><td>infiltration</td><td class="n">0.1178</td><td class="n">0.0968</td><td class="n ok">0.1563</td><td class="n">0.0483</td><td class="n">0.0312</td><td class="n">0.0406</td></tr>
+<tr><td>web_attacks</td><td class="n">0.0647</td><td class="n">0.1601</td><td class="n no">0.0405</td><td class="n">0.1601</td><td class="n no">0.0041</td><td class="n">0.0309</td></tr>
+<tr><td><b>macro</b></td><td class="n"><b>0.6919</b></td><td class="n"><b>0.7012</b></td><td class="n"><b>0.6902</b></td><td class="n"><b>0.6657</b></td><td class="n no"><b>0.5662</b></td><td class="n no"><b>0.5985</b></td></tr>
+</table></div>
+
+<p class="dim">exp15: inf 역대 최고(0.156)·web 역대 최저(0.041)·macro 제자리 — 게이트는
+개선, tail 조건부·global 손상 (0821 §9). exp16: 시스템·global 동시 붕괴(brute 반토막) —
+중복 질량이 다수결-베팅·retrieval 밀도의 실질 재료임을 개입으로 실증 (0821 §13).
+run: <code>20260821_174945_…exp15_prep</code> · <code>20260821_192317_…exp16_dedup</code>
+(tabpfn/results/).</p>
+
 <div class="tw"><table>
 <tr><th>이후 축</th><th>상태</th><th>내용</th></tr>
 <tr><td class="key-col">benign 반환 (margin δ, val-보정)</td><td>제안</td><td>tail 승리 중 benign과 박빙인 행을 반환 — test-오라클 δ=2.5에서 macro <b>0.7347</b>(전 클래스 ≥ global). 확정에는 val 게이트 점수로 δ 선택 → test 1회 (inf-절벽 회피 보수 선택)</td></tr>
