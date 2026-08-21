@@ -55,13 +55,13 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size
 
 <h1>TabPFN 앙상블 실험 보고서 — 제안 모델과 근거</h1>
 <p class="meta">cic2018 NetFlow · 시간순 분할 (과거 60% 학습 풀 / 미래 20% 평가) · 평가는 캡 없는 전체 400만 행 · seed 42</p>
-<p class="meta">2026-08-21 심야 갱신: §1 = 진행 중 시도(exp19 반환 구조 · exp18 dedup 변형 벤치마크) — 이하 재번호</p>
+<p class="meta">2026-08-21 심야 갱신: <b>exp19 승리</b> — benign 반환 출구로 macro 0.7331, 기록 bar 최초 상회 (§1) · exp18 변형 벤치마크 진행 중</p>
 <p class="meta">2026-08-21 밤 갱신: 최신 시도 exp17을 §1로 — 구조·선택 실측·클래스별 결과·경고(추첨 복권/삭제 불가)를 한 곳에 · §2 제안 모델 · §6 확정 결과</p>
 <p class="meta">2026-08-21 낮 갱신: §1 구조도를 판정 흐름(좌→우)으로 재구성 — context·aux 명세 포함 · §6에 oracle 대비 클래스별 원인 분해 추가</p>
 
-<h2><span class="n">1</span>진행 중 — exp19 benign 반환 출구 · exp18 dedup 변형 벤치마크</h2>
+<h2><span class="n">1</span>최신 결과 — exp19 benign 반환 출구: <span class="ok">최초 승리</span> · exp18 진행 중</h2>
 
-<p><b>exp19 (구조 변경, GPU 진행 중)</b>: §7에서 확정한 병목 — 게이트가 benign을 잘못
+<p><b>exp19 (구조 변경 — 완료, 승리)</b>: §7에서 확정한 병목 — 게이트가 benign을 잘못
 배정하면 조건부에 <b>돌아갈 길이 없어</b> 14.8만 행이 inf/web으로 강제 환전되고 web
 precision이 0.034로 침수 — 을 정면으로 푼다. 게이트는 그대로 두고, <b>공격 expert의
 조건부 context에 benign 200,000행을 추가</b>해 오배정 행이 조건부 단계에서 benign으로
@@ -108,12 +108,39 @@ precision이 0.034로 침수 — 을 정면으로 푼다. 게이트는 그대로
 사전 등록 0821 §16.</figcaption>
 </figure>
 
-<p><b>exp18 (변형 벤치마크, exp19 종료 후 자동 실행)</b>: train/test 할당 <b>전에</b>
+<h3>exp19 결과 (run 20260821_225628, test 402만 행) — 판정 튜플 전 항목 통과</h3>
+
+<div class="key g">
+<p><b>macro 0.7331 — 프로젝트 최초로 시스템이 모든 기준을 넘었다.</b> 같은-run global
+(0.6031) +0.130 · exp12c(0.6919) +0.041(밴드 밖) · <b>기록 bar인 va100 global(0.7012)
+최초 상회(+0.032)</b> · §12k 오라클 margin-반환 상한(0.7347)에 임계값 없이 −0.002까지
+도달. 반환 실측: tail 승리 20.1만 중 <b>157,408행(78.3%) 반환</b> → web 예측 1.19만→
+~3.1천으로 침수 해소, <b>web recall 0.790 무손실</b>.</p>
+</div>
+
+<div class="tw"><table>
+<tr><th>class</th><th class="n key-col">exp19 시스템</th><th class="n">같은-run global</th><th class="n">exp12c 기준</th><th>읽기</th></tr>
+<tr><td>benign</td><td class="n key-col ok">0.9900</td><td class="n">0.9901</td><td class="n">0.9741</td><td>P .989 / R .991 — global급 회복</td></tr>
+<tr><td class="key-col">web_attacks</td><td class="n key-col ok">0.2248</td><td class="n no">0.0000</td><td class="n">0.0647</td><td>P 0.034→<b>0.131</b>, R 0.790 유지 — XGB √가중 bar(0.2427)에 −0.018</td></tr>
+<tr><td>infiltration</td><td class="n key-col ok">0.2625</td><td class="n">0.0236</td><td class="n">0.1178</td><td>역대 최고 — √가중의 inf(0.2404)도 상회, 희생 없는 개선</td></tr>
+<tr><td>ddos</td><td class="n key-col">0.9854</td><td class="n">0.9348</td><td class="n">0.9939</td><td>−0.009 (밴드 내)</td></tr>
+<tr><td>dos</td><td class="n key-col">0.7553</td><td class="n">0.7812</td><td class="n">0.7805</td><td><b>유일한 밴드-밖 대가</b>: flood 오반환 ~8.3k행 → recall 0.641→0.607 (−0.025)</td></tr>
+<tr><td>brute_force</td><td class="n key-col">0.9159</td><td class="n no">0.4934</td><td class="n">0.9159</td><td>유지 (global은 추첨-붕괴)</td></tr>
+<tr><td>bot</td><td class="n key-col">0.9978</td><td class="n">0.9984</td><td class="n">0.9963</td><td>동급</td></tr>
+<tr><td><b>macro</b></td><td class="n key-col ok"><b>0.7331</b></td><td class="n"><b>0.6031</b></td><td class="n"><b>0.6919</b></td><td>기록 bar 0.7012 최초 상회 · 오라클 0.7347 근접</td></tr>
+</table></div>
+
+<p class="dim">강건성 부수 증거: 이번 run의 게이트는 §12n 지터로 benign→tail 누수가
+187,940행(12c의 148,254보다 나쁜 추첨)이었는데도 반환 출구가 전량 흡수 — 구조가 게이트
+요동에 둔감해졌다. 같은-run global은 web 0.0000·brute 0.4934로 추첨-복권의 세 번째
+표본(0.7012/0.6210/0.6031). 판정 원본 0821 §17, run <code>…225628_exp19_return</code>.</p>
+
+<p><b>exp18 (변형 벤치마크 — GPU 진행 중)</b>: train/test 할당 <b>전에</b>
 데이터 자체를 클래스-내 dedup(벡터별 시간순 첫 행만)하고 재분할한 <b>다른 시험지</b> —
 기존 기록·bar와 비교 불가하며, "중복-암기·다수결-베팅이 불가능할 때의 진짜 일반화
 서열"을 잰다. test는 첫 등장이 늦은 새 벡터만 남는다(§4의 no-twin 지역 전면화).
 예상: bot 12.4만→~1.7천, slowhttptest→1행 등 대규모 소멸(감수하고 진행), 전 방법
-점수 급락. 사전 등록 0821 §15. 두 실험의 결과가 도착하면 본 섹션을 갱신한다.</p>
+점수 급락. 사전 등록 0821 §15. exp18 결과 도착 시 갱신.</p>
 
 <h2><span class="n">2</span>직전 시도 — 구조 변경: global-vs-expert 학습 선택기 (exp17)</h2>
 
@@ -876,7 +903,7 @@ run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 
 <div class="tw"><table>
 <tr><th>이후 축</th><th>상태</th><th>내용</th></tr>
-<tr><td class="key-col">benign 반환 출구 (exp19)</td><td class="dim">진행</td><td>공격 expert 조건부 context에 benign 20만 추가 — 라벨 공간 = 소유 ∪ {benign}, 게이트 불변, 학습·임계값 없음. §1 구조도·0821 §16</td></tr>
+<tr><td class="key-col">benign 반환 출구 (exp19)</td><td class="ok">승리 — 새 기준</td><td>조건부 context에 benign 20만 추가만으로 <b>macro 0.7331</b> — 기록 bar(0.7012) 최초 상회, web 0.225·inf 0.263·benign 0.990. 유일한 대가 dos −0.025. §1 결과 표·0821 §17</td></tr>
 <tr><td>분할-전 dedup 변형 벤치마크 (exp18)</td><td class="dim">진행</td><td>데이터 자체를 dedup 후 재분할한 별도 시험지 — 기존 수치와 비교 불가, 진짜 일반화 서열 측정. §1·0821 §15</td></tr>
 <tr><td class="key-col">benign 반환 (margin δ, val-보정)</td><td>제안</td><td>tail 승리 중 benign과 박빙인 행을 반환 — test-오라클 δ=2.5에서 macro <b>0.7347</b>(전 클래스 ≥ global). 확정에는 val 게이트 점수로 δ 선택 → test 1회 (inf-절벽 회피 보수 선택)</td></tr>
 <tr><td>TTA tie-break (exp13)</td><td class="no">기각 (변형 한정)</td><td>공유-사본 perturb K-평균이 조밀 benign에 체계적 불리 — §5 표 참조. 기각 범위는 이 변형에 한정: 원 의도였던 <b>SADE식 안정성-가중 집계는 미검증 별개 축</b>. 재현성 부수 발견: GPU 동시 실행 run 간 게이트 점수 차로 박빙 3.2% 뒤집힘 (클래스 F1 ±0.008 밴드) — 원노브 판정은 이보다 큰 델타만 유효</td></tr>
