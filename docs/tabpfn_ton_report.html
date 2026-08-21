@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ToN-IoT 전이 실험 보고서</title>
+<style>
+:root{color-scheme:light;--s0:#f7f7f5;--s1:#fcfcfb;--s2:#f0efec;--br:#dedcd6;--brs:#c2bfb6;
+ --t1:#0b0b0b;--t2:#52514e;--t3:#7a7873;--c1:#2a78d6;--gr:#1baf7a;--sr:#e34948;--wr:#eda100;
+ --gb:#eefaf4;--sb:#fdeeee;--wb:#fff8e8;--cb:#f0efec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+ --s0:#141413;--s1:#1a1a19;--s2:#232322;--br:#35352f;--brs:#4d4d45;
+ --t1:#fff;--t2:#c3c2b7;--t3:#8f8d83;--c1:#3987e5;--gr:#199e70;--sr:#e66767;--wr:#c98500;
+ --gb:#10241c;--sb:#2b1717;--wb:#2a2411;--cb:#232322}}
+:root[data-theme="dark"]{color-scheme:dark;
+ --s0:#141413;--s1:#1a1a19;--s2:#232322;--br:#35352f;--brs:#4d4d45;
+ --t1:#fff;--t2:#c3c2b7;--t3:#8f8d83;--c1:#3987e5;--gr:#199e70;--sr:#e66767;--wr:#c98500;
+ --gb:#10241c;--sb:#2b1717;--wb:#2a2411;--cb:#232322}
+*{box-sizing:border-box}
+body{margin:0;background:var(--s0);color:var(--t1);font-size:15.5px;line-height:1.75;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR","Apple SD Gothic Neo",Roboto,sans-serif}
+.wrap{max-width:800px;margin:0 auto;padding:38px 22px 70px}
+h1{font-size:24px;margin:0 0 6px;letter-spacing:-.3px}
+.meta{color:var(--t3);font-size:12.5px;margin:0 0 4px}
+h2{font-size:18.5px;margin:38px 0 10px;padding-top:14px;border-top:2px solid var(--brs)}
+h2 .n{color:var(--c1);font-weight:700;margin-right:8px}
+h3{font-size:15.5px;margin:22px 0 6px;color:var(--t2)}
+p{margin:0 0 12px} ul{margin:0 0 12px;padding-left:20px} li{margin-bottom:5px}
+a{color:var(--c1)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.87em;background:var(--cb);
+ padding:1px 5px;border-radius:4px}
+.key{background:var(--s1);border-left:3px solid var(--c1);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.key.g{border-left-color:var(--gr);background:var(--gb)}
+.key.r{border-left-color:var(--sr);background:var(--sb)}
+.key.w{border-left-color:var(--wr);background:var(--wb)}
+.key p:last-child{margin-bottom:0}
+.tw{overflow-x:auto;margin:12px 0;border:1px solid var(--br);border-radius:8px;background:var(--s1)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 11px;border-bottom:1px solid var(--br)}
+th{font-weight:620;color:var(--t2);background:var(--s2);font-size:12px;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th.key-col,td.key-col{background:var(--s2)}
+.dim{color:var(--t3)} .no{color:var(--sr);font-weight:640} .ok{color:var(--gr);font-weight:640}
+.fig{border:1px solid var(--br);border-radius:8px;background:var(--s1);padding:14px 8px 6px;margin:14px 0;overflow-x:auto}
+.fig figcaption{font-size:12px;color:var(--t3);padding:8px 10px 4px}
+.viz{--sv1:#2a78d6;--sv2:#eb6834;--sv3:#1baf7a;--sv4:#eda100;--sv5:#e87ba4;--sv6:#008300;--sv7:#4a3aa7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .viz{
+ --sv1:#3987e5;--sv2:#d95926;--sv3:#199e70;--sv4:#c98500;--sv5:#d55181;--sv6:#008300;--sv7:#9085e9}}
+:root[data-theme="dark"] .viz{--sv1:#3987e5;--sv2:#d95926;--sv3:#199e70;--sv4:#c98500;--sv5:#d55181;--sv6:#008300;--sv7:#9085e9}
+footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size:12px;color:var(--t3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>ToN-IoT 전이 실험 보고서 — Activation Expert System</h1>
+<p class="meta">NF-ToN-IoT-v3 · family 수준 시간순 분할 · 평가는 캡 없는 전체 5,504,060행 · seed 42</p>
+<p class="meta">exp14, run <code>20260821_161948</code> (GPU 단독) · 사전 등록 0821.md §3 · 판정 0821.md §7 ·
+본편(cic2018) 보고서는 <a href="https://claude.ai/code/artifact/93e7826e-c1ec-47e8-a667-6f8d777263a6">여기</a></p>
+<p class="meta">저녁 갱신: §4 원인 분석 추가 — benign·scanning 붕괴의 동일-벡터 진단 (0821.md §9)</p>
+
+<h2><span class="n">1</span>무엇을 옮겼나 — 원노브 = 데이터셋</h2>
+
+<p>본편의 제안 모델(frozen TabPFN + context = expert, 학습된 게이트 argmax, 승자만
+조건부 분류)을 <b>방법 변경 없이</b> ton_iot로 전이. 그룹핑은 s43/s44의 기록
+(configs/nfv3_experts.json) + benign expert = <b>5 experts</b>. global 비교열은 같은
+run에서 자연-비례 1M context로 재-fit (같은 분할·같은 평가 행).</p>
+
+<div class="tw"><table>
+<tr><th>expert</th><th>소유 클래스</th><th class="n">context 실측</th><th class="n">holdout</th></tr>
+<tr><td>benign</td><td>benign</td><td class="n">200,000 + 공격 filler 19,998 (9클래스 ×2,222)</td><td class="n">15,000</td></tr>
+<tr><td>flood</td><td>ddos · dos</td><td class="n">ddos 190,634 + dos 9,366</td><td class="n">30,000</td></tr>
+<tr><td>probe_access</td><td>scanning · password</td><td class="n">password 107,983 + scanning 92,017</td><td class="n">30,000</td></tr>
+<tr><td>application</td><td>injection · xss</td><td class="n">xss 176,259 + injection 23,741</td><td class="n">30,000</td></tr>
+<tr><td>stealth_malware</td><td>backdoor · mitm · ransomware</td><td class="n">backdoor 107,030 + mitm 2,886 + ransomware 1,906 (전량)</td><td class="n">16,197</td></tr>
+</table></div>
+
+<p class="dim">게이트 음성의 aux = 외부 공격 5 family (bot_iot recon 20,000 + cic2018
+bot·brute·inf 각 20,000 + web 전량 2,029) → 30,000 샘플 — cic2018 타깃의 aux 레시피를
+미러링. global context 조성: benign 61.0% · ddos 15.0% · xss 10.3% · password 5.8% ·
+scanning 4.9% · mitm 218행 · ransomware 144행.</p>
+
+<h2><span class="n">2</span>게이트 argmax의 반응 — 클래스별 activation</h2>
+
+<p>올바른 목적지는 benign→benign, ddos·dos→flood, scanning·password→probe_access,
+injection·xss→application, backdoor·mitm·ransomware→stealth_malware:</p>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 402" width="738" height="402" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="클래스별 게이트 argmax 발화 분포: 공격 8개 클래스는 80.6에서 97.0퍼센트로 성공, benign은 24.1퍼센트로 붕괴하고 scanning은 0.8퍼센트">
+<g font-size="11" fill="var(--t2)">
+<rect x="140" y="16" width="10" height="10" rx="2" fill="var(--sv1)"/><text x="155" y="25.5">benign</text>
+<rect x="212" y="16" width="10" height="10" rx="2" fill="var(--sv2)"/><text x="227" y="25.5">flood</text>
+<rect x="280" y="16" width="10" height="10" rx="2" fill="var(--sv3)"/><text x="295" y="25.5">probe_access</text>
+<rect x="398" y="16" width="10" height="10" rx="2" fill="var(--sv7)"/><text x="413" y="25.5">application</text>
+<rect x="504" y="16" width="10" height="10" rx="2" fill="var(--sv5)"/><text x="519" y="25.5">stealth_malware</text>
+</g>
+<text x="736" y="44" font-size="10" fill="var(--t3)" text-anchor="end">정확 발화율</text>
+<!-- backdoor -->
+<text x="130" y="65" font-size="11.5" fill="var(--t1)" text-anchor="end">backdoor</text>
+<rect x="140" y="52" width="532" height="18" rx="3" fill="var(--sv5)"><title>stealth_malware 97.0%</title></rect>
+<rect x="674" y="52" width="15" height="18" rx="2" fill="var(--sv3)"><title>probe_access 3.0%</title></rect>
+<text x="406" y="65" font-size="11" fill="#fff" text-anchor="middle">97.0%</text>
+<text x="736" y="65" font-size="11" fill="var(--t2)" text-anchor="end">0.970</text>
+<!-- xss -->
+<text x="130" y="95" font-size="11.5" fill="var(--t1)" text-anchor="end">xss</text>
+<rect x="140" y="82" width="531" height="18" rx="3" fill="var(--sv7)"><title>application 96.9%</title></rect>
+<rect x="673" y="82" width="12" height="18" rx="2" fill="var(--sv2)"><title>flood 2.3%</title></rect>
+<rect x="687" y="82" width="3" height="18" fill="var(--sv5)"><title>stealth_malware 0.7%</title></rect>
+<text x="405" y="95" font-size="11" fill="#fff" text-anchor="middle">96.9%</text>
+<text x="736" y="95" font-size="11" fill="var(--t2)" text-anchor="end">0.969</text>
+<!-- ddos -->
+<text x="130" y="125" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
+<rect x="140" y="112" width="523" height="18" rx="3" fill="var(--sv2)"><title>flood 95.4%</title></rect>
+<rect x="665" y="112" width="21" height="18" rx="2" fill="var(--sv7)"><title>application 4.0%</title></rect>
+<rect x="688" y="112" width="2" height="18" fill="var(--sv1)"><title>benign 0.6%</title></rect>
+<text x="401" y="125" font-size="11" fill="#fff" text-anchor="middle">95.4%</text>
+<text x="736" y="125" font-size="11" fill="var(--t2)" text-anchor="end">0.954</text>
+<!-- password -->
+<text x="130" y="155" font-size="11.5" fill="var(--t1)" text-anchor="end">password</text>
+<rect x="140" y="142" width="520" height="18" rx="3" fill="var(--sv3)"><title>probe_access 94.8%</title></rect>
+<rect x="662" y="142" width="27" height="18" rx="2" fill="var(--sv7)"><title>application 5.0%</title></rect>
+<text x="400" y="155" font-size="11" fill="#fff" text-anchor="middle">94.8%</text>
+<text x="736" y="155" font-size="11" fill="var(--t2)" text-anchor="end">0.948</text>
+<!-- injection -->
+<text x="130" y="185" font-size="11.5" fill="var(--t1)" text-anchor="end">injection</text>
+<rect x="140" y="172" width="503" height="18" rx="3" fill="var(--sv7)"><title>application 91.8%</title></rect>
+<rect x="645" y="172" width="28" height="18" rx="2" fill="var(--sv2)"><title>flood 5.3%</title></rect>
+<rect x="675" y="172" width="8" height="18" fill="var(--sv3)"><title>probe_access 1.5%</title></rect>
+<rect x="685" y="172" width="5" height="18" fill="var(--sv5)"><title>stealth_malware 1.1%</title></rect>
+<text x="391" y="185" font-size="11" fill="#fff" text-anchor="middle">91.8%</text>
+<text x="736" y="185" font-size="11" fill="var(--t2)" text-anchor="end">0.918</text>
+<!-- ransomware -->
+<text x="130" y="215" font-size="11.5" fill="var(--t1)" text-anchor="end">ransomware</text>
+<rect x="140" y="202" width="496" height="18" rx="3" fill="var(--sv5)"><title>stealth_malware 90.6%</title></rect>
+<rect x="638" y="202" width="36" height="18" rx="2" fill="var(--sv7)"><title>application 6.7%</title></rect>
+<rect x="676" y="202" width="14" height="18" rx="2" fill="var(--sv2)"><title>flood 2.8%</title></rect>
+<text x="388" y="215" font-size="11" fill="#fff" text-anchor="middle">90.6%</text>
+<text x="736" y="215" font-size="11" fill="var(--t2)" text-anchor="end">0.906</text>
+<!-- mitm -->
+<text x="130" y="245" font-size="11.5" fill="var(--t1)" text-anchor="end">mitm</text>
+<rect x="140" y="232" width="470" height="18" rx="3" fill="var(--sv5)"><title>stealth_malware 85.9%</title></rect>
+<rect x="612" y="232" width="54" height="18" rx="2" fill="var(--sv2)"><title>flood 10.0%</title></rect>
+<rect x="668" y="232" width="12" height="18" rx="2" fill="var(--sv7)"><title>application 2.4%</title></rect>
+<rect x="682" y="232" width="7" height="18" fill="var(--sv1)"><title>benign 1.3%</title></rect>
+<text x="375" y="245" font-size="11" fill="#fff" text-anchor="middle">85.9%</text>
+<text x="736" y="245" font-size="11" fill="var(--t2)" text-anchor="end">0.859</text>
+<!-- dos -->
+<text x="130" y="275" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
+<rect x="140" y="262" width="441" height="18" rx="3" fill="var(--sv2)"><title>flood 80.6%</title></rect>
+<rect x="583" y="262" width="89" height="18" rx="2" fill="var(--sv7)"><title>application 16.4%</title></rect>
+<rect x="674" y="262" width="16" height="18" rx="2" fill="var(--sv5)"><title>stealth_malware 3.0%</title></rect>
+<text x="360" y="275" font-size="11" fill="#fff" text-anchor="middle">80.6%</text>
+<text x="627" y="275" font-size="10" fill="#fff" text-anchor="middle">16.4</text>
+<text x="736" y="275" font-size="11" fill="var(--t2)" text-anchor="end">0.806</text>
+<!-- benign -->
+<text x="130" y="309" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
+<rect x="140" y="296" width="132" height="18" rx="3" fill="var(--sv1)"><title>benign 24.1%</title></rect>
+<rect x="274" y="296" width="329" height="18" rx="2" fill="var(--sv7)"><title>application 60.2% = 2,022,414행</title></rect>
+<rect x="605" y="296" width="34" height="18" rx="2" fill="var(--sv5)"><title>stealth_malware 6.5%</title></rect>
+<rect x="641" y="296" width="26" height="18" rx="2" fill="var(--sv3)"><title>probe_access 5.1%</title></rect>
+<rect x="669" y="296" width="21" height="18" rx="2" fill="var(--sv2)"><title>flood 4.0%</title></rect>
+<text x="206" y="309" font-size="11" fill="#fff" text-anchor="middle">24.1%</text>
+<text x="438" y="309" font-size="11" fill="#fff" text-anchor="middle">60.2%</text>
+<text x="736" y="309" font-size="11" fill="var(--t2)" text-anchor="end">0.241</text>
+<text x="140" y="326" font-size="9.5" fill="var(--sr)">진짜 benign 3.36M 중 202만 행이 application으로 — injection·xss precision 침수 + benign recall 0.241의 전량</text>
+<!-- scanning -->
+<text x="130" y="349" font-size="11.5" fill="var(--t1)" text-anchor="end">scanning</text>
+<rect x="140" y="336" width="4" height="18" rx="1" fill="var(--sv3)"><title>probe_access 0.8%</title></rect>
+<rect x="146" y="336" width="541" height="18" rx="3" fill="var(--sv1)"><title>benign 98.4% = 267,522행</title></rect>
+<text x="416" y="349" font-size="11" fill="#fff" text-anchor="middle">98.4% → benign expert</text>
+<text x="736" y="349" font-size="11" fill="var(--t2)" text-anchor="end">0.008</text>
+<text x="140" y="366" font-size="9.5" fill="var(--t3)">단 global도 scanning F1 0.0000 — 방법이 아니라 데이터 병리 (test 97.4%가 train과 byte-identical + 라벨 충돌, 0819 §3)</text>
+</svg>
+<figcaption>게이트 argmax의 클래스별 반응 (test 550만 행). 왼쪽 첫 구간 = 올바른 expert
+점유율(오른쪽 숫자). <b>공격 9클래스 중 8개가 80.6–97.0%로 전이 성공</b> — cic2018 본편의
+게이트보다 좋은 성적. 실패는 benign(24.1%)과 scanning(0.8%) 둘 — 원인 분해는 §4:
+benign은 절반 이상이 라벨-충돌(+게이트 약세), scanning은 97%가 라벨-충돌.
+1% 미만 구간은 hover로.</figcaption>
+</figure>
+
+<h2><span class="n">3</span>분류 환전 — F1 판정</h2>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 348" width="738" height="348" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="클래스별 F1 증감 시스템 마이너스 global: ddos 플러스 0.71 대승부터 benign 마이너스 0.42 붕괴까지 상쇄전, macro는 마이너스 0.006으로 동급">
+<text x="8" y="20" font-size="11.5" fill="var(--t2)">F1 증감 = 시스템 − global (같은 run · 같은 분할, 0 기준선 좌 = 악화, 우 = 개선)</text>
+<line x1="400" y1="30" x2="400" y2="288" stroke="var(--brs)" stroke-width="1"/>
+<text x="130" y="53" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
+<rect x="400" y="42" width="286" height="14" rx="3" fill="var(--gr)"/>
+<text x="632" y="53" font-size="11" fill="#fff" text-anchor="middle">+0.715</text>
+<text x="130" y="79" font-size="11.5" fill="var(--t1)" text-anchor="end">password</text>
+<rect x="400" y="68" width="111" height="14" rx="3" fill="var(--gr)"/>
+<text x="517" y="79" font-size="11" fill="var(--t2)">+0.278</text>
+<text x="130" y="105" font-size="11.5" fill="var(--t1)" text-anchor="end">xss</text>
+<rect x="400" y="94" width="71" height="14" rx="3" fill="var(--gr)"/>
+<text x="477" y="105" font-size="11" fill="var(--t2)">+0.178</text>
+<text x="130" y="131" font-size="11.5" fill="var(--t1)" text-anchor="end">scanning</text>
+<rect x="400" y="120" width="5" height="14" rx="2" fill="var(--gr)"/>
+<text x="411" y="131" font-size="11" fill="var(--t2)">+0.013 (양쪽 ≈0)</text>
+<text x="130" y="157" font-size="11.5" fill="var(--t1)" text-anchor="end">backdoor</text>
+<rect x="395" y="146" width="5" height="14" rx="2" fill="var(--sr)"/>
+<text x="389" y="157" font-size="11" fill="var(--t2)" text-anchor="end">−0.013</text>
+<text x="130" y="183" font-size="11.5" fill="var(--t1)" text-anchor="end">mitm</text>
+<rect x="369" y="172" width="31" height="14" rx="3" fill="var(--sr)"/>
+<text x="363" y="183" font-size="11" fill="var(--t2)" text-anchor="end">−0.077</text>
+<text x="130" y="209" font-size="11.5" fill="var(--t1)" text-anchor="end">ransomware</text>
+<rect x="351" y="198" width="49" height="14" rx="3" fill="var(--sr)"/>
+<text x="345" y="209" font-size="11" fill="var(--t2)" text-anchor="end">−0.121</text>
+<text x="130" y="235" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
+<rect x="297" y="224" width="103" height="14" rx="3" fill="var(--sr)"/>
+<text x="291" y="235" font-size="11" fill="var(--t2)" text-anchor="end">−0.258</text>
+<text x="130" y="261" font-size="11.5" fill="var(--t1)" text-anchor="end">injection</text>
+<rect x="259" y="250" width="141" height="14" rx="3" fill="var(--sr)"/>
+<text x="253" y="261" font-size="11" fill="var(--t2)" text-anchor="end">−0.352</text>
+<text x="130" y="287" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
+<rect x="230" y="276" width="170" height="14" rx="3" fill="var(--sr)"/>
+<text x="224" y="287" font-size="11" fill="var(--t2)" text-anchor="end">−0.425</text>
+<line x1="8" y1="298" x2="730" y2="298" stroke="var(--br)" stroke-width="1"/>
+<text x="130" y="323" font-size="11.5" font-weight="700" fill="var(--t1)" text-anchor="end">macro</text>
+<rect x="398" y="312" width="2.4" height="14" fill="var(--sr)"/>
+<text x="410" y="323" font-size="10.5" fill="var(--t3)">−0.006 — 0.4362 vs 0.4423, 재현성 밴드(±0.01) 안 = 동급</text>
+<line x1="400" y1="304" x2="400" y2="332" stroke="var(--brs)" stroke-width="1"/>
+</svg>
+<figcaption>같은 run에서 재-fit한 global TabPFN(자연 비례 1M context) 대비. ddos +0.715는
+프로젝트 역대 최대 단일-클래스 이득 — global의 ddos recall 0.113 병리를 flood context가
+0.953으로 복구한 것. 손실 쪽 대부분은 benign 발화율 붕괴(0.241)의 직·간접 환전
+(benign recall ↓ + application 계열 precision 침수).</figcaption>
+</figure>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 406" width="738" height="406" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="클래스별 절대 F1: 시스템 대 global — ddos·password·xss는 시스템이 크게 높고 benign·injection·dos는 global이 높으며 mitm·ransomware·scanning은 양쪽 모두 바닥, macro 두 점은 겹친다">
+<!-- legend -->
+<circle cx="150" cy="26" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"/>
+<text x="162" y="30" font-size="11" fill="var(--t2)">시스템 (exp14)</text>
+<circle cx="290" cy="26" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"/>
+<text x="302" y="30" font-size="11" fill="var(--t2)">global (같은 run 재-fit)</text>
+<!-- grid -->
+<line x1="140" y1="46" x2="140" y2="380" stroke="var(--br)" stroke-width="1"/>
+<line x1="257.6" y1="46" x2="257.6" y2="380" stroke="var(--br)" stroke-width="1"/>
+<line x1="375.2" y1="46" x2="375.2" y2="380" stroke="var(--br)" stroke-width="1"/>
+<line x1="492.8" y1="46" x2="492.8" y2="380" stroke="var(--br)" stroke-width="1"/>
+<line x1="610.4" y1="46" x2="610.4" y2="380" stroke="var(--br)" stroke-width="1"/>
+<line x1="728" y1="46" x2="728" y2="380" stroke="var(--br)" stroke-width="1"/>
+<text x="140" y="398" font-size="10.5" fill="var(--t3)" text-anchor="middle">0</text>
+<text x="257.6" y="398" font-size="10.5" fill="var(--t3)" text-anchor="middle">0.2</text>
+<text x="375.2" y="398" font-size="10.5" fill="var(--t3)" text-anchor="middle">0.4</text>
+<text x="492.8" y="398" font-size="10.5" fill="var(--t3)" text-anchor="middle">0.6</text>
+<text x="610.4" y="398" font-size="10.5" fill="var(--t3)" text-anchor="middle">0.8</text>
+<text x="728" y="398" font-size="10.5" fill="var(--t3)" text-anchor="middle">1.0</text>
+<!-- ddos -->
+<text x="130" y="62" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
+<line x1="258.9" y1="58" x2="679.1" y2="58" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="258.9" cy="58" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.2022</title></circle>
+<circle cx="679.1" cy="58" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.9168</title></circle>
+<text x="247" y="62" font-size="10.5" fill="var(--t2)" text-anchor="end">0.202</text>
+<text x="691" y="62" font-size="10.5" fill="var(--t2)">0.917</text>
+<!-- password -->
+<text x="130" y="92" font-size="11.5" fill="var(--t1)" text-anchor="end">password</text>
+<line x1="456.8" y1="88" x2="620.2" y2="88" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="456.8" cy="88" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.5387</title></circle>
+<circle cx="620.2" cy="88" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.8166</title></circle>
+<!-- xss -->
+<text x="130" y="122" font-size="11.5" fill="var(--t1)" text-anchor="end">xss</text>
+<line x1="449.5" y1="118" x2="554.3" y2="118" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="449.5" cy="118" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.5264</title></circle>
+<circle cx="554.3" cy="118" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.7046</title></circle>
+<!-- scanning -->
+<text x="130" y="152" font-size="11.5" fill="var(--t1)" text-anchor="end">scanning</text>
+<line x1="140" y1="148" x2="147.8" y2="148" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="140" cy="148" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.0000</title></circle>
+<circle cx="147.8" cy="148" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.0132</title></circle>
+<text x="162" y="152" font-size="9.5" fill="var(--t3)">양쪽 ≈0 — 데이터 병리 (§4)</text>
+<!-- backdoor -->
+<text x="130" y="182" font-size="11.5" fill="var(--t1)" text-anchor="end">backdoor</text>
+<line x1="672.5" y1="178" x2="680.2" y2="178" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="680.2" cy="178" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.9187</title></circle>
+<circle cx="672.5" cy="178" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.9056</title></circle>
+<!-- mitm -->
+<text x="130" y="212" font-size="11.5" fill="var(--t1)" text-anchor="end">mitm</text>
+<line x1="147.2" y1="208" x2="192.2" y2="208" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="192.2" cy="208" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.0888</title></circle>
+<circle cx="147.2" cy="208" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.0122</title></circle>
+<!-- ransomware -->
+<text x="130" y="242" font-size="11.5" fill="var(--t1)" text-anchor="end">ransomware</text>
+<line x1="155.5" y1="238" x2="226.8" y2="238" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="226.8" cy="238" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.1476</title></circle>
+<circle cx="155.5" cy="238" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.0264</title></circle>
+<text x="238" y="242" font-size="9.5" fill="var(--t3)">초희소 tail — 양쪽 모두 낮음 (support 795–1,204)</text>
+<!-- dos -->
+<text x="130" y="272" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
+<line x1="457.6" y1="268" x2="609.0" y2="268" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="609.0" cy="268" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.7977</title></circle>
+<circle cx="457.6" cy="268" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.5402</title></circle>
+<text x="445" y="272" font-size="10.5" fill="var(--t2)" text-anchor="end">0.540</text>
+<!-- injection -->
+<text x="130" y="302" font-size="11.5" fill="var(--t1)" text-anchor="end">injection</text>
+<line x1="175.8" y1="298" x2="382.8" y2="298" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="382.8" cy="298" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.4130</title></circle>
+<circle cx="175.8" cy="298" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.0608</title></circle>
+<text x="188" y="302" font-size="10.5" fill="var(--t2)">0.061</text>
+<!-- benign -->
+<text x="130" y="332" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
+<line x1="354.6" y1="328" x2="604.5" y2="328" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="604.5" cy="328" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.7899</title></circle>
+<circle cx="354.6" cy="328" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.3650</title></circle>
+<text x="342" y="332" font-size="10.5" fill="var(--t2)" text-anchor="end">0.365</text>
+<text x="616" y="332" font-size="10.5" fill="var(--t2)">0.790</text>
+<!-- divider + macro -->
+<line x1="2" y1="348" x2="736" y2="348" stroke="var(--br)" stroke-width="1"/>
+<text x="130" y="370" font-size="11.5" font-weight="700" fill="var(--t1)" text-anchor="end">macro</text>
+<line x1="396.5" y1="366" x2="400.1" y2="366" stroke="var(--brs)" stroke-width="2"/>
+<circle cx="400.1" cy="366" r="5" fill="var(--s1)" stroke="var(--t2)" stroke-width="1.8"><title>global 0.4423</title></circle>
+<circle cx="396.5" cy="366" r="5" fill="var(--c1)" stroke="var(--s1)" stroke-width="2"><title>시스템 0.4362</title></circle>
+<text x="412" y="370" font-size="10.5" fill="var(--t2)">0.436 / 0.442 — 사실상 동률</text>
+</svg>
+<figcaption>클래스별 절대 F1 — 시스템(채운 점) vs 같은 run global(빈 점), 연결선 = 격차.
+위쪽 세 클래스(ddos·password·xss)가 시스템의 이득, dos·injection·benign이 손실이고,
+scanning·mitm·ransomware는 <b>양쪽 모두 바닥</b>(각각 데이터 병리·초희소 — §4).
+macro의 두 점이 겹치는 것이 §4에서 확정한 제로섬 구조의 시각적 요약이다.
+ton에는 oracle(완벽 배정) 측정이 없어 두 시리즈만 표시.</figcaption>
+</figure>
+
+<div class="tw"><table>
+<tr><th>class</th><th class="n">support</th><th class="n">global F1</th><th class="n key-col">시스템 F1</th><th>왜 이렇게 됐나</th></tr>
+<tr><td>ddos</td><td class="n">828,252</td><td class="n no">0.202</td><td class="n key-col ok">0.917</td><td>global recall 0.113 병리를 flood context가 0.953으로 — 시스템 최대 순이득</td></tr>
+<tr><td>password</td><td class="n">318,956</td><td class="n">0.539</td><td class="n key-col ok">0.817</td><td>발화 94.8% × 조건부 — recall 0.948 vs global 0.433</td></tr>
+<tr><td>xss</td><td class="n">566,887</td><td class="n">0.526</td><td class="n key-col ok">0.705</td><td>발화 96.9%; benign 유입으로 precision 0.639에 머묾</td></tr>
+<tr><td>backdoor</td><td class="n">40,678</td><td class="n">0.919</td><td class="n key-col">0.906</td><td>사실상 동급</td></tr>
+<tr><td>scanning</td><td class="n">271,796</td><td class="n no">0.000</td><td class="n key-col no">0.013</td><td>양쪽 전멸 — 데이터 병리(train 중복 97.4% + 라벨 충돌), 방법 무관</td></tr>
+<tr><td>dos</td><td class="n">40,692</td><td class="n">0.798</td><td class="n key-col no">0.540</td><td>발화 80.6%·recall 0.806인데 precision 0.406 — flood 조건부 안에서 ddos의 4.7%(≈3.9만 행)가 dos로 유입 (taxonomy-내 혼동, exp8 한계의 재확인)</td></tr>
+<tr><td>injection</td><td class="n">76,356</td><td class="n">0.413</td><td class="n key-col no">0.061</td><td>benign→application 202만 행 중 일부가 injection으로 환전 → precision 0.032</td></tr>
+<tr><td class="key-col">benign</td><td class="n">3,358,444</td><td class="n">0.790</td><td class="n key-col no">0.365</td><td>발화율 0.241이 그대로 recall — 손실의 원천</td></tr>
+<tr><td>mitm</td><td class="n">1,204</td><td class="n">0.089</td><td class="n key-col">0.012</td><td rowspan="2">발화율은 85.9/90.6으로 높지만 support가 1,204/795라 미세 유입에도 precision 붕괴 — 초희소 tail은 별도 처방 필요</td></tr>
+<tr><td>ransomware</td><td class="n">795</td><td class="n">0.148</td><td class="n key-col">0.026</td></tr>
+<tr><td><b>macro</b></td><td class="n">5,504,060</td><td class="n"><b>0.4423</b></td><td class="n key-col"><b>0.4362</b></td><td>±0.01 밴드 내 동급 — 이득(ddos·password·xss)과 손실(benign 계열)의 상쇄전</td></tr>
+</table></div>
+
+<h2><span class="n">4</span>원인 분석 — benign·scanning 붕괴의 데이터-수준 분해</h2>
+
+<p>cic2018의 slowhttptest 진단과 같은 방법으로, test 행의 <b>동일-벡터 지위</b>(같은
+46-feature 벡터가 train에 어떤 라벨로 존재하는가)를 exp14 게이트 승자와 교차했다
+(0821.md §9):</p>
+
+<h3>benign — 붕괴의 절반 이상이 라벨 충돌</h3>
+
+<div class="tw"><table>
+<tr><th>test benign 3,358,444행의 지위</th><th class="n">비율</th><th class="n">정확 발화</th><th>승자 분포</th></tr>
+<tr><td>train에 <b>benign으로만</b> 존재하는 벡터</td><td class="n">23.0%</td><td class="n">0.719</td><td>benign 72% · stealth 13%</td></tr>
+<tr><td class="key-col">benign·공격 <b>양쪽 라벨</b>로 존재 (충돌)</td><td class="n key-col"><b>53.5%</b></td><td class="n key-col no">0.000</td><td class="key-col">application <b>99%</b></td></tr>
+<tr><td>공격으로만 존재</td><td class="n">2.4%</td><td class="n no">0.001</td><td>probe_access 73%</td></tr>
+<tr><td>train에 없는 새 벡터</td><td class="n">21.0%</td><td class="n">0.360</td><td>benign 36% · application 26%</td></tr>
+</table></div>
+
+<p>충돌 덩어리 180만 행은 <b>distinct 벡터 단 1,501개로 축퇴</b>하고, 상위 1개 벡터가
+136.6만 행(76.0%)이다 — 하나의 IoT 텔레메트리 벡터가 train에서 benign·ddos·dos·mitm
+라벨을 동시에 달고 있다 (충돌 상대: ddos 52.9% · dos 40.9% · mitm 40.7% · xss 12.9%,
+중복 가능). 그 축퇴 벡터들이 application context에도 대량 포함되어 있어 retrieval
+유사도의 최고점이 application에 서고, 99%가 그쪽으로 발화한다 — <b>게이트의 오판이
+아니라 동일 입력에 대한 기하적 필연</b>이다.</p>
+
+<h3>scanning — 사실상 전량이 benign과 동일 벡터</h3>
+
+<div class="tw"><table>
+<tr><th>test scanning 271,796행의 지위</th><th class="n">비율</th><th class="n">정확 발화</th><th>승자 분포</th></tr>
+<tr><td>train에 scanning으로만 존재</td><td class="n">0.0% (27행)</td><td class="n">0.630</td><td>probe_access 63%</td></tr>
+<tr><td class="key-col">scanning·benign <b>양쪽 라벨</b>로 존재 (충돌)</td><td class="n key-col"><b>97.4%</b></td><td class="n key-col no">0.002</td><td class="key-col">benign <b>100%</b></td></tr>
+<tr><td>train에 없는 새 벡터</td><td class="n">2.2%</td><td class="n">0.256</td><td>benign 45% · probe 26%</td></tr>
+</table></div>
+
+<p>충돌 26.5만 행 = distinct 벡터 325개, 상위 1개가 50.9%. scanning에는 자기만의
+시그니처 벡터가 <b>27행</b>밖에 없다 — 이 표현에서 scanning은 학습 불가능한 클래스다
+(cic2018의 slowhttptest와 같은 칸, 규모는 10배).</p>
+
+<div class="key w">
+<p><b>ton에서 benign vs 공격 recall은 상당 부분 제로섬이다.</b> global의 benign recall
+0.952는 같은 충돌 벡터들에서 <b>prior(61% benign) 베팅</b>을 한 결과이고, 그 대가가
+ddos recall 0.113이다. 시스템은 반대로 공격 context를 세워 공격 recall을 살렸고 그
+대가로 충돌-benign을 잃었다. 라벨-충돌률 60.7%(0819 실측)의 데이터셋에서는 라벨 정리
+없이 양쪽을 다 가질 수 없다. benign 게이트를 개선해서 닿을 수 있는 상한도 여기서
+나온다: 충돌 56%p는 고정 손실이므로 <b>발화율 상한 ≈ 0.44</b> (깨끗한 23% + 새 벡터
+21%를 전부 잡는 가정).</p>
+</div>
+
+<h2><span class="n">5</span>판정과 해석</h2>
+
+<div class="key g">
+<p><b>공격 게이트는 전이에 성공했다.</b> 9개 공격 클래스 중 8개의 정확 발화율이
+80.6–97.0% — cic2018 본편의 게이트 성적보다 좋다. 특히 ddos +0.715, password +0.278,
+xss +0.178은 "context 전문화가 global의 시간-이동 병리를 복구한다"는 구조 이득의
+ton 판 재현이다.</p>
+</div>
+
+<div class="key r">
+<p><b>benign 붕괴의 실체는 §4의 분해대로 둘로 갈린다.</b> 발화율 0.241 중 잃어버린
+75.9%p의 대부분(≈56%p)은 <b>라벨-충돌 벡터</b>로, 게이트가 아니라 데이터의 문제 —
+어떤 방법으로도 이 표현에서는 복구 불가다. 게이트 자체의 약세는 나머지에서 드러난다:
+깨끗한 benign 벡터에서 0.719, 새 벡터에서 0.360 (cic2018의 0.958 대비 낮음) — 이
+부분만이 <b>benign context 구성</b>(단일 자연-샘플 20만이 IoT 텔레메트리의 이질성을
+못 덮음)으로 개선할 수 있는 영역이고, 전부 잡아도 발화율 상한은 ≈0.44다.
+후보 처방(보류): benign context 확대/계층화 + 충돌-벡터 전용 prior-베팅 규칙.</p>
+</div>
+
+<div class="key w">
+<p><b>scanning은 방법 밖의 문제다 — §4에서 직접 확정.</b> test의 97.4%가 benign과
+동일-벡터 충돌(축퇴 벡터 325개, 상위 1개가 절반), 자기만의 벡터는 27행. 시스템 0.013
+vs global 0.000 — 어떤 모델로도 이 표현에서 복구되지 않는다 (cic2018의 slowhttptest와
+같은 칸, 규모 10배). dos의 precision 손실은 별개로 taxonomy-내(ddos↔dos) 혼동 —
+exp8에서 기록한 원리적 한계의 재확인.</p>
+</div>
+
+<p>사전 등록 질문 ①("benign 비지배 환경에서 benign→tail 산수가 완화되는가")의 답:
+산수는 완화됐지만 그 앞 단계가 무너졌다 — 다만 §4의 진단으로 그 붕괴의 주범은 게이트가
+아니라 <b>데이터의 라벨 충돌</b>임이 확정됐다. cic2018과 ton은 같은 방법의 <b>다른 실패
+모드</b>다: cic2018은 "게이트는 좋은데 불균형 산수가 증폭", ton은 "산수는 온화한데
+라벨-충돌 질량이 benign을 앗아감(+ benign 게이트 약세)". 그리고 ton에서 시스템 vs
+global의 macro 동률은 우연이 아니라 제로섬 구조의 반영이다.</p>
+
+<h2><span class="n">6</span>기록 위치</h2>
+
+<div class="tw"><table>
+<tr><th>파일</th><th>내용</th></tr>
+<tr><td><code>manuscript/report/0821.md §3·§7</code></td><td>사전 등록 · 판정 원본</td></tr>
+<tr><td><code>tabpfn/nfv3_v3_exp14_ton_system.py</code></td><td>실험 스크립트 (frozen)</td></tr>
+<tr><td><code>tabpfn/results/20260821_161948_nfv3_toniot_exp14_system/</code></td><td>지표·activation·점수 덤프·global probs (재현 기록)</td></tr>
+<tr><td><code>scratchpad/ton_benign_scanning_diag.py</code></td><td>§4 동일-벡터 진단 (scratchpad — 기록 run 아님, 0821.md §9에 수치 보존)</td></tr>
+</table></div>
+
+<footer>
+이 문서는 exp14(ton_iot 전이) 단일 실험의 보고서입니다. 방법·설계 근거·cic2018 확정
+결과는 본편 보고서를 보세요. 판정 기준은 결과 전에 랩 로그(0821.md §3)에 고정되었습니다.
+</footer>
+
+</div>
+</body>
+</html>

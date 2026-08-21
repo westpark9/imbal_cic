@@ -1,0 +1,142 @@
+{
+  "title": "NF-v3 resolved expert pipeline: independent Energy OOD gates (attack experts + benign expert) + argmin-Energy multi-IN + all-OUT -> unseen",
+  "args": {
+    "data": "data/nfv3_energy_suite_uncapped_scenarios.pkl",
+    "target": "ton_iot",
+    "unseen": [
+      "xss"
+    ],
+    "expert_config": "/home/user/Desktop/imbal_cic/configs/nfv3_experts.json",
+    "seed": 42,
+    "hidden_dims": "256,128,64",
+    "dropout": 0.1,
+    "pretrain_epochs": 40,
+    "pretrain_patience": 6,
+    "finetune_epochs": 15,
+    "pretrain_lr": 0.001,
+    "finetune_lr": 0.0001,
+    "weight_decay": 0.0001,
+    "energy_weight": 0.1,
+    "temperature": 1.0,
+    "m_in": null,
+    "m_out": null,
+    "margin_gap_std": 3.0,
+    "grad_clip": 5.0,
+    "id_quantile": 0.95,
+    "batch_size": 4096,
+    "aux_batch_size": 4096,
+    "test_batch_size": 8192,
+    "workers": 0,
+    "max_id_train_per_expert": 1000000,
+    "max_global_train": 2000000,
+    "test_cap_per_class": 100000,
+    "val_cap_per_class": 50000,
+    "target_ood_cap_per_class": 100000,
+    "aux_cap_per_source_family": 20000,
+    "aux_val_fraction": 0.2,
+    "disable_external_aux": false,
+    "disable_target_ood": false,
+    "benign_diag_cap": 100000,
+    "benign_train_cap": 200000,
+    "hist_max_per_role": 50000,
+    "xgb_n_estimators": 300,
+    "xgb_max_depth": 8,
+    "xgb_learning_rate": 0.05,
+    "xgb_subsample": 0.8,
+    "xgb_colsample_bytree": 0.8,
+    "xgb_min_child_weight": 1.0,
+    "xgb_reg_lambda": 1.0,
+    "xgb_device": "cpu",
+    "xgb_n_jobs": -1,
+    "out_root": "results"
+  },
+  "target": "ton_iot",
+  "unseen_classes": [
+    "xss"
+  ],
+  "used_default_unseen": false,
+  "known_classes": [
+    "backdoor",
+    "ddos",
+    "dos",
+    "injection",
+    "mitm",
+    "password",
+    "ransomware",
+    "scanning"
+  ],
+  "tail_classes": [
+    "backdoor",
+    "mitm",
+    "ransomware"
+  ],
+  "tail_removed_by_custom_unseen": [],
+  "experts_configured": {
+    "flood": [
+      "ddos",
+      "dos"
+    ],
+    "probe_access": [
+      "scanning",
+      "password"
+    ],
+    "application": [
+      "injection",
+      "xss"
+    ],
+    "stealth_malware": [
+      "backdoor",
+      "mitm",
+      "ransomware"
+    ]
+  },
+  "experts_active": {
+    "flood": [
+      "ddos",
+      "dos"
+    ],
+    "probe_access": [
+      "scanning",
+      "password"
+    ],
+    "application": [
+      "injection"
+    ],
+    "stealth_malware": [
+      "backdoor",
+      "mitm",
+      "ransomware"
+    ]
+  },
+  "aux_policy": "OOD train = target-train non-owned known attacks plus external attack AUX; external semantic matches to the expert's full configured ownership are excluded; benign and target unseen are excluded from all OOD training",
+  "evaluation_scope": "0a-5c: attack experts only, target-test non-owned known attacks and target-test unseen as separate OOD roles, benign scored diagnostically per attack-expert; 6a/6b: attack experts + benign expert resolved into one final multiclass outcome over {known classes, benign, unseen}",
+  "resolution_policy": "1 expert IN -> its local prediction (benign expert is a full competitor, can win owner_only/argmin); 2+ IN -> argmin-Energy among accepting experts (no perturbation/stability, see module docstring); 0 IN (not even benign) -> unseen",
+  "benign_expert": {
+    "train_rows": 200000,
+    "val_rows": 50000,
+    "test_rows": 100000,
+    "id_quantile": 0.95,
+    "threshold": -2.9037768840789795,
+    "target_known_ood_train_rows": 605989,
+    "external_aux_train_rows": 204225
+  },
+  "resolved_accuracy": {
+    "known": 0.824129642721192,
+    "unseen": 0.25717,
+    "benign": 0.86629
+  },
+  "singleton_policy": "two-logit Energy head; IN maps deterministically to the single active owned class",
+  "global_xgb_known_attack_accuracy": 0.9902202403610855,
+  "global_xgb_known_attack_macro_f1": 0.9662834943825371,
+  "aggregate_f1_xgb_vs_gated_expert": {
+    "xgb_macro_f1": 0.9662834943825371,
+    "expert_macro_f1": 0.6745363345327618,
+    "xgb_tail_macro_f1": 0.9324734186922204,
+    "expert_tail_macro_f1": 0.3327834002281812
+  },
+  "ood_training_ablation": {
+    "external_aux_disabled": false,
+    "target_known_ood_disabled": false
+  },
+  "benign_diagnostic_rows": 100000
+}

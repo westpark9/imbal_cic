@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TabPFN 메모리와 대안 실험</title>
+<style>
+:root{color-scheme:light;--s0:#f7f7f5;--s1:#fcfcfb;--s2:#f0efec;--br:#dedcd6;--brs:#c2bfb6;
+ --t1:#0b0b0b;--t2:#52514e;--t3:#7a7873;--c1:#2a78d6;--gr:#1baf7a;--sr:#e34948;--wr:#eda100;
+ --gb:#eefaf4;--sb:#fdeeee;--wb:#fff8e8;--cb:#f0efec;--amber:#eda100}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+ --s0:#141413;--s1:#1a1a19;--s2:#232322;--br:#35352f;--brs:#4d4d45;
+ --t1:#fff;--t2:#c3c2b7;--t3:#8f8d83;--c1:#3987e5;--gr:#199e70;--sr:#e66767;--wr:#c98500;
+ --gb:#10241c;--sb:#2b1717;--wb:#2a2411;--cb:#232322;--amber:#c98500}}
+:root[data-theme="dark"]{color-scheme:dark;
+ --s0:#141413;--s1:#1a1a19;--s2:#232322;--br:#35352f;--brs:#4d4d45;
+ --t1:#fff;--t2:#c3c2b7;--t3:#8f8d83;--c1:#3987e5;--gr:#199e70;--sr:#e66767;--wr:#c98500;
+ --gb:#10241c;--sb:#2b1717;--wb:#2a2411;--cb:#232322;--amber:#c98500}
+*{box-sizing:border-box}
+body{margin:0;background:var(--s0);color:var(--t1);font-size:15px;line-height:1.65;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR","Apple SD Gothic Neo",Roboto,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:38px 22px 70px}
+h1{font-size:25px;margin:0 0 6px;letter-spacing:-.3px}
+.meta{color:var(--t3);font-size:12.5px;margin:0 0 4px}
+h2{font-size:19px;margin:40px 0 10px;padding-top:14px;border-top:2px solid var(--brs)}
+h2 .n{color:var(--c1);font-weight:700;margin-right:8px}
+h3{font-size:15.5px;margin:22px 0 6px;color:var(--t2)}
+p{margin:0 0 11px} ul{margin:0 0 11px;padding-left:20px} li{margin-bottom:4px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.87em;
+ background:var(--cb);padding:1px 5px;border-radius:4px}
+.key{background:var(--s1);border-left:3px solid var(--c1);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.key.g{border-left-color:var(--gr);background:var(--gb)}
+.key.r{border-left-color:var(--sr);background:var(--sb)}
+.key.w{border-left-color:var(--wr);background:var(--wb)}
+.key p:last-child{margin-bottom:0}
+.tw{overflow-x:auto;margin:12px 0;border:1px solid var(--br);border-radius:8px;background:var(--s1)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 11px;border-bottom:1px solid var(--br)}
+th{font-weight:620;color:var(--t2);background:var(--s2);white-space:nowrap;font-size:12px}
+tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th.key-col,td.key-col{background:var(--s2)}
+.dim{color:var(--t3)} .no{color:var(--sr);font-weight:640} .ok{color:var(--gr);font-weight:640}
+.eq{background:var(--s1);border:1px solid var(--br);border-radius:8px;padding:12px 15px;margin:12px 0;
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.8}
+.tbd{background:var(--s2);border:1px dashed var(--brs);border-radius:8px;padding:20px;
+ text-align:center;color:var(--t3);font-size:14px;margin:12px 0}
+.bar{display:inline-block;height:11px;border-radius:2px;background:var(--c1);vertical-align:middle}
+.bar.r{background:var(--sr)} .bar.o{background:var(--amber)}
+.sortnote{font-size:12px;color:var(--t3);margin:-4px 0 14px}
+footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size:12px;color:var(--t3)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<h1>TabPFN 메모리 부족 원인과 대안 실험</h1>
+<p class="meta">2026-08-18 · TabPFN 8.2.0 · <code>tabpfn-v3-classifier-v3_20260417_multiclass.ckpt</code> · RTX 4090 실측</p>
+<p class="meta">모든 실험 결과 표는 <b>test 샘플 수 내림차순</b>으로 정렬돼 있습니다.</p>
+
+<div class="key">
+<p><b>결론.</b> TabPFN은 체크포인트의 <code>MAX_NUMBER_OF_SAMPLES = 1,000,000</code>에 막혀
+100만 샘플보다 더 넣기 어렵습니다. 이전에 full data를 참여시킨 것은
+<b>disjoint bagging</b>(estimator마다 겹치지 않는 부분집합을 주고 확률 평균)을 시도한 것이며,
+이 방식은 <b>TabPFN 원 논문에 없습니다</b>.</p>
+</div>
+
+<h2><span class="n">1</span>메모리 부족 원인</h2>
+
+<p>TabPFN에서 <code>fit()</code>은 학습이 아니라 학습셋을 <b>프롬프트로 받아두는 것</b>입니다.
+그래서 <code>predict()</code>를 부를 때마다 학습셋 전체가 GPU로 다시 올라갑니다.</p>
+
+<div class="eq">
+시간 &nbsp;= n_estimators × test 배치 수 <span class="dim">(forward 횟수)</span><br>
+메모리 = 학습 컨텍스트 <b>전체</b> + test 배치 <b>하나</b>
+</div>
+
+<p>estimator와 배치는 순차 실행이라 <b>메모리는 곱해지지 않고 시간만 곱해집니다.</b></p>
+
+<div class="tw"><table>
+<thead><tr><th>실측 (RTX 4090, 46 feature)</th><th class="n">값</th></tr></thead>
+<tbody>
+<tr><td><code>fit()</code> 후 GPU 상주</td><td class="n">0.198 GiB <span class="dim">(모델 가중치뿐, 데이터 0)</span></td></tr>
+<tr><td>학습 행당</td><td class="n">18,530 B</td></tr>
+<tr><td>test 행당</td><td class="n">12,343 B</td></tr>
+<tr><td>100만 행 컨텍스트</td><td class="n">약 17.5 GiB</td></tr>
+</tbody></table></div>
+
+<h3>왜 100만이 상한인가</h3>
+<ul>
+<li>체크포인트가 <code>MAX_NUMBER_OF_SAMPLES = 1,000,000</code>을 선언하고 초과 시 <b>에러</b>를 냅니다.</li>
+<li>가드를 꺼도 메모리가 선형으로 늘어 막습니다 — CIC2018 전체 1,207만 행 = <b>213 GiB</b>(A100 80GB의 2.8배).</li>
+<li>멀티 GPU는 estimator를 나눌 뿐 <b>하나의 컨텍스트를 쪼개지 않습니다.</b></li>
+</ul>
+
+<div class="key g">
+<p><b>해결 (결과 불변).</b></p>
+<ul style="margin-bottom:0">
+<li><code>PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True</code> + test를 한 배치로
+&rarr; 조각화 제거, <b>6.85시간 → 26.7분</b></li>
+<li><code>fit_mode="fit_with_cache"</code> + <code>keep_cache_on_device=False</code>
+&rarr; 학습 컨텍스트 K/V를 한 번만 계산, <b>peak 21.1 → 16.6 GiB</b></li>
+</ul>
+</div>
+
+<div class="key w">
+<p><b>full data를 넣으려면</b> disjoint bagging밖에 없습니다. <code>SUBSAMPLE_SAMPLES=k</code>를 주면
+estimator마다 <b>겹치지 않는</b> k행을 가져가므로 <code>n_estimators = ⌈전체/k⌉</code>면 풀을 100% 덮습니다.
+다만 각 예측기는 여전히 k행에만 조건화되고 앙상블은 확률 평균이라
+<b>"전체로 학습"이 아니라 "분할 학습 후 평균"</b>이며, <b>TabPFN 원 논문에 없는 방식</b>입니다.</p>
+</div>
+
+<h2><span class="n">2</span>실험 결과</h2>
+
+<p>공통 설정: <b>클래스별 chronological 60/20/20</b>, val 미사용, seed 42,
+XGBoost 300 trees / depth 8 / lr 0.05, <b>class weighting 없음</b>, <b>test cap 없음</b>(test pool 전체 평가).</p>
+
+<div class="key w">
+<p><b>test cap을 뺀 것이 숫자를 바꿉니다.</b> 이전 회차는 <code>test_cap_per_class=100000</code>으로
+평가했는데, 이는 test 쪽 클래스 분포를 인위적으로 평탄화해 <b>소수 클래스 precision을 부풀립니다.</b>
+학습 조건이 완전히 같고 test cap만 다른 두 CIC2018 full-XGB 런을 비교하면:</p>
+<div class="tw"><table>
+<thead><tr><th>CIC2018 full-XGB</th><th class="n key-col">test 행 (cap 없음)</th><th class="n">test cap 100k</th><th class="n">cap 없음</th><th class="n">Δ</th></tr></thead>
+<tbody>
+<tr><td><code>benign</code> F1</td><td class="n key-col">3,502,926</td><td class="n">0.876</td><td class="n">0.995</td><td class="n ok">+0.119</td></tr>
+<tr><td><code>infiltration</code> F1</td><td class="n key-col">37,631</td><td class="n">0.488</td><td class="n">0.429</td><td class="n no">−0.059</td></tr>
+<tr><td><code>web_attacks</code> F1</td><td class="n key-col">509</td><td class="n">0.603</td><td class="n">0.162</td><td class="n no">−0.441</td></tr>
+<tr><td><b>macro F1</b></td><td class="n key-col">4,023,114</td><td class="n">0.8063</td><td class="n">0.7548</td><td class="n no">−0.052</td></tr>
+<tr><td><b>weighted F1</b></td><td class="n key-col">4,023,114</td><td class="n">0.874</td><td class="n">0.983</td><td class="n ok">+0.109</td></tr>
+</tbody></table></div>
+<p style="margin-bottom:0">아래 숫자는 전부 <b>cap 없는 쪽</b>입니다. 이전 회차 숫자와 직접 비교하면 안 됩니다.</p>
+</div>
+
+<p class="sortnote">아래 표는 데이터셋 표·클래스 표 모두 <b>test 행 수 내림차순</b>입니다
+(정렬 키 열은 음영). 정렬은 행 순서만 바꿉니다 — 수치는 run 산출 그대로입니다.</p>
+
+<h3>실험 1. 100만 샘플 — XGB vs TabPFN</h3>
+<p>학습 풀에서 <b>클래스 비율을 유지한 채 100만 행</b>을 뽑아 <b>XGBoost와 TabPFN에 똑같이</b> 줍니다.
+두 모델이 보는 학습 행은 완전히 동일하고, test는 <b>pool 전체</b>를 씁니다.
+TabPFN은 <code>n_estimators=4</code>, <code>fit_mode="fit_with_cache"</code>, test 1배치.</p>
+
+<div class="tw"><table>
+<thead><tr><th>데이터셋</th><th class="n">train pool</th><th class="n">100만 커버리지</th><th class="n key-col">test 행</th><th class="n">클래스</th></tr></thead>
+<tbody>
+<tr><td><b>1.1 ToN-IoT</b></td><td class="n">16,512,152</td><td class="n">6.06%</td><td class="n key-col">5,504,060</td><td class="n">10</td></tr>
+<tr><td><b>1.2 CIC2018</b></td><td class="n">12,069,313</td><td class="n">8.29%</td><td class="n key-col">4,023,114</td><td class="n">7</td></tr>
+<tr><td><b>1.3 BoT-IoT</b></td><td class="n">10,160,284</td><td class="n">9.84%</td><td class="n key-col">3,386,764</td><td class="n">5</td></tr>
+<tr><td><b>1.4 CIC2017</b></td><td class="n">1,696,720</td><td class="n">58.94%</td><td class="n key-col">565,586</td><td class="n">15</td></tr>
+</tbody></table></div>
+
+<h4 style="font-size:14px;margin:18px 0 6px;color:var(--t2)">전체 지표</h4>
+<div class="tw"><table>
+<thead><tr><th rowspan="2">데이터셋</th><th class="n key-col" rowspan="2">test 행</th><th class="n" colspan="3">macro F1</th><th class="n" colspan="3">weighted F1</th><th class="n" colspan="3">tail F1</th></tr>
+<tr><th class="n">XGB</th><th class="n">TabPFN</th><th class="n">Δ</th><th class="n">XGB</th><th class="n">TabPFN</th><th class="n">Δ</th><th class="n">XGB</th><th class="n">TabPFN</th><th class="n">Δ</th></tr></thead>
+<tbody>
+<tr><td><b>1.1 ToN-IoT</b></td><td class="n key-col">5,504,060</td><td class="n">0.6964</td><td class="n">0.6672</td><td class="n no">−0.029</td><td class="n">0.8735</td><td class="n">0.8552</td><td class="n no">−0.018</td><td class="n">0.2962</td><td class="n">0.2060</td><td class="n no">−0.090</td></tr>
+<tr><td><b>1.2 CIC2018</b></td><td class="n key-col">4,023,114</td><td class="n">0.7568</td><td class="n">0.7518</td><td class="n no">−0.005</td><td class="n">0.9843</td><td class="n">0.9838</td><td class="n dim">−0.001</td><td class="n">0.5367</td><td class="n">0.5261</td><td class="n no">−0.011</td></tr>
+<tr><td><b>1.3 BoT-IoT</b></td><td class="n key-col">3,386,764</td><td class="n">0.5639</td><td class="n">0.5492</td><td class="n no">−0.015</td><td class="n">0.4288</td><td class="n">0.4441</td><td class="n ok">+0.015</td><td class="n">0.3800</td><td class="n">0.3623</td><td class="n no">−0.018</td></tr>
+<tr><td><b>1.4 CIC2017</b></td><td class="n key-col">565,586</td><td class="n">0.6538</td><td class="n">0.6505</td><td class="n dim">−0.003</td><td class="n">0.9771</td><td class="n">0.9673</td><td class="n no">−0.010</td><td class="n">0.2847</td><td class="n">0.3334</td><td class="n ok">+0.049</td></tr>
+</tbody></table></div>
+
+<p class="meta">tail F1 = 스크립트에 데이터셋별로 지정된 tail 클래스들의 F1 평균 (ToN-IoT <code>mitm·ransomware</code>, CIC2018 <code>bot·infiltration·web_attacks</code>, BoT-IoT <code>theft</code>, CIC2017 <code>heartbleed·sql-injection·infiltration·xss·brute-force</code>).</p>
+
+<div class="key r">
+<p><b>12개 지표 중 TabPFN이 앞선 것은 2개뿐이고, 둘 다 실체가 없습니다.</b></p>
+<ul style="margin-bottom:0">
+<li><b>CIC2017 tail +0.049</b> — <code>heartbleed</code> 한 클래스에서 나옵니다(XGB 0.000 → TabPFN 1.000). 그 클래스의 <b>test 행은 3개</b>입니다. 아래 1.4 표에서 나머지 tail 클래스는 전부 TabPFN이 크게 집니다.</li>
+<li><b>BoT-IoT weighted +0.015</b> — <code>ddos</code>(0.031→0.067)에서 나오는데 둘 다 사실상 실패입니다. 같은 데이터셋에서 macro와 tail은 TabPFN이 집니다.</li>
+</ul></div>
+
+<h4 style="font-size:14px;margin:22px 0 6px;color:var(--t2)">1.1 ToN-IoT <span class="dim">(train 100만 · test 5,504,060 · 10 classes)</span></h4>
+<div class="tw"><table>
+<thead><tr><th>class</th><th class="n key-col">test 행</th><th class="n">XGB F1</th><th class="n">TabPFN F1</th><th class="n">Δ</th></tr></thead><tbody>
+<tr><td><code>benign</code></td><td class="n key-col">3,358,444</td><td class="n">0.916</td><td class="n">0.899</td><td class="n no">−0.017</td></tr>
+<tr><td><code>ddos</code></td><td class="n key-col">828,252</td><td class="n">0.986</td><td class="n">0.982</td><td class="n dim">−0.004</td></tr>
+<tr><td><code>xss</code></td><td class="n key-col">566,887</td><td class="n">0.880</td><td class="n">0.815</td><td class="n no">−0.066</td></tr>
+<tr><td><code>password</code></td><td class="n key-col">318,956</td><td class="n">0.842</td><td class="n">0.839</td><td class="n dim">−0.003</td></tr>
+<tr><td><code>scanning</code></td><td class="n key-col">271,796</td><td class="n no">0.001</td><td class="n no">0.000</td><td class="n dim">−0.001</td></tr>
+<tr><td><code>injection</code></td><td class="n key-col">76,356</td><td class="n">0.940</td><td class="n">0.910</td><td class="n no">−0.030</td></tr>
+<tr><td><code>dos</code></td><td class="n key-col">40,692</td><td class="n">0.812</td><td class="n">0.816</td><td class="n dim">+0.004</td></tr>
+<tr><td><code>backdoor</code></td><td class="n key-col">40,678</td><td class="n">0.994</td><td class="n">0.998</td><td class="n dim">+0.004</td></tr>
+<tr><td><code>mitm</code></td><td class="n key-col">1,204</td><td class="n no">0.208</td><td class="n no">0.038</td><td class="n no">−0.169</td></tr>
+<tr><td><code>ransomware</code></td><td class="n key-col">795</td><td class="n">0.385</td><td class="n">0.374</td><td class="n no">−0.011</td></tr>
+</tbody></table></div>
+<h4 style="font-size:14px;margin:22px 0 6px;color:var(--t2)">1.2 CIC2018 <span class="dim">(train 100만 · test 4,023,114 · 7 classes)</span></h4>
+<div class="tw"><table>
+<thead><tr><th>class</th><th class="n key-col">test 행</th><th class="n">XGB F1</th><th class="n">TabPFN F1</th><th class="n">Δ</th></tr></thead><tbody>
+<tr><td><code>benign</code></td><td class="n key-col">3,502,926</td><td class="n">0.995</td><td class="n">0.995</td><td class="n dim">0.000</td></tr>
+<tr><td><code>ddos</code></td><td class="n key-col">264,872</td><td class="n">0.995</td><td class="n">0.992</td><td class="n dim">−0.003</td></tr>
+<tr><td><code>brute_force</code></td><td class="n key-col">115,040</td><td class="n">0.916</td><td class="n">0.916</td><td class="n dim">0.000</td></tr>
+<tr><td><code>dos</code></td><td class="n key-col">60,594</td><td class="n">0.782</td><td class="n">0.781</td><td class="n dim">0.000</td></tr>
+<tr><td><code>bot</code></td><td class="n key-col">41,542</td><td class="n">0.998</td><td class="n">0.998</td><td class="n dim">+0.001</td></tr>
+<tr><td><code>infiltration</code></td><td class="n key-col">37,631</td><td class="n">0.450</td><td class="n">0.418</td><td class="n no">−0.032</td></tr>
+<tr><td><code>web_attacks</code></td><td class="n key-col">509</td><td class="n no">0.162</td><td class="n no">0.161</td><td class="n dim">−0.001</td></tr>
+</tbody></table></div>
+<h4 style="font-size:14px;margin:22px 0 6px;color:var(--t2)">1.3 BoT-IoT <span class="dim">(train 100만 · test 3,386,764 · 5 classes)</span></h4>
+<div class="tw"><table>
+<thead><tr><th>class</th><th class="n key-col">test 행</th><th class="n">XGB F1</th><th class="n">TabPFN F1</th><th class="n">Δ</th></tr></thead><tbody>
+<tr><td><code>dos</code></td><td class="n key-col">1,606,838</td><td class="n">0.678</td><td class="n">0.685</td><td class="n ok">+0.007</td></tr>
+<tr><td><code>ddos</code></td><td class="n key-col">1,430,177</td><td class="n no">0.033</td><td class="n no">0.067</td><td class="n ok">+0.034</td></tr>
+<tr><td><code>reconnaissance</code></td><td class="n key-col">339,027</td><td class="n">0.906</td><td class="n">0.886</td><td class="n no">−0.020</td></tr>
+<tr><td><code>benign</code></td><td class="n key-col">10,399</td><td class="n">0.823</td><td class="n">0.747</td><td class="n no">−0.076</td></tr>
+<tr><td><code>theft</code></td><td class="n key-col">323</td><td class="n">0.380</td><td class="n">0.362</td><td class="n no">−0.018</td></tr>
+</tbody></table></div>
+<h4 style="font-size:14px;margin:22px 0 6px;color:var(--t2)">1.4 CIC2017 <span class="dim">(train 100만 · test 565,586 · 15 classes)</span></h4>
+<div class="tw"><table>
+<thead><tr><th>class</th><th class="n key-col">test 행</th><th class="n">XGB F1</th><th class="n">TabPFN F1</th><th class="n">Δ</th></tr></thead><tbody>
+<tr><td><code>normal</code></td><td class="n key-col">454,264</td><td class="n">0.987</td><td class="n">0.981</td><td class="n no">−0.006</td></tr>
+<tr><td><code>dos-hulk</code></td><td class="n key-col">46,026</td><td class="n">0.974</td><td class="n">0.946</td><td class="n no">−0.028</td></tr>
+<tr><td><code>portscan</code></td><td class="n key-col">31,762</td><td class="n">0.984</td><td class="n">0.977</td><td class="n no">−0.007</td></tr>
+<tr><td><code>ddos</code></td><td class="n key-col">25,605</td><td class="n">0.837</td><td class="n">0.806</td><td class="n no">−0.031</td></tr>
+<tr><td><code>dos-goldeneye</code></td><td class="n key-col">2,060</td><td class="n">0.964</td><td class="n">0.963</td><td class="n dim">−0.002</td></tr>
+<tr><td><code>ftp-patator</code></td><td class="n key-col">1,587</td><td class="n">0.993</td><td class="n">0.989</td><td class="n dim">−0.004</td></tr>
+<tr><td><code>ssh-patator</code></td><td class="n key-col">1,180</td><td class="n">0.992</td><td class="n">0.803</td><td class="n no">−0.188</td></tr>
+<tr><td><code>dos-slowloris</code></td><td class="n key-col">1,160</td><td class="n">0.835</td><td class="n">0.820</td><td class="n no">−0.014</td></tr>
+<tr><td><code>dos-slowhttptest</code></td><td class="n key-col">1,101</td><td class="n">0.817</td><td class="n">0.804</td><td class="n no">−0.013</td></tr>
+<tr><td><code>bot</code></td><td class="n key-col">392</td><td class="n no">0.000</td><td class="n no">0.000</td><td class="n dim">0.000</td></tr>
+<tr><td><code>web-attack-brute-force</code></td><td class="n key-col">302</td><td class="n">0.705</td><td class="n no">0.304</td><td class="n no">−0.401</td></tr>
+<tr><td><code>web-attack-xss</code></td><td class="n key-col">131</td><td class="n no">0.219</td><td class="n no">0.030</td><td class="n no">−0.189</td></tr>
+<tr><td><code>infiltration</code></td><td class="n key-col">8</td><td class="n no">0.000</td><td class="n no">0.000</td><td class="n dim">0.000</td></tr>
+<tr><td><code>web-attack-sql-injection</code></td><td class="n key-col">5</td><td class="n">0.500</td><td class="n no">0.333</td><td class="n no">−0.167</td></tr>
+<tr><td><code>heartbleed</code></td><td class="n key-col">3</td><td class="n no">0.000</td><td class="n">1.000</td><td class="n ok">+1.000</td></tr>
+</tbody></table></div>
+
+<h4 style="font-size:14px;margin:22px 0 6px;color:var(--t2)">비용</h4>
+<div class="tw"><table>
+<thead><tr><th>데이터셋</th><th class="n key-col">test 행</th><th class="n">XGB fit+predict</th><th class="n">TabPFN fit+predict</th><th class="n">배수</th></tr></thead>
+<tbody>
+<tr><td><b>1.1 ToN-IoT</b></td><td class="n key-col">5,504,060</td><td class="n">183.1 s <span class="dim">(117+66)</span></td><td class="n">8,580 s <span class="dim">(1,265+7,315)</span></td><td class="n no">46.9×</td></tr>
+<tr><td><b>1.2 CIC2018</b></td><td class="n key-col">4,023,114</td><td class="n">99.5 s <span class="dim">(71+29)</span></td><td class="n">6,535 s <span class="dim">(1,245+5,290)</span></td><td class="n no">65.7×</td></tr>
+<tr><td><b>1.3 BoT-IoT</b></td><td class="n key-col">3,386,764</td><td class="n">81.2 s <span class="dim">(63+18)</span></td><td class="n">5,638 s <span class="dim">(1,241+4,397)</span></td><td class="n no">69.4×</td></tr>
+<tr><td><b>1.4 CIC2017</b></td><td class="n key-col">565,586</td><td class="n">255.2 s <span class="dim">(248+7)</span></td><td class="n">2,007 s <span class="dim">(1,253+754)</span></td><td class="n no">7.9×</td></tr>
+<tr><td><b>4개 합계</b></td><td class="n key-col">13,479,524</td><td class="n">619 s <span class="dim">(10분)</span></td><td class="n">22,760 s <span class="dim">(6.3시간)</span></td><td class="n no">36.8×</td></tr>
+</tbody></table></div>
+
+<p>TabPFN의 <code>fit</code>은 데이터셋과 무관하게 <b>1,241–1,265초로 거의 일정</b>합니다
+(학습 컨텍스트가 항상 100만 행으로 고정이므로). 변하는 것은 predict 쪽이고,
+이는 <b>test 행 수에 비례</b>합니다 — 56만 행 754초, 550만 행 7,315초.
+위 표가 test 행 내림차순이라 그 비례 관계가 predict 열에 그대로 보입니다.</p>
+
+<div class="key r">
+<p><b>실험 1 결론.</b> 동일한 100만 행을 주면 TabPFN은 <b>4개 데이터셋 모두에서 macro F1이 XGBoost보다 낮고</b>
+(−0.003 ~ −0.029), 비용은 <b>8–69배</b>입니다. 클래스별로 봐도 TabPFN이 유의하게 앞서는 칸은
+CIC2017 <code>heartbleed</code>(test 3행)뿐이고, 크게 지는 칸은 ToN-IoT <code>mitm</code>(−0.169),
+CIC2017 <code>web-attack-brute-force</code>(−0.401)·<code>ssh-patator</code>(−0.188)·<code>web-attack-xss</code>(−0.189)입니다.</p>
+</div>
+
+<h3>실험 2. 데이터 전체 — XGB</h3>
+
+<div class="tw"><table>
+<thead><tr><th>데이터셋</th><th class="n">전체 행</th><th class="n">train (60%)</th><th class="n key-col">test (20%)</th>
+<th class="n">클래스</th><th class="n">학습 시간</th><th class="n">macro F1</th><th class="n">weighted F1</th></tr></thead>
+<tbody>
+<tr><td><b>2.1 ToN-IoT</b></td><td class="n">27,520,260</td><td class="n">16,512,152</td><td class="n key-col">5,504,060</td><td class="n">10</td><td class="n">782 s</td><td class="n">0.6687</td><td class="n">0.8718</td></tr>
+<tr><td><b>2.2 CIC2018</b></td><td class="n">20,115,529</td><td class="n">12,069,313</td><td class="n key-col">4,023,114</td><td class="n">7</td><td class="n">385 s</td><td class="n">0.7548</td><td class="n">0.9834</td></tr>
+<tr><td><b>2.3 BoT-IoT</b></td><td class="n">16,933,808</td><td class="n">10,160,284</td><td class="n key-col">3,386,764</td><td class="n">5</td><td class="n">205 s</td><td class="n no">0.5610</td><td class="n no">0.4253</td></tr>
+<tr><td><b>2.4 CIC2017</b></td><td class="n">2,827,876</td><td class="n">1,696,720</td><td class="n key-col">565,586</td><td class="n">15</td><td class="n">124 s</td><td class="n">0.7643</td><td class="n">0.9757</td></tr>
+</tbody></table></div>
+
+<div class="key">
+<p><b>100만 행 → 전체 행: XGBoost macro F1 변화</b> (실험 1의 XGB와 실험 2의 XGB, <b>같은 test set</b>)</p>
+<div class="tw"><table>
+<thead><tr><th>데이터셋</th><th class="n key-col">test 행</th><th class="n">100만 행</th><th class="n">전체 행</th><th class="n">Δ</th><th class="n">학습 배수</th></tr></thead>
+<tbody>
+<tr><td><b>ToN-IoT</b></td><td class="n key-col">5,504,060</td><td class="n">0.6964</td><td class="n">0.6687</td><td class="n no">−0.028</td><td class="n">16.5×</td></tr>
+<tr><td><b>CIC2018</b></td><td class="n key-col">4,023,114</td><td class="n">0.7568</td><td class="n">0.7548</td><td class="n dim">−0.002</td><td class="n">12.1×</td></tr>
+<tr><td><b>BoT-IoT</b></td><td class="n key-col">3,386,764</td><td class="n">0.5639</td><td class="n">0.5610</td><td class="n dim">−0.003</td><td class="n">10.2×</td></tr>
+<tr><td><b>CIC2017</b></td><td class="n key-col">565,586</td><td class="n">0.6538</td><td class="n">0.7643</td><td class="n ok">+0.111</td><td class="n">1.7×</td></tr>
+</tbody></table></div>
+<p><b>3개 데이터셋은 학습 데이터를 10–16배로 늘려도 오르지 않고, ToN-IoT는 오히려 내려갑니다</b>
+(<code>ransomware</code> 0.385→0.150, <code>mitm</code> 0.208→0.162 — 795행·1,204행짜리 소수 클래스가
+다수 클래스 물량에 더 밀립니다).</p>
+<p style="margin-bottom:0">CIC2017의 +0.111은 <b>두 클래스에서 전부 나옵니다</b>:
+<code>heartbleed</code>(test 3행) 0.000→0.800, <code>infiltration</code>(test 8행) 0.000→0.857.
+100만 행 stratified 샘플링이 이 두 클래스의 학습 행을 4개·12개까지 깎아 학습이 불가능해진 것으로,
+15클래스 macro에서 (0.800+0.857)/15 = 0.110이 그대로 델타입니다.
+<b>데이터 양의 효과가 아니라 샘플링이 마이크로 클래스를 지운 효과</b>입니다.</p>
+</div>
+
+<h4 style="font-size:14px;margin:18px 0 6px;color:var(--t2)">2.1 ToN-IoT <span class="dim">(train 16,512,152 · test 5,504,060 · 10 classes)</span></h4>
+<div class="tw"><table>
+<thead><tr><th>class</th><th class="n key-col">test 행</th><th class="n">F1</th><th></th></tr></thead><tbody>
+<tr><td>benign</td><td class="n key-col">3,358,444</td><td class="n">0.914</td><td><span class="bar" style="width:110px"></span></td></tr>
+<tr><td>ddos</td><td class="n key-col">828,252</td><td class="n">0.987</td><td><span class="bar" style="width:118px"></span></td></tr>
+<tr><td>xss</td><td class="n key-col">566,887</td><td class="n">0.876</td><td><span class="bar" style="width:105px"></span></td></tr>
+<tr><td>password</td><td class="n key-col">318,956</td><td class="n">0.842</td><td><span class="bar" style="width:101px"></span></td></tr>
+<tr><td>scanning</td><td class="n key-col">271,796</td><td class="n no">0.001</td><td><span class="bar r" style="width:2px"></span></td></tr>
+<tr><td>injection</td><td class="n key-col">76,356</td><td class="n">0.941</td><td><span class="bar" style="width:113px"></span></td></tr>
+<tr><td>dos</td><td class="n key-col">40,692</td><td class="n">0.817</td><td><span class="bar" style="width:98px"></span></td></tr>
+<tr><td>backdoor</td><td class="n key-col">40,678</td><td class="n">0.998</td><td><span class="bar" style="width:120px"></span></td></tr>
+<tr><td>mitm</td><td class="n key-col">1,204</td><td class="n no">0.162</td><td><span class="bar r" style="width:19px"></span></td></tr>
+<tr><td>ransomware</td><td class="n key-col">795</td><td class="n no">0.150</td><td><span class="bar r" style="width:18px"></span></td></tr>
+</tbody></table></div>
+
+<h4 style="font-size:14px;margin:18px 0 6px;color:var(--t2)">2.2 CIC2018 <span class="dim">(train 12,069,313 · test 4,023,114 · 7 classes)</span></h4>
+<div class="tw"><table>
+<thead><tr><th>class</th><th class="n key-col">test 행</th><th class="n">F1</th><th></th></tr></thead><tbody>
+<tr><td>benign</td><td class="n key-col">3,502,926</td><td class="n">0.994</td><td><span class="bar" style="width:119px"></span></td></tr>
+<tr><td>ddos</td><td class="n key-col">264,872</td><td class="n">0.992</td><td><span class="bar" style="width:119px"></span></td></tr>
+<tr><td>brute_force</td><td class="n key-col">115,040</td><td class="n">0.916</td><td><span class="bar" style="width:110px"></span></td></tr>
+<tr><td>dos</td><td class="n key-col">60,594</td><td class="n">0.782</td><td><span class="bar" style="width:94px"></span></td></tr>
+<tr><td>bot</td><td class="n key-col">41,542</td><td class="n">0.998</td><td><span class="bar" style="width:120px"></span></td></tr>
+<tr><td>infiltration</td><td class="n key-col">37,631</td><td class="n">0.429</td><td><span class="bar o" style="width:51px"></span></td></tr>
+<tr><td>web_attacks</td><td class="n key-col">509</td><td class="n no">0.172</td><td><span class="bar r" style="width:21px"></span></td></tr>
+</tbody></table></div>
+
+<h4 style="font-size:14px;margin:18px 0 6px;color:var(--t2)">2.3 BoT-IoT <span class="dim">(train 10,160,284 · test 3,386,764 · 5 classes)</span></h4>
+<div class="tw"><table>
+<thead><tr><th>class</th><th class="n key-col">test 행</th><th class="n">F1</th><th></th></tr></thead><tbody>
+<tr><td>dos</td><td class="n key-col">1,606,838</td><td class="n">0.677</td><td><span class="bar" style="width:81px"></span></td></tr>
+<tr><td>ddos</td><td class="n key-col">1,430,177</td><td class="n no">0.031</td><td><span class="bar r" style="width:4px"></span></td></tr>
+<tr><td>reconnaissance</td><td class="n key-col">339,027</td><td class="n">0.884</td><td><span class="bar" style="width:106px"></span></td></tr>
+<tr><td>benign</td><td class="n key-col">10,399</td><td class="n">0.826</td><td><span class="bar" style="width:99px"></span></td></tr>
+<tr><td>theft</td><td class="n key-col">323</td><td class="n">0.387</td><td><span class="bar o" style="width:46px"></span></td></tr>
+</tbody></table></div>
+
+<h4 style="font-size:14px;margin:18px 0 6px;color:var(--t2)">2.4 CIC2017 <span class="dim">(train 1,696,720 · test 565,586 · 15 classes)</span></h4>
+<div class="tw"><table>
+<thead><tr><th>class</th><th class="n key-col">test 행</th><th class="n">F1</th><th></th></tr></thead><tbody>
+<tr><td>normal</td><td class="n key-col">454,264</td><td class="n">0.986</td><td><span class="bar" style="width:118px"></span></td></tr>
+<tr><td>dos-hulk</td><td class="n key-col">46,026</td><td class="n">0.977</td><td><span class="bar" style="width:117px"></span></td></tr>
+<tr><td>portscan</td><td class="n key-col">31,762</td><td class="n">0.985</td><td><span class="bar" style="width:118px"></span></td></tr>
+<tr><td>ddos</td><td class="n key-col">25,605</td><td class="n">0.821</td><td><span class="bar" style="width:99px"></span></td></tr>
+<tr><td>dos-goldeneye</td><td class="n key-col">2,060</td><td class="n">0.964</td><td><span class="bar" style="width:116px"></span></td></tr>
+<tr><td>ftp-patator</td><td class="n key-col">1,587</td><td class="n">0.996</td><td><span class="bar" style="width:120px"></span></td></tr>
+<tr><td>ssh-patator</td><td class="n key-col">1,180</td><td class="n">0.999</td><td><span class="bar" style="width:120px"></span></td></tr>
+<tr><td>dos-slowloris</td><td class="n key-col">1,160</td><td class="n">0.808</td><td><span class="bar" style="width:97px"></span></td></tr>
+<tr><td>dos-slowhttptest</td><td class="n key-col">1,101</td><td class="n">0.816</td><td><span class="bar" style="width:98px"></span></td></tr>
+<tr><td>bot</td><td class="n key-col">392</td><td class="n no">0.000</td><td></td></tr>
+<tr><td>web-attack-brute-force</td><td class="n key-col">302</td><td class="n">0.686</td><td><span class="bar" style="width:82px"></span></td></tr>
+<tr><td>web-attack-xss</td><td class="n key-col">131</td><td class="n">0.270</td><td><span class="bar o" style="width:32px"></span></td></tr>
+<tr><td>infiltration</td><td class="n key-col">8</td><td class="n">0.857</td><td><span class="bar" style="width:103px"></span></td></tr>
+<tr><td>web-attack-sql-injection</td><td class="n key-col">5</td><td class="n">0.500</td><td><span class="bar o" style="width:60px"></span></td></tr>
+<tr><td>heartbleed</td><td class="n key-col">3</td><td class="n">0.800</td><td><span class="bar" style="width:96px"></span></td></tr>
+</tbody></table></div>
+
+<div class="key">
+<p><b>test 행 수로 줄을 세우면 붕괴가 tail 전용 현상이 아님이 보입니다.</b>
+BoT-IoT에서 F1 0.031인 <code>ddos</code>는 test 143만 행으로 그 데이터셋의 <b>2위 규모</b>이고,
+ToN-IoT에서 F1 0.001인 <code>scanning</code>은 27만 행으로 <b>5위</b>입니다.
+반대로 test 8행뿐인 CIC2017 <code>infiltration</code>은 0.857로 멀쩡합니다.
+<b>샘플 수와 F1은 이 표에서 거의 무관합니다.</b></p>
+</div>
+
+<h2><span class="n">+</span>몇몇 클래스가 0.0을 기록한 원인</h2>
+
+<p>학습 데이터가 부족해서가 아닙니다. <b>클래스별 chronological split이 train과 test에
+서로 다른 시기의 트래픽을 넣기 때문</b>입니다. 같은 클래스라도 시간이 지나면 다른 것이 됩니다.</p>
+
+<p>진단은 <b>이진 프로브 AUC</b>로 합니다 — 같은 클래스의 train 행과 test 행을 구분하도록
+분류기를 학습시켜 AUC를 잽니다. <code>0.5</code>면 같은 개체군, <code>1.0</code>이면 완전히 다른 개체군입니다.</p>
+
+<div class="tw"><table>
+<thead><tr><th>케이스</th><th class="n key-col">test 행</th><th class="n">학습 행</th><th class="n">train vs test AUC</th><th>오분류 대상</th><th class="n">F1</th></tr></thead>
+<tbody>
+<tr><td><b>BoT-IoT / ddos</b></td><td class="n key-col">1,430,177</td><td class="n">4,290,529</td><td class="n">1.0000</td><td>dos 97%</td><td class="n no">0.031</td></tr>
+<tr><td><b>ToN-IoT / scanning</b></td><td class="n key-col">271,796</td><td class="n">815,386</td><td class="n">0.9900</td><td>benign 99.9%</td><td class="n no">0.001</td></tr>
+<tr><td><b>CIC2018 / web_attacks</b></td><td class="n key-col">509</td><td class="n">1,522</td><td class="n">0.6608</td><td>benign</td><td class="n no">0.172</td></tr>
+<tr><td><b>CIC2017 / bot</b></td><td class="n key-col">392</td><td class="n">1,173</td><td class="n">1.0000</td><td>normal 100%</td><td class="n no">0.000</td></tr>
+</tbody></table></div>
+
+<div class="key r">
+<p><b>핵심: 429만 행을 학습한 <code>ddos</code>도, 81만 행을 학습한 <code>scanning</code>도 실패합니다.</b>
+데이터 양의 문제가 아니라 train 시기와 test 시기의 트래픽이 다른 것입니다.
+이 표가 test 행 수 내림차순이라는 점이 그 자체로 근거입니다 — <b>맨 위 두 줄이 가장 큰 실패</b>입니다.</p>
+</div>
+
+<h3>사례 — CIC2017 / bot <span class="dim">(표의 맨 아래, test 392행 — 규모는 가장 작지만 원인이 가장 명확한 케이스)</span></h3>
+
+<p>Friday-morning bot 캡처 1,956행 안에서 <b>행 1,464에 행동 변화</b>가 있습니다.</p>
+
+<div class="tw"><table>
+<thead><tr><th></th><th>앞부분 (0–1463)</th><th>뒷부분 (1464–1955)</th></tr></thead><tbody>
+<tr><td>성격</td><td>C2 command 플로우</td><td><b>0.5초 주기 heartbeat</b></td></tr>
+<tr><td>duration</td><td class="n">~59 ms</td><td class="n">~1.01 s</td></tr>
+<tr><td><code>Fwd IAT Min</code></td><td class="n">~3 µs</td><td class="n">~500,000 µs</td></tr>
+<tr><td><code>Init_Win_bytes_backward</code></td><td class="n">110–16,390</td><td class="n"><b>전부 0</b></td></tr>
+</tbody></table></div>
+
+<p>세 feature의 값 범위가 <b>전혀 겹치지 않습니다</b>(AUC 1.0). 그런데 60% 컷이 행 1,173에 떨어져
+<b>변화 지점보다 291행 앞</b>이라, 변화 이후 데이터가 전부 <b>val 구간</b>에 몰립니다.</p>
+
+<div class="eq">
+train (0–1172) &nbsp; 변화 후 데이터 &nbsp;&nbsp;&nbsp;<b>0 행</b> &nbsp; ← 모델이 보는 것<br>
+val &nbsp;&nbsp;(1173–1563) 변화 후 데이터 &nbsp;&nbsp;<b>98 행</b> &nbsp; ← 사용 안 함<br>
+test &nbsp;(1564–1955) 변화 후 데이터 &nbsp;<b>392 행</b> &nbsp; ← 평가 대상
+</div>
+
+<p>즉 모델은 <b>한 번도 본 적 없는 행동</b>을 알아보라는 요구를 받습니다. 실제로 val을 학습에 넣으면
+<b>F1 0.000 → 0.810</b>으로 회복됩니다.</p>
+
+<div class="key w">
+<p><b>다만 val을 넣는 것이 일반 해법은 아닙니다.</b> 같은 조작이 CIC2018의 <code>web_attacks</code>는
+0.603 → 0.090으로 <b>악화</b>시켰습니다. 위상 변화가 val 구간에 걸린 경우에만 통합니다.
+그리고 <code>ToN-IoT / scanning</code>은 val을 넣어도 0.001 → 0.005로 <b>회복되지 않습니다</b> —
+80%를 학습해도 test 시기의 트래픽이 학습셋 어디에도 없는 경우입니다.</p>
+<p style="margin-bottom:0"><b>단, 이 절의 숫자는 test cap 100k 체제에서 얻은 것입니다</b>
+(<code>web_attacks</code> 0.603이 cap 있는 baseline 값). cap 없는 baseline은 0.162이므로
+val 투입 효과는 cap 없는 조건에서 재확인이 필요합니다.</p>
+</div>
+
+<footer>
+<p>baseline 설정: 클래스별 chronological 60/20/20 · train cap 없음 · class weighting 없음 · test cap 없음 · seed 42</p>
+<p>근거: <code>tabpfn/results/20260818_*_exp1_1m</code>, <code>tabpfn/results/20260818_*_exp2_fullxgb</code> · 상세 분석 <code>docs/tabpfn_v2_memory_rootcause.html</code>,
+<code>docs/chronological_split_class_failures.html</code></p>
+<p>2026-08-18 개정: 데이터셋 표(2.1–2.4 번호 포함)·클래스별 표·원인 표를 <b>test 샘플 수 내림차순</b>으로
+재정렬했습니다. 원인 표에는 정렬 키인 <code>test 행</code> 열을 추가했습니다. 수치·결론은 그대로입니다.</p>
+<p>2026-08-18 개정 2: <b>실험 1(100만 샘플 XGB vs TabPFN)을 test cap 없이 재실행</b>해 채웠습니다.
+데이터셋별 클래스별 F1 표(1.1–1.4)를 실험 2와 같은 형식·같은 정렬로 추가했고,
+test cap 유무가 숫자에 미치는 영향과 100만 행 대비 전체 행 비교를 새로 넣었습니다.</p>
+</footer>
+
+</div>
+
+</body>
+</html>
