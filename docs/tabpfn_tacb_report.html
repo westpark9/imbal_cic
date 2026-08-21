@@ -55,10 +55,210 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size
 
 <h1>TabPFN 앙상블 실험 보고서 — 제안 모델과 근거</h1>
 <p class="meta">cic2018 NetFlow · 시간순 분할 (과거 60% 학습 풀 / 미래 20% 평가) · 평가는 캡 없는 전체 400만 행 · seed 42</p>
-<p class="meta">2026-08-21 밤 갱신: exp17을 §2로 승격(구조 도표·CE 식·선택 실측) · §6에 후속 실험 클래스별 표와 삭제-불가 서술 추가</p>
+<p class="meta">2026-08-21 밤 갱신: 최신 시도 exp17을 §1로 — 구조·선택 실측·클래스별 결과·경고(추첨 복권/삭제 불가)를 한 곳에 · §2 제안 모델 · §6 확정 결과</p>
 <p class="meta">2026-08-21 낮 갱신: §1 구조도를 판정 흐름(좌→우)으로 재구성 — context·aux 명세 포함 · §6에 oracle 대비 클래스별 원인 분해 추가</p>
 
-<h2><span class="n">1</span>제안 모델 — Activation Expert System</h2>
+<h2><span class="n">1</span>최신 시도 — 구조 변경: global-vs-expert 학습 선택기 (exp17)</h2>
+
+<p>§2(제안 모델) 구조의 진단된 약점: 게이트가 한 번 잘못 배정하면 조건부에 <b>반환 출구가 없어</b>
+강제 환전된다. exp17은 구조를 바꾼다 — benign expert를 없애고 <b>global TabPFN이
+benign/기본 출구를 겸하게</b> 한 뒤, "global의 예측을 따를지, expert k를 믿을지"를
+후보들의 확률 분포로부터 <b>학습</b>한다:</p>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 446" width="738" height="446" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp17 선택기 구조: x가 global과 4개 expert에 입력되어 각자의 확률 분포를 내고, 15차원 결합 벡터를 입력받은 선택기 MLP가 5-way로 소스를 고르며, 선택된 소스의 예측이 라벨이 된다">
+<defs><marker id="ar17" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--t3)"/></marker></defs>
+<rect x="6" y="107" width="72" height="34" rx="17" fill="var(--s2)" stroke="var(--brs)"/>
+<text x="42" y="129" font-size="12" font-weight="700" fill="var(--t1)" text-anchor="middle">테스트 행 x</text>
+<line x1="78" y1="124" x2="92" y2="57" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<line x1="78" y1="124" x2="92" y2="99" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<line x1="78" y1="124" x2="92" y2="141" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<line x1="78" y1="124" x2="92" y2="183" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<line x1="78" y1="124" x2="92" y2="225" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<rect x="96" y="40" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--sv1)" stroke-width="1.5"/>
+<text x="108" y="55" font-size="11.5" font-weight="700" fill="var(--t1)">global — benign 출구 겸</text>
+<text x="108" y="68" font-size="9" fill="var(--t3)">자연비례 1M context → p⁷ (7클래스)</text>
+<rect x="96" y="82" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="108" y="97" font-size="11.5" font-weight="700" fill="var(--t1)">flood {ddos, dos}</text>
+<text x="108" y="110" font-size="9" fill="var(--t3)">context 20만 → p² (소유 2클래스)</text>
+<rect x="96" y="124" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="108" y="139" font-size="11.5" font-weight="700" fill="var(--t1)">bf_bot {brute, bot}</text>
+<text x="108" y="152" font-size="9" fill="var(--t3)">context 20만 → p²</text>
+<rect x="96" y="166" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="108" y="181" font-size="11.5" font-weight="700" fill="var(--t1)">inf {infiltration}</text>
+<text x="108" y="194" font-size="9" fill="var(--t3)">전량 + benign filler 2만 → p² (fit 요건)</text>
+<rect x="96" y="208" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="108" y="223" font-size="11.5" font-weight="700" fill="var(--t1)">web {web_attacks}</text>
+<text x="108" y="236" font-size="9" fill="var(--t3)">전량 1,218 + benign filler 2만 → p²</text>
+<line x1="320" y1="57" x2="352" y2="115" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<line x1="320" y1="99" x2="352" y2="121" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<line x1="320" y1="141" x2="352" y2="129" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<line x1="320" y1="183" x2="352" y2="135" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<line x1="320" y1="225" x2="352" y2="141" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
+<rect x="356" y="96" width="82" height="58" rx="8" fill="var(--s2)" stroke="var(--brs)"/>
+<text x="397" y="120" font-size="12" font-weight="700" fill="var(--t1)" text-anchor="middle">z(x)</text>
+<text x="397" y="137" font-size="9" fill="var(--t3)" text-anchor="middle">확률 결합 ℝ¹⁵</text>
+<line x1="438" y1="125" x2="458" y2="125" stroke="var(--t3)" stroke-width="1.3" marker-end="url(#ar17)"/>
+<rect x="462" y="96" width="140" height="58" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="532" y="115" font-size="11.5" font-weight="700" fill="var(--t1)" text-anchor="middle">선택기 f — MLP</text>
+<text x="532" y="130" font-size="9" fill="var(--t3)" text-anchor="middle">Linear 15→32 · ReLU · 32→5</text>
+<text x="532" y="144" font-size="9" fill="var(--t3)" text-anchor="middle">5-way cross-entropy (아래 식)</text>
+<line x1="602" y1="125" x2="622" y2="125" stroke="var(--t3)" stroke-width="1.3" marker-end="url(#ar17)"/>
+<rect x="626" y="107" width="106" height="36" rx="18" fill="var(--c1)"/>
+<text x="679" y="130" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">argmax 선택</text>
+<line x1="679" y1="143" x2="679" y2="266" stroke="var(--t3)" stroke-width="1.4" marker-end="url(#ar17)"/>
+<rect x="356" y="270" width="376" height="78" rx="10" fill="var(--s2)" stroke="var(--brs)"/>
+<text x="370" y="291" font-size="11" font-weight="700" fill="var(--t1)">선택된 소스의 예측이 라벨</text>
+<text x="370" y="309" font-size="10" fill="var(--t2)">global 선택 → global의 7-클래스 argmax (benign 포함)</text>
+<text x="370" y="325" font-size="10" fill="var(--t2)">flood·bf_bot 선택 → 소유 2-클래스 argmax</text>
+<text x="370" y="341" font-size="10" fill="var(--t2)">inf·web 선택 → 소유 클래스 (결정적)</text>
+<rect x="6" y="362" width="726" height="76" rx="10" fill="var(--gb)" stroke="var(--gr)"/>
+<text x="20" y="383" font-size="11" font-weight="700" fill="var(--t1)">선택기 학습 — train-측 holdout 90,304행 (val 예측 미사용)</text>
+<text x="20" y="401" font-size="9.5" fill="var(--t2)">타깃 t(y): y = benign → global · y ∈ owned(k) → expert k  (라벨 유도, 정적)</text>
+<text x="20" y="417" font-size="9.5" fill="var(--t2)">배치: 타깃별 2,048 × 5 균형 · 입력 z 표준화 · benign holdout 15k는 expert filler와 서로소 구간</text>
+<text x="20" y="432" font-size="9.5" fill="var(--t3)">SRC_HISTORY #2(예측-적합 competence)·exp5 선택기 사망에 최근접 — 탈출 논거·판정 기준은 0821 §12에 사전 고정</text>
+</svg>
+<figcaption>exp17 구조. x는 global + 4개 expert에 병렬 입력되고, 다섯 후보의 확률
+분포를 결합한 15차원 z(x)를 선택기 MLP가 읽어 "누구를 믿을지"를 고른다. §2와의 차이:
+benign expert가 없고 global이 반환 출구를 겸하며, 배정이 argmax 게이트가 아니라
+학습된 선택이다.</figcaption>
+</figure>
+
+<div class="key">
+<p><b>학습 목적함수 (코드 그대로).</b> 후보 확률 결합
+<code>z(x) = [ p_global(x)⁷ ‖ p_flood(x)² ‖ p_bf(x)² ‖ p_inf(x)² ‖ p_web(x)² ] ∈ ℝ¹⁵</code>
+(표준화)에 대해, 선택기 <code>f = Linear(15→32) → ReLU → Linear(32→5)</code>를
+5-way cross-entropy로 학습한다 (<code>torch.nn.CrossEntropyLoss</code>):</p>
+<p><code>L = −(1/B) Σᵢ log [ exp(f_{t(yᵢ)}(zᵢ)) / Σ_{c=0}^{4} exp(f_c(zᵢ)) ]</code>,&ensp;
+<code>t(y) = global (y=benign) · expert k (y∈owned(k))</code></p>
+<p class="dim" style="margin:0">즉 "x가 benign이면 global을 따르는 것이 정답"이라는
+라벨-유도 타깃으로, 후보들의 확률 분포만 보고 소스를 고르도록 배운다. 배치는 5개 타깃
+균형(각 2,048), 학습 데이터는 train-측 holdout — validation 예측은 쓰지 않는다.</p>
+</div>
+
+<h3>exp17 선택기의 선택 실측 — true class × 선택 소스</h3>
+
+<p>후보 5개의 확률 분포(15차원)를 입력으로 학습한 선택기가 실제로 각 클래스를 어디로
+보냈는가. 올바른 선택은 benign→global, ddos·dos→flood, brute·bot→bf_bot,
+infiltration→inf, web→web:</p>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 300" width="738" height="300" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp17 선택기의 클래스별 선택 분포: 공격 클래스는 82.9에서 100퍼센트로 올바르게 선택했으나 benign은 64.3퍼센트만 global로 가고 35.4퍼센트가 inf expert로 갔다">
+<g font-size="11" fill="var(--t2)">
+<rect x="140" y="16" width="10" height="10" rx="2" fill="var(--sv1)"/><text x="155" y="25.5">global</text>
+<rect x="212" y="16" width="10" height="10" rx="2" fill="var(--sv2)"/><text x="227" y="25.5">flood</text>
+<rect x="280" y="16" width="10" height="10" rx="2" fill="var(--sv3)"/><text x="295" y="25.5">bf_bot</text>
+<rect x="352" y="16" width="10" height="10" rx="2" fill="var(--sv6)"/><text x="367" y="25.5">inf</text>
+<rect x="404" y="16" width="10" height="10" rx="2" fill="var(--sv7)"/><text x="419" y="25.5">web</text>
+</g>
+<text x="736" y="44" font-size="10" fill="var(--t3)" text-anchor="end">정확 선택율</text>
+<!-- brute_force -->
+<text x="130" y="65" font-size="11.5" fill="var(--t1)" text-anchor="end">brute_force</text>
+<rect x="140" y="52" width="550" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.98% (web 20행)</title></rect>
+<text x="415" y="65" font-size="11" fill="#fff" text-anchor="middle">100.0%</text>
+<text x="736" y="65" font-size="11" fill="var(--t2)" text-anchor="end">1.000</text>
+<!-- bot -->
+<text x="130" y="95" font-size="11.5" fill="var(--t1)" text-anchor="end">bot</text>
+<rect x="140" y="82" width="546" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.69%</title></rect>
+<rect x="688" y="82" width="2" height="18" fill="var(--sv1)"><title>global 0.31%</title></rect>
+<text x="413" y="95" font-size="11" fill="#fff" text-anchor="middle">99.7%</text>
+<text x="736" y="95" font-size="11" fill="var(--t2)" text-anchor="end">0.997</text>
+<!-- web_attacks -->
+<text x="130" y="125" font-size="11.5" fill="var(--t1)" text-anchor="end">web_attacks</text>
+<rect x="140" y="112" width="521" height="18" rx="3" fill="var(--sv7)"><title>web 94.89%</title></rect>
+<rect x="663" y="112" width="16" height="18" rx="2" fill="var(--sv6)"><title>inf 2.95%</title></rect>
+<rect x="681" y="112" width="9" height="18" fill="var(--sv1)"><title>global 2.16%</title></rect>
+<text x="400" y="125" font-size="11" fill="#fff" text-anchor="middle">94.9%</text>
+<text x="736" y="125" font-size="11" fill="var(--t2)" text-anchor="end">0.949</text>
+<!-- ddos -->
+<text x="130" y="155" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
+<rect x="140" y="142" width="489" height="18" rx="3" fill="var(--sv2)"><title>flood 88.89%</title></rect>
+<rect x="631" y="142" width="54" height="18" rx="2" fill="var(--sv1)"><title>global 10.11%</title></rect>
+<rect x="687" y="142" width="3" height="18" fill="var(--sv6)"><title>inf 1.00%</title></rect>
+<text x="384" y="155" font-size="11" fill="#fff" text-anchor="middle">88.9%</text>
+<text x="658" y="155" font-size="10" fill="#fff" text-anchor="middle">10.1</text>
+<text x="736" y="155" font-size="11" fill="var(--t2)" text-anchor="end">0.889</text>
+<!-- infiltration -->
+<text x="130" y="185" font-size="11.5" fill="var(--t1)" text-anchor="end">infiltration</text>
+<rect x="140" y="172" width="456" height="18" rx="3" fill="var(--sv6)"><title>inf 82.92%</title></rect>
+<rect x="598" y="172" width="88" height="18" rx="2" fill="var(--sv1)"><title>global 16.08%</title></rect>
+<rect x="688" y="172" width="2" height="18" fill="var(--sv7)"><title>web 0.96%</title></rect>
+<text x="368" y="185" font-size="11" fill="#fff" text-anchor="middle">82.9%</text>
+<text x="642" y="185" font-size="10" fill="#fff" text-anchor="middle">16.1</text>
+<text x="736" y="185" font-size="11" fill="var(--t2)" text-anchor="end">0.829</text>
+<!-- benign -->
+<text x="130" y="219" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
+<rect x="140" y="206" width="354" height="18" rx="3" fill="var(--sv1)"><title>global 64.35% = 2,254,195행</title></rect>
+<rect x="496" y="206" width="192" height="18" rx="2" fill="var(--sv6)"><title>inf 35.38% = 1,239,456행</title></rect>
+<rect x="690" y="206" width="0" height="18" fill="var(--sv7)"><title>web 0.26%</title></rect>
+<text x="317" y="219" font-size="11" fill="#fff" text-anchor="middle">64.3%</text>
+<text x="592" y="219" font-size="11" fill="#fff" text-anchor="middle">35.4%</text>
+<text x="736" y="219" font-size="11" fill="var(--t2)" text-anchor="end">0.643</text>
+<text x="140" y="236" font-size="9.5" fill="var(--sr)">124만 행을 inf로 선택(라벨 결정적) → benign recall·inf precision 동반 붕괴 — #2 재현의 실체</text>
+<!-- dos -->
+<text x="130" y="263" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
+<rect x="140" y="250" width="352" height="18" rx="3" fill="var(--sv2)"><title>flood 64.10%</title></rect>
+<rect x="494" y="250" width="191" height="18" rx="2" fill="var(--sv3)"><title>bf_bot 34.84% = 21,110행</title></rect>
+<rect x="687" y="250" width="3" height="18" fill="var(--sv7)"><title>web 1.05%</title></rect>
+<text x="316" y="263" font-size="11" fill="#fff" text-anchor="middle">64.1%</text>
+<text x="589" y="263" font-size="11" fill="#fff" text-anchor="middle">34.8%</text>
+<text x="736" y="263" font-size="11" fill="var(--t2)" text-anchor="end">0.641</text>
+<text x="140" y="280" font-size="9.5" fill="var(--t3)">34.8% = slowhttptest mislabel 블록 21,110행 — 선택 단계에서도 소수점 불변 (6차 확인)</text>
+</svg>
+<figcaption>exp17 선택기의 클래스별 선택 분포 (run 20260821_200914, test 402만 행).
+왼쪽 첫 구간 = 올바른 소스(오른쪽 숫자 = 정확 선택율). <b>공격 5클래스는 82.9–100%로
+잘 선택</b>했고 global-출구 덕에 brute를 자기-run global의 붕괴(0.49)로부터 구제(0.916),
+web도 12c를 상회(0.086). 그러나 <b>benign의 35.4%(124만 행)가 inf expert로</b> 가며
+macro가 12c에 미달(0.6499 vs 0.6919) — holdout-학습 선택기도 benign의 이질성에서 전이
+실패, 사전 등록 규정대로 #2 재현으로 기록. 1% 미만 구간은 hover로.</figcaption>
+</figure>
+
+
+<h3>클래스별 결과 — 시스템 vs 같은-run global vs 기준(exp12c)</h3>
+
+<div class="tw"><table>
+<tr><th>class</th><th class="n key-col">exp17 시스템</th><th class="n">같은-run global</th><th class="n">exp12c 기준</th><th>읽기</th></tr>
+<tr><td>benign</td><td class="n key-col no">0.7787</td><td class="n">0.9917</td><td class="n">0.9741</td><td>선택 64.3% — 124만 행이 inf로 (아래 차트)</td></tr>
+<tr><td>bot</td><td class="n key-col">0.9984</td><td class="n">0.9982</td><td class="n">0.9963</td><td>동급</td></tr>
+<tr><td>brute_force</td><td class="n key-col ok">0.9158</td><td class="n no">0.4934</td><td class="n">0.9159</td><td>global-출구가 추첨-붕괴로부터 구제 (아래 경고 박스)</td></tr>
+<tr><td>ddos</td><td class="n key-col">0.9418</td><td class="n">0.9411</td><td class="n">0.9939</td><td>global 선택분 10.1%의 손실</td></tr>
+<tr><td>dos</td><td class="n key-col">0.7812</td><td class="n">0.7812</td><td class="n">0.7805</td><td>mislabel 블록 — 세 방법 동일 (아래 삭제-불가 박스)</td></tr>
+<tr><td>infiltration</td><td class="n key-col no">0.0476</td><td class="n">0.1375</td><td class="n">0.1178</td><td>benign 유입으로 precision 0.024</td></tr>
+<tr><td>web_attacks</td><td class="n key-col ok">0.0857</td><td class="n">0.0039</td><td class="n">0.0647</td><td>web 선택 94.9% + 결정적 라벨 — 12c 상회</td></tr>
+<tr><td><b>macro</b></td><td class="n key-col"><b>0.6499</b></td><td class="n"><b>0.6210</b></td><td class="n"><b>0.6919</b></td><td>자기-run global +0.029 · 12c −0.042 → <b>#2 재현 기각</b></td></tr>
+</table></div>
+
+<p><b>판정 요약</b>: 공격 선택은 82.9–100%로 성공(global-출구가 brute를 구제, web은
+12c 상회)했지만 <b>benign 선택 64.3%</b>(124만 행 → inf) 하나가 macro를 12c 아래로
+끌어내려(0.6499 vs 0.6919) 사전 등록 규정대로 <b>SRC_HISTORY #2 재현으로 기각</b>.
+클래스별 F1 전체 비교는 §6의 후속 표에, 판정 원본은 0821 §12·§14에.</p>
+
+<div class="key w">
+<p><b>부수 발견 — global 기준선은 추첨 복권이다.</b> exp17의 global(원시 표현·원시 풀,
+다른 1M 추첨)이 macro 0.6210 — 기록 bar(0.7012)와 <b>0.08 차이</b>, brute는
+0.916↔0.493으로 스윙. 같은 설정에서 context 추첨만 바꿔도 mega-vector(port-21 블록 등)
+베팅의 향방이 뒤집히기 때문 (exp16의 인과 실증과 같은 뿌리). 따라서 global 대비 판정은
+반드시 같은-run·같은-추첨으로 하며, 추첨이 다른 run 간 global 비교는 무효. 이 발견으로
+§9의 "표현 번들이 global을 손상" 해석도 정정됨: <b>같은 1M 행</b>(seed-990)에서 raw
+0.6210 vs 번들 0.6657 — 표현은 오히려 +0.045 개선 (0821 §14).</p>
+</div>
+
+<div class="key w">
+<p><b>"전부 같은 벡터면 지워버리면 되지 않나" — 안 된다, 두 겹으로.</b>
+① <b>test는 못 지운다</b>: 벤치마크 평가셋을 임의로 덜어내면 기록·타 연구와의 비교
+가능성이 깨진다(취사선택). slowhttptest 21,110행과 그와 동일-벡터인 ftp-bruteforce
+77,344행이 test에 공존하는 한, 모델은 벡터당 예측 하나만 낼 수 있어 <b>제로섬</b>이다
+— brute로 베팅하면 dos가 21k를 잃고(현 시스템·global의 최적 베팅), dos로 베팅하면
+brute가 77k를 잃는다. ② <b>train만 지우는 것은 실측으로 기각됐다</b> (exp16): 중복
+질량을 제거하자 베팅의 근거가 무너져 21,110 블록이 flood·tail로 산개했고 dos F1은
+0.781→0.681로 오히려 하락, brute는 0.916→0.492로 반토막, 시스템·global이 동시에
+붕괴했다(macro 0.566/0.599). 중복 빈도는 노이즈가 아니라 라벨-확률과 패턴-빈도를
+나르는 정보였기 때문. 정당한 처리는 삭제가 아니라 <b>결함 공개 + 라벨-교정 부지표
+병기</b>(교정 시 dos 0.991, Liu et al. IEEE CNS 2022 인용)다.</p>
+</div>
+
+<h2><span class="n">2</span>제안 모델 — Activation Expert System</h2>
 
 <p>frozen TabPFN + context = expert. 테스트 행은 <b>4개 expert 모두에 병렬 입력</b>되고
 (라우터·사전 배정 없음), 각 expert는 자기 context에 대한 유사도 logits에서 energy 기반
@@ -215,167 +415,6 @@ unseen 확장(모든 게이트 낮음 → unknown, taxonomy-간 AUROC 0.92–1.0
 </figure>
 
 <p class="dim">각 설계 결정의 실측 근거는 §4(기각된 접근이 남긴 것)과 §5(OOD 축 발견)에.</p>
-
-<h2><span class="n">2</span>최근 시도 — 구조 변경: global-vs-expert 학습 선택기 (exp17)</h2>
-
-<p>§1 구조의 진단된 약점: 게이트가 한 번 잘못 배정하면 조건부에 <b>반환 출구가 없어</b>
-강제 환전된다. exp17은 구조를 바꾼다 — benign expert를 없애고 <b>global TabPFN이
-benign/기본 출구를 겸하게</b> 한 뒤, "global의 예측을 따를지, expert k를 믿을지"를
-후보들의 확률 분포로부터 <b>학습</b>한다:</p>
-
-<figure class="fig viz">
-<svg viewBox="0 0 738 446" width="738" height="446" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp17 선택기 구조: x가 global과 4개 expert에 입력되어 각자의 확률 분포를 내고, 15차원 결합 벡터를 입력받은 선택기 MLP가 5-way로 소스를 고르며, 선택된 소스의 예측이 라벨이 된다">
-<defs><marker id="ar17" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-<path d="M0,0 L10,5 L0,10 z" fill="var(--t3)"/></marker></defs>
-<rect x="6" y="107" width="72" height="34" rx="17" fill="var(--s2)" stroke="var(--brs)"/>
-<text x="42" y="129" font-size="12" font-weight="700" fill="var(--t1)" text-anchor="middle">테스트 행 x</text>
-<line x1="78" y1="124" x2="92" y2="57" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<line x1="78" y1="124" x2="92" y2="99" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<line x1="78" y1="124" x2="92" y2="141" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<line x1="78" y1="124" x2="92" y2="183" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<line x1="78" y1="124" x2="92" y2="225" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<rect x="96" y="40" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--sv1)" stroke-width="1.5"/>
-<text x="108" y="55" font-size="11.5" font-weight="700" fill="var(--t1)">global — benign 출구 겸</text>
-<text x="108" y="68" font-size="9" fill="var(--t3)">자연비례 1M context → p⁷ (7클래스)</text>
-<rect x="96" y="82" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--br)"/>
-<text x="108" y="97" font-size="11.5" font-weight="700" fill="var(--t1)">flood {ddos, dos}</text>
-<text x="108" y="110" font-size="9" fill="var(--t3)">context 20만 → p² (소유 2클래스)</text>
-<rect x="96" y="124" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--br)"/>
-<text x="108" y="139" font-size="11.5" font-weight="700" fill="var(--t1)">bf_bot {brute, bot}</text>
-<text x="108" y="152" font-size="9" fill="var(--t3)">context 20만 → p²</text>
-<rect x="96" y="166" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--br)"/>
-<text x="108" y="181" font-size="11.5" font-weight="700" fill="var(--t1)">inf {infiltration}</text>
-<text x="108" y="194" font-size="9" fill="var(--t3)">전량 + benign filler 2만 → p² (fit 요건)</text>
-<rect x="96" y="208" width="224" height="34" rx="8" fill="var(--s1)" stroke="var(--br)"/>
-<text x="108" y="223" font-size="11.5" font-weight="700" fill="var(--t1)">web {web_attacks}</text>
-<text x="108" y="236" font-size="9" fill="var(--t3)">전량 1,218 + benign filler 2만 → p²</text>
-<line x1="320" y1="57" x2="352" y2="115" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<line x1="320" y1="99" x2="352" y2="121" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<line x1="320" y1="141" x2="352" y2="129" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<line x1="320" y1="183" x2="352" y2="135" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<line x1="320" y1="225" x2="352" y2="141" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#ar17)"/>
-<rect x="356" y="96" width="82" height="58" rx="8" fill="var(--s2)" stroke="var(--brs)"/>
-<text x="397" y="120" font-size="12" font-weight="700" fill="var(--t1)" text-anchor="middle">z(x)</text>
-<text x="397" y="137" font-size="9" fill="var(--t3)" text-anchor="middle">확률 결합 ℝ¹⁵</text>
-<line x1="438" y1="125" x2="458" y2="125" stroke="var(--t3)" stroke-width="1.3" marker-end="url(#ar17)"/>
-<rect x="462" y="96" width="140" height="58" rx="8" fill="var(--s1)" stroke="var(--br)"/>
-<text x="532" y="115" font-size="11.5" font-weight="700" fill="var(--t1)" text-anchor="middle">선택기 f — MLP</text>
-<text x="532" y="130" font-size="9" fill="var(--t3)" text-anchor="middle">Linear 15→32 · ReLU · 32→5</text>
-<text x="532" y="144" font-size="9" fill="var(--t3)" text-anchor="middle">5-way cross-entropy (아래 식)</text>
-<line x1="602" y1="125" x2="622" y2="125" stroke="var(--t3)" stroke-width="1.3" marker-end="url(#ar17)"/>
-<rect x="626" y="107" width="106" height="36" rx="18" fill="var(--c1)"/>
-<text x="679" y="130" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">argmax 선택</text>
-<line x1="679" y1="143" x2="679" y2="266" stroke="var(--t3)" stroke-width="1.4" marker-end="url(#ar17)"/>
-<rect x="356" y="270" width="376" height="78" rx="10" fill="var(--s2)" stroke="var(--brs)"/>
-<text x="370" y="291" font-size="11" font-weight="700" fill="var(--t1)">선택된 소스의 예측이 라벨</text>
-<text x="370" y="309" font-size="10" fill="var(--t2)">global 선택 → global의 7-클래스 argmax (benign 포함)</text>
-<text x="370" y="325" font-size="10" fill="var(--t2)">flood·bf_bot 선택 → 소유 2-클래스 argmax</text>
-<text x="370" y="341" font-size="10" fill="var(--t2)">inf·web 선택 → 소유 클래스 (결정적)</text>
-<rect x="6" y="362" width="726" height="76" rx="10" fill="var(--gb)" stroke="var(--gr)"/>
-<text x="20" y="383" font-size="11" font-weight="700" fill="var(--t1)">선택기 학습 — train-측 holdout 90,304행 (val 예측 미사용)</text>
-<text x="20" y="401" font-size="9.5" fill="var(--t2)">타깃 t(y): y = benign → global · y ∈ owned(k) → expert k  (라벨 유도, 정적)</text>
-<text x="20" y="417" font-size="9.5" fill="var(--t2)">배치: 타깃별 2,048 × 5 균형 · 입력 z 표준화 · benign holdout 15k는 expert filler와 서로소 구간</text>
-<text x="20" y="432" font-size="9.5" fill="var(--t3)">SRC_HISTORY #2(예측-적합 competence)·exp5 선택기 사망에 최근접 — 탈출 논거·판정 기준은 0821 §12에 사전 고정</text>
-</svg>
-<figcaption>exp17 구조. x는 global + 4개 expert에 병렬 입력되고, 다섯 후보의 확률
-분포를 결합한 15차원 z(x)를 선택기 MLP가 읽어 "누구를 믿을지"를 고른다. §1과의 차이:
-benign expert가 없고 global이 반환 출구를 겸하며, 배정이 argmax 게이트가 아니라
-학습된 선택이다.</figcaption>
-</figure>
-
-<div class="key">
-<p><b>학습 목적함수 (코드 그대로).</b> 후보 확률 결합
-<code>z(x) = [ p_global(x)⁷ ‖ p_flood(x)² ‖ p_bf(x)² ‖ p_inf(x)² ‖ p_web(x)² ] ∈ ℝ¹⁵</code>
-(표준화)에 대해, 선택기 <code>f = Linear(15→32) → ReLU → Linear(32→5)</code>를
-5-way cross-entropy로 학습한다 (<code>torch.nn.CrossEntropyLoss</code>):</p>
-<p><code>L = −(1/B) Σᵢ log [ exp(f_{t(yᵢ)}(zᵢ)) / Σ_{c=0}^{4} exp(f_c(zᵢ)) ]</code>,&ensp;
-<code>t(y) = global (y=benign) · expert k (y∈owned(k))</code></p>
-<p class="dim" style="margin:0">즉 "x가 benign이면 global을 따르는 것이 정답"이라는
-라벨-유도 타깃으로, 후보들의 확률 분포만 보고 소스를 고르도록 배운다. 배치는 5개 타깃
-균형(각 2,048), 학습 데이터는 train-측 holdout — validation 예측은 쓰지 않는다.</p>
-</div>
-
-<h3>exp17 선택기의 선택 실측 — true class × 선택 소스</h3>
-
-<p>후보 5개의 확률 분포(15차원)를 입력으로 학습한 선택기가 실제로 각 클래스를 어디로
-보냈는가. 올바른 선택은 benign→global, ddos·dos→flood, brute·bot→bf_bot,
-infiltration→inf, web→web:</p>
-
-<figure class="fig viz">
-<svg viewBox="0 0 738 300" width="738" height="300" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp17 선택기의 클래스별 선택 분포: 공격 클래스는 82.9에서 100퍼센트로 올바르게 선택했으나 benign은 64.3퍼센트만 global로 가고 35.4퍼센트가 inf expert로 갔다">
-<g font-size="11" fill="var(--t2)">
-<rect x="140" y="16" width="10" height="10" rx="2" fill="var(--sv1)"/><text x="155" y="25.5">global</text>
-<rect x="212" y="16" width="10" height="10" rx="2" fill="var(--sv2)"/><text x="227" y="25.5">flood</text>
-<rect x="280" y="16" width="10" height="10" rx="2" fill="var(--sv3)"/><text x="295" y="25.5">bf_bot</text>
-<rect x="352" y="16" width="10" height="10" rx="2" fill="var(--sv6)"/><text x="367" y="25.5">inf</text>
-<rect x="404" y="16" width="10" height="10" rx="2" fill="var(--sv7)"/><text x="419" y="25.5">web</text>
-</g>
-<text x="736" y="44" font-size="10" fill="var(--t3)" text-anchor="end">정확 선택율</text>
-<!-- brute_force -->
-<text x="130" y="65" font-size="11.5" fill="var(--t1)" text-anchor="end">brute_force</text>
-<rect x="140" y="52" width="550" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.98% (web 20행)</title></rect>
-<text x="415" y="65" font-size="11" fill="#fff" text-anchor="middle">100.0%</text>
-<text x="736" y="65" font-size="11" fill="var(--t2)" text-anchor="end">1.000</text>
-<!-- bot -->
-<text x="130" y="95" font-size="11.5" fill="var(--t1)" text-anchor="end">bot</text>
-<rect x="140" y="82" width="546" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.69%</title></rect>
-<rect x="688" y="82" width="2" height="18" fill="var(--sv1)"><title>global 0.31%</title></rect>
-<text x="413" y="95" font-size="11" fill="#fff" text-anchor="middle">99.7%</text>
-<text x="736" y="95" font-size="11" fill="var(--t2)" text-anchor="end">0.997</text>
-<!-- web_attacks -->
-<text x="130" y="125" font-size="11.5" fill="var(--t1)" text-anchor="end">web_attacks</text>
-<rect x="140" y="112" width="521" height="18" rx="3" fill="var(--sv7)"><title>web 94.89%</title></rect>
-<rect x="663" y="112" width="16" height="18" rx="2" fill="var(--sv6)"><title>inf 2.95%</title></rect>
-<rect x="681" y="112" width="9" height="18" fill="var(--sv1)"><title>global 2.16%</title></rect>
-<text x="400" y="125" font-size="11" fill="#fff" text-anchor="middle">94.9%</text>
-<text x="736" y="125" font-size="11" fill="var(--t2)" text-anchor="end">0.949</text>
-<!-- ddos -->
-<text x="130" y="155" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
-<rect x="140" y="142" width="489" height="18" rx="3" fill="var(--sv2)"><title>flood 88.89%</title></rect>
-<rect x="631" y="142" width="54" height="18" rx="2" fill="var(--sv1)"><title>global 10.11%</title></rect>
-<rect x="687" y="142" width="3" height="18" fill="var(--sv6)"><title>inf 1.00%</title></rect>
-<text x="384" y="155" font-size="11" fill="#fff" text-anchor="middle">88.9%</text>
-<text x="658" y="155" font-size="10" fill="#fff" text-anchor="middle">10.1</text>
-<text x="736" y="155" font-size="11" fill="var(--t2)" text-anchor="end">0.889</text>
-<!-- infiltration -->
-<text x="130" y="185" font-size="11.5" fill="var(--t1)" text-anchor="end">infiltration</text>
-<rect x="140" y="172" width="456" height="18" rx="3" fill="var(--sv6)"><title>inf 82.92%</title></rect>
-<rect x="598" y="172" width="88" height="18" rx="2" fill="var(--sv1)"><title>global 16.08%</title></rect>
-<rect x="688" y="172" width="2" height="18" fill="var(--sv7)"><title>web 0.96%</title></rect>
-<text x="368" y="185" font-size="11" fill="#fff" text-anchor="middle">82.9%</text>
-<text x="642" y="185" font-size="10" fill="#fff" text-anchor="middle">16.1</text>
-<text x="736" y="185" font-size="11" fill="var(--t2)" text-anchor="end">0.829</text>
-<!-- benign -->
-<text x="130" y="219" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
-<rect x="140" y="206" width="354" height="18" rx="3" fill="var(--sv1)"><title>global 64.35% = 2,254,195행</title></rect>
-<rect x="496" y="206" width="192" height="18" rx="2" fill="var(--sv6)"><title>inf 35.38% = 1,239,456행</title></rect>
-<rect x="690" y="206" width="0" height="18" fill="var(--sv7)"><title>web 0.26%</title></rect>
-<text x="317" y="219" font-size="11" fill="#fff" text-anchor="middle">64.3%</text>
-<text x="592" y="219" font-size="11" fill="#fff" text-anchor="middle">35.4%</text>
-<text x="736" y="219" font-size="11" fill="var(--t2)" text-anchor="end">0.643</text>
-<text x="140" y="236" font-size="9.5" fill="var(--sr)">124만 행을 inf로 선택(라벨 결정적) → benign recall·inf precision 동반 붕괴 — #2 재현의 실체</text>
-<!-- dos -->
-<text x="130" y="263" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
-<rect x="140" y="250" width="352" height="18" rx="3" fill="var(--sv2)"><title>flood 64.10%</title></rect>
-<rect x="494" y="250" width="191" height="18" rx="2" fill="var(--sv3)"><title>bf_bot 34.84% = 21,110행</title></rect>
-<rect x="687" y="250" width="3" height="18" fill="var(--sv7)"><title>web 1.05%</title></rect>
-<text x="316" y="263" font-size="11" fill="#fff" text-anchor="middle">64.1%</text>
-<text x="589" y="263" font-size="11" fill="#fff" text-anchor="middle">34.8%</text>
-<text x="736" y="263" font-size="11" fill="var(--t2)" text-anchor="end">0.641</text>
-<text x="140" y="280" font-size="9.5" fill="var(--t3)">34.8% = slowhttptest mislabel 블록 21,110행 — 선택 단계에서도 소수점 불변 (6차 확인)</text>
-</svg>
-<figcaption>exp17 선택기의 클래스별 선택 분포 (run 20260821_200914, test 402만 행).
-왼쪽 첫 구간 = 올바른 소스(오른쪽 숫자 = 정확 선택율). <b>공격 5클래스는 82.9–100%로
-잘 선택</b>했고 global-출구 덕에 brute를 자기-run global의 붕괴(0.49)로부터 구제(0.916),
-web도 12c를 상회(0.086). 그러나 <b>benign의 35.4%(124만 행)가 inf expert로</b> 가며
-macro가 12c에 미달(0.6499 vs 0.6919) — holdout-학습 선택기도 benign의 이질성에서 전이
-실패, 사전 등록 규정대로 #2 재현으로 기록. 1% 미만 구간은 hover로.</figcaption>
-</figure>
-
-<p><b>판정 요약</b>: 공격 선택은 82.9–100%로 성공(global-출구가 brute를 구제, web은
-12c 상회)했지만 <b>benign 선택 64.3%</b>(124만 행 → inf) 하나가 macro를 12c 아래로
-끌어내려(0.6499 vs 0.6919) 사전 등록 규정대로 <b>SRC_HISTORY #2 재현으로 기각</b>.
-클래스별 F1 전체 비교는 §6의 후속 표에, 판정 원본은 0821 §12·§14에.</p>
 
 <h2><span class="n">3</span>문제와 기준선</h2>
 
@@ -710,19 +749,7 @@ dos의 oracle 1.0은 그룹 강제가 brute 출구를 막아 생기는 가공치
 <tr><td><b>macro</b></td><td class="n"><b>0.964</b></td><td class="n"><b>0.7012</b></td><td class="n key-col"><span class="no">0.6919</span></td><td>조건부 정확도는 0.98–1.00으로 이미 oracle급 — 시스템 손실은 100% 배정 단계 (아래 인수분해). 판정: global 미달</td></tr>
 </table></div>
 
-<div class="key w">
-<p><b>"전부 같은 벡터면 지워버리면 되지 않나" — 안 된다, 두 겹으로.</b>
-① <b>test는 못 지운다</b>: 벤치마크 평가셋을 임의로 덜어내면 기록·타 연구와의 비교
-가능성이 깨진다(취사선택). slowhttptest 21,110행과 그와 동일-벡터인 ftp-bruteforce
-77,344행이 test에 공존하는 한, 모델은 벡터당 예측 하나만 낼 수 있어 <b>제로섬</b>이다
-— brute로 베팅하면 dos가 21k를 잃고(현 시스템·global의 최적 베팅), dos로 베팅하면
-brute가 77k를 잃는다. ② <b>train만 지우는 것은 실측으로 기각됐다</b> (exp16): 중복
-질량을 제거하자 베팅의 근거가 무너져 21,110 블록이 flood·tail로 산개했고 dos F1은
-0.781→0.681로 오히려 하락, brute는 0.916→0.492로 반토막, 시스템·global이 동시에
-붕괴했다(macro 0.566/0.599). 중복 빈도는 노이즈가 아니라 라벨-확률과 패턴-빈도를
-나르는 정보였기 때문. 정당한 처리는 삭제가 아니라 <b>결함 공개 + 라벨-교정 부지표
-병기</b>(교정 시 dos 0.991, Liu et al. IEEE CNS 2022 인용)다.</p>
-</div>
+
 
 <h3>환전 분해 — expert들의 분류 자체는 정확하다</h3>
 
@@ -786,15 +813,7 @@ exp17: 자기-run global은 +0.029 상회했으나 12c 미달 — benign 선택 
 run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 <code>…200914_exp17_selector</code> (tabpfn/results/).</p>
 
-<div class="key w">
-<p><b>부수 발견 — global 기준선은 추첨 복권이다.</b> exp17의 global(원시 표현·원시 풀,
-다른 1M 추첨)이 macro 0.6210 — 기록 bar(0.7012)와 <b>0.08 차이</b>, brute는
-0.916↔0.493으로 스윙. 같은 설정에서 context 추첨만 바꿔도 mega-vector(port-21 블록 등)
-베팅의 향방이 뒤집히기 때문 (exp16의 인과 실증과 같은 뿌리). 따라서 global 대비 판정은
-반드시 같은-run·같은-추첨으로 하며, 추첨이 다른 run 간 global 비교는 무효. 이 발견으로
-§9의 "표현 번들이 global을 손상" 해석도 정정됨: <b>같은 1M 행</b>(seed-990)에서 raw
-0.6210 vs 번들 0.6657 — 표현은 오히려 +0.045 개선 (0821 §14).</p>
-</div>
+
 
 
 
@@ -805,7 +824,7 @@ run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 <tr><td>dos→bf_bot 진단</td><td class="ok">종결</td><td>누수 21,110행 = <code>dos_attacks_slowhttptest</code> 시나리오 전체 — ftp-bruteforce와 바이트-동일 vector(port 21)인 기록된 mislabel(0819 §3). global도 전원 brute_force 판정 = 모델이 옳고 라벨이 틀림. 교정 시 dos F1 0.991/0.993, brute precision 1.000, macro 0.734 vs 0.743. <b>문헌 확증</b>: Liu et al. (IEEE CNS 2022)의 개선판 문서가 같은 시간창을 "SlowHTTPTest 도구가 port 21로 오발사, 성공한 공격 없음"으로 기록하고 FTP-BruteForce–Attempted로 재라벨 (0821 §4)</td></tr>
 <tr><td>표현 수리 번들 (exp15)</td><td class="no">혼합 — 전면 적용 기각</td><td>TCP_FLAGS 비트분해 + 준상수 제거 + 0→NaN + log1p (46→60). <b>게이트는 개선</b>(benign 누수 −17.7%, web 발화 0.859→0.945, inf 발화 0.297→0.337)했지만 tail 조건부의 web 정확도 0.918→0.634 훼손 + global 기준선 손상(benign recall 0.649). F1: inf <b>0.156(역대 최고)</b> / web 0.041(역대 최저) / macro 0.690(12c와 밴드 내 동일). 수확 경로 = 분리-표현(게이트만 수리 표현) — 후보로 보존 (0821 §9)</td></tr>
 <tr><td>train 중복-행 제거 (exp16)</td><td class="no">기각</td><td>클래스-내 exact-duplicate 제거(시간순 첫 행 유지) → <b>시스템·global 동시 붕괴</b> (macro 0.566/0.599 vs 원시 0.692/0.701; brute 양쪽 0.49로 반토막, benign→tail 누수 4.2%→36%). 중복 질량 = 다수결-베팅·retrieval 밀도·자연-비례 prior의 실질 재료임을 개입으로 실증 — 0821 §5 해석의 인과 확인 (0821 §13)</td></tr>
-<tr><td>global-vs-expert 학습 선택기 (exp17)</td><td class="no">기각 (#2 재현)</td><td>후보 = {global, flood, bf_bot, inf, web}, 15차원 확률 입력 5-way CE. 결과: 자기-run global 상회(+0.029)·brute 구제(0.916)·web 12c 상회(0.086)에도 <b>benign 선택 정확도 64.3%</b>(124만 행 → inf, 라벨 결정적) → benign·inf 동반 붕괴, macro 0.6499 &lt; 12c 0.6919 — 사전 등록 규정대로 <b>SRC_HISTORY #2 재현으로 기록</b> (holdout-학습 선택기도 benign 이질성에서 전이 실패). 위 표·부수 발견 박스 참조 (0821 §14)</td></tr>
+<tr><td>global-vs-expert 학습 선택기 (exp17)</td><td class="no">기각 (#2 재현)</td><td>후보 = {global, flood, bf_bot, inf, web}, 15차원 확률 입력 5-way CE. 결과: 자기-run global 상회(+0.029)·brute 구제(0.916)·web 12c 상회(0.086)에도 <b>benign 선택 정확도 64.3%</b>(124만 행 → inf, 라벨 결정적) → benign·inf 동반 붕괴, macro 0.6499 &lt; 12c 0.6919 — 사전 등록 규정대로 <b>SRC_HISTORY #2 재현으로 기록</b> (holdout-학습 선택기도 benign 이질성에서 전이 실패). §1 클래스별 표·경고 박스 참조 (0821 §14)</td></tr>
 <tr><td>infiltration 특징</td><td class="dim">대기</td><td>게이트 특징 공간의 inf↔benign 분리력 ~0.81 천장 — 이종 신호(XGB margin 등) 주입 필요. TabPFN global 자체가 inf F1 0.097 (XGB 0.42–0.45)</td></tr>
 <tr><td>unseen 확장</td><td class="dim">다음 단계</td><td>같은 게이트의 "전원 낮음 → unknown" — 검증된 재료로 구조 변경 없이</td></tr>
 </table></div>
@@ -820,7 +839,7 @@ run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 </table></div>
 
 <footer>
-이 문서는 실험군의 단일 보고서입니다. §1의 제안 모델이 본론, §2가 최신 구조 시도(exp17), §4–5는 설계의
+이 문서는 실험군의 단일 보고서입니다. §1이 최신 구조 시도(exp17), §2의 제안 모델이 본론, §4–5는 설계의
 근거 기록, §6이 확정 분류 결과입니다. 판정 기준은 결과가
 나오기 전에 랩 로그에 고정되었습니다.
 </footer>
