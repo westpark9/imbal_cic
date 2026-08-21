@@ -59,7 +59,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size
 <p class="meta">2026-08-21 밤 갱신: 최신 시도 exp17을 §1로 — 구조·선택 실측·클래스별 결과·경고(추첨 복권/삭제 불가)를 한 곳에 · §2 제안 모델 · §6 확정 결과</p>
 <p class="meta">2026-08-21 낮 갱신: §1 구조도를 판정 흐름(좌→우)으로 재구성 — context·aux 명세 포함 · §6에 oracle 대비 클래스별 원인 분해 추가</p>
 
-<h2><span class="n">1</span>최신 결과 — exp19 benign 반환 출구: <span class="ok">최초 승리</span> · exp18 진행 중</h2>
+<h2><span class="n">1</span>최신 결과 — exp19 반환 출구: <span class="ok">최초 승리</span> · exp18 변형 벤치마크: 예상 반증</h2>
 
 <p><b>exp19 (구조 변경 — 완료, 승리)</b>: §7에서 확정한 병목 — 게이트가 benign을 잘못
 배정하면 조건부에 <b>돌아갈 길이 없어</b> 14.8만 행이 inf/web으로 강제 환전되고 web
@@ -135,12 +135,23 @@ precision이 0.034로 침수 — 을 정면으로 푼다. 게이트는 그대로
 요동에 둔감해졌다. 같은-run global은 web 0.0000·brute 0.4934로 추첨-복권의 세 번째
 표본(0.7012/0.6210/0.6031). 판정 원본 0821 §17, run <code>…225628_exp19_return</code>.</p>
 
-<p><b>exp18 (변형 벤치마크 — GPU 진행 중)</b>: train/test 할당 <b>전에</b>
-데이터 자체를 클래스-내 dedup(벡터별 시간순 첫 행만)하고 재분할한 <b>다른 시험지</b> —
-기존 기록·bar와 비교 불가하며, "중복-암기·다수결-베팅이 불가능할 때의 진짜 일반화
-서열"을 잰다. test는 첫 등장이 늦은 새 벡터만 남는다(§4의 no-twin 지역 전면화).
-예상: bot 12.4만→~1.7천, slowhttptest→1행 등 대규모 소멸(감수하고 진행), 전 방법
-점수 급락. 사전 등록 0821 §15. exp18 결과 도착 시 갱신.</p>
+<h3>exp18 결과 — dedup 변형 벤치마크 (run 20260821_233323): 예상 반증</h3>
+
+<p>train/test 할당 <b>전에</b> 데이터 자체를 클래스-내 dedup하고 재분할한 별도
+시험지(기존 수치와 비교 불가; test 1.77M — slowhttptest·ftp·xss 시나리오 소멸,
+bot 561행·web 197행 잔존). 사전 등록의 예상("전 방법 급락")은 <b>반증</b>됐다:</p>
+
+<div class="tw"><table>
+<tr><th>class</th><th class="n">global(dedup)</th><th class="n">시스템(dedup)</th><th>읽기</th></tr>
+<tr><td>dos</td><td class="n ok">0.9979</td><td class="n">0.9930</td><td rowspan="2">원 벤치마크의 0.78/0.92 "어려움"이 전부 mislabel 제로섬이었음의 3차 확증 — 결함이 시험지에서 사라지자 거의 만점</td></tr>
+<tr><td>brute_force</td><td class="n ok">0.9997</td><td class="n">0.9943</td></tr>
+<tr><td>infiltration</td><td class="n no">0.1944</td><td class="n no">0.0694</td><td rowspan="2">no-twin 전면화에서도 남는 진짜 난제 — 원 벤치마크와 같은 자리</td></tr>
+<tr><td>web_attacks</td><td class="n no">0.1143</td><td class="n no">0.0822</td></tr>
+<tr><td><b>macro</b></td><td class="n"><b>0.7547</b></td><td class="n"><b>0.6879</b></td><td>dedup 시험지에선 expert-분리(반환 없는 12c 구조)가 열세 — 밀도 이점 소멸(exp16과 일관). 반환-출구 변형의 dedup 성적은 미측정 후보</td></tr>
+</table></div>
+
+<p class="dim">벤치마크 정의·잔존 표는 0821 §15/§18, run <code>…233323_exp18_dedup_bench</code>.
+benign 0.9938/0.9702 · ddos ≈1.0 · bot(561행) 0.983/0.707 생략분은 CSV에.</p>
 
 <h2><span class="n">2</span>직전 시도 — 구조 변경: global-vs-expert 학습 선택기 (exp17)</h2>
 
@@ -904,7 +915,7 @@ run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 <div class="tw"><table>
 <tr><th>이후 축</th><th>상태</th><th>내용</th></tr>
 <tr><td class="key-col">benign 반환 출구 (exp19)</td><td class="ok">승리 — 새 기준</td><td>조건부 context에 benign 20만 추가만으로 <b>macro 0.7331</b> — 기록 bar(0.7012) 최초 상회, web 0.225·inf 0.263·benign 0.990. 유일한 대가 dos −0.025. §1 결과 표·0821 §17</td></tr>
-<tr><td>분할-전 dedup 변형 벤치마크 (exp18)</td><td class="dim">진행</td><td>데이터 자체를 dedup 후 재분할한 별도 시험지 — 기존 수치와 비교 불가, 진짜 일반화 서열 측정. §1·0821 §15</td></tr>
+<tr><td>분할-전 dedup 변형 벤치마크 (exp18)</td><td class="ok">완료 — 반증 수확</td><td>별도 시험지에서 head 클래스는 오히려 상승(dos 0.998·brute 1.000 — mislabel 제로섬 3차 확증), 난제는 inf 0.19·web 0.11로 동일, 반환-없는 분리 구조는 global 열세. §1 결과·0821 §18</td></tr>
 <tr><td class="key-col">benign 반환 (margin δ, val-보정)</td><td>제안</td><td>tail 승리 중 benign과 박빙인 행을 반환 — test-오라클 δ=2.5에서 macro <b>0.7347</b>(전 클래스 ≥ global). 확정에는 val 게이트 점수로 δ 선택 → test 1회 (inf-절벽 회피 보수 선택)</td></tr>
 <tr><td>TTA tie-break (exp13)</td><td class="no">기각 (변형 한정)</td><td>공유-사본 perturb K-평균이 조밀 benign에 체계적 불리 — §5 표 참조. 기각 범위는 이 변형에 한정: 원 의도였던 <b>SADE식 안정성-가중 집계는 미검증 별개 축</b>. 재현성 부수 발견: GPU 동시 실행 run 간 게이트 점수 차로 박빙 3.2% 뒤집힘 (클래스 F1 ±0.008 밴드) — 원노브 판정은 이보다 큰 델타만 유효</td></tr>
 <tr><td>dos→bf_bot 진단</td><td class="ok">종결</td><td>누수 21,110행 = <code>dos_attacks_slowhttptest</code> 시나리오 전체 — ftp-bruteforce와 바이트-동일 vector(port 21)인 기록된 mislabel(0819 §3). global도 전원 brute_force 판정 = 모델이 옳고 라벨이 틀림. 교정 시 dos F1 0.991/0.993, brute precision 1.000, macro 0.734 vs 0.743. <b>문헌 확증</b>: Liu et al. (IEEE CNS 2022)의 개선판 문서가 같은 시간창을 "SlowHTTPTest 도구가 port 21로 오발사, 성공한 공격 없음"으로 기록하고 FTP-BruteForce–Attempted로 재라벨 (0821 §4)</td></tr>
