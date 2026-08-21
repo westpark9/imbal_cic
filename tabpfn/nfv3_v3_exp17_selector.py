@@ -5,19 +5,28 @@ Pre-registration: 0821.md SS12.  The user's diagnosis: the exp12c structure
 has no return path once a row is mis-assigned.  New structure:
 
   candidates = { global (natural-proportion 1M context),
-                 flood{ddos,dos}, bf_bot{brute,bot}, tail{inf,web} }
+                 flood{ddos,dos}, bf_bot{brute,bot}, inf{infiltration},
+                 web{web_attacks} }                     (user-corrected set)
   (the benign expert is REMOVED -- global plays the benign/default exit)
 
-  selector input  = [ p_global(7) | p_flood(2) | p_bf_bot(2) | p_tail(2) ]
-                    the candidates' predicted class distributions on x
+  single-class experts (inf, web): TabPFN fit needs >=2 classes, so their
+  context is own-class rows + a disjoint benign filler (drawn from the same
+  benign permutation AFTER the selector-holdout slice -- no leakage).  The
+  filler exists to make the fit legal and to give the selector a meaningful
+  P(own) feature; when a single-class expert is CHOSEN the label is its
+  owned class (deterministic).
+
+  selector input  = [ p_global(7) | p_flood(2) | p_bf_bot(2) | p_inf(2) |
+                      p_web(2) ]  = 15 dims (candidates' distributions on x)
   selector target = global      if y == benign
                     expert k    if y in owned(k)         (label-derived)
-  selector        = 2-layer MLP(32), 4-way cross-entropy, target-balanced
-                    batches with class-uniform sampling inside each target,
-                    trained on TRAIN-side holdout rows (same data regime as
-                    the exp11c gate heads -- NOT validation predictions)
+  selector        = 2-layer MLP(32), 5-way cross-entropy, target-balanced
+                    batches, trained on TRAIN-side holdout rows (same data
+                    regime as the exp11c gate heads -- NOT validation
+                    predictions)
   inference       = argmax choice; label = global's 7-way argmax if global
                     chosen, else the chosen expert's owned-class argmax
+                    (single-class experts: the owned class)
 
 DISCLOSED RISK (required by SRC_HISTORY): this is nearest to recorded failure
 mode #2 (competence models fitted on predictions do not transfer under chrono
@@ -48,7 +57,8 @@ SEED_BAND_GLOBAL = 990
 EXPERT_GROUPS = {
     "flood": ["ddos", "dos"],
     "bf_bot": ["brute_force", "bot"],
-    "tail": ["infiltration", "web_attacks"],
+    "inf": ["infiltration"],
+    "web": ["web_attacks"],
 }
 
 
@@ -74,8 +84,14 @@ def full_proba(proba, model_classes, n_classes):
     return out
 
 
-def build_expert_data(args, experts, class_names, train_idx, y_train):
-    """Contexts + holdouts for the attack experts (no benign expert here)."""
+def build_expert_data(args, experts, class_names, train_idx, y_train,
+                      benign_id):
+    """Contexts + holdouts for the attack experts (no benign expert here).
+
+    Single-class experts get a benign filler so the TabPFN fit is legal;
+    the filler is drawn from the benign permutation AFTER the slice reserved
+    for the selector holdout (skip bookkeeping below), so the selector's
+    benign training rows never sit inside any expert context."""
     def draw_class(c, n, off=0, skip=0):
         perm = np.random.default_rng(args.seed + SEED_BAND_CONTEXT + c + off) \
             .permutation(train_idx[y_train == c])
@@ -83,6 +99,7 @@ def build_expert_data(args, experts, class_names, train_idx, y_train):
 
     n_classes = len(class_names)
     contexts, holdouts = {}, {}
+    benign_skip = args.holdout_rows              # slice 0 = selector holdout
     for ename, owned in experts.items():
         counts = np.zeros(n_classes, dtype=np.int64)
         for c in owned:
@@ -99,10 +116,15 @@ def build_expert_data(args, experts, class_names, train_idx, y_train):
             parts.append(draw_class(c, ctx_take))
             n_hold = min(args.holdout_rows, int(counts[c]) - ctx_take)
             hold.append(draw_class(c, n_hold, skip=ctx_take))
-        contexts[ename] = np.sort(np.concatenate(parts))
+        filler = np.array([], dtype=np.int64)
+        if len(owned) == 1:                       # inf / web: fit needs 2 cls
+            filler = draw_class(benign_id, args.filler_rows, skip=benign_skip)
+            benign_skip += args.filler_rows
+        contexts[ename] = np.sort(np.concatenate(parts + [filler]))
         holdouts[ename] = np.sort(np.concatenate(hold))
-        print(f"context[{ename}]: {len(contexts[ename]):,}; "
-              f"holdout {len(holdouts[ename]):,}")
+        print(f"context[{ename}]: owned "
+              f"{len(contexts[ename]) - len(filler):,} + benign filler "
+              f"{len(filler):,}; holdout {len(holdouts[ename]):,}")
     return contexts, holdouts, draw_class
 
 
@@ -182,7 +204,7 @@ def run_exp17(args):
         return np.nan_to_num(np.asarray(X[idx], dtype=np.float32))
 
     contexts, holdouts, draw_class = build_expert_data(
-        args, experts, class_names, train_idx, y_train)
+        args, experts, class_names, train_idx, y_train, benign_id)
     benign_hold = np.sort(draw_class(benign_id, args.holdout_rows))
     print(f"benign holdout (selector train, target=global): "
           f"{len(benign_hold):,}")
@@ -276,8 +298,12 @@ def run_exp17(args):
     final[m0] = np.argmax(p_glob_eval[m0], axis=1)
     for j, ename in enumerate(enames):
         m = choice == j + 1
-        if m.any():
-            owned_sorted = np.sort(np.asarray(experts[ename]))
+        if not m.any():
+            continue
+        owned_sorted = np.sort(np.asarray(experts[ename]))
+        if len(owned_sorted) == 1:
+            final[m] = owned_sorted[0]            # single-class: deterministic
+        else:
             final[m] = owned_sorted[np.argmax(exp_eval[ename][m], axis=1)]
 
     all_rows = list(core.per_class_table("system_selector", y_eval, final,
@@ -314,6 +340,9 @@ def main():
     p = core.base_parser(__doc__)
     p.add_argument("--context-size", type=int, default=200_000)
     p.add_argument("--holdout-rows", type=int, default=15_000)
+    p.add_argument("--filler-rows", type=int, default=20_000,
+                   help="benign filler for single-class experts (fit needs "
+                        ">=2 classes); drawn AFTER the selector-holdout slice")
     p.add_argument("--global-context-size", type=int, default=1_000_000)
     p.set_defaults(
         target_dataset="cic2018",
