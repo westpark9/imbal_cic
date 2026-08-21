@@ -620,6 +620,83 @@ run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 0.6210 vs 번들 0.6657 — 표현은 오히려 +0.045 개선 (0821 §14).</p>
 </div>
 
+<h3>exp17 선택기의 선택 실측 — true class × 선택 소스</h3>
+
+<p>후보 5개의 확률 분포(15차원)를 입력으로 학습한 선택기가 실제로 각 클래스를 어디로
+보냈는가. 올바른 선택은 benign→global, ddos·dos→flood, brute·bot→bf_bot,
+infiltration→inf, web→web:</p>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 300" width="738" height="300" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp17 선택기의 클래스별 선택 분포: 공격 클래스는 82.9에서 100퍼센트로 올바르게 선택했으나 benign은 64.3퍼센트만 global로 가고 35.4퍼센트가 inf expert로 갔다">
+<g font-size="11" fill="var(--t2)">
+<rect x="140" y="16" width="10" height="10" rx="2" fill="var(--sv1)"/><text x="155" y="25.5">global</text>
+<rect x="212" y="16" width="10" height="10" rx="2" fill="var(--sv2)"/><text x="227" y="25.5">flood</text>
+<rect x="280" y="16" width="10" height="10" rx="2" fill="var(--sv3)"/><text x="295" y="25.5">bf_bot</text>
+<rect x="352" y="16" width="10" height="10" rx="2" fill="var(--sv6)"/><text x="367" y="25.5">inf</text>
+<rect x="404" y="16" width="10" height="10" rx="2" fill="var(--sv7)"/><text x="419" y="25.5">web</text>
+</g>
+<text x="736" y="44" font-size="10" fill="var(--t3)" text-anchor="end">정확 선택율</text>
+<!-- brute_force -->
+<text x="130" y="65" font-size="11.5" fill="var(--t1)" text-anchor="end">brute_force</text>
+<rect x="140" y="52" width="550" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.98% (web 20행)</title></rect>
+<text x="415" y="65" font-size="11" fill="#fff" text-anchor="middle">100.0%</text>
+<text x="736" y="65" font-size="11" fill="var(--t2)" text-anchor="end">1.000</text>
+<!-- bot -->
+<text x="130" y="95" font-size="11.5" fill="var(--t1)" text-anchor="end">bot</text>
+<rect x="140" y="82" width="546" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.69%</title></rect>
+<rect x="688" y="82" width="2" height="18" fill="var(--sv1)"><title>global 0.31%</title></rect>
+<text x="413" y="95" font-size="11" fill="#fff" text-anchor="middle">99.7%</text>
+<text x="736" y="95" font-size="11" fill="var(--t2)" text-anchor="end">0.997</text>
+<!-- web_attacks -->
+<text x="130" y="125" font-size="11.5" fill="var(--t1)" text-anchor="end">web_attacks</text>
+<rect x="140" y="112" width="521" height="18" rx="3" fill="var(--sv7)"><title>web 94.89%</title></rect>
+<rect x="663" y="112" width="16" height="18" rx="2" fill="var(--sv6)"><title>inf 2.95%</title></rect>
+<rect x="681" y="112" width="9" height="18" fill="var(--sv1)"><title>global 2.16%</title></rect>
+<text x="400" y="125" font-size="11" fill="#fff" text-anchor="middle">94.9%</text>
+<text x="736" y="125" font-size="11" fill="var(--t2)" text-anchor="end">0.949</text>
+<!-- ddos -->
+<text x="130" y="155" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
+<rect x="140" y="142" width="489" height="18" rx="3" fill="var(--sv2)"><title>flood 88.89%</title></rect>
+<rect x="631" y="142" width="54" height="18" rx="2" fill="var(--sv1)"><title>global 10.11%</title></rect>
+<rect x="687" y="142" width="3" height="18" fill="var(--sv6)"><title>inf 1.00%</title></rect>
+<text x="384" y="155" font-size="11" fill="#fff" text-anchor="middle">88.9%</text>
+<text x="658" y="155" font-size="10" fill="#fff" text-anchor="middle">10.1</text>
+<text x="736" y="155" font-size="11" fill="var(--t2)" text-anchor="end">0.889</text>
+<!-- infiltration -->
+<text x="130" y="185" font-size="11.5" fill="var(--t1)" text-anchor="end">infiltration</text>
+<rect x="140" y="172" width="456" height="18" rx="3" fill="var(--sv6)"><title>inf 82.92%</title></rect>
+<rect x="598" y="172" width="88" height="18" rx="2" fill="var(--sv1)"><title>global 16.08%</title></rect>
+<rect x="688" y="172" width="2" height="18" fill="var(--sv7)"><title>web 0.96%</title></rect>
+<text x="368" y="185" font-size="11" fill="#fff" text-anchor="middle">82.9%</text>
+<text x="642" y="185" font-size="10" fill="#fff" text-anchor="middle">16.1</text>
+<text x="736" y="185" font-size="11" fill="var(--t2)" text-anchor="end">0.829</text>
+<!-- benign -->
+<text x="130" y="219" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
+<rect x="140" y="206" width="354" height="18" rx="3" fill="var(--sv1)"><title>global 64.35% = 2,254,195행</title></rect>
+<rect x="496" y="206" width="192" height="18" rx="2" fill="var(--sv6)"><title>inf 35.38% = 1,239,456행</title></rect>
+<rect x="690" y="206" width="0" height="18" fill="var(--sv7)"><title>web 0.26%</title></rect>
+<text x="317" y="219" font-size="11" fill="#fff" text-anchor="middle">64.3%</text>
+<text x="592" y="219" font-size="11" fill="#fff" text-anchor="middle">35.4%</text>
+<text x="736" y="219" font-size="11" fill="var(--t2)" text-anchor="end">0.643</text>
+<text x="140" y="236" font-size="9.5" fill="var(--sr)">124만 행을 inf로 선택(라벨 결정적) → benign recall·inf precision 동반 붕괴 — #2 재현의 실체</text>
+<!-- dos -->
+<text x="130" y="263" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
+<rect x="140" y="250" width="352" height="18" rx="3" fill="var(--sv2)"><title>flood 64.10%</title></rect>
+<rect x="494" y="250" width="191" height="18" rx="2" fill="var(--sv3)"><title>bf_bot 34.84% = 21,110행</title></rect>
+<rect x="687" y="250" width="3" height="18" fill="var(--sv7)"><title>web 1.05%</title></rect>
+<text x="316" y="263" font-size="11" fill="#fff" text-anchor="middle">64.1%</text>
+<text x="589" y="263" font-size="11" fill="#fff" text-anchor="middle">34.8%</text>
+<text x="736" y="263" font-size="11" fill="var(--t2)" text-anchor="end">0.641</text>
+<text x="140" y="280" font-size="9.5" fill="var(--t3)">34.8% = slowhttptest mislabel 블록 21,110행 — 선택 단계에서도 소수점 불변 (6차 확인)</text>
+</svg>
+<figcaption>exp17 선택기의 클래스별 선택 분포 (run 20260821_200914, test 402만 행).
+왼쪽 첫 구간 = 올바른 소스(오른쪽 숫자 = 정확 선택율). <b>공격 5클래스는 82.9–100%로
+잘 선택</b>했고 global-출구 덕에 brute를 자기-run global의 붕괴(0.49)로부터 구제(0.916),
+web도 12c를 상회(0.086). 그러나 <b>benign의 35.4%(124만 행)가 inf expert로</b> 가며
+macro가 12c에 미달(0.6499 vs 0.6919) — holdout-학습 선택기도 benign의 이질성에서 전이
+실패, 사전 등록 규정대로 #2 재현으로 기록. 1% 미만 구간은 hover로.</figcaption>
+</figure>
+
 <div class="tw"><table>
 <tr><th>이후 축</th><th>상태</th><th>내용</th></tr>
 <tr><td class="key-col">benign 반환 (margin δ, val-보정)</td><td>제안</td><td>tail 승리 중 benign과 박빙인 행을 반환 — test-오라클 δ=2.5에서 macro <b>0.7347</b>(전 클래스 ≥ global). 확정에는 val 게이트 점수로 δ 선택 → test 1회 (inf-절벽 회피 보수 선택)</td></tr>
