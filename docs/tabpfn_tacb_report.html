@@ -55,13 +55,219 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size
 
 <h1>TabPFN 앙상블 실험 보고서 — 제안 모델과 근거</h1>
 <p class="meta">cic2018 NetFlow · 시간순 분할 (과거 60% 학습 풀 / 미래 20% 평가) · 평가는 캡 없는 전체 400만 행 · seed 42</p>
+<p class="meta">2026-08-22 밤: §1 재구성 — 공통 구조 + 선택-신호 차이(energy vs 확률+CE) → 결과 4열(21·20·TabPFN·XGB) → accept 차트 순</p>
 <p class="meta">2026-08-22 저녁: <b>exp21 새 챔피언</b> — energy 통일 선택(CE 無) macro 0.7411, 오라클 초과 (§1)</p>
 <p class="meta">2026-08-22 갱신: exp20(확률-소유 선택기) 결과 §1 추가 — macro 0.7235·inf 최고 0.3484, 반환이 재차 하중 · exp21(energy 통일, CE 無) 진행</p>
 <p class="meta">2026-08-21 심야 갱신: <b>exp19 승리</b> — benign 반환 출구로 macro 0.7331, 기록 bar 최초 상회 (§1) · exp18 변형 벤치마크 진행 중</p>
 <p class="meta">2026-08-21 밤 갱신: 최신 시도 exp17을 §1로 — 구조·선택 실측·클래스별 결과·경고(추첨 복권/삭제 불가)를 한 곳에 · §2 제안 모델 · §6 확정 결과</p>
 <p class="meta">2026-08-21 낮 갱신: §1 구조도를 판정 흐름(좌→우)으로 재구성 — context·aux 명세 포함 · §6에 oracle 대비 클래스별 원인 분해 추가</p>
 
-<h2><span class="n">1</span>최신 결과 — <span class="ok">exp21 새 챔피언(0.7411)</span> · exp19 · exp20 · exp18</h2>
+<h2><span class="n">1</span>최신 구조 — 후보-선택 시스템: <span class="ok">exp21 (energy, 챔피언)</span> vs exp20 (확률+CE)</h2>
+<p>최종적으로 수렴한 구조는 하나다: <b>후보 4개 = {global(자연 1M — benign/기본 출구 겸),
+flood, bf_bot, tail}</b> 중 하나를 고르고, <b>선택된 후보의 예측이 라벨</b>이 된다 —
+global이 선택되면 7-클래스 argmax, 공격 expert가 선택되면 {소유 ∪ benign} 조건부
+argmax(오배정 행은 benign으로 <b>반환</b>). exp21과 exp20은 이 구조가 완전히 같고,
+<b>"누구를 믿을지"의 선택 신호 하나만 다르다</b>:</p>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 300" width="738" height="300" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="공통 후보-선택 구조: 유일한 차이는 선택 신호로, exp21은 energy score argmax이고 exp20은 TabPFN 확률을 입력으로 한 CE 학습 선택기다">
+<defs><marker id="arC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--t3)"/></marker></defs>
+<rect x="6" y="133" width="72" height="34" rx="17" fill="var(--s2)" stroke="var(--brs)"/>
+<text x="42" y="155" font-size="12" font-weight="700" fill="var(--t1)" text-anchor="middle">테스트 행 x</text>
+<line x1="78" y1="150" x2="92" y2="62" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#arC)"/>
+<line x1="78" y1="150" x2="92" y2="124" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#arC)"/>
+<line x1="78" y1="150" x2="92" y2="186" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#arC)"/>
+<line x1="78" y1="150" x2="92" y2="248" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#arC)"/>
+<rect x="96" y="40" width="212" height="44" rx="8" fill="var(--s1)" stroke="var(--sv1)" stroke-width="1.5"/>
+<text x="108" y="58" font-size="11" font-weight="700" fill="var(--t1)">global — benign/기본 출구</text>
+<text x="108" y="74" font-size="9" fill="var(--t3)">자연 1M · 선택 시 7-클래스 argmax</text>
+<rect x="96" y="102" width="212" height="44" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="108" y="120" font-size="11" font-weight="700" fill="var(--t1)">flood {ddos, dos}</text>
+<text x="108" y="136" font-size="9" fill="var(--t3)">선택 시 {소유∪benign} 조건부 — 반환</text>
+<rect x="96" y="164" width="212" height="44" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="108" y="182" font-size="11" font-weight="700" fill="var(--t1)">bf_bot {brute, bot}</text>
+<text x="108" y="198" font-size="9" fill="var(--t3)">선택 시 {소유∪benign} 조건부 — 반환</text>
+<rect x="96" y="226" width="212" height="44" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="108" y="244" font-size="11" font-weight="700" fill="var(--t1)">tail {inf, web}</text>
+<text x="108" y="260" font-size="9" fill="var(--t3)">선택 시 {소유∪benign} 조건부 — 반환</text>
+<line x1="308" y1="62" x2="342" y2="120" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#arC)"/>
+<line x1="308" y1="124" x2="342" y2="140" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#arC)"/>
+<line x1="308" y1="186" x2="342" y2="160" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#arC)"/>
+<line x1="308" y1="248" x2="342" y2="180" stroke="var(--t3)" stroke-width="1.2" marker-end="url(#arC)"/>
+<text x="455" y="32" font-size="10.5" font-weight="700" fill="var(--t2)" text-anchor="middle">선택 신호 — 두 실험의 유일한 차이</text>
+<rect x="346" y="42" width="218" height="100" rx="8" fill="var(--gb)" stroke="var(--gr)" stroke-width="1.6"/>
+<text x="360" y="64" font-size="11.5" font-weight="700" fill="var(--t1)">exp21 — energy score</text>
+<text x="360" y="84" font-size="9.5" fill="var(--t2)">후보별 energy 게이트 점수 s₀…s₃</text>
+<text x="360" y="100" font-size="9.5" fill="var(--t2)">(softmax-직전 유사도 LSE·max → head)</text>
+<text x="360" y="118" font-size="9.5" font-weight="700" fill="var(--gr)">순수 argmax — 학습 선택기·CE 없음</text>
+<text x="360" y="134" font-size="9" fill="var(--t3)">macro 0.7411 — 챔피언</text>
+<rect x="346" y="158" width="218" height="100" rx="8" fill="var(--s1)" stroke="var(--br)"/>
+<text x="360" y="180" font-size="11.5" font-weight="700" fill="var(--t1)">exp20 — TabPFN 확률 + CE</text>
+<text x="360" y="200" font-size="9.5" fill="var(--t2)">후보 확률 결합 z = [p₀⁷‖p₁³‖p₂³‖p₃³] ∈ ℝ¹⁶</text>
+<text x="360" y="216" font-size="9.5" fill="var(--t2)">2층 MLP를 4-way CE로 학습 → argmax</text>
+<text x="360" y="234" font-size="9" fill="var(--t3)">타깃: benign→global · 공격→소유 expert</text>
+<text x="360" y="250" font-size="9" fill="var(--t3)">macro 0.7235 — 2위</text>
+<line x1="564" y1="100" x2="596" y2="140" stroke="var(--t3)" stroke-width="1.3" marker-end="url(#arC)"/>
+<line x1="564" y1="200" x2="596" y2="160" stroke="var(--t3)" stroke-width="1.3" marker-end="url(#arC)"/>
+<rect x="600" y="118" width="132" height="64" rx="8" fill="var(--s2)" stroke="var(--brs)"/>
+<text x="666" y="140" font-size="10.5" font-weight="700" fill="var(--t1)" text-anchor="middle">선택된 후보의</text>
+<text x="666" y="156" font-size="10.5" font-weight="700" fill="var(--t1)" text-anchor="middle">예측 = 라벨</text>
+<text x="666" y="172" font-size="8.5" fill="var(--t3)" text-anchor="middle">global 7-way / expert 반환-조건부</text>
+</svg>
+<figcaption>공통 구조와 유일한 차이. 두 실험 모두 후보·조건부·반환·global이 동일하고,
+선택 신호만 다르다 — exp21은 energy score(학습 없음), exp20은 TabPFN 확률 위의 CE 학습
+선택기. 결과가 이 차이의 가격을 잰다. 사전 등록 0821 §19(exp20)·§21(exp21).</figcaption>
+</figure>
+
+<h3>클래스별 결과 — exp21 · exp20 · 그냥 TabPFN · XGB</h3>
+
+<p class="dim">초록 = 4열 전체 행-최고 · 빨강 = 주목할 붕괴. 우리 열은 음영(key-col).</p>
+<div class="tw"><table>
+<tr><th>class</th><th class="n key-col">exp21 (energy)</th><th class="n">exp20 (확률+CE)</th><th class="n">그냥 TabPFN (1M)</th><th class="n">XGB (full pool)</th></tr>
+<tr><td>benign</td><td class="n key-col">0.9917</td><td class="n">0.9917</td><td class="n">0.9918</td><td class="n ok">0.9943</td></tr>
+<tr><td>bot</td><td class="n key-col">0.9945</td><td class="n">0.9945</td><td class="n ok">0.9984</td><td class="n">0.9978</td></tr>
+<tr><td>brute_force</td><td class="n key-col">0.9159</td><td class="n">0.9159</td><td class="n">0.9159</td><td class="n">0.9159</td></tr>
+<tr><td>ddos</td><td class="n key-col">0.9853</td><td class="n">0.9850</td><td class="n">0.9627</td><td class="n ok">0.9921</td></tr>
+<tr><td>dos</td><td class="n key-col">0.7553</td><td class="n">0.7556</td><td class="n ok">0.7827</td><td class="n">0.7822</td></tr>
+<tr><td>infiltration</td><td class="n key-col">0.3147</td><td class="n">0.3484</td><td class="n no">0.0968</td><td class="n ok">0.4291</td></tr>
+<tr><td class="key-col">web_attacks</td><td class="n key-col ok"><b>0.2300</b></td><td class="n no">0.0736</td><td class="n">0.1601</td><td class="n">0.1724</td></tr>
+<tr><td><b>macro</b></td><td class="n key-col"><b>0.7411</b></td><td class="n"><b>0.7235</b></td><td class="n"><b>0.7012</b></td><td class="n ok"><b>0.7548</b></td></tr>
+</table></div>
+
+<p class="dim">그냥 TabPFN = 자연-비례 1M context의 기록 run(va100 추첨 — global 수치는
+추첨에 ±0.1급으로 민감함을 §2·0821 §14에서 실측). XGB = full-pool 기록
+run(20260818_111317). XGB의 macro 우위는 inf(0.429)에서 오는데 그 상당분은
+중복-다수결 몫(0821 §5의 분해: 충돌-벡터 베팅 0.37 + 암기 0.94; exp16이 인과 실증) —
+<b>web에서는 exp21이 XGB·TabPFN 모두를 상회</b>(0.230 vs 0.172/0.160)하며 벤치마크
+승리 조건("web을 올리며 나머지를 희생 않기")에 가장 근접한 것도 exp21이다.</p>
+
+<div class="key g">
+<p><b>왜 이겼나.</b> ① 1M 전분포-context의 global 게이트가 박빙 benign을 흡수해
+tail 유입이 3.0%(exp19 5.4%)로 줄었다 — 입구 통제 강화 → web precision 상승.
+② global 승리분에서 benign-고정 라벨(exp19) 대신 <b>7-way argmax</b>가 inf 일부를
+직접 명명 — 오라클 초과의 원천. ③ 학습 선택기 없음(#2 노출 0), 임계값 없음, 신호는
+energy 하나로 통일, global+반환의 이중 안전판. <b>exp21이 새 기준 시스템</b>
+(0821 §21/§22). 남은 손잡이: inf 신호 결합(exp20이 0.3484로 우위), flood 오반환.</p>
+</div>
+
+<h3>클래스별 accept — 올바른 목적지에 찾아갔는가</h3>
+
+<p>올바른 목적지: benign→global, ddos·dos→flood, brute·bot→bf_bot, inf·web→tail.
+먼저 <b>exp21 (energy argmax)</b>:</p>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 310" width="738" height="310" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp21 energy 선택의 클래스별 도달 분포: brute 100, bot 99.7, ddos 98.4, benign 97.0, web 84.3, dos 64.5, infiltration 31.0퍼센트">
+<g font-size="11" fill="var(--t2)">
+<rect x="140" y="16" width="10" height="10" rx="2" fill="var(--sv1)"/><text x="155" y="25.5">global</text>
+<rect x="212" y="16" width="10" height="10" rx="2" fill="var(--sv2)"/><text x="227" y="25.5">flood</text>
+<rect x="280" y="16" width="10" height="10" rx="2" fill="var(--sv3)"/><text x="295" y="25.5">bf_bot</text>
+<rect x="352" y="16" width="10" height="10" rx="2" fill="var(--sv7)"/><text x="367" y="25.5">tail</text>
+</g>
+<text x="736" y="44" font-size="10" fill="var(--t3)" text-anchor="end">정확 도달률</text>
+<text x="130" y="65" font-size="11.5" fill="var(--t1)" text-anchor="end">brute_force</text>
+<rect x="140" y="52" width="550" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 100.0%</title></rect>
+<text x="415" y="65" font-size="11" fill="#fff" text-anchor="middle">100.0%</text>
+<text x="736" y="65" font-size="11" fill="var(--t2)" text-anchor="end">1.000</text>
+<text x="130" y="95" font-size="11.5" fill="var(--t1)" text-anchor="end">bot</text>
+<rect x="140" y="82" width="548" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.7%</title></rect>
+<text x="414" y="95" font-size="11" fill="#fff" text-anchor="middle">99.7%</text>
+<text x="736" y="95" font-size="11" fill="var(--t2)" text-anchor="end">0.997</text>
+<text x="130" y="125" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
+<rect x="140" y="112" width="541" height="18" rx="3" fill="var(--sv2)"><title>flood 98.4%</title></rect>
+<rect x="683" y="112" width="7" height="18" fill="var(--sv1)"><title>global 1.5%</title></rect>
+<text x="410" y="125" font-size="11" fill="#fff" text-anchor="middle">98.4%</text>
+<text x="736" y="125" font-size="11" fill="var(--t2)" text-anchor="end">0.984</text>
+<text x="130" y="159" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
+<rect x="140" y="146" width="533" height="18" rx="3" fill="var(--sv1)"><title>global 97.0%</title></rect>
+<rect x="675" y="146" width="15" height="18" rx="2" fill="var(--sv7)"><title>tail 3.0% ≈ 10.5만 행</title></rect>
+<text x="406" y="159" font-size="11" fill="#fff" text-anchor="middle">97.0%</text>
+<text x="736" y="159" font-size="11" fill="var(--t2)" text-anchor="end">0.970</text>
+<text x="140" y="176" font-size="9.5" fill="var(--gr)">1M 전분포 게이트가 박빙 benign을 흡수 — tail 유입 3.0%(exp19 5.4%↓) → web precision 상승의 원천</text>
+<text x="130" y="199" font-size="11.5" fill="var(--t1)" text-anchor="end">web_attacks</text>
+<rect x="140" y="186" width="464" height="18" rx="3" fill="var(--sv7)"><title>tail 84.3%</title></rect>
+<rect x="606" y="186" width="63" height="18" rx="2" fill="var(--sv1)"><title>global 11.6%</title></rect>
+<rect x="671" y="186" width="19" height="18" rx="2" fill="var(--sv2)"><title>flood 4.1%</title></rect>
+<text x="372" y="199" font-size="11" fill="#fff" text-anchor="middle">84.3%</text>
+<text x="736" y="199" font-size="11" fill="var(--t2)" text-anchor="end">0.843</text>
+<text x="130" y="229" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
+<rect x="140" y="216" width="355" height="18" rx="3" fill="var(--sv2)"><title>flood 64.5%</title></rect>
+<rect x="497" y="216" width="191" height="18" rx="2" fill="var(--sv3)"><title>bf_bot 34.8% = 21,110행 mislabel 블록</title></rect>
+<text x="317" y="229" font-size="11" fill="#fff" text-anchor="middle">64.5%</text>
+<text x="591" y="229" font-size="11" fill="#fff" text-anchor="middle">34.8%</text>
+<text x="736" y="229" font-size="11" fill="var(--t2)" text-anchor="end">0.645</text>
+<text x="130" y="263" font-size="11.5" fill="var(--t1)" text-anchor="end">infiltration</text>
+<rect x="140" y="250" width="170" height="18" rx="3" fill="var(--sv7)"><title>tail 31.0%</title></rect>
+<rect x="312" y="250" width="377" height="18" rx="2" fill="var(--sv1)"><title>global 68.8%</title></rect>
+<text x="225" y="263" font-size="11" fill="#fff" text-anchor="middle">31.0%</text>
+<text x="500" y="263" font-size="11" fill="#fff" text-anchor="middle">68.8%</text>
+<text x="736" y="263" font-size="11" fill="var(--t2)" text-anchor="end">0.310</text>
+<text x="140" y="280" font-size="9.5" fill="var(--t3)">global로 간 68.8%도 사망은 아님 — global의 7-way가 일부 inf를 직접 명명 → inf F1 0.3147</text>
+</svg>
+<figcaption>exp21의 클래스별 accept (run 20260822_173034). 공격 head·benign은
+97–100%, web 84.3%, inf 31.0%. benign의 3.0%만 tail로 새는 입구 통제가 web 최고치의
+원천이고, inf의 global행은 7-way 라벨이 일부 회수한다.</figcaption>
+</figure>
+
+<p>같은 문제에서 <b>exp20 (확률+CE 선택기)</b> — benign 66.9%가 결정적 차이:</p>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 300" width="738" height="300" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp20 선택기의 클래스별 선택 분포: benign은 66.9퍼센트만 global로 가고 33.1퍼센트가 tail로 갔으나 반환이 97.4퍼센트를 회수했다">
+<g font-size="11" fill="var(--t2)">
+<rect x="140" y="16" width="10" height="10" rx="2" fill="var(--sv1)"/><text x="155" y="25.5">global</text>
+<rect x="212" y="16" width="10" height="10" rx="2" fill="var(--sv2)"/><text x="227" y="25.5">flood</text>
+<rect x="280" y="16" width="10" height="10" rx="2" fill="var(--sv3)"/><text x="295" y="25.5">bf_bot</text>
+<rect x="352" y="16" width="10" height="10" rx="2" fill="var(--sv7)"/><text x="367" y="25.5">tail</text>
+</g>
+<text x="736" y="44" font-size="10" fill="var(--t3)" text-anchor="end">정확 선택율</text>
+<text x="130" y="65" font-size="11.5" fill="var(--t1)" text-anchor="end">brute_force</text>
+<rect x="140" y="52" width="550" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.98%</title></rect>
+<text x="415" y="65" font-size="11" fill="#fff" text-anchor="middle">100.0%</text>
+<text x="736" y="65" font-size="11" fill="var(--t2)" text-anchor="end">1.000</text>
+<text x="130" y="95" font-size="11.5" fill="var(--t1)" text-anchor="end">bot</text>
+<rect x="140" y="82" width="548" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.69%</title></rect>
+<rect x="690" y="82" width="0" height="18"><title>tail 0.29%</title></rect>
+<text x="414" y="95" font-size="11" fill="#fff" text-anchor="middle">99.7%</text>
+<text x="736" y="95" font-size="11" fill="var(--t2)" text-anchor="end">0.997</text>
+<text x="130" y="125" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
+<rect x="140" y="112" width="535" height="18" rx="3" fill="var(--sv2)"><title>flood 97.34%</title></rect>
+<rect x="677" y="112" width="13" height="18" rx="2" fill="var(--sv1)"><title>global 2.66%</title></rect>
+<text x="407" y="125" font-size="11" fill="#fff" text-anchor="middle">97.3%</text>
+<text x="736" y="125" font-size="11" fill="var(--t2)" text-anchor="end">0.973</text>
+<text x="130" y="155" font-size="11.5" fill="var(--t1)" text-anchor="end">web_attacks</text>
+<rect x="140" y="142" width="469" height="18" rx="3" fill="var(--sv7)"><title>tail 85.27%</title></rect>
+<rect x="611" y="142" width="79" height="18" rx="2" fill="var(--sv1)"><title>global 14.73%</title></rect>
+<text x="374" y="155" font-size="11" fill="#fff" text-anchor="middle">85.3%</text>
+<text x="650" y="155" font-size="10" fill="#fff" text-anchor="middle">14.7</text>
+<text x="736" y="155" font-size="11" fill="var(--t2)" text-anchor="end">0.853</text>
+<text x="130" y="185" font-size="11.5" fill="var(--t1)" text-anchor="end">infiltration</text>
+<rect x="140" y="172" width="444" height="18" rx="3" fill="var(--sv7)"><title>tail 80.70% = 30,368행</title></rect>
+<rect x="586" y="172" width="104" height="18" rx="2" fill="var(--sv1)"><title>global 19.23%</title></rect>
+<text x="362" y="185" font-size="11" fill="#fff" text-anchor="middle">80.7%</text>
+<text x="638" y="185" font-size="10" fill="#fff" text-anchor="middle">19.2</text>
+<text x="736" y="185" font-size="11" fill="var(--t2)" text-anchor="end">0.807</text>
+<text x="140" y="202" font-size="9.5" fill="var(--gr)">energy 게이트(32.4%)보다 훨씬 높은 inf 도달률 → inf F1 0.3484 역대 최고의 원천</text>
+<text x="130" y="225" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
+<rect x="140" y="212" width="368" height="18" rx="3" fill="var(--sv1)"><title>global 66.88%</title></rect>
+<rect x="510" y="212" width="180" height="18" rx="2" fill="var(--sv7)"><title>tail 33.11% = 1,159,840행</title></rect>
+<text x="324" y="225" font-size="11" fill="#fff" text-anchor="middle">66.9%</text>
+<text x="600" y="225" font-size="11" fill="#fff" text-anchor="middle">33.1%</text>
+<text x="736" y="225" font-size="11" fill="var(--t2)" text-anchor="end">0.669</text>
+<text x="140" y="242" font-size="9.5" fill="var(--gr)">오선택 116만 행을 tail 조건부가 97.4%(1,159,612) 반환 → benign 0.9917 — 반환이 또 하중을 짊어짐</text>
+<text x="130" y="265" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
+<rect x="140" y="252" width="353" height="18" rx="3" fill="var(--sv2)"><title>flood 64.15%</title></rect>
+<rect x="495" y="252" width="191" height="18" rx="2" fill="var(--sv3)"><title>bf_bot 34.84% = 21,110행 (9차 불변)</title></rect>
+<text x="316" y="265" font-size="11" fill="#fff" text-anchor="middle">64.2%</text>
+<text x="590" y="265" font-size="11" fill="#fff" text-anchor="middle">34.8%</text>
+<text x="736" y="265" font-size="11" fill="var(--t2)" text-anchor="end">0.642</text>
+</svg>
+<figcaption>exp20 선택기의 선택 분포. benign 선택 정확도는 66.9% — p(benign) 신호를
+줘도 exp17(64.3%)에서 거의 오르지 않았다(선택기의 #2 전이 실패는 신호를 바꿔도 반복).
+시스템을 구한 것은 반환 출구(97.4% 회수)다. 반면 inf 도달률(80.7%)은 energy
+게이트(32.4%)를 압도 — 배정 신호의 상보성.</figcaption>
+</figure>
+
+<h3>경과 — exp19: 반환 출구의 기원 (직전 챔피언, 0.7331)</h3>
 
 <p><b>exp19 (구조 변경 — 완료, 승리)</b>: §7에서 확정한 병목 — 게이트가 benign을 잘못
 배정하면 조건부에 <b>돌아갈 길이 없어</b> 14.8만 행이 inf/web으로 강제 환전되고 web
@@ -237,104 +443,6 @@ benign 정확 선택이 <b>64.3%</b>였는데, energy 게이트는 <b>94.6%</b>�
 </figure>
 
 
-
-<h3>exp21 결과 — energy 통일 선택, CE 없음: 새 챔피언 (run 20260822_173034)</h3>
-
-<p>exp19의 benign expert 후보를 <b>global 후보(자연 1M context + 자기 energy 게이트)</b>로
-교체 — 후보 4가 전원 energy 게이트로 겨루고(순수 argmax, 학습·임계값 없음), global
-승리 시 <b>7-way argmax 라벨</b>, 공격 승리 시 {소유∪benign} 반환-조건부:</p>
-
-<div class="tw"><table>
-<tr><th>class</th><th class="n key-col">exp21</th><th class="n">exp19</th><th class="n">exp20</th><th class="n">같은-run global</th><th>읽기</th></tr>
-<tr><td>web_attacks</td><td class="n key-col ok">0.2300</td><td class="n">0.2248</td><td class="n">0.0736</td><td class="n">0.0000</td><td><b>역대 최고</b> — benign→tail 유입 3.0%로 입구 통제 강화</td></tr>
-<tr><td>infiltration</td><td class="n key-col ok">0.3147</td><td class="n">0.2625</td><td class="n ok">0.3484</td><td class="n">0.0242</td><td>global 승리분의 7-way가 inf 직접 명명 (최고치는 exp20)</td></tr>
-<tr><td>benign</td><td class="n key-col">0.9917</td><td class="n">0.9900</td><td class="n">0.9917</td><td class="n">0.9908</td><td>global 게이트 97.0% + 반환</td></tr>
-<tr><td>brute_force</td><td class="n key-col">0.9159</td><td class="n">0.9159</td><td class="n">0.9159</td><td class="n no">0.4934</td><td>유지</td></tr>
-<tr><td>dos</td><td class="n key-col">0.7553</td><td class="n">0.7553</td><td class="n">0.7556</td><td class="n">0.7812</td><td>flood 오반환 6,210 — 잔존 대가</td></tr>
-<tr><td><b>macro</b></td><td class="n key-col ok"><b>0.7411</b></td><td class="n"><b>0.7331</b></td><td class="n"><b>0.7235</b></td><td class="n"><b>0.6047</b></td><td>exp19 +0.008(밴드 밖) · <b>§12k 오라클(0.7347) 초과</b></td></tr>
-</table></div>
-
-<div class="key g">
-<p><b>왜 이겼나.</b> ① 1M 전분포-context의 global 게이트가 박빙 benign을 흡수해
-tail 유입이 3.0%(exp19 5.4%)로 줄었다 — 입구 통제 강화 → web precision 상승.
-② global 승리분에서 benign-고정 라벨(exp19) 대신 <b>7-way argmax</b>가 inf 일부를
-직접 명명 — 오라클 초과의 원천. ③ 학습 선택기 없음(#2 노출 0), 임계값 없음, 신호는
-energy 하나로 통일, global+반환의 이중 안전판. <b>exp21이 새 기준 시스템</b>
-(0821 §21/§22). 남은 손잡이: inf 신호 결합(exp20이 0.3484로 우위), flood 오반환.</p>
-</div>
-
-<h3>exp20 결과 — 확률-소유 선택기 (energy 없음, run 20260822_154151)</h3>
-
-<p>exp17 선택기에 exp19의 {benign ∪ 소유} 조건부를 결합 — 각 expert의 <b>p(benign)이
-확률-기반 소유-주장</b>이 되고, 16차원 확률 벡터의 4-way CE 선택기가 global/expert를
-고른다 (energy score 부재). 결과: <b>macro 0.7235</b> — bar(0.7012) 상회,
-exp19(0.7331)에 −0.010 미달:</p>
-
-<figure class="fig viz">
-<svg viewBox="0 0 738 300" width="738" height="300" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp20 선택기의 클래스별 선택 분포: benign은 66.9퍼센트만 global로 가고 33.1퍼센트가 tail로 갔으나 반환이 97.4퍼센트를 회수했다">
-<g font-size="11" fill="var(--t2)">
-<rect x="140" y="16" width="10" height="10" rx="2" fill="var(--sv1)"/><text x="155" y="25.5">global</text>
-<rect x="212" y="16" width="10" height="10" rx="2" fill="var(--sv2)"/><text x="227" y="25.5">flood</text>
-<rect x="280" y="16" width="10" height="10" rx="2" fill="var(--sv3)"/><text x="295" y="25.5">bf_bot</text>
-<rect x="352" y="16" width="10" height="10" rx="2" fill="var(--sv7)"/><text x="367" y="25.5">tail</text>
-</g>
-<text x="736" y="44" font-size="10" fill="var(--t3)" text-anchor="end">정확 선택율</text>
-<text x="130" y="65" font-size="11.5" fill="var(--t1)" text-anchor="end">brute_force</text>
-<rect x="140" y="52" width="550" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.98%</title></rect>
-<text x="415" y="65" font-size="11" fill="#fff" text-anchor="middle">100.0%</text>
-<text x="736" y="65" font-size="11" fill="var(--t2)" text-anchor="end">1.000</text>
-<text x="130" y="95" font-size="11.5" fill="var(--t1)" text-anchor="end">bot</text>
-<rect x="140" y="82" width="548" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.69%</title></rect>
-<rect x="690" y="82" width="0" height="18"><title>tail 0.29%</title></rect>
-<text x="414" y="95" font-size="11" fill="#fff" text-anchor="middle">99.7%</text>
-<text x="736" y="95" font-size="11" fill="var(--t2)" text-anchor="end">0.997</text>
-<text x="130" y="125" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
-<rect x="140" y="112" width="535" height="18" rx="3" fill="var(--sv2)"><title>flood 97.34%</title></rect>
-<rect x="677" y="112" width="13" height="18" rx="2" fill="var(--sv1)"><title>global 2.66%</title></rect>
-<text x="407" y="125" font-size="11" fill="#fff" text-anchor="middle">97.3%</text>
-<text x="736" y="125" font-size="11" fill="var(--t2)" text-anchor="end">0.973</text>
-<text x="130" y="155" font-size="11.5" fill="var(--t1)" text-anchor="end">web_attacks</text>
-<rect x="140" y="142" width="469" height="18" rx="3" fill="var(--sv7)"><title>tail 85.27%</title></rect>
-<rect x="611" y="142" width="79" height="18" rx="2" fill="var(--sv1)"><title>global 14.73%</title></rect>
-<text x="374" y="155" font-size="11" fill="#fff" text-anchor="middle">85.3%</text>
-<text x="650" y="155" font-size="10" fill="#fff" text-anchor="middle">14.7</text>
-<text x="736" y="155" font-size="11" fill="var(--t2)" text-anchor="end">0.853</text>
-<text x="130" y="185" font-size="11.5" fill="var(--t1)" text-anchor="end">infiltration</text>
-<rect x="140" y="172" width="444" height="18" rx="3" fill="var(--sv7)"><title>tail 80.70% = 30,368행</title></rect>
-<rect x="586" y="172" width="104" height="18" rx="2" fill="var(--sv1)"><title>global 19.23%</title></rect>
-<text x="362" y="185" font-size="11" fill="#fff" text-anchor="middle">80.7%</text>
-<text x="638" y="185" font-size="10" fill="#fff" text-anchor="middle">19.2</text>
-<text x="736" y="185" font-size="11" fill="var(--t2)" text-anchor="end">0.807</text>
-<text x="140" y="202" font-size="9.5" fill="var(--gr)">energy 게이트(32.4%)보다 훨씬 높은 inf 도달률 → inf F1 0.3484 역대 최고의 원천</text>
-<text x="130" y="225" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
-<rect x="140" y="212" width="368" height="18" rx="3" fill="var(--sv1)"><title>global 66.88%</title></rect>
-<rect x="510" y="212" width="180" height="18" rx="2" fill="var(--sv7)"><title>tail 33.11% = 1,159,840행</title></rect>
-<text x="324" y="225" font-size="11" fill="#fff" text-anchor="middle">66.9%</text>
-<text x="600" y="225" font-size="11" fill="#fff" text-anchor="middle">33.1%</text>
-<text x="736" y="225" font-size="11" fill="var(--t2)" text-anchor="end">0.669</text>
-<text x="140" y="242" font-size="9.5" fill="var(--gr)">오선택 116만 행을 tail 조건부가 97.4%(1,159,612) 반환 → benign 0.9917 — 반환이 또 하중을 짊어짐</text>
-<text x="130" y="265" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
-<rect x="140" y="252" width="353" height="18" rx="3" fill="var(--sv2)"><title>flood 64.15%</title></rect>
-<rect x="495" y="252" width="191" height="18" rx="2" fill="var(--sv3)"><title>bf_bot 34.84% = 21,110행 (9차 불변)</title></rect>
-<text x="316" y="265" font-size="11" fill="#fff" text-anchor="middle">64.2%</text>
-<text x="590" y="265" font-size="11" fill="#fff" text-anchor="middle">34.8%</text>
-<text x="736" y="265" font-size="11" fill="var(--t2)" text-anchor="end">0.642</text>
-</svg>
-<figcaption>exp20 선택기의 선택 분포. benign 선택 정확도는 66.9% — p(benign) 신호를
-줘도 exp17(64.3%)에서 거의 오르지 않았다(선택기의 #2 전이 실패는 신호를 바꿔도 반복).
-시스템을 구한 것은 반환 출구(97.4% 회수)다. 반면 inf 도달률(80.7%)은 energy
-게이트(32.4%)를 압도 — 배정 신호의 상보성.</figcaption>
-</figure>
-
-<div class="tw"><table>
-<tr><th>class</th><th class="n key-col">exp20</th><th class="n">같은-run global</th><th class="n">exp19 (energy)</th><th>읽기</th></tr>
-<tr><td>benign</td><td class="n key-col">0.9917</td><td class="n">0.9777</td><td class="n">0.9900</td><td>반환 97.4%가 오선택 흡수</td></tr>
-<tr><td>infiltration</td><td class="n key-col ok">0.3484</td><td class="n">0.3366</td><td class="n">0.2625</td><td><b>역대 최고</b> — inf→tail 80.7% 도달</td></tr>
-<tr><td>web_attacks</td><td class="n key-col no">0.0736</td><td class="n">0.0000</td><td class="n ok">0.2248</td><td>web은 energy 게이트 압도</td></tr>
-<tr><td>brute_force</td><td class="n key-col">0.9159</td><td class="n no">0.4934</td><td class="n">0.9159</td><td>bf_bot 100% 선택 — 추첨 병리 면역</td></tr>
-<tr><td>dos</td><td class="n key-col">0.7556</td><td class="n">0.7629</td><td class="n">0.7553</td><td>동급</td></tr>
-<tr><td><b>macro</b></td><td class="n key-col"><b>0.7235</b></td><td class="n"><b>0.6478</b></td><td class="n ok"><b>0.7331</b></td><td>bar 상회 · exp19에 −0.010 (energy 우승 유지)</td></tr>
-</table></div>
 
 <h3>exp18 결과 — dedup 변형 벤치마크 (run 20260821_233323): 예상 반증</h3>
 
