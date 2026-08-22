@@ -165,6 +165,75 @@ precision이 0.034로 침수 — 을 정면으로 푼다. 게이트는 그대로
 고순도 반환에서 나왔다. 남은 두 손잡이 — tail 잔류 benign 3.2만(inf 예측의 대부분)과
 flood의 저순도 반환 — 이 다음 원노브 후보다.</p>
 
+<div class="key w">
+<p><b>신호의 위치 — energy score는 게이트에만 있다.</b> exp19의 두 단계는 서로 다른
+신호를 쓴다. <b>배정(게이트)</b> = §3의 energy score(softmax-직전 유사도의 LSE·max →
+학습 head)의 4-way argmax. <b>반환(조건부)</b> = energy 개념이 전혀 없는 <b>순수
+TabPFN retrieval 분류</b> — 들어온 행을 context의 benign 블록 vs 소유 블록과
+이웃-비교해서 argmax할 뿐이다 (exp17의 확률-입력 CE 선택기와도 무관). 즉 "내
+것인가"의 주장은 energy가 재고, "돌려보낼까"의 판정은 이웃이 잰다.</p>
+</div>
+
+<h3>exp19의 expert 선택 실측 — energy 게이트 발화 (true class × 승자)</h3>
+
+<figure class="fig viz">
+<svg viewBox="0 0 738 298" width="738" height="298" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif" role="img" aria-label="exp19 게이트 발화 분포: benign 94.6퍼센트, web 90.8, 공격 head 클래스 99 이상, dos는 mislabel 블록 34.8이 bf_bot으로, infiltration은 67.4가 benign으로">
+<g font-size="11" fill="var(--t2)">
+<rect x="140" y="16" width="10" height="10" rx="2" fill="var(--sv1)"/><text x="155" y="25.5">benign expert</text>
+<rect x="260" y="16" width="10" height="10" rx="2" fill="var(--sv2)"/><text x="275" y="25.5">flood</text>
+<rect x="330" y="16" width="10" height="10" rx="2" fill="var(--sv3)"/><text x="345" y="25.5">bf_bot</text>
+<rect x="408" y="16" width="10" height="10" rx="2" fill="var(--sv7)"/><text x="423" y="25.5">tail</text>
+</g>
+<text x="736" y="44" font-size="10" fill="var(--t3)" text-anchor="end">정확 발화율</text>
+<text x="130" y="65" font-size="11.5" fill="var(--t1)" text-anchor="end">brute_force</text>
+<rect x="140" y="52" width="550" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.98%</title></rect>
+<text x="415" y="65" font-size="11" fill="#fff" text-anchor="middle">100.0%</text>
+<text x="736" y="65" font-size="11" fill="var(--t2)" text-anchor="end">0.9998</text>
+<text x="130" y="95" font-size="11.5" fill="var(--t1)" text-anchor="end">bot</text>
+<rect x="140" y="82" width="546" height="18" rx="3" fill="var(--sv3)"><title>bf_bot 99.70%</title></rect>
+<rect x="688" y="82" width="2" height="18" fill="var(--sv1)"><title>benign 0.26%</title></rect>
+<text x="413" y="95" font-size="11" fill="#fff" text-anchor="middle">99.7%</text>
+<text x="736" y="95" font-size="11" fill="var(--t2)" text-anchor="end">0.9970</text>
+<text x="130" y="125" font-size="11.5" fill="var(--t1)" text-anchor="end">ddos</text>
+<rect x="140" y="112" width="544" height="18" rx="3" fill="var(--sv2)"><title>flood 99.21%</title></rect>
+<rect x="686" y="112" width="4" height="18" fill="var(--sv1)"><title>benign 0.70%</title></rect>
+<text x="412" y="125" font-size="11" fill="#fff" text-anchor="middle">99.2%</text>
+<text x="736" y="125" font-size="11" fill="var(--t2)" text-anchor="end">0.9921</text>
+<text x="130" y="159" font-size="11.5" fill="var(--t1)" text-anchor="end">benign</text>
+<rect x="140" y="146" width="520" height="18" rx="3" fill="var(--sv1)"><title>benign 94.61%</title></rect>
+<rect x="662" y="146" width="28" height="18" rx="2" fill="var(--sv7)"><title>tail 5.37% = 187,940행</title></rect>
+<text x="400" y="159" font-size="11" fill="#fff" text-anchor="middle">94.6%</text>
+<text x="736" y="159" font-size="11" fill="var(--t2)" text-anchor="end">0.9461</text>
+<text x="140" y="176" font-size="9.5" fill="var(--gr)">tail로 187,940행 — 이 중 157,408(84%)이 반환 단계에서 benign으로 복귀 → 잔여 침수 3.2만 행뿐</text>
+<text x="130" y="197" font-size="11.5" fill="var(--t1)" text-anchor="end">web_attacks</text>
+<rect x="140" y="184" width="499" height="18" rx="3" fill="var(--sv7)"><title>tail 90.77%</title></rect>
+<rect x="641" y="184" width="27" height="18" rx="2" fill="var(--sv1)"><title>benign 5.30%</title></rect>
+<rect x="670" y="184" width="20" height="18" rx="2" fill="var(--sv2)"><title>flood 3.93%</title></rect>
+<text x="389" y="197" font-size="11" fill="#fff" text-anchor="middle">90.8%</text>
+<text x="736" y="197" font-size="11" fill="var(--t2)" text-anchor="end">0.9077</text>
+<text x="130" y="231" font-size="11.5" fill="var(--t1)" text-anchor="end">dos</text>
+<rect x="140" y="218" width="352" height="18" rx="3" fill="var(--sv2)"><title>flood 64.32%</title></rect>
+<rect x="494" y="218" width="191" height="18" rx="2" fill="var(--sv3)"><title>bf_bot 34.84% = 21,110행</title></rect>
+<rect x="687" y="218" width="3" height="18" fill="var(--sv1)"><title>benign 0.72%</title></rect>
+<text x="316" y="231" font-size="11" fill="#fff" text-anchor="middle">64.3%</text>
+<text x="589" y="231" font-size="11" fill="#fff" text-anchor="middle">34.8%</text>
+<text x="736" y="231" font-size="11" fill="var(--t2)" text-anchor="end">0.6432</text>
+<text x="140" y="248" font-size="9.5" fill="var(--t3)">34.8% = slowhttptest mislabel 블록 (7차 소수점 불변)</text>
+<text x="130" y="269" font-size="11.5" fill="var(--t1)" text-anchor="end">infiltration</text>
+<rect x="140" y="256" width="178" height="18" rx="3" fill="var(--sv7)"><title>tail 32.42%</title></rect>
+<rect x="320" y="256" width="370" height="18" rx="2" fill="var(--sv1)"><title>benign 67.42% = 25,369행</title></rect>
+<text x="229" y="269" font-size="11" fill="#fff" text-anchor="middle">32.4%</text>
+<text x="505" y="269" font-size="11" fill="#fff" text-anchor="middle">67.4%</text>
+<text x="736" y="269" font-size="11" fill="var(--t2)" text-anchor="end">0.3242</text>
+<text x="140" y="286" font-size="9.5" fill="var(--t3)">inf↔benign 특징 한계 — 남은 배정-손실의 최대 항목 (§7 oracle 분해)</text>
+</svg>
+<figcaption>exp19의 expert 선택(energy 게이트 argmax) 실측 — run 20260821_225628,
+test 402만 행. §2 exp17과의 대비가 핵심: 같은 배정 문제에서 확률-입력 CE 선택기는
+benign 정확 선택이 <b>64.3%</b>였는데, energy 게이트는 <b>94.6%</b>다 — "내 것"이라는
+주장의 신호로서 energy score의 우위가 실측으로 갈린다. 그리고 게이트가 놓친 5.4%마저
+반환 단계가 84% 회수해 최종 benign recall 0.991이 된다.</figcaption>
+</figure>
+
 <h3>exp18 결과 — dedup 변형 벤치마크 (run 20260821_233323): 예상 반증</h3>
 
 <p>train/test 할당 <b>전에</b> 데이터 자체를 클래스-내 dedup하고 재분할한 별도
