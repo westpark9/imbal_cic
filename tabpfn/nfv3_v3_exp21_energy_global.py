@@ -371,7 +371,9 @@ def run_exp21(args):
     f_neg = featurize(clf, dec, p0, emb_ref, np.concatenate([aux_train, opp]))
     head = train_score_head(f_pos, f_neg, args.seed)
     print(f"[global] gate head ready ({time.time()-t0:.0f}s)", flush=True)
-    gate_scores[0] = head(featurize(clf, dec, p0, emb_ref, Xu_eval))[inv_eval]
+    # 1M-context 모델은 featurize 메모리가 expert(200k)보다 무거움 — 작은 chunk
+    gate_scores[0] = head(featurize(clf, dec, p0, emb_ref, Xu_eval,
+                                    chunk=100_000))[inv_eval]
     pr = []
     for s0 in range(0, len(Xu_eval), args.test_batch_size or len(Xu_eval)):
         pr.append(clf.predict_proba(
