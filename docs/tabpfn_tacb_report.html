@@ -1017,6 +1017,7 @@ run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 <tr><th>이후 축</th><th>상태</th><th>내용</th></tr>
 <tr><td class="key-col">benign 반환 출구 (exp19)</td><td class="ok">승리 — 새 기준</td><td>조건부 context에 benign 20만 추가만으로 <b>macro 0.7331</b> — 기록 bar(0.7012) 최초 상회, web 0.225·inf 0.263·benign 0.990. 유일한 대가 dos −0.025. §1 결과 표·0821 §17</td></tr>
 
+<tr><td>확률-소유 선택기 (exp20)</td><td class="ok">근접 2위 — inf 최고</td><td>global vs {benign∪소유} expert 판단의 CE 선택기(energy 無) → macro <b>0.7235</b> (bar 상회, exp19에 −0.010 미달). benign 선택 66.9%로 exp17과 유사하게 실패했지만 <b>tail 조건부가 오선택 116만 행의 97.4%를 반환</b>해 benign 0.992 — "성능 하중 = 반환 출구" 2차 실증. inf 0.3484 역대 최고(선택기가 inf→tail 80.7%) ↔ web은 energy 게이트 압도(0.225 vs 0.074) — 신호 상보성. 0821 §19/§20</td></tr>
 <tr><td>분할-전 dedup 변형 벤치마크 (exp18)</td><td class="ok">완료 — 반증 수확</td><td>별도 시험지에서 head 클래스는 오히려 상승(dos 0.998·brute 1.000 — mislabel 제로섬 3차 확증), 난제는 inf 0.19·web 0.11로 동일, 반환-없는 분리 구조는 global 열세. §1 결과·0821 §18</td></tr>
 <tr><td class="key-col">benign 반환 (margin δ, val-보정)</td><td>제안</td><td>tail 승리 중 benign과 박빙인 행을 반환 — test-오라클 δ=2.5에서 macro <b>0.7347</b>(전 클래스 ≥ global). 확정에는 val 게이트 점수로 δ 선택 → test 1회 (inf-절벽 회피 보수 선택)</td></tr>
 <tr><td>TTA tie-break (exp13)</td><td class="no">기각 (변형 한정)</td><td>공유-사본 perturb K-평균이 조밀 benign에 체계적 불리 — §5 표 참조. 기각 범위는 이 변형에 한정: 원 의도였던 <b>SADE식 안정성-가중 집계는 미검증 별개 축</b>. 재현성 부수 발견: GPU 동시 실행 run 간 게이트 점수 차로 박빙 3.2% 뒤집힘 (클래스 F1 ±0.008 밴드) — 원노브 판정은 이보다 큰 델타만 유효</td></tr>
