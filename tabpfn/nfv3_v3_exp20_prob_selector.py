@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""EXP21 -- probability-ownership SELECTOR: global vs {benign U owned} experts.
+"""EXP20 -- probability-ownership SELECTOR: global vs {benign U owned} experts.
 
-Pre-registration: 0821.md SS21.  The user's actual intent behind "exp20"
-(SS19's run was a misreading, kept as a control): combine the exp17 selector
-with the exp19 return-capable conditionals --
+Pre-registration: 0821.md SS19.  Combine the exp17 selector with the exp19
+return-capable conditionals --
 
   candidates      = { global (natural 1M, plain classifier),
                       flood, bf_bot, tail }
@@ -20,10 +19,9 @@ with the exp19 return-capable conditionals --
 
 NO energy score anywhere.  Judged against exp19 (energy gate + return,
 0.7331): does a probability-based ownership signal replace energy?
-Also against exp20 (global-argmax routing, 0.6123) and exp17 (owned-only
-probs, 0.6499).  #2-adjacency disclosed as in SS12/SS21.
+Also against exp17 (owned-only probs, 0.6499).  #2-adjacency disclosed as in SS12/SS19.
 
-    python tabpfn/nfv3_v3_exp21_prob_selector.py \\
+    python tabpfn/nfv3_v3_exp20_prob_selector.py \\
         --fit-mode fit_with_cache --test-batch-size 500000
 """
 
@@ -112,12 +110,12 @@ def train_selector(feats, targets, n_choices, seed):
     return predict
 
 
-def run_exp21(args):
+def run_exp20(args):
     cfg = core.build_dataset_config(args.data_dir)
     if args.data is None:
         args.data = cfg[args.target_dataset]["default_data"]
     args.auto_scale_n_estimators = False
-    args.experiment = "exp21_prob_selector"
+    args.experiment = "exp20_prob_selector"
     os.makedirs(args.resume_dir, exist_ok=True)
     print(f"Args: {vars(args)}", flush=True)
     if args.subsample_samples:
@@ -304,7 +302,7 @@ def run_exp21(args):
     ts = time.strftime("%Y%m%d_%H%M%S")
     out_dir = os.path.join(
         args.out_root,
-        f"{ts}_{cfg[args.target_dataset]['out_tag']}_exp21_probsel")
+        f"{ts}_{cfg[args.target_dataset]['out_tag']}_exp20_probsel")
     os.makedirs(out_dir, exist_ok=True)
     table.to_csv(os.path.join(out_dir, "per_class_metrics.csv"), index=False)
     sel_tab.to_csv(os.path.join(out_dir, "4a_selection_counts.csv"), index=False)
@@ -338,7 +336,7 @@ def main():
         subsample_samples=0,
     )
     args = p.parse_args()
-    run_exp21(args)
+    run_exp20(args)
 
 
 if __name__ == "__main__":
