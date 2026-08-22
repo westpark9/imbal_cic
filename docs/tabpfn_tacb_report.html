@@ -55,6 +55,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size
 
 <h1>TabPFN 앙상블 실험 보고서 — 제안 모델과 근거</h1>
 <p class="meta">cic2018 NetFlow · 시간순 분할 (과거 60% 학습 풀 / 미래 20% 평가) · 평가는 캡 없는 전체 400만 행 · seed 42</p>
+<p class="meta">2026-08-22 심야: 분리 변형 exp20b(0.7262)·exp21b(0.6885) — 신호×입도 2×2 교차, exp21 챔피언 유지 (§1)</p>
 <p class="meta">2026-08-22 밤: §1 재구성 — 공통 구조 + 선택-신호 차이(energy vs 확률+CE) → 결과 4열(21·20·TabPFN·XGB) → accept 차트 순</p>
 <p class="meta">2026-08-22 저녁: <b>exp21 새 챔피언</b> — energy 통일 선택(CE 無) macro 0.7411, 오라클 초과 (§1)</p>
 <p class="meta">2026-08-22 갱신: exp20(확률-소유 선택기) 결과 §1 추가 — macro 0.7235·inf 최고 0.3484, 반환이 재차 하중 · exp21(energy 통일, CE 無) 진행</p>
@@ -266,6 +267,30 @@ energy 하나로 통일, global+반환의 이중 안전판. <b>exp21이 새 기�
 시스템을 구한 것은 반환 출구(97.4% 회수)다. 반면 inf 도달률(80.7%)은 energy
 게이트(32.4%)를 압도 — 배정 신호의 상보성.</figcaption>
 </figure>
+
+<h3>분리 변형 exp20b·exp21b — 신호마다 최적 입도가 다르다 (exp21 챔피언 유지)</h3>
+
+<p>tail을 inf/web 전용 expert로 분리한 5-후보 변형(0821 §23, run 20260822_190957 /
+20260822_202415). 결과는 2×2 교차:</p>
+
+<div class="tw"><table>
+<tr><th></th><th class="n">energy (선택 신호)</th><th class="n">확률+CE (선택 신호)</th></tr>
+<tr><td class="key-col"><b>병합 tail {inf,web}</b></td><td class="n ok"><b>0.7411</b> (exp21, 챔피언)</td><td class="n">0.7235 (exp20)</td></tr>
+<tr><td><b>분리 inf / web</b></td><td class="n no"><b>0.6885</b> (exp21b — web 0.064·inf 0.112)</td><td class="n"><b>0.7262</b> (exp20b — web 0.213·inf 0.237)</td></tr>
+</table></div>
+
+<div class="key">
+<p><b>병합에서는 energy가, 분리에서는 확률+CE가 이긴다.</b> ① exp21b 붕괴 원인:
+단일-클래스 energy 게이트가 성립하지 않는다 — web 게이트 context는 owned 1,218 +
+benign filler 20,000(94%)·감독 304행뿐이라 기하가 benign에 지배되고(benign 12.1k·
+inf 8.8k·ddos 2.2k 유입, true web 420), 2-way 조건부 {benign,web}에는 inf 라벨이
+없어 유입 inf가 web FP로 강제 환전된다(병합 3-way에서는 무해하던 누수). inf 도달률
+31.0%→18.5% — "병합 게이트 탓" 가설은 인과로 기각. ② exp20b의 소폭 이득(+0.0027)은
+<b>오유입 격리</b>: 선택기의 benign 실패(30.1%)는 그대로지만 105만 행이 거의 전부
+inf 게이트로 쏠리고 web 게이트는 3,017행만 받아 web이 0.074→0.213으로 부활, 대신
+inf가 0.348→0.237로 그 값을 치른다(tail 합산은 0.422→0.450 순증). 분리 축은 종결 —
+기준 시스템은 exp21 유지.</p>
+</div>
 
 <h3>경과 — exp19: 반환 출구의 기원 (직전 챔피언, 0.7331)</h3>
 
@@ -1223,6 +1248,7 @@ run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 
 <div class="tw"><table>
 <tr><th>이후 축</th><th>상태</th><th>내용</th></tr>
+<tr><td class="key-col">tail 분리 inf/web (exp20b·exp21b)</td><td class="no">기각 — 챔피언 유지</td><td>5-후보 분리: 확률+CE는 0.7262(오유입 격리로 web 부활), energy는 0.6885 대패(단일-클래스 게이트 불성립). 병합=energy 승·분리=확률 승의 2×2 교차. §1 분리 변형·0821 §23</td></tr>
 <tr><td class="key-col">energy 통일 + global 후보 (exp21)</td><td class="ok"><b>새 챔피언</b></td><td>후보 4 전원 energy 게이트(CE 無), global 승리 시 7-way 라벨 → <b>macro 0.7411</b> — exp19 +0.008, 오라클(0.7347) 초과, web 0.230 최고. §1 결과·0821 §22</td></tr>
 <tr><td class="key-col">benign 반환 출구 (exp19)</td><td class="ok">승리 (2위)</td><td>조건부 context에 benign 20만 추가만으로 <b>macro 0.7331</b> — 기록 bar(0.7012) 최초 상회, web 0.225·inf 0.263·benign 0.990. 유일한 대가 dos −0.025. §1 결과 표·0821 §17</td></tr>
 
