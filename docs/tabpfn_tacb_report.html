@@ -234,6 +234,26 @@ benign 정확 선택이 <b>64.3%</b>였는데, energy 게이트는 <b>94.6%</b>�
 반환 단계가 84% 회수해 최종 benign recall 0.991이 된다.</figcaption>
 </figure>
 
+<h3>exp20 대조군 — energy를 빼면 무엇이 남나 (run 20260822_145829)</h3>
+
+<p>사용자 지시로 <b>energy score를 모델 전체에서 제거한 버전</b>을 돌렸다: 배정 =
+global TabPFN의 순수 7-way argmax(예측 클래스의 소유 expert로 라우팅), 조건부·반환은
+exp19와 동일. 결과 — <b>global과 사실상 동일(0.6123 vs 0.6111)</b>:</p>
+
+<div class="tw"><table>
+<tr><th>class</th><th class="n">exp20 (energy 없음)</th><th class="n key-col">exp19 (energy 게이트)</th><th>격차의 원인</th></tr>
+<tr><td>infiltration</td><td class="n no">0.0282</td><td class="n key-col ok">0.2625</td><td>inf의 94.8%가 benign 직결 — expert에 도달조차 못 함</td></tr>
+<tr><td>web_attacks</td><td class="n no">0.0422</td><td class="n key-col ok">0.2248</td><td>web의 97.8% benign 직결 (tail 도착 11행)</td></tr>
+<tr><td>brute_force</td><td class="n no">0.4934</td><td class="n key-col ok">0.9159</td><td>게이트는 ftp 블록을 bf_bot으로 정확 배정 — global 추첨 병리에 면역</td></tr>
+<tr><td><b>macro</b></td><td class="n no"><b>0.6123</b></td><td class="n key-col ok"><b>0.7331</b></td><td><b>energy 게이트의 기여 = +0.121</b> (조건부·반환·global 동일, 배정만 상이한 순수 대조)</td></tr>
+</table></div>
+
+<p class="dim">반환도 무력해진다(tail 23행·bf_bot 0) — global 예측으로 라우팅하면 benign
+오배정 자체가 없어 돌려보낼 것이 없고, 조건부는 global의 예측에 동의하는 역할만 남는다
+(exp10 hard_route의 재현). 3중 대조 완성: 확률-선택기(exp17, benign 64.3%) ·
+순수-분류 라우팅(exp20, ≈global) · <b>energy 게이트+반환(exp19) — 유일 생존</b>.
+0821 §19/§20.</p>
+
 <h3>exp18 결과 — dedup 변형 벤치마크 (run 20260821_233323): 예상 반증</h3>
 
 <p>train/test 할당 <b>전에</b> 데이터 자체를 클래스-내 dedup하고 재분할한 별도
@@ -1014,6 +1034,7 @@ run: <code>…174945_exp15_prep</code> · <code>…192317_exp16_dedup</code> ·
 <div class="tw"><table>
 <tr><th>이후 축</th><th>상태</th><th>내용</th></tr>
 <tr><td class="key-col">benign 반환 출구 (exp19)</td><td class="ok">승리 — 새 기준</td><td>조건부 context에 benign 20만 추가만으로 <b>macro 0.7331</b> — 기록 bar(0.7012) 최초 상회, web 0.225·inf 0.263·benign 0.990. 유일한 대가 dos −0.025. §1 결과 표·0821 §17</td></tr>
+<tr><td>energy-free 대조군 (exp20)</td><td class="ok">완료 — 가격표 확정</td><td>배정을 global argmax로 바꾸면 시스템 ≈ global(0.6123) — <b>energy 게이트 기여 +0.121</b> 확정, 반환도 무력화. §1 대조표·0821 §20</td></tr>
 <tr><td>분할-전 dedup 변형 벤치마크 (exp18)</td><td class="ok">완료 — 반증 수확</td><td>별도 시험지에서 head 클래스는 오히려 상승(dos 0.998·brute 1.000 — mislabel 제로섬 3차 확증), 난제는 inf 0.19·web 0.11로 동일, 반환-없는 분리 구조는 global 열세. §1 결과·0821 §18</td></tr>
 <tr><td class="key-col">benign 반환 (margin δ, val-보정)</td><td>제안</td><td>tail 승리 중 benign과 박빙인 행을 반환 — test-오라클 δ=2.5에서 macro <b>0.7347</b>(전 클래스 ≥ global). 확정에는 val 게이트 점수로 δ 선택 → test 1회 (inf-절벽 회피 보수 선택)</td></tr>
 <tr><td>TTA tie-break (exp13)</td><td class="no">기각 (변형 한정)</td><td>공유-사본 perturb K-평균이 조밀 benign에 체계적 불리 — §5 표 참조. 기각 범위는 이 변형에 한정: 원 의도였던 <b>SADE식 안정성-가중 집계는 미검증 별개 축</b>. 재현성 부수 발견: GPU 동시 실행 run 간 게이트 점수 차로 박빙 3.2% 뒤집힘 (클래스 F1 ±0.008 밴드) — 원노브 판정은 이보다 큰 델타만 유효</td></tr>
