@@ -1,0 +1,103 @@
+[
+  {
+    "phi_mode": "embed_pca",
+    "phi_fit_rows_in_C0": 6711,
+    "anchor_rows_in_C0": 26,
+    "dup_hash_overlap": {
+      "eval_rows": 12509,
+      "eval_distinct": 6827,
+      "C0": {
+        "rows": 20000,
+        "distinct": 9697,
+        "distinct_shared_with_eval": 505,
+        "eval_rows_covered": 5919
+      },
+      "anchor": {
+        "rows": 210,
+        "distinct": 137,
+        "distinct_shared_with_eval": 31,
+        "eval_rows_covered": 3855
+      },
+      "phi_fit": {
+        "rows": 60000,
+        "distinct": 26593,
+        "distinct_shared_with_eval": 727,
+        "eval_rows_covered": 6250
+      },
+      "expert": {
+        "rows": 60000,
+        "distinct": 24091,
+        "distinct_shared_with_eval": 799,
+        "eval_rows_covered": 6139
+      },
+      "route": {
+        "rows": 18381,
+        "distinct": 11809,
+        "distinct_shared_with_eval": 541,
+        "eval_rows_covered": 3755
+      },
+      "tune": {
+        "rows": 12202,
+        "distinct": 5512,
+        "distinct_shared_with_eval": 398,
+        "eval_rows_covered": 5802
+      },
+      "cal": {
+        "rows": 12305,
+        "distinct": 6915,
+        "distinct_shared_with_eval": 490,
+        "eval_rows_covered": 5742
+      },
+      "xgb_train": {
+        "rows": 361517,
+        "distinct": 144796,
+        "distinct_shared_with_eval": 1286,
+        "eval_rows_covered": 6917
+      }
+    },
+    "tune_rows_ctx_dup": 7350,
+    "cal_rows_route_dup": 3963,
+    "mask_tune_ctx_fallback": true,
+    "global_fit_s": 1.0,
+    "phi_fit_s": 1.5,
+    "prior_select_s": 0.2,
+    "prior_T": 1.25,
+    "residual_clip_r_max": 5.590405,
+    "mining_s": 1.0,
+    "prior_beta": 0.0,
+    "k_selection_s": 6.3,
+    "route_gain_s": 1.1,
+    "scorer_verifier_s": 86.3,
+    "calibration_s": 1.1,
+    "eval_global_s": 0.2,
+    "eval_scorer_s": 0.3,
+    "eval_experts_s": 0.4,
+    "dense_eval_s": 0.6,
+    "feasibility_random_s": 1.9,
+    "feasibility_proximity_s": 2.0,
+    "total_s": 106.8,
+    "dense_eval": "done",
+    "rho": 0.0571,
+    "gain_matrix_sha256": "bb680d11fe3ca91cbe012d74b1bb78646bf8f6ab3977c5990f9270fc3dac078d",
+    "gain_matrix_dtype": "float32",
+    "peak_gpu_mem_gb": 1.88,
+    "data_file": {
+      "path": "/home/user/Desktop/imbalcic/data/nfv3_energy_suite_cic2018_scenarios.pkl",
+      "bytes": 443157753,
+      "mtime": 1784176661
+    },
+    "env": {
+      "cmd": "tabpfn/nfv3_v3_exp23d_racepfn_anchmode.py --target-dataset cic2018_capped --global-context-size 20000 --expert-block-rows 4000 --expert-max-rows 60000 --route-cap-per-class 3000 --tune-cap-per-class 2000 --cal-cap-per-class 2000 --phi-fit-rows 60000 --kmeans-max-rows 60000 --diversity-subclusters 256 --k-candidates 2,4 --test-cap-per-class 2000 --dense-eval --skip-xgboost --anchor-per-class 30 --anchor-mode natural",
+      "git_commit": "37ce039b756585a30d42087f4e9efffc2cf34b89",
+      "python": "3.13.12",
+      "numpy": "2.4.4",
+      "pandas": "3.0.2",
+      "sklearn": "1.8.0",
+      "xgboost": "3.2.0",
+      "torch": "2.11.0+cu130",
+      "tabpfn": "8.2.0",
+      "cuda": "13.0",
+      "gpu": "NVIDIA GeForce RTX 4090"
+    }
+  }
+]

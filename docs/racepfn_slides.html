@@ -1,0 +1,472 @@
+<title>RACE-PFN Briefing</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital,wght@0,400;1,400;1,600&display=swap">
+<style>
+  body { background:#FFFFFF; color:#111111; margin:0; padding:32px 0 64px;
+         font-family:"IBM Plex Sans",system-ui,sans-serif; }
+  .deck { max-width:1080px; margin:0 auto; padding:0 20px; }
+  .slide { background:#FFFFFF; border:1px solid #D8D8D8; border-radius:2px;
+           padding:52px 64px 44px; margin:0 0 28px; min-height:560px;
+           position:relative; display:flex; flex-direction:column; }
+  .kicker { font-size:12px; font-weight:600; letter-spacing:.18em;
+            text-transform:uppercase; color:#8A8A8A; margin:0 0 10px; }
+  h1 { font-size:40px; font-weight:700; margin:0 0 8px; letter-spacing:-.015em;
+       text-wrap:balance; }
+  h2 { font-size:29px; font-weight:700; margin:0 0 20px; letter-spacing:-.01em;
+       text-wrap:balance; }
+  .slide p, .slide li { font-size:16.5px; line-height:1.6; }
+  .lead { font-size:19px; line-height:1.6; max-width:62ch; }
+  ul { margin:8px 0; padding-left:22px; }
+  li { margin:0 0 9px; }
+  li::marker { color:#8A8A8A; }
+  b { font-weight:600; }
+  .mono, td.num, .num { font-family:"IBM Plex Mono",monospace;
+                        font-variant-numeric:tabular-nums; }
+  .math { font-family:"STIX Two Text",Georgia,serif; font-style:italic; }
+  .muted { color:#666666; }
+  .foot { margin-top:auto; padding-top:18px; display:flex;
+          justify-content:space-between; font-size:11.5px; color:#999999;
+          font-family:"IBM Plex Mono",monospace; border-top:1px solid #ECECEC; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:12px 44px; }
+  .tblwrap { overflow-x:auto; }
+  table { border-collapse:collapse; font-size:14.5px; width:100%;
+          font-variant-numeric:tabular-nums; }
+  th, td { padding:7px 12px; border-bottom:1px solid #E2E2E2; text-align:right; }
+  thead th { font-size:11.5px; letter-spacing:.07em; text-transform:uppercase;
+             color:#666666; border-bottom:1.5px solid #111111; }
+  tbody th, td.lab { text-align:left; font-weight:500; }
+  td.hit { font-weight:700; }
+  td.miss { color:#111111; font-weight:600; text-decoration:underline;
+            text-decoration-color:#B5B5B5; text-underline-offset:3px; }
+  .rule { border:none; border-top:1px solid #E2E2E2; margin:20px 0; }
+  .tag { display:inline-block; border:1px solid #111111; border-radius:2px;
+         padding:1px 8px; font-size:12px; font-weight:600; margin-right:8px; }
+  .tag.open { border-color:#9A9A9A; color:#666666; }
+  svg text { font-family:"IBM Plex Sans",sans-serif; fill:#111111; }
+  svg .m { font-family:"IBM Plex Mono",monospace; }
+  svg .s { font-size:11px; fill:#666666; }
+  .note { font-size:13px; color:#666666; line-height:1.55; }
+  @media print {
+    body { padding:0; }
+    .slide { border:none; margin:0; min-height:0; page-break-after:always;
+             padding:40px 56px; }
+  }
+</style>
+
+<div class="deck">
+
+<!-- ═══════════ S0 · TITLE ═══════════ -->
+<section class="slide">
+  <p class="kicker">Progress report · Network intrusion detection under severe class imbalance</p>
+  <h1>RACE-PFN: Residual-Advantage-Guided Context Experts on a Frozen Tabular Foundation Model</h1>
+  <p class="lead" style="margin-top:22px">We replaced the TAILGUARD design (per-family experts + energy gates) with
+  a foundation-model architecture in which experts are <b>discovered from the global model's failures</b> and invoked
+  through <b>calibrated gates</b>.</p>
+  <p class="lead"><b>Status in one sentence:</b> expert construction and safety are verified
+  (oracle upper bound 0.83–0.87 &gt; XGBoost 0.755; 4 harmful flips out of 4.02M rows);
+  the remaining bottleneck — recovery of that potential — is localized; we come with a
+  <b>decision point</b> on where to spend the next cycle.</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>CSE-CIC-IDS2018 · test 4,023,114 rows · all comparisons same-run, same-split</span><span>0 / 11</span></div>
+</section>
+
+<!-- ═══════════ S1 · WHY WE CHANGED COURSE ═══════════ -->
+<section class="slide">
+  <p class="kicker">1 · Why we changed course</p>
+  <h2>Three reasons, in numbers</h2>
+  <ul style="margin-top:14px">
+    <li style="margin-bottom:16px"><b>1 · It lost, and it was expensive.</b> The per-family expert pipeline beat the plain
+      global XGBoost baseline in <span class="mono">3 / 28</span> configurations (median macro-F1
+      <span class="mono">−0.184</span>) — while running <b>every expert on every sample</b>.
+      <span class="muted">(The new design averages <span class="mono">1.16</span> model calls per sample.)</span></li>
+    <li style="margin-bottom:16px"><b>2 · The OOD part was the weakest link — so it is deferred, not deleted.</b>
+      Unseen-class resolution landed at median accuracy <span class="mono">0.125</span>, and its energy scores
+      degrade toward chance exactly under long-tailed training. OOD detection presupposes a closed-set base
+      you can trust — <b>we rebuild that base first</b>; OOD returns as an extension once the base is verified.
+      <span class="muted">(The scenario framework of the previous draft is retained.)</span></li>
+    <li style="margin-bottom:6px"><b>3 · Too much of it was hand-designed.</b> Expert scopes named by us; gates and
+      thresholds hand-tuned on validation — none of it transferred under chronological splits.
+      Each of these becomes a measured or pre-registered choice in the new design <span class="muted">(slide 3)</span>.</li>
+  </ul>
+  <hr class="rule">
+  <p><b>Decision:</b> rebuild on a backbone where specialization is <b>data, not weights</b> (slide 2),
+  with every remaining design choice measured on a held-out split or fixed by a pre-registered rule (slide 3).</p>
+  <p class="note">The evaluation design of the previous draft (temporal / cross-dataset scenarios A–E) is retained unchanged — only the method is replaced.</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>evidence: s44 sweep record · src-history archive</span><span>1 / 11</span></div>
+</section>
+
+<!-- ═══════════ S2 · TABPFN ═══════════ -->
+<section class="slide">
+  <p class="kicker">2 · The new backbone</p>
+  <h2>TabPFN: prediction by reading labeled rows, not by training on them</h2>
+  <p style="margin:0 0 4px">A transformer pre-trained once on millions of synthetic tabular tasks. At inference it
+  receives a <b>labeled context set</b> and a query row, and predicts by <b>in-context learning</b> —
+  one forward pass, <span class="math">θ</span> frozen: <span class="math">p(y|x) = F<sub>θ</sub>(C, x)</span>.
+  The context <span class="math">C</span> is the only thing we ever choose.</p>
+  <svg viewBox="0 0 960 252" role="img" style="width:100%;height:auto;margin:10px 0 2px"
+       aria-label="Left: a stack of labeled context rows and one unlabeled query row feed a frozen transformer, which outputs class probabilities in a single forward pass with no gradient step. Right: swapping the context set turns the same frozen model into the global predictor or into a specialist expert — specialization is data, not weights.">
+    <defs><marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#111"/></marker></defs>
+    <!-- context table -->
+    <text class="s" x="10" y="18" style="letter-spacing:.12em">CONTEXT — LABELED ROWS (DATA, NOT WEIGHTS)</text>
+    <g font-size="11" class="m">
+      <rect x="10" y="28" width="240" height="132" fill="none" stroke="#111" stroke-width="1.3"/>
+      <line x1="10" y1="50" x2="250" y2="50" stroke="#111"/>
+      <line x1="196" y1="28" x2="196" y2="160" stroke="#CCC"/>
+      <text x="18" y="43" font-weight="600">x₁ … x₄₆ (46 features)</text><text x="206" y="43" font-weight="600">y</text>
+      <text x="18" y="66">0.2  13  909  …</text><text x="206" y="66">benign</text>
+      <text x="18" y="84">7.1   2   80  …</text><text x="206" y="84">dos</text>
+      <text x="18" y="102">0.9  55  443  …</text><text x="206" y="102">brute</text>
+      <text x="18" y="120">3.3   8  121  …</text><text x="206" y="120">benign</text>
+      <text x="18" y="141" fill="#666">⋮  up to 1M rows  ⋮</text>
+    </g>
+    <rect x="10" y="172" width="240" height="26" fill="#F4F4F4" stroke="#111" stroke-width="1.3"/>
+    <text x="18" y="189" font-size="11" class="m">query x: 5.0  21  307  …</text>
+    <text x="230" y="189" font-size="12" font-weight="700" text-anchor="middle">?</text>
+    <line x1="250" y1="94" x2="316" y2="112" stroke="#111" stroke-width="1.3" marker-end="url(#b)"/>
+    <line x1="250" y1="185" x2="316" y2="132" stroke="#111" stroke-width="1.3" marker-end="url(#b)"/>
+    <!-- model -->
+    <rect x="320" y="84" width="150" height="72" fill="none" stroke="#111" stroke-width="1.6"/>
+    <text x="395" y="112" text-anchor="middle" font-size="13.5" font-weight="700">Transformer</text>
+    <text x="395" y="130" text-anchor="middle" font-size="11.5" class="m">θ frozen · pre-trained once</text>
+    <line x1="470" y1="120" x2="536" y2="120" stroke="#111" stroke-width="1.3" marker-end="url(#b)"/>
+    <text class="s" x="503" y="111" text-anchor="middle">1 pass</text>
+    <!-- output bars -->
+    <g font-size="11.5">
+      <text class="s" x="540" y="70" style="letter-spacing:.12em">p(y | x)</text>
+      <text x="540" y="94" class="m">benign</text><rect x="596" y="84" width="118" height="11" fill="#111"/><text x="720" y="94" class="m">.82</text>
+      <text x="540" y="114" class="m">dos</text><rect x="596" y="104" width="16" height="11" fill="#9A9A9A"/><text x="618" y="114" class="m">.11</text>
+      <text x="540" y="134" class="m">brute</text><rect x="596" y="124" width="7" height="11" fill="#C9C9C9"/><text x="609" y="134" class="m">.05</text>
+      <text x="540" y="154" class="m">others</text><rect x="596" y="144" width="4" height="11" fill="#E2E2E2" stroke="#BBB" stroke-width="0.5"/><text x="606" y="154" class="m">.02</text>
+    </g>
+    <text x="540" y="184" font-size="12" font-weight="600">No gradient step. No fitting.</text>
+    <text x="540" y="200" font-size="12">"Training data" is an input you can edit at any time.</text>
+    <!-- right: swap contexts -->
+    <line x1="770" y1="28" x2="770" y2="240" stroke="#DDD"/>
+    <text class="s" x="786" y="18" style="letter-spacing:.12em">WHY IT FITS US</text>
+    <g font-size="11.5">
+      <rect x="786" y="30" width="76" height="34" fill="none" stroke="#111"/><text x="824" y="45" text-anchor="middle" class="m">C₀ 1M</text><text x="824" y="58" text-anchor="middle" class="s">natural mix</text>
+      <rect x="786" y="74" width="76" height="34" fill="none" stroke="#111"/><text x="824" y="89" text-anchor="middle" class="m">C_k 199k</text><text x="824" y="102" text-anchor="middle" class="s">failure regime</text>
+      <line x1="862" y1="47" x2="898" y2="62" stroke="#111" stroke-width="1.2" marker-end="url(#b)"/>
+      <line x1="862" y1="91" x2="898" y2="76" stroke="#111" stroke-width="1.2" marker-end="url(#b)"/>
+      <rect x="902" y="52" width="48" height="34" fill="none" stroke="#111" stroke-width="1.5"/>
+      <text x="926" y="73" text-anchor="middle" font-size="11" class="m">same θ</text>
+      <text x="786" y="132" font-weight="600" font-size="12">Same frozen model:</text>
+      <text x="786" y="149" font-size="12">global ↔ specialist by</text>
+      <text x="786" y="166" font-size="12">swapping context rows —</text>
+      <text x="786" y="183" font-size="12">8 experts cost seconds,</text>
+      <text x="786" y="200" font-size="12">and drift adaptation =</text>
+      <text x="786" y="217" font-size="12">refreshing rows, not retraining.</text>
+    </g>
+  </svg>
+  <p class="note">Honest cost note: TFM inference is far heavier than XGBoost per call — the architecture holds the average at
+  <span class="mono">1.16</span> forward passes/sample by invoking at most one expert, only when a gate predicts positive gain.</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>backbone: TabPFN-v3, frozen checkpoint</span><span>2 / 11</span></div>
+</section>
+
+<!-- ═══════════ S3 · DE-HEURISTICIZATION ═══════════ -->
+<section class="slide">
+  <p class="kicker">3 · Design principle</p>
+  <h2>Every heuristic of the old design is replaced by a measured or pre-registered choice</h2>
+  <div class="tblwrap">
+  <table>
+    <thead><tr><th class="lab" style="width:24%">Design choice</th><th class="lab" style="width:33%">Before (hand-set)</th><th class="lab">Now (measured / pre-registered)</th></tr></thead>
+    <tbody>
+      <tr><td class="lab">Expert scope</td><td class="lab">attack families named by us</td><td class="lab"><b>discovered</b> by clustering the global model's <b>failure signatures</b> (where · toward which class · how badly it errs) on held-out data</td></tr>
+      <tr><td class="lab">Number of experts <span class="math">K</span></td><td class="lab">fixed guess (4)</td><td class="lab">selected from {2, 4, 8} by oracle score on a <b>dedicated tuning split</b></td></tr>
+      <tr><td class="lab">Which experts to keep</td><td class="lab">all of them</td><td class="lab"><b>pruned</b> by measured marginal contribution, re-computed after every removal</td></tr>
+      <tr><td class="lab">Invocation thresholds</td><td class="lab">hand-tuned on validation</td><td class="lab">fixed on a <b>separate calibration split</b> under pre-registered constraints (benign-FPR cap, harm cap, min support)</td></tr>
+      <tr><td class="lab">Data protocol</td><td class="lab">train / val / test</td><td class="lab"><b>six chronological roles</b> (build · mine · gate-train · tune · calibrate · test), each used once for its purpose</td></tr>
+      <tr><td class="lab">Experiment discipline</td><td class="lab">—</td><td class="lab">one knob per run · judged before results · all runs against same-run baselines</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note" style="margin-top:14px">Residual hand-set constants remain (clip quantile, threshold grids) — declared in each run's config record rather than hidden.</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>protocol: research guide §5–§16</span><span>3 / 11</span></div>
+</section>
+
+<!-- ═══════════ S4 · ARCHITECTURE ═══════════ -->
+<section class="slide">
+  <p class="kicker">4 · Architecture</p>
+  <h2>Find where the global model fails → build one context per failure regime → invoke through two gates</h2>
+  <svg viewBox="0 0 960 300" role="img" style="width:100%;height:auto;margin:8px 0 4px"
+       aria-label="Offline: the frozen global TabPFN is evaluated on held-out data, failure signatures are clustered into regimes, and each regime becomes an expert context of a shared anchor plus specialist rows. Online: every input goes to the global model; a scorer gate proposes at most one expert; a verifier gate accepts the override only if a calibrated lower bound on the gain is positive.">
+    <defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#111"/></marker></defs>
+    <text class="s" x="8" y="20" style="letter-spacing:.14em">OFFLINE — BUILT ONCE, THEN FROZEN</text>
+    <rect x="8" y="34" width="150" height="46" fill="none" stroke="#111" stroke-width="1.4"/>
+    <text x="83" y="54" text-anchor="middle" font-size="13" font-weight="600">Global TFM</text>
+    <text x="83" y="70" text-anchor="middle" font-size="11" class="m">F(C0 , ·) frozen</text>
+    <line x1="158" y1="57" x2="238" y2="57" stroke="#111" stroke-width="1.3" marker-end="url(#a)"/>
+    <text class="s" x="198" y="48" text-anchor="middle">held-out errors</text>
+    <rect x="242" y="34" width="180" height="46" fill="none" stroke="#111" stroke-width="1.4"/>
+    <text x="332" y="54" text-anchor="middle" font-size="13" font-weight="600">Failure signatures</text>
+    <text x="332" y="70" text-anchor="middle" font-size="11" class="m">where · direction · severity</text>
+    <line x1="422" y1="57" x2="502" y2="57" stroke="#111" stroke-width="1.3" marker-end="url(#a)"/>
+    <text class="s" x="462" y="48" text-anchor="middle">cluster (K tuned)</text>
+    <rect x="506" y="34" width="130" height="46" fill="none" stroke="#111" stroke-width="1.4"/>
+    <text x="571" y="54" text-anchor="middle" font-size="13" font-weight="600">Failure regimes</text>
+    <text x="571" y="70" text-anchor="middle" font-size="11" class="m">disjoint · prunable</text>
+    <line x1="636" y1="57" x2="716" y2="57" stroke="#111" stroke-width="1.3" marker-end="url(#a)"/>
+    <text class="s" x="676" y="48" text-anchor="middle">1 context / regime</text>
+    <rect x="720" y="28" width="228" height="58" fill="#F4F4F4" stroke="#111" stroke-width="1.4"/>
+    <text x="834" y="50" text-anchor="middle" font-size="13" font-weight="600">Expert bank</text>
+    <text x="834" y="68" text-anchor="middle" font-size="11" class="m">C_k = balanced anchor ∪ regime rows</text>
+
+    <line x1="8" y1="112" x2="948" y2="112" stroke="#DDD" stroke-width="1"/>
+    <text class="s" x="8" y="138" style="letter-spacing:.14em">ONLINE — PER SAMPLE</text>
+    <rect x="8" y="154" width="118" height="46" fill="none" stroke="#111" stroke-width="1.4"/>
+    <text x="67" y="174" text-anchor="middle" font-size="13" font-weight="600">① Global</text>
+    <text x="67" y="190" text-anchor="middle" font-size="11" class="m">every sample</text>
+    <line x1="126" y1="177" x2="196" y2="177" stroke="#111" stroke-width="1.3" marker-end="url(#a)"/>
+    <rect x="200" y="154" width="168" height="46" fill="none" stroke="#111" stroke-width="1.4"/>
+    <text x="284" y="174" text-anchor="middle" font-size="13" font-weight="600">② Scorer gate</text>
+    <text x="284" y="190" text-anchor="middle" font-size="11" class="m">P(gain&gt;0) &gt; τ_pre ?</text>
+    <line x1="368" y1="177" x2="438" y2="177" stroke="#111" stroke-width="1.3" marker-end="url(#a)"/>
+    <text class="s" x="403" y="168" text-anchor="middle">4–16%</text>
+    <rect x="442" y="154" width="150" height="46" fill="none" stroke="#111" stroke-width="1.4"/>
+    <text x="517" y="174" text-anchor="middle" font-size="13" font-weight="600">③ Top-1 expert</text>
+    <text x="517" y="190" text-anchor="middle" font-size="11" class="m">one extra call</text>
+    <line x1="592" y1="177" x2="662" y2="177" stroke="#111" stroke-width="1.3" marker-end="url(#a)"/>
+    <rect x="666" y="154" width="170" height="46" fill="none" stroke="#111" stroke-width="1.4"/>
+    <text x="751" y="174" text-anchor="middle" font-size="13" font-weight="600">④ Verifier gate</text>
+    <text x="751" y="190" text-anchor="middle" font-size="11" class="m">gain lower-bound &gt; τ_post ?</text>
+    <line x1="836" y1="177" x2="900" y2="177" stroke="#111" stroke-width="1.3" marker-end="url(#a)"/>
+    <rect x="904" y="154" width="44" height="46" fill="#F4F4F4" stroke="#111" stroke-width="1.4"/>
+    <text x="926" y="182" text-anchor="middle" font-size="12" font-weight="600">swap</text>
+    <path d="M284 200 v34 h620 v-24" fill="none" stroke="#999" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#a)"/>
+    <text class="s" x="600" y="248" text-anchor="middle">"no" at either gate → keep the global prediction (safe default)</text>
+    <text class="s" x="8" y="288">Thresholds τ fixed on the calibration split under pre-registered caps · both gates are small XGBoost models, not hand rules.</text>
+  </svg>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>full figure with worked examples: report appendix</span><span>4 / 11</span></div>
+</section>
+
+<!-- ═══════════ S5 · DATA WALKTHROUGH ═══════════ -->
+<section class="slide">
+  <p class="kicker">5 · What the data looks like at each stage</p>
+  <h2>Failure signature → regime → expert context, with real rows</h2>
+  <div style="display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:0 22px">
+    <div>
+      <p style="margin-top:2px"><b>① A failure becomes a vector.</b> For every held-out row the global model got wrong,
+      we record <em>how</em> it failed:</p>
+      <div style="border:1px solid #111;padding:10px 14px;font-size:13px;line-height:1.5">
+        <span class="mono">true: web · global said: benign .85, web .08</span><br>
+        <span class="muted">signature = [ position in feature space (16d) |
+        global's belief p₀ | <b>direction</b> y−p₀: web +.92, benign −.85 |
+        <b>severity</b> 6.1 ]</span>
+      </div>
+      <div style="border:1px solid #CCC;padding:10px 14px;font-size:13px;line-height:1.5;margin-top:8px">
+        <span class="mono">true: inf · global said: dos .55, inf .35</span><br>
+        <span class="muted">same "wrong", <b>different direction</b> → different signature → different regime</span>
+      </div>
+      <p class="note" style="margin-top:8px">Signatures use only the global model's outputs + labels on held-out data — no hand-defined categories.</p>
+    </div>
+    <div>
+      <p style="margin-top:2px"><b>② Signatures cluster into regimes</b> <span class="muted">(one record run, 2M mined rows):</span></p>
+      <table style="font-size:13px">
+        <thead><tr><th class="lab">regime (discovered)</th><th>rows</th><th>failure mass</th></tr></thead>
+        <tbody>
+          <tr><td class="lab">dos, pure</td><td class="num">21,068</td><td class="num">.17</td></tr>
+          <tr><td class="lab">brute-force, pure</td><td class="num">17,610</td><td class="num hit">.34</td></tr>
+          <tr><td class="lab">infiltration, pure</td><td class="num">15,645</td><td class="num">.28</td></tr>
+          <tr><td class="lab">web, pure</td><td class="num">140</td><td class="num">.003</td></tr>
+          <tr><td class="lab">everything-else</td><td class="num">1.89M</td><td class="num">.01</td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:8px">Regimes are <b>failure types, not class labels</b> — a class may split into several regimes, and a confusion boundary (e.g. benign↔inf) keeps <em>both</em> sides in one regime. Each row belongs to exactly one regime.</p>
+    </div>
+    <div>
+      <p style="margin-top:2px"><b>③ A regime becomes an expert's context:</b></p>
+      <div style="border:1px solid #111;padding:12px 14px;font-size:13.5px;line-height:1.65">
+        <span class="mono">C_k =</span><br>
+        <b>anchor</b> — 2,000 rows × every class<br>
+        <span class="muted">(keeps the full label space: the expert can still answer sensibly outside its specialty)</span><br>
+        <span class="mono">∪</span><br>
+        <b>regime rows</b> — up to 186k, chosen to <em>cover</em> the regime (budget ∝ failure mass, ≥1 per sub-area)<br>
+        <hr class="rule" style="margin:8px 0">
+        <span class="mono">≈ 199k labeled rows → handed to the frozen model as-is</span>
+      </div>
+      <p class="note" style="margin-top:8px">Then each expert is kept only if removing it measurably hurts the bank on its own regime — and everything downstream (gates, thresholds) is trained/fixed on later, disjoint splits.</p>
+    </div>
+  </div>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>numbers: record-run regime reconstruction</span><span>5 / 11</span></div>
+</section>
+
+<!-- ═══════════ S5 · POTENTIAL VS REALIZED ═══════════ -->
+<section class="slide">
+  <p class="kicker">6 · The one chart that frames everything</p>
+  <h2>The bank's potential already exceeds XGBoost — the gap is a <em>recovery</em> problem</h2>
+  <svg viewBox="0 0 960 240" role="img" style="width:100%;height:auto;margin:6px 0"
+       aria-label="Horizontal bars of macro F1: oracle upper bound of the expert bank 0.83, XGBoost 0.755, RACE-PFN realized 0.698, global TabPFN 0.670. The distance between the oracle and the realized system is marked as the recovery gap.">
+    <g font-size="13">
+      <text x="150" y="38" text-anchor="end" font-weight="600">Oracle (bank potential)</text>
+      <rect x="162" y="24" width="674" height="20" fill="#EDEDED" stroke="#111" stroke-width="1.2"/>
+      <text class="m" x="844" y="39" font-weight="600">0.829</text>
+      <text x="150" y="86" text-anchor="end" font-weight="600">XGBoost (full data)</text>
+      <rect x="162" y="72" width="456" height="20" fill="#C9C9C9" stroke="#111" stroke-width="1.2"/>
+      <text class="m" x="626" y="87">0.755</text>
+      <text x="150" y="134" text-anchor="end" font-weight="600">RACE-PFN (realized)</text>
+      <rect x="162" y="120" width="288" height="20" fill="#111111"/>
+      <text class="m" x="458" y="135">0.698</text>
+      <text x="150" y="182" text-anchor="end" font-weight="600">Global TabPFN</text>
+      <rect x="162" y="168" width="206" height="20" fill="#F6F6F6" stroke="#999" stroke-width="1.2"/>
+      <text class="m" x="376" y="183">0.670</text>
+      <!-- axis: 0.66 -> 0.84 mapped over 162..898 (x = 162 + (v-0.66)/0.18*736) ; 0.829->853? adjust: bars scaled illustratively with true labels -->
+      <path d="M450 130 h386 M450 124 v12 M836 124 v12" stroke="#111" stroke-width="1.2" fill="none"/>
+      <text x="643" y="118" text-anchor="middle" font-size="12.5" font-weight="600">recovery gap — the whole remaining problem</text>
+      <line x1="162" y1="206" x2="898" y2="206" stroke="#DDD"/>
+      <text class="s" x="162" y="224">macro F1, CSE-CIC-IDS2018 test 4.02M · oracle = per-row best model chosen with labels (upper bound; 0.83–0.87 across runs) · bar axis starts at 0.60 · lengths proportional</text>
+    </g>
+  </svg>
+  <p style="margin-top:6px"><b>Where the recovery dies (measured funnel):</b> of the
+  <span class="mono">462k</span> rows an expert could genuinely fix, the scorer gate proposes
+  <span class="mono">26%</span> → the verifier accepts <span class="mono">12.9k</span> → outcome
+  <span class="mono">12,710 fixed / 4 broken</span>. The gates are safe but still too closed —
+  and one high-value regime is unreachable for a data reason (slide 9).</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>controls: random-context bank 0.78 · proximity bank 0.92 (oracle refs)</span><span>6 / 11</span></div>
+</section>
+
+<!-- ═══════════ S6 · VERIFICATION STATUS ═══════════ -->
+<section class="slide">
+  <p class="kicker">7 · Verification status, gate by gate</p>
+  <h2>Two of the three layers pass; the third is localized, not mysterious</h2>
+  <div class="tblwrap">
+  <table>
+    <thead><tr><th class="lab" style="width:20%">Layer</th><th style="width:11%">Verdict</th><th class="lab">Evidence (all same-run)</th></tr></thead>
+    <tbody>
+      <tr><td class="lab"><b>Expert construction</b><br><span class="note">do meaningful specialists exist?</span></td>
+          <td><span class="tag">PASS</span></td>
+          <td class="lab">regimes are row-disjoint and failure-typed; dos / infiltration / web specialists survive selection; bank oracle <span class="mono">0.83–0.87</span> &gt; XGBoost <span class="mono">0.755</span>; beats an equal-memory random-context bank by <span class="mono">+0.05</span></td></tr>
+      <tr><td class="lab"><b>Safety</b><br><span class="note">does invoking experts hurt?</span></td>
+          <td><span class="tag">PASS</span></td>
+          <td class="lab"><span class="mono">4</span> harmful flips out of 4.02M (precision <span class="mono">0.9997</span>); benign FPR unchanged; system ECE <span class="mono">0.008</span> (better than global, near XGB); cost <span class="mono">1.16</span> calls/sample</td></tr>
+      <tr><td class="lab"><b>Recovery</b><br><span class="note">how much potential is realized?</span></td>
+          <td><span class="tag open">PARTIAL</span></td>
+          <td class="lab">proposal recall raised <span class="mono">0.09 → 0.26</span> this cycle (scorer reformulated as sign classification), but utility realized ≈ <span class="mono">0.20</span>; the largest unrealized mass sits in one regime that the tuning window cannot measure (slide 9)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note" style="margin-top:14px">Every verdict comes from a pre-registered per-run record: bank composition, per-class transitions with denominators, threshold grids, calibration coverage — reproducible from run directories.</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>framework: research guide §24 gates</span><span>7 / 11</span></div>
+</section>
+
+<!-- ═══════════ S7 · HONEST PERFORMANCE ═══════════ -->
+<section class="slide">
+  <p class="kicker">8 · Performance, stated plainly</p>
+  <h2>XGBoost still leads on IID macro-F1 — what changed is the price of what we do recover</h2>
+  <div class="cols">
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th class="lab">class</th><th>Global</th><th>RACE</th><th>XGB</th></tr></thead>
+        <tbody>
+          <tr><td class="lab">benign</td><td class="num">0.980</td><td class="num">0.982</td><td class="num hit">0.994</td></tr>
+          <tr><td class="lab">bot</td><td class="num">0.998</td><td class="num hit">0.998</td><td class="num">0.998</td></tr>
+          <tr><td class="lab">brute-force</td><td class="num">0.725</td><td class="num">0.725</td><td class="num hit">0.916</td></tr>
+          <tr><td class="lab">ddos</td><td class="num">0.905</td><td class="num">0.905</td><td class="num hit">0.992</td></tr>
+          <tr><td class="lab">dos</td><td class="num">0.524</td><td class="num">0.718</td><td class="num hit">0.782</td></tr>
+          <tr><td class="lab">infiltration</td><td class="num">0.393</td><td class="num">0.393</td><td class="num hit">0.429</td></tr>
+          <tr><td class="lab">web</td><td class="num">0.164</td><td class="num">0.164</td><td class="num hit">0.172</td></tr>
+          <tr><td class="lab"><b>macro</b></td><td class="num">0.670</td><td class="num"><b>0.698</b></td><td class="num hit"><b>0.755</b></td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:8px">Best current run. dos is the one mover (<span class="mono">+0.19</span>); brute-force
+      (<span class="mono">−0.19</span> vs XGB) is the largest gap item — its cause is measured and a concrete fix is queued, see slide 8. These numbers are a <b>work-in-progress checkpoint under active improvement</b>, not the endpoint.</p>
+    </div>
+    <div>
+      <p><b>The risk-adjusted view</b> — same architecture family, two operating points:</p>
+      <table>
+        <thead><tr><th class="lab"></th><th>open-gate<br>(pre-protocol)</th><th>calibrated<br>(now)</th></tr></thead>
+        <tbody>
+          <tr><td class="lab">gain vs global</td><td class="num">+0.063</td><td class="num">+0.028</td></tr>
+          <tr><td class="lab">correct rows broken</td><td class="num">8,524</td><td class="num hit">4</td></tr>
+          <tr><td class="lab">override precision</td><td class="num">0.871</td><td class="num hit">0.9997</td></tr>
+          <tr><td class="lab">calls / sample</td><td class="num">1.60</td><td class="num hit">1.16</td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:8px">Deployment phrasing: an add-on to a global TFM that buys
+      <span class="mono">+0.028</span> macro at <b>near-zero harm</b> and 16% extra compute — with the
+      dial between these two points now under calibrated control instead of hand-tuning.</p>
+    </div>
+  </div>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>XGBoost: full-pool 12.1M rows, same split, cited across runs (deterministic)</span><span>8 / 11</span></div>
+</section>
+
+<!-- ═══════════ S8 · KEY FINDING ═══════════ -->
+<section class="slide">
+  <p class="kicker">9 · The finding that sets the next phase</p>
+  <h2>The highest-value failure regime does not exist in the later tuning window — drift is real, and measured</h2>
+  <ul>
+    <li>Verified by scenario labels: the hard regime is <b>SSH-bruteforce (starts 18:01)</b>, the easy one is <b>FTP-bruteforce (afternoon)</b> — same class label, different tool, different traffic shape. The frozen model solves FTP and misses <b>all 37,696 SSH rows</b> in test; the tuning window (15:31–15:43) <b>ends before SSH begins</b>, so the SSH specialist is unmeasurable there and dropped.</li>
+    <li>Consequence: its specialist is unmeasurable on the tuning split and is dropped by the
+      support rule — which is exactly why brute-force F1 stays frozen at <span class="mono">0.725</span>
+      in every configuration, the single largest item of the XGBoost gap.</li>
+    <li>Reading: <b>the character of brute-force failures changes over time within this dataset.</b>
+      This is direct, quantified evidence of temporal drift — the phenomenon the frozen-backbone /
+      context-refresh architecture was chosen to handle in the first place.</li>
+  </ul>
+  <hr class="rule">
+  <p><b>What this buys us:</b> the temporal-refresh phase of the plan (update contexts with a few
+  verified labels per window, evaluate on the <em>next</em> window) is no longer a speculative
+  differentiator — our own IID experiments produced its motivating evidence, and the calibrated
+  safety machinery built this cycle is its prerequisite.</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>observed independently in 3 consecutive runs</span><span>9 / 11</span></div>
+</section>
+
+<!-- ═══════════ S10 · EVALUATION PLAN ═══════════ -->
+<section class="slide">
+  <p class="kicker">10 · So what do we evaluate on, if not IID F1?</p>
+  <h2>Three axes where editable contexts should beat retraining — IID F1 becomes a guardrail</h2>
+  <div class="tblwrap">
+  <table>
+    <thead><tr><th class="lab" style="width:19%">Axis (old-draft scenario)</th><th class="lab" style="width:30%">Question</th><th class="lab" style="width:29%">Metric</th><th class="lab">Baselines</th></tr></thead>
+    <tbody>
+      <tr><td class="lab"><b>1 · Temporal adaptation</b><br><span class="note">Scenario A / C lineage — primary claim</span></td>
+          <td class="lab">with ≤ 200 verified labels per window, how much of the next window's performance is recovered?</td>
+          <td class="lab">prequential per-window macro-F1 &amp; tail-F1 <b>recovery</b>, plus <b>forgetting</b> on a past reference window · label budget B ∈ {0, 50, 200, 1000}</td>
+          <td class="lab">frozen system (no update) · XGBoost retrained with the <em>same</em> label budget</td></tr>
+      <tr><td class="lab"><b>2 · Long-tail stress</b><br><span class="note">Scenario D lineage</span></td>
+          <td class="lab">as imbalance worsens, who degrades slower?</td>
+          <td class="lab">macro / tail-F1 <b>degradation slope</b> over imbalance factor IF ∈ {10, 50, 100, 500}</td>
+          <td class="lab">full-data XGBoost · global TFM</td></tr>
+      <tr><td class="lab"><b>3 · Test-prior shift</b></td>
+          <td class="lab">does performance survive when the test mix changes (tail-heavy ↔ head-heavy)?</td>
+          <td class="lab">reweighted macro-F1 + calibration (ECE) across 4 test priors</td>
+          <td class="lab">XGBoost ± posterior correction</td></tr>
+      <tr><td class="lab"><b>Guardrails (always-on)</b></td>
+          <td class="lab">is the base system ever harmed?</td>
+          <td class="lab">IID macro-F1 (do-no-harm check) · benign FPR · balanced accuracy · ECE · calls/sample · harmful-override count</td>
+          <td class="lab">same-run global</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="margin-top:12px"><b>Why these axes:</b> on axis 1 an XGBoost baseline must <em>retrain</em> on 50–200 labels (unstable), while RACE edits context rows under already-calibrated gates — and slide 9&rsquo;s drift finding (FTP→SSH) is precisely an axis-1 phenomenon occurring inside our own dataset. The safety machinery verified this cycle (4 harmful flips, fixed FPR caps) is what makes these claims defensible. IID macro-F1 stays reported, but as a do-no-harm guardrail rather than the headline.</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>protocol: research guide §17, §20.3–20.5 · scenario map: A,C→axis 1 · D→axis 2</span><span>10 / 11</span></div>
+</section>
+
+<!-- ═══════════ S9 · DECISION ═══════════ -->
+<section class="slide">
+  <p class="kicker">11 · Decision requested</p>
+  <h2>Where should the next cycle go?</h2>
+  <div class="cols">
+    <div>
+      <p><span class="tag open">Branch A</span><b>Keep pursuing IID parity with XGBoost</b></p>
+      <ul>
+        <li>2–3 recovery knobs remain: measure unmeasurable regimes on the gate-training split;
+          temper the class-weight scale that biases gates toward web; iterate the scorer.</li>
+        <li>Upside: closes the headline number. Risk: even at parity, "why not just XGBoost"
+          remains unanswered on IID alone.</li>
+      </ul>
+    </div>
+    <div>
+      <p><span class="tag">Branch B</span><b>Pivot to the temporal / long-tail scenarios now</b></p>
+      <ul>
+        <li>Drift evidence is in hand (slide 9); scenario framework A–E already designed in the draft;
+          safety machinery (calibrated gates) is the prerequisite and is done.</li>
+        <li>These are the settings where a frozen backbone with editable contexts is structurally
+          advantaged over retraining-based baselines — the paper's actual claim.</li>
+      </ul>
+    </div>
+  </div>
+  <hr class="rule">
+  <p><b>Recommendation:</b> Branch B as the main line, with Branch A limited to the one cheap knob
+  (regime measurement fallback) that directly unblocks brute-force — it serves both branches.</p>
+  <div class="foot"><span>RACE-PFN Briefing</span><span>lab log & full report available for detail</span><span>11 / 11</span></div>
+</section>
+
+</div>

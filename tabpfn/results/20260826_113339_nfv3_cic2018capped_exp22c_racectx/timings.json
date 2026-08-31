@@ -1,0 +1,80 @@
+[
+  {
+    "phi_mode": "embed_pca",
+    "phi_fit_rows_in_C0": 6711,
+    "anchor_rows_in_C0": 226,
+    "dup_hash_overlap": {
+      "eval_rows": 12509,
+      "eval_distinct": 6827,
+      "C0": {
+        "rows": 20000,
+        "distinct_shared_with_eval": 505,
+        "eval_rows_covered": 5919
+      },
+      "anchor": {
+        "rows": 2100,
+        "distinct_shared_with_eval": 168,
+        "eval_rows_covered": 5141
+      },
+      "phi_fit": {
+        "rows": 60000,
+        "distinct_shared_with_eval": 727,
+        "eval_rows_covered": 6250
+      },
+      "mine": {
+        "rows": 60000,
+        "distinct_shared_with_eval": 799,
+        "eval_rows_covered": 6139
+      },
+      "router": {
+        "rows": 18381,
+        "distinct_shared_with_eval": 541,
+        "eval_rows_covered": 3755
+      },
+      "xgb_train": {
+        "rows": 361517,
+        "distinct_shared_with_eval": 1286,
+        "eval_rows_covered": 6917
+      }
+    },
+    "xgb_baseline_s": 44.1,
+    "global_fit_s": 1.1,
+    "phi_fit_s": 0.6,
+    "residual_clip_r_max": 6.807859,
+    "residual_clipped_rows": 300,
+    "mining_s": 1.1,
+    "router_advantage_s": 1.1,
+    "router_train_s": 7.9,
+    "verifier_train_s": 0.4,
+    "eval_global_s": 0.2,
+    "eval_router_s": 0.3,
+    "eval_experts_s": 0.4,
+    "dense_eval_s": 0.6,
+    "feasibility_random_s": 2.2,
+    "feasibility_proximity_s": 2.1,
+    "total_s": 67.3,
+    "dense_eval": "done",
+    "rho": 0.3931,
+    "gain_matrix_sha256": "7c7b23c6b874ce3eb9ebe6ee98b7ed5385175ef017237444d05adab0df73e372",
+    "gain_matrix_dtype": "float32",
+    "peak_gpu_mem_gb": 1.69,
+    "data_file": {
+      "path": "/home/user/Desktop/imbalcic/data/nfv3_energy_suite_cic2018_scenarios.pkl",
+      "bytes": 443157753,
+      "mtime": 1784176661
+    },
+    "env": {
+      "cmd": "tabpfn/nfv3_v3_exp22c_racepfn_context.py --target-dataset cic2018_capped --global-context-size 20000 --anchor-per-class 300 --expert-block-rows 4000 --mine-max-rows 60000 --router-cap-per-class 3000 --phi-fit-rows 60000 --kmeans-max-rows 60000 --diversity-subclusters 256 --test-cap-per-class 2000 --dense-eval",
+      "git_commit": "37ce039b756585a30d42087f4e9efffc2cf34b89",
+      "python": "3.13.12",
+      "numpy": "2.4.4",
+      "pandas": "3.0.2",
+      "sklearn": "1.8.0",
+      "xgboost": "3.2.0",
+      "torch": "2.11.0+cu130",
+      "tabpfn": "8.2.0",
+      "cuda": "13.0",
+      "gpu": "NVIDIA GeForce RTX 4090"
+    }
+  }
+]
