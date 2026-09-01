@@ -20,6 +20,11 @@ method 열세가 아니라 분할 결함이다.
 
 THE KNOB: --pool-partition scenario_stratified
     (class, attack_scenario) 그룹마다 timestamp 정렬 후 50/25/25를 적용한다.
+    **train 분할(D_global/D_expert/D_route)과 val 분할(D_tune/D_cal) 양쪽에
+    같이 적용한다.** train만 고치면 C0에는 SSH가 들어가는데 D_tune은 여전히
+    FTP 전용(val brute = ftp 77,344 + ssh 37,694, 클래스내 앞 40% = 46,015은
+    전부 FTP)이라, 이 실험이 없애려는 바로 그 결함(역할 split의 scenario
+    피복 결여)이 절반 남는다.
     scenario **안에서는** context가 expert/route보다 시간상 앞선다는 성질이
     보존되고, 잃는 것은 "C0 전체가 D_expert 전체보다 앞선다"는 전역 성질뿐이다.
     모든 scenario가 모든 pool에 나타나므로 C0가 늦게 등장한 공격을 못 보는
@@ -229,6 +234,39 @@ def class_chrono_partition(train_idx, y_train, ts_train, ctx_frac, exp_frac,
                       "expert": n_exp, "route": n_rt})
     return ({k: np.sort(np.asarray(v, dtype=np.int64)) for k, v in parts.items()},
             pd.DataFrame(audit))
+
+
+def scenario_stratified_split2(idx, y, ts, scen, first_frac, class_names):
+    """exp27 (same knob, val side): val -> D_tune / D_cal chronologically
+    WITHIN each (class, attack_scenario) group.
+
+    Applying the knob only to the train partition would leave C0 containing
+    ssh_bruteforce while D_tune stayed ftp-only (val brute = ftp 77,344 +
+    ssh 37,694, and the first 40% by class-internal time is all ftp), so
+    tuning and calibration would still see a different scenario mix than the
+    context. That is the same defect this experiment exists to remove, so the
+    knob is applied to both role splits or to neither.
+    """
+    first, second, rows_out = [], [], []
+    for cid, cname in enumerate(class_names):
+        cmask = y == cid
+        if not cmask.any():
+            continue
+        for sname in sorted(np.unique(scen[cmask])):
+            mask = cmask & (scen == sname)
+            rows = idx[mask]
+            if len(rows) == 0:
+                continue
+            order = rows[np.argsort(ts[mask], kind="stable")]
+            n1 = int(len(order) * first_frac)
+            first.extend(order[:n1])
+            second.extend(order[n1:])
+            rows_out.append({"class": cname, "scenario": sname,
+                             "val_total": len(order), "tune": n1,
+                             "cal": len(order) - n1})
+    return (np.sort(np.asarray(first, dtype=np.int64)),
+            np.sort(np.asarray(second, dtype=np.int64)),
+            pd.DataFrame(rows_out))
 
 
 def class_chrono_split2(idx, y, ts, first_frac, class_names):
@@ -692,8 +730,14 @@ def run_exp27(args):
     ctx_pool, expert_pool, route_pool = \
         pools["context"], pools["expert"], pools["route"]
     y_val = label_fn(val_idx)
-    tune_pool, cal_pool = class_chrono_split2(
-        val_idx, y_val, ts_val, args.tune_frac_of_val, class_names)
+    if args.pool_partition == "scenario_stratified":
+        tune_pool, cal_pool, val_scen_audit = scenario_stratified_split2(
+            val_idx, y_val, ts_val, scen_all[val_idx],
+            args.tune_frac_of_val, class_names)
+    else:
+        tune_pool, cal_pool = class_chrono_split2(
+            val_idx, y_val, ts_val, args.tune_frac_of_val, class_names)
+        val_scen_audit = None
     print(f"pools: D_global={len(ctx_pool):,} D_expert={len(expert_pool):,} "
           f"D_route={len(route_pool):,} D_tune={len(tune_pool):,} "
           f"D_cal={len(cal_pool):,} | test(dev holdout)={len(test_idx):,}")
@@ -1737,6 +1781,9 @@ def run_exp27(args):
         scen_audit.to_csv(
             os.path.join(out_dir, "0e_pool_partition_scenario.csv"),
             index=False)
+    if val_scen_audit is not None:  # exp27: per-scenario tune/cal coverage
+        val_scen_audit.to_csv(
+            os.path.join(out_dir, "0f_val_split_scenario.csv"), index=False)
     dupmat_df.to_csv(os.path.join(out_dir, "0d_dup_hash_pairwise.csv"),
                      index=False)
     residual_stats.to_csv(os.path.join(out_dir, "1a_residual_stats.csv"),
