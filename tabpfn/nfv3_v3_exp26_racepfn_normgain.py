@@ -839,13 +839,26 @@ def run_exp26(args):
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
 
+    # ported from exp25 (E-2): opt-in determinism. Env var set in main().
+    clf_extra = {}
+    if args.deterministic:
+        torch.use_deterministic_algorithms(True, warn_only=True)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+        clf_extra["inference_precision"] = torch.float32
+        print("determinism ON: fp32 inference, tf32/cudnn-benchmark off",
+              flush=True)
+    timings["deterministic"] = bool(args.deterministic)
+
     def make_clf(Xc, yc):
         clf = TabPFNClassifier(
             device=args.device, model_path=args.model_path,
             ignore_pretraining_limits=args.ignore_pretraining_limits,
             random_state=args.seed, n_estimators=args.n_estimators,
             auto_scale_n_estimators=False, fit_mode=args.fit_mode,
-            keep_cache_on_device=args.keep_cache_on_device)
+            keep_cache_on_device=args.keep_cache_on_device, **clf_extra)
         clf.fit(Xc, yc)
         return clf
 
@@ -1459,6 +1472,7 @@ def run_exp26(args):
     probs_sys = p0_eval.astype(np.float32)
     realized = np.zeros(len(y_eval), dtype=np.float32)
     g_lower_ev = np.zeros(len(y_eval), dtype=np.float32)
+    q_hat_ev = np.zeros(len(y_eval), dtype=np.float32)
     final = y_glob.copy()
     accepted = np.zeros(len(y_eval), dtype=bool)
     decision_rows = []
@@ -1475,7 +1489,9 @@ def run_exp26(args):
         hp = build_pair_post(p0_eval[rows], pk, a0_eval[rows],
                              aff_k[k].score(z_eval[rows]),
                              np.sqrt(d2_eval[rows, k]), qk_mat[k])
-        gl = (verifier.predict(hp) - q_corr).astype(np.float32)
+        qh = verifier.predict(hp).astype(np.float32)
+        q_hat_ev[rows] = qh                     # pre-correction verifier output
+        gl = (qh - q_corr).astype(np.float32)
         g_lower_ev[rows] = gl
         acc = gl > tau_post
         accepted[rows] = acc
@@ -1790,7 +1806,7 @@ def run_exp26(args):
     np.savez_compressed(
         os.path.join(out_dir, "system_dump.npz"),
         proposal=proposal.astype(np.int8), accepted=accepted,
-        g_lower=g_lower_ev, final=final.astype(np.int64),
+        g_lower=g_lower_ev, q_hat=q_hat_ev, final=final.astype(np.int64),
         y_glob=y_glob.astype(np.int64), y_glob_raw=y_glob_raw.astype(np.int64),
         y_true=y_eval.astype(np.int64), mu=mu,
         obs_dim=np.int64(sig.obs_dim), d2_med=np.float32(d2_med),
@@ -1807,6 +1823,10 @@ def run_exp26(args):
     np.savez_compressed(os.path.join(out_dir, "probs_tabpfn_global.npz"),
                         probs=p0_eval.astype(np.float32),
                         y_true=y_eval.astype(np.int64))
+    if y_proba_xgb is not None:
+        np.savez_compressed(os.path.join(out_dir, "probs_xgboost.npz"),
+                            probs=y_proba_xgb.astype(np.float32),
+                            y_true=y_eval.astype(np.int64))
     np.savez_compressed(os.path.join(out_dir, "probs_racepfn_system.npz"),
                         probs=probs_sys, y_true=y_eval.astype(np.int64))
     ctx_dump = {"C0": g_idx, "anchor": anchor_idx, "phi_fit": phi_fit_idx,
@@ -1975,6 +1995,9 @@ def main():
     p.add_argument("--tau-post-grid", default="0,0.25,0.5,1,2,4,8",
                    help="tau_post grid (>=0, guide §14)")
     p.add_argument("--dense-eval", action="store_true")
+    p.add_argument("--deterministic", action="store_true",
+                   help="ported from exp25/E-2: fp32 inference + deterministic "
+                        "kernels; use once E-2 confirms it collapses the band")
     p.set_defaults(
         target_dataset="cic2018",
         max_train_samples=-1,
@@ -1985,6 +2008,8 @@ def main():
         subsample_samples=0,
     )
     args = p.parse_args()
+    if args.deterministic:
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     run_exp26(args)
 
 
