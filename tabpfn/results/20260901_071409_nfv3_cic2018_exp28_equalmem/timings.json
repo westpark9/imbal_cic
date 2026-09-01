@@ -1,0 +1,118 @@
+[
+  {
+    "phi_mode": "embed_pca",
+    "phi_fit_rows_in_C0": 82670,
+    "anchor_rows_in_C0": 2178,
+    "dup_hash_overlap": {
+      "eval_rows": 4023114,
+      "eval_distinct": 2098523,
+      "C0": {
+        "rows": 1000000,
+        "distinct": 531494,
+        "distinct_shared_with_eval": 64877,
+        "eval_rows_covered": 1690993
+      },
+      "anchor": {
+        "rows": 12761,
+        "distinct": 6353,
+        "distinct_shared_with_eval": 1715,
+        "eval_rows_covered": 1018799
+      },
+      "phi_fit": {
+        "rows": 500000,
+        "distinct": 281047,
+        "distinct_shared_with_eval": 43104,
+        "eval_rows_covered": 1613276
+      },
+      "expert": {
+        "rows": 2000000,
+        "distinct": 986611,
+        "distinct_shared_with_eval": 96792,
+        "eval_rows_covered": 1765258
+      },
+      "route": {
+        "rows": 391486,
+        "distinct": 178200,
+        "distinct_shared_with_eval": 24542,
+        "eval_rows_covered": 1399469
+      },
+      "tune": {
+        "rows": 202122,
+        "distinct": 77579,
+        "distinct_shared_with_eval": 13552,
+        "eval_rows_covered": 1395697
+      },
+      "cal": {
+        "rows": 234163,
+        "distinct": 104106,
+        "distinct_shared_with_eval": 20980,
+        "eval_rows_covered": 1434657
+      },
+      "xgb_train": {
+        "rows": 12069313,
+        "distinct": 5250813,
+        "distinct_shared_with_eval": 218938,
+        "eval_rows_covered": 2004079
+      }
+    },
+    "tune_rows_ctx_dup": 123005,
+    "cal_rows_route_dup": 77211,
+    "mask_tune_ctx_fallback": true,
+    "xgb_baseline_s": 1753.1,
+    "global_fit_s": 635.2,
+    "phi_fit_s": 182.8,
+    "prior_select_s": 50.8,
+    "prior_T": 1.25,
+    "residual_clip_r_max": 45.131606,
+    "mining_s": 1260.9,
+    "prior_beta": 0.0,
+    "k_selection_s": 255.8,
+    "route_gain_s": 174.1,
+    "scorer_verifier_s": 1185.3,
+    "calibration_s": 74.7,
+    "eval_global_s": 617.0,
+    "eval_scorer_s": 650.0,
+    "eval_experts_s": 2.5,
+    "dense_eval_s": 326.1,
+    "feasibility_random_s": 346.0,
+    "feasibility_proximity_s": 349.4,
+    "feasibility_regime_random_s": 162.3,
+    "feas_match_memory": "per_expert",
+    "bank_total_block_rows": {
+      "proximity": 229151,
+      "random": 229151,
+      "regime_random": 229151,
+      "residual": 229151
+    },
+    "bank_memory_ratio_vs_residual": {
+      "proximity": 1.0,
+      "random": 1.0,
+      "regime_random": 1.0,
+      "residual": 1.0
+    },
+    "total_s": 8624.9,
+    "dense_eval": "done",
+    "rho": 0.015,
+    "gain_matrix_sha256": "c55ba0e26bea394c2fbe3d9923d07c24641fdda20600ecd28aeb0bc7733f4fdb",
+    "gain_matrix_dtype": "float32",
+    "peak_gpu_mem_gb": 16.83,
+    "data_file": {
+      "path": "/home/jovyan/mspark/imbal_cic/data/nfv3_energy_suite_uncapped_scenarios.pkl",
+      "bytes": 14694741242,
+      "mtime": 1787304887
+    },
+    "env": {
+      "cmd": "tabpfn/nfv3_v3_exp28_racepfn_equalmem.py --target-dataset cic2018 --prune-mode off --dense-eval --feas-match-memory per_expert --feasibility-banks random,proximity,regime_random",
+      "git_commit": "3106badf9b3b4772964d6d711f57c678008996f8",
+      "python": "3.11.0rc1",
+      "numpy": "2.2.6",
+      "pandas": "2.2.2",
+      "sklearn": "1.5.0",
+      "xgboost": "3.2.0",
+      "torch": "2.6.0+cu124",
+      "tabpfn": "8.5.0",
+      "cuda": "12.4",
+      "gpu": "NVIDIA A100-SXM4-40GB"
+    }
+  }
+]
