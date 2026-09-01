@@ -185,6 +185,22 @@ def main():
     scen_eval = scenarios[eval_idx].astype(str)
 
     budget_rows = {"full": train_idx, "ctxpool": pools["context"], "c0": c0_idx}
+
+    # "c0+sshN": C0 plus N ssh_bruteforce rows drawn from D_expert -- a CPU
+    # proxy for the §17 refresh question "how many recent verified labels does
+    # it take to recover a scenario the context never saw?".  XGBoost is less
+    # sample-efficient than in-context TabPFN (0813: 13 rows -> f1 .560 for
+    # TabPFN, 0 for XGB), so the N it needs is a loose UPPER bound.
+    ssh_pool = pools["expert"][scenarios[pools["expert"]] == "ssh_bruteforce"]
+    rng = np.random.default_rng(args.seed)
+    for b in [x.strip() for x in args.budgets.split(",")]:
+        if not b.startswith("c0+ssh"):
+            continue
+        n = int(b[len("c0+ssh"):])
+        take = rng.choice(ssh_pool, size=min(n, len(ssh_pool)), replace=False)
+        budget_rows[b] = np.sort(np.concatenate([c0_idx, take]))
+        print(f"{b}: C0 {len(c0_idx):,} + SSH {len(take):,} "
+              f"(pool {len(ssh_pool):,})", flush=True)
     all_rows, summary, scen_rows = [], [], []
     for b in [x.strip() for x in args.budgets.split(",") if x.strip()]:
         rows = budget_rows[b]
