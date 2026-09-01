@@ -1,0 +1,16 @@
+scenario,family,eval_rows,train_rows,recall_fine,recall_family_after_agg,top_wrong_sink,sink_frac
+benign,benign,3502926,10508775,0.997822,0.997822,infilteration,0.002129
+bot,bot,41542,124621,0.996197,0.996197,benign,0.003346
+brute_force_web,web_attacks,325,970,0.003077,0.003077,benign,0.996923
+brute_force_xss,web_attacks,96,288,0.0,0.0,benign,1.0
+ddos_attack_hoic,ddos,206463,619386,0.759729,0.759729,benign,0.240271
+ddos_attack_loic_udp,ddos,690,2070,1.0,1.0,,0.0
+ddos_attacks_loic_http,ddos,57719,173153,0.986313,0.998597,ddos_attack_loic_udp,0.012284
+dos_attacks_goldeneye,dos,12260,36780,0.999837,1.0,dos_attacks_slowloris,0.000163
+dos_attacks_hulk,dos,20016,60045,0.999301,0.99975,benign,0.00025
+dos_attacks_slowhttptest,dos,21110,63330,0.0,0.0,ftp_bruteforce,1.0
+dos_attacks_slowloris,dos,7208,21624,0.88596,0.88596,benign,0.11404
+ftp_bruteforce,brute_force,77344,232032,1.0,1.0,,0.0
+infilteration,infiltration,37631,112891,0.324653,0.324653,benign,0.675347
+sql_injection,web_attacks,88,264,0.0,0.181818,benign,0.818182
+ssh_bruteforce,brute_force,37696,113084,0.999469,0.999469,benign,0.000531

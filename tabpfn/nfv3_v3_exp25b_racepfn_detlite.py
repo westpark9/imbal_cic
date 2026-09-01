@@ -1,78 +1,17 @@
 #!/usr/bin/env python3
-"""EXP26 -- RACE-PFN, ONE KNOB vs exp24b: post-call verifier의 학습
-**타깃 단위**를 raw gain(w_bal 가중 CE) -> 정규화 gain G_ik / w_bal(y_i)
-(순수 delta-NLL)로 교체.
+"""EXP25B -- exp25의 결정성 옵션 수정판: fp32가 24 GB에 안 들어간다(run3 OOM,
+21.2+1.9 GiB 요구). --det-precision {auto,float32}을 추가해 **결정성 커널만 켜고
+정밀도는 auto(bf16 autocast)로 두는 det-lite 모드**를 4090에서 시험한다.
 
-진단 (0831.md 원인 B; 기록 run 20260827_174858_nfv3_cic2018_exp24b_signscorer).
-XGB 대비 macro-F1 격차 -0.055 (RACE 0.6978 / global 0.6698 / XGB 0.7548).
-채택 규칙은 q_hat > q_corr = 21.145이고 그 단위가 w_bal 가중 cross-entropy다.
-w_bal = N/(7*n_c)는 benign 0.164에서 web 1132.8까지 네 자릿수를 걸치므로
-단일 문턱 21.145는 이득 문턱이 아니라 **클래스별 신뢰도 필터**로 작동한다:
+E-2 배경: 동일 config 반복에서 paired delta가 +0.028 / -0.015 / +0.013으로 흔들리고
+K 선택이 5<->6, harmful이 4~1,132로 움직인다. 판정 재현성이 없으므로 결정성 확보가
+모든 후속 knob 비교의 전제다. det-lite가 두 번 연속 실행에서 동일(또는 대역 <0.005)
+결과를 내면 이후 전 실험의 기본으로 채택하고, 아니면 fp32 결정성은 A100(40 GB)에서만
+가능하다고 기록한다.
 
-    ddos   (w=2.17)  21.145/2.17 = 9.75 nats 필요 -> p(true) <= 5.9e-5.
-                     오답 45,886행 중 자격 있는 행 0개 (구조적으로 영구 0)
-    benign (w=0.164) 오답 14,496행 중 0개
-    infil  (w=15.27) 오답행의 98.98%가 자격은 있는데 제안 18,142건 중 채택 0건
-                     -- 이쪽은 문턱이 아니라 verifier가 죽어 있는 것이다
-                     (tune에서 실제 이득과 pearson r 0.05~0.15, 하나는 음수,
-                      출력이 사실상 클래스 상수)
-
-두 증상의 공통 원인이 타깃 스케일이다. G의 동적 범위가 w_bal 탓에 여섯 자릿수라
-quantile regressor는 w_bal(=클래스)만 학습하고 조건부 신호를 놓치며, 같은 이유로
-절대 문턱이 클래스 필터로 퇴화한다.
-
-THE KNOB: --verifier-target normgain
-    verifier 학습 타깃   G_ik  ->  G_ik / w_bal(y_i)   (**최종 적합만**;
-                         타깃 범위 ~6자리 -> ~2자리로 압축)
-    D_cal 한쪽 보정      q_corr = quantile_{1-delta}( q_hat - g_cal/w_bal )
-    tau_post 문턱        같은 정규화 단위에서 산다. --tau-post-grid 기본값
-                         "0,0.25,0.5,1,2,4,8"은 이제 nat 단위로 읽힌다.
-    --verifier-target gain 은 exp24b를 그대로 재현한다. 그 외 전부 동일.
-
-    **OOF fold 적합은 일부러 raw로 둔다.** b_OOF = (OOF verifier 예측 > 0)이고
-    이는 sign(G)가 아니라 *적합된* 분위수 모델의 부호다. w_bal[y]는 feature에
-    없는 per-row 인자이므로 그걸로 타깃을 재척도하면 조건부 분위수의 모양이
-    바뀌고 b_OOF 값이 이동한다. b_OOF는 scorer 타깃 U = b_OOF·G − λ·c에 들어가고
-    (λ=0 기본이므로 사실상 유일한 입력), 그러면 sc_label -> Û -> tau_pre_grid까지
-    움직여 **제안 관문이 함께 이동한다.** 그러면 5b/6b의 변화를 "문턱이 클래스
-    필터이길 그만뒀다"와 "scorer가 다른 행을 제안한다"로 구분할 수 없다.
-    한 run 한 knob을 지키려고 OOF는 exp24b와 byte-identical하게 고정했다.
-    가이드 §15에 충실한 "verifier가 바뀌면 b_OOF도 바뀐다" 판본은 별도 run
-    (exp26b)으로 돌린다.
-
-왜 "sign(G>0) 분류"가 아니라 단위 교체인가. w_bal로 나누는 것은 결정 규칙에서
-클래스별 스케일을 **구성상** 제거하는 조치이므로 진단이 함의하는 단위 수정이지,
-어떤 클래스가 막혔는지 보고 나서 고른 규칙이 아니다. (sign 교체는 exp24b가 이미
-scorer 쪽에서 쓴 카드이기도 하다.)
-
-단위 회계 -- raw로 남는 것: G_rt와 route_gain.npz, scorer 타깃 U_rt·sc_weight,
-select_thresholds의 목적함수 net_gain(g_cal을 raw로 전달), realized /
-mean_realized_gain_* / oracle_utility_*, 그리고 모든 balanced_ce 기반 손실.
-정규화되는 것: verifier 학습 타깃, q_hat, q_corr, g_lower(cal·eval), tau_post,
-verifier tune diag의 gt(4b, target_unit 열로 명시), lower_bound_coverage.
-
-사전 등록 예측 (같은 run의 4b/5b/6b/6d로 판정):
-    ddos          제안->채택이 0에서 **열린다** (문턱이 더는 w=2.17로 나뉘지 않음)
-    infiltration  채택 0건이 **열린다** (타깃 압축으로 verifier가 살아난다면)
-    benign        열리면 안 된다 (w=0.164 -> 정규화는 오히려 문턱을 높인다)
-    dos           거의 불변 (문턱이 허용하는 몫의 91%를 이미 실현했다)
-    brute_force   0 유지 (커버하는 expert가 없다 -- 0831.md 원인 A, exp27 소관)
-
-kill 기준 (하나라도 어기면 이 knob은 폐기): harmful override > 200, 또는
-benign FPR 증가 > 0.0005. 둘 다 통과하는데 ddos·infiltration이 열리지 않으면
-원인 B는 단위가 아니라 verifier 특징(h_post) 쪽이라는 결론이 된다.
-
-Judged against (same run, same split): corrected global, dense oracle,
-random/proximity banks, routing baselines; XGB 인용(0.7548). Cross-run
-refs: exp24b record run 20260827_174858 (lab log 0831.md).
-
-    PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-    python tabpfn/nfv3_v3_exp26_racepfn_normgain.py --target-dataset cic2018 \
-        --verifier-target normgain --dense-eval --skip-xgboost
-
-smoke (capped suite):
-    python tabpfn/nfv3_v3_exp26_racepfn_normgain.py \
-        --target-dataset cic2018_capped --verifier-target normgain --dense-eval
+    python tabpfn/nfv3_v3_exp25b_racepfn_detlite.py --target-dataset cic2018 \
+        --prune-mode off --dense-eval --dump-level full --deterministic \
+        --det-precision auto
 """
 
 import gc
@@ -149,21 +88,6 @@ def margin_of(p):
 def balanced_ce(probs, y, w):
     p_true = np.clip(probs[np.arange(len(y)), y], 1e-12, 1.0)
     return (w[y] * (-np.log(p_true))).astype(np.float64)
-
-
-def gain_norm(y, w, mode):
-    """THE KNOB (exp26): per-row divisor taking a w_bal-weighted-CE gain into
-    the verifier's target unit.  mode='gain' -> 1 (exp24b, raw weighted-CE);
-    mode='normgain' -> w_bal[y], i.e. plain delta-NLL, which removes the
-    per-class scale (0.164 .. 1132.8) from the acceptance rule by construction
-    and compresses the regression target from ~6 decades to ~2 (0831.md
-    cause B).  Applied to the FINAL verifier fit and the D_cal correction
-    only; the OOF fold fit stays raw on purpose so b_OOF -- and therefore the
-    pre-call scorer and tau_pre -- are byte-identical to exp24b (see the
-    module docstring)."""
-    if mode == "normgain":
-        return w[y].astype(np.float64)
-    return np.ones(len(y), dtype=np.float64)
 
 
 def pick_rows(rows, k, seed):
@@ -620,19 +544,19 @@ def _parse_floats(s):
 
 # ---------------------------------------------------------------------------
 
-def run_exp26(args):
+def run_exp25(args):
     cfg = core.build_dataset_config(args.data_dir)
     if args.data is None:
         args.data = cfg[args.target_dataset]["default_data"]
     args.auto_scale_n_estimators = False
-    args.experiment = "exp26_racepfn_normgain"
+    args.experiment = "exp25b_racepfn_detlite"
     print(f"Args: {vars(args)}", flush=True)
     if args.subsample_samples:
         raise SystemExit("--subsample-samples must stay 0.")
     if args.context_frac + args.expert_frac >= 1.0:
         raise SystemExit("--context-frac + --expert-frac must be < 1.")
     if args.train_split != "train":
-        raise SystemExit("--train-split is not implemented in exp26.")
+        raise SystemExit("--train-split is not implemented in exp25.")
     if args.skip_tabpfn:
         raise SystemExit("--skip-tabpfn is meaningless here.")
     if args.context_selection != "random":
@@ -747,6 +671,20 @@ def run_exp26(args):
     eval_idx = core.cap_per_class(test_idx, label_fn(test_idx), n_classes,
                                   args.test_cap_per_class, args.seed + 900)
 
+    if args.reuse_context_rows:        # exp25: freeze row sets across runs
+        _r = np.load(args.reuse_context_rows)
+        _missing = [n for n in ("C0", "anchor", "phi_fit", "expert", "route",
+                                "tune", "cal", "eval") if n not in _r.files]
+        if _missing:
+            raise SystemExit(f"--reuse-context-rows: missing {_missing}")
+        g_idx, anchor_idx, phi_fit_idx = _r["C0"], _r["anchor"], _r["phi_fit"]
+        exp_idx, route_idx = _r["expert"], _r["route"]
+        tune_idx, cal_idx, eval_idx = _r["tune"], _r["cal"], _r["eval"]
+        print(f"reusing row sets from {args.reuse_context_rows}: "
+              f"C0={len(g_idx):,} expert={len(exp_idx):,} "
+              f"eval={len(eval_idx):,}", flush=True)
+        timings["reuse_context_rows"] = args.reuse_context_rows
+
     glob_ctx = (feats_of(g_idx), label_fn(g_idx))
     anchor = (feats_of(anchor_idx), label_fn(anchor_idx))
     X_phi = feats_of(phi_fit_idx)
@@ -839,7 +777,7 @@ def run_exp26(args):
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
 
-    # ported from exp25 (E-2): opt-in determinism. Env var set in main().
+    # exp25: opt-in determinism (E-2). Env var is set in main() before CUDA init.
     clf_extra = {}
     if args.deterministic:
         torch.use_deterministic_algorithms(True, warn_only=True)
@@ -847,10 +785,13 @@ def run_exp26(args):
         torch.backends.cudnn.benchmark = False
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False
-        clf_extra["inference_precision"] = torch.float32
-        print("determinism ON: fp32 inference, tf32/cudnn-benchmark off",
-              flush=True)
+        if args.det_precision == "float32":
+            clf_extra["inference_precision"] = torch.float32
+        print(f"determinism ON: precision={args.det_precision}, "
+              "tf32/cudnn-benchmark off", flush=True)
     timings["deterministic"] = bool(args.deterministic)
+
+    batch_log = []          # (tag, rows, seconds) per predict_proba batch
 
     def make_clf(Xc, yc):
         clf = TabPFNClassifier(
@@ -872,7 +813,10 @@ def run_exp26(args):
         bs = args.test_batch_size or len(Xu)
         outs = []
         for bn, s0 in enumerate(range(0, len(Xu), bs), 1):
+            _t = time.time()
             outs.append(clf.predict_proba(Xu[s0:s0 + bs]))
+            batch_log.append((tag, int(min(bs, len(Xu) - s0)),
+                              time.time() - _t))
             if bn == 1 or s0 + bs >= len(Xu):
                 print(f"    [{tag}] proba rows {min(s0 + bs, len(Xu)):,}"
                       f"/{len(Xu):,} (distinct of {len(Xr):,})", flush=True)
@@ -1267,12 +1211,6 @@ def run_exp26(args):
             quantile_alpha=args.verifier_quantile,
             n_jobs=-1, random_state=seed)
 
-    # THE KNOB (exp26): the verifier's target unit.  nrm == 1 reproduces
-    # exp24b's raw w_bal-weighted-CE gain; nrm == w_bal[y] puts the target --
-    # and therefore q_hat, q_corr, g_lower and tau_post -- into plain
-    # delta-NLL units (0831.md cause B).  The scorer target below stays raw.
-    nrm_rt = gain_norm(y_route, w_bal, args.verifier_target)
-
     # 2-fold chrono OOF b for the scorer target (guide §15)
     t0 = time.time()
     order_rt = np.argsort(route_ts, kind="stable")
@@ -1309,20 +1247,15 @@ def run_exp26(args):
     print(f"sign-scorer labels: positive {sc_label.mean():.3f}", flush=True)
     verifier = quantile_verifier(args.seed + SEED_BAND_VERIFIER)
     verifier.fit(np.concatenate(hpost_rt),
-                 np.concatenate([G_rt[:, k] / nrm_rt for k in range(K)])
+                 np.concatenate([G_rt[:, k] for k in range(K)])
                  .astype(np.float32))
     timings["scorer_verifier_s"] = round(time.time() - t0, 1)
-    print(f"scorer+verifier trained (§15/§14, verifier target "
-          f"'{args.verifier_target}', OOF b positive rate "
+    print(f"scorer+verifier trained (§15/§14, OOF b positive rate "
           f"{b_oof.mean():.3f}; {timings['scorer_verifier_s']}s)", flush=True)
     del hpost_rt, hpre_rt, z_rt, d2_rt, a0_rt, ak_rt, pk_rt
     gc.collect()
 
     # ---- diagnostics on D_tune (scorer/verifier quality) ---------------
-    # exp26: the verifier's own diagnostics must be read in the verifier's own
-    # unit, so gt is divided by the same nrm.  The scorer diagnostics further
-    # down keep raw G_t -- the scorer target never left raw units.
-    nrm_tu = gain_norm(y_tune, w_bal, args.verifier_target)
     d2_tu = sq_dist_to_centroids(sig.observable(z_tune, p0_tune), mu_obs)
     a0_tu = aff0.score(z_tune)
     U_hat_tu = np.stack(
@@ -1335,10 +1268,9 @@ def run_exp26(args):
                              aff_k[k].score(z_tune),
                              np.sqrt(d2_tu[:, k]), qk_mat[k])
         qh = verifier.predict(hp).astype(np.float64)
-        gt = G_t[:, k] / nrm_tu
+        gt = G_t[:, k]
         ver_rows.append({
             "expert": k + 1, "tune_rows": len(gt),
-            "target_unit": args.verifier_target,
             "sign_accuracy": round(float(((qh > 0) == (gt > 0)).mean()), 4),
             "false_accept": int(((qh > 0) & (gt <= 0)).sum()),
             "false_reject": int(((qh <= 0) & (gt > 0)).sum()),
@@ -1392,18 +1324,12 @@ def run_exp26(args):
     # §5 enforcement: correction/thresholds use only cal rows that are NOT
     # content-duplicates of D_route (the scorer/verifier training data)
     msk_c = cal_sel_mask
-    # exp26: q_hat now lives in the verifier's target unit, so the one-sided
-    # offset has to be fitted against g_cal in that SAME unit or it stops being
-    # a valid conservative correction.  Raw g_cal is kept untouched -- it still
-    # feeds select_thresholds' net_gain objective and every reported utility.
-    nrm_cal = gain_norm(y_cal, w_bal, args.verifier_target)
-    g_cal_v = g_cal / nrm_cal
-    q_corr = float(np.quantile((q_hat_cal - g_cal_v)[msk_c],
+    q_corr = float(np.quantile((q_hat_cal - g_cal)[msk_c],
                                1.0 - args.cal_delta))
     g_lower_cal = q_hat_cal - q_corr
     # in-sample by construction ~= 1-delta (q_corr fit on these rows); the
     # informative coverage check is the held-out eval-side record
-    lb_coverage = float((g_cal_v[msk_c] >= g_lower_cal[msk_c]).mean())
+    lb_coverage = float((g_cal[msk_c] >= g_lower_cal[msk_c]).mean())
     names_l = [str(n).lower() for n in class_names]
     benign_id = next((names_l.index(n) for n in ("benign", "normal")
                       if n in names_l), None)
@@ -1434,7 +1360,6 @@ def run_exp26(args):
         "cal_rows": len(y_cal), "cal_rows_used": int(msk_c.sum()),
         "delta": args.cal_delta,
         "verifier_alpha": args.verifier_quantile,
-        "verifier_target": args.verifier_target,
         "q_corr": round(q_corr, 4),
         "lower_bound_coverage_cal_insample": round(lb_coverage, 4),
         "target_coverage": round(1 - args.cal_delta, 4),
@@ -1490,7 +1415,7 @@ def run_exp26(args):
                              aff_k[k].score(z_eval[rows]),
                              np.sqrt(d2_eval[rows, k]), qk_mat[k])
         qh = verifier.predict(hp).astype(np.float32)
-        q_hat_ev[rows] = qh                     # pre-correction verifier output
+        q_hat_ev[rows] = qh                     # exp25: pre-correction output
         gl = (qh - q_corr).astype(np.float32)
         g_lower_ev[rows] = gl
         acc = gl > tau_post
@@ -1523,7 +1448,6 @@ def run_exp26(args):
     called = proposal != 0
     n_called, n_acc = int(called.sum()), int(accepted.sum())
     quality = {
-        "verifier_target": args.verifier_target,
         "helpful_override": n_helpful, "harmful_override": n_harmful,
         "net_correction": n_helpful - n_harmful,
         "override_precision": round(n_helpful / max(n_helpful + n_harmful, 1),
@@ -1749,7 +1673,7 @@ def run_exp26(args):
     ts = time.strftime("%Y%m%d_%H%M%S")
     out_dir = os.path.join(
         args.out_root,
-        f"{ts}_{cfg[args.target_dataset]['out_tag']}_exp26_normgain")
+        f"{ts}_{cfg[args.target_dataset]['out_tag']}_exp25b_detlite")
     os.makedirs(out_dir, exist_ok=True)
     table.to_csv(os.path.join(out_dir, "per_class_metrics.csv"), index=False)
     pool_audit.to_csv(os.path.join(out_dir, "0a_pool_partition.csv"), index=False)
@@ -1784,7 +1708,6 @@ def run_exp26(args):
                      index=False)
     ver_df.to_csv(os.path.join(out_dir, "4b_verifier_tune_diag.csv"),
                   index=False)
-    thr_df["target_unit"] = args.verifier_target   # tau_post unit stamp
     thr_df.to_csv(os.path.join(out_dir, "4c_threshold_grid.csv"), index=False)
     cal_df.to_csv(os.path.join(out_dir, "4d_calibration.csv"), index=False)
     decision_df.to_csv(os.path.join(out_dir, "5a_decision_stats.csv"),
@@ -1814,7 +1737,6 @@ def run_exp26(args):
         prior_beta=np.float64(beta), prior_T=np.float64(temp),
         tau_pre=np.float64(tau_pre), tau_post=np.float64(tau_post),
         q_corr=np.float64(q_corr),
-        verifier_target=np.asarray(args.verifier_target),
         sig_mean=np.concatenate([sig.stats[n][0] for n in sig.BLOCKS]),
         sig_std=np.concatenate([sig.stats[n][1] for n in sig.BLOCKS]),
         sig_alpha=np.asarray([sig.alpha[n] for n in sig.BLOCKS],
@@ -1823,10 +1745,17 @@ def run_exp26(args):
     np.savez_compressed(os.path.join(out_dir, "probs_tabpfn_global.npz"),
                         probs=p0_eval.astype(np.float32),
                         y_true=y_eval.astype(np.int64))
-    if y_proba_xgb is not None:
+    if y_proba_xgb is not None:      # exp25: XGB posterior (was never saved)
         np.savez_compressed(os.path.join(out_dir, "probs_xgboost.npz"),
                             probs=y_proba_xgb.astype(np.float32),
                             y_true=y_eval.astype(np.int64))
+    if args.dump_level == "full":    # exp25: stage-wise global posteriors
+        np.savez_compressed(
+            os.path.join(out_dir, "probs_global_stages.npz"),
+            expert_idx=exp_idx, p0_expert=p0_exp.astype(np.float32),
+            route_idx=route_idx, p0_route=p0_rt.astype(np.float32),
+            tune_idx=tune_idx, p0_tune=p0_tune.astype(np.float32),
+            prior_beta=np.float64(beta), prior_T=np.float64(temp))
     np.savez_compressed(os.path.join(out_dir, "probs_racepfn_system.npz"),
                         probs=probs_sys, y_true=y_eval.astype(np.int64))
     ctx_dump = {"C0": g_idx, "anchor": anchor_idx, "phi_fit": phi_fit_idx,
@@ -1849,6 +1778,20 @@ def run_exp26(args):
                         route_idx=route_idx, gain=gain_f32,
                         b_oof=b_oof.astype(np.int8),
                         y=y_route.astype(np.int32))
+    if batch_log:                    # exp25: measured latency, not call counts
+        import collections
+        by_tag = collections.defaultdict(list)
+        for tag, nrows, dt in batch_log:
+            by_tag[tag.split("/")[0]].append(dt / max(nrows, 1) * 1000.0)
+        lat = {}
+        for tag, v in by_tag.items():
+            a = np.asarray(v)
+            lat[tag] = {"batches": int(a.size),
+                        "ms_per_1k_p50": round(float(np.percentile(a, 50)) * 1000, 4),
+                        "ms_per_1k_p95": round(float(np.percentile(a, 95)) * 1000, 4),
+                        "ms_per_1k_p99": round(float(np.percentile(a, 99)) * 1000, 4)}
+        timings["batch_latency"] = lat
+        timings["batch_total_s"] = round(sum(d for _, _, d in batch_log), 1)
     timings["gain_matrix_sha256"] = hashlib.sha256(
         gain_f32.tobytes()).hexdigest()
     timings["gain_matrix_dtype"] = "float32"
@@ -1962,17 +1905,6 @@ def main():
     p.add_argument("--verifier-lr", type=float, default=0.05)
     p.add_argument("--verifier-quantile", type=float, default=0.25,
                    help="§14: lower conditional quantile alpha")
-    p.add_argument("--verifier-target", default="normgain",
-                   choices=["gain", "normgain"],
-                   help="THE KNOB (exp26). 'gain' reproduces exp24b exactly: "
-                        "the verifier predicts a low quantile of the raw "
-                        "w_bal-weighted-CE gain G. 'normgain' predicts the "
-                        "same quantile of G / w_bal(y) -- plain delta-NLL -- "
-                        "so the target, q_corr, g_lower and tau_post are all "
-                        "free of the per-class scale (0831.md cause B: "
-                        "q_corr=21.145 in weighted-CE units acts as a "
-                        "per-class confidence filter that makes ddos and "
-                        "benign acceptance structurally impossible)")
     p.add_argument("--cal-delta", type=float, default=0.10,
                    help="§14: one-sided correction level on D_cal")
     p.add_argument("--cal-benign-fpr-increase", type=float, default=5e-4,
@@ -1995,9 +1927,21 @@ def main():
     p.add_argument("--tau-post-grid", default="0,0.25,0.5,1,2,4,8",
                    help="tau_post grid (>=0, guide §14)")
     p.add_argument("--dense-eval", action="store_true")
+    p.add_argument("--dump-level", choices=["std", "full"], default="std",
+                   help="exp25: 'full' also dumps stage-wise global posteriors "
+                        "(expert/route/tune) for GPU-free re-analysis")
+    p.add_argument("--det-precision", choices=["auto", "float32"],
+                   default="auto",
+                   help="exp25b: precision under --deterministic. float32 "
+                        "needs >24GB (run3 OOM); auto keeps bf16 autocast "
+                        "with deterministic kernels only")
     p.add_argument("--deterministic", action="store_true",
-                   help="ported from exp25/E-2: fp32 inference + deterministic "
-                        "kernels; use once E-2 confirms it collapses the band")
+                   help="exp25/E-2: fp32 inference + deterministic kernels, to "
+                        "test whether the 0.027 global-macro band collapses")
+    p.add_argument("--reuse-context-rows", default=None,
+                   help="exp25/E-2: path to another run's context_rows.npz; "
+                        "reuse its C0/anchor/phi_fit/expert/route/tune/cal/eval "
+                        "row ids verbatim")
     p.set_defaults(
         target_dataset="cic2018",
         max_train_samples=-1,
@@ -2010,7 +1954,7 @@ def main():
     args = p.parse_args()
     if args.deterministic:
         os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
-    run_exp26(args)
+    run_exp25(args)
 
 
 if __name__ == "__main__":
