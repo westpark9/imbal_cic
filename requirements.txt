@@ -12,7 +12,19 @@ xgboost>=2.0.0
 imbalanced-learn>=0.11.0
 
 # Deep Learning (for CUDA device detection + CIFAR-LT dataset)
-torch>=2.0.0
+# WARNING: the torch WHEEL's CUDA build must match the node's driver, and pip
+# will happily install a wheel that is too new. Symptom of a mismatch:
+#   UserWarning: CUDA initialization: The NVIDIA driver ... is too old
+#   -> torch.cuda.is_available() False -> --device auto silently falls back to
+#      CPU -> TabPFN aborts with "Running on CPU with more than 5000 samples".
+# Known-good pairs in this project:
+#   driver 580.x (CUDA 13.0)  ->  torch 2.11+cu130      (local RTX 4090)
+#   driver 550.x (CUDA 12.4)  ->  torch 2.6.0+cu124     (A100 pod)
+# Install the matching build explicitly, e.g. for a 12.4 driver:
+#   pip install --force-reinstall torch==2.6.0 \
+#       --index-url https://download.pytorch.org/whl/cu124
+# tabpfn 8.2.0 requires torch>=2.5, so cu124 builds below 2.5 will not do.
+torch>=2.5
 torchvision>=0.15.0
 
 # GPU acceleration (optional, for CUDA support)
@@ -27,4 +39,6 @@ seaborn>=0.12.0
 
 # Progress bar
 tqdm>=4.65.0
+
+tabpfn
 
