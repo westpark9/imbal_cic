@@ -186,21 +186,31 @@ def main():
 
     budget_rows = {"full": train_idx, "ctxpool": pools["context"], "c0": c0_idx}
 
-    # "c0+sshN": C0 plus N ssh_bruteforce rows drawn from D_expert -- a CPU
-    # proxy for the §17 refresh question "how many recent verified labels does
-    # it take to recover a scenario the context never saw?".  XGBoost is less
-    # sample-efficient than in-context TabPFN (0813: 13 rows -> f1 .560 for
-    # TabPFN, 0 for XGB), so the N it needs is a loose UPPER bound.
-    ssh_pool = pools["expert"][scenarios[pools["expert"]] == "ssh_bruteforce"]
+    # "c0+<scenario>:<N>": C0 plus N rows of one attack scenario drawn from
+    # D_expert -- a CPU proxy for the §17 refresh question "how many recent
+    # verified labels does it take to recover a scenario the context never
+    # saw?".  XGBoost is less sample-efficient than in-context TabPFN (0813:
+    # 13 rows -> f1 .560 for TabPFN, 0 for XGB), so the N it needs is a loose
+    # UPPER bound.  Shorthand "c0+sshN" == "c0+ssh_bruteforce:N".
     rng = np.random.default_rng(args.seed)
     for b in [x.strip() for x in args.budgets.split(",")]:
-        if not b.startswith("c0+ssh"):
+        if not b.startswith("c0+"):
             continue
-        n = int(b[len("c0+ssh"):])
-        take = rng.choice(ssh_pool, size=min(n, len(ssh_pool)), replace=False)
+        spec = b[len("c0+"):]
+        if ":" in spec:
+            sname, n = spec.rsplit(":", 1)
+        elif spec.startswith("ssh"):
+            sname, n = "ssh_bruteforce", spec[len("ssh"):]
+        else:
+            raise SystemExit(f"budget {b!r}: use c0+<scenario>:<N>")
+        pool = pools["expert"][scenarios[pools["expert"]] == sname]
+        if len(pool) == 0:
+            raise SystemExit(f"budget {b!r}: no D_expert rows for scenario "
+                             f"{sname!r}")
+        take = rng.choice(pool, size=min(int(n), len(pool)), replace=False)
         budget_rows[b] = np.sort(np.concatenate([c0_idx, take]))
-        print(f"{b}: C0 {len(c0_idx):,} + SSH {len(take):,} "
-              f"(pool {len(ssh_pool):,})", flush=True)
+        print(f"{b}: C0 {len(c0_idx):,} + {sname} {len(take):,} "
+              f"(pool {len(pool):,})", flush=True)
     all_rows, summary, scen_rows = [], [], []
     for b in [x.strip() for x in args.budgets.split(",") if x.strip()]:
         rows = budget_rows[b]
