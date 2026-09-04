@@ -374,7 +374,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--runs", nargs="+", required=True,
                     help="run directories (globs accepted)")
-    ap.add_argument("--out", default="scripts/results",
+    ap.add_argument("--out", default="results/scripts_analysis",
                     help="where 9e_frontier.csv is written")
     args = ap.parse_args()
 

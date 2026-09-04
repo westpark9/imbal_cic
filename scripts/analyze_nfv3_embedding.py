@@ -4,7 +4,7 @@ Analyze NF-v3 class feature geometry for one target dataset.
 
 Forked from analyze_cic2017_embedding_v2.py, which reads the older
 data/cic2017_chrono_v2.pkl.  This one reads the NF-v3 suite pickle used by
-src/s43_nfv3_independent_expert_energy.py / s44_nfv3_resolved_expert_pipeline.py
+scripts/s43_nfv3_independent_expert_energy.py / s44_nfv3_resolved_expert_pipeline.py
 (data/nfv3_energy_suite_uncapped_scenarios.pkl by default) -- different
 dataset, different feature schema (NetFlow v3, not CICFlowMeter), do not mix
 results between the two embedding scripts.

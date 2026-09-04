@@ -20,7 +20,7 @@ it) side by side per unseen-class choice.
 
 Usage:
   python scripts/s44_unseen_tradeoff_summary.py
-  python scripts/s44_unseen_tradeoff_summary.py --results-root results --out-root scripts/results
+  python scripts/s44_unseen_tradeoff_summary.py --results-root results --out-root results/scripts_analysis
 """
 
 import argparse
@@ -37,7 +37,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 
 import s44_nfv3_resolved_expert_pipeline as s44  # noqa: E402
@@ -303,7 +302,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results-root", default=os.path.join(REPO_ROOT, "results"))
     parser.add_argument(
-        "--out-root", default=os.path.join(REPO_ROOT, "scripts", "results")
+        "--out-root", default=os.path.join(REPO_ROOT, "results", "scripts_analysis")
     )
     parser.add_argument(
         "--expert-config",

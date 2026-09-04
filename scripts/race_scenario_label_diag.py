@@ -23,7 +23,7 @@ Usage (from repo root; ~35-45 min CPU, safe to nice alongside a GPU run):
     nice -n 19 python scripts/race_scenario_label_diag.py \
         --run-dir tabpfn/results/20260827_174858_nfv3_cic2018_exp24b_signscorer
 
-Outputs (default --out scripts/results/scenario_label_diag):
+Outputs (default --out results/scripts_analysis/scenario_label_diag):
     per_class_metrics.csv   family-level P/R/F1: xgb_family, xgb_fine_soft,
                             xgb_fine_hard (+ macro/tail/weighted)
     fine_confusion.csv      scenario-level recall + where each scenario's rows
@@ -112,7 +112,7 @@ def main():
                     default="data/nfv3_energy_suite_uncapped_scenarios.pkl")
     ap.add_argument("--run-dir", required=True,
                     help="run whose context_rows.npz defines the eval rows")
-    ap.add_argument("--out", default="scripts/results/scenario_label_diag")
+    ap.add_argument("--out", default="results/scripts_analysis/scenario_label_diag")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--n-jobs", type=int, default=-1)
     ap.add_argument("--xgb-n-estimators", type=int, default=300)

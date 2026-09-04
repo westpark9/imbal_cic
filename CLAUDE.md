@@ -15,12 +15,12 @@ Two active tracks:
 
 | Track | Files | What it is |
 |---|---|---|
-| **NF-v3 expert pipeline** (paper) | `src/s43_*.py`, `src/s44_*.py` | independent per-expert Energy gates + a resolution step |
+| **NF-v3 expert pipeline** (paper) | `scripts/s43_*.py`, `scripts/s44_*.py` | independent per-expert Energy gates + a resolution step |
 | **TabPFN check** (standalone) | `tabpfn/nfv3_multiclass_test_v2.py` | TabPFN-v3 vs XGBoost sanity check; *not* part of the paper's experiment record |
 
 ### Current frontier state — both tracks are losing
 
-**s44** (28-config `--unseen` sweep, 2026-08-04, `scripts/results/s44_unseen_tradeoff_*.csv`):
+**s44** (28-config `--unseen` sweep, 2026-08-04, `results/scripts_analysis/s44_unseen_tradeoff_*.csv`):
 the expert pipeline beats the Global XGBoost baseline on known macro-F1 in only **3 of 28**
 configurations; median delta **−0.184**. Unseen resolved accuracy median **0.125**. The XGBoost
 baseline is the bar, and it is not being cleared.
@@ -34,16 +34,17 @@ Any proposed change should say which of these two numbers it attacks.
 ## Running
 
 ```bash
-pip install -r requirements.txt      # xgboost>=2.0, torch, sklearn, imbalanced-learn
+pip install -r requirements.txt      # xgboost>=2.0, torch==2.6.0+cu124, sklearn, imbalanced-learn
+pip install tabpfn                   # or use the local editable install — see Data section below
 ```
 
-**Always run from this folder's root** — `src/s4x` scripts resolve `scripts/` via `REPO_ROOT` and
+**Always run from this folder's root** — `scripts/s4x` scripts resolve `scripts/` via `REPO_ROOT` and
 data paths CWD-relative.
 
 ```bash
 # s44: resolved expert pipeline (the paper track)
-python src/s44_nfv3_resolved_expert_pipeline.py --target cse_cic_ids2018 --unseen bot
-python src/s43_nfv3_independent_expert_energy.py --target ton_iot     # gates only, no resolution
+python scripts/s44_nfv3_resolved_expert_pipeline.py --target cse_cic_ids2018 --unseen bot
+python scripts/s43_nfv3_independent_expert_energy.py --target ton_iot     # gates only, no resolution
 
 # sweep summary over existing s44 runs
 python scripts/s44_unseen_tradeoff_summary.py
@@ -52,9 +53,9 @@ python scripts/s44_unseen_tradeoff_summary.py
 python tabpfn/nfv3_multiclass_test_v2.py --target-dataset cic2018_capped
 ```
 
-`tabpfn/tabpfn-v3-...ckpt` and `tabpfn/tabpfn_src` are **symlinks** into `../tabpfn/`. The
-`tabpfn` package itself is a pip editable install pointing at `../tabpfn/src/tabpfn`, so
-`import tabpfn` resolves regardless of CWD.
+`tabpfn/tabpfn-v3-...ckpt` is a **symlink** into `../tabpfn/`. The `tabpfn` package itself is a
+pip editable install pointing at `../tabpfn/src/tabpfn`, so `import tabpfn` resolves regardless
+of CWD — there is no local `tabpfn_src` copy in this folder.
 
 ## Data
 
@@ -90,7 +91,7 @@ near-perfect, suspect leakage, not success.
 - **First log line is the full `Args: {...}` dump.** That is the config record — there are no
   config files. Every hyperparameter must be an argparse arg so it lands there.
 - **Artifacts**: numbered CSV + PNG pairs (`0a…5c`, plus s44's `6a/6b`), per-class comparison CSVs
-  with macro/weighted footers. No checkpoints — `src/` scripts save no weights; reproducing a
+  with macro/weighted footers. No checkpoints — `s43`/`s44` save no weights; reproducing a
   number means re-running. (The tabpfn script is the exception: it saves fitted models and
   resume checkpoints.)
 - **`--seed 42` everywhere**, threaded into every RNG; sub-models get deterministic offsets.

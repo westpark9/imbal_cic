@@ -1,0 +1,111 @@
+[
+  {
+    "phi_mode": "embed_pca",
+    "c0_pool_rows": 6034654,
+    "c0_benign_share_arg": 0.75,
+    "c0_benign_share_realized": 0.75,
+    "phi_fit_rows_in_C0": 8143,
+    "anchor_rows_in_C0": 1281,
+    "dup_hash_overlap": {
+      "eval_rows": 4023114,
+      "eval_distinct": 2098523,
+      "C0": {
+        "rows": 100000,
+        "distinct": 59949,
+        "distinct_shared_with_eval": 13763,
+        "eval_rows_covered": 1418998
+      },
+      "anchor": {
+        "rows": 12761,
+        "distinct": 7142,
+        "distinct_shared_with_eval": 1818,
+        "eval_rows_covered": 1007476
+      },
+      "phi_fit": {
+        "rows": 500000,
+        "distinct": 281399,
+        "distinct_shared_with_eval": 43258,
+        "eval_rows_covered": 1615940
+      },
+      "expert": {
+        "rows": 2000000,
+        "distinct": 1019555,
+        "distinct_shared_with_eval": 98348,
+        "eval_rows_covered": 1778387
+      },
+      "route": {
+        "rows": 391486,
+        "distinct": 139405,
+        "distinct_shared_with_eval": 22773,
+        "eval_rows_covered": 1509224
+      },
+      "tune": {
+        "rows": 202121,
+        "distinct": 78751,
+        "distinct_shared_with_eval": 16359,
+        "eval_rows_covered": 1419351
+      },
+      "cal": {
+        "rows": 234163,
+        "distinct": 100675,
+        "distinct_shared_with_eval": 19552,
+        "eval_rows_covered": 1434181
+      },
+      "xgb_train": {
+        "rows": 12069313,
+        "distinct": 5250813,
+        "distinct_shared_with_eval": 218938,
+        "eval_rows_covered": 2004079
+      }
+    },
+    "tune_rows_ctx_dup": 116567,
+    "cal_rows_route_dup": 118704,
+    "deterministic": false,
+    "global_fit_s": 17.8,
+    "phi_fit_s": 49.7,
+    "prior_select_s": 13.3,
+    "prior_T": 1.0,
+    "residual_clip_r_max": 27.402765,
+    "mining_s": 344.8,
+    "prior_beta": 0.0,
+    "k_selection_s": 363.9,
+    "route_gain_s": 92.8,
+    "scorer_verifier_s": 185.6,
+    "calibration_s": 46.5,
+    "eval_global_s": 347.8,
+    "eval_scorer_s": 367.0,
+    "eval_experts_s": 0.0,
+    "feas_match_memory": "per_expert",
+    "bank_total_block_rows": {
+      "residual": 225011
+    },
+    "bank_memory_ratio_vs_residual": {
+      "residual": 1.0
+    },
+    "total_s": 1979.6,
+    "dense_eval": "skipped (--dense-eval off)",
+    "rho": 0.0,
+    "gain_matrix_sha256": "c6516dac182cd8645a97e7553703a4a7d189548d9cc802f39aca3e6c4d529593",
+    "gain_matrix_dtype": "float32",
+    "peak_gpu_mem_gb": 6.44,
+    "data_file": {
+      "path": "/home/user/Desktop/imbalcic/data/nfv3_energy_suite_uncapped_scenarios.pkl",
+      "bytes": 14694741242,
+      "mtime": 1784182032
+    },
+    "env": {
+      "cmd": "tabpfn/nfv3_v3_exp31_c0alloc.py --target-dataset cic2018 --prune-mode off --feasibility-banks none --skip-xgboost --global-context-size 100000 --c0-benign-share 0.75 --c0-attack-alloc balanced --n-estimators 4 --seed 48",
+      "git_commit": "721efeccf517b22a524f3ae1e8113ee29d7416b2",
+      "git_dirty": 1,
+      "python": "3.13.12",
+      "numpy": "2.4.4",
+      "pandas": "3.0.2",
+      "sklearn": "1.8.0",
+      "xgboost": "3.2.0",
+      "torch": "2.11.0+cu130",
+      "tabpfn": "8.2.0",
+      "cuda": "13.0",
+      "gpu": "NVIDIA GeForce RTX 4090"
+    }
+  }
+]

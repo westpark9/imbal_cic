@@ -40,7 +40,6 @@ import numpy as np
 import pandas as pd
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 
 import s44_nfv3_resolved_expert_pipeline as s44  # noqa: E402
@@ -203,7 +202,7 @@ def main():
 
     table = pd.DataFrame(rows).sort_values(["scope", "role", "source_dataset", "class"])
     out_path = os.path.join(
-        REPO_ROOT, "scripts", "results",
+        REPO_ROOT, "results", "scripts_analysis",
         f"nfv3_expert_data_composition_{args.target}_unseen_{'-'.join(unseen)}.csv",
     )
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

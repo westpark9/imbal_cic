@@ -17,14 +17,12 @@ imbalanced-learn>=0.11.0
 #   UserWarning: CUDA initialization: The NVIDIA driver ... is too old
 #   -> torch.cuda.is_available() False -> --device auto silently falls back to
 #      CPU -> TabPFN aborts with "Running on CPU with more than 5000 samples".
-# Known-good pairs in this project:
-#   driver 580.x (CUDA 13.0)  ->  torch 2.11+cu130      (local RTX 4090)
-#   driver 550.x (CUDA 12.4)  ->  torch 2.6.0+cu124     (A100 pod)
-# Install the matching build explicitly, e.g. for a 12.4 driver:
-#   pip install --force-reinstall torch==2.6.0 \
-#       --index-url https://download.pytorch.org/whl/cu124
+# Pinned to the cu124 build below: CUDA wheels are driver-backward-compatible,
+# so this installs clean on every node seen so far (driver 550.x/CUDA 12.4 A100
+# pods, driver 580.x/CUDA 13.0 local RTX 4090) without a manual reinstall step.
 # tabpfn 8.2.0 requires torch>=2.5, so cu124 builds below 2.5 will not do.
-torch>=2.5
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0
 torchvision>=0.15.0
 
 # GPU acceleration (optional, for CUDA support)

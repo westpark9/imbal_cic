@@ -25,7 +25,7 @@ Usage (from repo root):
     python scripts/race_budget_diag.py \
         --run-dir tabpfn/results/20260827_174858_nfv3_cic2018_exp24b_signscorer
 
-Outputs (default --out scripts/results/budget_diag):
+Outputs (default --out results/scripts_analysis/budget_diag):
     per_class_metrics.csv     per class P/R/F1 for every budget + macro/tail
     summary.csv               macro/tail/weighted + brute FTP-vs-SSH recall
     scenario_recall.csv       per attack scenario recall, per budget
@@ -104,7 +104,7 @@ def main():
                     default="data/nfv3_energy_suite_uncapped_scenarios.pkl")
     ap.add_argument("--run-dir", required=True,
                     help="run whose context_rows.npz defines C0 and eval rows")
-    ap.add_argument("--out", default="scripts/results/budget_diag")
+    ap.add_argument("--out", default="results/scripts_analysis/budget_diag")
     ap.add_argument("--budgets", default="full,ctxpool,c0")
     ap.add_argument("--context-frac", type=float, default=0.5)
     ap.add_argument("--expert-frac", type=float, default=0.25)
