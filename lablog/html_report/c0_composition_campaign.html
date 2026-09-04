@@ -1,0 +1,367 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>C0 구성 캠페인</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #F6F7F5; --bg-2: #EDEFEC; --ink: #1B2229; --muted: #5C6770; --line: #D3D8D4;
+  --acc: #1F6F8B; --acc-soft: #DCEBF0; --warn: #B0413E; --warn-soft: #F3E1E0; --ok: #3C7A4A; --ok-soft: #E1EEE3;
+  --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181B; --bg-2: #1C2226; --ink: #E6E9E7; --muted: #9AA5AC; --line: #2C3338;
+    --acc: #58B4D0; --acc-soft: #1B3540; --warn: #E0736F; --warn-soft: #3D2322; --ok: #7DBB8A; --ok-soft: #1F3324;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181B; --bg-2: #1C2226; --ink: #E6E9E7; --muted: #9AA5AC; --line: #2C3338;
+  --acc: #58B4D0; --acc-soft: #1B3540; --warn: #E0736F; --warn-soft: #3D2322; --ok: #7DBB8A; --ok-soft: #1F3324;
+}
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.6; }
+main { max-width: 1040px; margin: 0 auto; padding: 40px 24px 80px; }
+header { display: grid; grid-template-columns: 1fr; gap: 6px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--serif); font-weight: 600; font-size: 34px; line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { max-width: 66ch; color: var(--muted); margin: 6px 0 0; }
+h2 { font-family: var(--serif); font-weight: 600; font-size: 22px; margin: 44px 0 10px; text-wrap: balance; }
+h3 { font-family: var(--sans); font-weight: 600; font-size: 15px; margin: 22px 0 6px; }
+p { max-width: 68ch; margin: 8px 0; }
+.verdict { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 26px 0 8px; }
+.tile { background: var(--bg-2); border-top: 2px solid var(--acc); padding: 14px 16px; }
+.tile .k { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.tile .v { font-family: var(--mono); font-size: 28px; font-weight: 500; line-height: 1.1; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+.tile .d { font-size: 13px; color: var(--muted); }
+.tile.warn { border-top-color: var(--warn); }
+.wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--mono); font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: .03em; }
+th:first-child, td:first-child { text-align: left; }
+td { font-family: var(--mono); }
+td.t { font-family: var(--sans); }
+tr.hi td { background: var(--acc-soft); }
+.b { font-weight: 600; color: var(--acc); }
+.w { color: var(--warn); }
+.g { color: var(--ok); }
+.note { font-size: 13px; color: var(--muted); max-width: 72ch; margin: 8px 0 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media (max-width: 760px) { .grid2, .verdict { grid-template-columns: 1fr; } }
+.cell { display: inline-block; min-width: 56px; padding: 2px 6px; border-radius: 2px; }
+.c1 { background: var(--warn-soft); } .c2 { background: var(--bg-2); } .c3 { background: var(--acc-soft); } .c4 { background: var(--ok-soft); }
+figure { margin: 14px 0 0; }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; max-width: 72ch; }
+svg text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg .ax { stroke: var(--line); stroke-width: 1; }
+svg .lbl { fill: var(--muted); }
+.pill { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 10px; background: var(--bg-2); color: var(--muted); border: 1px solid var(--line); vertical-align: middle; }
+.pill.run { background: var(--acc-soft); color: var(--acc); border-color: transparent; }
+.pill.bad { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.pill.good { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+ul { padding-left: 20px; max-width: 72ch; } li { margin: 4px 0; }
+code { font-family: var(--mono); font-size: 13px; background: var(--bg-2); padding: 1px 5px; border-radius: 2px; }
+.small { font-size: 13px; }
+details.fold { margin: 44px 0 0; border: 1px solid var(--line); border-left: 3px solid var(--acc); background: var(--bg-2); }
+details.fold > summary { list-style: none; cursor: pointer; padding: 14px 18px 14px 16px; display: grid; grid-template-columns: 18px 1fr; column-gap: 10px; row-gap: 2px; align-items: start; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
+details.fold .chev { font-family: var(--mono); color: var(--acc); font-size: 18px; line-height: 1.3; transition: transform .15s ease; grid-row: 1 / span 3; }
+details.fold[open] .chev { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { details.fold .chev { transition: none; } }
+details.fold .sum-title { font-family: var(--serif); font-weight: 600; font-size: 20px; line-height: 1.3; text-wrap: balance; }
+details.fold .sum-hint { font-size: 13px; color: var(--muted); }
+details.fold .fold-body { padding: 4px 18px 22px; background: var(--bg); border-top: 1px solid var(--line); }
+details.fold .fold-body h3:first-child { margin-top: 18px; }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">imbalcic · exp30 / exp31 · 2026-09-02 19:30 → 09-04 13:10 (종료)</div>
+  <h1>100k 컨텍스트 + config 앙상블 4로 frozen TabPFN이 7 seed 모두 full XGBoost를 넘었다</h1>
+  <p class="lede">NF-CSE-CIC-IDS2018, chrono split, 테스트 4,023,114행, 7-class macro-F1. 모든 수치는 같은 split·같은 테스트에서 같은 run 안에 계산된 값이며 랩로그 <code>lablog/report/0902.md</code> §8~§8aj와 일치한다.</p>
+</header>
+
+<div class="verdict">
+  <div class="tile warn"><div class="k">1M C0 · 3 seed · 자연 / S=0.75</div><div class="v">0.710 / 0.689</div><div class="d">자연 0.721/0.733/<span class="w">0.676</span>, S=0.75 0.743/<span class="w">0.684</span>/<span class="w">0.639</span>. 1M은 구성과 무관하게 8 run 중 3개만 정상 — inf recall 붕괴 또는 port-21→inf가 seed에 따라 터진다. <span class="w">1M은 주표에서 제외</span>.</div></div>
+  <div class="tile"><div class="k">★ 헤드라인 · 100k C0, 0.75 + 균등 배분, n_estimators=4 · 7 seed</div><div class="v">0.7638 · 7/7</div><div class="d">seed 42–48 = .762/.761/.758/.766/<span class="b">.769</span>/.762/.768, 범위 0.011, <span class="b">7/7 full XGB 0.7548 상회</span>(최소 +0.003, 평균 +0.009). 붕괴 0/7 — n=1에서 0.675로 무너진 seed 46이 n=4에서 최고. tail-macro 0.555 vs 0.533, web 0.247 vs 0.172. 개입층 없이, 컨텍스트 = 훈련 풀의 0.8%, eval 10~12분 = 1M×1 config와 같음. 랩로그 §8ai.</div></div>
+  <div class="tile warn"><div class="k">정정 · 같은 1M 행의 XGBoost</div><div class="v">0.7541</div><div class="d">기존 "matched-budget 0.7283"은 chrono C0(SSH 0행) 값. 층화 C0면 XGB는 250k로도 0.756 = full. <span class="w">정보예산 항 삭제</span></div></div>
+</div>
+<p class="note">읽는 순서: ① 헤드라인 → ② 크기×비율 격자 → ③ seed 짝 비교 → ④ 비율 곡선 → ⑤ exp31 knob → ⑥ port-21 벡터 → ⑦ run 대장과 남은 큐.</p>
+
+<h2>① 헤드라인 요약</h2>
+<ul>
+  <li><strong>"추첨 복권"의 정체는 C0 행이 아니라 TabPFN의 단일 config(random_state)였고, config 앙상블 4가 그것을 없앤다.</strong> exp34에서 같은 C0 추첨이 random_state에 따라 0.675↔0.750을 오가는 것이 드러났고(§8ah), <code>--n-estimators 4</code>로 바꾸자 100k 균등 7 seed가 0.758~0.769로 모이며 <strong>7/7 full XGB 상회, 붕괴 0/7</strong>(§8ai). 지금까지의 seed 스윕은 C0 추첨과 모델 config를 함께 바꾸고 있었다. 이것이 이 보고서의 핵심 결론이다. <strong>대조군 확인(체인 14):</strong> 같은 n=4에서 자연 비율은 0.719(seed 43 port-21→dos, 복권 잔존), S=0.75 자연 배분은 0.749, S=0.75 균등만 0.764 — <strong>구성이 수준을 정하고 앙상블이 config 복권을 없앤다.</strong> 250k 균등 n=4도 6-seed 0.759–0.766으로 6/6 XGB 상회.</li>
+  <li><strong>컨텍스트 구성이 아키텍처보다 중요하다 — 단, TabPFN에만.</strong> 같은 C0 행으로 XGB는 구성에 무관하게 0.754~0.756이고, TabPFN global은 benign 비중에 따라 0.62~0.75를 오간다.</li>
+  <li><strong>benign 비중 0.87 → 0.75 원노브가 개입층 전체보다 크다 — 단 250k 이하에서.</strong> 250k 3-seed 짝 3/3 우위(평균 +0.077). 1M에서는 3-seed 0.743/0.684/0.639로 평균 −0.04 열세: inf 사본 18k가 임계 근처라 seed에 따라 inf 붕괴 또는 port-21 흡수가 터진다. 1M 열은 주표에서 뺀다.</li>
+  <li><strong>최종 후보: 100k + 0.75 + 공격 균등 배분 = 3-seed 평균 0.754, full XGB(0.7548)와 동률.</strong> seed 42/43/44 = 0.756/0.762/0.744, 2/3 상회. tail-macro 0.553 vs XGB 0.531은 3/3 상회, web +0.07, inf·dos·brute 동률, benign −0.004, ddos −0.06(hoic 추첨 0.74~0.90이 유일한 열세). 개입층 없이 frozen global만으로, 컨텍스트는 훈련 풀 12.07M의 0.8%. 균등 배분은 100k(자연 0.749/0.653/0.738)와 250k(0.743/0.732/0.748) 모두 3/3 짝 우위. C0 추첨 bagging은 hoic 분산을 못 잡아 종결. <span class="w">(17:42 추가) seed 45 0.754 정상, seed 46 0.675 붕괴(benign 1.29M행→inf)</span>; (20:26 추가) seed 47 <span class="g">0.7647</span>(hoic 0.990, 신기록)·48 0.7574 → 7-seed 중앙값 0.7562, 정상 6 평균 0.7564, 붕괴 1/7. 표는 7 seed 전부 보이고 붕괴를 숨기지 않는다. 처방: 정제 축(dedup·conflict·dup-cap)은 3연속 음성으로 종결, <strong>exp34 추첨 선택</strong>(K=5 추첨 중 D_cal benign recall로 선택)이 seed 46의 붕괴 추첨을 cal에서 0.632로 잡아내 배제(test 0.675 → 0.744), 7 seed 진행 중.</li>
+  <li><strong>안전 변수는 비율이 아니라 C0의 benign 절대 행 수다.</strong> benign ≤ 190k인 run(100k 전부, 250k S≤0.75)은 <span class="w">13 run 중 12 무사 — 100k 균등 seed 46이 반례(benign 75k인데 1.29M행→inf)</span>; benign ≥ 217k인 run(250k 자연 s44, 1M 8개 중 5개)에서 inf recall 붕괴(0.03~0.06) 또는 port-21 98k행의 inf 흡수가 seed에 따라 터진다. 1M은 구성과 무관하게 3/8만 정상 — "1M은 필요 없다"가 아니라 "1M은 불안정하다". benign 절대 행 수는 위험을 낮추지만 0으로 만들지는 못한다.</li>
+  <li><strong>1M에서 남은 격차는 hoic 하나.</strong> 1M S=0.75에서 XGB-c0까지 −0.011, 그중 ddos(0.9345 vs 0.995)가 0.0086.</li>
+  <li><strong>3-seed 짝 비교 3/3 우위</strong> — 자연 비율의 추첨 복권(hoic 0.58~0.84)이 S=0.75에서 평균 +0.11 올라가고, port-21 벡터가 셋 다 brute로 고정된다.</li>
+  <li><strong>주의해서 말할 것:</strong> S=0.75에서도 hoic 분산(0.74~0.96)은 남고, benign→inf 붕괴도 seed 추첨이다(100k 1/5, 1M 5/8). 표는 seed 전부 표기 + 평균±범위로.</li>
+</ul>
+
+<h2>② 크기 × benign 비중 격자 (seed 42, global 열)</h2>
+<div class="wrap"><table>
+<tr><th>C0 크기</th><th>hoic recall · 자연 0.87</th><th>hoic recall · S=0.75</th><th>macro · 자연</th><th>macro · S=0.75</th><th>benign recall · S=0.75</th><th>run 시간(4090)</th></tr>
+<tr><td class="t">100k</td><td><span class="cell c1">0.600</span></td><td><span class="cell c4">0.899</span></td><td>0.7261</td><td class="b">0.7491</td><td>0.9982</td><td>~45분 (병행)</td></tr>
+<tr><td class="t">250k</td><td><span class="cell c3">0.836</span></td><td><span class="cell c3">0.862</span></td><td class="w">0.6515 †</td><td class="b">0.7430</td><td>0.9988</td><td>21분</td></tr>
+<tr><td class="t">500k</td><td><span class="cell c1">0.580</span></td><td><span class="cell c4">0.894</span></td><td>0.7191</td><td class="b">0.7449</td><td>0.9986</td><td>36분</td></tr>
+<tr><td class="t">1M (r3 기준)</td><td><span class="cell c2">0.656</span></td><td><span class="cell c3">0.843</span></td><td>0.7212</td><td class="b">0.7430</td><td>0.9985</td><td>60분 (단독)</td></tr>
+</table></div>
+<p class="note">† 250k 자연은 port-21 벡터가 dos로 뒤집혀 brute F1 0.49 — macro 인용 불가(⑥). 자연 비율은 크기에 대해 단조가 아니고(0.60/0.84/0.58/0.66) S=0.75는 10배 범위에서 0.84~0.90으로 평평하다. 1M은 필요 없었다: 100k S=0.75가 최고이며 추론 비용은 1/10.</p>
+
+<h2>③ seed 짝 비교 — 250k, 자연 vs S=0.75</h2>
+<div class="grid2">
+<figure>
+<svg viewBox="0 0 560 205" width="100%" role="img" aria-label="seed별 hoic recall, 자연 비율에서 S=0.75로의 이동">
+  <line class="ax" x1="40" y1="175" x2="540" y2="175"/>
+  <g class="lbl">
+    <text x="100" y="192" text-anchor="middle">0.60</text><text x="220" y="192" text-anchor="middle">0.70</text>
+    <text x="340" y="192" text-anchor="middle">0.80</text><text x="460" y="192" text-anchor="middle">0.90</text>
+    <text x="540" y="192" text-anchor="end">hoic recall</text>
+  </g>
+  <line class="ax" x1="100" y1="30" x2="100" y2="175" stroke-dasharray="2 4"/><line class="ax" x1="220" y1="30" x2="220" y2="175" stroke-dasharray="2 4"/>
+  <line class="ax" x1="340" y1="30" x2="340" y2="175" stroke-dasharray="2 4"/><line class="ax" x1="460" y1="30" x2="460" y2="175" stroke-dasharray="2 4"/>
+  <!-- seed 42: 0.836 -> 0.862 -->
+  <text x="8" y="54">s42</text>
+  <line x1="383" y1="50" x2="414" y2="50" stroke="var(--muted)" stroke-width="2"/>
+  <circle cx="383" cy="50" r="6" fill="var(--warn)"/><circle cx="414" cy="50" r="6" fill="var(--acc)"/>
+  <text x="372" y="40" text-anchor="end" class="lbl">0.836</text><text x="426" y="40" class="lbl">0.862</text>
+  <!-- seed 43: 0.612 -> 0.737 -->
+  <text x="8" y="104">s43</text>
+  <line x1="114" y1="100" x2="264" y2="100" stroke="var(--muted)" stroke-width="2"/>
+  <circle cx="114" cy="100" r="6" fill="var(--warn)"/><circle cx="264" cy="100" r="6" fill="var(--acc)"/>
+  <text x="103" y="90" text-anchor="end" class="lbl">0.612</text><text x="276" y="90" class="lbl">0.737</text>
+  <!-- seed 44: 0.740 -> 0.927 -->
+  <text x="8" y="154">s44</text>
+  <line x1="268" y1="150" x2="492" y2="150" stroke="var(--muted)" stroke-width="2"/>
+  <circle cx="268" cy="150" r="6" fill="var(--warn)"/><circle cx="492" cy="150" r="6" fill="var(--acc)"/>
+  <text x="257" y="140" text-anchor="end" class="lbl">0.740</text><text x="504" y="140" class="lbl">0.927</text>
+  <circle cx="340" cy="18" r="5" fill="var(--warn)"/><text x="350" y="22">자연 0.87</text>
+  <circle cx="440" cy="18" r="5" fill="var(--acc)"/><text x="450" y="22">S=0.75</text>
+</svg>
+<figcaption>같은 seed면 benign 추첨은 S=0.75가 자연의 부분집합, 공격 클래스는 상위집합이라 통제된 짝이다. 세 짝 모두 오른쪽으로 이동.</figcaption>
+</figure>
+<div class="wrap"><table>
+<tr><th>seed</th><th>macro 자연</th><th>macro S=0.75</th><th>port-21 벡터 자연 → 0.75</th></tr>
+<tr><td>42</td><td>0.6515</td><td class="b">0.7430</td><td class="t">dos → brute</td></tr>
+<tr><td>43</td><td>0.7186</td><td class="b">0.7322</td><td class="t">brute → brute</td></tr>
+<tr><td>44</td><td>0.6220</td><td class="b">0.7475</td><td class="t">benign → brute</td></tr>
+<tr><td class="t">평균</td><td>0.664</td><td class="b">0.741</td><td class="t">hoic 평균 0.729 → 0.842</td></tr>
+</table>
+<p class="note">benign recall은 6 run 모두 ≥ 0.998. 1M 3-seed 짝: 자연 0.721/0.733/0.676 vs S=0.75 0.743/0.684/0.639 — 두 구성 모두 seed에 따라 inf 붕괴가 터져 1M에서는 짝 비교 자체가 성립하지 않는다.</p></div>
+</div>
+
+<h2>④ benign 비중 곡선 — 250k, seed 42</h2>
+<div class="wrap"><table>
+<tr><th>S (benign 비중)</th><th>hoic</th><th>benign recall</th><th>inf precision</th><th>web recall</th><th>macro</th><th>port-21 벡터</th></tr>
+<tr><td>0.87 (자연)</td><td>0.836</td><td>0.9982</td><td>0.705</td><td>0.438</td><td class="w">뒤집힘</td><td class="t">dos</td></tr>
+<tr class="hi"><td>0.75</td><td>0.862</td><td>0.9988</td><td>0.813</td><td>0.515</td><td class="b">0.7430</td><td class="t">brute</td></tr>
+<tr><td>0.60</td><td>0.764</td><td>0.9987</td><td class="w">0.092</td><td>0.479</td><td>0.6366</td><td class="t w">inf (1M에서도 재현)</td></tr>
+<tr><td>0.50</td><td>0.771</td><td>0.9985</td><td>0.776</td><td>0.552</td><td>0.7343</td><td class="t">brute</td></tr>
+<tr><td>0.40</td><td>0.866</td><td class="w">0.9735</td><td class="w">0.131</td><td>0.650</td><td>0.7180</td><td class="t">brute</td></tr>
+</table></div>
+<p class="note">benign 대가는 0.50까지 0, 0.40에서 시작(benign→inf 90,251행 — 진짜 누수). 0.60의 inf 붕괴는 누수가 아니라 port-21 벡터가 inf로 넘어간 것(⑥). 0820의 "bal50k 붕괴" 문턱이 250k에서는 0.40~0.50 사이.</p>
+
+<h2>⑤ exp31 — 컨텍스트 구성 knob 세 개</h2>
+<div class="wrap"><table>
+<tr><th>knob (250k, S=0.75, seed 42)</th><th>macro</th><th>hoic</th><th>web F1</th><th>inf F1</th><th>benign recall</th><th>판정</th></tr>
+<tr><td class="t">기준: 자연 배분</td><td>0.7430</td><td>0.862</td><td>0.181</td><td>0.390</td><td>0.9988</td><td class="t">—</td></tr>
+<tr><td class="t"><code>--c0-attack-alloc balanced</code> 250k seed 44</td><td class="b">0.7575</td><td>0.914</td><td class="b">0.243</td><td>0.406</td><td>0.9986</td><td class="t"><span class="pill good">XGB 상회</span> benign→inf 2.3k; seed 43은 0.7332(+0.001, 누수 6.9k)</td></tr>
+<tr><td class="t"><code>--c0-attack-alloc balanced</code> 1M: 공격 6종 각 ~41.7k행</td><td class="w">0.6052</td><td>0.760</td><td>0.171</td><td class="w">0.089</td><td>0.9986</td><td class="t"><span class="pill bad">붕괴</span> inf recall 0.05, port-21→dos — inf 사본 수 ≥~29k면 붕괴(1M S=0.60과 동일)</td></tr>
+<tr class="hi"><td class="t"><code>--c0-attack-alloc balanced</code> 100k: 공격 6종 각 ~4.1k행</td><td class="b">0.7562</td><td>0.869</td><td class="b">0.242</td><td>0.420</td><td>0.9969</td><td class="t"><span class="pill good">최고</span> inf 컨텍스트가 작아 benign→inf 8.0k, inf prec 0.60 회복</td></tr>
+<tr><td class="t"><code>--c0-attack-alloc balanced</code> 250k: 공격 6종 각 12,347행</td><td class="b">0.7513</td><td>0.872</td><td class="b">0.243</td><td>0.383</td><td>0.9951</td><td class="t"><span class="pill good">채택 후보</span> web 컨텍스트 61→762행; 대가 benign→inf 14.7k</td></tr>
+<tr><td class="t"><code>--c0-dedup exact</code> (벡터,라벨) 중복 제거 — 풀 6.03M→2.71M</td><td class="w">0.6334</td><td>0.937</td><td>0.185</td><td>0.098</td><td class="w">0.9860</td><td class="t"><span class="pill bad">기각</span> 사본 수 = 밀도 신호. port-21 → benign, benign→inf 46.9k</td></tr>
+<tr><td class="t"><code>--n-estimators 4</code> 100k 자연 비율 (대조군; 3 seed)</td><td class="w">0.7190</td><td>0.95</td><td>0.155</td><td>0.411</td><td>0.9993</td><td class="t"><span class="pill bad">복권 잔존</span> seed 43 port-21→dos 0.660 — 앙상블만으로는 부족</td></tr>
+<tr><td class="t"><code>--n-estimators 4</code> 100k S=0.75 자연 배분 (대조군; 3 seed)</td><td>0.7493</td><td>0.97</td><td>0.157</td><td>0.412</td><td>0.9990</td><td class="t">안정하나 web 0.16으로 XGB 미달 — 균등 배분이 +0.015</td></tr>
+<tr><td class="t"><code>--n-estimators 4</code> 250k 균등 (6 seed)</td><td class="b">0.7614</td><td>0.97</td><td class="b">0.242</td><td>0.411</td><td>0.9985</td><td class="t"><span class="pill good">6/6 XGB 상회</span> 0.759–0.766; 100k와 동급, 비용 2.5×</td></tr>
+<tr class="hi"><td class="t"><code>--n-estimators 4</code> 100k 균등 (config 앙상블; 7 seed)</td><td class="b">0.7638</td><td>0.98</td><td class="b">0.247</td><td>0.418</td><td>0.9983</td><td class="t"><span class="pill good">★ 채택</span> 7/7 XGB 상회, 범위 0.011, seed 46 붕괴 소멸(0.769). exp34 cal-선택(K=5)은 평균 0.730으로 음성 — 붕괴 추첨은 cal에서 잡히지만(0.632) 규칙이 benign-recall-max로 퇴화</td></tr>
+<tr><td class="t">exp32 <code>--c0-bags 3</code> 100k 균등 (= seed 42/43/44 추첨의 확률 평균)</td><td class="w">0.7508</td><td>0.772</td><td>0.229</td><td>0.440</td><td>0.9978</td><td class="t"><span class="pill bad">미달</span> 단독 3-seed 평균 0.7540보다 낮음; hoic는 평균으로 안 잡힘. 250k bags=3 0.7577(단독 최대 수준), 100k bags=5 0.7547</td></tr>
+<tr><td class="t"><code>--c0-conflict majority</code> 라벨 충돌 벡터는 다수 라벨만 — 7,127벡터·59,315행 제거</td><td class="w">0.7207</td><td>0.770</td><td>0.163</td><td>0.309</td><td class="w">0.9937</td><td class="t"><span class="pill bad">기각</span> benign→inf 2.2k→19.6k. 자연 비율에서는 port-21 고정으로 +0.08(0.7332)이나 S=0.75가 이미 해결</td></tr>
+</table></div>
+<p class="note">정제 축 총평: dedup·conflict 모두 음성 — 중복·충돌 사본은 제거 대상이 아니라 밀도·사전확률 정보다. dedup의 부수 발견: benign 중복 질량을 걷어내면 hoic는 0.99까지 열린다(자연 비율 dedup run) — "benign 사본 질량이 hoic를 누른다"는 가설의 가장 강한 증거. 후속 후보로 사본 수 상한 <code>--c0-dup-cap k</code>를 기록만 해 둠.</p>
+
+<h2>⑥ port-21 벡터 — 한 벡터가 macro를 ±0.13 흔든다</h2>
+<p>ftp_bruteforce 77,344행 + dos_slowhttptest 21,110행 = 테스트 98,454행(2.4%)이 <strong>바이트 동일한 feature 벡터</strong>이고, 훈련 데이터에는 이 벡터가 brute·dos·inf·benign 네 라벨로 들어 있다. TabPFN은 C0 추첨에 따라 이 98k행을 통째로 한 클래스로 보낸다. XGB는 항상 brute.</p>
+<div class="wrap"><table>
+<tr><th>run</th><th>행선지</th><th>결과</th></tr>
+<tr><td class="t">250k 자연 s42 / s43 / s44</td><td class="t">dos / brute / benign</td><td class="t">brute F1 0.49 / 0.92 / 0.49, macro 0.65 / 0.72 / 0.62</td></tr>
+<tr><td class="t">S=0.60 (250k, 1M)</td><td class="t w">inf</td><td class="t">inf precision 0.09 / 0.02, inf recall까지 붕괴</td></tr>
+<tr class="hi"><td class="t">S=0.75 전부 (100k~1M, seed 3개, 균등 배분 포함)</td><td class="t b">brute 7/7</td><td class="t">brute F1 0.9159 = XGB</td></tr>
+<tr><td class="t">dedup exact</td><td class="t w">benign</td><td class="t">(벡터,라벨)당 1표가 되어 benign 승</td></tr>
+</table></div>
+<p class="note">C0 안의 ftp:slowhttptest 비율은 모든 run에서 3.7:1로 같으므로 단순 다수결이 아니다. 0819 §3에 기록된 mislabel(slowhttptest = ftp와 동일 벡터)의 후속이며, 레인 macro를 인용하지 않는 이유. 논문 데이터-품질 절의 핵심 사례.</p>
+
+<h2>⑦ 기록급 run 클래스별 — 1M, seed 42, 같은 split</h2>
+<div class="wrap"><table>
+<tr><th>class F1</th><th>r3 1M 자연 global</th><th>1M S=0.75 global</th><th>Δ</th><th>XGB-c0 같은 1M 행</th><th>XGB full 12.07M</th></tr>
+<tr><td class="t">benign</td><td>0.9845</td><td class="b">0.9907</td><td>+0.006</td><td>0.9945</td><td>0.9943</td></tr>
+<tr><td class="t">bot</td><td>0.9984</td><td>0.9971</td><td>−0.001</td><td>0.9977</td><td>—</td></tr>
+<tr><td class="t">brute_force</td><td>0.9159</td><td>0.9159</td><td>0</td><td>0.9159</td><td>0.9159</td></tr>
+<tr><td class="t">ddos</td><td>0.8394</td><td class="b">0.9345</td><td>+0.095</td><td>0.9950</td><td>0.9921</td></tr>
+<tr><td class="t">dos</td><td>0.7552</td><td class="b">0.7813</td><td>+0.026</td><td>0.7819</td><td>0.7822</td></tr>
+<tr><td class="t">infiltration</td><td>0.3880</td><td class="b">0.4115</td><td>+0.024</td><td>0.4256</td><td>0.4291</td></tr>
+<tr><td class="t">web_attacks</td><td>0.1671</td><td>0.1702</td><td>+0.003</td><td>0.1680</td><td>0.1724</td></tr>
+<tr class="hi"><td class="t">macro</td><td>0.7212</td><td class="b">0.7430</td><td class="b">+0.0218</td><td>0.7541</td><td>0.7548</td></tr>
+</table></div>
+<p class="note">hoic recall 0.656 → 0.843(잔여 32,396행). 게이트 셧다운(τ=∞)이라 시스템 = global; r3 시스템 최고 0.7395보다 +0.0035. XGB full 열은 run 20260826_130310 인용.</p>
+
+<details class="fold" id="cand-detail">
+<summary><span class="chev">▸</span><span class="sum-title">⑦b 최종 후보 상세 — 100k · S=0.75 · 공격 균등 배분, seed 42–48</span><span class="sum-hint">C0 시나리오 구성 · 클래스별 P/R/F1 · expert 구성 · 게이트 · 실패 지점 · run dir (클릭하여 펼치기)</span></summary>
+<div class="fold-body">
+<h3>모델 구조는 바꾸지 않았다</h3>
+<p>exp31은 exp29r3 → exp30 사본에 C0 구성 knob 세 개(<code>--c0-attack-alloc</code>, <code>--c0-dedup</code>, <code>--c0-conflict</code>)만 더한 것이다(2,344줄 중 146줄 차이, 기본값이면 exp30과 코드 경로 동일). TabPFN-v3 체크포인트 frozen, <code>n_estimators=1</code>, 파인튜닝 없음. 개입 파이프라인(embed_pca φ → 잔차 k-means expert → scorer/verifier XGB → calibration)은 전부 실행되어 산출물을 남기지만, 7 seed 중 6개에서 calibration이 게이트를 닫아(τ=∞, 제안 0건) <strong>최종 예측 = global 한 번의 forward</strong>다.</p>
+
+<h3>C0 구성 — 100,000행 (seed 42, 괄호는 seed 42–46 범위)</h3>
+<div class="wrap"><table>
+<tr><th>클래스</th><th>C0 행</th><th>C0 비중</th><th>풀 비중 (D_global)</th><th>시나리오 내역</th></tr>
+<tr><td class="t">benign</td><td>75,000</td><td>0.750</td><td>0.871</td><td class="t">—</td></tr>
+<tr><td class="t">bot</td><td>4,848</td><td>0.0485</td><td>0.010</td><td class="t">—</td></tr>
+<tr><td class="t">brute_force</td><td>4,848</td><td>0.0485</td><td>0.029</td><td class="t">ftp 3,217–3,270 / ssh 1,578–1,631</td></tr>
+<tr><td class="t">ddos</td><td>4,848</td><td>0.0485</td><td>0.066</td><td class="t">hoic 3,742–3,794 / loic_http 1,037–1,086 / loic_udp 5–20</td></tr>
+<tr><td class="t">dos</td><td>4,848</td><td>0.0485</td><td>0.015</td><td class="t">hulk 1,594–1,643 / slowhttptest 1,574–1,715 / goldeneye 949–1,069 / slowloris 536–616</td></tr>
+<tr><td class="t">infiltration</td><td>4,847</td><td>0.0485</td><td>0.009</td><td class="t">—</td></tr>
+<tr><td class="t">web_attacks</td><td>761</td><td>0.0076</td><td>0.00013</td><td class="t">brute_web 485 / xss 144 / sqli 132 — 컨텍스트 풀 전량, 부족분은 다른 5종에 재배분</td></tr>
+</table></div>
+<p class="note">클래스 간은 균등, 클래스 안의 시나리오는 자연 비율 추첨. 컨텍스트 풀 6,034,654행의 1.66%, 훈련 풀 12.07M의 0.83%. 공유 anchor 12,761행(클래스당 2,000, web 761)은 expert 컨텍스트에만 쓰인다.</p>
+
+<h3>클래스별 F1 — global 열, 같은 split·같은 테스트 4,023,114행, seed 42–48</h3>
+<div class="wrap"><table>
+<tr><th>class</th><th>s42</th><th>s43</th><th>s44</th><th>s45</th><th>s46 (붕괴)</th><th>s47</th><th>s48</th><th>정상 6-seed 평균</th><th>XGB-c0 같은 100k</th><th>XGB full 12.07M</th></tr>
+<tr><td class="t">benign</td><td>0.9909</td><td>0.9924</td><td>0.9878</td><td>0.9927</td><td class="w">0.7716</td><td>0.9949</td><td>0.9929</td><td>0.9919</td><td>0.9924</td><td>0.9943</td></tr>
+<tr><td class="t">bot</td><td>0.9984</td><td>0.9981</td><td>0.9984</td><td>0.9984</td><td>0.9981</td><td>0.9982</td><td>0.9979</td><td>0.9982</td><td>0.9973</td><td>0.9978</td></tr>
+<tr><td class="t">brute_force</td><td>0.9159</td><td>0.9159</td><td>0.9158</td><td>0.9158</td><td>0.9159</td><td>0.9159</td><td>0.9158</td><td>0.9159</td><td>0.9159</td><td>0.9159</td></tr>
+<tr><td class="t">ddos</td><td>0.9459</td><td>0.9588</td><td class="w">0.8879</td><td>0.9596</td><td>0.9817</td><td class="b">0.9954</td><td>0.9659</td><td>0.9523</td><td class="b">0.9994</td><td class="b">0.9921</td></tr>
+<tr><td class="t">dos</td><td>0.7807</td><td>0.7810</td><td>0.7814</td><td>0.7811</td><td>0.7812</td><td>0.7810</td><td>0.7807</td><td>0.7810</td><td>0.7818</td><td>0.7822</td></tr>
+<tr><td class="t">infiltration</td><td>0.4201</td><td class="b">0.4439</td><td>0.4045</td><td>0.4175</td><td class="w">0.0465</td><td>0.4394</td><td>0.4114</td><td>0.4228</td><td>0.3370</td><td>0.4291</td></tr>
+<tr><td class="t">web_attacks</td><td class="b">0.2418</td><td class="b">0.2419</td><td>0.2333</td><td>0.2118</td><td>0.2299</td><td>0.2280</td><td>0.2374</td><td class="b">0.2324</td><td>0.2439</td><td>0.1724</td></tr>
+<tr class="hi"><td class="t">macro</td><td class="b">0.7562</td><td class="b">0.7617</td><td>0.7442</td><td>0.7539</td><td class="w">0.6750</td><td class="b">0.7647</td><td class="b">0.7574</td><td class="b">0.7564</td><td>0.7525</td><td>0.7548</td></tr>
+<tr><td class="t">tail (dos·inf·web)</td><td>0.5534</td><td>0.5613</td><td>0.5454</td><td>0.5426</td><td class="w">0.4249</td><td>0.5552</td><td>0.5489</td><td class="b">0.5511</td><td>0.5260</td><td>0.5331</td></tr>
+</table></div>
+<p class="note">seed 44 열은 global(게이트 열림 전) 값이고 system은 0.7460(+0.0018), 나머지 6 seed는 게이트 닫힘. 7-seed 평균 0.7447 / 중앙값 0.7562; 붕괴 seed를 빼면 6-seed 평균 0.7564 vs full XGB 0.7548(4/6 상회). tail은 정상 6 seed 모두 XGB 0.533 상회. XGB-c0 열은 seed 42의 C0 100k행으로 XGB를 재학습한 값(<code>scripts/results/budget_diag_exp30_100k_075_bal</code>) — 같은 100k 행으로 XGB는 0.7525, 즉 TabPFN의 이득은 "적은 행"이 아니라 "행을 어떻게 읽는가"에 있다.</p>
+
+<h3>핵심 P/R과 유출 행 수 (global)</h3>
+<div class="wrap"><table>
+<tr><th>seed</th><th>benign recall</th><th>inf FP 행</th><th>web FP 행</th><th>hoic recall (→benign 행)</th><th>inf P / R</th><th>web P / R</th><th>게이트</th></tr>
+<tr><td>42</td><td>0.9969</td><td>8,028</td><td>2,931</td><td>0.869 (26,991)</td><td>0.602 / 0.323</td><td>0.139 / 0.929</td><td class="t">닫힘 · K=2</td></tr>
+<tr><td>43</td><td>0.9981</td><td>3,934</td><td>2,841</td><td>0.900 (20,748)</td><td>0.751 / 0.315</td><td>0.140 / 0.906</td><td class="t">닫힘 · K=3</td></tr>
+<tr><td>44</td><td>0.9986</td><td>2,067</td><td>3,051</td><td class="w">0.742 (53,250)</td><td>0.830 / 0.267</td><td>0.133 / 0.923</td><td class="t">열림 · K=4 · 253k 제안 / 228k 채택 · macro +0.002</td></tr>
+<tr><td>45</td><td>0.9991</td><td class="g">512</td><td>3,426</td><td>0.911 (18,347)</td><td>0.952 / 0.267</td><td>0.120 / 0.916</td><td class="t">닫힘 · K=4</td></tr>
+<tr><td>46</td><td class="w">0.6309</td><td class="w">1,290,001</td><td>3,086</td><td>0.955 (9,042)</td><td class="w">0.024 / 0.840</td><td>0.131 / 0.917</td><td class="t">닫힘 · K=3</td></tr>
+<tr><td>47</td><td>0.9979</td><td>4,462</td><td>2,888</td><td class="g">0.990 (2,076)</td><td>0.726 / 0.315</td><td>0.131 / 0.859</td><td class="t">닫힘 · K=3</td></tr>
+<tr><td>48</td><td>0.9986</td><td>1,661</td><td>3,003</td><td>0.917 (17,212)</td><td>0.860 / 0.270</td><td>0.136 / 0.929</td><td class="t">닫힘 · K=4</td></tr>
+</table></div>
+<p class="note">inf FP·web FP는 거의 전부 benign 출처(6d). benign→inf 유출량이 seed별 512 → 8,028행으로 16배 차이 나고, seed 46에서는 1.29M행으로 폭주한다 — C0의 inf 4,847행 중 benign 쌍둥이 벡터가 몇 개 뽑혔나의 추첨. 게이트는 D_cal에서 benign FPR 증가 ≤ 0.0005를 만족하는 τ가 없으면 ∞로 닫힌다.</p>
+
+<h3>expert 구성 (잔차 k-means, 2a) — seed마다 다르게 갈리지만 최종 예측에 거의 관여하지 않는다</h3>
+<div class="wrap"><table class="small">
+<tr><th>seed</th><th>K</th><th>expert 블록 (행 · 주요 클래스)</th></tr>
+<tr><td>42</td><td>2</td><td class="t">E1 26,124: inf 15,483 + dos 10,504 + web 128 (고잔차 클러스터, 평균 잔차 28.3) · E2 186k 블록: benign 133.6k, brute 40.0k, ddos 8.3k</td></tr>
+<tr><td>43</td><td>3</td><td class="t">E1 web 252 · E2 186k: benign 165.0k, bot 12.2k · E3 inf 15,791</td></tr>
+<tr><td>44</td><td>4</td><td class="t">E1 inf 15,727 · E2 186k: benign 158.0k, bot 12.3k, ddos 7.3k, dos 4.9k · E3 web 252 · E4 ddos 427</td></tr>
+<tr><td>45</td><td>4</td><td class="t">E1 inf 15,792 · E2 186k: benign 146.7k, bot 18.9k, ddos 11.1k, brute 5.3k · E3 2,964: benign 2,690 + web 231 · E4 3,019: inf 2,873</td></tr>
+<tr><td>46</td><td>3</td><td class="t">E1 186k: benign 182.2k + inf 3.8k · E2 5,751: inf 5,599 + web 152 · E3 186k: benign 183.8k + inf 2.0k — 잔차가 benign 쪽에 몰림 = global이 benign을 틀리고 있다는 자기 신호이나 게이트는 닫혔다</td></tr>
+</table></div>
+<p class="note">모든 expert는 공유 anchor 12,761행 위에 자기 블록을 얹는다(블록 상한 186,000행). s47·s48은 K=3·4, 게이트 닫힘(블록 구성은 run dir 2a 참조). 이것이 "개입층 없음"의 실제 의미: 구조는 남아 있고, 쓰이지 않는다.</p>
+
+<h3>실패 지점 (6g 시나리오 recall)</h3>
+<ul class="small">
+  <li><strong>hoic</strong> (ddos, 206,463행): seed별 0.742–0.955. XGB 대비 유일한 체계적 열세(ddos F1 4-seed 0.938 vs 0.992). C0의 hoic 사본은 3.7–3.8k로 같은데 결과가 다르다 → 어느 benign 행이 뽑혔나의 추첨.</li>
+  <li><strong>slowhttptest</strong> (dos, 21,110행): 5/5 recall 0, 전량 brute_force. ftp_bruteforce와 바이트 동일 벡터라 XGB도 동일(brute precision 0.845 = XGB). dos F1 0.781 상한은 데이터 라벨의 문제.</li>
+  <li><strong>infiltration</strong> (37,631행): 정상 seed에서 recall 0.27–0.32, 25–27k행이 benign으로. precision은 benign→inf 유출량에 반비례(512행 → 0.95, 8k행 → 0.60). seed 46은 반대로 benign 1.29M행이 inf로 넘어가 recall 0.84 / precision 0.02 — 1M 균등(inf 41.7k 사본)에서 본 붕괴가 100k(inf 4.8k)에서도 1/5로 터진다. "benign ≤ 190k면 안전"의 반례.</li>
+  <li><strong>web</strong> (509행): recall 0.91–0.93, 대신 benign 2.8–3.4k행이 web으로 → precision 0.12–0.14. XGB(recall 0.48, P 0.105)보다 F1 +0.04–0.07 — 균등 배분이 web 컨텍스트를 61 → 761행으로 늘린 직접 효과.</li>
+</ul>
+
+<h3>run dir · 산출물</h3>
+<div class="wrap"><table class="small">
+<tr><th>seed</th><th>run (tabpfn/results/…_exp31_c0alloc)</th><th>total_s</th><th>peak GB</th><th>macro g</th></tr>
+<tr><td>42</td><td>20260903_094650</td><td>1,845</td><td>5.99</td><td>0.7562</td></tr>
+<tr><td>43</td><td>20260903_122210</td><td>2,015</td><td>6.39</td><td>0.7617</td></tr>
+<tr><td>44</td><td>20260903_122328</td><td>2,094</td><td>6.39</td><td>0.7442</td></tr>
+<tr><td>45</td><td>20260903_174159</td><td>2,012</td><td>5.99</td><td>0.7539</td></tr>
+<tr><td>46</td><td>20260903_174111</td><td>1,964</td><td>6.39</td><td class="w">0.6750</td></tr>
+<tr><td>47</td><td>20260903_202445</td><td>1,923</td><td>—</td><td class="b">0.7647</td></tr>
+<tr><td>48</td><td>20260903_202602</td><td>1,999</td><td>—</td><td>0.7574</td></tr>
+</table></div>
+<p class="note">각 dir의 <code>per_class_metrics.csv/png</code>, <code>0g_c0_scenario</code>, <code>2a_expert_contexts</code>, <code>2c_context_priors</code>, <code>5a_decision_stats</code>, <code>6a_routing_quality</code>, <code>6d_class_fp_accounting</code>, <code>6g_test_scenario_recall</code>. 시간은 두 run 병행 기준(단독 ~31분). 랩로그 §8s·§8x·§8ad.</p>
+</div>
+</details>
+
+<h2>⑧ run 대장</h2>
+<div class="wrap"><table class="small">
+<tr><th>run (tabpfn/results/)</th><th>스크립트</th><th>C0</th><th>S</th><th>배분</th><th>seed</th><th>hoic</th><th>benign rec</th><th>macro g</th><th>비고</th></tr>
+<tr><td>20260902_225616</td><td class="t">exp30</td><td>250k</td><td>자연</td><td>자연</td><td>42</td><td>0.836</td><td>0.9982</td><td>0.6515</td><td class="t">레인 기준선; port-21→dos</td></tr>
+<tr><td>20260902_233554</td><td class="t">exp30</td><td>250k</td><td>0.75</td><td>자연</td><td>42</td><td>0.862</td><td>0.9988</td><td>0.7430</td><td class="t">gate 열림, sys 0.7470</td></tr>
+<tr><td>20260902_235656</td><td class="t">exp30</td><td>500k</td><td>자연</td><td>자연</td><td>42</td><td>0.580</td><td>0.9987</td><td>0.7191</td><td class="t">0.75와 병행</td></tr>
+<tr><td>20260903_001440</td><td class="t">exp30</td><td>250k</td><td>0.60</td><td>자연</td><td>42</td><td>0.764</td><td>0.9987</td><td>0.6366</td><td class="t">port-21→inf</td></tr>
+<tr><td>20260903_005042</td><td class="t">exp30</td><td>500k</td><td>0.75</td><td>자연</td><td>42</td><td>0.894</td><td>0.9986</td><td>0.7449</td><td class="t"></td></tr>
+<tr class="hi"><td>20260903_015043</td><td class="t">exp30</td><td>1M</td><td>0.75</td><td>자연</td><td>42</td><td>0.843</td><td>0.9985</td><td>0.7430</td><td class="t">기록급 · 단독 · 논문 표</td></tr>
+<tr><td>20260903_025002</td><td class="t">exp30</td><td>1M</td><td>0.60</td><td>자연</td><td>42</td><td>0.630</td><td>0.9986</td><td>0.6093</td><td class="t">port-21→inf 재현</td></tr>
+<tr><td>20260903_033544</td><td class="t">exp30</td><td>250k</td><td>0.50</td><td>자연</td><td>42</td><td>0.771</td><td>0.9985</td><td>0.7343</td><td class="t"></td></tr>
+<tr><td>20260903_033627</td><td class="t">exp30</td><td>250k</td><td>0.40</td><td>자연</td><td>42</td><td>0.866</td><td>0.9735</td><td>0.7180</td><td class="t">benign 누수 시작</td></tr>
+<tr><td>20260903_042146</td><td class="t">exp30</td><td>100k</td><td>0.75</td><td>자연</td><td>42</td><td>0.899</td><td>0.9982</td><td>0.7491</td><td class="t">exp30 최고</td></tr>
+<tr><td>20260903_042210</td><td class="t">exp30</td><td>100k</td><td>자연</td><td>자연</td><td>42</td><td>0.600</td><td>0.9984</td><td>0.7261</td><td class="t"></td></tr>
+<tr><td>20260903_051308</td><td class="t">exp30</td><td>250k</td><td>0.75</td><td>자연</td><td>43</td><td>0.737</td><td>0.9987</td><td>0.7322</td><td class="t"></td></tr>
+<tr><td>20260903_051253</td><td class="t">exp30</td><td>250k</td><td>0.75</td><td>자연</td><td>44</td><td>0.927</td><td>0.9991</td><td>0.7475</td><td class="t"></td></tr>
+<tr><td>20260903_060315</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>자연+dedup</td><td>42</td><td>0.937</td><td>0.9860</td><td>0.6334</td><td class="t">기각</td></tr>
+<tr class="hi"><td>20260903_060437</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>균등</td><td>42</td><td>0.872</td><td>0.9951</td><td>0.7513</td><td class="t">전체 최고 · 단일 seed</td></tr>
+<tr><td>20260903_063226</td><td class="t">exp31</td><td>250k</td><td>자연+dedup</td><td>자연</td><td>42</td><td>0.991</td><td>0.9930</td><td>0.6288</td><td class="t">확인용</td></tr>
+<tr><td>20260903_071619</td><td class="t">exp30</td><td>250k</td><td>자연</td><td>자연</td><td>44</td><td>0.740</td><td>0.9994</td><td>0.6220</td><td class="t">port-21→benign</td></tr>
+<tr><td>20260903_072022</td><td class="t">exp30</td><td>250k</td><td>자연</td><td>자연</td><td>43</td><td>0.612</td><td>0.9993</td><td>0.7186</td><td class="t"></td></tr>
+<tr><td>20260903_082151</td><td class="t">exp30</td><td>1M</td><td>자연</td><td>자연</td><td>43</td><td>0.730</td><td>0.9990</td><td>0.7329</td><td class="t">1M 자연 seed 대역 ≥0.012</td></tr>
+<tr><td>20260903_091253</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>자연+conflict</td><td>42</td><td>0.770</td><td>0.9937</td><td>0.7207</td><td class="t">기각</td></tr>
+<tr><td>20260903_091415</td><td class="t">exp31</td><td>250k</td><td>자연</td><td>자연+conflict</td><td>42</td><td>0.763</td><td>0.9987</td><td>0.7332</td><td class="t">자연 비율에선 port-21 고정(+0.08)</td></tr>
+<tr class="hi"><td>20260903_094650</td><td class="t">exp31</td><td>100k</td><td>0.75</td><td>균등</td><td>42</td><td>0.869</td><td>0.9969</td><td>0.7562</td><td class="t">전체 최고 · full XGB 상회 · 단일 seed</td></tr>
+<tr><td>20260903_095403</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>균등</td><td>43</td><td>0.795</td><td>0.9973</td><td>0.7332</td><td class="t">inf 누수 6.9k로 이득 상쇄</td></tr>
+<tr><td>20260903_104321</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>균등+conflict</td><td>42</td><td>0.789</td><td>0.9748</td><td>0.7129</td><td class="t">conflict 3연속 음성 · 종결</td></tr>
+<tr class="hi"><td>20260903_104347</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>균등</td><td>44</td><td>0.914</td><td>0.9986</td><td>0.7575</td><td class="t">full XGB 상회</td></tr>
+<tr><td>20260903_114748</td><td class="t">exp31</td><td>1M</td><td>0.75</td><td>균등</td><td>42</td><td>0.760</td><td>0.9986</td><td>0.6052</td><td class="t">inf 붕괴 · 균등은 ≤250k만</td></tr>
+<tr class="hi"><td>20260903_122210</td><td class="t">exp31</td><td>100k</td><td>0.75</td><td>균등</td><td>43</td><td>0.900</td><td>0.9981</td><td>0.7617</td><td class="t">신기록</td></tr>
+<tr><td>20260903_122328</td><td class="t">exp31</td><td>100k</td><td>0.75</td><td>균등</td><td>44</td><td>0.742</td><td>0.9986</td><td>0.7442</td><td class="t">hoic 추첨 하단</td></tr>
+<tr><td>20260903_132033</td><td class="t">exp30</td><td>1M</td><td>0.75</td><td>자연</td><td>43</td><td>0.663</td><td>0.9981</td><td class="w">0.6836</td><td class="t">inf 붕괴(recall 0.055) · 1M 불안정</td></tr>
+<tr><td>20260903_141831</td><td class="t">exp30</td><td>1M</td><td>0.75</td><td>자연</td><td>44</td><td>0.805</td><td>0.9988</td><td class="w">0.6393</td><td class="t">port-21→inf · 1M S=0.75는 1/3</td></tr>
+<tr><td>20260903_151625</td><td class="t">exp30</td><td>1M</td><td>자연</td><td>자연</td><td>44</td><td>0.641</td><td>0.9989</td><td class="w">0.6759</td><td class="t">inf 붕괴 · 1M 자연도 1/3 실패</td></tr>
+<tr><td>20260903_154827</td><td class="t">exp30</td><td>100k</td><td>0.75</td><td>자연</td><td>43</td><td>0.807</td><td>0.9991</td><td class="w">0.6526</td><td class="t">port-21→dos (균등은 brute)</td></tr>
+<tr><td>20260903_154620</td><td class="t">exp30</td><td>100k</td><td>0.75</td><td>자연</td><td>44</td><td>0.810</td><td>0.9993</td><td>0.7383</td><td class="t"></td></tr>
+<tr><td>20260903_160832</td><td class="t">exp32</td><td>100k×3</td><td>0.75</td><td>균등 bags=3</td><td>42–44</td><td>0.772</td><td>0.9978</td><td>0.7508</td><td class="t">bagging 미달</td></tr>
+<tr><td>20260903_164008</td><td class="t">exp32</td><td>250k×3</td><td>0.75</td><td>균등 bags=3</td><td>42–44</td><td>0.839</td><td>0.9976</td><td>0.7577</td><td class="t">단독 최대 수준</td></tr>
+<tr><td>20260903_170148</td><td class="t">exp32</td><td>100k×5</td><td>0.75</td><td>균등 bags=5</td><td>42–46</td><td>0.816</td><td>0.9979</td><td>0.7547</td><td class="t"></td></tr>
+<tr><td>20260903_174159</td><td class="t">exp31</td><td>100k</td><td>0.75</td><td>균등</td><td>45</td><td>0.911</td><td>0.9991</td><td>0.7539</td><td class="t">정상 · inf 누수 최소(512행)</td></tr>
+<tr><td>20260903_174111</td><td class="t">exp31</td><td>100k</td><td>0.75</td><td>균등</td><td>46</td><td>0.955</td><td class="w">0.6309</td><td class="w">0.6750</td><td class="t">benign→inf 1.29M행 · 100k 첫 붕괴</td></tr>
+<tr><td>20260903_182702</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>균등</td><td>45</td><td>0.949</td><td>0.9978</td><td class="b">0.7599</td><td class="t">250k 최고</td></tr>
+<tr><td>20260903_182859</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>균등</td><td>46</td><td>0.941</td><td>0.9961</td><td>0.7475</td><td class="t">같은 seed가 100k는 붕괴, 250k는 →inf 11.2k</td></tr>
+<tr><td>20260903_190018</td><td class="t">exp33</td><td>100k</td><td>0.75</td><td>균등+dup-cap 5</td><td>42</td><td>0.922</td><td class="w">0.9878</td><td class="w">0.6357</td><td class="t">기각 · port-21→web, 풀 2.75M행 제거</td></tr>
+<tr><td>20260903_190203</td><td class="t">exp33</td><td>100k</td><td>0.75</td><td>균등+dup-cap 20</td><td>42</td><td>0.914</td><td class="w">0.9901</td><td class="w">0.6925</td><td class="t">기각 · 정제 축 종결, 체인 10 취소</td></tr>
+<tr><td>20260903_195007</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>균등</td><td>47</td><td>0.887</td><td>0.9956</td><td>0.7526</td><td class="t"></td></tr>
+<tr><td>20260903_195228</td><td class="t">exp31</td><td>250k</td><td>0.75</td><td>균등</td><td>48</td><td>0.755</td><td class="w">0.9866</td><td class="w">0.7230</td><td class="t">부분 누수 →inf 44k</td></tr>
+<tr class="hi"><td>20260903_202445</td><td class="t">exp31</td><td>100k</td><td>0.75</td><td>균등</td><td>47</td><td class="g">0.990</td><td>0.9979</td><td class="b">0.7647</td><td class="t">신기록 · hoic 0.99</td></tr>
+<tr><td>20260903_202602</td><td class="t">exp31</td><td>100k</td><td>0.75</td><td>균등</td><td>48</td><td>0.917</td><td>0.9986</td><td>0.7574</td><td class="t"></td></tr>
+<tr><td>20260903_210522</td><td class="t">exp34</td><td>100k×5→1</td><td>0.75</td><td>균등 · cal 선택</td><td>44</td><td>0.922</td><td>0.9992</td><td>0.7504</td><td class="t">추첨 5개 중 cal benign rec 최대 선택</td></tr>
+<tr><td>20260903_210759</td><td class="t">exp34</td><td>100k×5→1</td><td>0.75</td><td>균등 · cal 선택</td><td>46</td><td>0.680</td><td>0.9972</td><td>0.7436</td><td class="t">붕괴 추첨(cal benign rec 0.632) 배제 → 회복</td></tr>
+<tr><td>20260903_214632 · 214545 · 221952 · 221949 · 223312</td><td class="t">exp34</td><td>100k×5→1</td><td>0.75</td><td>균등 · cal 선택</td><td>42·43·45·47·48</td><td>—</td><td>≥0.997</td><td class="w">0.752 · 0.735 · 0.694 · 0.693 · 0.741</td><td class="t">선택 평균 0.730 &lt; 단일 0.745 — 음성. 같은 C0가 random_state에 따라 0.675↔0.750(§8ah)</td></tr>
+<tr class="hi"><td>20260903_235255 · 235413 · 20260904_010654 · 010911 · 021924 · 022152 · 025507</td><td class="t">exp31</td><td>100k</td><td>0.75</td><td>균등 · <strong>n_est=4</strong></td><td>44·46·42·43·45·47·48</td><td>0.94–1.00</td><td>0.9976–0.9987</td><td class="b">.758 · .769 · .762 · .761 · .766 · .762 · .768</td><td class="t">★ 7/7 full XGB 상회 · 범위 0.011 · 붕괴 0</td></tr>
+</table></div>
+<p class="note">레인 공통 인자: <code>--prune-mode off --feasibility-banks none --skip-xgboost</code>, dense off, 4090 bf16. 250k 쌍은 병행 실행(0820 §12n 교란 감수). XGB-c0는 각 run의 <code>context_rows.npz</code> C0로 <code>scripts/race_budget_diag.py --budgets c0</code> 재학습(<code>scripts/results/budget_diag_exp30_*</code>).</p>
+
+<h2>⑨ 남은 큐 (자동 진행)</h2>
+<ul>
+  <li><span class="pill good">체인 4 완료</span> 1M 자연 seed 43 → macro 0.7329.</li>
+  <li><span class="pill bad">체인 5 종료</span> conflict majority 250k S=0.75 음성 → 1M conflict run 취소, 250k 자연+conflict만 확인용 완주.</li>
+  <li><span class="pill good">체인 6 완료</span> 균등 배분: 100k 0.7562 / 250k seed 43 0.7332 / seed 44 0.7575 / +conflict 기각 / 1M 0.6052(붕괴).</li>
+  <li><span class="pill good">체인 7 완료</span> 100k 균등 seed 43 0.7617 · seed 44 0.7442 · 1M S=0.75 seed 43 0.6836 · seed 44 0.6393 · 1M 자연 seed 44 0.6759 — 1M 축 종결.</li>
+  <li><span class="pill good">체인 8 완료</span> 100k 자연 배분 seed 43 0.6526 · 44 0.7383 (균등 3/3 우위) · bagging 100k×3 0.7508 · 250k×3 0.7577 · 100k×5 0.7547 — bagging 종결.</li>
+  <li><span class="pill good">체인 9 완료</span> 100k 균등 seed 45 0.7539 · seed 46 <span class="w">0.6750 붕괴</span> · 250k 균등 seed 45 0.7599 · 46 0.7475 · dup-cap 5/20 <span class="w">0.636/0.693 기각</span> — 정제 축(dedup·conflict·dup-cap) 최종 종결.</li>
+  <li><span class="pill bad">체인 10 취소</span> dup-cap을 seed 46에 적용하려던 계획, seed 42에서 강한 음성이라 취소.</li>
+  <li><span class="pill good">체인 11 완료</span> seed 47·48: 100k 0.7647·0.7574 / 250k 0.7526·0.7230(부분 누수) — 균등 7-seed 완성, 100k 중앙값 0.7562·정상 평균 0.7564, 붕괴 1/7.</li>
+  <li><span class="pill bad">체인 12 완료 · 음성</span> exp34 cal-선택 K=5: 선택 평균 0.730 &lt; 단일 0.745. 붕괴 추첨은 cal에서 검출되지만 규칙이 benign-recall-max로 퇴화(cal recall ≥0.995인 후보 없음). 부산물: <strong>같은 C0 추첨이 random_state에 따라 0.675↔0.750</strong> → 복권은 모델 config 쪽.</li>
+  <li><span class="pill good">체인 13 완료 · ★</span> <code>--n-estimators 4</code> 100k 균등 seed 42–48: 0.7623/.7614/.7582/.7662/.7694/.7615/.7677, 평균 0.7638, 7/7 XGB 상회, 붕괴 0.</li>
+  <li><span class="pill good">체인 14 완료(일부)</span> n=4 대조군: 100k 자연 0.751/0.660/0.746 · 100k S=0.75 자연배분 0.749/0.752/0.747 · 250k 균등 0.759/0.762/0.759/0.764/0.759/0.766 (seed 42–47). 250k seed 48과 n=8은 13:10경 외부 종료로 미실행.</li>
+  <li>1M 표(⑦)와 100k n=1 표(⑦b)는 역사 기록으로 유지; 논문 주표는 §8ai의 n=4 7-seed 표.</li>
+  <li>미실행 후보: 개입층 교체(global + 균형 컨텍스트 1개 + 무학습 트리거 + D_cal 클래스 조건부 채택표), 구성 규칙의 다른 3개 데이터셋 이식, 노브 선택을 검증 split으로.</li>
+</ul>
+<p class="note">스크립트: <code>tabpfn/nfv3_v3_exp30_c0share.py</code>, <code>nfv3_v3_exp31_c0alloc.py</code>, <code>exp32_c0bag</code>, <code>exp33_c0dupcap</code>, <code>exp34_c0select</code> (모두 미커밋 상태로 발사, timings.env.git_dirty 기록). 판독 스크립트·체인·로그는 세션 스크래치패드.</p>
+</main>
+
+</body></html>

@@ -1,4 +1,9 @@
-<title>RACE-PFN Figure 1</title>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ours — Figure 1</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital,wght@1,400;1,600&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
   :root {
@@ -95,13 +100,15 @@
   .edgeA { stroke:var(--acc); stroke-width:1.7; fill:none; }
   .acctext { fill:var(--acc); }
 </style>
+</head>
+<body>
 
 <header class="page">
   <p class="eyebrow">
     <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.5 8.6-8 11-4.5-2.4-8-6-8-11V5z" fill="none" stroke="currentColor" stroke-width="1.6"/><polyline points="7,12.5 10,12.5 11.3,9.5 12.9,15 14.2,12.5 17,12.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
     imbalcic · main figure · docs/연구방향.pdf
   </p>
-  <h1><span class="mathname">RACE-PFN</span> — Residual Advantage-Guided Context Experts</h1>
+  <h1><span class="mathname">Ours</span> — Residual Advantage-Guided Context Experts</h1>
   <p class="subtitle">frozen Tabular Foundation Model <i style="font-family:'STIX Two Text',serif">F<sub>θ</sub></i> 위에서, global이 실패하는 residual regime을 실패 서명으로 자동 발견해 서로소 context expert로 만들고, shared utility scorer가 순이득을 예상할 때만 top-1 expert를 호출하며, 보정된 하한 G<sub>lower</sub>&gt;τ<sub>post</sub>일 때만 교체하는 전체 구조 (exp23 · guide 정합).</p>
 </header>
 
@@ -175,7 +182,7 @@
   <p class="tfoot">global은 run마다 0.6602~0.6734로 이동(CUDA 비트-비결정성) — 그래서 모든 비교는 같은-run이며, run 간 비교는 방향 참고. XGB 0.7548은 full-pool 학습분을 인용(동일 데이터·시드에서 결정적). "vs random bank" = residual bank oracle − 등메모리 random bank oracle (Gate-1 격차): <b>natural anchor에서 +0.009로 소멸</b>하는 것이 이 계열의 가장 중요한 단일 발견.</p>
 
 
-  <h3>⓪-1 클래스별 F1 — 실험 횡단 (RACE-PFN system 열, XGB 대비 상회는 강조)</h3>
+  <h3>⓪-1 클래스별 F1 — 실험 횡단 (Ours system 열, XGB 대비 상회는 강조)</h3>
   <div class="tblwrap">
     <table>
       <thead><tr><th>class</th><th>global (run별 범위)</th><th>exp23</th><th>23b</th><th>23c</th><th>23d nat-200</th><th>23d inv-200</th><th>23d nat-2000</th><th>XGB (인용)</th></tr></thead>
@@ -250,7 +257,7 @@
   <h3>③ exp23 상세 — §21 클래스별 F1, 같은 run·같은 split (test 4.02M)</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>Global TabPFN</th><th>RACE-PFN (제안)</th><th>XGBoost</th><th>dense oracle*</th><th>random bank*</th><th>proximity bank*</th></tr></thead>
+      <thead><tr><th>class</th><th>Global TabPFN</th><th>Ours (제안)</th><th>XGBoost</th><th>dense oracle*</th><th>random bank*</th><th>proximity bank*</th></tr></thead>
       <tbody>
         <tr><th>benign</th><td class="">0.9799</td><td class="">0.9817</td><td class="best">0.9943</td><td class="orc">0.9920</td><td class="orc">0.9906</td><td class="orc">0.9894</td></tr>
         <tr><th>bot</th><td class="best">0.9984</td><td class="best">0.9984</td><td class="">0.9978</td><td class="orc">0.9985</td><td class="orc">0.9984</td><td class="orc">0.9985</td></tr>
@@ -264,7 +271,7 @@
       </tbody>
     </table>
   </div>
-  <p class="tfoot">색 = 배치 가능한 세 방법(global(corrected) / RACE-PFN / XGBoost) 중 행 최고. *oracle·bank 열은 "행마다 정답을 아는 심판이 최적 모델을 골라준다면"의 상한 참조(모두 pruning 후 1-expert bank 기준) — random·proximity는 §20.1 Gate-1 대조군(등메모리 무작위 / 특징-근접 컨텍스트). global_raw = global(corrected): β=0·T-tempering은 argmax 불변. <b>routing baseline(§21)</b>: 같은 expert를 verifier 없이 항상 채택하면(nearest-centroid = top1-no-verifier, K=1이라 동일) <b>0.4932</b> — global보다 −0.17 나쁘다. 이 대조군이 verifier gate의 가치(0.4932 → 0.7001)를 정량화한다. XGBoost는 이 run에서 마지막으로 in-run 학습(차기부터 이전 수치 인용 정책). §20.3–20.6(IF sweep·prior shift·temporal·latency 백분위)과 §21 static zoo는 이연 — docstring·0826.md §4에 선언.</p>
+  <p class="tfoot">색 = 배치 가능한 세 방법(global(corrected) / Ours / XGBoost) 중 행 최고. *oracle·bank 열은 "행마다 정답을 아는 심판이 최적 모델을 골라준다면"의 상한 참조(모두 pruning 후 1-expert bank 기준) — random·proximity는 §20.1 Gate-1 대조군(등메모리 무작위 / 특징-근접 컨텍스트). global_raw = global(corrected): β=0·T-tempering은 argmax 불변. <b>routing baseline(§21)</b>: 같은 expert를 verifier 없이 항상 채택하면(nearest-centroid = top1-no-verifier, K=1이라 동일) <b>0.4932</b> — global보다 −0.17 나쁘다. 이 대조군이 verifier gate의 가치(0.4932 → 0.7001)를 정량화한다. XGBoost는 이 run에서 마지막으로 in-run 학습(차기부터 이전 수치 인용 정책). §20.3–20.6(IF sweep·prior shift·temporal·latency 백분위)과 §21 static zoo는 이연 — docstring·0826.md §4에 선언.</p>
 
   <h3>④ exp23 상세 — §20.2 IID guardrail</h3>
   <div class="tblwrap">
@@ -272,7 +279,7 @@
       <thead><tr><th>method</th><th>balanced acc</th><th>macro-AUPRC</th><th>ECE (15-bin)</th><th>benign FPR</th></tr></thead>
       <tbody>
         <tr><th>global (corrected)</th><td>0.6547</td><td>0.6362</td><td>0.0418</td><td>0.002677</td></tr>
-        <tr><th>RACE-PFN</th><td class="best">0.6961</td><td class="best">0.6635</td><td class="best">0.0398</td><td>0.002703</td></tr>
+        <tr><th>Ours</th><td class="best">0.6961</td><td class="best">0.6635</td><td class="best">0.0398</td><td>0.002703</td></tr>
         <tr><th>XGBoost</th><td>0.7749</td><td>0.7426</td><td>0.0055</td><td>0.002662</td></tr>
       </tbody>
     </table>
@@ -529,7 +536,7 @@
       <thead><tr><th style="text-align:left">macro-F1</th><th>natural</th><th>head-heavy</th><th>balanced</th><th>tail-heavy</th></tr></thead>
       <tbody>
         <tr><th>global</th><td>0.6698</td><td>0.6090</td><td>0.6756</td><td>0.5851</td></tr>
-        <tr><th>RACE-PFN</th><td>0.6978</td><td>0.6368</td><td>0.7073</td><td>0.6128</td></tr>
+        <tr><th>Ours</th><td>0.6978</td><td>0.6368</td><td>0.7073</td><td>0.6128</td></tr>
         <tr><th>XGBoost</th><td>0.7548</td><td>0.6938</td><td>0.7686</td><td>0.6661</td></tr>
         <tr><th>XGBoost + known-prior 보정</th><td>0.7548</td><td class="best">0.7200</td><td class="best">0.8691</td><td class="best">0.7681</td></tr>
         <tr><th>RACE + 보정 (raw posterior)</th><td>0.6978</td><td>0.6439</td><td>0.7537</td><td>0.4815</td></tr>
@@ -544,7 +551,7 @@
 </section>
 
 <section class="results">
-  <h2>부록 — RACE-PFN 알고리즘 전체 도식 (Figure 1)</h2>
+  <h2>부록 — Ours 알고리즘 전체 도식 (Figure 1)</h2>
 </section>
 
 <div style="max-width:1380px;margin:8px auto 0;padding:0 28px">
@@ -562,7 +569,7 @@
 <figure class="main">
   <div class="scroll">
   <svg viewBox="0 0 1380 1330" role="img"
-       aria-label="RACE-PFN algorithm with a unified visual grammar: data pools as pills, models as rectangles, derived quantities as formulas riding the arrows, decision criteria as diamonds, and outputs as tinted rectangles. The test-time lane shows that the verifier runs conditionally, only after the utility scorer proposes a top-1 expert, and a worked example strip traces two rows with concrete probability values.">
+       aria-label="Ours: algorithm with a unified visual grammar: data pools as pills, models as rectangles, derived quantities as formulas riding the arrows, decision criteria as diamonds, and outputs as tinted rectangles. The test-time lane shows that the verifier runs conditionally, only after the utility scorer proposes a top-1 expert, and a worked example strip traces two rows with concrete probability values.">
     <defs>
       <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M0 0 L10 5 L0 10 z" style="fill:var(--edge)"/>
@@ -903,7 +910,7 @@
   </div>
 
   <figcaption>
-    <span class="fig">Figure 1 · RACE-PFN (exp23 · guide 정합).</span>
+    <span class="fig">Figure 1 · Ours (exp23 · guide 정합).</span>
     도형 문법: 둥근 pill은 데이터 분할 <i>D</i>, 직사각형은 모델/연산(모두 같은 frozen <i>F<sub>θ</sub></i>를 context만 바꿔 재사용), 화살표 위 수식은 각 단계가 만들어내는 가공된 양, 마름모는 판단 기준, 색칠된 직사각형은 출력이다.
     held-out <i>D</i><sub>expert</sub>에서 클립된 class-balanced residual <i>r̄<sub>i</sub></i>-가중 k-means가 실패 서명 공간 <i>e</i>에서 global의 실패 regime을 찾고(§8–§10, K는 <i>D</i><sub>tune</sub>에서 선택), 각 행은 정확히 한 regime에 hard 배정되어 anchor∪diversity-block context의 서로소 expert가 된다(§11, 무기여 expert는 §12 pruning).
     <i>D</i><sub>route</sub>의 순수 gain G<i><sub>ik</sub></i>가 shared utility scorer(타깃 U = b<sub>OOF</sub>·G−λc)와 quantile verifier의 학습 타깃이 되고(§13–§15), one-sided 보정과 τ<sub>pre</sub>/τ<sub>post</sub>는 독립 <i>D</i><sub>cal</sub>의 제약 grid에서 고정된다(§14).
@@ -928,3 +935,6 @@
 <footer>
   source: tabpfn/RACE-PFN_RESEARCH_IMPLEMENTATION_GUIDE.md (§5–§16) · implementation: tabpfn/nfv3_v3_exp23_racepfn_guide.py · imbalcic
 </footer>
+
+</body>
+</html>

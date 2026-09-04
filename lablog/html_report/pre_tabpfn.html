@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TabPFN 도입 이전 연구 기록</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg:#f7f7f5; --panel:#fcfcfb; --panel2:#f0efec; --border:#dedcd6; --border-strong:#c2bfb6;
+    --ink:#0b0b0b; --ink2:#52514e; --ink3:#7a7873;
+    --accent:#2a78d6; --accent-soft:#eaf1fb; --accent-ink:#154d8f;
+    --good:#1baf7a; --good-soft:#eefaf4;
+    --bad:#e34948; --bad-soft:#fdeeee;
+    --warn:#c9860a; --warn-soft:#fff8e8;
+    --shadow: 0 1px 2px rgba(20,20,19,.04), 0 8px 24px -12px rgba(20,20,19,.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#141413; --panel:#1a1a19; --panel2:#232322; --border:#35352f; --border-strong:#4d4d45;
+      --ink:#f5f4f0; --ink2:#c3c2b7; --ink3:#8f8d83;
+      --accent:#5b9ee8; --accent-soft:#182635; --accent-ink:#a8cdf2;
+      --good:#3fca97; --good-soft:#0f241b;
+      --bad:#ea7877; --bad-soft:#2b1717;
+      --warn:#dba33e; --warn-soft:#2a2411;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#141413; --panel:#1a1a19; --panel2:#232322; --border:#35352f; --border-strong:#4d4d45;
+    --ink:#f5f4f0; --ink2:#c3c2b7; --ink3:#8f8d83;
+    --accent:#5b9ee8; --accent-soft:#182635; --accent-ink:#a8cdf2;
+    --good:#3fca97; --good-soft:#0f241b;
+    --bad:#ea7877; --bad-soft:#2b1717;
+    --warn:#dba33e; --warn-soft:#2a2411;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans","Noto Sans KR",system-ui,-apple-system,sans-serif;
+    font-size: 15px; line-height: 1.6;
+  }
+  ::selection { background: var(--accent-soft); color: var(--accent-ink); }
+
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ---- sidebar ---- */
+  .side {
+    width: 320px; flex: 0 0 320px; height: 100%; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .side-head { padding: 22px 22px 16px; border-bottom: 1px solid var(--border); }
+  .side-head .kicker {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink3); margin: 0 0 6px;
+  }
+  .side-head h1 {
+    font-size: 19px; font-weight: 600; margin: 0 0 8px; text-wrap: balance;
+    letter-spacing: -.01em;
+  }
+  .side-head p { margin: 0; color: var(--ink2); font-size: 13px; line-height: 1.55; }
+  .side-head p.sib-link { margin-top: 10px; }
+  .side-head p.sib-link a {
+    color: var(--accent); text-decoration: none; font-size: 12.5px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .side-head p.sib-link a:hover { text-decoration: underline; }
+
+  nav.timeline { padding: 14px 12px 24px; flex: 1; }
+  .nav-group-label {
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink3); padding: 12px 10px 6px;
+  }
+  .nav-item {
+    position: relative; width: 100%; text-align: left; display: flex; gap: 10px;
+    align-items: flex-start; padding: 10px 10px 10px 8px; margin: 1px 0;
+    background: transparent; border: none; border-radius: 8px; cursor: pointer;
+    color: var(--ink); font-family: inherit;
+  }
+  .nav-item:hover { background: var(--panel2); }
+  .nav-item.active { background: var(--accent-soft); }
+  .nav-item .dot {
+    flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px;
+    background: var(--border-strong); position: relative;
+  }
+  .nav-item.active .dot { background: var(--accent); }
+  .group-block { position: relative; }
+  .group-block .nav-item:not(:last-child)::before {
+    content: ""; position: absolute; left: 16px; top: 24px; bottom: -1px; width: 1px;
+    background: var(--border);
+  }
+  .nav-item .meta { min-width: 0; }
+  .nav-item time {
+    display: block; font-family: "IBM Plex Mono", monospace; font-size: 11px;
+    color: var(--ink3); margin-bottom: 2px; font-variant-numeric: tabular-nums;
+  }
+  .nav-item .title-kr { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.35; }
+  .nav-item .title-en {
+    display: block; font-size: 11.5px; color: var(--ink3); margin-top: 1px;
+    font-style: italic;
+  }
+  .nav-item .verdict {
+    display: inline-block; margin-top: 5px; font-size: 11px; padding: 2px 7px;
+    border-radius: 999px; font-weight: 500;
+  }
+  .v-good { background: var(--good-soft); color: var(--good); }
+  .v-bad { background: var(--bad-soft); color: var(--bad); }
+  .v-warn { background: var(--warn-soft); color: var(--warn); }
+  .v-neutral { background: var(--panel2); color: var(--ink2); }
+
+  .side-foot {
+    padding: 14px 22px 18px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--ink3); font-family: "IBM Plex Mono", monospace;
+  }
+  .side-foot a { color: inherit; }
+
+  /* ---- main ---- */
+  .main { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; }
+  .topbar {
+    flex: 0 0 auto; padding: 14px 28px; border-bottom: 1px solid var(--border);
+    background: var(--panel); display: flex; align-items: baseline; gap: 12px;
+    box-shadow: var(--shadow); position: relative; z-index: 2;
+  }
+  .topbar #tb-menu {
+    display: none; border: 1px solid var(--border); background: var(--panel2);
+    border-radius: 6px; width: 30px; height: 30px; color: var(--ink); cursor: pointer;
+    align-items: center; justify-content: center; font-size: 16px; flex: 0 0 auto;
+  }
+  .topbar time { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink3); flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .topbar h2 { font-size: 15px; margin: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .frame-wrap { flex: 1; min-height: 0; position: relative; background: var(--bg); }
+  iframe#viewer {
+    position: absolute; inset: 0; width: 100%; height: 100%; border: none;
+    background: var(--panel); display: none;
+  }
+  iframe#viewer.show { display: block; }
+
+  .overview { position: absolute; inset: 0; overflow-y: auto; display: none; }
+  .overview.show { display: block; }
+  .ov-inner { max-width: 760px; margin: 0 auto; padding: 44px 32px 80px; }
+
+  .ov-inner .eyebrow {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 10px;
+  }
+  .ov-inner h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -.015em; text-wrap: balance; }
+  .ov-inner .asof { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--ink3); margin: 0 0 26px; }
+  .ov-inner .lede { font-size: 15.5px; color: var(--ink2); max-width: 62ch; margin: 0 0 30px; }
+
+  .status-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px; background: var(--border); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; margin: 0 0 36px;
+  }
+  .status-cell { background: var(--panel); padding: 16px 18px; }
+  .status-cell .label { font-size: 11.5px; color: var(--ink3); margin: 0 0 6px; }
+  .status-cell .value { font-size: 13.5px; font-weight: 500; line-height: 1.45; }
+  .status-cell .value .num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .status-cell.good { border-left: 3px solid var(--good); }
+  .status-cell.bad { border-left: 3px solid var(--bad); }
+  .status-cell.warn { border-left: 3px solid var(--warn); }
+
+  .ov-inner h2 {
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink3);
+    margin: 40px 0 16px; font-weight: 600; font-family: "IBM Plex Mono", monospace;
+  }
+
+  .flow-rail { display: flex; flex-direction: column; margin: 0 0 8px; }
+  .flow-step {
+    display: grid; grid-template-columns: 88px 20px 1fr; column-gap: 14px; padding: 0 0 22px;
+  }
+  .flow-step:last-child { padding-bottom: 2px; }
+  .flow-step time { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink3); padding-top: 2px; font-variant-numeric: tabular-nums; }
+  .flow-rail-dotcol { display: flex; flex-direction: column; align-items: center; }
+  .flow-rail-dotcol .d { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); margin-top: 4px; flex: 0 0 auto; }
+  .flow-rail-dotcol .l { width: 1px; flex: 1; background: var(--border); margin-top: 4px; }
+  .flow-step.pivot .flow-rail-dotcol .d { background: var(--accent); width: 11px; height: 11px; margin-top: 3px; }
+  .flow-step .body h3 { margin: 0 0 4px; font-size: 14.5px; font-weight: 600; }
+  .flow-step .body button.jump {
+    background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer;
+    text-align: left;
+  }
+  .flow-step .body button.jump:hover h3 { color: var(--accent); }
+  .flow-step .body p { margin: 0; font-size: 13.5px; color: var(--ink2); max-width: 58ch; }
+  .flow-step.pivot .body p { color: var(--ink); font-weight: 500; }
+  .flow-step .body .tag {
+    display: inline-block; font-size: 10.5px; font-family: "IBM Plex Mono", monospace;
+    color: var(--ink3); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; margin-top: 6px;
+  }
+
+  .ov-inner table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 0 0 8px;
+  }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .ov-inner th, .ov-inner td {
+    padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .ov-inner thead th {
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink3); background: var(--panel2);
+  }
+  .ov-inner tbody tr:last-child td { border-bottom: none; }
+  .ov-inner td.num, .ov-inner th.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ov-inner tbody tr.best td { background: var(--good-soft); }
+  .ov-inner code { font-family: "IBM Plex Mono", monospace; font-size: .92em; background: var(--panel2); padding: .1em .35em; border-radius: 4px; }
+
+  .findings { margin: 0; padding: 0; list-style: none; counter-reset: f; }
+  .findings li { counter-increment: f; display: grid; grid-template-columns: 26px 1fr; gap: 10px; margin: 0 0 16px; }
+  .findings li::before {
+    content: counter(f); font-family: "IBM Plex Mono", monospace; font-size: 12px;
+    color: var(--accent); background: var(--accent-soft); width: 22px; height: 22px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+  }
+  .findings li p { margin: 0; font-size: 13.5px; color: var(--ink2); }
+  .findings li strong { color: var(--ink); }
+
+  .next-list { margin: 0; padding-left: 20px; }
+  .next-list li { font-size: 13.5px; color: var(--ink2); margin-bottom: 8px; }
+  .next-list li strong { color: var(--ink); }
+
+  .filemap { font-size: 12.5px; color: var(--ink2); line-height: 1.9; }
+  .filemap code { font-family: "IBM Plex Mono", monospace; font-size: .93em; background: var(--panel2); padding: .1em .35em; border-radius: 4px; color: var(--ink); }
+
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0;
+    padding: 12px 16px; margin: 18px 0; font-size: 13.5px; color: var(--ink);
+  }
+  .callout.warn { border-left-color: var(--bad); background: var(--bad-soft); }
+  .callout.ok { border-left-color: var(--good); background: var(--good-soft); }
+  .callout p { margin: 0; color: var(--ink); font-size: 13.5px; }
+  .callout p + p { margin-top: 6px; }
+  .callout .k {
+    display: block; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; opacity: .8; margin-bottom: 5px;
+  }
+  .ov-inner h3 { font-size: 15px; font-weight: 600; margin: 22px 0 8px; }
+  .ov-inner .stamp {
+    display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 11px;
+    color: var(--ink3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px;
+    margin-left: 8px; vertical-align: 1px;
+  }
+
+  @media (max-width: 860px) {
+    .side {
+      position: fixed; z-index: 10; left: 0; top: 0; bottom: 0;
+      transform: translateX(-100%); transition: transform .18s ease; box-shadow: var(--shadow);
+    }
+    .side.open { transform: translateX(0); }
+    .topbar #tb-menu { display: flex; }
+    .ov-inner { padding: 32px 20px 60px; }
+    .flow-step { grid-template-columns: 64px 18px 1fr; column-gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-head">
+      <p class="kicker">Lab Record &middot; NetFlow-v3 Open-Set</p>
+      <h1>TabPFN 도입 이전 연구 기록</h1>
+      <p>XGBoost 기반 Mixture-of-Experts로 CIC-IDS의 심한 클래스 불균형에 맞선 4&ndash;6월의 기록, 다섯 편을 최신순으로 묶었습니다.</p>
+      <p class="sib-link"><a href="https://claude.ai/code/artifact/688578fa-0974-4310-a8a4-200b6c9bad28" target="_blank" rel="noopener">TabPFN 도입 이후 연구 기록 &rarr;</a></p>
+    </div>
+    <nav class="timeline" id="nav"></nav>
+    <div class="side-foot">lablog/html_report/ &middot; imbalcic</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button id="tb-menu" aria-label="목차 열기">&#9776;</button>
+      <time id="tb-time"></time>
+      <h2 id="tb-title"></h2>
+    </div>
+    <div class="frame-wrap">
+      <div class="overview" id="overview"><div class="ov-inner">
+<p class="eyebrow">종합 현황</p>
+<h1>TabPFN 도입 이전 연구 기록</h1>
+<p class="asof">2026-04-24 &ndash; 2026-06-26 &middot; XGBoost 기반 Mixture-of-Experts로 CIC-IDS의 심한 클래스 불균형에 맞선 두 달의 기록.</p>
+<p class="lede">휴리스틱 라우팅 방법 — confusion-matrix 전문가, TTA/perturbation 안정성 라우팅, OOD 임계값 폴백 — 을 차례로 소진하며 "전문가 품질이 아니라 라우팅 자체가 병목"이라는 것을 세 가지 독립 증거로 확증했다. 이 결론이 8월 이후 frozen TabPFN을 컨텍스트/라우팅의 새 기반으로 채택하게 된 직접적 동기다.</p>
+
+<div class="status-grid">
+  <div class="status-cell bad">
+    <p class="label">라우팅 병목 확증</p>
+    <p class="value">Oracle <span class="num">0.9507</span> vs 최선 라우팅 <span class="num">0.17&ndash;0.32</span> — 격차 <span class="num">0.78</span>. 전문가 품질은 문제가 아니었다.</p>
+  </div>
+  <div class="status-cell good">
+    <p class="label">최초 양의 결과</p>
+    <p class="value">CIFAR-10-LT, DCE-XGB(3-expert 가중 + 학습 라우터): <span class="num">0.1718 → 0.1938</span> (+0.022)</p>
+  </div>
+  <div class="status-cell bad">
+    <p class="label">완전 폐기 판정</p>
+    <p class="value">exclusive-partition + TTA-stability 라우팅: 3가지 독립 섭동 방식 전부 <strong>구조적으로 불가능</strong> 확정</p>
+  </div>
+  <div class="status-cell warn">
+    <p class="label">임계값 재보정</p>
+    <p class="value">hard-negative 보정으로 <span class="num">0.7175 → 0.7341</span> 부분 회복, 그러나 구조적 상한 도달</p>
+  </div>
+</div>
+
+<h2>연구 흐름</h2>
+<div class="flow-rail">
+  <div class="flow-step pivot">
+    <time>&mdash;</time>
+    <div class="flow-rail-dotcol"><div class="d"></div><div class="l"></div></div>
+    <div class="body">
+      <h3>전환: XGBoost 라우팅 한계 &rarr; TabPFN 도입</h3>
+      <p>학습된 라우터로도 못 넘은 구조적 상한과, "XGBoost의 부스팅 자체가 이미 암묵적 MoE"라는 재인식이 8월부터 frozen TabPFN을 컨텍스트 구성·라우팅의 새 기반으로 채택하는 동기가 됐다.</p>
+      <span class="tag">방향 전환</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <time>06-26</time>
+    <div class="flow-rail-dotcol"><div class="d"></div><div class="l"></div></div>
+    <div class="body">
+      <button class="jump" data-jump="pre-0626"><h3>OOD 게이트 임계값 재보정</h3></button>
+      <p>fallback 구조 디버깅 5회 반복 끝에 hard-negative 보정으로 0.7175&rarr;0.7341. rare-class expert가 primary가 거부한 행만 구제할 수 있다는 구조적 한계에 부딪힘.</p>
+    </div>
+  </div>
+  <div class="flow-step">
+    <time>06-03</time>
+    <div class="flow-rail-dotcol"><div class="d"></div><div class="l"></div></div>
+    <div class="body">
+      <button class="jump" data-jump="pre-0603"><h3>CIC-IDS2017 전체 데이터 확증</h3></button>
+      <p>15클래스·282만행 전체로 재현: 3가지 독립 섭동(VIME/gaussian/mask) 전부 Oracle&asymp;0.95, TTA&asymp;0.17&ndash;0.29. 학습된 라우터로 전환을 명시적으로 권고.</p>
+    </div>
+  </div>
+  <div class="flow-step">
+    <time>05-21</time>
+    <div class="flow-rail-dotcol"><div class="d"></div><div class="l"></div></div>
+    <div class="body">
+      <button class="jump" data-jump="pre-0521"><h3>라우팅이 병목이라는 최초 발견</h3></button>
+      <p>MATI 이식 포기 후 TTA 안정성 라우팅 시도, 배타적 분할에서 파국적 실패(0.17&ndash;0.32). 진단 결과 Oracle 0.9507 vs baseline 0.8737 — 전문가는 건강하고 라우팅만 고장.</p>
+    </div>
+  </div>
+  <div class="flow-step">
+    <time>05-11</time>
+    <div class="flow-rail-dotcol"><div class="d"></div><div class="l"></div></div>
+    <div class="body">
+      <button class="jump" data-jump="pre-0511"><h3>인프라 정리 · 비전 벤치마크 이식</h3></button>
+      <p>저장소 구조화, 문헌 24&rarr;44편 확장. FAR-MoE를 4개 비전 벤치마크로 이식하는 스크립트는 작성했으나 미실행.</p>
+    </div>
+  </div>
+  <div class="flow-step">
+    <time>04-24</time>
+    <div class="flow-rail-dotcol"><div class="d"></div></div>
+    <div class="body">
+      <button class="jump" data-jump="pre-0427"><h3>도메인 진단: CIC-IDS인가 MoE 설계인가</h3></button>
+      <p>4가지 실패 모드 진단 후 CIFAR 벤치마크로 대조 실험 — MoE 설계 자체는 무죄, CIC-IDS의 temporal/file 분포 이동이 범인으로 지목됨.</p>
+    </div>
+  </div>
+</div>
+
+<h2>핵심 발견 (최신순)</h2>
+<ol class="findings">
+  <li><p><strong>(06-26) 임계값 재보정의 구조적 한계.</strong> ssh-patator는 WebBot_Main이 잘못 채가서 약함(F1 0.37&rarr;0.56, 재구조화 전 0.98에는 못 미침), web-sql은 rare여서 primary expert들이 전부 거부하는 경우가 드물어 구제용 fallback이 애초에 발동하지 않음 — rare-class 구제는 "primary가 전부 거부"라는 조건 자체가 병목.</p></li>
+  <li><p><strong>(06-03) 안정성 신호는 섭동 강도와 무관하게 실패.</strong> gaussian &sigma; 0.01&ndash;2.0, mask p 0.05&ndash;0.7 전 구간에서 flip-rate가 높아 안정성 격차가 거의 0에 수렴 — 튜닝 문제가 아니라 방법 자체의 한계. CIC-IDS의 70개 feature가 attack-type 구분이 아니라 benign-vs-attack 구분에 최적화돼 있어, 비소유 전문가가 겹치는 feature 분포 위에서 confident하게 계속 틀린다.</p></li>
+  <li><p><strong>(05-21) "라우팅이 병목" — 3종 독립 증거.</strong> 샘플의 83.1%에서 비소유 전문가의 안정성이 소유 전문가보다 높았고, 15개 클래스 중 14개가 평균 델타 음수, 3가지 섭동 유형 모두 같은 패턴(Oracle&asymp;0.95, TTA&asymp;0.17&ndash;0.29) — exclusive-partition + TTA-stability 라우팅은 구조적으로 불가능하다는 결론.</p></li>
+  <li><p><strong>(05-21) MATI 이식 포기.</strong> 회귀 기반 prior 추정이 이산 다중분류로 깔끔히 변환되지 않아 SADE 영감의 TTA 라우팅으로 방향 전환.</p></li>
+  <li><p><strong>(04-24) 도메인이 아니라 분포 이동이 원인.</strong> 4가지 진단된 실패 모드(라우팅 오류의 불균형 증폭, expert 내부 불균형, confusion-matrix 누수, XGBoost의 암묵적 MoE 특성) 중, CIFAR에서는 양의 결과가 나온 것으로 보아 CIC-IDS 고유의 temporal/file 분포 이동이 진짜 원인으로 지목됨.</p></li>
+</ol>
+
+<h2>다음 단계 — 이 시점에 제안된 방향</h2>
+<ol class="next-list">
+  <li><strong>학습된 라우터(메타 분류기 또는 게이팅 네트워크)로 전환</strong> — 안정성/휴리스틱 기반 라우팅을 포기하고 명시적으로 권고된 방향(0603).</li>
+  <li>더 표적화된 hard-negative 압력과, primary가 거부하지 않아도 강한 마진에서 이길 수 있는 "rare override" 규칙(0626).</li>
+  <li>비전 벤치마크(CIFAR-LT, ImageNet-LT, iNaturalist, mini-ImageNet)로 FAR-MoE 이식 완주(0511, 미실행 상태로 남음).</li>
+</ol>
+<p class="lede" style="margin-top:8px">실제로 다음 국면(8월&ndash;)은 이 목록을 그대로 따르지 않았다 — "학습된 라우터"를 XGBoost 위에 얹는 대신, frozen TabPFN이라는 사전학습된 in-context 학습기 자체의 표현·행동을 전문가 구성과 게이팅에 활용하는 방향으로 도약했다. 이어지는 기록은 <a href="https://claude.ai/code/artifact/688578fa-0974-4310-a8a4-200b6c9bad28" target="_blank" rel="noopener" style="color:var(--accent);font-weight:500">TabPFN 도입 이후 연구 기록 →</a>에 있다.</p>
+
+<h2>파일 맵</h2>
+<p class="filemap">
+  이 시기의 44개 실험 스크립트(<code>code_dce.py</code>, <code>code_tta_diag.py</code>, <code>code_ood_v1</code> 등)는 이 저장소(<code>imbalcic/</code>)가 아니라 원본 프로젝트 <code>imbal_cic/</code>에 남아 있고, <code>../SRC_HISTORY.md</code>에 요약돼 있다.<br>
+  랩 로그 원문 <code>lablog/report/0427.md &ndash; 0626.md</code>
+</p>
+      </div></div>
+      <div class="overview" id="prosepane"><div class="ov-inner" id="prose-inner"></div></div>
+      <iframe id="viewer" title="report"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+const REPORTS = [{"id": "overview", "date": "", "titleKr": "개요", "titleEn": null, "verdict": null, "verdictClass": null, "group": "overview", "type": "overview"}, {"id": "pre-0626", "date": "2026-06-26", "titleKr": "OOD 게이트 임계값 재보정", "titleEn": "Threshold Recalibration", "verdict": "부분 회복 0.734", "verdictClass": "warn", "group": "report", "type": "prose", "body": "<p class=\"eyebrow\">2026-06-26<span class=\"stamp\">code_ood_v1</span></p>\n<h1>OOD 게이트 임계값 재보정</h1>\n<p class=\"lede\">tail expert가 자기 소유가 아닌 샘플까지 과다 수락하는 문제를 5회 반복해 디버깅. 최종적으로 hard-negative 임계값 보정만 유효했다.</p>\n\n<div class=\"status-grid\">\n  <div class=\"status-cell good\"><p class=\"label\">macro-F1</p><p class=\"value\"><span class=\"num\">0.7175 &rarr; 0.7341</span></p></div>\n  <div class=\"status-cell warn\"><p class=\"label\">ssh-patator F1</p><p class=\"value\"><span class=\"num\">0.3749 &rarr; 0.5622</span> (재구조화 전 0.9841에는 못 미침)</p></div>\n</div>\n\n<h3>시도 순서</h3>\n<ol class=\"next-list\">\n  <li>전역 threshold sweep &mdash; rare-expert 누수를 못 잡고 head recall만 악화.</li>\n  <li><code>WebBot_Rare</code>를 <code>WebBot_Main</code>/<code>Rare_Micro</code>로 분리 &mdash; 진단에는 도움, 누수 자체는 그대로.</li>\n  <li>fallback-only <code>exp4</code> 구조 &mdash; 일부 누수는 잡았지만 <code>web-sql</code> recall이 깨짐(모든 primary가 거부해야만 fallback이 발동).</li>\n  <li>fallback margin-gap 튜닝 &mdash; 실질 효과 없음.</li>\n  <li><strong>hard-negative threshold 보정</strong> &mdash; macro-F1 0.7175&rarr;0.7341, 유효했던 유일한 변경.</li>\n</ol>\n\n<div class=\"callout\">\n  <span class=\"k\">진단</span>\n  <p><strong>ssh-patator</strong>가 약한 이유는 <code>WebBot_Main</code>이 잘못된 확신으로 채가기 때문(엉뚱한 expert가 이김). <strong>web-sql</strong>이 약한 이유는 rare해서 primary들이 전부 거부하는 경우가 드물어, 구제용 fallback expert가 애초에 트리거되지 않기 때문 &mdash; 이것이 rare-class 구제 구조 전체의 병목으로 확인됨.</p>\n</div>\n<p>제안된 다음 수: 더 표적화된 hard-negative 압력, 그리고 primary가 거부하지 않아도 강한 마진에서는 <code>Rare_Micro</code>가 이길 수 있는 \"rare override\" 규칙.</p>"}, {"id": "pre-0603", "date": "2026-06-03", "titleKr": "CIC-IDS2017 전체 데이터 확증", "titleEn": "Bottleneck Confirmed", "verdict": "라우팅 병목 확증", "verdictClass": "bad", "group": "report", "type": "prose", "body": "<p class=\"eyebrow\">2026-06-03<span class=\"stamp\">code_tta_diag.py 확장</span></p>\n<h1>CIC-IDS2017 전체 데이터로 라우팅 병목 확증</h1>\n<p class=\"lede\">5/21의 진단을 전체 CIC-IDS2017(2,829,385행, 15클래스, 6-expert: Benign/DoS/DDoS_Scan/BruteForce/WebBot/Tail)로 정식 재현.</p>\n\n<div class=\"status-grid\">\n  <div class=\"status-cell warn\"><p class=\"label\">Baseline</p><p class=\"value\"><span class=\"num\">0.8737</span></p></div>\n  <div class=\"status-cell good\"><p class=\"label\">Oracle (진짜 라벨로 라우팅)</p><p class=\"value\"><span class=\"num\">0.9507</span></p></div>\n  <div class=\"status-cell bad\"><p class=\"label\">JS-TTA 라우팅</p><p class=\"value\"><span class=\"num\">0.2935</span> (전역 &Delta;=+0.0367이나 28.9% 샘플은 &Delta;&lt;0)</p></div>\n</div>\n\n<p>클래스별로는 15개 중 14개가 평균 &Delta; 음수, ddos는 최대 &minus;0.1707. 원인은 CIC-IDS의 70개 feature가 <strong>attack-type 구분이 아니라 benign-vs-attack 구분</strong>에 최적화돼 있다는 것 &mdash; 비소유 전문가가 겹치는 feature 분포 위에서 confident하게 계속 틀리는 것은 XGBoost의 hard leaf-region 분할 특성이다.</p>\n\n<h3>노이즈 민감도 스윕</h3>\n<p>gaussian &sigma; 0.01&ndash;2.0, mask p 0.05&ndash;0.7 전 구간에서 flip-rate가 미세한 섭동에도 이미 높아, 안정성 격차가 섭동 강도와 무관하게 거의 0에 수렴한다 &mdash; <strong>튜닝으로 해결될 문제가 아님</strong>을 확인.</p>\n\n<div class=\"callout warn\">\n  <span class=\"k\">권고</span>\n  <p>안정성 기반 라우팅을 포기하고 <strong>학습된 라우터(메타 분류기 또는 게이팅 네트워크)</strong>로 전환할 것을 명시적으로 권고.</p>\n</div>"}, {"id": "pre-0521", "date": "2026-05-11–05-21", "titleKr": "라우팅이 병목이라는 최초 발견", "titleEn": "Oracle vs TTA", "verdict": "TTA 구조적 불가능", "verdictClass": "bad", "group": "report", "type": "prose", "body": "<p class=\"eyebrow\">2026-05-11 &ndash; 05-21<span class=\"stamp\">code_mati.py &middot; code_tta*.py</span></p>\n<h1>MATI 포기, TTA 라우팅 시도, 그리고 병목의 정체</h1>\n<p class=\"lede\">MATI(WSDM 2026) 이식을 포기하고 SADE 영감의 TTA(test-time augmentation) 라우팅으로 전환했으나, 배타적 분할에서 파국적으로 실패. 원인 진단이 이 시기 최대 성과.</p>\n\n<h3>MATI 이식 포기</h3>\n<p><code>code_mati.py</code>, <code>code_mati_repo.py</code>로 시도 &mdash; MATI의 prior 추정이 회귀 기반이라 이산 다중분류로 깔끔히 변환되지 않아 <strong>포기</strong>.</p>\n\n<h3>TTA 라우팅 — 포괄 vs 배타</h3>\n<p><code>code_tta.py</code>(포괄적 전문가, 전체 클래스, SADE 안정성 가중): baseline 대비 개선 없음이나 구조적으로는 정상. 이어서 <strong>배타적 분할 + TTA</strong>(<code>code_tta_js.py</code> JS-발산, <code>code_tta_ent.py</code> 엔트로피 안정성): 파국적 실패.</p>\n\n<div class=\"status-grid\">\n  <div class=\"status-cell bad\"><p class=\"label\">배타 분할 + TTA macro-F1</p><p class=\"value\"><span class=\"num\">0.17&ndash;0.32</span> (baseline 0.87)</p></div>\n  <div class=\"status-cell bad\"><p class=\"label\">다수 클래스도 붕괴</p><p class=\"value\">benign recall <span class=\"num\">57%</span>, dos-hulk recall <span class=\"num\">21%</span></p></div>\n</div>\n\n<h3>근본 원인 진단 (<code>code_tta_diag.py</code>)</h3>\n<div class=\"status-grid\">\n  <div class=\"status-cell good\"><p class=\"label\">Oracle 라우팅 (진짜 라벨)</p><p class=\"value\"><span class=\"num\">0.9507</span></p></div>\n  <div class=\"status-cell warn\"><p class=\"label\">Baseline</p><p class=\"value\"><span class=\"num\">0.8737</span></p></div>\n</div>\n<p>Oracle&minus;TTA 격차 <strong>0.78</strong> &mdash; 전문가 품질은 문제가 아니라 <strong>라우팅이 병목</strong>. 비소유 전문가가 섭동된 여러 뷰에서 일관되게(~0.99) 확신에 차서 틀리기 때문에, TTA 안정성으로는 \"일관되게 맞는\" 전문가와 \"일관되게 틀린\" 전문가를 구별할 수 없다. 샘플의 83.1%에서 비소유 전문가의 안정성이 소유 전문가보다 높았고, 15개 클래스 중 14개가 평균 &Delta; 음수. VIME/gaussian/mask 3가지 독립 섭동 유형 모두에서 견고하게 재현(Oracle&asymp;0.95, TTA&asymp;0.17&ndash;0.29).</p>\n\n<div class=\"callout\">\n  <span class=\"k\">결론</span>\n  <p><strong>배타적 분할 + TTA-stability 라우팅은 구조적으로 불가능하다</strong> &mdash; 3가지 독립 증거 유형으로 검증됨.</p>\n</div>"}, {"id": "pre-0511", "date": "2026-04-28–05-12", "titleKr": "인프라 정리 · 비전 벤치마크 이식", "titleEn": "Infrastructure", "verdict": "실험 결과 없음", "verdictClass": "neutral", "group": "report", "type": "prose", "body": "<p class=\"eyebrow\">2026-04-28 &ndash; 05-12<span class=\"stamp\">인프라</span></p>\n<h1>저장소 정리와 비전 벤치마크 이식</h1>\n<p class=\"lede\">이 시기는 대부분 인프라 작업. 새 실험 결과는 없음.</p>\n\n<ul class=\"next-list\">\n  <li>저장소를 <code>src/</code>/<code>scripts/</code>/<code>outputs/</code>로 재구성, <code>CLAUDE.md</code> 최초 작성.</li>\n  <li>FAR-MoE(<code>code_mat.py</code>)를 ResNet 백본으로 4개 비전 벤치마크(CIFAR-LT, ImageNet-LT, iNaturalist, mini-ImageNet)에 이식하는 스크립트 작성 &mdash; <strong>아직 미실행</strong>.</li>\n  <li>문헌 조사 24&rarr;44편으로 확장. MATI(WSDM 2026, MoE + test-time 불균형 보정)를 가장 관련 있는 선행연구로 식별.</li>\n</ul>\n<p>다음 계획: 실제 CIC-IDS2017에서 DCE-XGB 실행, CIFAR-100 ConfMat-MoE 마무리, <code>tail_power</code> 튜닝.</p>"}, {"id": "pre-0427", "date": "2026-04-24", "titleKr": "도메인 진단: CIC-IDS인가 MoE 설계인가", "titleEn": "CIFAR Control", "verdict": "최초 양의 결과", "verdictClass": "good", "group": "report", "type": "prose", "body": "<p class=\"eyebrow\">2026-04-24 (작성 04-28)<span class=\"stamp\">code_dce.py &middot; code_3.py</span></p>\n<h1>도메인 진단: CIC-IDS인가 MoE 설계인가</h1>\n<p class=\"lede\">목표: CIC-IDS에서 MoE가 실패하는 것이 도메인 고유의 문제인지, 아니면 MoE 설계 자체의 근본적 결함인지를 CIFAR 벤치마크 대조 실험으로 가른다.</p>\n\n<h3>지금까지의 실패 (전부 CIC-IDS에서)</h3>\n<p><code>cic_6.py</code>(TAILGUARD), <code>cic_xg_19.py</code>(XGBoost-router+SMOTE), <code>code_final.py</code>(OOD-filter 앙상블), <code>code_chrono.py</code>/<code>code_file.py</code>(leakage-safe 분할 &rarr; 성능 하락), <code>code_mat.py</code>(FAR-MoE, val near-perfect·test 무이득) &mdash; 전부 단일 XGBoost baseline을 못 넘음.</p>\n\n<h3>진단된 4가지 실패 모드</h3>\n<ol class=\"next-list\">\n  <li>라우팅 오류가 불균형을 증폭한다.</li>\n  <li>전문가 내부 불균형이 해결되지 않는다.</li>\n  <li>confusion-matrix 기반 설계가 val&rarr;test로 일반화되지 않는다(누수).</li>\n  <li>XGBoost의 부스팅 자체가 이미 암묵적 MoE다.</li>\n</ol>\n\n<h3>CIFAR 대조 실험 — 첫 양의 결과</h3>\n<div class=\"status-grid\">\n  <div class=\"status-cell good\"><p class=\"label\">CIFAR-10-LT, DCE-XGB</p><p class=\"value\"><span class=\"num\">0.1718 &rarr; 0.1938</span> (+0.0220) &mdash; 최초의 양의 결과</p></div>\n  <div class=\"status-cell good\"><p class=\"label\">CIFAR-100Tasks (20 tasks)</p><p class=\"value\"><span class=\"num\">0.1459 &rarr; 0.1525</span> (+0.0066)</p></div>\n  <div class=\"status-cell warn\"><p class=\"label\">ConfMat-MoE, CIFAR-10</p><p class=\"value\"><span class=\"num\">0.4992 &rarr; 0.5066</span> (+0.0074), 그러나 &tau;=0.05가 너무 낮아 10클래스가 confusion 클러스터 1개로 붕괴</p></div>\n</div>\n<p><code>code_dce.py</code>(DCE-XGB): head/balanced/tail 가중의 3개 XGBoost 전문가 + pseudo-sample 위 LogisticRegression 라우터. <code>code_3.py</code>(ConfMat-MoE, confusion-cluster 전문가). CIFAR-100 실행은 중단되어 미완.</p>\n\n<div class=\"callout ok\">\n  <span class=\"k\">판정</span>\n  <p>양의 결과는 <strong>CIFAR(iid, 클래스당 충분한 test 샘플, temporal/file 누수 없음)에서만</strong> 나타난다 &mdash; CIC-IDS의 temporal/file-level 분포 이동이 병목으로 지목되고, MoE 설계 자체는 무죄에 가깝다.</p>\n</div>"}];
+
+const nav = document.getElementById('nav');
+const viewer = document.getElementById('viewer');
+const overview = document.getElementById('overview');
+const prosepane = document.getElementById('prosepane');
+const proseInner = document.getElementById('prose-inner');
+const tbTitle = document.getElementById('tb-title');
+const tbTime = document.getElementById('tb-time');
+const side = document.getElementById('side');
+
+function b64ToUtf8(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+function renderNav() {
+  const groups = [{ label: '개요', items: REPORTS.filter(r => r.group === 'overview') },
+                  { label: '보고서 &middot; 시간순', items: REPORTS.filter(r => r.group === 'report') }];
+  groups.forEach(g => {
+    if (!g.items.length) return;
+    const gl = document.createElement('div');
+    gl.className = 'nav-group-label';
+    gl.innerHTML = g.label;
+    nav.appendChild(gl);
+    const block = document.createElement('div');
+    block.className = 'group-block';
+    nav.appendChild(block);
+    g.items.forEach(r => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-item';
+      btn.dataset.id = r.id;
+      btn.innerHTML = `<span class="dot"></span><span class="meta">
+        <time>${r.date}</time>
+        <span class="title-kr">${r.titleKr}</span>
+        ${r.titleEn ? `<span class="title-en">${r.titleEn}</span>` : ''}
+        ${r.verdict ? `<span class="verdict v-${r.verdictClass}">${r.verdict}</span>` : ''}
+      </span>`;
+      btn.addEventListener('click', () => activate(r.id));
+      block.appendChild(btn);
+    });
+  });
+}
+
+function activate(id) {
+  const r = REPORTS.find(x => x.id === id);
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+  tbTitle.textContent = r.titleKr;
+  tbTime.textContent = r.date;
+  overview.classList.toggle('show', r.type === 'overview');
+  prosepane.classList.toggle('show', r.type === 'prose');
+  viewer.classList.toggle('show', r.type === 'iframe');
+  if (r.type === 'prose') {
+    proseInner.innerHTML = r.body;
+  }
+  if (r.type === 'iframe') {
+    if (!viewer.dataset.loaded || viewer.dataset.loaded !== id) {
+      viewer.src = 'data:text/html;base64,' + r.b64;
+      viewer.dataset.loaded = id;
+    }
+  } else {
+    viewer.removeAttribute('src');
+    viewer.dataset.loaded = '';
+  }
+  side.classList.remove('open');
+  location.hash = id;
+}
+
+document.getElementById('tb-menu').addEventListener('click', () => side.classList.toggle('open'));
+
+renderNav();
+const startId = (location.hash || '').replace('#', '') || REPORTS[0].id;
+activate(REPORTS.find(x => x.id === startId) ? startId : REPORTS[0].id);
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.jump');
+  if (b && b.dataset.jump) activate(b.dataset.jump);
+});
+</script>
+</body>
+</html>

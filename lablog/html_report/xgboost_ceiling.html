@@ -1,0 +1,778 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>왜 XGBoost를 못 넘는가</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+
+<style>
+:root{
+  --paper:#eef2f3; --card:#ffffff; --ink:#101619; --ink-2:#41545c; --ink-3:#6b8189;
+  --rule:#cfdadd; --rule-2:#e2eaec;
+  --accent:#0d6b76; --accent-soft:#d7ebed;
+  --warn:#a8501c; --warn-soft:#f6e2d4;
+  --ok:#2c6650; --ok-soft:#d9ebe2;
+  --grid:#dfe8ea;
+  --shadow:0 1px 2px rgba(16,22,25,.05),0 8px 24px -16px rgba(16,22,25,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0c1215; --card:#131c20; --ink:#e6eef0; --ink-2:#a3b6bd; --ink-3:#7b9198;
+    --rule:#24343a; --rule-2:#1b272c;
+    --accent:#4fb6c2; --accent-soft:#12333a;
+    --warn:#e0965c; --warn-soft:#38251a;
+    --ok:#6fb392; --ok-soft:#17302a;
+    --grid:#1e2c31;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0c1215; --card:#131c20; --ink:#e6eef0; --ink-2:#a3b6bd; --ink-3:#7b9198;
+  --rule:#24343a; --rule-2:#1b272c;
+  --accent:#4fb6c2; --accent-soft:#12333a;
+  --warn:#e0965c; --warn-soft:#38251a;
+  --ok:#6fb392; --ok-soft:#17302a;
+  --grid:#1e2c31;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1060px;margin:0 auto;padding:52px 24px 96px;}
+.col{max-width:64ch;}
+.eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;}
+h1{font-size:clamp(30px,4.6vw,44px);line-height:1.14;font-weight:700;letter-spacing:-.02em;
+  margin:0 0 16px;text-wrap:balance;}
+h2{font-size:clamp(19px,2.4vw,24px);font-weight:600;letter-spacing:-.012em;line-height:1.3;
+  margin:0 0 12px;text-wrap:balance;}
+h3{font-size:16px;font-weight:600;margin:0 0 8px}
+p{margin:0 0 14px;color:var(--ink-2)}
+p strong,li strong,figcaption strong{color:var(--ink);font-weight:600}
+.lede{font-size:18px;line-height:1.62;color:var(--ink-2)}
+hr.rule{border:0;border-top:1px solid var(--rule);margin:52px 0}
+.step{display:grid;grid-template-columns:52px 1fr;gap:22px;margin:0 0 48px}
+.step-n{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--accent);
+  border-top:2px solid var(--accent);padding-top:9px;letter-spacing:.06em;}
+.step-body{min-width:0}
+figure{margin:20px 0 8px;padding:22px 22px 16px;background:var(--card);
+  border:1px solid var(--rule);border-radius:6px;box-shadow:var(--shadow)}
+figcaption{font-size:13.5px;line-height:1.6;color:var(--ink-3);margin-top:14px;
+  padding-top:12px;border-top:1px solid var(--rule-2)}
+.fig-title{font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:500;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:0 0 16px}
+.wf{display:flex;flex-direction:column;gap:9px}
+.wf-row{display:grid;grid-template-columns:190px 1fr 78px;gap:12px;align-items:center}
+.wf-lab{font-size:13.5px;color:var(--ink-2);text-align:right;line-height:1.35}
+.wf-lab b{color:var(--ink);font-weight:600}
+.wf-track{position:relative;height:24px;background:var(--grid);border-radius:3px;overflow:hidden}
+.wf-bar{position:absolute;top:0;bottom:0;border-radius:3px}
+.wf-val{font-family:"IBM Plex Mono",monospace;font-size:13px;font-variant-numeric:tabular-nums;
+  color:var(--ink);font-weight:500}
+.wf-axis{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;color:var(--ink-3);padding-top:2px;border-top:1px solid var(--rule)}
+.b-accent{background:var(--accent)} .b-warn{background:var(--warn)} .b-ok{background:var(--ok)}
+.b-mute{background:var(--ink-3);opacity:.45}
+/* fate bars */
+.fate{display:flex;flex-direction:column;gap:7px}
+.fate-row{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center}
+.fate-lab{font-size:13px;color:var(--ink-2);text-align:right;line-height:1.3}
+.fate-lab b{color:var(--ink);font-weight:600}
+.fate-lab .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3)}
+.fate-bar{display:flex;height:26px;border-radius:3px;overflow:hidden;background:var(--grid)}
+.fseg{display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;color:#fff;white-space:nowrap;overflow:hidden}
+.f-resc{background:var(--ok)}
+.f-null{background:var(--ok);opacity:.45}
+.f-rej{background:var(--warn)}
+.f-unp{background:var(--ink-3);opacity:.5}
+/* split diagram */
+.sd{display:flex;flex-direction:column;gap:6px;font-family:"IBM Plex Mono",monospace;font-size:12px}
+.sd-row{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center}
+.sd-lab{color:var(--ink-2);text-align:right}
+.sd-bar{display:flex;height:22px;border-radius:3px;overflow:hidden}
+.sd-seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:10.5px;
+  letter-spacing:.04em;white-space:nowrap;overflow:hidden}
+.sg-c0{background:var(--accent)} .sg-exp{background:var(--warn)} .sg-rt{background:var(--ink-3);opacity:.7}
+.sd-cut{position:relative}
+.sd-note{color:var(--ink-3);font-size:11.5px;margin:2px 0 8px;font-family:"IBM Plex Sans KR",sans-serif}
+.legend{display:flex;gap:16px;margin:10px 0 0;font-size:11.5px;color:var(--ink-3);
+  font-family:"IBM Plex Mono",monospace}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--rule-2)}
+th{font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:500;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--rule)}
+td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
+tr:last-child td{border-bottom:0}
+td.name{color:var(--ink-2)}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);
+  padding:13px 18px;border-radius:0 5px 5px 0;margin:18px 0}
+.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.note.ok{border-left-color:var(--ok);background:var(--ok-soft)}
+.note p{margin:0;color:var(--ink)}
+.note p+p{margin-top:8px}
+.note-k{font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px;opacity:.85}
+.pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;
+  letter-spacing:.06em;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.p-fail{background:var(--warn-soft);color:var(--warn)}
+.p-pass{background:var(--ok-soft);color:var(--ok)}
+.p-hold{background:var(--grid);color:var(--ink-3)}
+.hero-strip{display:flex;gap:14px;flex-wrap:wrap;margin:26px 0 6px}
+.stat{flex:1 1 145px;background:var(--card);border:1px solid var(--rule);border-radius:6px;
+  padding:14px 16px;box-shadow:var(--shadow)}
+.stat .k{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.stat .v{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:600;
+  font-variant-numeric:tabular-nums;color:var(--ink)}
+.stat .s{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.stat.hl{border-color:var(--accent)}
+.stat.hl .v{color:var(--accent)}
+.pipe{display:flex;flex-wrap:wrap;gap:22px;align-items:stretch;margin:0 0 6px}
+.pnode{position:relative;background:var(--card);border:1.5px solid var(--rule);border-radius:6px;
+  padding:9px 13px;display:flex;flex-direction:column;gap:2px;min-width:104px;flex:1 1 120px}
+.pnode b{color:var(--ink);font-size:13px;font-weight:600}
+.pnode .pv{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;line-height:1.5}
+.pnode:not(:last-child)::after{content:"→";position:absolute;right:-17px;top:50%;
+  transform:translateY(-50%);color:var(--ink-3);font-size:14px}
+.pnode.hi{border-color:var(--warn);background:var(--warn-soft)}
+.pnode.hi b{color:var(--warn)}
+.pnode.hi2{border-color:var(--warn);border-style:dashed}
+.pnode.hi2 b{color:var(--warn)}
+.pnode.okn{border-color:var(--ok)}
+.pipe.mini{gap:16px;margin:0 0 18px}
+.pipe.mini .pnode{padding:4px 9px;min-width:auto;flex:0 1 auto;gap:0}
+.pipe.mini .pnode b{font-size:11.5px;font-weight:500}
+.pipe.mini .pnode:not(:last-child)::after{right:-13px;font-size:12px}
+.formula{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:2;
+  background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:14px 18px;
+  margin:0 0 14px;color:var(--ink);overflow-x:auto}
+.formula sub,.formula sup{font-size:10px}
+.kbd{font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--grid);
+  padding:1px 6px;border-radius:3px;color:var(--ink)}
+.foot{font-size:13px;color:var(--ink-3);border-top:1px solid var(--rule);padding-top:18px;margin-top:10px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media (max-width:640px){
+  .step{grid-template-columns:1fr;gap:10px}
+  .step-n{border-top:none;padding-top:0}
+  .wf-row{grid-template-columns:120px 1fr 66px;gap:8px}
+  .sd-row{grid-template-columns:70px 1fr}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<div class="col">
+  <p class="eyebrow">결과 보고 · 2026-09-02 · 진단→분할 변경→검증</p>
+  <h1>왜 XGBoost를 못 넘는가</h1>
+  <p class="lede">
+    답이 나왔습니다. 격차 0.055의 <strong>절반은 두 모델에게 준 데이터량 차이</strong>였고,
+    나머지는 <strong>ddos·infiltration 두 클래스</strong>에 몰려 있었습니다.
+    분할 방법과 채택 단위를 바꾼 결과 시스템은 0.6978 → <strong>0.72~0.74(3반복)</strong>,
+    남은 격차는 −0.015~−0.035입니다. 부산물로 global의 <strong>재현성 대역이 25배</strong>
+    줄었고, expert bank 가설은 <strong>기각</strong>됐습니다.
+  </p>
+  <div class="hero-strip">
+    <div class="stat hl"><div class="k">시스템 (3반복)</div><div class="v">0.72–0.74</div><div class="s">macro-F1 · 최고 0.7395</div></div>
+    <div class="stat"><div class="k">기준선 XGB full</div><div class="v">0.7548</div><div class="s">12.07M행으로 학습 시</div></div>
+    <div class="stat"><div class="k">기준선 XGB c0</div><div class="v">0.7283</div><div class="s">global과 같은 1M행 시</div></div>
+    <div class="stat"><div class="k">oracle (뱅크 상한)</div><div class="v">0.84</div><div class="s">정답을 알 때 회수 한계</div></div>
+    <div class="stat"><div class="k">global 재현성</div><div class="v">25×↓</div><div class="s">반복 대역 0.027→0.0011</div></div>
+  </div>
+</div>
+
+<hr class="rule">
+
+<!-- 1 -->
+<section class="step">
+  <div class="step-n">01</div>
+  <div class="step-body">
+    <div class="col">
+      <h2>기준선 — 학습 데이터량별 XGBoost, 그리고 우리의 위치</h2>
+      <p>XGBoost를 두 조건으로 재측정했습니다: 전체 12.07M행(공식 기준선)과,
+      global이 컨텍스트로 받는 것과 <strong>동일한 1M행</strong>(정보예산을 맞춘 보조 기준선).</p>
+    </div>
+    <figure>
+      <p class="fig-title">Fig 1 — 기준선과 현재 위치 (동일 평가 4,023,114행, macro-F1)</p>
+      <div class="wf">
+        <div class="wf-row"><div class="wf-lab"><b>oracle</b> · 뱅크 상한</div>
+          <div class="wf-track"><div class="wf-bar b-mute" style="left:0;width:84.35%"></div></div><div class="wf-val">0.8435</div></div>
+        <div class="wf-row"><div class="wf-lab"><b>기준선 XGB full</b> · 12.07M행</div>
+          <div class="wf-track"><div class="wf-bar b-accent" style="left:0;width:75.48%"></div></div><div class="wf-val">0.7548</div></div>
+        <div class="wf-row"><div class="wf-lab"><b>시스템</b> · 3반복 최고</div>
+          <div class="wf-track"><div class="wf-bar b-ok" style="left:0;width:73.95%"></div></div><div class="wf-val">0.7395</div></div>
+        <div class="wf-row"><div class="wf-lab"><b>기준선 XGB c0</b> · 1M행</div>
+          <div class="wf-track"><div class="wf-bar b-accent" style="left:0;width:72.83%"></div></div><div class="wf-val">0.7283</div></div>
+        <div class="wf-row"><div class="wf-lab"><b>global</b> · 층화 분할</div>
+          <div class="wf-track"><div class="wf-bar b-ok" style="left:0;width:72.07%"></div></div><div class="wf-val">0.7207</div></div>
+        <div class="wf-row"><div class="wf-lab">global · 기존 분할</div>
+          <div class="wf-track"><div class="wf-bar b-mute" style="left:0;width:66.98%"></div></div><div class="wf-val">0.6698</div></div>
+        <div class="wf-row"><div class="wf-lab"></div>
+          <div class="wf-axis"><span>0</span><span>0.25</span><span>0.5</span><span>0.75</span><span>1.0</span></div>
+          <div class="wf-val"></div></div>
+      </div>
+      <figcaption>
+        막대는 macro-F1 절대값(0~1 전 구간) — 차이가 작아 보이는 것이 실제 크기입니다.
+        full과 c0의 차이 0.0265가 격차 중 <strong>정보예산 몫</strong>. 같은 1M행이면
+        <strong>global 0.7207 ≈ XGB c0 0.7283</strong>이고, brute_force에서는 XGB도 0.7246으로
+        우리와 동일했습니다. <strong>oracle = 각 행마다 정답을 아는 심판이 global과 expert 중
+        최선을 골랐을 때의 값</strong> — 라우팅이 완벽해도 이 이상은 불가능한 상한이며, 현재
+        시스템은 상한과 global 사이 이득의 ~20% 이하만 회수합니다.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="step">
+  <div class="step-n">02</div>
+  <div class="step-body">
+    <div class="col">
+      <h2>분할 방법 변경 (exp27) <span class="pill p-pass">완료</span></h2>
+      <div class="pipe mini" aria-label="파이프라인 위치">
+        <div class="pnode hi"><b>C0 컨텍스트</b></div>
+        <div class="pnode"><b>global</b></div>
+        <div class="pnode"><b>expert 뱅크</b></div>
+        <div class="pnode"><b>scorer 제안</b></div>
+        <div class="pnode"><b>verifier 채택</b></div>
+      </div>
+      <p class="sd-note" style="margin:-8px 0 14px">이 섹션이 다루는 단계: <strong>C0 컨텍스트</strong> — 무엇을 보여줄 것인가</p>
+      <p>
+        기존 분할은 <strong>클래스 단위</strong>로 시간순 정렬 후 앞 50%를 컨텍스트(C0) 풀로
+        떼었습니다. 그런데 brute_force 클래스는 ftp 공격(앞) + ssh 공격(뒤)이 시간순으로 붙어
+        있어, 50% 컷이 ftp 안에서 끝나 <strong>C0에 ssh가 0행</strong>이 됐습니다.
+        같은 이유로 dos의 hulk, web_attacks의 sql_injection도 0행.
+      </p>
+    </div>
+    <figure>
+      <p class="fig-title">Fig 3 — 분할 방식 비교 (brute_force 예시)</p>
+      <p class="sd-note">기존 · 클래스 단위 시간순 50/25/25 — 컷이 scenario 경계를 무시</p>
+      <div class="sd">
+        <div class="sd-row"><div class="sd-lab">brute 전체</div>
+          <div class="sd-bar">
+            <div class="sd-seg sg-c0" style="width:50%">C0 풀 (전부 ftp)</div>
+            <div class="sd-seg sg-exp" style="width:17.2%">ftp</div>
+            <div class="sd-seg sg-exp" style="width:7.8%;filter:brightness(.85)">ssh</div>
+            <div class="sd-seg sg-rt" style="width:25%">route (전부 ssh)</div>
+          </div></div>
+      </div>
+      <p class="sd-note" style="margin-top:14px">층화 · <strong>(클래스, scenario) 그룹마다</strong> 같은 시간순 50/25/25 적용</p>
+      <div class="sd">
+        <div class="sd-row"><div class="sd-lab">ftp</div>
+          <div class="sd-bar">
+            <div class="sd-seg sg-c0" style="width:50%">C0 풀</div>
+            <div class="sd-seg sg-exp" style="width:25%">expert</div>
+            <div class="sd-seg sg-rt" style="width:25%">route</div>
+          </div></div>
+        <div class="sd-row"><div class="sd-lab">ssh</div>
+          <div class="sd-bar">
+            <div class="sd-seg sg-c0" style="width:50%">C0 풀</div>
+            <div class="sd-seg sg-exp" style="width:25%">expert</div>
+            <div class="sd-seg sg-rt" style="width:25%">route</div>
+          </div></div>
+      </div>
+      <div class="legend">
+        <span><i class="sg-c0"></i>C0(컨텍스트) 풀</span>
+        <span><i class="sg-exp"></i>expert 풀</span>
+        <span><i class="sg-rt"></i>route 풀</span>
+      </div>
+      <figcaption>
+        scenario <strong>안에서는</strong> 여전히 과거→미래 순서가 지켜지고, 바뀌는 건 "모든
+        scenario의 앞부분이 C0에 들어간다"는 것뿐입니다. C0 풀 기준: ssh 0→56,542행,
+        hulk 0→약 30,022행, sql 0→132행.
+      </figcaption>
+    </figure>
+    <figure>
+      <p class="fig-title">Fig 4 — 분할 변경 전후 (global 기준)</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>클래스</th><th class="num">기존 분할</th><th class="num">층화 분할</th><th class="num">XGB c0</th><th class="num">XGB full</th></tr></thead>
+        <tbody>
+          <tr><td class="name">brute_force</td><td class="num">0.7246</td><td class="num" style="color:var(--ok)">0.9159</td><td class="num">0.7246</td><td class="num">0.9159</td></tr>
+          <tr><td class="name">dos</td><td class="num">0.5237</td><td class="num" style="color:var(--ok)">0.7552+</td><td class="num">0.7820</td><td class="num">0.7822</td></tr>
+          <tr><td class="name">ddos</td><td class="num">0.9047</td><td class="num" style="color:var(--warn)">0.83~0.90</td><td class="num">0.9997</td><td class="num">0.9921</td></tr>
+          <tr><td class="name"><strong>macro</strong></td><td class="num">0.6698</td><td class="num"><strong>0.7207</strong></td><td class="num">0.7283</td><td class="num">0.7548</td></tr>
+        </tbody>
+      </table></div>
+      <figcaption>부작용 하나: 층화가 C0의 ddos 몫을 다른 scenario에 내주면서 ddos가 소폭
+      하락 — 남은 작업 #3. 근거 실험: 무작위 블록만으로 brute recall 0.9998 / ssh 50행
+      주입만으로 완전 회복(50행에서 포화).</figcaption>
+    </figure>
+    <div class="note ok">
+      <p><span class="note-k">부산물 — global 재현성 25배</span>
+      <strong>재현성 대역</strong> = 같은 설정·같은 seed로 같은 run을 반복했을 때 global
+      macro-F1이 흔들리는 폭. GPU bf16 연산은 실행마다 비트 수준으로 조금씩 달라 확률값이
+      미세하게 변하는데, C0에 없던 scenario 행들은 global이 크게 틀리는(경계가 얇은) 행이라
+      이 미세 변동이 예측을 수만 행 단위로 뒤집었습니다(한 반복에서 infiltration 0.39→0.21).
+      그 행들이 C0에 포함되자 뒤집힘이 사라져 대역이 <strong>0.027 → 0.0011</strong>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- structure -->
+<section class="step">
+  <div class="step-n">03</div>
+  <div class="step-body">
+    <div class="col">
+      <h2>지금 시스템의 구조 — 병목이 어디인가</h2>
+      <p>분할 변경 이후의 시스템을 한 장으로. 수치는 층화 분할 3반복 중 최고 run(exp29 r3,
+      delta +0.018) 기준입니다.</p>
+    </div>
+    <figure>
+      <p class="fig-title">Fig 2 — 파이프라인과 각 단계의 실측 (4,023,114행 기준)</p>
+      <div class="pipe">
+        <div class="pnode okn"><b>C0 컨텍스트</b>
+          <span class="pv">1M행 · 층화<br>재현 대역 0.0011<br>상태: 양호</span></div>
+        <div class="pnode okn"><b>global</b>
+          <span class="pv">macro 0.7212<br>전 행 처리<br>상태: 양호</span></div>
+        <div class="pnode"><b>expert 뱅크</b>
+          <span class="pv">K=5<br>블록 = KMeans regime<br>구성은 아래 표</span></div>
+        <div class="pnode hi"><b>scorer 제안</b>
+          <span class="pv">1,186,416행 (29.5%)<br><strong>병목 A: 남발+누락</strong><br>정밀 0.3~22% · ddos 오답 53% 미제안</span></div>
+        <div class="pnode hi"><b>verifier 채택</b>
+          <span class="pv">42,224 (제안의 3.6%)<br><strong>병목 B: 클래스별 편차</strong><br>dos·web ○ / ddos 35% / inf ✕</span></div>
+        <div class="pnode okn"><b>최종</b>
+          <span class="pv">helpful 26,536<br>harmful 141<br>delta +0.018</span></div>
+      </div>
+      <figcaption>
+        <strong>이중 병목 — 서열이 아니라 역할 분담.</strong>
+        병목 A(scorer): 학습 타깃이 부호 분류 P(U&gt;0)라 <strong>이득의 크기를 버리고</strong>,
+        λ=0이라 비용 항도 없음 → 티끌 양수 이득(ddos)·노이즈 양수(benign)까지 전부 제안 —
+        405행짜리 e3에 25만, 112행짜리 e5에 59만. 남발은 낭비만이 아니라 <strong>top-1
+        선택 오류</strong>를 낳아 verifier가 구제 자체를 못 하게 만듦.
+        병목 B(verifier): dos(610/610)·web(125/129)은 정상, ddos는 회수 35%(47,535 남김,
+        oracle 0.994), inf는 고장(채택 8,829 중 구제 49), benign은 훼손 141/311.
+        ※ 이전 판 "1차=verifier"의 근거(+1.7%)는 옛 파이프라인 측정 — 새 구조에서의 서열
+        분리는 r3 dump 오프라인 분해로 재측정 예정(개선 계획 0번).
+      </figcaption>
+    </figure>
+    <figure>
+      <p class="fig-title">Fig 2a — expert 뱅크 구성과 제안/채택 (exp29 r3)</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>expert</th><th class="num">블록 행</th><th>구성 (지배 클래스)</th>
+          <th class="num">scorer가 제안</th><th class="num">verifier가 채택</th><th class="num">채택률</th></tr></thead>
+        <tbody>
+          <tr><td class="name">e1</td><td class="num">15,892</td><td class="name">infiltration 100%</td>
+            <td class="num">36,780</td><td class="num">33,587</td><td class="num" style="color:var(--ok)">91.3%</td></tr>
+          <tr><td class="name">e2</td><td class="num">40,275</td><td class="name">brute_force 96%</td>
+            <td class="num">289,705</td><td class="num">1,414</td><td class="num">0.5%</td></tr>
+          <tr><td class="name">e3</td><td class="num">405</td><td class="name">ddos 100%</td>
+            <td class="num">247,864</td><td class="num">4,725</td><td class="num">1.9%</td></tr>
+          <tr><td class="name">e4</td><td class="num">186,000</td><td class="name">benign 86% 잡탕 (유일하게 selector 작동)</td>
+            <td class="num">22,045</td><td class="num">2,492</td><td class="num">11.3%</td></tr>
+          <tr><td class="name">e5</td><td class="num">112</td><td class="name">web_attacks 100%</td>
+            <td class="num" style="color:var(--warn)">590,025</td><td class="num" style="color:var(--warn)">6</td><td class="num" style="color:var(--warn)">0.0%</td></tr>
+        </tbody>
+      </table></div>
+      <figcaption>
+        모든 expert는 공유 anchor 12,761행(클래스당 ≤2,000)을 블록에 더해 사용.
+        읽을 점 셋: ① scorer의 남발 — <strong>제안의 절반(59만 행)을 112행짜리 web expert에</strong>
+        보냄(web 평가행은 509뿐). ② e1(infiltration)은 채택률 91%로 제안-채택이 정합 —
+        구성 자체는 건강한 축도 있음. ③ brute는 제안 77,344행(정확히 ftp 평가행 수)에 채택 0 —
+        이건 정상: 분할 변경 후 global이 이미 0.9159라 expert가 더 얹을 이득이 없음.
+        클래스별 채택은 Fig 2b.
+      </figcaption>
+    </figure>
+    <div class="note warn">
+      <p><span class="note-k">expert 형성 자체는 문제 없나</span>
+      "틀렸다"기보다 <strong>가치를 더하지 못하고, 불안정의 진원</strong>입니다. ① 내용은
+      유효 — 이 뱅크로 oracle 0.84가 나옵니다. ② 그러나 형성 방식(residual 서명 KMeans)이
+      <strong>등메모리 무작위 선택보다 낫지 않고</strong>(Gate 1 기각), ③ KMeans가 1.93M짜리
+      잡탕 1개 + 112~405행짜리 미세 regime들로 갈라지는 구조라 run마다 K가 2↔5로 요동 —
+      <strong>재현 불안정과 게이트 셧다운(4/7)의 진원</strong>입니다. ④ 미세 regime expert는
+      블록이 컨텍스트의 1% 미만(공유 anchor 12,761행이 지배)이라 반쯤 퇴화 상태.
+      결론: expert를 더 정교하게 만드는 방향이 아니라 <strong>더 단순하게(K 축소·최소 크기
+      규칙) 만들고 게이트를 고치는 방향</strong>이 데이터가 가리키는 길입니다.</p>
+    </div>
+    <figure>
+      <p class="fig-title">Fig 2b — 개선가능대상의 운명 구성 (exp29 r3 · 개선가능대상 = global이 오판한 행 · 막대 = 100%)</p>
+      <div class="fate" style="margin:0 0 6px">
+        <div class="fate-row"><div class="fate-lab"><b>ddos</b><br><span class="n">대상 73,287</span></div>
+          <div class="fate-bar">
+            <div class="fseg f-resc" style="width:35.1%">구제 35%</div>
+            <div class="fseg f-null" style="width:5.4%">5%</div>
+            <div class="fseg f-rej" style="width:6.7%">7%</div>
+            <div class="fseg f-unp" style="width:52.8%">미제안 53%</div>
+          </div></div>
+        <div class="fate-row"><div class="fate-lab"><b>infiltration</b><br><span class="n">대상 27,473</span></div>
+          <div class="fate-bar">
+            <div class="fseg f-resc" style="width:0.2%"></div>
+            <div class="fseg f-null" style="width:0.7%"></div>
+            <div class="fseg f-rej" style="width:62.9%">기각 63%</div>
+            <div class="fseg f-unp" style="width:36.2%">미제안 36%</div>
+          </div></div>
+        <div class="fate-row"><div class="fate-lab"><b>dos</b><br><span class="n">대상 23,833</span></div>
+          <div class="fate-bar">
+            <div class="fseg f-resc" style="width:2.6%"></div>
+            <div class="fseg f-rej" style="width:88.8%">기각 89% (대부분 정당 — oracle 여지 없음)</div>
+            <div class="fseg f-unp" style="width:8.6%">9%</div>
+          </div></div>
+        <div class="fate-row"><div class="fate-lab"><b>benign</b><br><span class="n">대상 6,547</span></div>
+          <div class="fate-bar">
+            <div class="fseg f-null" style="width:0.3%"></div>
+            <div class="fseg f-rej" style="width:34.9%">기각 35%</div>
+            <div class="fseg f-unp" style="width:64.8%">미제안 65%</div>
+          </div></div>
+        <div class="fate-row"><div class="fate-lab"><b>web_attacks</b><br><span class="n">대상 273</span></div>
+          <div class="fate-bar">
+            <div class="fseg f-resc" style="width:45.8%">구제 46%</div>
+            <div class="fseg f-null" style="width:1.5%"></div>
+            <div class="fseg f-rej" style="width:10.3%">10%</div>
+            <div class="fseg f-unp" style="width:42.5%">미제안 43%</div>
+          </div></div>
+        <div class="fate-row"><div class="fate-lab"><b>bot</b><br><span class="n">대상 127</span></div>
+          <div class="fate-bar">
+            <div class="fseg f-rej" style="width:2.4%"></div>
+            <div class="fseg f-unp" style="width:97.6%">미제안 98%</div>
+          </div></div>
+        <div class="fate-row"><div class="fate-lab"><b>brute_force</b><br><span class="n">대상 20</span></div>
+          <div class="fate-bar">
+            <div class="fseg f-unp" style="width:100%">미제안 100% (정상 — global이 이미 상한)</div>
+          </div></div>
+      </div>
+      <div class="legend" style="margin:4px 0 20px">
+        <span><i class="f-resc" style="background:var(--ok)"></i>채택+ 구제</span>
+        <span><i style="background:var(--ok);opacity:.45"></i>채택− 무익</span>
+        <span><i style="background:var(--warn)"></i>기각</span>
+        <span><i style="background:var(--ink-3);opacity:.5"></i>제안 미포함</span>
+      </div>
+      <p class="sd-note" style="margin:0 0 10px"><strong>정밀 수치 · Panel A — 개선가능대상</strong> (막대의 원자료)</p>
+      <div class="tbl-wrap"><table>
+        <thead>
+          <tr><th rowspan="2">클래스</th><th rowspan="2" class="num">개선가능<br>대상</th>
+            <th rowspan="2" class="num">제안<br>미포함</th>
+            <th colspan="3" style="text-align:center;border-bottom:1px solid var(--rule-2)">제안 포함 → verifier 판정</th>
+            <th rowspan="2" class="num"><strong>구제율</strong></th></tr>
+          <tr><th class="num" style="color:var(--ok)">채택 + (구제)</th>
+            <th class="num">채택 − (무익)</th><th class="num">기각 *</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="name">ddos</td><td class="num">73,287</td>
+            <td class="num" style="color:var(--warn)"><strong>38,695</strong></td>
+            <td class="num" style="color:var(--ok)">25,752</td><td class="num">3,964</td><td class="num">4,876</td>
+            <td class="num"><strong>35.1%</strong></td></tr>
+          <tr><td class="name">infiltration</td><td class="num">27,473</td><td class="num">9,950</td>
+            <td class="num" style="color:var(--warn)">49</td><td class="num">194</td>
+            <td class="num" style="color:var(--warn)"><strong>17,280</strong></td>
+            <td class="num" style="color:var(--warn)"><strong>0.2%</strong></td></tr>
+          <tr><td class="name">dos</td><td class="num">23,833</td><td class="num">2,061</td>
+            <td class="num">610</td><td class="num">0</td><td class="num">21,162</td><td class="num">2.6%</td></tr>
+          <tr><td class="name">web_attacks</td><td class="num">273</td><td class="num">116</td>
+            <td class="num" style="color:var(--ok)">125</td><td class="num">4</td><td class="num">28</td><td class="num">45.8%</td></tr>
+          <tr><td class="name">benign</td><td class="num">6,547</td><td class="num">4,241</td>
+            <td class="num">0</td><td class="num">20</td><td class="num">2,286</td><td class="num">0.0%</td></tr>
+          <tr><td class="name">brute_force</td><td class="num">20</td><td class="num">20</td>
+            <td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0.0%</td></tr>
+          <tr><td class="name">bot</td><td class="num">127</td><td class="num">124</td>
+            <td class="num">0</td><td class="num">0</td><td class="num">3</td><td class="num">0.0%</td></tr>
+        </tbody>
+      </table></div>
+      <p class="sd-note" style="margin:16px 0 10px"><strong>Panel B — 개선 불필요 행 (global 정답)</strong>: 여기 낸 제안은 이득이 없고 훼손 위험만 있음</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>클래스</th><th class="num">정답 행</th><th class="num">제안 포함</th>
+          <th class="num">채택</th><th class="num" style="color:var(--warn)">훼손 − (정답→오답)</th>
+          <th class="num">채택·무해 (답 유지)</th></tr></thead>
+        <tbody>
+          <tr><td class="name">benign</td><td class="num">3,496,379</td>
+            <td class="num" style="color:var(--warn)"><strong>891,217</strong></td>
+            <td class="num">291</td><td class="num" style="color:var(--warn)"><strong>141</strong></td><td class="num">150</td></tr>
+          <tr><td class="name">ddos</td><td class="num">191,585</td><td class="num">124,661</td>
+            <td class="num">2,629</td><td class="num">0</td><td class="num">2,629</td></tr>
+          <tr><td class="name">infiltration</td><td class="num">10,158</td><td class="num">8,887</td>
+            <td class="num" style="color:var(--warn)"><strong>8,586</strong></td><td class="num">0</td><td class="num">8,586</td></tr>
+          <tr><td class="name">brute_force</td><td class="num">115,020</td><td class="num">77,344</td>
+            <td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+          <tr><td class="name">dos</td><td class="num">36,761</td><td class="num">7,734</td>
+            <td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+        </tbody>
+      </table></div>
+      <figcaption>
+        용어: <strong>개선가능대상 = global이 오판한 행</strong>(파이프라인 뒷단의 잘못과 구분).
+        각 행은 Panel A에서 미포함+채택++채택−+기각 = 대상으로 합이 맞는다.
+        <strong>* 기각의 정당/부당(±)은 행 단위로는 판별 불가</strong> — 각 expert의 eval 확률이
+        저장되지 않아, 클래스 oracle로 추정만 가능: inf 기각 17,280은 대부분 부당(oracle 0.96),
+        dos 기각 21,162는 대부분 정당(oracle 0.782 — 뱅크에 답이 없는 충돌대). 후속 run부터
+        기각 행의 expert 예측을 저장해 ±로 쪼갠다.
+        읽을 점: ① ddos 최대 손실 = <strong>제안 미포함 38,695</strong>(scorer 누락).
+        ② inf의 "채택 8,829" 수수께끼 해소 — <strong>8,586이 Panel B(정답 행)에서 발생</strong>:
+        verifier가 inf에서 하는 일의 대부분은 정답 행의 무해한 재확인이고, 정작 개선가능대상에선
+        49행만 구제. ③ benign 제안 89만은 전부 Panel B — 이득 0, 훼손 141만 생산.
+      </figcaption></figure>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="step">
+  <div class="step-n">04</div>
+  <div class="step-body">
+    <div class="col">
+      <h2>채택 단위 변경 (exp26) <span class="pill p-pass">완료 · 목표 3/4 달성</span></h2>
+      <div class="pipe mini" aria-label="파이프라인 위치">
+        <div class="pnode"><b>C0 컨텍스트</b></div>
+        <div class="pnode"><b>global</b></div>
+        <div class="pnode"><b>expert 뱅크</b></div>
+        <div class="pnode"><b>scorer 제안</b></div>
+        <div class="pnode hi"><b>verifier 채택</b></div>
+      </div>
+      <p class="sd-note" style="margin:-8px 0 14px">이 섹션이 다루는 단계: <strong>verifier</strong> — 채택 문턱의 단위</p>
+      <p>
+        개입 흐름: scorer가 후보를 제안 → expert 실행 → <strong>verifier</strong>가 이득을
+        예측 → 예측값이 문턱을 넘으면 답 교체. 이득과 채택 조건의 정의:
+      </p>
+      <div class="formula">
+        G&nbsp;=&nbsp;w<sub>c</sub> × ΔNLL &nbsp;&nbsp;(w<sub>c</sub> = N / (7·n<sub>c</sub>),&nbsp; N = 12,069,313)<br>
+        채택:&nbsp; q̂ &gt; 21.145 &nbsp;&nbsp;(전 클래스 공통 문턱)<br>
+        자격(상한):&nbsp; 완벽한 expert여도 G<sup>max</sup> = w<sub>c</sub>·NLL<sub>global</sub>
+        이므로&nbsp; <strong>NLL<sub>global</sub> &gt; 21.145 / w<sub>c</sub></strong>
+        &nbsp;⇔&nbsp; p<sub>global</sub>(정답) &lt; e<sup>−21.145/w<sub>c</sub></sup>
+      </div>
+      <p>
+        w<sub>c</sub>는 클래스가 희귀할수록 커서(아래 표), 같은 문턱 21.145가 클래스마다
+        전혀 다른 난이도가 됩니다:
+      </p>
+      <figure>
+        <p class="fig-title">Fig 5a — 클래스별 자격 조건 (기존 단위)</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>클래스</th><th class="num">n<sub>c</sub> (학습 풀)</th><th class="num">w<sub>c</sub></th>
+            <th class="num">필요 NLL (21.145/w)</th><th class="num">p(정답) 조건</th><th class="num">오답 중 자격</th></tr></thead>
+          <tbody>
+            <tr><td class="name">web_attacks</td><td class="num">1,522</td><td class="num">1,132.8</td><td class="num">0.019</td><td class="num">&lt; 0.981</td><td class="num">100%</td></tr>
+            <tr><td class="name">infiltration</td><td class="num">112,891</td><td class="num">15.27</td><td class="num">1.38</td><td class="num">&lt; 0.250</td><td class="num">99.0%</td></tr>
+            <tr><td class="name">bot</td><td class="num">124,621</td><td class="num">13.84</td><td class="num">1.53</td><td class="num">&lt; 0.217</td><td class="num">99.2%</td></tr>
+            <tr><td class="name">dos</td><td class="num">181,779</td><td class="num">9.49</td><td class="num">2.23</td><td class="num">&lt; 0.108</td><td class="num">34.9%</td></tr>
+            <tr><td class="name">brute_force</td><td class="num">345,116</td><td class="num">5.00</td><td class="num">4.23</td><td class="num">&lt; 0.015</td><td class="num">100%</td></tr>
+            <tr><td class="name">ddos</td><td class="num">794,609</td><td class="num">2.17</td><td class="num">9.74</td><td class="num">&lt; 5.9×10<sup>−5</sup></td><td class="num" style="color:var(--warn)"><strong>0%</strong></td></tr>
+            <tr><td class="name">benign</td><td class="num">10,508,775</td><td class="num">0.164</td><td class="num">128.9</td><td class="num">&lt; 10<sup>−56</sup></td><td class="num" style="color:var(--warn)"><strong>0%</strong></td></tr>
+          </tbody>
+        </table></div>
+        <figcaption>ddos는 p(정답) &lt; 0.00006 수준으로 확신에 차서 틀려야 자격이 생기는데,
+        그런 행이 틀린 45,886행 중 <strong>0행</strong> — 완벽한 expert·verifier로도 채택
+        불가였습니다. benign도 동일(사실상 불가능 조건이라 안전판 역할은 했음).</figcaption>
+      </figure>
+      <p><strong>변경: verifier의 학습 목표를 G → G / w<sub>c</sub> = ΔNLL로</strong> —
+      채택 조건이 「ΔNLL &gt; τ」(전 클래스 공통, nat 단위)가 되어 위 표의 w<sub>c</sub> 열이
+      비교에서 소거됩니다. scorer는 그대로입니다.</p>
+    </div>
+    <figure>
+      <p class="fig-title">Fig 5 — 단위 변경 사전 등록 채점표 (exp26)</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>예측</th><th>결과</th><th>판정</th></tr></thead>
+        <tbody>
+          <tr><td class="name">ddos가 열린다</td><td class="num">채택 0 → 6,602 · F1 +0.015</td><td><span class="pill p-pass">적중</span></td></tr>
+          <tr><td class="name">benign은 열리면 안 됨</td><td class="num">204만 제안 중 289 채택</td><td><span class="pill p-pass">적중</span></td></tr>
+          <tr><td class="name">harmful ≤ 200</td><td class="num">56</td><td><span class="pill p-pass">적중</span></td></tr>
+          <tr><td class="name">infiltration이 열린다</td><td class="num">42행뿐 (제안 35,193)</td><td><span class="pill p-fail">미달</span></td></tr>
+        </tbody>
+      </table></div>
+      <figcaption>infiltration이 안 열리는 이유는 단위가 아니라 <strong>verifier의 예측
+      실패</strong>(예측↔실제 이득 상관 ≤0.15) — 독립 병목으로 확정. 병목이 scorer가 아니라는
+      것도 확정: 제안 문을 100% 열어도 채택 +1.7%.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="step">
+  <div class="step-n">05</div>
+  <div class="step-body">
+    <div class="col">
+      <h2>기각·불성립 가설들</h2>
+      <div class="pipe mini" aria-label="파이프라인 위치">
+        <div class="pnode"><b>C0 컨텍스트</b></div>
+        <div class="pnode"><b>global</b></div>
+        <div class="pnode hi"><b>expert 뱅크</b></div>
+        <div class="pnode"><b>scorer 제안</b></div>
+        <div class="pnode"><b>verifier 채택</b></div>
+      </div>
+      <p class="sd-note" style="margin:-8px 0 14px">이 섹션이 다루는 단계: <strong>expert 뱅크</strong> — 뱅크를 어떻게 만들 것인가</p>
+    </div>
+    <figure>
+      <p class="fig-title">Fig 6 — 판정 목록 (전부 등조건 측정)</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>가설</th><th>측정</th><th>판정</th></tr></thead>
+        <tbody>
+          <tr><td class="name">residual mining이 무작위/근접 선택보다 낫다 (Gate 1)</td>
+            <td class="num">등메모리 oracle: residual 0.830 &lt; random 0.845 &lt; proximity 0.886</td>
+            <td><span class="pill p-fail">기각</span></td></tr>
+          <tr><td class="name">expert 다중화(K&gt;1)가 필요하다</td>
+            <td class="num">K=1 vs K=5<strong>만</strong> 비교(중간 격자 미측정): delta +0.002(대역 안) · K=1 oracle 0.884 ≥ K=5</td>
+            <td><span class="pill p-hold">근거 없음</span></td></tr>
+          <tr><td class="name">diversity selector가 블록을 고른다</td>
+            <td class="num">5개 regime 중 4개가 크기≤예산 → KMeans 배정 결과 전체가 그대로 블록(선택 과정 없음)</td>
+            <td><span class="pill p-fail">사실상 미사용</span></td></tr>
+          <tr><td class="name">15-클래스(scenario) 학습이 유리하다</td>
+            <td class="num">XGB 동일 행: family 0.7548 &gt; fine 0.7391</td>
+            <td><span class="pill p-fail">기각</span></td></tr>
+          <tr><td class="name">호출 비용 λ로 낭비 호출(제안 후 미채택 98%)을 줄인다</td>
+            <td class="num">λ 3종 전부 게이트 셧다운(제안 0건) — 판독 불가</td>
+            <td><span class="pill p-fail">실패</span></td></tr>
+        </tbody>
+      </table></div>
+      <figcaption>
+        <strong>클러스터 배정의 실제 동작</strong>: 각 행의 31차원 residual 서명
+        [feature 임베딩 16 | global 예측확률 7 | 혼동 방향 7 | 오차 크기 1] 공간에서
+        KMeans를 적합(오차 큰 행 가중), 각 행을 <strong>최근접 중심에 hard 배정</strong>한
+        묶음이 regime — 크기 ≤ 예산 186,000이면 그 배정 결과 전체가 곧 expert의 컨텍스트
+        블록이 됨. proximity = residual 정보 없이 <strong>feature 거리만으로</strong> 중심
+        근처 행을 뽑은 대조 컨텍스트. oracle로 재는 이유: Gate 1은 "뱅크 안에 좋은 답이
+        존재하는가"(상한)를 묻는 관문이라 상한이 무작위 뱅크보다 낮으면 라우팅 품질과 무관하게
+        mining의 가치가 없기 때문. 단 무작위 뱅크로 <strong>시스템을 실제로 돌린 적은
+        없으며</strong>(oracle 대조만), K=1도 단일모델이 아니라 global+expert 1개+게이트 구성임.
+        서사 이동: <strong>"residual expert bank" → "컨텍스트 구성 + 드물고 정확한 조건부
+        개입"</strong> (검증 없는 라우팅은 0.52로 붕괴, verifier 경유 시 harmful 0~214행).
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="step">
+  <div class="step-n">06</div>
+  <div class="step-body">
+    <div class="col">
+      <h2>재현성 — 남은 불안정은 개입층</h2>
+      <div class="pipe mini" aria-label="파이프라인 위치">
+        <div class="pnode"><b>C0 컨텍스트</b></div>
+        <div class="pnode hi"><b>global</b></div>
+        <div class="pnode hi2"><b>expert 뱅크</b></div>
+        <div class="pnode hi2"><b>scorer 제안</b></div>
+        <div class="pnode"><b>verifier 채택</b></div>
+      </div>
+      <p class="sd-note" style="margin:-8px 0 14px">잡음의 사슬: <strong>원천 = TabPFN 추론(bf16, global·expert)</strong> →
+      증폭 = 뱅크(KMeans의 K 요동 2↔5) → 발현 = 문턱 보정(연속 잡음을 가능/불가능 이진 판정으로 바꿔 셧다운)</p>
+      <p>
+        <strong>시스템 delta</strong> = 시스템 − global (개입층이 얹는 개선폭).
+        bf16/fp32는 GPU 수치 정밀도 포맷으로, bf16 연산은 실행 순서가 비결정적이라 같은
+        입력에도 매번 미세하게 다른 확률이 나옵니다. fp32+결정성 커널은 PyTorch가 문서화한
+        완전 결정성 조합이라 <strong>동일 명령 2회가 완전히 같은 결과를 내는지</strong>(A/B
+        해시 비교)를 시험 중입니다.
+      </p>
+    </div>
+    <figure>
+      <p class="fig-title">Fig 7 — 동일 설정 반복 결과</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>파이프라인</th><th class="num">global 대역</th><th class="num">시스템 delta</th><th class="num">harmful</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td class="name">기존 분할 ×3</td><td class="num" style="color:var(--warn)">0.027</td>
+            <td class="num" style="color:var(--warn)">+.028 / −.015 / +.013</td><td class="num">4~1,132</td>
+            <td class="name">개선/개악 판정의 부호가 run마다 뒤집힘</td></tr>
+          <tr><td class="name"><strong>층화 분할 ×3</strong></td><td class="num" style="color:var(--ok)"><strong>0.0011</strong></td>
+            <td class="num">0 / +.007 / +.018</td><td class="num">0~214</td>
+            <td class="name">게이트 셧다운 7회 중 4회</td></tr>
+        </tbody>
+      </table></div>
+      <figcaption>
+        <strong>게이트 셧다운</strong>: <strong>결정은 보정 단계에서, 닫히는 문은 scorer의
+        제안 문턱</strong>. 보정 데이터(D_cal) 위에서 (제안 문턱 × 채택 문턱) 조합 그리드를
+        시뮬레이션해 안전 제약(benign 오탐 한도·harmful 한도·최소 채택 수)을 검사하는데,
+        전부 만족하는 조합이 하나도 없으면 제안 문턱 τ_pre=∞로 설정 → scorer가 아무 행도
+        제안하지 못함(expert 호출 0, 시스템=global). verifier까지 가지도 않음.
+        bf16+결정성 커널(det-lite)은 재현 실패(bf16 경로에 결정성 보장 밖 커널 존재).
+        fp32 A/B는 판정 대기 — 실패해도 본 보고의 결론은 유지되며, 단일 run 주장 대신
+        <strong>×3 반복 프로토콜 또는 p0 캐시</strong>(global 확률 저장·재사용)로 전환됩니다.
+        global은 이미 대역 0.0011로 안정 — 불안정한 것은 개입층뿐.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="col" style="max-width:none">
+  <h2>최고 성능 run — 조건과 클래스별 지표</h2>
+  <p class="col">
+    <strong>조건</strong>: exp29(층화 분할 + verifier 단위 ΔNLL + 등메모리 대조) · K=5(자동
+    선택) · τ_pre 0.8835, τ_post 0.25 · prior T 1.25 · seed 42 · bf16 비결정 · 동일 설정
+    3반복 중 r3. 같은 run 안에서 XGB·oracle 동시 계산.
+  </p>
+  <figure>
+    <p class="fig-title">Fig 8 — 클래스별 F1과 안전 지표 (exp29 r3, 동일 run)</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>클래스</th><th class="num">XGB full</th><th class="num">global</th>
+        <th class="num">시스템</th><th class="num">oracle</th><th>시스템 vs XGB</th></tr></thead>
+      <tbody>
+        <tr><td class="name">benign</td><td class="num">0.9943</td><td class="num">0.9845</td><td class="num">0.9882</td><td class="num">0.9991</td><td class="name">−0.006</td></tr>
+        <tr><td class="name">bot</td><td class="num">0.9978</td><td class="num">0.9984</td><td class="num">0.9984</td><td class="num">0.9985</td><td class="name" style="color:var(--ok)">+0.001</td></tr>
+        <tr><td class="name">brute_force</td><td class="num">0.9159</td><td class="num">0.9159</td><td class="num">0.9159</td><td class="num">0.9159</td><td class="name">0 (동일)</td></tr>
+        <tr><td class="name">ddos</td><td class="num">0.9921</td><td class="num">0.8394</td><td class="num">0.9014</td><td class="num">0.9939</td><td class="name" style="color:var(--warn)">−0.091</td></tr>
+        <tr><td class="name">dos</td><td class="num">0.7822</td><td class="num">0.7552</td><td class="num">0.7629</td><td class="num">0.7820</td><td class="name">−0.019</td></tr>
+        <tr><td class="name">infiltration</td><td class="num">0.4291</td><td class="num">0.3880</td><td class="num">0.3891</td><td class="num" style="color:var(--ok)">0.9615</td><td class="name" style="color:var(--warn)">−0.040</td></tr>
+        <tr><td class="name">web_attacks</td><td class="num">0.1724</td><td class="num">0.1671</td><td class="num">0.2207</td><td class="num">0.2532</td><td class="name" style="color:var(--ok)">+0.048</td></tr>
+        <tr><td class="name"><strong>macro</strong></td><td class="num"><strong>0.7548</strong></td><td class="num">0.7212</td><td class="num"><strong>0.7395</strong></td><td class="num">0.8435</td><td class="name">−0.015</td></tr>
+        <tr><td class="name">tail (bot·inf·web)</td><td class="num">0.5331</td><td class="num">0.5178</td><td class="num" style="color:var(--ok)"><strong>0.5361</strong></td><td class="num">0.7377</td><td class="name" style="color:var(--ok)">+0.003</td></tr>
+        <tr><td class="name">weighted</td><td class="num">0.9834</td><td class="num">0.9640</td><td class="num">0.9714</td><td class="num">0.9927</td><td class="name">−0.012</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tbl-wrap" style="margin-top:14px"><table>
+      <thead><tr><th>안전 지표</th><th class="num">XGB</th><th class="num">global</th><th class="num">시스템</th></tr></thead>
+      <tbody>
+        <tr><td class="name">balanced accuracy</td><td class="num">0.7749</td><td class="num">0.7226</td><td class="num">0.7732</td></tr>
+        <tr><td class="name">macro-AUPRC</td><td class="num">0.7426</td><td class="num">0.7105</td><td class="num">0.7157</td></tr>
+        <tr><td class="name">ECE (낮을수록 좋음)</td><td class="num">0.0055</td><td class="num">0.0127</td><td class="num" style="color:var(--warn)">0.0185</td></tr>
+        <tr><td class="name">benign FPR</td><td class="num">0.00266</td><td class="num">0.00187</td><td class="num">0.00191</td></tr>
+      </tbody>
+    </table></div>
+    <figcaption>
+      macro 격차 −0.015의 기여도(클래스 격차 ÷ 7): ddos −0.013 · infiltration −0.006 ·
+      dos −0.003 · benign −0.001 / web <strong>+0.007</strong> · bot +0.000 · brute 0 →
+      합 −0.015. tail 평균과 web·bot은 XGB <strong>우위</strong>, benign FPR도 XGB보다 낮음.
+      정직한 결점 하나: ECE가 개입으로 나빠짐(0.0127→0.0185) — 개입 행의 확률 보정 미적용.
+      infiltration은 oracle 0.9615로 <strong>회수분이 뱅크 안에 이미 존재</strong>.
+    </figcaption>
+  </figure>
+
+  <h2 style="margin-top:36px">어떻게 개선할 것인가</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>수리 대상</th><th>무엇을 바꾸나</th><th>겨냥하는 증상 (근거)</th><th class="num">기대</th></tr></thead>
+    <tbody>
+      <tr><td class="num">0</td><td class="name"><strong>병목 분해 진단</strong></td>
+        <td class="name">r3 dump 오프라인: scorer 완전 개방 시 회수 상한 vs 완벽 선택 시 verifier 상한</td>
+        <td class="name">새 파이프라인에서 A/B 병목 서열 미측정 (+1.7% 근거는 옛 구조)</td>
+        <td class="num">GPU 0</td></tr>
+      <tr><td class="num">1</td><td class="name"><strong>scorer 타깃: ΔNLL 단위 + 크기 복원</strong></td>
+        <td class="name">U를 b·(G/w<sub>c</sub>)−λc로, sign 분류 대신 기대이득(또는 ΔNLL 문턱)</td>
+        <td class="name">남발의 원인 = 크기를 버리는 sign 타깃 + λ=0. ΔNLL 단위면 web 인플레는 소거되고 ddos의 ~2nat 이득은 보존 → 남발을 잡아도 ddos 구제가 안 죽음</td>
+        <td class="num">낭비 호출↓</td></tr>
+      <tr><td class="num">2</td><td class="name"><strong>verifier 예측력</strong></td>
+        <td class="name">특징(h_post)에 regime·서명 정보 보강 or sign 추정기</td>
+        <td class="name">inf: 자격 99%인데 구제 49행 — 예측↔실제 상관 ≤0.15, oracle 0.9615</td>
+        <td class="num">~+0.01</td></tr>
+      <tr><td class="num">3</td><td class="name"><strong>게이트 폴백</strong></td>
+        <td class="name">보정 제약 불충족 시 τ_pre=∞ 대신 "최소 안전 채택" 규칙</td>
+        <td class="name">셧다운 4/7 — delta가 0이 되는 run들</td>
+        <td class="num">안정화</td></tr>
+      <tr><td class="num">4</td><td class="name"><strong>C0 ddos 몫</strong></td>
+        <td class="name">층화 시 클래스별 C0 예산 보전 (one knob)</td>
+        <td class="name">ddos global 0.905→0.839 하락 — 층화가 ddos 슬롯 잠식</td>
+        <td class="num">~+0.01</td></tr>
+      <tr><td class="num">5</td><td class="name"><strong>뱅크 단순화</strong></td>
+        <td class="name">K 격자(1~4) + regime 최소 크기 규칙(112·405행짜리 expert 방지)</td>
+        <td class="name">K 요동 2↔5, 미세 regime의 anchor 지배(블록<1%) — Gate 1 기각 반영</td>
+        <td class="num">재현성↑</td></tr>
+      <tr><td class="num">6</td><td class="name">개입 행 확률 보정</td>
+        <td class="name">교체된 행의 posterior 재보정</td>
+        <td class="name">ECE 0.0127→0.0185 악화</td>
+        <td class="num">ECE↓</td></tr>
+      <tr><td class="num">7</td><td class="name">fp32 A/B 판정 (run B 진행 중)</td>
+        <td class="name">해시 비교</td>
+        <td class="name">향후 프로토콜 (1회 vs ×3)</td>
+        <td class="num">—</td></tr>
+    </tbody>
+  </table></div>
+  <p class="col" style="margin-top:10px">
+    산술 체크: 1·2·4가 겨냥대로 되면 ddos·inf에서 ~+0.02 → macro 0.755± — XGB full
+    기준선이 사정권. 순서는 1→3→4→2 (1이 2의 측정을 깨끗하게 만듦).
+  </p>
+  <p class="foot">
+    수치 출처: 동일 평가 4,023,114행. 기준 run <span class="kbd">exp29 ×3 (0902)</span> ·
+    <span class="kbd">exp23 (XGB 동일 run)</span> · 상세 <span class="kbd">lablog/report/0831.md·0902.md</span> ·
+    문헌 대조 <span class="kbd">docs/tabpfn_imbalance_papers.xlsx</span>.
+  </p>
+</section>
+
+</div>
+
+</body></html>
