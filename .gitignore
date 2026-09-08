@@ -11,6 +11,16 @@ tabpfn/saved_models/
 nohup.out
 tabpfn/results/**/*.png
 tabpfn/results_past/**/*.png
+# per-row posteriors/logits saved by exp35-37 (113 MB each at 4.02M rows); CSV/JSON summaries are tracked
+tabpfn/results/**/*.npy
 
 # local-only symlink to the shared data store; each box provides its own
 /data
+
+# vendored third-party PFN code (tabpfn/third_party/): source is tracked, weights/data/outputs are not
+*.cpkt
+*.cpkt.*
+tabpfn/third_party/BoostPFN/datasets/*.pickle
+tabpfn/third_party/BoostPFN/largeresults/
+tabpfn/third_party/BoostPFN/log.txt
+tabpfn/third_party/DistPFN/src/plots/img/

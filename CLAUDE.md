@@ -57,6 +57,13 @@ python tabpfn/nfv3_multiclass_test_v2.py --target-dataset cic2018_capped
 pip editable install pointing at `../tabpfn/src/tabpfn`, so `import tabpfn` resolves regardless
 of CWD — there is no local `tabpfn_src` copy in this folder.
 
+**External PFN baselines** live vendored under `tabpfn/third_party/` (BoostPFN with its v1 port,
+LoCalPFN, DistPFN; `UPSTREAM.txt` in each gives the upstream commit). Their 103 MB TabPFN-v1
+checkpoint is not tracked — run `bash tabpfn/third_party/fetch_checkpoints.sh` once. The adapter
+scripts `tabpfn/scripts/nfv3_v3_exp35_boostpfn.py` / `exp36_localpfn.py` import that code at runtime
+(`--boostpfn-root` / `--localpfn-root`); `exp37_distpfn.py` re-implements DistPFN's 5-line
+adjustment and imports nothing from the clone. Port details: `tabpfn/third_party/boostpfn_port/`.
+
 ## Data
 
 `data/` holds real copies (17 GB, gitignored) of the five pkls the current code needs:

@@ -97,7 +97,11 @@ import torch
 import xgboost as xgb
 from sklearn.metrics import precision_recall_fscore_support
 
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# 2026-09-04: the v3 scripts moved from tabpfn/ to tabpfn/scripts/ (commit da5ee2e), so the
+# repo root is now two levels up and the tabpfn/ directory (ckpt symlink, results/,
+# saved_models/, resume/) is one level up.  Path plumbing only; nothing else changed.
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+TABPFN_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 from exp_utils import load_pickle as _load_pickle_uncached  # noqa: E402
 from exp_utils import scenario_chronological_split, subset_indices, labels_for  # noqa: E402
@@ -467,8 +471,7 @@ def base_parser(description):
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--device", default="auto")
     p.add_argument("--model-path",
-                   default=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                        "tabpfn-v3-classifier-v3_20260417_multiclass.ckpt"))
+                   default=os.path.join(TABPFN_DIR, "tabpfn-v3-classifier-v3_20260417_multiclass.ckpt"))
     p.add_argument("--ignore-pretraining-limits", action="store_true",
                    help="Bypass the checkpoint's MAX_NUMBER_OF_SAMPLES=1,000,000 guard. "
                         "REQUIRED whenever the context exceeds 1M rows. Without it the "
@@ -517,14 +520,11 @@ def base_parser(description):
     p.add_argument("--xgb-colsample-bytree", type=float, default=0.8)
     p.add_argument("--xgb-min-child-weight", type=float, default=1.0)
     p.add_argument("--xgb-reg-lambda", type=float, default=1.0)
-    p.add_argument("--out-root", default=os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "results"))
-    p.add_argument("--models-dir", default=os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "saved_models"),
+    p.add_argument("--out-root", default=os.path.join(TABPFN_DIR, "results"))
+    p.add_argument("--models-dir", default=os.path.join(TABPFN_DIR, "saved_models"),
         help="Fitted models land here. Under fit_with_cache these are LARGE "
              "(~4 KB x rows x n_estimators); keep them off Drive.")
-    p.add_argument("--resume-dir", default=os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "resume"))
+    p.add_argument("--resume-dir", default=os.path.join(TABPFN_DIR, "resume"))
     p.add_argument("--force-refit", action="store_true")
     p.add_argument("--no-save-models", action="store_true",
                    help="Skip the final copy of the fitted models from --resume-dir into "

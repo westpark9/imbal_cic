@@ -1,0 +1,377 @@
+diff --git a/boost_tabpfn.py b/boost_tabpfn.py
+index 598d2e6..8e8b773 100644
+--- a/boost_tabpfn.py
++++ b/boost_tabpfn.py
+@@ -3,7 +3,10 @@ import numpy as np
+ import torch
+ import copy
+ from scripts import tabular_metrics
+-from sklearn.ensemble._gb_losses import LeastSquaresError, MultinomialDeviance
++try:
++    from sklearn.ensemble._gb_losses import LeastSquaresError, MultinomialDeviance
++except ImportError:  # scikit-learn >= 1.3 removed the private module; see gb_losses_compat.py
++    from gb_losses_compat import LeastSquaresError, MultinomialDeviance
+ def check_classnum(idx,y):
+     if len(np.unique(y[idx])) !=len(np.unique(y)) :
+         return False
+diff --git a/gradient_boost_tabpfn.py b/gradient_boost_tabpfn.py
+index d459a08..d377d87 100644
+--- a/gradient_boost_tabpfn.py
++++ b/gradient_boost_tabpfn.py
+@@ -7,7 +7,10 @@ import numpy as np
+ from scipy.optimize import minimize
+ from joblib import Parallel,delayed
+ from scripts import tabular_metrics
+-from sklearn.ensemble._gb_losses import LeastSquaresError,BinomialDeviance,ExponentialLoss,MultinomialDeviance
++try:
++    from sklearn.ensemble._gb_losses import LeastSquaresError,BinomialDeviance,ExponentialLoss,MultinomialDeviance
++except ImportError:  # scikit-learn >= 1.3 removed the private module; see gb_losses_compat.py
++    from gb_losses_compat import LeastSquaresError,BinomialDeviance,ExponentialLoss,MultinomialDeviance
+ from scipy.special import  logsumexp
+ 
+ # def loss_function(y, y_pred):
+diff --git a/priors/differentiable_prior.py b/priors/differentiable_prior.py
+index bb1780c..dda207b 100644
+--- a/priors/differentiable_prior.py
++++ b/priors/differentiable_prior.py
+@@ -3,7 +3,7 @@ from torch import nn
+ import math
+ 
+ from .utils import get_batch_to_dataloader
+-from tabpfn.utils import default_device, normalize_by_used_features_f
++from tabpfn_v1.utils import default_device, normalize_by_used_features_f
+ from .utils import order_by_y
+ 
+ from .utils import trunc_norm_sampler_f, beta_sampler_f, gamma_sampler_f, uniform_sampler_f, zipf_sampler_f, scaled_beta_sampler_f, uniform_int_sampler_f
+diff --git a/priors/fast_gp.py b/priors/fast_gp.py
+index e341939..1d48dec 100644
+--- a/priors/fast_gp.py
++++ b/priors/fast_gp.py
+@@ -5,7 +5,7 @@ from torch import nn
+ import gpytorch
+ 
+ from .utils import get_batch_to_dataloader
+-from tabpfn.utils import default_device
++from tabpfn_v1.utils import default_device
+ 
+ 
+ # We will use the simplest form of GP model, exact inference
+diff --git a/priors/flexible_categorical.py b/priors/flexible_categorical.py
+index f99cab8..1dc3555 100644
+--- a/priors/flexible_categorical.py
++++ b/priors/flexible_categorical.py
+@@ -5,7 +5,7 @@ import torch
+ from torch import nn
+ 
+ from .utils import get_batch_to_dataloader
+-from tabpfn.utils import normalize_data, nan_handling_missing_for_unknown_reason_value, nan_handling_missing_for_no_reason_value, nan_handling_missing_for_a_reason_value, to_ranking_low_mem, remove_outliers, normalize_by_used_features_f
++from tabpfn_v1.utils import normalize_data, nan_handling_missing_for_unknown_reason_value, nan_handling_missing_for_no_reason_value, nan_handling_missing_for_a_reason_value, to_ranking_low_mem, remove_outliers, normalize_by_used_features_f
+ from .utils import randomize_classes, CategoricalActivation
+ from .utils import uniform_int_sampler_f
+ 
+diff --git a/priors/mlp.py b/priors/mlp.py
+index 920a19a..6c905d0 100644
+--- a/priors/mlp.py
++++ b/priors/mlp.py
+@@ -5,7 +5,7 @@ import torch
+ from torch import nn
+ import numpy as np
+ 
+-from tabpfn.utils import default_device
++from tabpfn_v1.utils import default_device
+ from .utils import get_batch_to_dataloader
+ 
+ class GaussianNoise(nn.Module):
+diff --git a/priors/prior_bag.py b/priors/prior_bag.py
+index 0688b53..133abda 100644
+--- a/priors/prior_bag.py
++++ b/priors/prior_bag.py
+@@ -1,7 +1,7 @@
+ import torch
+ 
+ from .utils import get_batch_to_dataloader
+-from tabpfn.utils import default_device
++from tabpfn_v1.utils import default_device
+ 
+ def get_batch(batch_size, seq_len, num_features, device=default_device
+               , hyperparameters=None, batch_size_per_gp_sample=None, **kwargs):
+diff --git a/priors/utils.py b/priors/utils.py
+index 8e1495b..25d0b78 100644
+--- a/priors/utils.py
++++ b/priors/utils.py
+@@ -2,7 +2,7 @@ import random
+ 
+ import torch
+ 
+-from tabpfn.utils import set_locals_in_self
++from tabpfn_v1.utils import set_locals_in_self
+ from .prior import PriorDataLoader
+ from torch import nn
+ import numpy as np
+diff --git a/scripts/differentiable_pfn_evaluation.py b/scripts/differentiable_pfn_evaluation.py
+index 073588c..2180b08 100644
+--- a/scripts/differentiable_pfn_evaluation.py
++++ b/scripts/differentiable_pfn_evaluation.py
+@@ -3,13 +3,13 @@ import torch
+ import numpy as np
+ import time
+ import pickle
+-from tabpfn.scripts import  tabular_metrics
+-from tabpfn.scripts.tabular_metrics import calculate_score_per_method
+-from tabpfn.scripts.tabular_evaluation import evaluate
++from tabpfn_v1.scripts import  tabular_metrics
++from tabpfn_v1.scripts.tabular_metrics import calculate_score_per_method
++from tabpfn_v1.scripts.tabular_evaluation import evaluate
+ from tqdm import tqdm
+ import random
+-from tabpfn.scripts.transformer_prediction_interface import get_params_from_config
+-from tabpfn.scripts.transformer_prediction_interface import load_model_workflow
++from tabpfn_v1.scripts.transformer_prediction_interface import get_params_from_config
++from tabpfn_v1.scripts.transformer_prediction_interface import load_model_workflow
+ 
+ """
+ ===============================
+diff --git a/scripts/model_builder.py b/scripts/model_builder.py
+index cd11d20..570e429 100644
+--- a/scripts/model_builder.py
++++ b/scripts/model_builder.py
+@@ -1,8 +1,8 @@
+ from functools import partial
+-import tabpfn.encoders as encoders
++import tabpfn_v1.encoders as encoders
+ 
+-from tabpfn.transformer import TransformerModel
+-from tabpfn.utils import get_uniform_single_eval_pos_sampler
++from tabpfn_v1.transformer import TransformerModel
++from tabpfn_v1.utils import get_uniform_single_eval_pos_sampler
+ import torch
+ import math
+ 
+@@ -143,7 +143,7 @@ def get_default_spec(test_datasets, valid_datasets):
+     return bptt, eval_positions, max_features, max_splits
+ 
+ def get_mlp_prior_hyperparameters(config):
+-    from tabpfn.priors.utils import gamma_sampler_f
++    from tabpfn_v1.priors.utils import gamma_sampler_f
+     config = {hp: (list(config[hp].values())[0]) if type(config[hp]) is dict else config[hp] for hp in config}
+ 
+     if 'random_feature_rotation' not in config:
+@@ -173,7 +173,7 @@ def get_gp_prior_hyperparameters(config):
+ 
+ 
+ def get_meta_gp_prior_hyperparameters(config):
+-    from tabpfn.priors.utils import trunc_norm_sampler_f
++    from tabpfn_v1.priors.utils import trunc_norm_sampler_f
+     config = {hp: (list(config[hp].values())[0]) if type(config[hp]) is dict else config[hp] for hp in config}
+ 
+     if "outputscale_mean" in config:
+@@ -189,8 +189,8 @@ def get_meta_gp_prior_hyperparameters(config):
+ 
+ 
+ def get_model(config, device, should_train=True, verbose=False, state_dict=None, epoch_callback=None):
+-    import tabpfn.priors as priors
+-    from tabpfn.train import train, Losses
++    import tabpfn_v1.priors as priors
++    from tabpfn_v1.train import train, Losses
+     extra_kwargs = {}
+     verbose_train, verbose_prior = verbose >= 1, verbose >= 2
+     config['verbose'] = verbose_prior
+diff --git a/scripts/model_configs.py b/scripts/model_configs.py
+index dd49139..72e8520 100644
+--- a/scripts/model_configs.py
++++ b/scripts/model_configs.py
+@@ -1,9 +1,9 @@
+ from copy import deepcopy
+-from tabpfn.priors.utils import uniform_int_sampler_f
+-from tabpfn.priors.differentiable_prior import DifferentiableHyperparameter
++from tabpfn_v1.priors.utils import uniform_int_sampler_f
++from tabpfn_v1.priors.differentiable_prior import DifferentiableHyperparameter
+ from ConfigSpace import hyperparameters as CSH
+ import torch
+-from tabpfn.priors.differentiable_prior import replace_differentiable_distributions
++from tabpfn_v1.priors.differentiable_prior import replace_differentiable_distributions
+ 
+ import ConfigSpace as CS
+ 
+diff --git a/scripts/tabular_baselines.py b/scripts/tabular_baselines.py
+index 40ed6ee..07def70 100644
+--- a/scripts/tabular_baselines.py
++++ b/scripts/tabular_baselines.py
+@@ -25,14 +25,15 @@ from sklearn import neighbors
+ from sklearn.gaussian_process import GaussianProcessClassifier
+ from sklearn.gaussian_process.kernels import RBF
+ import numpy as np
+-np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning) 
++import warnings as _warnings  # numpy>=1.24 removed np.warnings; numpy 2 moved VisibleDeprecationWarning
++_warnings.filterwarnings('ignore', category=getattr(getattr(np, 'exceptions', np), 'VisibleDeprecationWarning', DeprecationWarning))
+ 
+ import torch
+ import itertools
+-from tabpfn.scripts import tabular_metrics
++from tabpfn_v1.scripts import tabular_metrics
+ import pandas as pd
+ from tqdm import tqdm
+-from tabpfn.utils import remove_outliers
++from tabpfn_v1.utils import remove_outliers
+ 
+ from sklearn.linear_model import LogisticRegression, Ridge
+ from sklearn.model_selection import cross_val_score
+@@ -240,7 +241,7 @@ import torch
+ import random
+ from tqdm import tqdm
+ def transformer_metric(x, y, test_x, test_y, cat_features, metric_used, max_time=300, device='cuda:0', N_ensemble_configurations=1, classifier=None):
+-    from tabpfn.scripts.transformer_prediction_interface import TabPFNClassifier
++    from tabpfn_v1.scripts.transformer_prediction_interface import TabPFNClassifier
+ 
+     if classifier is None:
+       classifier = TabPFNClassifier(device=device, N_ensemble_configurations=N_ensemble_configurations)
+diff --git a/scripts/tabular_evaluation.py b/scripts/tabular_evaluation.py
+index ae20ea9..33fa735 100644
+--- a/scripts/tabular_evaluation.py
++++ b/scripts/tabular_evaluation.py
+@@ -11,9 +11,9 @@ import numpy as np
+ from torch import nn
+ 
+ from torch.utils.checkpoint import checkpoint
+-from tabpfn.utils import normalize_data, torch_nanmean, to_ranking_low_mem, remove_outliers
+-from tabpfn.scripts.tabular_baselines import get_scoring_string
+-from tabpfn.scripts import tabular_metrics
++from tabpfn_v1.utils import normalize_data, torch_nanmean, to_ranking_low_mem, remove_outliers
++from tabpfn_v1.scripts.tabular_baselines import get_scoring_string
++from tabpfn_v1.scripts import tabular_metrics
+ from .transformer_prediction_interface import *
+ from .baseline_prediction_interface import *
+ """
+diff --git a/scripts/transformer_prediction_interface.py b/scripts/transformer_prediction_interface.py
+index a7af6f9..868cce4 100644
+--- a/scripts/transformer_prediction_interface.py
++++ b/scripts/transformer_prediction_interface.py
+@@ -4,8 +4,8 @@ import pathlib
+ 
+ from torch.utils.checkpoint import checkpoint
+ 
+-from tabpfn.utils import normalize_data, to_ranking_low_mem, remove_outliers
+-from tabpfn.utils import NOP, normalize_by_used_features_f
++from tabpfn_v1.utils import normalize_data, to_ranking_low_mem, remove_outliers
++from tabpfn_v1.utils import NOP, normalize_by_used_features_f
+ 
+ from sklearn.preprocessing import PowerTransformer, QuantileTransformer, RobustScaler
+ 
+@@ -17,7 +17,7 @@ from sklearn.utils.multiclass import check_classification_targets
+ from sklearn.utils import column_or_1d
+ from sklearn.preprocessing import LabelEncoder
+ from pathlib import Path
+-from tabpfn.scripts.model_builder import load_model, load_model_only_inference
++from tabpfn_v1.scripts.model_builder import load_model, load_model_only_inference
+ import os
+ import pickle
+ import io
+@@ -65,13 +65,16 @@ def load_model_workflow(i, e, add_name, base_path, device='cpu', eval_addition='
+     def check_file(e):
+         model_file, model_path, results_file = get_file(e)
+         if not Path(model_path).is_file():  # or Path(results_file).is_file():
+-            print('We have to download the TabPFN, as there is no checkpoint at ', model_path)
+-            print('It has about 100MB, so this might take a moment.')
+-            import requests
+-            url = 'https://github.com/automl/TabPFN/raw/main/tabpfn/models_diff/prior_diff_real_checkpoint_n_0_epoch_42.cpkt'
+-            r = requests.get(url, allow_redirects=True)
+-            os.makedirs(os.path.dirname(model_path), exist_ok=True)
+-            open(model_path, 'wb').write(r.content)
++            # Original code downloaded epoch_42 from a now-dead automl/TabPFN URL and
++            # saved it under whatever epoch was probed first (100).  The upstream URL
++            # returns a 404 page today, which would be written as a bogus checkpoint,
++            # so refuse instead.  Put the v1.0.0 checkpoint (103,350,223 bytes, from
++            # github.com/PriorLabs/TabPFN/raw/v1.0.0/tabpfn/models_diff/) at
++            # models_diff/prior_diff_real_checkpoint_n_0_epoch_100.cpkt.
++            raise FileNotFoundError(
++                f'TabPFN v1 checkpoint not found at {model_path}. Copy '
++                'prior_diff_real_checkpoint_n_0_epoch_42.cpkt (TabPFN v1.0.0) to '
++                'models_diff/prior_diff_real_checkpoint_n_0_epoch_100.cpkt.')
+         return model_file, model_path, results_file
+ 
+     model_file = None
+@@ -219,7 +222,7 @@ class TabPFNClassifier(BaseEstimator, ClassifierMixin):
+         """
+         if self.no_grad:
+             # Check that X and y have correct shape
+-            X, y = check_X_y(X, y, force_all_finite=False)
++            X, y = check_X_y(X, y, ensure_all_finite=False)  # sklearn>=1.6 renamed force_all_finite
+         # Store the classes seen during fit
+         y = self._validate_targets(y)
+         self.label_encoder = LabelEncoder()
+@@ -254,7 +257,7 @@ class TabPFNClassifier(BaseEstimator, ClassifierMixin):
+ 
+         # Input validation
+         if self.no_grad:
+-            X = check_array(X, force_all_finite=False)
++            X = check_array(X, ensure_all_finite=False)  # sklearn>=1.6 renamed force_all_finite
+             X_full = np.concatenate([self.X_, X], axis=0)
+             X_full = torch.tensor(X_full, device=self.device).float().unsqueeze(1)
+         else:
+@@ -524,11 +527,22 @@ def transformer_predict(model, eval_xs, eval_ys, eval_position,
+                                     message="None of the inputs have requires_grad=True. Gradients will be None")
+             warnings.filterwarnings("ignore",
+                                     message="torch.cuda.amp.autocast only affects CUDA ops, but CUDA is not available.  Disabling.")
+-            if device == 'cpu':
+-                output_batch = checkpoint(predict, batch_input, batch_label, style_, softmax_temperature_, True)
++            # torch>=2.4 requires an explicit use_reentrant for checkpoint(); in the
++            # no_grad inference path checkpointing is a no-op, so call predict directly.
++            # torch.cuda.amp.autocast is deprecated -> torch.autocast('cuda').
++            if no_grad:
++                if device == 'cpu':
++                    output_batch = predict(batch_input, batch_label, style_, softmax_temperature_, True)
++                else:
++                    with torch.autocast('cuda', enabled=fp16_inference):
++                        output_batch = predict(batch_input, batch_label, style_, softmax_temperature_, True)
++            elif device == 'cpu':
++                output_batch = checkpoint(predict, batch_input, batch_label, style_, softmax_temperature_, True,
++                                          use_reentrant=False)
+             else:
+-                with torch.cuda.amp.autocast(enabled=fp16_inference):
+-                    output_batch = checkpoint(predict, batch_input, batch_label, style_, softmax_temperature_, True)
++                with torch.autocast('cuda', enabled=fp16_inference):
++                    output_batch = checkpoint(predict, batch_input, batch_label, style_, softmax_temperature_, True,
++                                              use_reentrant=False)
+         outputs += [output_batch]
+     #print('MODEL INFERENCE TIME ('+str(batch_input.device)+' vs '+device+', '+str(fp16_inference)+')', str(time.time()-start))
+ 
+diff --git a/tests/test_deterministic_and_model_caching.py b/tests/test_deterministic_and_model_caching.py
+index 4f95785..857d81e 100644
+--- a/tests/test_deterministic_and_model_caching.py
++++ b/tests/test_deterministic_and_model_caching.py
+@@ -1,7 +1,7 @@
+ import unittest
+ 
+-from tabpfn.datasets import load_openml_list, open_cc_dids
+-from tabpfn.scripts.transformer_prediction_interface import TabPFNClassifier
++from tabpfn_v1.datasets import load_openml_list, open_cc_dids
++from tabpfn_v1.scripts.transformer_prediction_interface import TabPFNClassifier
+ 
+ 
+ class TestLoadModuleOnlyInference(unittest.TestCase):
+diff --git a/tests/test_load_module_only_inference.py b/tests/test_load_module_only_inference.py
+index 973000a..95bd534 100644
+--- a/tests/test_load_module_only_inference.py
++++ b/tests/test_load_module_only_inference.py
+@@ -1,7 +1,7 @@
+ import unittest
+ 
+-from tabpfn.datasets import load_openml_list, open_cc_dids
+-from tabpfn.scripts.transformer_prediction_interface import TabPFNClassifier
++from tabpfn_v1.datasets import load_openml_list, open_cc_dids
++from tabpfn_v1.scripts.transformer_prediction_interface import TabPFNClassifier
+ 
+ 
+ class TestLoadModuleOnlyInference(unittest.TestCase):
+diff --git a/tests/test_standardization.py b/tests/test_standardization.py
+index 22744fd..60e38c6 100644
+--- a/tests/test_standardization.py
++++ b/tests/test_standardization.py
+@@ -1,5 +1,5 @@
+-from tabpfn.utils import remove_outliers, torch_nanmean, torch_nanstd
+-from tabpfn.datasets import load_openml_list, open_cc_dids
++from tabpfn_v1.utils import remove_outliers, torch_nanmean, torch_nanstd
++from tabpfn_v1.datasets import load_openml_list, open_cc_dids
+ 
+ import torch
+ import unittest
