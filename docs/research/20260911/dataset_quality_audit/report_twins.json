@@ -1,0 +1,3433 @@
+{
+ "cse_cic_ids2018": {
+  "feature_names": [
+   "PROTOCOL",
+   "L7_PROTO",
+   "IN_BYTES",
+   "IN_PKTS",
+   "OUT_BYTES",
+   "OUT_PKTS",
+   "TCP_FLAGS",
+   "CLIENT_TCP_FLAGS",
+   "SERVER_TCP_FLAGS",
+   "FLOW_DURATION_MILLISECONDS",
+   "DURATION_IN",
+   "DURATION_OUT",
+   "MIN_TTL",
+   "MAX_TTL",
+   "LONGEST_FLOW_PKT",
+   "SHORTEST_FLOW_PKT",
+   "MIN_IP_PKT_LEN",
+   "MAX_IP_PKT_LEN",
+   "SRC_TO_DST_SECOND_BYTES",
+   "DST_TO_SRC_SECOND_BYTES",
+   "RETRANSMITTED_IN_BYTES",
+   "RETRANSMITTED_IN_PKTS",
+   "RETRANSMITTED_OUT_BYTES",
+   "RETRANSMITTED_OUT_PKTS",
+   "SRC_TO_DST_AVG_THROUGHPUT",
+   "DST_TO_SRC_AVG_THROUGHPUT",
+   "NUM_PKTS_UP_TO_128_BYTES",
+   "NUM_PKTS_128_TO_256_BYTES",
+   "NUM_PKTS_256_TO_512_BYTES",
+   "NUM_PKTS_512_TO_1024_BYTES",
+   "NUM_PKTS_1024_TO_1514_BYTES",
+   "TCP_WIN_MAX_IN",
+   "TCP_WIN_MAX_OUT",
+   "ICMP_TYPE",
+   "ICMP_IPV4_TYPE",
+   "DNS_QUERY_TYPE",
+   "DNS_TTL_ANSWER",
+   "FTP_COMMAND_RET_CODE",
+   "SRC_TO_DST_IAT_MIN",
+   "SRC_TO_DST_IAT_MAX",
+   "SRC_TO_DST_IAT_AVG",
+   "SRC_TO_DST_IAT_STDDEV",
+   "DST_TO_SRC_IAT_MIN",
+   "DST_TO_SRC_IAT_MAX",
+   "DST_TO_SRC_IAT_AVG",
+   "DST_TO_SRC_IAT_STDDEV"
+  ],
+  "top_conflicts": [
+   {
+    "hash": "1490556379652202945",
+    "total": 492330,
+    "minority": 105550,
+    "labels": {
+     "brute_force": 386780,
+     "dos": 105550
+    },
+    "scenarios": {
+     "brute_force/ftp_bruteforce": 386720,
+     "brute_force/ssh_bruteforce": 60,
+     "dos/dos_attacks_slowhttptest": 105550
+    },
+    "time_span_ms": {
+     "brute_force": [
+      1518618806718,
+      1518631281502
+     ],
+     "dos": [
+      1518790334134,
+      1518793513888
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 1.0,
+     "IN_BYTES": 60.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 60.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 60.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 480000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 320000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 26883.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "13402726291687468737",
+    "total": 43487,
+    "minority": 5653,
+    "labels": {
+     "benign": 5653,
+     "infiltration": 37834
+    },
+    "scenarios": {
+     "benign/benign": 5653,
+     "infiltration/infilteration": 37834
+    },
+    "time_span_ms": {
+     "benign": [
+      1519132205500,
+      1519843070011
+     ],
+     "infiltration": [
+      1519829404756,
+      1519932466506
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 44.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 44.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 44.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 352000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 320000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 1024.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "15863770471732411583",
+    "total": 81545,
+    "minority": 1243,
+    "labels": {
+     "benign": 80302,
+     "infiltration": 1243
+    },
+    "scenarios": {
+     "benign/benign": 80302,
+     "infiltration/infilteration": 1243
+    },
+    "time_span_ms": {
+     "benign": [
+      1518611294389,
+      1520021063956
+     ],
+     "infiltration": [
+      1519820540200,
+      1519939972816
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 5.0,
+     "IN_BYTES": 64.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 80.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 80.0,
+     "SHORTEST_FLOW_PKT": 64.0,
+     "MIN_IP_PKT_LEN": 64.0,
+     "MAX_IP_PKT_LEN": 80.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 512000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 640000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 1.0,
+     "DNS_TTL_ANSWER": 60.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "4049393923991598443",
+    "total": 9261,
+    "minority": 936,
+    "labels": {
+     "benign": 936,
+     "ddos": 8325
+    },
+    "scenarios": {
+     "benign/benign": 936,
+     "ddos/ddos_attacks_loic_http": 8325
+    },
+    "time_span_ms": {
+     "benign": [
+      1518611288604,
+      1520020877912
+     ],
+     "ddos": [
+      1519136129204,
+      1519146907558
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 7.0,
+     "IN_BYTES": 40.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 20.0,
+     "CLIENT_TCP_FLAGS": 20.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 40.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 40.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 320000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "7179683446869158627",
+    "total": 51706,
+    "minority": 899,
+    "labels": {
+     "benign": 50807,
+     "infiltration": 899
+    },
+    "scenarios": {
+     "benign/benign": 50807,
+     "infiltration/infilteration": 899
+    },
+    "time_span_ms": {
+     "benign": [
+      1518611301693,
+      1520021057271
+     ],
+     "infiltration": [
+      1519820545735,
+      1519938637578
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 5.0,
+     "IN_BYTES": 79.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 95.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 95.0,
+     "SHORTEST_FLOW_PKT": 79.0,
+     "MIN_IP_PKT_LEN": 79.0,
+     "MAX_IP_PKT_LEN": 95.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 632000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 760000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 1.0,
+     "DNS_TTL_ANSWER": 60.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "2834002129251682997",
+    "total": 41067,
+    "minority": 800,
+    "labels": {
+     "benign": 40267,
+     "infiltration": 800
+    },
+    "scenarios": {
+     "benign/benign": 40267,
+     "infiltration/infilteration": 800
+    },
+    "time_span_ms": {
+     "benign": [
+      1518611302574,
+      1520021056386
+     ],
+     "infiltration": [
+      1519820534952,
+      1519939746326
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 5.0,
+     "IN_BYTES": 74.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 90.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 90.0,
+     "SHORTEST_FLOW_PKT": 74.0,
+     "MIN_IP_PKT_LEN": 74.0,
+     "MAX_IP_PKT_LEN": 90.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 592000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 720000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 1.0,
+     "DNS_TTL_ANSWER": 60.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "10835073610661719397",
+    "total": 45224,
+    "minority": 780,
+    "labels": {
+     "benign": 44444,
+     "infiltration": 780
+    },
+    "scenarios": {
+     "benign/benign": 44444,
+     "infiltration/infilteration": 780
+    },
+    "time_span_ms": {
+     "benign": [
+      1518611297633,
+      1520021057270
+     ],
+     "infiltration": [
+      1519820545668,
+      1519938844095
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 5.0,
+     "IN_BYTES": 70.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 130.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 130.0,
+     "SHORTEST_FLOW_PKT": 70.0,
+     "MIN_IP_PKT_LEN": 70.0,
+     "MAX_IP_PKT_LEN": 130.0,
+     "SRC_TO_DST_SECOND_BYTES": 130.0,
+     "DST_TO_SRC_SECOND_BYTES": 70.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 280000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 520000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 1.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 1.0,
+     "DNS_TTL_ANSWER": 60.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "10890534269996645914",
+    "total": 2849,
+    "minority": 778,
+    "labels": {
+     "benign": 2071,
+     "web_attacks": 778
+    },
+    "scenarios": {
+     "benign/benign": 2071,
+     "web_attacks/brute_force_web": 186,
+     "web_attacks/brute_force_xss": 315,
+     "web_attacks/sql_injection": 277
+    },
+    "time_span_ms": {
+     "benign": [
+      1519216388060,
+      1520021021888
+     ],
+     "web_attacks": [
+      1519302464740,
+      1519334903081
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 79.0,
+     "IN_BYTES": 3168.0,
+     "IN_PKTS": 6.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 89479.0,
+     "DURATION_IN": 89479.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 62.0,
+     "MAX_TTL": 62.0,
+     "LONGEST_FLOW_PKT": 528.0,
+     "SHORTEST_FLOW_PKT": 528.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 528.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 283.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 0.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 6.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 4000.0,
+     "SRC_TO_DST_IAT_MAX": 41990.0,
+     "SRC_TO_DST_IAT_AVG": 17895.0,
+     "SRC_TO_DST_IAT_STDDEV": 13725.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "8852865894797993785",
+    "total": 45078,
+    "minority": 721,
+    "labels": {
+     "benign": 44357,
+     "infiltration": 721
+    },
+    "scenarios": {
+     "benign/benign": 44357,
+     "infiltration/infilteration": 721
+    },
+    "time_span_ms": {
+     "benign": [
+      1518611301611,
+      1520021056391
+     ],
+     "infiltration": [
+      1519821045116,
+      1519938844269
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 5.0,
+     "IN_BYTES": 60.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 156.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 156.0,
+     "SHORTEST_FLOW_PKT": 60.0,
+     "MIN_IP_PKT_LEN": 60.0,
+     "MAX_IP_PKT_LEN": 156.0,
+     "SRC_TO_DST_SECOND_BYTES": 1.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 480000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 1248000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 1.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 1.0,
+     "DNS_TTL_ANSWER": 60.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "13928321246998462527",
+    "total": 12690,
+    "minority": 658,
+    "labels": {
+     "benign": 12032,
+     "infiltration": 658
+    },
+    "scenarios": {
+     "benign/benign": 12032,
+     "infiltration/infilteration": 658
+    },
+    "time_span_ms": {
+     "benign": [
+      1518611339920,
+      1520020228987
+     ],
+     "infiltration": [
+      1519820569371,
+      1519938085417
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 9.0,
+     "IN_BYTES": 76.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 76.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 18.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 76.0,
+     "SHORTEST_FLOW_PKT": 76.0,
+     "MIN_IP_PKT_LEN": 76.0,
+     "MAX_IP_PKT_LEN": 76.0,
+     "SRC_TO_DST_SECOND_BYTES": 4.0,
+     "DST_TO_SRC_SECOND_BYTES": 4.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 32000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 32000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   }
+  ],
+  "decomposition": {
+   "benign": {
+    "rows": 17514626,
+    "clean": 12798328,
+    "twin_benign": 0,
+    "twin_other": 4716298
+   },
+   "bot": {
+    "rows": 207703,
+    "clean": 207703,
+    "twin_benign": 0,
+    "twin_other": 0
+   },
+   "brute_force": {
+    "rows": 575194,
+    "clean": 188414,
+    "twin_benign": 0,
+    "twin_other": 386780
+   },
+   "ddos": {
+    "rows": 1324350,
+    "clean": 1316025,
+    "twin_benign": 8325,
+    "twin_other": 0
+   },
+   "dos": {
+    "rows": 302966,
+    "clean": 197415,
+    "twin_benign": 1,
+    "twin_other": 105550
+   },
+   "infiltration": {
+    "rows": 188152,
+    "clean": 46761,
+    "twin_benign": 141386,
+    "twin_other": 5
+   },
+   "web_attacks": {
+    "rows": 2538,
+    "clean": 771,
+    "twin_benign": 1764,
+    "twin_other": 3
+   }
+  },
+  "mixed_groups": 20609,
+  "unavoidable_error_rows": 210728,
+  "rows": 20115529
+ },
+ "ton_iot": {
+  "feature_names": [
+   "PROTOCOL",
+   "L7_PROTO",
+   "IN_BYTES",
+   "IN_PKTS",
+   "OUT_BYTES",
+   "OUT_PKTS",
+   "TCP_FLAGS",
+   "CLIENT_TCP_FLAGS",
+   "SERVER_TCP_FLAGS",
+   "FLOW_DURATION_MILLISECONDS",
+   "DURATION_IN",
+   "DURATION_OUT",
+   "MIN_TTL",
+   "MAX_TTL",
+   "LONGEST_FLOW_PKT",
+   "SHORTEST_FLOW_PKT",
+   "MIN_IP_PKT_LEN",
+   "MAX_IP_PKT_LEN",
+   "SRC_TO_DST_SECOND_BYTES",
+   "DST_TO_SRC_SECOND_BYTES",
+   "RETRANSMITTED_IN_BYTES",
+   "RETRANSMITTED_IN_PKTS",
+   "RETRANSMITTED_OUT_BYTES",
+   "RETRANSMITTED_OUT_PKTS",
+   "SRC_TO_DST_AVG_THROUGHPUT",
+   "DST_TO_SRC_AVG_THROUGHPUT",
+   "NUM_PKTS_UP_TO_128_BYTES",
+   "NUM_PKTS_128_TO_256_BYTES",
+   "NUM_PKTS_256_TO_512_BYTES",
+   "NUM_PKTS_512_TO_1024_BYTES",
+   "NUM_PKTS_1024_TO_1514_BYTES",
+   "TCP_WIN_MAX_IN",
+   "TCP_WIN_MAX_OUT",
+   "ICMP_TYPE",
+   "ICMP_IPV4_TYPE",
+   "DNS_QUERY_TYPE",
+   "DNS_TTL_ANSWER",
+   "FTP_COMMAND_RET_CODE",
+   "SRC_TO_DST_IAT_MIN",
+   "SRC_TO_DST_IAT_MAX",
+   "SRC_TO_DST_IAT_AVG",
+   "SRC_TO_DST_IAT_STDDEV",
+   "DST_TO_SRC_IAT_MIN",
+   "DST_TO_SRC_IAT_MAX",
+   "DST_TO_SRC_IAT_AVG",
+   "DST_TO_SRC_IAT_STDDEV"
+  ],
+  "top_conflicts": [
+   {
+    "hash": "10213263762454574007",
+    "total": 1959622,
+    "minority": 367694,
+    "labels": {
+     "benign": 1591928,
+     "scanning": 367694
+    },
+    "scenarios": {
+     "benign/benign": 1591928,
+     "scanning/scanning": 367694
+    },
+    "time_span_ms": {
+     "benign": [
+      1556028833185,
+      1556089102627
+     ],
+     "scanning": [
+      1556028590855,
+      1556088990218
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 48.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 2.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 48.0,
+     "SHORTEST_FLOW_PKT": 48.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 48.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 384000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 4096.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "1296922339046244480",
+    "total": 450940,
+    "minority": 135861,
+    "labels": {
+     "benign": 315079,
+     "scanning": 135861
+    },
+    "scenarios": {
+     "benign/benign": 315079,
+     "scanning/scanning": 135861
+    },
+    "time_span_ms": {
+     "benign": [
+      1556035699251,
+      1556089108734
+     ],
+     "scanning": [
+      1556028689340,
+      1556088835838
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 48.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 48.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 48.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 384000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 320000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 4096.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "18164688247102993274",
+    "total": 3604850,
+    "minority": 130577,
+    "labels": {
+     "benign": 3474273,
+     "scanning": 130577
+    },
+    "scenarios": {
+     "benign/benign": 3474273,
+     "scanning/scanning": 130577
+    },
+    "time_span_ms": {
+     "benign": [
+      1556028590624,
+      1556086999143
+     ],
+     "scanning": [
+      1556028594348,
+      1556086983953
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 44.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 2.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 44.0,
+     "SHORTEST_FLOW_PKT": 44.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 44.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 352000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 1024.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "4472331875692801573",
+    "total": 291892,
+    "minority": 102972,
+    "labels": {
+     "benign": 102972,
+     "scanning": 188920
+    },
+    "scenarios": {
+     "benign/benign": 102972,
+     "scanning/scanning": 188920
+    },
+    "time_span_ms": {
+     "benign": [
+      1556029224034,
+      1556470144310
+     ],
+     "scanning": [
+      1556028765515,
+      1556076733552
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 7.0,
+     "IN_BYTES": 40.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 16.0,
+     "CLIENT_TCP_FLAGS": 16.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 40.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 40.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 320000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 1024.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "2835068037189639520",
+    "total": 441063,
+    "minority": 48351,
+    "labels": {
+     "benign": 392712,
+     "ransomware": 1,
+     "scanning": 48350
+    },
+    "scenarios": {
+     "benign/benign": 392712,
+     "ransomware/ransomware": 1,
+     "scanning/scanning": 48350
+    },
+    "time_span_ms": {
+     "benign": [
+      1556028596720,
+      1556546761837
+     ],
+     "ransomware": [
+      1556427828751,
+      1556427828751
+     ],
+     "scanning": [
+      1556028591177,
+      1556088763849
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 40.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 20.0,
+     "CLIENT_TCP_FLAGS": 20.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 40.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 40.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 320000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "16656237567393786952",
+    "total": 306172,
+    "minority": 40544,
+    "labels": {
+     "benign": 40544,
+     "scanning": 265628
+    },
+    "scenarios": {
+     "benign/benign": 40544,
+     "scanning/scanning": 265628
+    },
+    "time_span_ms": {
+     "benign": [
+      1556028996929,
+      1556470144310
+     ],
+     "scanning": [
+      1556028594455,
+      1556086989558
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 91.0,
+     "IN_BYTES": 44.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 2.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 44.0,
+     "SHORTEST_FLOW_PKT": 44.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 44.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 352000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 1024.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "12288504211789141802",
+    "total": 76936,
+    "minority": 22670,
+    "labels": {
+     "benign": 22670,
+     "password": 54266
+    },
+    "scenarios": {
+     "benign/benign": 22670,
+     "password/password": 54266
+    },
+    "time_span_ms": {
+     "benign": [
+      1556295451749,
+      1556318889102
+     ],
+     "password": [
+      1556286404073,
+      1556336864600
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 1.0,
+     "IN_BYTES": 60.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 60.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 60.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 480000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 320000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 29200.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "6695307849821620014",
+    "total": 105262,
+    "minority": 15948,
+    "labels": {
+     "benign": 89314,
+     "ddos": 15948
+    },
+    "scenarios": {
+     "benign/benign": 89314,
+     "ddos/ddos": 15948
+    },
+    "time_span_ms": {
+     "benign": [
+      1556083524420,
+      1556250636163
+     ],
+     "ddos": [
+      1556203758749,
+      1556248211845
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 5.0,
+     "IN_BYTES": 67.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 67.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 2.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 67.0,
+     "SHORTEST_FLOW_PKT": 67.0,
+     "MIN_IP_PKT_LEN": 67.0,
+     "MAX_IP_PKT_LEN": 67.0,
+     "SRC_TO_DST_SECOND_BYTES": 33.0,
+     "DST_TO_SRC_SECOND_BYTES": 33.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 178666.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 178666.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 1.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "10094531097311875302",
+    "total": 99603,
+    "minority": 15304,
+    "labels": {
+     "benign": 84299,
+     "ddos": 15304
+    },
+    "scenarios": {
+     "benign/benign": 84299,
+     "ddos/ddos": 15304
+    },
+    "time_span_ms": {
+     "benign": [
+      1556083882731,
+      1556543727834
+     ],
+     "ddos": [
+      1556203757753,
+      1556248212006
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 5.0,
+     "IN_BYTES": 71.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 71.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 2.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 71.0,
+     "SHORTEST_FLOW_PKT": 71.0,
+     "MIN_IP_PKT_LEN": 71.0,
+     "MAX_IP_PKT_LEN": 71.0,
+     "SRC_TO_DST_SECOND_BYTES": 35.0,
+     "DST_TO_SRC_SECOND_BYTES": 35.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 189333.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 189333.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 1.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "1011962147466170403",
+    "total": 31576,
+    "minority": 12310,
+    "labels": {
+     "benign": 19266,
+     "scanning": 12310
+    },
+    "scenarios": {
+     "benign/benign": 19266,
+     "scanning/scanning": 12310
+    },
+    "time_span_ms": {
+     "benign": [
+      1556035699263,
+      1556089111642
+     ],
+     "scanning": [
+      1556035709897,
+      1556088831819
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 48.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 1.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 48.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 48.0,
+     "SRC_TO_DST_SECOND_BYTES": 40.0,
+     "DST_TO_SRC_SECOND_BYTES": 48.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 192000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 160000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 4096.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   }
+  ],
+  "decomposition": {
+   "backdoor": {
+    "rows": 203384,
+    "clean": 200688,
+    "twin_benign": 2694,
+    "twin_other": 2
+   },
+   "benign": {
+    "rows": 16792214,
+    "clean": 6446120,
+    "twin_benign": 0,
+    "twin_other": 10346094
+   },
+   "ddos": {
+    "rows": 4141256,
+    "clean": 925247,
+    "twin_benign": 3160750,
+    "twin_other": 55259
+   },
+   "dos": {
+    "rows": 203456,
+    "clean": 113655,
+    "twin_benign": 67354,
+    "twin_other": 22447
+   },
+   "injection": {
+    "rows": 381777,
+    "clean": 341263,
+    "twin_benign": 28818,
+    "twin_other": 11696
+   },
+   "mitm": {
+    "rows": 6013,
+    "clean": 5446,
+    "twin_benign": 510,
+    "twin_other": 57
+   },
+   "password": {
+    "rows": 1594777,
+    "clean": 1061699,
+    "twin_benign": 531206,
+    "twin_other": 1872
+   },
+   "ransomware": {
+    "rows": 3971,
+    "clean": 3604,
+    "twin_benign": 365,
+    "twin_other": 2
+   },
+   "scanning": {
+    "rows": 1358977,
+    "clean": 39069,
+    "twin_benign": 1319888,
+    "twin_other": 20
+   },
+   "xss": {
+    "rows": 2834435,
+    "clean": 1670497,
+    "twin_benign": 1048462,
+    "twin_other": 115476
+   }
+  },
+  "mixed_groups": 41422,
+  "unavoidable_error_rows": 1294643,
+  "rows": 27520260
+ },
+ "bot_iot": {
+  "feature_names": [
+   "PROTOCOL",
+   "L7_PROTO",
+   "IN_BYTES",
+   "IN_PKTS",
+   "OUT_BYTES",
+   "OUT_PKTS",
+   "TCP_FLAGS",
+   "CLIENT_TCP_FLAGS",
+   "SERVER_TCP_FLAGS",
+   "FLOW_DURATION_MILLISECONDS",
+   "DURATION_IN",
+   "DURATION_OUT",
+   "MIN_TTL",
+   "MAX_TTL",
+   "LONGEST_FLOW_PKT",
+   "SHORTEST_FLOW_PKT",
+   "MIN_IP_PKT_LEN",
+   "MAX_IP_PKT_LEN",
+   "SRC_TO_DST_SECOND_BYTES",
+   "DST_TO_SRC_SECOND_BYTES",
+   "RETRANSMITTED_IN_BYTES",
+   "RETRANSMITTED_IN_PKTS",
+   "RETRANSMITTED_OUT_BYTES",
+   "RETRANSMITTED_OUT_PKTS",
+   "SRC_TO_DST_AVG_THROUGHPUT",
+   "DST_TO_SRC_AVG_THROUGHPUT",
+   "NUM_PKTS_UP_TO_128_BYTES",
+   "NUM_PKTS_128_TO_256_BYTES",
+   "NUM_PKTS_256_TO_512_BYTES",
+   "NUM_PKTS_512_TO_1024_BYTES",
+   "NUM_PKTS_1024_TO_1514_BYTES",
+   "TCP_WIN_MAX_IN",
+   "TCP_WIN_MAX_OUT",
+   "ICMP_TYPE",
+   "ICMP_IPV4_TYPE",
+   "DNS_QUERY_TYPE",
+   "DNS_TTL_ANSWER",
+   "FTP_COMMAND_RET_CODE",
+   "SRC_TO_DST_IAT_MIN",
+   "SRC_TO_DST_IAT_MAX",
+   "SRC_TO_DST_IAT_AVG",
+   "SRC_TO_DST_IAT_STDDEV",
+   "DST_TO_SRC_IAT_MIN",
+   "DST_TO_SRC_IAT_MAX",
+   "DST_TO_SRC_IAT_AVG",
+   "DST_TO_SRC_IAT_STDDEV"
+  ],
+  "top_conflicts": [
+   {
+    "hash": "10796722494715133001",
+    "total": 208636,
+    "minority": 86005,
+    "labels": {
+     "ddos": 86005,
+     "dos": 122631
+    },
+    "scenarios": {
+     "ddos/ddos": 86005,
+     "dos/dos": 122631
+    },
+    "time_span_ms": {
+     "ddos": [
+      1528095782732,
+      1528098029129
+     ],
+     "dos": [
+      1528081373285,
+      1528083840458
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 7.0,
+     "IN_BYTES": 140.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 2.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 140.0,
+     "SHORTEST_FLOW_PKT": 140.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 140.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 1120000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 0.0,
+     "NUM_PKTS_128_TO_256_BYTES": 1.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 512.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "7441072195666113111",
+    "total": 145535,
+    "minority": 45882,
+    "labels": {
+     "benign": 3910,
+     "dos": 99653,
+     "reconnaissance": 41972
+    },
+    "scenarios": {
+     "benign/benign": 3910,
+     "dos/dos": 99653,
+     "reconnaissance/reconnaissance": 41972
+    },
+    "time_span_ms": {
+     "benign": [
+      1526351621903,
+      1526967221009
+     ],
+     "dos": [
+      1528085576747,
+      1528086922872
+     ],
+     "reconnaissance": [
+      1526344356272,
+      1526967355979
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 28.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 28.0,
+     "SHORTEST_FLOW_PKT": 28.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 28.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 224000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "15441434729541369935",
+    "total": 122453,
+    "minority": 19905,
+    "labels": {
+     "benign": 19905,
+     "reconnaissance": 102548
+    },
+    "scenarios": {
+     "benign/benign": 19905,
+     "reconnaissance/reconnaissance": 102548
+    },
+    "time_span_ms": {
+     "benign": [
+      1526356054449,
+      1526960821598
+     ],
+     "reconnaissance": [
+      1526348450439,
+      1526980441330
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 40.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 40.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 40.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 320000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 320000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 512.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "5120497926755356548",
+    "total": 15768,
+    "minority": 3996,
+    "labels": {
+     "benign": 3996,
+     "reconnaissance": 11772
+    },
+    "scenarios": {
+     "benign/benign": 3996,
+     "reconnaissance/reconnaissance": 11772
+    },
+    "time_span_ms": {
+     "benign": [
+      1526345804766,
+      1526353396540
+     ],
+     "reconnaissance": [
+      1526345859774,
+      1526355821504
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 40.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 20.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 40.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 40.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 320000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 320000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 512.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "13742086810369667862",
+    "total": 7024,
+    "minority": 3419,
+    "labels": {
+     "ddos": 3419,
+     "dos": 3605
+    },
+    "scenarios": {
+     "ddos/ddos": 3419,
+     "dos/dos": 3605
+    },
+    "time_span_ms": {
+     "ddos": [
+      1528103283603,
+      1528104145694
+     ],
+     "dos": [
+      1528088662617,
+      1528089744751
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 7.0,
+     "IN_BYTES": 52.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 20.0,
+     "CLIENT_TCP_FLAGS": 20.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 52.0,
+     "SHORTEST_FLOW_PKT": 52.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 52.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 416000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 251.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "16122626358288481069",
+    "total": 402881,
+    "minority": 1094,
+    "labels": {
+     "benign": 1094,
+     "reconnaissance": 401787
+    },
+    "scenarios": {
+     "benign/benign": 1094,
+     "reconnaissance/reconnaissance": 401787
+    },
+    "time_span_ms": {
+     "benign": [
+      1526352730473,
+      1526352733204
+     ],
+     "reconnaissance": [
+      1526344332972,
+      1526982345958
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 44.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 44.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 44.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 352000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 320000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 1024.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "405002184294679442",
+    "total": 23400,
+    "minority": 1090,
+    "labels": {
+     "reconnaissance": 22310,
+     "theft": 1090
+    },
+    "scenarios": {
+     "reconnaissance/reconnaissance": 22310,
+     "theft/theft": 1090
+    },
+    "time_span_ms": {
+     "reconnaissance": [
+      1526345485369,
+      1526967633642
+     ],
+     "theft": [
+      1529380744487,
+      1529381833932
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 60.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 60.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 60.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 480000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 320000.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 29200.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "11981447437752614554",
+    "total": 2277,
+    "minority": 1002,
+    "labels": {
+     "ddos": 1002,
+     "dos": 1275
+    },
+    "scenarios": {
+     "ddos/ddos": 1002,
+     "dos/dos": 1275
+    },
+    "time_span_ms": {
+     "ddos": [
+      1528097045853,
+      1528097702081
+     ],
+     "dos": [
+      1528081978247,
+      1528083840290
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 7.0,
+     "IN_BYTES": 140.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 40.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 140.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 140.0,
+     "SRC_TO_DST_SECOND_BYTES": 1.0,
+     "DST_TO_SRC_SECOND_BYTES": 3.5,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 27317.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 7804.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 1.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 512.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "7589646868882767674",
+    "total": 1839,
+    "minority": 825,
+    "labels": {
+     "ddos": 825,
+     "dos": 1014
+    },
+    "scenarios": {
+     "ddos/ddos": 825,
+     "dos/dos": 1014
+    },
+    "time_span_ms": {
+     "ddos": [
+      1528097046121,
+      1528097702081
+     ],
+     "dos": [
+      1528081979486,
+      1528083840403
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 7.0,
+     "IN_BYTES": 140.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 35.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 140.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 140.0,
+     "SRC_TO_DST_SECOND_BYTES": 1.1428571939468384,
+     "DST_TO_SRC_SECOND_BYTES": 4.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 31111.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 8888.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 1.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 512.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "11764009327117810657",
+    "total": 1966,
+    "minority": 814,
+    "labels": {
+     "ddos": 814,
+     "dos": 1152
+    },
+    "scenarios": {
+     "ddos/ddos": 814,
+     "dos/dos": 1152
+    },
+    "time_span_ms": {
+     "ddos": [
+      1528096385416,
+      1528097700506
+     ],
+     "dos": [
+      1528081653041,
+      1528083840403
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 6.0,
+     "L7_PROTO": 7.0,
+     "IN_BYTES": 140.0,
+     "IN_PKTS": 1.0,
+     "OUT_BYTES": 40.0,
+     "OUT_PKTS": 1.0,
+     "TCP_FLAGS": 22.0,
+     "CLIENT_TCP_FLAGS": 2.0,
+     "SERVER_TCP_FLAGS": 20.0,
+     "FLOW_DURATION_MILLISECONDS": 41.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 0.0,
+     "MAX_TTL": 0.0,
+     "LONGEST_FLOW_PKT": 140.0,
+     "SHORTEST_FLOW_PKT": 40.0,
+     "MIN_IP_PKT_LEN": 40.0,
+     "MAX_IP_PKT_LEN": 140.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.9756097793579102,
+     "DST_TO_SRC_SECOND_BYTES": 3.4146342277526855,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 26666.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 7619.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 1.0,
+     "NUM_PKTS_128_TO_256_BYTES": 1.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 512.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   }
+  ],
+  "decomposition": {
+   "benign": {
+    "rows": 51989,
+    "clean": 18795,
+    "twin_benign": 0,
+    "twin_other": 33194
+   },
+   "ddos": {
+    "rows": 7150882,
+    "clean": 7036752,
+    "twin_benign": 80,
+    "twin_other": 114050
+   },
+   "dos": {
+    "rows": 8034190,
+    "clean": 7775574,
+    "twin_benign": 99687,
+    "twin_other": 158929
+   },
+   "reconnaissance": {
+    "rows": 1695132,
+    "clean": 1068039,
+    "twin_benign": 603218,
+    "twin_other": 23875
+   },
+   "theft": {
+    "rows": 1615,
+    "clean": 523,
+    "twin_benign": 0,
+    "twin_other": 1092
+   }
+  },
+  "mixed_groups": 722,
+  "unavoidable_error_rows": 183868,
+  "rows": 16933808
+ },
+ "unsw_nb15": {
+  "feature_names": [
+   "PROTOCOL",
+   "L7_PROTO",
+   "IN_BYTES",
+   "IN_PKTS",
+   "OUT_BYTES",
+   "OUT_PKTS",
+   "TCP_FLAGS",
+   "CLIENT_TCP_FLAGS",
+   "SERVER_TCP_FLAGS",
+   "FLOW_DURATION_MILLISECONDS",
+   "DURATION_IN",
+   "DURATION_OUT",
+   "MIN_TTL",
+   "MAX_TTL",
+   "LONGEST_FLOW_PKT",
+   "SHORTEST_FLOW_PKT",
+   "MIN_IP_PKT_LEN",
+   "MAX_IP_PKT_LEN",
+   "SRC_TO_DST_SECOND_BYTES",
+   "DST_TO_SRC_SECOND_BYTES",
+   "RETRANSMITTED_IN_BYTES",
+   "RETRANSMITTED_IN_PKTS",
+   "RETRANSMITTED_OUT_BYTES",
+   "RETRANSMITTED_OUT_PKTS",
+   "SRC_TO_DST_AVG_THROUGHPUT",
+   "DST_TO_SRC_AVG_THROUGHPUT",
+   "NUM_PKTS_UP_TO_128_BYTES",
+   "NUM_PKTS_128_TO_256_BYTES",
+   "NUM_PKTS_256_TO_512_BYTES",
+   "NUM_PKTS_512_TO_1024_BYTES",
+   "NUM_PKTS_1024_TO_1514_BYTES",
+   "TCP_WIN_MAX_IN",
+   "TCP_WIN_MAX_OUT",
+   "ICMP_TYPE",
+   "ICMP_IPV4_TYPE",
+   "DNS_QUERY_TYPE",
+   "DNS_TTL_ANSWER",
+   "FTP_COMMAND_RET_CODE",
+   "SRC_TO_DST_IAT_MIN",
+   "SRC_TO_DST_IAT_MAX",
+   "SRC_TO_DST_IAT_AVG",
+   "SRC_TO_DST_IAT_STDDEV",
+   "DST_TO_SRC_IAT_MIN",
+   "DST_TO_SRC_IAT_MAX",
+   "DST_TO_SRC_IAT_AVG",
+   "DST_TO_SRC_IAT_STDDEV"
+  ],
+  "top_conflicts": [
+   {
+    "hash": "10249520995878961071",
+    "total": 2468,
+    "minority": 1338,
+    "labels": {
+     "backdoor": 99,
+     "dos": 26,
+     "exploits": 929,
+     "fuzzers": 1130,
+     "generic": 25,
+     "reconnaissance": 256,
+     "shellcode": 3
+    },
+    "scenarios": {
+     "backdoor/backdoor": 99,
+     "dos/dos": 26,
+     "exploits/exploits": 929,
+     "fuzzers/fuzzers": 1130,
+     "generic/generic": 25,
+     "reconnaissance/reconnaissance": 256,
+     "shellcode/shellcode": 3
+    },
+    "time_span_ms": {
+     "backdoor": [
+      1424220919533,
+      1424221244579
+     ],
+     "dos": [
+      1421933529149,
+      1424249452966
+     ],
+     "exploits": [
+      1421928484569,
+      1424261672180
+     ],
+     "fuzzers": [
+      1421928409120,
+      1424261673777
+     ],
+     "generic": [
+      1421930266749,
+      1424256542315
+     ],
+     "reconnaissance": [
+      1424222584963,
+      1424258505029
+     ],
+     "shellcode": [
+      1424242169124,
+      1424256689612
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 1064.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 532.0,
+     "SHORTEST_FLOW_PKT": 532.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 532.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 8512000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 0.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 2.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "17828873904080850701",
+    "total": 3390,
+    "minority": 1265,
+    "labels": {
+     "backdoor": 256,
+     "dos": 316,
+     "exploits": 424,
+     "fuzzers": 2125,
+     "generic": 25,
+     "reconnaissance": 240,
+     "shellcode": 4
+    },
+    "scenarios": {
+     "backdoor/backdoor": 256,
+     "dos/dos": 316,
+     "exploits/exploits": 424,
+     "fuzzers/fuzzers": 2125,
+     "generic/generic": 25,
+     "reconnaissance/reconnaissance": 240,
+     "shellcode/shellcode": 4
+    },
+    "time_span_ms": {
+     "backdoor": [
+      1424220811246,
+      1424221386849
+     ],
+     "dos": [
+      1424224277421,
+      1424256991151
+     ],
+     "exploits": [
+      1421928484211,
+      1424261277712
+     ],
+     "fuzzers": [
+      1421928323711,
+      1424261371484
+     ],
+     "generic": [
+      1424223173298,
+      1424259972806
+     ],
+     "reconnaissance": [
+      1421933201321,
+      1424259950109
+     ],
+     "shellcode": [
+      1424227922474,
+      1424242171452
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 104.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 52.0,
+     "SHORTEST_FLOW_PKT": 52.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 52.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 832000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "11543947993166345296",
+    "total": 1702,
+    "minority": 652,
+    "labels": {
+     "backdoor": 248,
+     "dos": 102,
+     "exploits": 162,
+     "fuzzers": 1050,
+     "generic": 9,
+     "reconnaissance": 73,
+     "shellcode": 58
+    },
+    "scenarios": {
+     "backdoor/backdoor": 248,
+     "dos/dos": 102,
+     "exploits/exploits": 162,
+     "fuzzers/fuzzers": 1050,
+     "generic/generic": 9,
+     "reconnaissance/reconnaissance": 73,
+     "shellcode/shellcode": 58
+    },
+    "time_span_ms": {
+     "backdoor": [
+      1424221219099,
+      1424221468020
+     ],
+     "dos": [
+      1424235310740,
+      1424249742173
+     ],
+     "exploits": [
+      1421928737916,
+      1424256863305
+     ],
+     "fuzzers": [
+      1421928710951,
+      1424257040192
+     ],
+     "generic": [
+      1424235409097,
+      1424257009278
+     ],
+     "reconnaissance": [
+      1424228259999,
+      1424242422396
+     ],
+     "shellcode": [
+      1424228284145,
+      1424249652094
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 64.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 32.0,
+     "SHORTEST_FLOW_PKT": 32.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 32.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 512000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "8901639048031440030",
+    "total": 13090,
+    "minority": 230,
+    "labels": {
+     "backdoor": 230,
+     "generic": 12860
+    },
+    "scenarios": {
+     "backdoor/backdoor": 230,
+     "generic/generic": 12860
+    },
+    "time_span_ms": {
+     "backdoor": [
+      1424262171311,
+      1424262564127
+     ],
+     "generic": [
+      1421930701770,
+      1424262166093
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 5.0,
+     "IN_BYTES": 114.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 57.0,
+     "SHORTEST_FLOW_PKT": 57.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 57.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 912000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 255.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "17513222794667951318",
+    "total": 4542,
+    "minority": 158,
+    "labels": {
+     "backdoor": 142,
+     "dos": 3,
+     "exploits": 8,
+     "fuzzers": 5,
+     "reconnaissance": 4384
+    },
+    "scenarios": {
+     "backdoor/backdoor": 142,
+     "dos/dos": 3,
+     "exploits/exploits": 8,
+     "fuzzers/fuzzers": 5,
+     "reconnaissance/reconnaissance": 4384
+    },
+    "time_span_ms": {
+     "backdoor": [
+      1424219025594,
+      1424262556485
+     ],
+     "dos": [
+      1424220496063,
+      1424262140940
+     ],
+     "exploits": [
+      1424220506256,
+      1424262164396
+     ],
+     "fuzzers": [
+      1424219043130,
+      1424262112009
+     ],
+     "reconnaissance": [
+      1421927425918,
+      1424261975867
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 11.0,
+     "IN_BYTES": 168.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 84.0,
+     "SHORTEST_FLOW_PKT": 84.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 84.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 1344000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "15131465618926783243",
+    "total": 268,
+    "minority": 97,
+    "labels": {
+     "exploits": 171,
+     "fuzzers": 61,
+     "reconnaissance": 36
+    },
+    "scenarios": {
+     "exploits/exploits": 171,
+     "fuzzers/fuzzers": 61,
+     "reconnaissance/reconnaissance": 36
+    },
+    "time_span_ms": {
+     "exploits": [
+      1421930098827,
+      1424251009536
+     ],
+     "fuzzers": [
+      1424222601239,
+      1424258251764
+     ],
+     "reconnaissance": [
+      1424222600220,
+      1424222609912
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 1066.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 533.0,
+     "SHORTEST_FLOW_PKT": 533.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 533.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 8528000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 0.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 2.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "17839674149519898247",
+    "total": 112,
+    "minority": 63,
+    "labels": {
+     "backdoor": 16,
+     "dos": 19,
+     "exploits": 19,
+     "fuzzers": 49,
+     "generic": 3,
+     "reconnaissance": 6
+    },
+    "scenarios": {
+     "backdoor/backdoor": 16,
+     "dos/dos": 19,
+     "exploits/exploits": 19,
+     "fuzzers/fuzzers": 49,
+     "generic/generic": 3,
+     "reconnaissance/reconnaissance": 6
+    },
+    "time_span_ms": {
+     "backdoor": [
+      1424220932929,
+      1424221056037
+     ],
+     "dos": [
+      1424234976796,
+      1424256588253
+     ],
+     "exploits": [
+      1424242058170,
+      1424256598089
+     ],
+     "fuzzers": [
+      1421928386079,
+      1424256582871
+     ],
+     "generic": [
+      1424242115165,
+      1424242120255
+     ],
+     "reconnaissance": [
+      1424227929469,
+      1424227945376
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 32.0,
+     "IN_BYTES": 104.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 52.0,
+     "SHORTEST_FLOW_PKT": 52.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 52.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 832000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "441477801295484572",
+    "total": 126,
+    "minority": 36,
+    "labels": {
+     "exploits": 13,
+     "fuzzers": 90,
+     "generic": 2,
+     "reconnaissance": 21
+    },
+    "scenarios": {
+     "exploits/exploits": 13,
+     "fuzzers/fuzzers": 90,
+     "generic/generic": 2,
+     "reconnaissance/reconnaissance": 21
+    },
+    "time_span_ms": {
+     "exploits": [
+      1421930104722,
+      1424258600962
+     ],
+     "fuzzers": [
+      1421930185939,
+      1424258599611
+     ],
+     "generic": [
+      1421930266810,
+      1421930348810
+     ],
+     "reconnaissance": [
+      1424222612224,
+      1424258505729
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 0.0,
+     "IN_BYTES": 1098.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 549.0,
+     "SHORTEST_FLOW_PKT": 549.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 549.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 8784000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 0.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 2.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "11905028657476779963",
+    "total": 47,
+    "minority": 20,
+    "labels": {
+     "dos": 20,
+     "reconnaissance": 27
+    },
+    "scenarios": {
+     "dos/dos": 20,
+     "reconnaissance/reconnaissance": 27
+    },
+    "time_span_ms": {
+     "dos": [
+      1421927462238,
+      1424260765763
+     ],
+     "reconnaissance": [
+      1421927530831,
+      1424258532879
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 14.0,
+     "IN_BYTES": 136.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 68.0,
+     "SHORTEST_FLOW_PKT": 68.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 68.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 1088000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 2.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 0.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   },
+   {
+    "hash": "13879105988208659221",
+    "total": 28,
+    "minority": 14,
+    "labels": {
+     "backdoor": 3,
+     "exploits": 14,
+     "generic": 11
+    },
+    "scenarios": {
+     "backdoor/backdoor": 3,
+     "exploits/exploits": 14,
+     "generic/generic": 11
+    },
+    "time_span_ms": {
+     "backdoor": [
+      1424262475766,
+      1424262535248
+     ],
+     "exploits": [
+      1421931023605,
+      1424259129350
+     ],
+     "generic": [
+      1421934278411,
+      1424255275261
+     ]
+    },
+    "vector": {
+     "PROTOCOL": 17.0,
+     "L7_PROTO": 96.0,
+     "IN_BYTES": 1104.0,
+     "IN_PKTS": 2.0,
+     "OUT_BYTES": 0.0,
+     "OUT_PKTS": 0.0,
+     "TCP_FLAGS": 0.0,
+     "CLIENT_TCP_FLAGS": 0.0,
+     "SERVER_TCP_FLAGS": 0.0,
+     "FLOW_DURATION_MILLISECONDS": 0.0,
+     "DURATION_IN": 0.0,
+     "DURATION_OUT": 0.0,
+     "MIN_TTL": 254.0,
+     "MAX_TTL": 254.0,
+     "LONGEST_FLOW_PKT": 552.0,
+     "SHORTEST_FLOW_PKT": 552.0,
+     "MIN_IP_PKT_LEN": 0.0,
+     "MAX_IP_PKT_LEN": 552.0,
+     "SRC_TO_DST_SECOND_BYTES": 0.0,
+     "DST_TO_SRC_SECOND_BYTES": 0.0,
+     "RETRANSMITTED_IN_BYTES": 0.0,
+     "RETRANSMITTED_IN_PKTS": 0.0,
+     "RETRANSMITTED_OUT_BYTES": 0.0,
+     "RETRANSMITTED_OUT_PKTS": 0.0,
+     "SRC_TO_DST_AVG_THROUGHPUT": 8832000.0,
+     "DST_TO_SRC_AVG_THROUGHPUT": 0.0,
+     "NUM_PKTS_UP_TO_128_BYTES": 0.0,
+     "NUM_PKTS_128_TO_256_BYTES": 0.0,
+     "NUM_PKTS_256_TO_512_BYTES": 0.0,
+     "NUM_PKTS_512_TO_1024_BYTES": 2.0,
+     "NUM_PKTS_1024_TO_1514_BYTES": 0.0,
+     "TCP_WIN_MAX_IN": 0.0,
+     "TCP_WIN_MAX_OUT": 0.0,
+     "ICMP_TYPE": 0.0,
+     "ICMP_IPV4_TYPE": 0.0,
+     "DNS_QUERY_TYPE": 0.0,
+     "DNS_TTL_ANSWER": 0.0,
+     "FTP_COMMAND_RET_CODE": 0.0,
+     "SRC_TO_DST_IAT_MIN": 0.0,
+     "SRC_TO_DST_IAT_MAX": 0.0,
+     "SRC_TO_DST_IAT_AVG": 0.0,
+     "SRC_TO_DST_IAT_STDDEV": 0.0,
+     "DST_TO_SRC_IAT_MIN": 0.0,
+     "DST_TO_SRC_IAT_MAX": 0.0,
+     "DST_TO_SRC_IAT_AVG": 0.0,
+     "DST_TO_SRC_IAT_STDDEV": 0.0
+    }
+   }
+  ],
+  "decomposition": {
+   "analysis": {
+    "rows": 1226,
+    "clean": 1226,
+    "twin_benign": 0,
+    "twin_other": 0
+   },
+   "backdoor": {
+    "rows": 4659,
+    "clean": 3471,
+    "twin_benign": 0,
+    "twin_other": 1188
+   },
+   "benign": {
+    "rows": 2237731,
+    "clean": 2237731,
+    "twin_benign": 0,
+    "twin_other": 0
+   },
+   "dos": {
+    "rows": 5980,
+    "clean": 5329,
+    "twin_benign": 0,
+    "twin_other": 651
+   },
+   "exploits": {
+    "rows": 42748,
+    "clean": 39850,
+    "twin_benign": 0,
+    "twin_other": 2898
+   },
+   "fuzzers": {
+    "rows": 33816,
+    "clean": 26940,
+    "twin_benign": 0,
+    "twin_other": 6876
+   },
+   "generic": {
+    "rows": 19651,
+    "clean": 5595,
+    "twin_benign": 0,
+    "twin_other": 14056
+   },
+   "reconnaissance": {
+    "rows": 17074,
+    "clean": 11650,
+    "twin_benign": 0,
+    "twin_other": 5424
+   },
+   "shellcode": {
+    "rows": 2381,
+    "clean": 2013,
+    "twin_benign": 0,
+    "twin_other": 368
+   },
+   "worms": {
+    "rows": 158,
+    "clean": 150,
+    "twin_benign": 0,
+    "twin_other": 8
+   }
+  },
+  "mixed_groups": 1050,
+  "unavoidable_error_rows": 5737,
+  "rows": 2365424
+ }
+}

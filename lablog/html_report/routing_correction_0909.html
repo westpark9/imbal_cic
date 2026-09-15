@@ -1,9 +1,11 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>고정 global 위의 교정 실험 — EXP38·39</title><style>
 :root{--bg:#f6f7f5;--panel:#fff;--ink:#1b2229;--muted:#5c6770;--line:#d3d8d4;--accent:#1f6f8b;--soft:#dcebf0;--warn:#b0413e}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Noto Sans CJK KR","Noto Sans KR",sans-serif}main{max-width:1160px;margin:auto;padding:42px 28px 72px}h1{font-size:29px;line-height:1.35;letter-spacing:-.025em;margin:0 0 20px}h2{font-size:21px;margin:44px 0 15px;padding-top:15px;border-top:1px solid var(--line)}p{margin:12px 0;max-width:100ch}strong{font-weight:650}a{color:var(--accent);text-underline-offset:3px}code,pre{font-family:"DejaVu Sans Mono",monospace;font-size:12px}code{background:#e9edeb;padding:2px 4px;border-radius:3px;overflow-wrap:anywhere}pre{overflow-x:auto;padding:18px;background:#e9edeb;border:1px solid var(--line);line-height:1.7}pre code{padding:0;overflow-wrap:normal}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:7px;background:var(--panel);margin:16px 0 20px}table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.65}th,td{padding:11px 12px;vertical-align:top;border-bottom:1px solid var(--line);text-align:left}th{background:#e9eeeb;font-weight:650}tr:last-child td{border-bottom:0}td:first-child{font-weight:550}td[align="right"],th[align="right"]{white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}.table-wrap:first-of-type table{min-width:850px}.table-wrap:first-of-type th:first-child{width:14%}.table-wrap:first-of-type th:nth-child(2){width:23%}.table-wrap:first-of-type th:nth-child(3){width:34%}.chart{margin:24px 0;background:white;border:1px solid var(--line);border-radius:7px;padding:12px}.chart svg{display:block;width:100%;height:auto}.kicker{color:var(--muted);font:12px monospace;letter-spacing:.07em;margin:0 0 16px}.complete{display:inline-block;padding:4px 10px;background:var(--soft);color:var(--accent);border-radius:4px;font-size:12px;margin-bottom:14px}footer{margin-top:36px;color:var(--muted);font-size:12px}@media(max-width:760px){main{padding:25px 16px 50px}h1{font-size:24px}h2{font-size:19px}table{font-size:12.5px;min-width:680px}th,td{padding:9px}}@media print{main{max-width:none;padding:0}body{font-size:11px}.table-wrap{overflow:visible}table{font-size:9px}h2{break-after:avoid}tr{break-inside:avoid}a{color:inherit}.chart{break-inside:avoid}}
-</style></head><body><main><p class="kicker">RACE-PFN · 2026-09-09 · EXP38 / EXP39</p><span class="complete">실험 완료 · 단일 seed · full test 4,023,114행</span><h1>0909 — 고정 global 위의 scorer/verifier 교정 실험</h1>
-<p>EXP38 cache 생성과 EXP39 6조건 평가가 <strong>정상 완료</strong>됐다. 원본 test 4,023,114행에서 최종 정책은 모두 global 유지로 선택되어 추가 F1 개선은 0이다. 다만 <strong>결정 손익 목표는 calibration에서 실제 교정을 만들었고, 기존 임계값 격자가 유효한 높은 점수 영역을 충분히 탐색하지 않은 문제</strong>를 확인했다. 아래는 구현 변경, 원래 완료 결과, 사후 calibration 진단을 구분한 기록이다.</p>
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Noto Sans CJK KR","Noto Sans KR",sans-serif}main{max-width:1160px;margin:auto;padding:42px 28px 72px}h1{font-size:29px;line-height:1.35;letter-spacing:-.025em;margin:0 0 20px}h3{font-size:17px;margin:28px 0 12px}h2{font-size:21px;margin:44px 0 15px;padding-top:15px;border-top:1px solid var(--line)}p{margin:12px 0;max-width:100ch}strong{font-weight:650}a{color:var(--accent);text-underline-offset:3px}code,pre{font-family:"DejaVu Sans Mono",monospace;font-size:12px}code{background:#e9edeb;padding:2px 4px;border-radius:3px;overflow-wrap:anywhere}pre{overflow-x:auto;padding:18px;background:#e9edeb;border:1px solid var(--line);line-height:1.7}pre code{padding:0;overflow-wrap:normal}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:7px;background:var(--panel);margin:16px 0 20px}table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.65}th,td{padding:11px 12px;vertical-align:top;border-bottom:1px solid var(--line);text-align:left}th{background:#e9eeeb;font-weight:650}tr:last-child td{border-bottom:0}td:first-child{font-weight:550}td[align="right"],th[align="right"]{white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}.table-wrap:first-of-type table{min-width:850px}.table-wrap:first-of-type th:first-child{width:14%}.table-wrap:first-of-type th:nth-child(2){width:23%}.table-wrap:first-of-type th:nth-child(3){width:34%}.chart{margin:24px 0;background:white;border:1px solid var(--line);border-radius:7px;padding:12px}.chart svg{display:block;width:100%;height:auto}.kicker{color:var(--muted);font:12px monospace;letter-spacing:.07em;margin:0 0 16px}.complete{display:inline-block;padding:4px 10px;background:var(--soft);color:var(--accent);border-radius:4px;font-size:12px;margin-bottom:14px}footer{margin-top:36px;color:var(--muted);font-size:12px}@media(max-width:760px){main{padding:25px 16px 50px}h1{font-size:24px}h2{font-size:19px}table{font-size:12.5px;min-width:680px}th,td{padding:9px}}@media print{main{max-width:none;padding:0}body{font-size:11px}.table-wrap{overflow:visible}table{font-size:9px}h2{break-after:avoid}tr{break-inside:avoid}a{color:inherit}.chart{break-inside:avoid}}
+</style></head><body><main><p class="kicker">RACE-PFN · 2026-09-09 · EXP38 / EXP39</p><span class="complete">실행 완료 · 최종 성능 개선 0 · 9/10 해석 보완</span><h1>0909 — 고정 global 위의 scorer/verifier 교정 실험</h1>
+<p><strong>결론: 이번 실험에서 최종 모델 성능은 개선되지 않았다.</strong> Test 4,023,114행의 최종 예측은 6조건 모두 global과 같다. EXP38·39가 정상 종료했다는 사실과 연구 목표를 달성했다는 것은 다르다.</p>
+<p>2026-09-10 설명 보완: 이번에 실행한 것은 <strong>기존 context·global·expert bank를 고정한 scorer/verifier 비교</strong>다. 세부 패턴의 context 지원 보강과 새 expert 구성은 아직 실행하지 않았다. 아래 단계 번호는 모델 내 위치이며, 6조건을 차례로 연결한 하나의 모델을 뜻하지 않는다. 각 조건은 별도로 평가했다.</p>
+<p>이전 표에서 혼동을 만든 <strong>expert 전체 강제 적용의 큰 훼손 수</strong>는 최종 모델의 훼손 수가 아니다. 실제 적용 결과는 §3-A, 무조건 적용 진단은 §3-B, 어디서 교정 후보가 사라졌는지는 §4-A에서 각각 확인한다.</p>
 <h2>1. 모델 처리 순서별 현재·변경·근거</h2>
 <div class="table-wrap"><table>
 <thead>
@@ -176,7 +178,9 @@
 </tbody>
 </table></div>
 <p><code>legacy</code>도 새 calibration 절차와 공통 학습기 설정을 쓰므로 EXP31 원본의 정확한 재실행은 아니다. 모든 조건의 학습·임계값을 결정한 뒤 test 정답으로 평가했다. 원본 실험 스크립트와 결과는 수정하지 않았다.</p>
-<h2>3. 완료된 full-test 결과</h2>
+<h2>3. 최종 결과와 expert 진단을 구분해서 읽기</h2>
+<h3>3-A. 실제 선택된 최종 정책 — 성능 개선 0</h3>
+<p>교정은 <code>global 오답 → 최종 정답</code>, 훼손은 <code>global 정답 → 최종 오답</code>인 행 수다. 한 행에서 두 모델 모두 오답인 상태로 라벨만 바뀌면 어느 쪽에도 포함하지 않는다.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -245,6 +249,24 @@
 <td style="text-align: right;">0 / 0</td>
 <td>global 유지</td>
 </tr>
+</tbody>
+</table></div>
+<p><strong>“개입 0”은 calibration에서 임계값 쌍을 고를 때 모든 후보가 탈락해, test에 들어가기 전에 “항상 global 사용” 정책을 선택했다는 뜻이다.</strong> Code의 <code>global_fallback</code>은 pre/post 임계값을 <code>None</code>으로 저장하고 global 예측을 그대로 반환한다. Test 각 행에서 verifier가 판단한 끝에 전부 거절했다는 뜻이 아니다.</p>
+<p>따라서 이 표로 확인한 최종 성과는 <strong>Δmacro-F1=0, Δtail-F1=0, 교정=0, 훼손=0</strong>이다. 성능 개선 성공으로 볼 수 없다. 비교용 cache를 만들 때는 모든 expert를 이미 실행했으므로 이 결과를 실측 계산비용 절감으로도 주장하지 않는다.</p>
+<h3>3-B. 진단용 강제 적용 — 최종 정책에 사용하지 않은 예측</h3>
+<p>아래는 scorer·verifier를 우회한 별도 계산이다. <code>expert1_always</code>는 test 전체 4,023,114행을 expert 1의 정답 여부와 관계없이 그 expert의 예측으로 바꾼다. 반대로 oracle은 실제 정답을 보고 맞힐 수 있는 expert를 선택한다. <strong>§3-A의 모델 처리 결과에 이어서 적용한 단계가 아니다.</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>진단</th>
+<th style="text-align: right;">Macro-F1</th>
+<th style="text-align: right;">Tail F1</th>
+<th style="text-align: right;">Benign FPR</th>
+<th style="text-align: right;">교정 / 훼손 행</th>
+<th>계산 방법</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td>correctness_oracle</td>
 <td style="text-align: right;">0.849159</td>
@@ -279,7 +301,8 @@
 </tr>
 </tbody>
 </table></div>
-<p>6조건의 선택 임계값은 모두 <code>global_fallback</code>이다. 따라서 채택·라벨 변경·교정·훼손 모두 0이며, 이를 라우팅 성능 개선 또는 비용 절감 성공으로 세지 않는다. Correctness oracle은 global 오답을 맞힐 수 있는 expert가 있으면 정답을 선택하는 진단이며 실제 달성 보장이 아니다.</p>
+<p>즉 <strong>1,869,000건 훼손은 expert 1을 전 행에 강제 적용했을 때</strong>의 결과다. 이 expert가 일부 global 오류를 고칠 수 있더라도, 다른 영역에서 global의 정답을 대량으로 망가뜨린다. 그래서 expert를 단독 대체 모델로 쓸 수 없고, 도움이 되는 구간을 선별해야 한다. Correctness oracle의 30,663건은 현재 bank가 제공하는 교정 가능 사례 수이며, 학습된 라우터가 전부 회수할 수 있다는 보장은 없다.</p>
+<h3>3-C. 어느 클래스에 교정 가능한 expert가 있는가</h3>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -343,7 +366,69 @@
 </tbody>
 </table></div>
 <p>현재 bank의 oracle 교정 30,663행 중 infiltration이 25,423행이다. Brute force는 <strong>교정 가능한 expert 출력이 0행</strong>이고 dos도 64행이다. 이 두 클래스는 라우팅만 바꾸어 해결할 수 있는 폭이 작으므로, 다음 context 실험에서 해당 residual 취약 구간의 support·contrast를 보강해야 한다. Oracle 격차 전체를 학습 가능한 라우팅 이득으로 간주하지 않는다.</p>
-<h2>4. 왜 최종 개입이 0이 됐는가</h2>
+<h2>4. 무엇을 바꿨고, 어디서 교정이 막혔는가</h2>
+<h3>4-A. 임계값을 적용하기 전의 단계별 진단</h3>
+<p>2026-09-10에 저장된 예측을 다시 집계했다. 재학습이나 새 정책의 test 실행은 하지 않았다. Calibration 선택 구간은 81,472행이며 global 오답 6,814행 중 <strong>6,025행은 bank의 어떤 expert가 정답</strong>이다.</p>
+<p>다음 표는 pre 임계값을 잠시 우회하고 scorer가 1위로 고른 expert를 조사한 것이다. “Verifier 양수”는 그 후보에 <code>post &gt; 0</code>만 적용한 진단이며, calibration이 최종 채택한 정책이 아니다. Dense 행은 scorer 대신 모든 expert의 post 정보를 사용하므로 별도 진단이다.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>조건</th>
+<th style="text-align: right;">1위 후보가 교정 가능한 행 / 6,025</th>
+<th style="text-align: right;">후보 회수율</th>
+<th style="text-align: right;">Verifier 양수 중 교정 / 훼손</th>
+<th>이 비교에서 확인한 점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>legacy</td>
+<td style="text-align: right;">5,286</td>
+<td style="text-align: right;">87.7%</td>
+<td style="text-align: right;">0 / 0</td>
+<td>Scorer가 맞는 후보를 상당수 골랐지만 NLL verifier의 양수 영역에 교정 사례가 없음</td>
+</tr>
+<tr>
+<td>post_z</td>
+<td style="text-align: right;">5,286</td>
+<td style="text-align: right;">87.7%</td>
+<td style="text-align: right;">0 / 0</td>
+<td>z 추가만으로 이 현상을 해결하지 못함</td>
+</tr>
+<tr>
+<td>post_raw</td>
+<td style="text-align: right;">5,286</td>
+<td style="text-align: right;">87.7%</td>
+<td style="text-align: right;">0 / 0</td>
+<td>raw 추가만으로 이 현상을 해결하지 못함</td>
+</tr>
+<tr>
+<td>decision_post_raw</td>
+<td style="text-align: right;">5,286</td>
+<td style="text-align: right;">87.7%</td>
+<td style="text-align: right;">2,250 / 1,590</td>
+<td>기존 scorer를 유지하고 verifier를 결정 손익으로 바꾸면 교정 후보가 통과하지만 훼손도 통과</td>
+</tr>
+<tr>
+<td>decision_both_raw</td>
+<td style="text-align: right;">2,793</td>
+<td style="text-align: right;">46.4%</td>
+<td style="text-align: right;">2,022 / 1,205</td>
+<td>새 scorer는 후보 단계에서 더 많은 교정 기회를 잃음. Scorer 개선이 확인된 것이 아님</td>
+</tr>
+<tr>
+<td>dense_decision_raw</td>
+<td style="text-align: right;">3,029</td>
+<td style="text-align: right;">50.3%</td>
+<td style="text-align: right;">2,821 / 2,211</td>
+<td>모든 post 정보를 보아도 현재 verifier 점수만으로 교정/훼손 구분이 충분하지 않음</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>이번 calibration에서 가장 먼저 확인된 차단점은 NLL verifier의 양수 판정이다.</strong> 최종 채택 0만 보고 scorer가 아무 후보도 찾지 못했다고 해석하면 안 된다. 또한 새 scorer에서는 감독 신호·회귀 방식·가중치가 함께 바뀌었으므로 “임시 verifier 의존성을 제거한 것만이 회수율 하락의 원인”이라고 단정할 수도 없다.</p>
+<p>이 관찰을 test 전체로 일반화하지 않는다. 같은 <code>post_raw</code>의 <code>post &gt; 0</code> 진단은 calibration 선택에서는 교정/훼손 0/0이지만, 저장된 test 예측에서는 2,238/177이다. 이는 <strong>선택 구간에서 관측한 교정 양상이 그대로 반복되지 않았음</strong>을 보여 주며 calibration의 시간·scenario·오류 패턴 대표성을 점검할 이유다. 이 사후 수치로 임계값을 새로 선택하지 않았고, 원래 test 최종 정책은 계속 global 유지다.</p>
+<p>원본 집계: <a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260910/exp39_stage_audit/stage_counts.csv" target="_blank" rel="noopener">단계별 CSV</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260910/exp39_stage_audit/stage_counts_by_class.csv" target="_blank" rel="noopener">클래스별 CSV</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/scripts/exp39_stage_audit.py" target="_blank" rel="noopener">집계 코드</a>.</p>
+<h3>4-B. 최종 임계값 선택에서 남은 후보가 없는 이유</h3>
 <p>다음 수치는 <strong>calibration 선택 구간에서 기존 격자의 최고 macro 후보</strong>이며 채택된 정책이나 test 개선 수치가 아니다. ΔF1은 과거 train prior로 표준화한 confusion matrix에서 계산했다. 교정/훼손은 원래 calibration 표본의 행 수다.</p>
 <div class="table-wrap"><table>
 <thead>
@@ -414,7 +499,7 @@
 </tr>
 </tbody>
 </table></div>
-<p>입력에 raw만 추가한 NLL 목표는 최고 후보에서도 라벨 교정이 0이다. 같은 raw 입력에서 <strong>결정 손익 목표</strong>로 바꾸면 infiltration 교정 764행과 benign 훼손 28행이 나타난다. Scorer까지 바꾸면 교정 780행(infiltration 779·dos 1)과 benign 훼손 33행이다. 이것은 calibration에서 목표 변경의 효과이며, 최종 test 향상으로 주장할 수 없다.</p>
+<p>§4-A의 후보에 pre/post 임계값을 함께 적용하면 위 후보들로 좁혀진다. 같은 raw 입력에서 <strong>결정 손익 목표</strong>로 바꾸면 최고 macro 후보에 infiltration 교정 764행과 benign 훼손 28행이 남는다. Scorer까지 바꾸면 교정 780행(infiltration 779·dos 1)과 benign 훼손 33행이다. 이것은 calibration에서 관측한 목표·회귀·가중 방식 변경의 효과이며, 최종 test 향상으로 주장할 수 없다.</p>
 <p>선택 구간의 benign은 22,325행이다. ΔFPR≤0.0005를 지키려면 기존 오경보 교정을 차감한 신규 오경보가 약 11행 이하여야 한다. 28·33행을 함께 채택하는 기존 후보들은 이 상한을 넘는다.</p>
 <h2>5. 사후 진단: 임계값 격자에서 빠진 구간</h2>
 <p>기존 격자는 전체 행 점수의 99% 분위수까지만 생성했다. <code>decision_both_raw</code>의 post 임계값 최댓값은 <strong>0.611627</strong>이지만, 라벨이 바뀌는 후보의 post 점수 95% 분위수는 <strong>0.910811</strong>이다. Pre 점수 역시 변경 후보 상위 구간이 충분히 포함되지 않았다. 후보가 적은 교정 문제에서 전체 행의 분위수만 사용하면 필요한 세밀한 선택 범위가 빠질 수 있다.</p>
@@ -457,8 +542,8 @@
 </tr>
 </tbody>
 </table></div>
-<p>이 결과는 <strong>제약을 완화하지 않고도 탐색 격자를 수정할 근거</strong>다. 새 모델의 검증된 성능으로 보고하지 않는다. 특히 11행 후보는 상한 근처이므로 다음 독립 확인 구간에서 안정성을 확인해야 한다.</p>
-<figure class="chart"><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="784.139062pt" height="282.132pt" viewBox="0 0 784.139062 282.132" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<p>이 결과는 <strong>제약을 완화하지 않고도 탐색 격자를 수정할 근거</strong>다. 새 모델의 검증된 성능으로 보고하지 않는다. 특히 11행 후보는 상한 근처이므로 다음 독립 확인 구간에서 안정성을 확인해야 한다. §4-A에서 확인한 구간별 차이도 있어, <strong>격자만 보완하면 test 성능이 나아진다는 결론은 아직 없다.</strong></p>
+<div class="chart"><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="784.139062pt" height="282.132pt" viewBox="0 0 784.139062 282.132" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
@@ -4039,8 +4124,7 @@ z
    <rect x="544.552369" y="61.728" width="223.480443" height="156.088"/>
   </clipPath>
  </defs>
-</svg>
-</figure>
+</svg></div>
 <p>그림은 calibration의 낮은 오경보 증가 영역(0–0.25%p)을 표시한다. 원래 격자와 사후 보완 격자를 구분하며, 모두 test 수치가 아니다.</p>
 <h2>6. 다음 변경 — 결과에서 직접 이어지는 수정</h2>
 <div class="table-wrap"><table>
@@ -4061,9 +4145,15 @@ z
 </tr>
 <tr>
 <td>Scorer/verifier</td>
-<td>결정 손익이 교정 후보를 만들지만 benign 훼손 동반</td>
-<td>먼저 격자 수정만 비교; 이후 남는 혼동 구간에 대해 helpful/harmful 분리 추정·대조 evidence 보강</td>
-<td>목표·입력·context를 다시 한꺼번에 바꾸지 않음</td>
+<td>기존 scorer 후보 회수율 87.7%, 새 scorer 46.4%; 결정 verifier는 교정과 훼손을 함께 통과</td>
+<td>우선 기존 scorer + 결정 verifier에서 격자만 보완해 확인. 새 scorer는 개선된 것으로 채택하지 않고 감독 신호·손실·가중치의 영향을 따로 비교</td>
+<td>최종 0뿐 아니라 후보 회수율·verifier 교정 생존율·훼손 통과량을 함께 보고</td>
+</tr>
+<tr>
+<td>Calibration 대표성</td>
+<td>같은 양수 gate에서도 선택 구간과 test의 교정 양상이 다름</td>
+<td>선택·확인 구간의 class×scenario와 global 오류 유형을 비교하고, 선택된 정책의 다음 구간 교정/훼손을 확인</td>
+<td>Prior 가중만으로 class 내부의 시간·오류 패턴 차이까지 해결된 것으로 간주하지 않음</td>
 </tr>
 <tr>
 <td>중간 클래스 expert context</td>
@@ -4090,27 +4180,27 @@ z
 <tbody>
 <tr>
 <td>원본 문헌조사</td>
-<td><a href="https://github.com/westpark9/imbal_cic/blob/main/docs/tabpfn_papers_survey.xlsx">tabpfn_papers_survey.xlsx</a>: HINT(9/7), LoGIC(9/5), Xiaomi-TabLDM(v1 9/3·v2 9/4) 추가. 총 102편, Ch.2 38편</td>
+<td><a href="https://github.com/westpark9/imbal_cic/blob/main/docs/tabpfn_papers_survey.xlsx" target="_blank" rel="noopener">tabpfn_papers_survey.xlsx</a>: HINT(9/7), LoGIC(9/5), Xiaomi-TabLDM(v1 9/3·v2 9/4) 추가. 총 102편, Ch.2 38편</td>
 </tr>
 <tr>
 <td>설계 근거</td>
-<td><a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260909/research_and_model_proposal.md">상세 조사</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260909/mechanism_clarifications.md">학습·추론·지표 설명</a></td>
+<td><a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260909/research_and_model_proposal.md" target="_blank" rel="noopener">상세 조사</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260909/mechanism_clarifications.md" target="_blank" rel="noopener">학습·추론·지표 설명</a></td>
 </tr>
 <tr>
 <td>구현</td>
-<td><a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/scripts/nfv3_v3_exp38_frozen_cache.py">EXP38</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/scripts/nfv3_v3_exp39_decision_routing.py">EXP39</a></td>
+<td><a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/scripts/nfv3_v3_exp38_frozen_cache.py" target="_blank" rel="noopener">EXP38</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/scripts/nfv3_v3_exp39_decision_routing.py" target="_blank" rel="noopener">EXP39</a></td>
 </tr>
 <tr>
 <td>완료 결과</td>
-<td><a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/results/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing/summary.csv">summary.csv</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/results/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing/per_class_metrics.csv">클래스별 결과</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/results/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing/selected_thresholds.json">선택 임계값</a></td>
+<td><a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/results/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing/summary.csv" target="_blank" rel="noopener">summary.csv</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/results/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing/per_class_metrics.csv" target="_blank" rel="noopener">클래스별 결과</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/results/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing/selected_thresholds.json" target="_blank" rel="noopener">선택 임계값</a></td>
 </tr>
 <tr>
 <td>사후 진단</td>
-<td><a href="https://github.com/westpark9/imbal_cic/blob/main/scripts/exp39_calibration_audit.py">진단 코드</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260909/exp39_completed_audit/calibration_grid_audit.csv">calibration 격자 감사</a></td>
+<td><a href="https://github.com/westpark9/imbal_cic/blob/main/scripts/exp39_calibration_audit.py" target="_blank" rel="noopener">진단 코드</a>, <a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260909/exp39_completed_audit/calibration_grid_audit.csv" target="_blank" rel="noopener">calibration 격자 감사</a></td>
 </tr>
 <tr>
 <td>검증</td>
-<td><a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/tests/test_exp39_decision_routing.py">테스트 6개 통과</a>: 손익 라벨, weighted F1, benign·중간 클래스 제약, 시간·hash 분리, 합성 end-to-end</td>
+<td><a href="https://github.com/westpark9/imbal_cic/blob/main/tabpfn/tests/test_exp39_decision_routing.py" target="_blank" rel="noopener">테스트 6개 통과</a>: 손익 라벨, weighted F1, benign·중간 클래스 제약, 시간·hash 분리, 합성 end-to-end</td>
 </tr>
 <tr>
 <td>환경</td>
@@ -4134,4 +4224,33 @@ python scripts/exp39_calibration_audit.py \
   --cache tabpfn/resume/exp38_frozen_seed42_20260909_v2 \
   --out docs/research/20260909/exp39_completed_audit
 </code></pre>
-<p>큰 cache·학습 모델·행별 예측은 로컬에 보관하며 Git에는 코드·설정·표·보고서를 반영한다. 새 context 구성과 보완 격자의 확인/test 실험은 아직 실행하지 않았다.</p><footer>원본 완료 결과와 사후 calibration 진단을 구분했습니다. 모델 목표는 모든 클래스의 취약 구간을 교정하면서 tail을 개선하는 것입니다.</footer></main></body></html>
+<p>큰 cache·학습 모델·행별 예측은 로컬에 보관하며 Git에는 코드·설정·표·보고서를 반영한다. 새 context 구성과 보완 격자의 확인/test 실험은 아직 실행하지 않았다.</p>
+<h2>8. 9/10 보완 — 신규 논문의 성능 비교군 포함 판단</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>방법</th>
+<th>이번 판단</th>
+<th>우리 모델과의 관계·비교 범위</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Xiaomi-TabLDM</td>
+<td><strong>주요 성능 비교군에 포함</strong></td>
+<td>공식 분류 코드·checkpoint가 있어 실행 비교가 가능하다. 프리프린트라는 이유로 제외하지 않는다. 내부 FFN MoE와 우리 context별 PFN expert는 학습·선택 단위가 다르지만, 조건부 expert 사용의 관련 연구로도 다룬다. <a href="https://github.com/xiaomi-research/xiaomi-tabldm" target="_blank" rel="noopener">공식 코드</a>, <a href="https://arxiv.org/abs/2609.03880" target="_blank" rel="noopener">논문</a></td>
+</tr>
+<tr>
+<td>HINT</td>
+<td><strong>조건부 호출 방식 비교군에 포함</strong></td>
+<td>kNN confidence → 검색 context를 넣은 TabPFN 호출이 우리 gate/context 주장과 가깝다. Streaming 원문과 fixed-split adaptation을 구분하고, test 라벨로 memory를 갱신하지 않는 비교부터 수행한다. <a href="https://arxiv.org/html/2609.07956v1" target="_blank" rel="noopener">원문</a></td>
+</tr>
+<tr>
+<td>LoGIC</td>
+<td><strong>관련 연구 포함, 현재 주 성능표에서는 제외</strong></td>
+<td>그래프 node 분류의 구조 검색·unlabeled halo가 핵심이다. NetFlow에 feature/coverage 부분만 이식하면 LoGIC-inspired adaptation으로 표시한다. <a href="https://arxiv.org/html/2609.05955v1" target="_blank" rel="noopener">원문</a></td>
+</tr>
+</tbody>
+</table></div>
+<p>MoE라는 공통점만으로 우리의 독창성을 주장할 수 없다. Xiaomi는 사전학습된 Transformer 내부 표현의 expert 선택, 우리는 frozen PFN의 context별 출력 선택과 교정을 다룬다. 우리의 기여는 같은 global 위에서 실제 교정이 늘어나는 결과로 입증해야 하며, 이번 최종 ΔF1=0으로는 아직 그 성능 기여를 입증하지 못했다.</p>
+<p>Xiaomi와 같은 C0 100k를 사용한 비교는 backbone 비교다. Ours 전체 시스템은 expert bank·route의 추가 라벨도 쓰므로 별도로 접근 가능한 train pool과 검증 예산을 맞춰야 한다. <a href="https://github.com/westpark9/imbal_cic/blob/main/docs/research/20260910/sota_inclusion_decision.md" target="_blank" rel="noopener">상세 비교 판단과 프로토콜</a>.</p><footer>9/10 해석 보완: 최종 정책·expert 강제 적용·단계별 진단을 분리했습니다. 원래 실험의 모델·임계값·test 예측은 변경하지 않았습니다.</footer></main></body></html>
