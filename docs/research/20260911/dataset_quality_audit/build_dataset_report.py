@@ -501,6 +501,7 @@ svg text {{ font-family:var(--mono); font-size:11px; fill:var(--ink); }} svg .ax
 ol, ul {{ max-width:76ch; padding-left:22px; }} li {{ margin:5px 0; }} ul.lit {{ list-style:none; padding-left:0; max-width:88ch; }} ul.lit li {{ margin:0 0 10px; padding-left:12px; border-left:2px solid var(--line); }} ul.lit a {{ color:var(--acc); text-decoration:none; font-weight:500; }} ul.lit a:hover {{ text-decoration:underline; }} .ref, .figcap {{ font-size:12.5px; color:var(--muted); }} .figcap {{ padding:6px 4px 0; }}
 @media (max-width:720px) {{ h1 {{ font-size:26px; }} main {{ padding:28px 16px 60px; }} }}
 </style></head><body><main>
+<aside style="border:2px solid #427d68;background:#eef6f1;padding:16px 20px;border-radius:12px;margin-bottom:24px"><strong>09-16 후속 결정 · 모순 제거 후 구조 재검증</strong><p style="margin:8px 0 0">이 보고서는 09-11~15의 데이터 감사와 당시 권고를 보존한 기록입니다. 이후 미팅에서 모순 그룹의 모든 행을 제외하고 재검증하기로 결정했습니다. CIC2018 EXP47 완료: 실제 expert 호출·채택 0건. ToN EXP48도 같은 정제 기준으로 실행합니다. 상세 진단·시각화·최신 실행 상태는 통합본 목차의 <strong>「모순 제거 후 구조 진단 · CIC2018와 ToN」(09-16)</strong>을 확인하세요.</p></aside>
 <p class="eyebrow">imbalcic · 데이터 감사 · 2026-09-11 (09-15 개정) · 코드 <code>docs/research/20260911/dataset_quality_audit/</code></p>
 <h1>NF-v3 4종 데이터 품질 감사 — 모순·중복·누수</h1>
 <p class="lede">전 행(66,935,021 × 46)을 hash로 묶어 (1) <b>모순</b>(한 벡터가 두 라벨)·<b>중복</b>(같은 벡터·라벨의 반복)·<b>누수</b>(test 벡터가 train에 존재)가 클래스별로 어떻게 생겼는지, (2) 그중 모순이 만드는 oracle 천장이 어디인지, (3) 다른 연구는 이 셋을 어떻게 처리했는지, (4) 중복과 모순을 분리해 처리하면 방법별·클래스별로 무엇이 달라지는지, (5) 시간순으로 어떤 클래스가 언제 나타나는지를 정리한다.</p>

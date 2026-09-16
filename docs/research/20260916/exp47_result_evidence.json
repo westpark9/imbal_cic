@@ -1,0 +1,100 @@
+{
+  "run": "tabpfn/results/20260915_180000_nfv3_cic2018_exp47_clean_revalidation_s42",
+  "completion": {
+    "seconds": 4429.754582166672,
+    "completed_kst": "2026-09-15T19:23:03.674308+09:00",
+    "seed": 42
+  },
+  "new_models_trained": false,
+  "new_thresholds_selected": false,
+  "native": {
+    "macro_f1": 0.8106530623034781,
+    "rows": 3042473,
+    "global_errors": 11597,
+    "calls": 0,
+    "accepted": 0,
+    "q_corr": 0.0007752043487708821
+  },
+  "positive_scorer_training_pairs": {
+    "total": 602429,
+    "both_correct": 584700,
+    "helpful": 11470,
+    "harmful": 0,
+    "both_wrong": 6259,
+    "fractions": {
+      "both_correct": 0.9705708058542999,
+      "helpful": 0.019039588067639505,
+      "harmful": 0.0,
+      "both_wrong": 0.01038960607806065
+    }
+  },
+  "scorer_teacher_pairs": {
+    "helpful_available": 26570,
+    "helpful_passes_oof": 11470
+  },
+  "residual_clip_value": 0.6016453908106546,
+  "verifier": {
+    "cal": {
+      "evaluation_rows": 124856,
+      "candidate_helpful": 2816,
+      "candidate_harmful": 9758,
+      "raw_positive_helpful": 6,
+      "raw_positive_harmful": 3,
+      "corrected_positive_helpful": 6,
+      "corrected_positive_harmful": 3,
+      "q_hat_auroc_helpful_vs_harmful": 0.4465387301677877,
+      "q_hat_helpful_median": -1.2168031334877014,
+      "q_hat_harmful_median": -1.1454437971115112
+    },
+    "eval": {
+      "evaluation_rows": 3042473,
+      "candidate_helpful": 4685,
+      "candidate_harmful": 553246,
+      "raw_positive_helpful": 13,
+      "raw_positive_harmful": 106,
+      "corrected_positive_helpful": 13,
+      "corrected_positive_harmful": 106,
+      "q_hat_auroc_helpful_vs_harmful": 0.5408505280628616,
+      "q_hat_helpful_median": -1.0767796039581299,
+      "q_hat_harmful_median": -1.1253836154937744
+    }
+  },
+  "policy_candidates": {
+    "EXP31": {
+      "count": 77,
+      "feasible": 0,
+      "support_rejections": 77
+    },
+    "EXP39_legacy": {
+      "count": 78,
+      "feasible": 0,
+      "support_rejections": 78
+    }
+  },
+  "bank_correctness_oracle": {
+    "arm": "correctness_oracle",
+    "split": "full_test",
+    "rows": 3042473,
+    "macro_f1": 0.962639709037386,
+    "tail_f1": 0.9153958936559804,
+    "benign_fpr": 6.673697299941495e-05,
+    "accuracy": 0.999503035852742,
+    "delta_macro_f1": 0.1519866467339079,
+    "delta_tail_f1": 0.3534270653057648,
+    "delta_benign_fpr": -0.0015651139826023,
+    "proposed": 0,
+    "accepted": 10085,
+    "logical_expert_calls": 0,
+    "diagnostic_all_expert_policy": false,
+    "changed": 10085,
+    "helpful": 10085,
+    "harmful": 0
+  },
+  "audit_scope": {
+    "cal_dense_vs_original_candidate_changes": 23,
+    "dense_diagnostic_vs_native_final_label_changes": 0,
+    "new_thresholds_selected": false,
+    "cal_role": "baseline selection/training diagnostics; independent EXP39 confirm results reported separately",
+    "dense_gate_results": "diagnostic; native_final_policy is actual EXP31 result"
+  }
+}

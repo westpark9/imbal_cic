@@ -2,6 +2,8 @@
 
 승인: 2026-09-15 사용자 지시 “일단 global 모델에 대한 실험은 지금 진행해도 될 것같음.”
 
+> **현재 상태: 사용자 요청으로 중단.** 위 승인은 이후 중단 지시로 철회됐다. Controller·worker 종료를 확인했고 재개하지 않는다. 이 문서는 착수 당시 프로토콜로 보존한다. 현재 작업은 [모순 행 제거 후 CIC2018 기존 구조 재검증 계획](post_meeting_plan.md)이며, [중단 상태](../../../tabpfn/results/20260915_155115_nfv3_toniot_exp46_global_context_s42/STOPPED.json)에 부분 완료 범위를 기록했다.
+
 ## 목적과 범위
 
 기존 C0와 자연 비율 context의 차이에 섞인 **class quota**와 **추첨 시간 구간**을 분리한다. 이번 실행은 global 비교이며 expert·scorer·verifier를 학습하거나 선택하지 않는다. 기존 실험 스크립트는 변경하지 않는다.
