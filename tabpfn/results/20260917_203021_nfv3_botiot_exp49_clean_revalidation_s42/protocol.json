@@ -1,0 +1,24 @@
+{
+  "dataset": "bot_iot",
+  "seed": 42,
+  "parent_args": "/home/user/Desktop/imbalcic/tabpfn/results/20260904_010654_nfv3_cic2018_exp31_c0alloc/args.json",
+  "clean_manifest": "/home/user/Desktop/imbalcic/data/derived/botiot_conflict_free_fixed_split_20260917_202829/manifest.json",
+  "training_configuration_changes": [
+    "target_dataset: cic2018 -> bot_iot",
+    "dataset tail vocabulary: theft"
+  ],
+  "secondary_protected_classes": [
+    "ddos",
+    "dos"
+  ],
+  "diagnostic_changes": [
+    "dense_eval=True",
+    "nine observation callbacks",
+    "calibration all-expert predictions after baseline test"
+  ],
+  "baseline_policy": "EXP31 weighted-NLL constraints, original scorer and normgain verifier",
+  "secondary_policy": "existing EXP39 legacy only; shared macro-F1 calibration/confirmation protocol",
+  "context_rule": "100k C0; benign share .75, attack balanced, original scenario-stratified role rules",
+  "outer_split": "original memberships intersected with clean keep indices",
+  "old_predictions_reused": false
+}

@@ -1,0 +1,31 @@
+{
+  "cache_dir": "tabpfn/results/20260915_180000_nfv3_cic2018_exp47_clean_revalidation_s42/frozen_cache",
+  "out_root": "tabpfn/results/exp51_scorer_target_cic2018",
+  "arms": "legacy,hdn,s1v0,s1v1",
+  "trees": 300,
+  "depth": 6,
+  "learning_rate": 0.05,
+  "threads": 8,
+  "seed": 42,
+  "predict_chunk": 100000,
+  "confirm_fraction": 0.3,
+  "benign_fpr_increase": 0.0005,
+  "protected_classes": "brute_force,ddos,dos",
+  "protected_f1_drop": 0.0,
+  "max_proposal": 1.0,
+  "min_decided": 30,
+  "hdn_lambda": 1.0,
+  "wait_for_cache": false,
+  "cache_wait_minutes": 120.0,
+  "cache_identity": {
+    "schema": "exp47_direct_v1",
+    "clean_manifest_sha256": "f9faadfa00d9206814c22ba96efbbbb3f3abb793cefeec3da18b1d44e0363640",
+    "source_args_sha256": "306ddc111d8b792854e7fb2c7428d93592e8054418366a79d0c0cfb16fb1368c",
+    "contexts_sha256": "2a5394bb197b55f16c26164e0e4f767a5bb6a9ba2f46ccb8ad6249b508529211",
+    "trace_source_sha256": "3b75319f6a99f319b3a2d099353ba7dd7b91cab2c4f618cb16aa08cb5c537a75"
+  },
+  "script_sha256": "5aa15c3dbc16cd3db85020e60a7a5171ecf020028c7f64b61d66cf7f2703487a",
+  "test_role": "conflict-free subset of previously-used development holdout",
+  "calibration_prior_assumption": "class-conditional transfer from masked calibration to historical train prior",
+  "legacy_control_note": "new shared calibration and shared learner hyperparameters; not exact EXP31 replay"
+}

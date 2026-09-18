@@ -1,0 +1,135 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Expert 전용 context가 자기 클래스에서 오히려 나쁘다</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #F6F7F5; --bg-2: #EDEFEC; --ink: #1B2229; --muted: #5C6770; --line: #D3D8D4;
+  --acc: #1F6F8B; --acc-soft: #DCEBF0; --warn: #B0413E; --warn-soft: #F3E1E0; --ok: #3C7A4A; --ok-soft: #E1EEE3;
+  --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181B; --bg-2: #1C2226; --ink: #E6E9E7; --muted: #9AA5AC; --line: #2C3338;
+    --acc: #58B4D0; --acc-soft: #1B3540; --warn: #E0736F; --warn-soft: #3D2322; --ok: #7DBB8A; --ok-soft: #1F3324;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181B; --bg-2: #1C2226; --ink: #E6E9E7; --muted: #9AA5AC; --line: #2C3338;
+  --acc: #58B4D0; --acc-soft: #1B3540; --warn: #E0736F; --warn-soft: #3D2322; --ok: #7DBB8A; --ok-soft: #1F3324;
+}
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.6; }
+main { max-width: 1040px; margin: 0 auto; padding: 40px 24px 80px; }
+header { display: grid; grid-template-columns: 1fr; gap: 6px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--serif); font-weight: 600; font-size: 30px; line-height: 1.2; margin: 0; text-wrap: balance; }
+.lede { max-width: 70ch; color: var(--muted); margin: 6px 0 0; }
+h2 { font-family: var(--serif); font-weight: 600; font-size: 22px; margin: 44px 0 10px; text-wrap: balance; }
+h3 { font-family: var(--sans); font-weight: 600; font-size: 15px; margin: 22px 0 6px; }
+p { max-width: 72ch; margin: 8px 0; }
+.verdict { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 26px 0 8px; }
+.tile { background: var(--bg-2); border-top: 2px solid var(--acc); padding: 14px 16px; }
+.tile .k { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.tile .v { font-family: var(--mono); font-size: 24px; font-weight: 500; line-height: 1.25; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+.tile .d { font-size: 13px; color: var(--muted); }
+.tile.warn { border-top-color: var(--warn); }
+.tile.ok { border-top-color: var(--ok); }
+.wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--mono); font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: .03em; }
+th:first-child, td:first-child { text-align: left; }
+td { font-family: var(--mono); }
+td.t { font-family: var(--sans); }
+tr.hi td { background: var(--acc-soft); }
+tr.bad td { background: var(--warn-soft); }
+.b { font-weight: 600; color: var(--acc); }
+.w { color: var(--warn); }
+.g { color: var(--ok); }
+.note { font-size: 13px; color: var(--muted); max-width: 76ch; margin: 8px 0 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media (max-width: 760px) { .grid2, .verdict { grid-template-columns: 1fr; } }
+.pill { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 10px; background: var(--bg-2); color: var(--muted); border: 1px solid var(--line); vertical-align: middle; }
+.pill.bad { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.pill.good { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+ul, ol { padding-left: 20px; max-width: 76ch; } li { margin: 4px 0; }
+code { font-family: var(--mono); font-size: 13px; background: var(--bg-2); padding: 1px 5px; border-radius: 2px; }
+pre { font-family: var(--mono); font-size: 12.5px; background: var(--bg-2); padding: 12px 14px; border-radius: 4px; overflow-x: auto; border-left: 3px solid var(--acc); }
+.small { font-size: 13px; }
+.foot { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.foot code { word-break: break-all; }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">imbalcic · 진단 · 2026-09-18</div>
+  <h1>Expert 전용 context가 &mdash; 그걸 위해 설계된 &mdash; 자기 담당 클래스에서 오히려 global보다 나쁘다</h1>
+  <p class="lede">S0/S1 &times; V0/V1 scorer&middot;verifier target 대조(09-17&ndash;18)에서 어떤 조합도 macro-F1을 크게 못 끌어올린 이유를 진단했다. 결론: <b>routing 문제가 아니라 expert 자체가 특화돼 있지 않다.</b> 오히려 자기 담당 클래스로 설계된 expert일수록 그 클래스에서 더 나쁜 경우가 많다. 새 TabPFN 학습 없이 기존 EXP48 run의 "expert K를 test 전체에 강제 적용" 진단(이미 저장돼 있던 값)만으로 확인했다.</p>
+</header>
+
+<div class="verdict">
+  <div class="tile warn"><div class="k">꼬리 클래스(mitm&middot;ransomware)</div><div class="v">7개 expert 전부 global 이하</div><div class="d">mitm(global F1 0.067)·ransomware(0.140) 모두 어떤 expert도 이기지 못한다. 라우팅을 아무리 잘해도 고칠 표적이 없다.</div></div>
+  <div class="tile warn"><div class="k">"자기 클래스" 역설</div><div class="v">최대 &minus;0.543</div><div class="d">injection 전용으로 만든 expert4가 injection에서 F1을 0.543 깎는다. dos 전용 expert3도 dos에서 &minus;0.524. 설계 의도와 실제 성능이 반대로 간다.</div></div>
+</div>
+
+<h2>배경 &mdash; 왜 이 진단을 했나</h2>
+<p>09-17&ndash;18 scorer&middot;verifier target 4-arm 대조(S0V0&middot;S0V1&middot;S1V0&middot;S1V1)에서 ToN은 S1V0(scorer만 교정확률&minus;훼손위험으로 직접 회귀)가 호출을 81% 줄이면서 macro-F1을 소폭(0.754327&rarr;0.755490) 올렸지만, CIC는 4개 조합 모두 여전히 실패했다. Scorer&middot;verifier의 목표 함수를 아무리 바꿔도 개선폭이 작다는 건 <b>애초에 배울 신호가 약하다</b>는 뜻일 수 있다. 그래서 "expert가 실제로 자기 클래스에 특화돼 있는가"를 직접 재봤다 &mdash; ToN EXP48 run에 이미 저장된 "expert K를 test 전체(2,271,723행)에 강제 적용했을 때의 클래스별 F1" 진단값을 그대로 썼다(추가 학습 없음).</p>
+
+<h2>클래스별: 최선의 expert도 global을 못 이기는 경우가 태반</h2>
+<div class="wrap"><table>
+<thead><tr><th class="t">클래스</th><th>Test support</th><th>Global F1</th><th class="t">최선 expert</th><th>그 &Delta;F1</th></tr></thead>
+<tbody>
+<tr><td class="t">backdoor</td><td>40,030</td><td>0.9987</td><td class="t">expert7</td><td class="g">+0.000</td></tr>
+<tr class="bad"><td class="t">benign</td><td>1,474,302</td><td>0.9119</td><td class="t">expert6</td><td class="w">&minus;0.019</td></tr>
+<tr><td class="t">ddos</td><td>103,338</td><td>0.9687</td><td class="t">expert4</td><td class="g">+0.006</td></tr>
+<tr class="bad"><td class="t">dos</td><td>22,458</td><td>0.9831</td><td class="t">expert7</td><td class="w">&minus;0.007</td></tr>
+<tr><td class="t">injection</td><td>68,891</td><td>0.9315</td><td class="t">expert7</td><td class="g">+0.022</td></tr>
+<tr class="bad"><td class="t"><b>mitm</b></td><td>1,161</td><td>0.0674</td><td class="t">expert3</td><td class="w">&minus;0.006</td></tr>
+<tr><td class="t">password</td><td>210,951</td><td>0.8909</td><td class="t">expert2</td><td class="g">+0.001</td></tr>
+<tr class="bad"><td class="t"><b>ransomware</b></td><td>709</td><td>0.1397</td><td class="t">expert2</td><td class="w">&minus;0.016</td></tr>
+<tr class="hi"><td class="t">scanning</td><td>6,029</td><td>0.1384</td><td class="t">expert4</td><td class="b">+0.333</td></tr>
+<tr class="hi"><td class="t">xss</td><td>343,854</td><td>0.8070</td><td class="t">expert5</td><td class="b">+0.055</td></tr>
+</tbody>
+</table></div>
+<p class="note">10개 클래스 중 <b>6개는 어느 expert도 global을 못 이긴다</b>(음영 표시). 특히 이 프로젝트가 표적으로 삼는 꼬리 클래스 mitm&middot;ransomware가 여기 포함된다. scanning&middot;xss만 뚜렷한 양의 개선이 있는데, 아래에서 보듯 그 개선이 "설계된" expert에게서 나온 게 아니다.</p>
+
+<h2>결정적 증거: 설계 의도 vs 실제 성능이 반대로 간다</h2>
+<p>각 expert의 전용 context(anchor 제외)가 어떤 클래스로 채워졌는지(<code>2a_expert_contexts.csv</code>)와, 그 expert를 <b>자기 담당 클래스에서</b> 강제 적용했을 때 실제 성능을 나란히 놓았다.</p>
+<div class="wrap"><table>
+<thead><tr><th class="t">Expert</th><th class="t">전용 context 지배 클래스</th><th>비중</th><th>자기 클래스 실제 &Delta;F1</th></tr></thead>
+<tbody>
+<tr class="bad"><td class="t">expert1</td><td class="t">injection</td><td>92%</td><td class="w">&minus;0.042</td></tr>
+<tr><td class="t">expert2</td><td class="t">scanning</td><td>99%</td><td class="g">+0.027</td></tr>
+<tr class="bad"><td class="t">expert3</td><td class="t">dos</td><td>100%</td><td class="w"><b>&minus;0.524</b></td></tr>
+<tr class="bad"><td class="t">expert4</td><td class="t">injection</td><td>94%</td><td class="w"><b>&minus;0.543</b></td></tr>
+<tr class="bad"><td class="t">expert5</td><td class="t">ransomware</td><td>100%</td><td class="w">&minus;0.109</td></tr>
+<tr><td class="t">expert6</td><td class="t">benign(잔여 혼합)</td><td>27%</td><td class="w">&minus;0.019</td></tr>
+<tr class="bad"><td class="t">expert7</td><td class="t">xss</td><td>96%</td><td class="w">&minus;0.076</td></tr>
+</tbody>
+</table></div>
+<p class="note"><b>injection용으로 만든 expert1&middot;4는 injection에서 오히려 global보다 나쁘고(&minus;0.042, &minus;0.543), dos 전용 expert3은 dos에서 F1이 반토막(&minus;0.524)난다.</b> 7개 중 6개가 자기 담당 클래스에서 음수다. 유일한 예외 expert2(scanning, +0.027)도 폭이 작다 &mdash; 반면 <b>scanning에서 진짜 큰 개선(+0.306&ndash;+0.333)은 scanning을 위해 설계되지 않은 expert4&middot;5&middot;7에서 나온다.</b> "제대로 설계된 expert가 자기 클래스를 잘한다"는 가정과 정반대의 패턴이다.</p>
+
+<h2>메커니즘 가설 &mdash; 왜 이렇게 됐나</h2>
+<p>Expert 전용 context는 residual(=global이 그 정답에 준 확률이 얼마나 낮았는지, 클래스 가중치 포함)이 큰 사례를 우선으로 뽑는다. 코드로는 <code>diversity_select()</code>(<code>nfv3_v3_exp31_c0alloc.py</code>)가 임베딩으로 군집을 나눈 뒤, <b>각 군집 안에서도 residual이 가장 큰 사례부터</b> budget만큼 채운다:</p>
+<pre>top = members[np.argsort(-r_regime[members], kind="stable")[:tgt[cid]]]</pre>
+<p>즉 군집 배정과 무관하게 최종 선택은 항상 "global이 가장 헷갈려한 사례" 우선이다. 이게 의도했던 그림은 "global이 헷갈리는 경계를 아는 expert"였지만, 실제로는 <b>그 클래스의 깨끗한 대표 사례를 거의 안 보여주고 경계에 걸친 애매한 사례만 잔뜩 보여주는 컨텍스트</b>가 된다. TabPFN 같은 in-context 학습기가 "injection이 뭔지"를 애매한 사례로만 배우면, 오히려 injection을 더 못 배우는 쪽으로 가는 게 자연스럽다. scanning&middot;xss의 개선이 설계 안 된 expert에서 나오는 것도 같은 논리로 설명된다 &mdash; 그 expert들은 해당 클래스를 residual 기준으로 고르지 않았으니 우연히 더 깨끗한(혹은 그냥 다른 성격의) 표본을 보게 된 것으로 보인다.</p>
+
+<h2>Scorer&middot;verifier 결과와의 연결</h2>
+<p>이 진단은 09-17&ndash;18 결과를 재해석하게 만든다. S1V0가 호출을 81% 줄이면서도 macro-F1을 지켰다는 건 <b>"불필요한 호출을 잘 걸러냈다"</b>는 뜻이지, expert가 새로 뭔가를 잘하게 됐다는 뜻이 아니다. Scorer&middot;verifier의 target을 어떻게 바꿔도 상한이 낮았던 이유는 바로 이 표에 있다 &mdash; <b>애초에 라우팅해서 얻을 게 많지 않은 expert가 대부분이다.</b> CIC가 4개 조합 모두 실패한 것도 같은 원인일 가능성이 높다(CIC는 이번 진단을 아직 반복하지 않았음 &mdash; 다음 단계 참고).</p>
+
+<h2>다음 단계</h2>
+<ol>
+  <li><b>Expert context 구성 실험(합의 후 진행)</b> &mdash; residual-top-pick 일변도 대신 클래스 대표 사례를 섞어서 자기 클래스 특화가 회복되는지 검증. 별도 계획 브리핑 참고.</li>
+  <li><b>CIC에서도 같은 진단 반복</b> &mdash; 지금은 ToN만 확인했다. CIC 8개 expert도 같은 패턴(자기 클래스 역설)인지 확인해야 scorer/verifier 축을 완전히 접을지 판단할 수 있다.</li>
+  <li><b>K(expert 개수) 재검토는 이 진단 이후로</b> &mdash; 지금 K는 tune NLL-oracle 기준으로 뽑힌 것이라, expert 품질 자체가 바뀌면 최적 K도 달라질 수 있다.</li>
+</ol>
+
+<div class="foot">
+<p>진단 데이터 원본: <code>tabpfn/results/exp51_scorer_target_toniot/20260917_220024_150140_exp51_scorer_target/per_class_metrics.csv</code>(arm=<code>expertK_always</code>, split=<code>full_test</code>) &middot; <code>tabpfn/results/20260916_021730_nfv3_toniot_exp48_clean_revalidation_s42/baseline/20260916_030340_nfv3_toniot_exp31_c0alloc/2a_expert_contexts.csv</code>. 새 TabPFN 학습 없음, 09-17 EXP48 frozen cache와 그 진단값을 재사용.</p>
+<p>이전 버전(S0/S1 &times; V0/V1 4-arm 비교, ToN S1V0/CIC 4개 조합 표)은 이 페이지에 실린 결과로 대체됐다. 원 수치는 <code>tabpfn/results/exp51_scorer_target_{cic2018,toniot}/</code>의 seed 42/43/44 run에 그대로 보존돼 있다.</p>
+<p>관련 보고서: <span class="pill">clean_revalidation_0916</span></p>
+</div>
+</main>
+</body></html>

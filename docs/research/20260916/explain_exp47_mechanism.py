@@ -44,23 +44,65 @@ def explain(cic, read_csv):
     result['post_grid'] = [float(x) for x in args['tau_post_grid'].split(',')]
     result['threshold_limits'] = {k: args[k] for k in ['cal_min_decided', 'cal_min_accepted', 'cal_max_proposal',
                                                      'cal_harmful_frac', 'cal_benign_fpr_increase']}
+    result['cost'] = {k: args[k] for k in ['lambda_cost', 'expert_cost']}
+    # Accounting on the saved selection-calibration grid only: no refitting,
+    # no replacement of the original policy, and no use of test to select gates.
+    result['support_relaxation'] = {
+        'scope': 'saved calibration grid; remove only cal_min_decided',
+        'original_feasible': sum(bool(r['feasible']) for r in result['cal_grid']),
+        'candidates': [r for r in result['cal_grid']
+                       if set(str(r['reason']).split(',')) <= {'', 'decided_support'}]}
+    assert len(result['support_relaxation']['candidates']) == 7
+    pre_values = sorted({r['tau_pre'] for r in result['cal_grid']})
+    assert len(pre_values) == len(result['pre_quantiles'])
+    result['pre_cutoffs'] = []
+    for q, cutoff in zip(result['pre_quantiles'], pre_values):
+        row = next(r for r in result['cal_grid'] if r['tau_pre'] == cutoff)
+        result['pre_cutoffs'].append({'quantile': q, 'threshold': cutoff,
+            'called': row['called_transitions']['rows'], 'cal_rows': int(mask.sum())})
     with np.load(diag / 'residual_inputs.npz') as source, np.load(base / 'context_rows.npz') as contexts:
         ids, y = source['row_id'], source['y']
         glob = source['p0'].argmax(1)
         order = ids.argsort(); sorted_ids = ids[order]
         result['global_context_rows'] = len(contexts['C0'])
         result['clip'] = float(source['r_max'])
+        result['clip_quantile'] = args['residual_clip_q']
         result['pool_rows'] = len(ids)
+        raw, clipped = source['residual'], source['clipped_residual']
+        assert np.isclose(np.quantile(raw, args['residual_clip_q']), result['clip'], rtol=0, atol=1e-12)
+        assert np.allclose(clipped, np.minimum(raw, result['clip']))
+        result['clipped_rows'] = int((raw > result['clip']).sum())
+        result['clip_by_class'] = [
+            {'class': name, 'rows': int((y == c).sum()),
+             'clipped': int(((y == c) & (raw > result['clip'])).sum())}
+            for c, name in enumerate(names)]
+        result['minority_benign_rows'] = []
         result['block_stats'] = []
         for k in range(1, 9):
             block_ids = contexts[f'expert{k}_block']
             positions = order[np.searchsorted(sorted_ids, block_ids)]
             assert np.array_equal(ids[positions], block_ids)
             wrong = positions[glob[positions] != y[positions]]
+            pairs, counts = np.unique(np.column_stack([y[wrong], glob[wrong]]), axis=0, return_counts=True)
+            directions = sorted([{'true': names[int(a)], 'global_pred': names[int(b)], 'rows': int(count)}
+                                 for (a, b), count in zip(pairs, counts)], key=lambda row: -row['rows'])
+            values = raw[positions]
             result['block_stats'].append({'expert': k, 'rows': len(positions), 'global_wrong': len(wrong),
                 'global_correct': len(positions)-len(wrong),
                 'wrong_by_class': dict(zip(names, np.bincount(y[wrong], minlength=len(names)).tolist())),
-                'mean_residual': float(source['residual'][positions].mean())})
+                'mean_residual': float(values.mean()), 'wrong_directions': directions,
+                'raw_quantiles': dict(zip(['min', 'median', 'p95', 'max'],
+                                         np.quantile(values, [0, .5, .95, 1]).tolist())),
+                'clipped_rows': int((values > result['clip']).sum())})
+            assert sum(row['rows'] for row in directions) == len(wrong)
+            if k in (1, 5):
+                for pos in positions[y[positions] == names.index('benign')]:
+                    result['minority_benign_rows'].append({
+                        'expert': k, 'row_id': int(ids[pos]), 'global_pred': names[int(glob[pos])],
+                        'p_true': float(source['p0'][pos, names.index('benign')]),
+                        'raw_residual': float(raw[pos]), 'clipped_residual': float(clipped[pos])})
+        assert sum(r['expert'] == 1 for r in result['minority_benign_rows']) == 4
+        assert sum(r['expert'] == 5 for r in result['minority_benign_rows']) == 1
     y = np.load(cache / 'eval_y.npy', mmap_mode='r')
     glob = np.load(cache / 'eval_p0.npy', mmap_mode='r').argmax(1)
     benign_correct = (y == names.index('benign')) & (glob == y)

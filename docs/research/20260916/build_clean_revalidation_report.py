@@ -187,6 +187,60 @@ def write_ton_result(ton):
         'ToN EXP48도 완료했으며 결과를 같은 HTML에 반영했다.'))
 
 
+def brief_case(result):
+    """Same three reporting sections for both datasets, using native cal candidates."""
+    root = Path(result['launch']['run_dir'])
+    base = Path(result['meta']['source_run'])
+    cache, diag = root / 'frozen_cache', root / 'diagnostics'
+    contexts = read_csv(base / '2a_expert_contexts.csv')
+    anchor = next(r for r in contexts if r['expert'] == 'anchor(shared)')
+    experts = [dict(r) for r in contexts if isinstance(r['expert'], int)]
+    assert len(experts) == result['meta']['n_experts']
+    with np.load(diag / 'residual_inputs.npz') as source, np.load(base / 'context_rows.npz') as saved:
+        ids, y, pred = source['row_id'], source['y'], source['p0'].argmax(1)
+        order = ids.argsort()
+        for expert in experts:
+            block = saved[f"expert{expert['expert']}_block"]
+            positions = order[np.searchsorted(ids[order], block)]
+            assert np.array_equal(ids[positions], block)
+            assert len(block) == expert['block_rows']
+            assert sum(expert[name] for name in result['meta']['class_names']) == len(block)
+            expert['global_wrong'] = int((pred[positions] != y[positions]).sum())
+            expert['total_context'] = expert['anchor_rows'] + expert['block_rows']
+    if result['native']['calls'] == 0:
+        # A rejected candidate with only the decided-support failure explains the bottleneck.
+        example = max((r for r in result['grid'] if r['reason'] == 'decided_support'),
+                      key=lambda r: r['net_gain'])
+    else:
+        example = next(r for r in result['grid']
+                       if np.isclose(r['tau_pre'], float(result['native']['tau_pre']), rtol=0, atol=1e-12)
+                       and r['tau_post'] == float(result['native']['tau_post']))
+    with np.load(diag / 'baseline_cal_scores.npz') as scores:
+        y = np.load(cache / 'cal_y.npy')
+        glob = np.load(cache / 'cal_p0.npy').argmax(1)
+        candidate = scores['candidate']
+        mask = np.load(cache / 'cal_baseline_mask.npy')
+        called = mask & (scores['score'].max(1) > example['tau_pre'])
+        accepted = called & (scores['g_lower'] > example['tau_post'])
+        stages = []
+        for name, take in [('Scorer 추천', mask), ('호출 기준 통과', called), ('Verifier 승인', accepted)]:
+            h = int((take & (glob != y) & (candidate == y)).sum())
+            d = int((take & (glob == y) & (candidate != y)).sum())
+            cc = int((take & (glob == y) & (candidate == y)).sum())
+            ww = int((take & (glob != y) & (candidate != y)).sum())
+            assert h + d + cc + ww == int(take.sum())
+            stages.append(dict(name=name, rows=int(take.sum()), helpful=h, harmful=d,
+                               both_correct=cc, both_wrong=ww))
+        assert (stages[-1]['rows'], stages[-1]['helpful'], stages[-1]['harmful']) == (
+            example['accepted'], example['helpful'], example['harmful'])
+    for split in ['train', 'test']:
+        assert sum(r['after'] for r in result['class_counts'] if r['split'] == split) == result['clean']['split_rows'][split]
+    candidates = read_csv(base / '2d_k_selection.csv')
+    return {'anchor': anchor, 'experts': experts, 'cal_example': example, 'cal_funnel': stages,
+            'chosen_k_before_pruning': max(candidates, key=lambda r: r['tune_oracle_macro'])['K'],
+            'feasible_count': sum(bool(r['feasible']) for r in result['grid'])}
+
+
 def main():
     cic = collect(read_json(ROOT / 'docs/research/20260915/exp47_launch.json'))
     ton = collect(read_json(HERE / 'exp48_launch.json'))
@@ -203,6 +257,7 @@ def main():
             'cic': cic, 'ton': ton, 'evidence': evidence,
             'residual': read_csv(HERE / 'exp47_residual_context_evidence.csv')}
     data['mechanism'] = explain(cic, read_csv)
+    data['brief'] = {'cic': brief_case(cic), 'ton': brief_case(ton)}
     (HERE / 'exp47_mechanism_explainer.json').write_text(json.dumps(data['mechanism'], ensure_ascii=False, indent=2)+'\n')
     encoded = json.dumps(data, ensure_ascii=False, allow_nan=False).replace('</', r'<\/')
     template = (HERE / 'clean_revalidation_template.html').read_text()
@@ -217,9 +272,9 @@ def main():
     if report is None:
         report = {'id': REPORT_ID, 'type': 'iframe', 'group': 'report', 'b64': ''}
         reports.insert(1, report)
-    report.update(date='2026-09-16', titleKr='모순 제거 후 구조 진단 · CIC2018와 ToN',
-                  titleEn='EXP47 / EXP48 · Calls, corrections & acceptance',
-                  verdict='CIC 실제 채택 0 · ToN ' + ('완료' if ton['state']=='complete' else ('실행 중' if ton['state']=='running' else ton['state'])),
+    report.update(date='2026-09-16', titleKr='동일벡터상반라벨 제거 후 모델 병목 지점 관찰',
+                  titleEn='CIC2018 / ToN · Data, experts & routing bottlenecks',
+                  verdict='CIC2018 승인 0 · ToN 승인 271,715',
                   verdictClass='warn')
     for old in reports:
         if old['id'] == 'dataset_quality_0911':
@@ -235,6 +290,15 @@ def main():
     status_html = f'<div class="status-cell warn"><p class="label">ToN · EXP48</p><p class="value">{line}</p></div>'
     text = re.sub(r'(?<=<!-- CLEAN_REVALIDATION_STATUS -->).*?(?=<!-- /CLEAN_REVALIDATION_STATUS -->)',
                   status_html, text, flags=re.S)
+    text = re.sub(r'<p class="lede">09-15 미팅 후.*?</p>',
+                  '<p class="lede">동일 벡터에 상반 라벨이 있는 그룹의 모든 행을 제거한 뒤 기존 구조를 다시 학습했다. '
+                  '<strong>CIC2018은 호출·승인 0건, ToN은 호출 288,684건·승인 271,715건</strong>이다. '
+                  '보고서는 두 데이터를 같은 순서로 제시한다: <strong>정제 후 클래스별 train/test 수 → expert 구성 → 호출·승인 결과와 병목</strong>.</p>',
+                  text, flags=re.S)
+    text = re.sub(r'(<button class="jump" data-jump="clean_revalidation_0916"><h3>).*?(</h3></button><p>).*?(</p>)',
+                  r'\g<1>동일벡터상반라벨 제거 후 모델 병목 지점 관찰\g<2>'
+                  r'CIC2018·ToN 각각의 데이터 규모, 공통·전용 expert 사례 구성, scorer 추천부터 verifier 승인까지의 경로를 같은 형식으로 확인한다.\g<3>',
+                  text, flags=re.S)
     index.write_text(text)
     print(f'Built {OUTPUT}; ToN state={ton["state"]}. Run sync_html_reports.py next.')
 

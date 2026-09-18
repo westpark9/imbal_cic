@@ -1,44 +1,65 @@
-import json,sys
+"""Browser validation of the concise two-case report and its embedded copy."""
+import json
+import sys
 from pathlib import Path
-sys.path.insert(0,'/tmp/imbalcic_report_browser')
+
+sys.path.insert(0, '/tmp/imbalcic_report_browser')
 from playwright.sync_api import sync_playwright
-repo=Path('/home/user/Desktop/imbalcic'); dest=repo/'docs/research/20260916/figures'
+
+root = Path(__file__).resolve().parents[4]
+evidence = root / 'docs/research/20260916'
+data = json.loads((evidence / 'clean_revalidation_visual_data.json').read_text())
+figures = evidence / 'figures'
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/google-chrome',headless=True,args=['--no-sandbox'])
- page=browser.new_page(viewport={'width':1440,'height':1080},device_scale_factor=1)
- errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
- page.goto((repo/'lablog/html_report/clean_revalidation_0916.html').as_uri(),wait_until='networkidle')
- assert page.locator('#accepted-count').inner_text()=='36,156건'
- assert page.locator('#decided-count').inner_text()=='6'
- assert page.locator('#neutral-count').inner_text()=='36,150건'
- assert page.locator('#m-h').inner_text()=='5,720'
- assert page.locator('#m-d').inner_text()=='804,905'
- page.screenshot(path=str(dest/'clean_revalidation_desktop.png'),full_page=True)
- page.locator('#calibration').screenshot(path=str(dest/'calibration_explainer.png'))
- page.locator('#pre-select').select_option('0')
- assert page.locator('#decided-count').inner_text()=='9'
- page.locator('#post-select').select_option('6')
- assert page.locator('#decided-count').inner_text()=='0'
- page.locator('#heatmap').evaluate("e => e.closest('details').open = true")
- page.locator('#heatmap button[data-pre="0"][data-post="0"]').click()
- assert page.locator('#decided-count').inner_text()=='9'
- page.locator('#class-select').select_option('benign');assert page.locator('#m-d').inner_text()=='804,855'
- page.locator('#class-select').select_option('infiltration');assert page.locator('#m-h').inner_text()=='4,827'
- page.locator('#expert-select').select_option('expert2');page.locator('#class-select').select_option('benign');assert page.locator('#m-h').inner_text()=='3,898'
- page.locator('#split-select').select_option('cal');assert '2,816' in page.locator('#diagnostic-table').inner_text()
- with page.expect_download() as dl:page.locator('#download-chart').click()
- dl.value.save_as(str(dest/'exp47_calibration_diagnostic.svg'))
- page.locator('#split-select').select_option('eval')
- with page.expect_download() as dl:page.locator('#download-chart').click()
- dl.value.save_as(str(dest/'exp47_test_diagnostic.svg'))
- page.set_viewport_size({'width':390,'height':844});page.goto((repo/'lablog/html_report/clean_revalidation_0916.html').as_uri())
- assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'mobile document overflows'
- page.locator('#expert').screenshot(path=str(dest/'expert_mobile.png'))
- page.set_viewport_size({'width':1440,'height':1080})
- page.goto((repo/'lablog/html_report/post_tabpfn.html').as_uri()+'#clean_revalidation_0916')
- frame=page.frame_locator('#viewer');assert frame.locator('#accepted-count').inner_text()=='36,156건'
- assert page.locator('.nav-item[data-id="clean_revalidation_0916"]').count()==1
- page.screenshot(path=str(dest/'combined_report.png'))
- assert not errors, errors
- print(json.dumps({'passed':True,'errors':errors,'checks':['77-grid controls','expert/class matrix counts','cal/test diagnostic switch','SVG export','mobile overflow','combined embedded report']},ensure_ascii=False))
- browser.close()
+    browser = p.chromium.launch(executable_path='/usr/bin/google-chrome', headless=True, args=['--no-sandbox'])
+    page = browser.new_page(viewport={'width': 1280, 'height': 1000}, device_scale_factor=1)
+    errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto((root / 'lablog/html_report/clean_revalidation_0916.html').as_uri(), wait_until='networkidle')
+    assert page.locator('h1').inner_text() == '동일벡터상반라벨 제거 후 모델 병목 지점 관찰'
+    assert page.locator('[role=tab]').all_text_contents() == ['CIC2018', 'ToN']
+    for key, filename in [('cic', 'brief_cic2018.png'), ('ton', 'brief_ton.png')]:
+        page.locator('#tab-' + key).click()
+        case = page.locator('#case-' + key)
+        assert case.is_visible()
+        assert case.locator('section').count() == 3
+        assert case.locator('h3').all_text_contents() == ['1정제 후 클래스별 샘플 수', '2Expert 구성', '3호출·승인 결과와 병목']
+        d, b = data[key], data['brief'][key]
+        for i, name in enumerate(d['meta']['class_names']):
+            expected = [name] + [f"{next(r['after'] for r in d['class_counts'] if r['split'] == split and r['class'] == name):,}" for split in ['train', 'test']]
+            assert page.locator(f'#{key}-data-table tbody tr').nth(i).locator('td').all_text_contents() == expected
+        assert page.locator(f'#{key}-expert-table tbody tr').count() == d['meta']['n_experts']
+        assert page.locator(f'#{key}-calls').inner_text() == f"{d['native']['calls']:,}"
+        assert page.locator(f'#{key}-accepted').inner_text() == f"{d['native']['accepted']:,}"
+        for i, stage in enumerate(b['cal_funnel']):
+            cells = page.locator(f'#{key}-funnel tbody tr').nth(i).locator('td').all_text_contents()
+            assert cells[1:] == [f"{stage[k]:,}" for k in ['rows', 'helpful', 'harmful']]
+        page.screenshot(path=str(figures / filename), full_page=True)
+        page.set_viewport_size({'width': 390, 'height': 844})
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), key + ' mobile overflow'
+        page.set_viewport_size({'width': 1280, 'height': 1000})
+    assert '0건인 경우가 아닙니다' in page.locator('#case-ton').inner_text()
+    page.locator('#tab-ton').focus()
+    page.keyboard.press('ArrowLeft')
+    assert page.locator('#case-cic').is_visible()
+    assert page.locator('#tab-cic').get_attribute('aria-selected') == 'true'
+    page.emulate_media(media='print')
+    assert page.locator('#case-cic').is_visible() and page.locator('#case-ton').is_visible()
+    page.emulate_media(media='screen')
+    page.goto((root / 'lablog/html_report/post_tabpfn.html').as_uri() + '#clean_revalidation_0916', wait_until='networkidle')
+    frame = page.frame_locator('#viewer')
+    assert frame.locator('h1').inner_text() == '동일벡터상반라벨 제거 후 모델 병목 지점 관찰'
+    frame.locator('#tab-ton').click()
+    assert frame.locator('#ton-accepted').inner_text() == '271,715'
+    assert frame.locator('#case-ton').is_visible()
+    page.screenshot(path=str(figures / 'brief_combined.png'))
+    assert not errors, errors
+    result = {'passed': True, 'js_errors': errors,
+              'checks': ['Exact requested title', 'Two datasets with identical 3 sections',
+                         'All 17 class train/test counts', '8 CIC and 7 ToN experts',
+                         'Native calibration stage counts', 'Actual test calls and approvals',
+                         'Dataset tabs and keyboard', 'Mobile width', 'Print includes both cases',
+                         'Combined report title and dataset switching']}
+    (evidence / 'brief_report_validation.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n')
+    print(json.dumps(result, ensure_ascii=False))
+    browser.close()

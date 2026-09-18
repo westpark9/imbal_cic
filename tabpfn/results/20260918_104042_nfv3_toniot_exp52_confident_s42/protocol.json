@@ -1,0 +1,23 @@
+{
+  "dataset": "ton_iot",
+  "seed": 42,
+  "parent_args": "/home/user/Desktop/imbalcic/tabpfn/results/20260904_010654_nfv3_cic2018_exp31_c0alloc/args.json",
+  "clean_manifest": "/home/user/Desktop/imbalcic/data/derived/toniot_conflict_free_fixed_split_20260916_021730/manifest.json",
+  "training_configuration_changes": [
+    "target_dataset: cic2018 -> ton_iot",
+    "expert_select_mode: residual (exp31 default) -> confident"
+  ],
+  "experiment_purpose": "09-18 self-class specialization paradox diagnosis: does confident-first or random within-cell expert block selection recover self-class F1, vs the exp31 default residual (hardest-first) selection that anti-correlated with the block's own dominant class?",
+  "secondary_protected_classes": [
+    "ddos",
+    "dos"
+  ],
+  "diagnostic_changes": [
+    "dense_eval=True (needed for expertK_always full-test diagnostic)"
+  ],
+  "baseline_policy": "EXP31 weighted-NLL constraints, unchanged",
+  "secondary_policy": "EXP39 legacy arm only, run to obtain frozen_cache expertK_always diagnostic; scorer/verifier comparison itself is out of scope for this experiment",
+  "context_rule": "same as EXP48 (100k C0, benign share .75, attack balanced); ONLY expert_select_mode changed",
+  "outer_split": "original memberships intersected with clean keep indices (reused from EXP48, not re-cleaned)",
+  "old_predictions_reused": false
+}
