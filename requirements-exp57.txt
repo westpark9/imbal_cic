@@ -1,5 +1,7 @@
-# Install a CUDA-enabled PyTorch >=2.5 compatible with the node's driver first.
-# Local reference: Python 3.13, torch 2.11.0+cu130. Actual node versions are saved.
+# First create a persistent environment with driver-compatible, pinned CUDA PyTorch:
+# python scripts/setup_exp57_env.py --prefix /workspace/envs/exp57
+# That script installs this file WITH a torch constraint; pip -r alone is insufficient.
+# Local reference: Python 3.13, torch 2.11.0+cu130. External setup uses Python 3.12.
 tabpfn==8.2.0
 numpy==2.4.4
 pandas==3.0.2

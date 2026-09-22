@@ -76,7 +76,12 @@ def main():
                       OPENBLAS_NUM_THREADS=str(a.cpu_threads),NUMEXPR_NUM_THREADS=str(a.cpu_threads),MALLOC_ARENA_MAX='2',
                       CUBLAS_WORKSPACE_CONFIG=':4096:8',PYTHONFAULTHANDLER='1',PYTHONUNBUFFERED='1',PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True')
     import torch
-    if not torch.cuda.is_available():p.error('CUDA is unavailable; CPU fallback is not allowed for this experiment')
+    if not torch.cuda.is_available():
+        p.error(f'CUDA is unavailable (python={sys.executable}, torch={torch.__version__}, '
+                f'wheel CUDA={torch.version.cuda}, selected GPU={a.gpu}). '
+                'Create a driver-compatible environment with: '
+                'python scripts/setup_exp57_env.py --prefix /YOUR_PERSISTENT_MOUNT/envs/exp57 '
+                f'--gpu {a.gpu}; then launch with that prefix/bin/python. CPU fallback is not allowed.')
     capability=torch.cuda.get_device_capability(0)
     if capability[0]<8:p.error('Requires compute capability >=8.0 for the long-context attention backend')
     sys.path.insert(0,str(ROOT/'tabpfn/scripts'))

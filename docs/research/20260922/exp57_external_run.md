@@ -13,17 +13,47 @@
 
 생성한 split은 단순히 행 수만 맞추는 것이 아니다. Git의 `tabpfn/configs/exp57_clean_split_reference.json`에 고정한 원본 PKL SHA-256, 클래스 정의, 정제 규칙, train/validation/test 인덱스 SHA-256과 대조한다. 기존 EXP47·48과 다른 데이터나 분할이면 학습 전에 중단한다. 준비는 별도 CPU 프로세스에서 실행해 데이터 정제용 메모리를 학습 전에 반환한다.
 
-## 실행
+## 마운트에 실행 환경 저장
 
-Python 3.11 이상과 해당 장비 드라이버에서 작동하는 CUDA PyTorch를 사용한다. 로컬 참조 환경은 Python 3.13, torch 2.11.0+cu130, RTX 4090 24 GB, host RAM 128 GB다. 실제 외부 환경은 `environment.json`에 기록된다. 원본 PKL 크기와 전처리·worker 메모리를 고려하면 host RAM 64 GB 이상을 권장한다. GPU compute capability 8.0 이상이 필요하며 CPU로 자동 전환하지 않는다.
+`pip install -r requirements-exp57.txt`만으로는 장비 드라이버와 PyTorch의 CUDA 빌드가 맞는다고 보장되지 않는다. **Conda 환경 자체를 마운트 경로에 만들고, 드라이버에 맞는 PyTorch wheel을 먼저 고정한다.** Conda를 새로 만드는 것만으로 호환 문제가 해결되는 것은 아니다.
 
-업데이트한 저장소 루트에서, 아래 두 입력 경로를 외부 파일 경로로 바꿔 실행한다.
+업데이트한 저장소 루트에서 다음을 실행한다. `/workspace`는 예시이므로 실제 영구 마운트 경로로 바꾼다. `--prefix`는 기존 base 환경이 아닌 새 전용 경로여야 한다. 첫 생성 때는 Conda 또는 Miniforge가 필요하다.
 
 ```bash
-git pull --ff-only
-python -m pip install -r requirements-exp57.txt
+python scripts/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
+```
 
-python scripts/run_exp57_external.py \
+스크립트는 Python 3.12 환경을 만들고 `nvidia-smi`에 표시되는 **드라이버의 CUDA 지원 버전**에 따라 아래 중 하나를 선택한다. 시스템에 설치된 `nvcc` 버전과 같아야 한다는 뜻은 아니다. CUDA minor compatibility에 기대지 않는 보수적인 선택이며, 마지막에 GPU 연산으로 확인한다.
+
+| 드라이버가 표시하는 CUDA 지원 버전 | 설치할 PyTorch |
+|---|---|
+| 12.8 이상 | 2.7.1+cu128 |
+| 12.4 이상, 12.8 미만 | 2.6.0+cu124 |
+| 12.1 이상, 12.4 미만 | 2.5.1+cu121 |
+| 11.8 이상, 12.1 미만 | 2.6.0+cu118 |
+
+공식 근거: [PyTorch wheel 설치 조합](https://pytorch.org/get-started/previous-versions/), [NVIDIA 드라이버 호환 규칙](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html), [Conda prefix 환경](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html). Blackwell은 CUDA 12.8 이상 조합을 요구한다. GPU compute capability 8.0 미만은 이 실험에서 지원하지 않는다.
+
+의존성을 설치할 때도 선택한 torch 버전을 constraint로 고정한다. 설치 후 `pip check`, CUDA 초기화, 실제 Flash Attention 연산, 주요 패키지 import를 확인한다. 설치 정보와 전체 패키지 목록은 환경 안의 `exp57_setup.json`, `exp57_packages.txt`에 저장한다. 먼저 선택만 확인하려면 `--dry-run`을 추가한다.
+
+같은 경로가 마운트되고 호환되는 OS·장비라면 재접속 후 라이브러리를 다시 설치할 필요 없이 **저장한 환경의 Python**을 사용한다. 활성화나 base Conda 재설치도 필요 없다. 새 노드에서 호환성을 재확인하려면 다음 명령을 실행한다. 설정이 같으면 패키지 설치는 생략하고 GPU 검증만 반복한다.
+
+```bash
+/workspace/envs/exp57/bin/python scripts/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
+```
+
+다른 드라이버 때문에 선택되는 torch 빌드가 바뀌면 기존 환경을 덮어쓰지 않고 중단한다. 그 경우 `/workspace/envs/exp57-cu124`처럼 새 `--prefix`를 지정한다. 설치 캐시도 마운트의 `envs/.exp57-cache/`에 보존한다. `conda create -n ...`만 사용하면 환경이 임시 홈 디렉터리에 생성되어 재접속 때 사라질 수 있다.
+
+## 실행
+
+로컬 참조 환경은 Python 3.13, torch 2.11.0+cu130, RTX 4090 24 GB, host RAM 128 GB다. 외부는 드라이버에 맞춘 위 조합을 사용하며 실제 버전은 각 실행의 `environment.json`에 기록된다. 서로 다른 torch/GPU의 수치 재현성이 검증됐다는 뜻은 아니므로 결과를 합칠 때 환경 차이도 확인한다. 원본 PKL 크기와 전처리·worker 메모리를 고려하면 host RAM 64 GB 이상을 권장한다. CPU로 자동 전환하지 않는다.
+
+아래 환경·입력 경로를 외부 파일 경로로 바꿔 실행한다. 재접속할 때도 `EXP57_PY`를 다시 지정한다.
+
+```bash
+EXP57_PY=/workspace/envs/exp57/bin/python
+
+"$EXP57_PY" scripts/run_exp57_external.py \
   --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl \
   --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt \
   --datasets cic2018 toniot \
@@ -38,8 +68,8 @@ python scripts/run_exp57_external.py \
 한 GPU에서 두 데이터는 순차 실행한다. GPU가 두 개라면 위 명령 대신 데이터별로 나눌 수 있다.
 
 ```bash
-python scripts/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets cic2018 --seeds 42 --gpu 0 --root tabpfn/results/exp57_external_cic_s42 --detach
-python scripts/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets toniot --seeds 42 --gpu 1 --root tabpfn/results/exp57_external_ton_s42 --detach
+"$EXP57_PY" scripts/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets cic2018 --seeds 42 --gpu 0 --root tabpfn/results/exp57_external_cic_s42 --detach
+"$EXP57_PY" scripts/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets toniot --seeds 42 --gpu 1 --root tabpfn/results/exp57_external_ton_s42 --detach
 ```
 
 두 프로세스를 동시에 실행하면 host RAM도 두 작업의 데이터 준비·학습을 수용해야 한다. 같은 데이터의 split을 동시에 준비할 경우 잠금으로 중복 생성을 막는다. 검증에 성공한 완성 디렉터리만 재사용 대상으로 공개한다.
