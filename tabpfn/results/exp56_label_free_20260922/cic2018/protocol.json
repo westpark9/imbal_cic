@@ -1,0 +1,62 @@
+{
+  "cache": "/home/user/Desktop/imbalcic/tabpfn/results/20260915_180000_nfv3_cic2018_exp47_clean_revalidation_s42/frozen_cache",
+  "policy": "/home/user/Desktop/imbalcic/tabpfn/results/exp51_scorer_target_cic2018/20260917_220024_150139_exp51_scorer_target",
+  "arm": "s1v0",
+  "cache_identity": {
+    "schema": "exp47_direct_v1",
+    "clean_manifest_sha256": "f9faadfa00d9206814c22ba96efbbbb3f3abb793cefeec3da18b1d44e0363640",
+    "source_args_sha256": "306ddc111d8b792854e7fb2c7428d93592e8054418366a79d0c0cfb16fb1368c",
+    "contexts_sha256": "2a5394bb197b55f16c26164e0e4f767a5bb6a9ba2f46ccb8ad6249b508529211",
+    "trace_source_sha256": "3b75319f6a99f319b3a2d099353ba7dd7b91cab2c4f618cb16aa08cb5c537a75"
+  },
+  "class_names": [
+    "benign",
+    "bot",
+    "brute_force",
+    "ddos",
+    "dos",
+    "infiltration",
+    "web_attacks"
+  ],
+  "n_experts": 8,
+  "test_role": "conflict-free subset of previously-used development holdout",
+  "mapping_rule": "block dominant class; largest target-class block; lowest ID breaks ties",
+  "assignment_oracle": "owner by true class; raw expert output; no correctness fallback",
+  "unassigned_classes": "global by predeclared rule",
+  "scorer_only": "same candidate and tau_pre as saved S+V; remove post gate only",
+  "selection": {
+    "tau_pre": null,
+    "tau_post": null,
+    "delta_macro_f1": 0.0,
+    "delta_tail_f1": 0.0,
+    "delta_benign_fpr": 0.0,
+    "accepted": 0,
+    "changed": 0,
+    "helpful": 0,
+    "harmful": 0,
+    "feasible": true,
+    "proposal_rate": 0.0,
+    "reason": "global_fallback"
+  },
+  "fixed_fpr_targets": [
+    0.001,
+    0.01
+  ],
+  "fixed_fpr_calibration": "saved cal_select positions, negative weights from train class prior",
+  "threshold_comparison": "strict >; ties conservatively excluded; no test threshold adjustment",
+  "average_precision": "sklearn average_precision_score; not trapezoidal PR integration",
+  "test_roc_metrics": "descriptive recall at empirical test FPR budget; no interpolation or deployment threshold selection",
+  "expert_training": false,
+  "fresh_independent_test": false,
+  "source_sha256": "81856874d1d92d637d6325d4ea47e518df736c6d834bcf85d839310f32c6af99",
+  "contexts_sha256": "bf6204504029f11a137aa4943f9f8d46582108f00397c0387e66db20ed697a25",
+  "policy_scores_sha256": "641c2549bc21abd348caea72c420fbcd116ebbc49ca4b2979f8f9c897ab402f4",
+  "cal_select_sha256": "967d18a3cff1f20ae2f47c56d24ee2d4c1b76917a27f74a7f9bc7b79e9fa1578",
+  "condition_2": "observable fixed centroid, raw expert prediction; no truth input",
+  "historical_assignment_oracle": "excluded; retained only in historical files and anomaly explanation",
+  "source_results": "tabpfn/results/exp56_five_condition_20260922_final/cic2018",
+  "bank_satisfies_K_less_than_C": false,
+  "new_expert_training": false,
+  "source_revision_sha256": "315f354b32a3aef9f6056c5bab43063b997776b1a6c056e7ef3fab266cd50669",
+  "eval_distances_sha256": "ad48e34ec5cf8ea4b4af038d4428e9ec9437d056a37761cd626908d466cb5e11"
+}

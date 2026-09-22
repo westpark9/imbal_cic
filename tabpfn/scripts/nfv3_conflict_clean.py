@@ -91,7 +91,7 @@ def prepare(data, out, dataset='ton_iot'):
     core._PICKLE_CACHE.clear(); gc.collect()
 
 
-def install_clean_loader(core, manifest_path):
+def install_clean_loader(core, manifest_path, source_override=None):
     """Install only in the isolated cleaned-data worker; historical loader stays intact."""
     manifest_path = Path(manifest_path).resolve()
     directory = manifest_path.parent
@@ -101,10 +101,18 @@ def install_clean_loader(core, manifest_path):
         raise ValueError('Clean manifest identity mismatch')
     loader_name = {'cic2018': 'load_cic2018', 'ton_iot': 'load_ton_iot', 'bot_iot': 'load_bot_iot'}[meta['dataset']]
     original_loader = getattr(core, loader_name)
+    relocated = None
+    if source_override is not None:
+        relocated = Path(source_override).resolve()
+        relocated_stat = relocated.stat()
+        if relocated_stat.st_size != meta['source']['bytes'] or sha256(relocated) != meta['source']['sha256']:
+            raise ValueError('Relocated source content hash mismatch')
     def clean_loader(args):
         path = Path(args.data).resolve(); st = path.stat()
         src = meta['source']
-        if str(path) != src['path'] or (st.st_size, st.st_mtime_ns) != (src['bytes'], src['mtime_ns']):
+        expected_path = str(relocated) if relocated is not None else src['path']
+        expected_mtime = relocated_stat.st_mtime_ns if relocated is not None else src['mtime_ns']
+        if str(path) != expected_path or (st.st_size, st.st_mtime_ns) != (src['bytes'], expected_mtime):
             raise ValueError('Source dataset identity mismatch')
         X, names, tr, va, te, _, _, audit, label = original_loader(args)
         if names != meta['class_names']:

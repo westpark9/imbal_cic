@@ -690,6 +690,18 @@ def _parse_floats(s):
     return [float(v) for v in s.split(",") if v.strip()]
 
 
+def admissible_expert_counts(candidates, n_classes):
+    """Only fit banks with fewer experts than modeled classes (global excluded)."""
+    candidates = sorted(set(candidates))
+    if not candidates or any(k < 1 for k in candidates):
+        raise ValueError("--k-candidates must list positive ints")
+    allowed = [k for k in candidates if k < n_classes]
+    if not allowed:
+        raise ValueError(f"No admissible expert count: require 1 <= K < C={n_classes}; "
+                         f"requested {candidates}")
+    return allowed
+
+
 # ---------------------------------------------------------------------------
 
 def run_exp29(args):
@@ -736,6 +748,13 @@ def run_exp29(args):
     X, class_names, train_idx, val_idx, test_idx, _, _, split_audit, label_fn = \
         cfg[args.target_dataset]["loader"](args)
     n_classes = len(class_names)
+    requested_k_candidates = k_candidates
+    k_candidates = admissible_expert_counts(k_candidates, n_classes)
+    args.k_candidates_requested = ','.join(map(str, requested_k_candidates))
+    args.k_candidates = ','.join(map(str, k_candidates))
+    args.expert_count_constraint = '1 <= K < number of modeled classes; global excluded'
+    print(f"Expert count constraint: K < C={n_classes}; "
+          f"requested={requested_k_candidates}, effective={k_candidates}", flush=True)
     y_train = label_fn(train_idx)
 
     d = core.load_pickle(args.data)
@@ -2205,7 +2224,8 @@ def main():
                         "goes to the other classes by natural ratio.")
     p.add_argument("--expert-block-rows", type=int, default=186_000)
     p.add_argument("--k-candidates", default="2,4,8",
-                   help="§10: K grid selected on D_tune by oracle macro")
+                   help="K grid; candidates >= modeled class count are excluded. "
+                        "Current bank selection uses D_tune oracle macro.")
     p.add_argument("--phi-mode", default="embed_pca",
                    choices=["embed_pca", "quantile_pca", "raw_pca"])
     p.add_argument("--embed-chunk", type=int, default=100_000)
