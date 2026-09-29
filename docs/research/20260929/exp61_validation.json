@@ -1,0 +1,71 @@
+{
+  "gpu": "RTX 4090 (local implementation checks; A100 benchmark not yet started)",
+  "protocol_tests_passed": 4,
+  "gpu_smoke_jobs_passed": [
+    "xgb",
+    "distpfn + global_raw",
+    "boostpfn",
+    "xgb_full",
+    "localpfn FT"
+  ],
+  "boost_replay_parity": {
+    "sample_ids": "equal",
+    "alphas_and_probabilities": {
+      "rtol": 2e-05,
+      "atol": 2e-06
+    }
+  },
+  "localpfn_query_label_invariance": "exact equality",
+  "localpfn_resume": "prediction SHA-256 and fit/predict times unchanged",
+  "real_data_inputs": {
+    "cic2018": {
+      "train_shape": [
+        100000,
+        46
+      ],
+      "test_shape": [
+        3042473,
+        46
+      ],
+      "val_shape": [
+        30194,
+        46
+      ],
+      "classes": [
+        "benign",
+        "bot",
+        "brute_force",
+        "ddos",
+        "dos",
+        "infiltration",
+        "web_attacks"
+      ]
+    },
+    "toniot": {
+      "train_shape": [
+        100000,
+        46
+      ],
+      "test_shape": [
+        2271723,
+        46
+      ],
+      "val_shape": [
+        41744,
+        46
+      ],
+      "classes": [
+        "backdoor",
+        "benign",
+        "ddos",
+        "dos",
+        "injection",
+        "mitm",
+        "password",
+        "ransomware",
+        "scanning",
+        "xss"
+      ]
+    }
+  }
+}
