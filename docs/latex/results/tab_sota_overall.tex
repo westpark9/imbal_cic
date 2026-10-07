@@ -1,0 +1,21 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Macro-F1 and accuracy on the conflict-free test splits (seed 43). The first five methods use exactly the same 100,000 training IDs as the Global context C0; full-train XGBoost and the proposed model use additional training data and are not same-budget comparisons.}
+\label{tab:sota_overall}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrl}
+\toprule
+Method & CIC macro-F1 & CIC acc. (\%) & ToN macro-F1 & ToN acc. (\%) & Training rows (CIC / ToN) \\
+\midrule
+Global TabPFN-v3 (C0) & 0.7824 & 99.37 & 0.6796 & 90.13 & 100,000 \\
+XGBoost (same 100k) & 0.7821 & 98.83 & 0.6983 & 92.09 & 100,000 \\
+BoostPFN & 0.7148 & 98.90 & 0.5866 & 82.68 & 100,000 \\
+LoCalPFN (FT) & 0.7024 & 97.72 & 0.6462 & 89.44 & 100,000 \\
+DistPFN (v3) & 0.7839 & 99.43 & 0.6682 & 88.56 & 100,000 \\
+XGBoost (full train) & 0.7795 & 98.02 & 0.7162 & 92.38 & 8,666,430 / 4,669,119 \\
+Proposed: experts (K=4) + S/V & 0.7824 & 99.37 & 0.7617 & 90.31 & 100,000 + expert/route pools \\
+\bottomrule
+\end{tabular}}
+\par\vspace{2pt}\parbox{\linewidth}{\footnotesize Test rows: CIC-IDS2018 3,042,473; ToN-IoT 2,271,723. Source: EXP61 (SOTA), EXP63 K sweep (proposed, K=4: previously used representative configuration, not selected as the test maximum, single seed).}
+\end{table}

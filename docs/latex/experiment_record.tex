@@ -1,0 +1,29 @@
+\documentclass[11pt]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{booktabs,graphicx,float,textcomp,longtable,hyperref}
+\title{Context composition for intrusion detection with scarce attack labels}
+\author{Research record: intent, selected evidence, and evaluation design}
+\date{2 October 2026; revision r06}
+\begin{document}
+\maketitle
+\input{sections/research_intent}
+\input{sections/evaluation_design}
+\section{Existing exploratory evidence}
+All reported results below use seed 43 and the conflict-free development holdouts already inspected during model development. They are not final, untouched evaluations. Removing feature-identical rows with conflicting labels reduced the full CIC-IDS2018 dataset from 20,115,529 to 14,755,417 rows, and ToN-IoT from 27,520,260 to 10,807,288 rows. These full-dataset counts are distinct from the test supports in the tables. Feature-label conflicts motivate auditing; they do not establish that a remaining class is intrinsically impossible to classify.
+
+The implemented context design combines a common multi-class anchor with a residual-cluster-specific block. Global errors help construct the experts offline. Scorer and verifier select whether to call an expert and accept its output. Their policies were selected on validation data. Changing the context can require revalidating these policies; adding examples does not automatically validate routing.
+
+The current evidence supports a narrower observation: ToN Scanning improves under the residual-context system, while the selected CIC-IDS2018 policies retain Global predictions. It does not establish the cause of each tail error or the effectiveness of sequential evaluation. The previous label-assisted assignment diagnostic is not a deployable oracle or a guaranteed performance upper bound. Different assignment rules must not be interpreted as an isolated measure of expert competence.
+\input{results/tab_sota_overall}
+\input{results/tab_classwise_cic2018}
+\input{results/tab_classwise_toniot}
+\input{results/tab_sota_cost}
+\clearpage
+\section{Expert and routing diagnostics}
+Experts are compared on identical complete test populations, including false positives from other classes. A target-class improvement should be checked on validation data and against damage to other classes. The K sweep changes total context size and repeats the shared anchor, so it does not isolate the effect of expert count at fixed memory.
+\input{results/tab_experts_cic2018}
+\input{results/tab_experts_toniot}
+\input{results/tab_sv_by_k}
+\clearpage
+\input{sections/decision_log}
+\end{document}

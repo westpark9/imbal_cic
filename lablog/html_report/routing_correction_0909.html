@@ -2,7 +2,8 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>고정 global 위의 교정 실험 — EXP38·39</title><style>
 :root{--bg:#f6f7f5;--panel:#fff;--ink:#1b2229;--muted:#5c6770;--line:#d3d8d4;--accent:#1f6f8b;--soft:#dcebf0;--warn:#b0413e}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Noto Sans CJK KR","Noto Sans KR",sans-serif}main{max-width:1160px;margin:auto;padding:42px 28px 72px}h1{font-size:29px;line-height:1.35;letter-spacing:-.025em;margin:0 0 20px}h3{font-size:17px;margin:28px 0 12px}h2{font-size:21px;margin:44px 0 15px;padding-top:15px;border-top:1px solid var(--line)}p{margin:12px 0;max-width:100ch}strong{font-weight:650}a{color:var(--accent);text-underline-offset:3px}code,pre{font-family:"DejaVu Sans Mono",monospace;font-size:12px}code{background:#e9edeb;padding:2px 4px;border-radius:3px;overflow-wrap:anywhere}pre{overflow-x:auto;padding:18px;background:#e9edeb;border:1px solid var(--line);line-height:1.7}pre code{padding:0;overflow-wrap:normal}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:7px;background:var(--panel);margin:16px 0 20px}table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.65}th,td{padding:11px 12px;vertical-align:top;border-bottom:1px solid var(--line);text-align:left}th{background:#e9eeeb;font-weight:650}tr:last-child td{border-bottom:0}td:first-child{font-weight:550}td[align="right"],th[align="right"]{white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}.table-wrap:first-of-type table{min-width:850px}.table-wrap:first-of-type th:first-child{width:14%}.table-wrap:first-of-type th:nth-child(2){width:23%}.table-wrap:first-of-type th:nth-child(3){width:34%}.chart{margin:24px 0;background:white;border:1px solid var(--line);border-radius:7px;padding:12px}.chart svg{display:block;width:100%;height:auto}.kicker{color:var(--muted);font:12px monospace;letter-spacing:.07em;margin:0 0 16px}.complete{display:inline-block;padding:4px 10px;background:var(--soft);color:var(--accent);border-radius:4px;font-size:12px;margin-bottom:14px}footer{margin-top:36px;color:var(--muted);font-size:12px}@media(max-width:760px){main{padding:25px 16px 50px}h1{font-size:24px}h2{font-size:19px}table{font-size:12.5px;min-width:680px}th,td{padding:9px}}@media print{main{max-width:none;padding:0}body{font-size:11px}.table-wrap{overflow:visible}table{font-size:9px}h2{break-after:avoid}tr{break-inside:avoid}a{color:inherit}.chart{break-inside:avoid}}
-</style></head><body><main><p class="kicker">RACE-PFN · 2026-09-09 · EXP38 / EXP39</p><span class="complete">실행 완료 · 최종 성능 개선 0 · 9/10 해석 보완</span><h1>0909 — 고정 global 위의 scorer/verifier 교정 실험</h1>
+</style><style data-report-rule="num-align">td[data-num],th[data-num]{text-align:right;font-variant-numeric:tabular-nums}</style>
+</head><body><main><p class="kicker">RACE-PFN · 2026-09-09 · EXP38 / EXP39</p><span class="complete">실행 완료 · 최종 성능 개선 0 · 9/10 해석 보완</span><h1>0909 — 고정 global 위의 scorer/verifier 교정 실험</h1>
 <p><strong>결론: 이번 실험에서 최종 모델 성능은 개선되지 않았다.</strong> Test 4,023,114행의 최종 예측은 6조건 모두 global과 같다. EXP38·39가 정상 종료했다는 사실과 연구 목표를 달성했다는 것은 다르다.</p>
 <p>2026-09-10 설명 보완: 이번에 실행한 것은 <strong>기존 context·global·expert bank를 고정한 scorer/verifier 비교</strong>다. 세부 패턴의 context 지원 보강과 새 expert 구성은 아직 실행하지 않았다. 아래 단계 번호는 모델 내 위치이며, 6조건을 차례로 연결한 하나의 모델을 뜻하지 않는다. 각 조건은 별도로 평가했다.</p>
 <p>이전 표에서 혼동을 만든 <strong>expert 전체 강제 적용의 큰 훼손 수</strong>는 최종 모델의 훼손 수가 아니다. 실제 적용 결과는 §3-A, 무조건 적용 진단은 §3-B, 어디서 교정 후보가 사라졌는지는 §4-A에서 각각 확인한다.</p>
@@ -185,68 +186,68 @@
 <thead>
 <tr>
 <th>방법</th>
-<th style="text-align: right;">Macro-F1</th>
-<th style="text-align: right;">Tail F1</th>
-<th style="text-align: right;">Benign FPR</th>
-<th style="text-align: right;">교정 / 훼손 행</th>
+<th style="text-align: right;" data-num="">Macro-F1</th>
+<th style="text-align: right;" data-num="">Tail F1</th>
+<th style="text-align: right;" data-num="">Benign FPR</th>
+<th style="text-align: right;" data-num="">교정 / 훼손 행</th>
 <th>해석</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>global</td>
-<td style="text-align: right;">0.762086</td>
-<td style="text-align: right;">0.548877</td>
-<td style="text-align: right;">0.1523%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0.762086</td>
+<td style="text-align: right;" data-num="">0.548877</td>
+<td style="text-align: right;" data-num="">0.1523%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>기준선</td>
 </tr>
 <tr>
 <td>legacy</td>
-<td style="text-align: right;">0.762086</td>
-<td style="text-align: right;">0.548877</td>
-<td style="text-align: right;">0.1523%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0.762086</td>
+<td style="text-align: right;" data-num="">0.548877</td>
+<td style="text-align: right;" data-num="">0.1523%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>global 유지</td>
 </tr>
 <tr>
 <td>post_z</td>
-<td style="text-align: right;">0.762086</td>
-<td style="text-align: right;">0.548877</td>
-<td style="text-align: right;">0.1523%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0.762086</td>
+<td style="text-align: right;" data-num="">0.548877</td>
+<td style="text-align: right;" data-num="">0.1523%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>global 유지</td>
 </tr>
 <tr>
 <td>post_raw</td>
-<td style="text-align: right;">0.762086</td>
-<td style="text-align: right;">0.548877</td>
-<td style="text-align: right;">0.1523%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0.762086</td>
+<td style="text-align: right;" data-num="">0.548877</td>
+<td style="text-align: right;" data-num="">0.1523%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>global 유지</td>
 </tr>
 <tr>
 <td>decision_post_raw</td>
-<td style="text-align: right;">0.762086</td>
-<td style="text-align: right;">0.548877</td>
-<td style="text-align: right;">0.1523%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0.762086</td>
+<td style="text-align: right;" data-num="">0.548877</td>
+<td style="text-align: right;" data-num="">0.1523%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>global 유지</td>
 </tr>
 <tr>
 <td>decision_both_raw</td>
-<td style="text-align: right;">0.762086</td>
-<td style="text-align: right;">0.548877</td>
-<td style="text-align: right;">0.1523%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0.762086</td>
+<td style="text-align: right;" data-num="">0.548877</td>
+<td style="text-align: right;" data-num="">0.1523%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>global 유지</td>
 </tr>
 <tr>
 <td>dense_decision_raw</td>
-<td style="text-align: right;">0.762086</td>
-<td style="text-align: right;">0.548877</td>
-<td style="text-align: right;">0.1523%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0.762086</td>
+<td style="text-align: right;" data-num="">0.548877</td>
+<td style="text-align: right;" data-num="">0.1523%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>global 유지</td>
 </tr>
 </tbody>
@@ -259,44 +260,44 @@
 <thead>
 <tr>
 <th>진단</th>
-<th style="text-align: right;">Macro-F1</th>
-<th style="text-align: right;">Tail F1</th>
-<th style="text-align: right;">Benign FPR</th>
-<th style="text-align: right;">교정 / 훼손 행</th>
+<th style="text-align: right;" data-num="">Macro-F1</th>
+<th style="text-align: right;" data-num="">Tail F1</th>
+<th style="text-align: right;" data-num="">Benign FPR</th>
+<th style="text-align: right;" data-num="">교정 / 훼손 행</th>
 <th>계산 방법</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>correctness_oracle</td>
-<td style="text-align: right;">0.849159</td>
-<td style="text-align: right;">0.748924</td>
-<td style="text-align: right;">0.0693%</td>
-<td style="text-align: right;">30,663 / 0</td>
+<td style="text-align: right;" data-num="">0.849159</td>
+<td style="text-align: right;" data-num="">0.748924</td>
+<td style="text-align: right;" data-num="">0.0693%</td>
+<td style="text-align: right;" data-num="">30,663 / 0</td>
 <td>정답을 사용하는 진단</td>
 </tr>
 <tr>
 <td>expert1_always</td>
-<td style="text-align: right;">0.631228</td>
-<td style="text-align: right;">0.362831</td>
-<td style="text-align: right;">53.4832%</td>
-<td style="text-align: right;">27,673 / 1,869,000</td>
+<td style="text-align: right;" data-num="">0.631228</td>
+<td style="text-align: right;" data-num="">0.362831</td>
+<td style="text-align: right;" data-num="">53.4832%</td>
+<td style="text-align: right;" data-num="">27,673 / 1,869,000</td>
 <td>단일 expert 전체 적용</td>
 </tr>
 <tr>
 <td>expert2_always</td>
-<td style="text-align: right;">0.694409</td>
-<td style="text-align: right;">0.409213</td>
-<td style="text-align: right;">0.1343%</td>
-<td style="text-align: right;">2,951 / 35,400</td>
+<td style="text-align: right;" data-num="">0.694409</td>
+<td style="text-align: right;" data-num="">0.409213</td>
+<td style="text-align: right;" data-num="">0.1343%</td>
+<td style="text-align: right;" data-num="">2,951 / 35,400</td>
 <td>단일 expert 전체 적용</td>
 </tr>
 <tr>
 <td>expert3_always</td>
-<td style="text-align: right;">0.651426</td>
-<td style="text-align: right;">0.367657</td>
-<td style="text-align: right;">38.5245%</td>
-<td style="text-align: right;">24,524 / 1,344,307</td>
+<td style="text-align: right;" data-num="">0.651426</td>
+<td style="text-align: right;" data-num="">0.367657</td>
+<td style="text-align: right;" data-num="">38.5245%</td>
+<td style="text-align: right;" data-num="">24,524 / 1,344,307</td>
 <td>단일 expert 전체 적용</td>
 </tr>
 </tbody>
@@ -307,61 +308,61 @@
 <thead>
 <tr>
 <th>클래스</th>
-<th style="text-align: right;">Test 표본 수</th>
-<th style="text-align: right;">Global F1 = 6조건 F1</th>
-<th style="text-align: right;">Correctness oracle F1</th>
-<th style="text-align: right;">Oracle 교정 가능 행</th>
+<th style="text-align: right;" data-num="">Test 표본 수</th>
+<th style="text-align: right;" data-num="">Global F1 = 6조건 F1</th>
+<th style="text-align: right;" data-num="">Correctness oracle F1</th>
+<th style="text-align: right;" data-num="">Oracle 교정 가능 행</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>benign</td>
-<td style="text-align: right;">3,502,926</td>
-<td style="text-align: right;">0.994950</td>
-<td style="text-align: right;">0.999301</td>
-<td style="text-align: right;">2,907</td>
-</tr>
-<tr>
-<td>bot</td>
-<td style="text-align: right;">41,542</td>
-<td style="text-align: right;">0.998421</td>
-<td style="text-align: right;">0.998529</td>
-<td style="text-align: right;">5</td>
-</tr>
-<tr>
-<td>brute_force</td>
-<td style="text-align: right;">115,040</td>
-<td style="text-align: right;">0.915874</td>
-<td style="text-align: right;">0.915874</td>
-<td style="text-align: right;">0</td>
+<td style="text-align: right;" data-num="">3,502,926</td>
+<td style="text-align: right;" data-num="">0.994950</td>
+<td style="text-align: right;" data-num="">0.999301</td>
+<td style="text-align: right;" data-num="">2,907</td>
 </tr>
 <tr>
 <td>ddos</td>
-<td style="text-align: right;">264,872</td>
-<td style="text-align: right;">0.995782</td>
-<td style="text-align: right;">0.999994</td>
-<td style="text-align: right;">2,214</td>
+<td style="text-align: right;" data-num="">264,872</td>
+<td style="text-align: right;" data-num="">0.995782</td>
+<td style="text-align: right;" data-num="">0.999994</td>
+<td style="text-align: right;" data-num="">2,214</td>
+</tr>
+<tr>
+<td>brute_force</td>
+<td style="text-align: right;" data-num="">115,040</td>
+<td style="text-align: right;" data-num="">0.915874</td>
+<td style="text-align: right;" data-num="">0.915874</td>
+<td style="text-align: right;" data-num="">0</td>
 </tr>
 <tr>
 <td>dos</td>
-<td style="text-align: right;">60,594</td>
-<td style="text-align: right;">0.781366</td>
-<td style="text-align: right;">0.782174</td>
-<td style="text-align: right;">64</td>
+<td style="text-align: right;" data-num="">60,594</td>
+<td style="text-align: right;" data-num="">0.781366</td>
+<td style="text-align: right;" data-num="">0.782174</td>
+<td style="text-align: right;" data-num="">64</td>
+</tr>
+<tr>
+<td>bot</td>
+<td style="text-align: right;" data-num="">41,542</td>
+<td style="text-align: right;" data-num="">0.998421</td>
+<td style="text-align: right;" data-num="">0.998529</td>
+<td style="text-align: right;" data-num="">5</td>
 </tr>
 <tr>
 <td>infiltration</td>
-<td style="text-align: right;">37,631</td>
-<td style="text-align: right;">0.400205</td>
-<td style="text-align: right;">0.970450</td>
-<td style="text-align: right;">25,423</td>
+<td style="text-align: right;" data-num="">37,631</td>
+<td style="text-align: right;" data-num="">0.400205</td>
+<td style="text-align: right;" data-num="">0.970450</td>
+<td style="text-align: right;" data-num="">25,423</td>
 </tr>
 <tr>
 <td>web_attacks</td>
-<td style="text-align: right;">509</td>
-<td style="text-align: right;">0.248007</td>
-<td style="text-align: right;">0.277793</td>
-<td style="text-align: right;">50</td>
+<td style="text-align: right;" data-num="">509</td>
+<td style="text-align: right;" data-num="">0.248007</td>
+<td style="text-align: right;" data-num="">0.277793</td>
+<td style="text-align: right;" data-num="">50</td>
 </tr>
 </tbody>
 </table></div>
@@ -374,53 +375,53 @@
 <thead>
 <tr>
 <th>조건</th>
-<th style="text-align: right;">1위 후보가 교정 가능한 행 / 6,025</th>
-<th style="text-align: right;">후보 회수율</th>
-<th style="text-align: right;">Verifier 양수 중 교정 / 훼손</th>
+<th style="text-align: right;" data-num="">1위 후보가 교정 가능한 행 / 6,025</th>
+<th style="text-align: right;" data-num="">후보 회수율</th>
+<th style="text-align: right;" data-num="">Verifier 양수 중 교정 / 훼손</th>
 <th>이 비교에서 확인한 점</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>legacy</td>
-<td style="text-align: right;">5,286</td>
-<td style="text-align: right;">87.7%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">5,286</td>
+<td style="text-align: right;" data-num="">87.7%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>Scorer가 맞는 후보를 상당수 골랐지만 NLL verifier의 양수 영역에 교정 사례가 없음</td>
 </tr>
 <tr>
 <td>post_z</td>
-<td style="text-align: right;">5,286</td>
-<td style="text-align: right;">87.7%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">5,286</td>
+<td style="text-align: right;" data-num="">87.7%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>z 추가만으로 이 현상을 해결하지 못함</td>
 </tr>
 <tr>
 <td>post_raw</td>
-<td style="text-align: right;">5,286</td>
-<td style="text-align: right;">87.7%</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">5,286</td>
+<td style="text-align: right;" data-num="">87.7%</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>raw 추가만으로 이 현상을 해결하지 못함</td>
 </tr>
 <tr>
 <td>decision_post_raw</td>
-<td style="text-align: right;">5,286</td>
-<td style="text-align: right;">87.7%</td>
-<td style="text-align: right;">2,250 / 1,590</td>
+<td style="text-align: right;" data-num="">5,286</td>
+<td style="text-align: right;" data-num="">87.7%</td>
+<td style="text-align: right;" data-num="">2,250 / 1,590</td>
 <td>기존 scorer를 유지하고 verifier를 결정 손익으로 바꾸면 교정 후보가 통과하지만 훼손도 통과</td>
 </tr>
 <tr>
 <td>decision_both_raw</td>
-<td style="text-align: right;">2,793</td>
-<td style="text-align: right;">46.4%</td>
-<td style="text-align: right;">2,022 / 1,205</td>
+<td style="text-align: right;" data-num="">2,793</td>
+<td style="text-align: right;" data-num="">46.4%</td>
+<td style="text-align: right;" data-num="">2,022 / 1,205</td>
 <td>새 scorer는 후보 단계에서 더 많은 교정 기회를 잃음. Scorer 개선이 확인된 것이 아님</td>
 </tr>
 <tr>
 <td>dense_decision_raw</td>
-<td style="text-align: right;">3,029</td>
-<td style="text-align: right;">50.3%</td>
-<td style="text-align: right;">2,821 / 2,211</td>
+<td style="text-align: right;" data-num="">3,029</td>
+<td style="text-align: right;" data-num="">50.3%</td>
+<td style="text-align: right;" data-num="">2,821 / 2,211</td>
 <td>모든 post 정보를 보아도 현재 verifier 점수만으로 교정/훼손 구분이 충분하지 않음</td>
 </tr>
 </tbody>
@@ -434,67 +435,67 @@
 <thead>
 <tr>
 <th>조건</th>
-<th style="text-align: right;">양의 macro 후보 / 전체</th>
-<th style="text-align: right;">최고 Δmacro</th>
-<th style="text-align: right;">해당 Δtail</th>
-<th style="text-align: right;">해당 Δbenign FPR</th>
-<th style="text-align: right;">교정 / 훼손</th>
+<th style="text-align: right;" data-num="">양의 macro 후보 / 전체</th>
+<th style="text-align: right;" data-num="">최고 Δmacro</th>
+<th style="text-align: right;" data-num="">해당 Δtail</th>
+<th style="text-align: right;" data-num="">해당 Δbenign FPR</th>
+<th style="text-align: right;" data-num="">교정 / 훼손</th>
 <th>선택되지 않은 이유</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>legacy</td>
-<td style="text-align: right;">0 / 52</td>
-<td style="text-align: right;">+0.000000</td>
-<td style="text-align: right;">+0.000000</td>
-<td style="text-align: right;">+0.0000%p</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0 / 52</td>
+<td style="text-align: right;" data-num="">+0.000000</td>
+<td style="text-align: right;" data-num="">+0.000000</td>
+<td style="text-align: right;" data-num="">+0.0000%p</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>교정 표본 부족·일부 tail 하락</td>
 </tr>
 <tr>
 <td>post_z</td>
-<td style="text-align: right;">0 / 52</td>
-<td style="text-align: right;">+0.000000</td>
-<td style="text-align: right;">+0.000000</td>
-<td style="text-align: right;">+0.0000%p</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0 / 52</td>
+<td style="text-align: right;" data-num="">+0.000000</td>
+<td style="text-align: right;" data-num="">+0.000000</td>
+<td style="text-align: right;" data-num="">+0.0000%p</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>교정 표본 부족·일부 tail 하락</td>
 </tr>
 <tr>
 <td>post_raw</td>
-<td style="text-align: right;">0 / 52</td>
-<td style="text-align: right;">+0.000000</td>
-<td style="text-align: right;">+0.000000</td>
-<td style="text-align: right;">+0.0000%p</td>
-<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;" data-num="">0 / 52</td>
+<td style="text-align: right;" data-num="">+0.000000</td>
+<td style="text-align: right;" data-num="">+0.000000</td>
+<td style="text-align: right;" data-num="">+0.0000%p</td>
+<td style="text-align: right;" data-num="">0 / 0</td>
 <td>교정 표본 부족(라벨 변경 0)</td>
 </tr>
 <tr>
 <td>decision_post_raw</td>
-<td style="text-align: right;">50 / 65</td>
-<td style="text-align: right;">+0.018208</td>
-<td style="text-align: right;">+0.042495</td>
-<td style="text-align: right;">+0.1254%p</td>
-<td style="text-align: right;">764 / 28</td>
+<td style="text-align: right;" data-num="">50 / 65</td>
+<td style="text-align: right;" data-num="">+0.018208</td>
+<td style="text-align: right;" data-num="">+0.042495</td>
+<td style="text-align: right;" data-num="">+0.1254%p</td>
+<td style="text-align: right;" data-num="">764 / 28</td>
 <td>benign FPR 상한 초과</td>
 </tr>
 <tr>
 <td>decision_both_raw</td>
-<td style="text-align: right;">65 / 65</td>
-<td style="text-align: right;">+0.018270</td>
-<td style="text-align: right;">+0.042661</td>
-<td style="text-align: right;">+0.1478%p</td>
-<td style="text-align: right;">780 / 33</td>
+<td style="text-align: right;" data-num="">65 / 65</td>
+<td style="text-align: right;" data-num="">+0.018270</td>
+<td style="text-align: right;" data-num="">+0.042661</td>
+<td style="text-align: right;" data-num="">+0.1478%p</td>
+<td style="text-align: right;" data-num="">780 / 33</td>
 <td>benign FPR 상한 초과</td>
 </tr>
 <tr>
 <td>dense_decision_raw</td>
-<td style="text-align: right;">4 / 18</td>
-<td style="text-align: right;">+0.016003</td>
-<td style="text-align: right;">+0.037473</td>
-<td style="text-align: right;">+0.2060%p</td>
-<td style="text-align: right;">764 / 46</td>
+<td style="text-align: right;" data-num="">4 / 18</td>
+<td style="text-align: right;" data-num="">+0.016003</td>
+<td style="text-align: right;" data-num="">+0.037473</td>
+<td style="text-align: right;" data-num="">+0.2060%p</td>
+<td style="text-align: right;" data-num="">764 / 46</td>
 <td>benign FPR·일부 중간 클래스 제약 또는 표본 부족</td>
 </tr>
 </tbody>
@@ -509,36 +510,36 @@
 <tr>
 <th>조건</th>
 <th style="text-align: right;">추가 격자의 pre / post 후보</th>
-<th style="text-align: right;">Calibration Δmacro</th>
-<th style="text-align: right;">Calibration Δtail</th>
-<th style="text-align: right;">Calibration Δbenign FPR</th>
-<th style="text-align: right;">교정 / 훼손</th>
+<th style="text-align: right;" data-num="">Calibration Δmacro</th>
+<th style="text-align: right;" data-num="">Calibration Δtail</th>
+<th style="text-align: right;" data-num="">Calibration Δbenign FPR</th>
+<th style="text-align: right;" data-num="">교정 / 훼손</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>decision_post_raw</td>
 <td style="text-align: right;">0.968356 / 0.870510</td>
-<td style="text-align: right;">+0.008035</td>
-<td style="text-align: right;">+0.018750</td>
-<td style="text-align: right;">+0.0493%p</td>
-<td style="text-align: right;">310 / 11</td>
+<td style="text-align: right;" data-num="">+0.008035</td>
+<td style="text-align: right;" data-num="">+0.018750</td>
+<td style="text-align: right;" data-num="">+0.0493%p</td>
+<td style="text-align: right;" data-num="">310 / 11</td>
 </tr>
 <tr>
 <td>decision_both_raw</td>
 <td style="text-align: right;">0.926194 / 0.611627</td>
-<td style="text-align: right;">+0.009718</td>
-<td style="text-align: right;">+0.022659</td>
-<td style="text-align: right;">+0.0493%p</td>
-<td style="text-align: right;">376 / 11</td>
+<td style="text-align: right;" data-num="">+0.009718</td>
+<td style="text-align: right;" data-num="">+0.022659</td>
+<td style="text-align: right;" data-num="">+0.0493%p</td>
+<td style="text-align: right;" data-num="">376 / 11</td>
 </tr>
 <tr>
 <td>dense_decision_raw</td>
 <td style="text-align: right;">-inf / 0.929575</td>
-<td style="text-align: right;">+0.005550</td>
-<td style="text-align: right;">+0.012926</td>
-<td style="text-align: right;">+0.0269%p</td>
-<td style="text-align: right;">215 / 6</td>
+<td style="text-align: right;" data-num="">+0.005550</td>
+<td style="text-align: right;" data-num="">+0.012926</td>
+<td style="text-align: right;" data-num="">+0.0269%p</td>
+<td style="text-align: right;" data-num="">215 / 6</td>
 </tr>
 </tbody>
 </table></div>

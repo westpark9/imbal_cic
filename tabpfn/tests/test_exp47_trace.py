@@ -1,3 +1,13 @@
+
+# Repository layout bootstrap: works in the workspace and portable source snapshots.
+from pathlib import Path as _LayoutPath
+import sys as _layout_sys
+_layout_root = next(p for p in _LayoutPath(__file__).resolve().parents
+                    if (p / 'scripts/common/experiment_paths.py').is_file())
+_layout_sys.path.insert(0, str(_layout_root / 'scripts/common'))
+from experiment_paths import bootstrap, repo_root, script_path, resolve_path, result_root, snapshot_path, read_record
+bootstrap(_layout_root)
+
 import ast
 import sys
 from pathlib import Path
@@ -11,7 +21,7 @@ from exp47_audit import counts
 
 class TraceTests(unittest.TestCase):
     def test_only_observation_callbacks_are_inserted(self):
-        path = Path(__file__).resolve().parents[1] / 'scripts/nfv3_v3_exp31_c0alloc.py'
+        path = script_path('nfv3_v3_exp31_c0alloc.py')
         original = path.read_text()
         modified = instrument(original)
         compile(modified, '<instrumented>', 'exec')

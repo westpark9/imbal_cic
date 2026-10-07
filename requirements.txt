@@ -1,42 +1,29 @@
-# Requirements for cic_1.py
-# Network Intrusion Detection - XGBoost Mixture-of-Experts
+# Common environment for XGBoost/MoE and TabPFN-v3 experiments.
+# Python >= 3.12. Core pins retain the EXP57 environment specification.
+# GPU setup (selects and constrains a driver-compatible PyTorch CUDA wheel):
+#   python scripts/common/setup_exp57_env.py --prefix /workspace/envs/imbal --gpu 0
+# SOTA setup adds requirements-sota.txt through scripts/common/setup_exp61_env.py.
+# Installing this file alone does not select a CUDA build for your driver.
 
-# Core dependencies
-numpy>=1.25.2
-pandas>=2.0.0
-scipy>=1.11.4
+# Numerical/data processing and machine learning
+numpy==2.4.4
+pandas==3.0.2
+scipy==1.17.1
+scikit-learn==1.8.0
+xgboost==3.2.0
+imbalanced-learn==0.14.1
+joblib==1.5.3
+threadpoolctl==3.6.0
+tabpfn==8.2.0
 
-# Machine Learning
-scikit-learn>=1.4.2
-xgboost>=2.0.0
-imbalanced-learn>=0.11.0
-
-# Deep Learning (for CUDA device detection + CIFAR-LT dataset)
-# WARNING: the torch WHEEL's CUDA build must match the node's driver, and pip
-# will happily install a wheel that is too new. Symptom of a mismatch:
-#   UserWarning: CUDA initialization: The NVIDIA driver ... is too old
-#   -> torch.cuda.is_available() False -> --device auto silently falls back to
-#      CPU -> TabPFN aborts with "Running on CPU with more than 5000 samples".
-# Pinned to the cu124 build below: CUDA wheels are driver-backward-compatible,
-# so this installs clean on every node seen so far (driver 550.x/CUDA 12.4 A100
-# pods, driver 580.x/CUDA 13.0 local RTX 4090) without a manual reinstall step.
-# tabpfn 8.2.0 requires torch>=2.5, so cu124 builds below 2.5 will not do.
---extra-index-url https://download.pytorch.org/whl/cu124
-torch==2.6.0
+# The setup script pins the exact CUDA build; allow its supported profiles.
+torch>=2.5
+# Retained for the legacy CIFAR experiments; resolved against the torch constraint.
 torchvision>=0.15.0
+# Retained CUDA 12 acceleration dependency; TabPFN itself does not require CuPy.
+cupy-cuda12x>=12.0.0
 
-# GPU acceleration (optional, for CUDA support)
-cupy-cuda12x>=12.0.0  # CUDA 12.x용, 다른 CUDA 버전은 cupy-cuda11x 등으로 변경
-
-# Data processing
-joblib>=1.2.0
-
-# Visualization
-matplotlib>=3.7.0
+# Visualisation and progress (shared by core experiments and SOTA)
+matplotlib==3.10.8
 seaborn>=0.12.0
-
-# Progress bar
-tqdm>=4.65.0
-
-tabpfn
-
+tqdm==4.67.3

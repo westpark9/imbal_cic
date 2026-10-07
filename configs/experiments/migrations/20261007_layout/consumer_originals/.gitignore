@@ -1,0 +1,40 @@
+__pycache__/
+.ipynb_checkpoints/
+# Persistent external EXP57 environment and package caches (machine-local).
+/.exp57-runtime/
+*.pkl
+*.pth
+*.ckpt
+data/
+tabpfn/resume/
+tabpfn/saved_models/
+*.npz
+*.log
+nohup.out
+tabpfn/results/**/*.png
+tabpfn/results_past/**/*.png
+# per-row posteriors/logits saved by exp35-37 (113 MB each at 4.02M rows); CSV/JSON summaries are tracked
+tabpfn/results/**/*.npy
+# Reconstructible routing models and host-local launch manifests
+tabpfn/results/**/*.joblib
+# Fitted Global state retained locally for residual-membership replay.
+tabpfn/results/**/*.tabpfn_fit
+tabpfn/logs/*.process.json
+
+# local-only symlink to the shared data store; each box provides its own
+/data
+
+# vendored third-party PFN code (tabpfn/third_party/): source is tracked, weights/data/outputs are not
+*.cpkt
+*.cpkt.*
+tabpfn/third_party/BoostPFN/datasets/*.pickle
+tabpfn/third_party/BoostPFN/largeresults/
+tabpfn/third_party/BoostPFN/log.txt
+tabpfn/third_party/DistPFN/src/plots/img/
+
+# Local locks and reproducible LaTeX build intermediates
+tabpfn/results/.versions.lock
+docs/latex/*.aux
+docs/latex/*.fdb_latexmk
+docs/latex/*.fls
+docs/latex/*.out

@@ -1,0 +1,2589 @@
+{
+  "args": {
+    "dataset": "toniot",
+    "seed": 43,
+    "windows": 5,
+    "warmup_frac": 0.1,
+    "label_budget": 50,
+    "arms": "tabpfn_frozen,tabpfn_context,xgb_frozen,xgb_retrain",
+    "n_estimators": 4
+  },
+  "dataset": "toniot",
+  "class_names": [
+    "backdoor",
+    "benign",
+    "ddos",
+    "dos",
+    "injection",
+    "mitm",
+    "password",
+    "ransomware",
+    "scanning",
+    "xss"
+  ],
+  "periods": [
+    {
+      "window": 1,
+      "t_start": 1556088591864,
+      "t_end": 1556249976973,
+      "warm_rows": 45437,
+      "eval_rows": 408908,
+      "eval_counts": [
+        0,
+        263154,
+        58115,
+        20212,
+        62001,
+        0,
+        0,
+        0,
+        5426,
+        0
+      ],
+      "label_counts": [
+        0,
+        50,
+        50,
+        50,
+        50,
+        0,
+        0,
+        0,
+        50,
+        0
+      ]
+    },
+    {
+      "window": 2,
+      "t_start": 1556249976973,
+      "t_end": 1556305359485,
+      "warm_rows": 45435,
+      "eval_rows": 408910,
+      "eval_counts": [
+        0,
+        374022,
+        34888,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "label_counts": [
+        0,
+        50,
+        50,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "window": 3,
+      "t_start": 1556305359522,
+      "t_end": 1556353682051,
+      "warm_rows": 45436,
+      "eval_rows": 408909,
+      "eval_counts": [
+        0,
+        219054,
+        0,
+        0,
+        0,
+        0,
+        189855,
+        0,
+        0,
+        0
+      ],
+      "label_counts": [
+        0,
+        50,
+        0,
+        0,
+        0,
+        0,
+        50,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "window": 4,
+      "t_start": 1556353682089,
+      "t_end": 1556426816068,
+      "warm_rows": 45435,
+      "eval_rows": 408909,
+      "eval_counts": [
+        0,
+        99441,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        309468
+      ],
+      "label_counts": [
+        0,
+        50,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        50
+      ]
+    },
+    {
+      "window": 5,
+      "t_start": 1556426816069,
+      "t_end": 1556549155177,
+      "warm_rows": 45436,
+      "eval_rows": 408908,
+      "eval_counts": [
+        36027,
+        371199,
+        0,
+        0,
+        0,
+        1044,
+        0,
+        638,
+        0,
+        0
+      ],
+      "label_counts": [
+        50,
+        50,
+        0,
+        0,
+        0,
+        50,
+        0,
+        50,
+        0,
+        0
+      ]
+    }
+  ],
+  "results": {
+    "tabpfn_frozen": [
+      {
+        "rows": 408908,
+        "present_classes": [
+          "benign",
+          "ddos",
+          "dos",
+          "injection",
+          "scanning"
+        ],
+        "macro_f1_present": 0.7928861909346085,
+        "tail_f1_present": 0.037940379403794036,
+        "benign_fpr": 0.05806358659110556,
+        "accuracy": 0.9740112690385123,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 263154,
+            "precision": 0.9687749048082883,
+            "recall": 0.9977769670991131,
+            "f1": 0.9830620795003987,
+            "TP": 262569,
+            "FP": 8463,
+            "FN": 585
+          },
+          {
+            "cls": "ddos",
+            "support": 58115,
+            "precision": 0.997153062667987,
+            "recall": 0.9703346812354814,
+            "f1": 0.9835610942991445,
+            "TP": 56391,
+            "FP": 161,
+            "FN": 1724
+          },
+          {
+            "cls": "dos",
+            "support": 20212,
+            "precision": 0.998844743583304,
+            "recall": 0.9838709677419355,
+            "f1": 0.9913013135265821,
+            "TP": 19886,
+            "FP": 23,
+            "FN": 326
+          },
+          {
+            "cls": "injection",
+            "support": 62001,
+            "precision": 0.9804990910593291,
+            "recall": 0.9569200496766181,
+            "f1": 0.9685660879431235,
+            "TP": 59330,
+            "FP": 1180,
+            "FN": 2671
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 273,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 127,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 17,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 5426,
+            "precision": 0.963302752293578,
+            "recall": 0.01935127165499447,
+            "f1": 0.037940379403794036,
+            "TP": 105,
+            "FP": 4,
+            "FN": 5321
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 379,
+            "FN": 0
+          }
+        ],
+        "window": 1,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.006383180618286133,
+        "labels_used": 250,
+        "context_rows": 100000
+      },
+      {
+        "rows": 408910,
+        "present_classes": [
+          "benign",
+          "ddos"
+        ],
+        "macro_f1_present": 0.9724308353432256,
+        "tail_f1_present": null,
+        "benign_fpr": 0.016939922036230223,
+        "accuracy": 0.9240762025873664,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 374022,
+            "precision": 0.998284007003342,
+            "recall": 0.9192400447032527,
+            "f1": 0.9571328551603568,
+            "TP": 343816,
+            "FP": 591,
+            "FN": 30206
+          },
+          {
+            "cls": "ddos",
+            "support": 34888,
+            "precision": 0.9998238092441416,
+            "recall": 0.9759229534510433,
+            "f1": 0.9877288155260944,
+            "TP": 34048,
+            "FP": 6,
+            "FN": 840
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 229,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 28,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 771,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 28412,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 961,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 1,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 47,
+            "FN": 0
+          }
+        ],
+        "window": 2,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.006052255630493164,
+        "labels_used": 350,
+        "context_rows": 100000
+      },
+      {
+        "rows": 408909,
+        "present_classes": [
+          "benign",
+          "password"
+        ],
+        "macro_f1_present": 0.8677403932059651,
+        "tail_f1_present": null,
+        "benign_fpr": 0.0016802296489426142,
+        "accuracy": 0.7802934149162772,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 219054,
+            "precision": 0.9975489631115106,
+            "recall": 0.5926849087439626,
+            "f1": 0.7435789497799274,
+            "TP": 129830,
+            "FP": 319,
+            "FN": 89224
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 119,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 1,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 4055,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 578,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 189855,
+            "precision": 0.9870952934855748,
+            "recall": 0.9967554186089383,
+            "f1": 0.9919018366320027,
+            "TP": 189239,
+            "FP": 2474,
+            "FN": 616
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 455,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 12,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 81825,
+            "FN": 0
+          }
+        ],
+        "window": 3,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.0058329105377197266,
+        "labels_used": 450,
+        "context_rows": 100000
+      },
+      {
+        "rows": 408909,
+        "present_classes": [
+          "benign",
+          "xss"
+        ],
+        "macro_f1_present": 0.9060097076172227,
+        "tail_f1_present": null,
+        "benign_fpr": 0.06161541742603435,
+        "accuracy": 0.9215791288526298,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 99441,
+            "precision": 0.8244166559236819,
+            "recall": 0.9003328606912642,
+            "f1": 0.8607040026148943,
+            "TP": 89530,
+            "FP": 19068,
+            "FN": 9911
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 340,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 3,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 5145,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 172,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 44,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 30,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 12,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 309468,
+            "precision": 0.9753838737383853,
+            "recall": 0.9284061680044463,
+            "f1": 0.951315412619551,
+            "TP": 287312,
+            "FP": 7251,
+            "FN": 22156
+          }
+        ],
+        "window": 4,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.0060672760009765625,
+        "labels_used": 550,
+        "context_rows": 100000
+      },
+      {
+        "rows": 408908,
+        "present_classes": [
+          "backdoor",
+          "benign",
+          "mitm",
+          "ransomware"
+        ],
+        "macro_f1_present": 0.5628173998644267,
+        "tail_f1_present": 0.15049927895790344,
+        "benign_fpr": 0.0030761887082659312,
+        "accuracy": 0.9142129770021619,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 36027,
+            "precision": 1.0,
+            "recall": 0.9995558886390763,
+            "f1": 0.9997778949998611,
+            "TP": 36011,
+            "FP": 0,
+            "FN": 16
+          },
+          {
+            "cls": "benign",
+            "support": 371199,
+            "precision": 0.9996551724137931,
+            "recall": 0.9059399405709606,
+            "f1": 0.9504931465420386,
+            "TP": 336284,
+            "FP": 116,
+            "FN": 34915
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 346,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 407,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 4,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 1044,
+            "precision": 0.07863965744400526,
+            "recall": 0.9147509578544061,
+            "f1": 0.1448286320897786,
+            "TP": 955,
+            "FP": 11189,
+            "FN": 89
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 65,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 638,
+            "precision": 0.08543603364320496,
+            "recall": 0.9075235109717869,
+            "f1": 0.15616992582602832,
+            "TP": 579,
+            "FP": 6198,
+            "FN": 59
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 3,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 16751,
+            "FN": 0
+          }
+        ],
+        "window": 5,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.005576372146606445,
+        "labels_used": 750,
+        "context_rows": 100000
+      }
+    ],
+    "tabpfn_context": [
+      {
+        "rows": 408908,
+        "present_classes": [
+          "benign",
+          "ddos",
+          "dos",
+          "injection",
+          "scanning"
+        ],
+        "macro_f1_present": 0.7964232752997304,
+        "tail_f1_present": 0.04254552010095547,
+        "benign_fpr": 0.05137423329719939,
+        "accuracy": 0.9771831316579769,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 263154,
+            "precision": 0.9722741629115091,
+            "recall": 0.9978377679989664,
+            "f1": 0.984890112466173,
+            "TP": 262585,
+            "FP": 7488,
+            "FN": 569
+          },
+          {
+            "cls": "ddos",
+            "support": 58115,
+            "precision": 0.9975762079153618,
+            "recall": 0.9702486449281597,
+            "f1": 0.9837226748547602,
+            "TP": 56386,
+            "FP": 137,
+            "FN": 1729
+          },
+          {
+            "cls": "dos",
+            "support": 20212,
+            "precision": 0.998996689073944,
+            "recall": 0.9852562833960024,
+            "f1": 0.9920789119713047,
+            "TP": 19914,
+            "FP": 20,
+            "FN": 298
+          },
+          {
+            "cls": "injection",
+            "support": 62001,
+            "precision": 0.9807651830383887,
+            "recall": 0.9770003709617587,
+            "f1": 0.9788791571054588,
+            "TP": 60575,
+            "FP": 1188,
+            "FN": 1426
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 172,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 143,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 17,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 5426,
+            "precision": 0.9752066115702479,
+            "recall": 0.021747143383708072,
+            "f1": 0.04254552010095547,
+            "TP": 118,
+            "FP": 3,
+            "FN": 5308
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 162,
+            "FN": 0
+          }
+        ],
+        "window": 1,
+        "fit_seconds": 17.51778244972229,
+        "predict_seconds": 68.3618233203888,
+        "labels_used": 250,
+        "context_rows": 100250
+      },
+      {
+        "rows": 408910,
+        "present_classes": [
+          "benign",
+          "ddos"
+        ],
+        "macro_f1_present": 0.9758050018320402,
+        "tail_f1_present": null,
+        "benign_fpr": 0.004729419857830773,
+        "accuracy": 0.9251473429360985,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 374022,
+            "precision": 0.9995203432598053,
+            "recall": 0.9192801492960307,
+            "f1": 0.9577225083493729,
+            "TP": 343831,
+            "FP": 165,
+            "FN": 30191
+          },
+          {
+            "cls": "ddos",
+            "support": 34888,
+            "precision": 0.9997969719821336,
+            "recall": 0.9880474661774822,
+            "f1": 0.9938874953147075,
+            "TP": 34471,
+            "FP": 7,
+            "FN": 417
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 231,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 28,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 733,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 28426,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 961,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 6,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 51,
+            "FN": 0
+          }
+        ],
+        "window": 2,
+        "fit_seconds": 17.097213745117188,
+        "predict_seconds": 67.68991589546204,
+        "labels_used": 350,
+        "context_rows": 100350
+      },
+      {
+        "rows": 408909,
+        "present_classes": [
+          "benign",
+          "password"
+        ],
+        "macro_f1_present": 0.8675746005551315,
+        "tail_f1_present": null,
+        "benign_fpr": 0.0020752679676595298,
+        "accuracy": 0.7801197821520192,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 219054,
+            "precision": 0.9969746995815257,
+            "recall": 0.5927351246724551,
+            "f1": 0.7434588549882761,
+            "TP": 129841,
+            "FP": 394,
+            "FN": 89213
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 154,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 3,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 4351,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 226,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 189855,
+            "precision": 0.9871000735796774,
+            "recall": 0.9963235100471413,
+            "f1": 0.9916903461219868,
+            "TP": 189157,
+            "FP": 2472,
+            "FN": 698
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 461,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 8,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 81840,
+            "FN": 0
+          }
+        ],
+        "window": 3,
+        "fit_seconds": 17.13312005996704,
+        "predict_seconds": 67.82215595245361,
+        "labels_used": 450,
+        "context_rows": 100450
+      },
+      {
+        "rows": 408909,
+        "present_classes": [
+          "benign",
+          "xss"
+        ],
+        "macro_f1_present": 0.9414998619493155,
+        "tail_f1_present": null,
+        "benign_fpr": 0.026920392415370895,
+        "accuracy": 0.9497418741089093,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 99441,
+            "precision": 0.9156627725699014,
+            "recall": 0.9095946340040828,
+            "f1": 0.9126186164067742,
+            "TP": 90451,
+            "FP": 8331,
+            "FN": 8990
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 367,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 4,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 4984,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 165,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 39,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 32,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 309468,
+            "precision": 0.978245307553886,
+            "recall": 0.9626423410498016,
+            "f1": 0.9703811074918567,
+            "TP": 297907,
+            "FP": 6625,
+            "FN": 11561
+          }
+        ],
+        "window": 4,
+        "fit_seconds": 17.16234850883484,
+        "predict_seconds": 67.93560767173767,
+        "labels_used": 550,
+        "context_rows": 100550
+      },
+      {
+        "rows": 408908,
+        "present_classes": [
+          "backdoor",
+          "benign",
+          "mitm",
+          "ransomware"
+        ],
+        "macro_f1_present": 0.5539843486045737,
+        "tail_f1_present": 0.1393428514221518,
+        "benign_fpr": 0.002094990585801798,
+        "accuracy": 0.8930175002690092,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 36027,
+            "precision": 1.0,
+            "recall": 0.9995558886390763,
+            "f1": 0.9997778949998611,
+            "TP": 36011,
+            "FP": 0,
+            "FN": 16
+          },
+          {
+            "cls": "benign",
+            "support": 371199,
+            "precision": 0.9997588964170177,
+            "recall": 0.8824942955126496,
+            "f1": 0.9374737965741301,
+            "TP": 327581,
+            "FP": 79,
+            "FN": 43618
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 363,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 378,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 3,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 1044,
+            "precision": 0.06578860281951154,
+            "recall": 0.9521072796934866,
+            "f1": 0.12307311335355661,
+            "TP": 994,
+            "FP": 14115,
+            "FN": 50
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 5,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 638,
+            "precision": 0.08514412416851441,
+            "recall": 0.9028213166144201,
+            "f1": 0.155612589490747,
+            "TP": 576,
+            "FP": 6189,
+            "FN": 62
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 6,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 22608,
+            "FN": 0
+          }
+        ],
+        "window": 5,
+        "fit_seconds": 17.245065212249756,
+        "predict_seconds": 68.03902053833008,
+        "labels_used": 750,
+        "context_rows": 100750
+      }
+    ],
+    "xgb_frozen": [
+      {
+        "rows": 408908,
+        "present_classes": [
+          "benign",
+          "ddos",
+          "dos",
+          "injection",
+          "scanning"
+        ],
+        "macro_f1_present": 0.7900079443839367,
+        "tail_f1_present": 0.046978662363277746,
+        "benign_fpr": 0.06895865636620607,
+        "accuracy": 0.9686604321754527,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 263154,
+            "precision": 0.9631107228844912,
+            "recall": 0.9971841583255432,
+            "f1": 0.9798513119424664,
+            "TP": 262413,
+            "FP": 10051,
+            "FN": 741
+          },
+          {
+            "cls": "ddos",
+            "support": 58115,
+            "precision": 0.9965426465426466,
+            "recall": 0.9770799277295018,
+            "f1": 0.986715322125201,
+            "TP": 56783,
+            "FP": 197,
+            "FN": 1332
+          },
+          {
+            "cls": "dos",
+            "support": 20212,
+            "precision": 0.9943224264156582,
+            "recall": 0.9877795369087671,
+            "f1": 0.991040182671068,
+            "TP": 19965,
+            "FP": 114,
+            "FN": 247
+          },
+          {
+            "cls": "injection",
+            "support": 62001,
+            "precision": 0.9767173931734159,
+            "recall": 0.9161303849937904,
+            "f1": 0.9454542428176703,
+            "TP": 56801,
+            "FP": 1354,
+            "FN": 5200
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 286,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 101,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 1,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 5426,
+            "precision": 0.8675496688741722,
+            "recall": 0.024143015112421673,
+            "f1": 0.046978662363277746,
+            "TP": 131,
+            "FP": 20,
+            "FN": 5295
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 691,
+            "FN": 0
+          }
+        ],
+        "window": 1,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.1596534252166748,
+        "labels_used": 250,
+        "context_rows": 100000
+      },
+      {
+        "rows": 408910,
+        "present_classes": [
+          "benign",
+          "ddos"
+        ],
+        "macro_f1_present": 0.9763125767054142,
+        "tail_f1_present": null,
+        "benign_fpr": 0.0025223572575097455,
+        "accuracy": 0.9278618766965836,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 374022,
+            "precision": 0.9997449859307579,
+            "recall": 0.9223815711375267,
+            "f1": 0.9595063836651597,
+            "TP": 344991,
+            "FP": 88,
+            "FN": 29031
+          },
+          {
+            "cls": "ddos",
+            "support": 34888,
+            "precision": 0.9997095640556475,
+            "recall": 0.9866143086448063,
+            "f1": 0.9931187697456686,
+            "TP": 34421,
+            "FP": 10,
+            "FN": 467
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 397,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 34,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 477,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 28403,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 4,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 85,
+            "FN": 0
+          }
+        ],
+        "window": 2,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.12876582145690918,
+        "labels_used": 350,
+        "context_rows": 100000
+      },
+      {
+        "rows": 408909,
+        "present_classes": [
+          "benign",
+          "password"
+        ],
+        "macro_f1_present": 0.8743776413617836,
+        "tail_f1_present": null,
+        "benign_fpr": 0.0012061836664823155,
+        "accuracy": 0.7893198731258055,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 219054,
+            "precision": 0.9982878888697824,
+            "recall": 0.6095483305486319,
+            "f1": 0.7569237571816886,
+            "TP": 133524,
+            "FP": 229,
+            "FN": 85530
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 284,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 113,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 1440,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 200,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 189855,
+            "precision": 0.9869715334786736,
+            "recall": 0.9967396170761897,
+            "f1": 0.9918315255418788,
+            "TP": 189236,
+            "FP": 2498,
+            "FN": 619
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 12,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 81369,
+            "FN": 0
+          }
+        ],
+        "window": 3,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.12994027137756348,
+        "labels_used": 450,
+        "context_rows": 100000
+      },
+      {
+        "rows": 408909,
+        "present_classes": [
+          "benign",
+          "xss"
+        ],
+        "macro_f1_present": 0.9607209295221149,
+        "tail_f1_present": null,
+        "benign_fpr": 0.011577933744361292,
+        "accuracy": 0.9642365416266211,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 99441,
+            "precision": 0.9625330698204557,
+            "recall": 0.925654408141511,
+            "f1": 0.943733595800525,
+            "TP": 92048,
+            "FP": 3583,
+            "FN": 7393
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 404,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 854,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2845,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 251,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 88,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 24,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 24,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 309468,
+            "precision": 0.9787847973366841,
+            "recall": 0.9766340946398335,
+            "f1": 0.9777082632437049,
+            "TP": 302237,
+            "FP": 6551,
+            "FN": 7231
+          }
+        ],
+        "window": 4,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.13909912109375,
+        "labels_used": 550,
+        "context_rows": 100000
+      },
+      {
+        "rows": 408908,
+        "present_classes": [
+          "backdoor",
+          "benign",
+          "mitm",
+          "ransomware"
+        ],
+        "macro_f1_present": 0.6049744501631906,
+        "tail_f1_present": 0.2182323178773767,
+        "benign_fpr": 0.0022806226630247423,
+        "accuracy": 0.9708296242675614,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 36027,
+            "precision": 0.9999444614145677,
+            "recall": 0.9995003747189608,
+            "f1": 0.9997223687498265,
+            "TP": 36009,
+            "FP": 2,
+            "FN": 18
+          },
+          {
+            "cls": "benign",
+            "support": 371199,
+            "precision": 0.9997607582294996,
+            "recall": 0.9681680176940132,
+            "f1": 0.9837107961481822,
+            "TP": 359383,
+            "FP": 86,
+            "FN": 11816
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 197,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 149,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 5,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 1044,
+            "precision": 0.15807560137457044,
+            "recall": 0.9252873563218391,
+            "f1": 0.270020964360587,
+            "TP": 966,
+            "FP": 5145,
+            "FN": 78
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 61,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 638,
+            "precision": 0.09098888238736103,
+            "recall": 0.9749216300940439,
+            "f1": 0.16644367139416644,
+            "TP": 622,
+            "FP": 6214,
+            "FN": 16
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 4,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 65,
+            "FN": 0
+          }
+        ],
+        "window": 5,
+        "fit_seconds": 0.0,
+        "predict_seconds": 0.13078713417053223,
+        "labels_used": 750,
+        "context_rows": 100000
+      }
+    ],
+    "xgb_retrain": [
+      {
+        "rows": 408908,
+        "present_classes": [
+          "benign",
+          "ddos",
+          "dos",
+          "injection",
+          "scanning"
+        ],
+        "macro_f1_present": 0.7986440103789324,
+        "tail_f1_present": 0.05259391771019678,
+        "benign_fpr": 0.04508967163851421,
+        "accuracy": 0.9776306650884795,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 263154,
+            "precision": 0.9755666841402797,
+            "recall": 0.9971537578756166,
+            "f1": 0.9862421095557297,
+            "TP": 262405,
+            "FP": 6572,
+            "FN": 749
+          },
+          {
+            "cls": "ddos",
+            "support": 58115,
+            "precision": 0.9897237607552165,
+            "recall": 0.9777854254495397,
+            "f1": 0.9837183737416579,
+            "TP": 56824,
+            "FP": 590,
+            "FN": 1291
+          },
+          {
+            "cls": "dos",
+            "support": 20212,
+            "precision": 0.9937310313945967,
+            "recall": 0.9881753413813577,
+            "f1": 0.9909453995187418,
+            "TP": 19973,
+            "FP": 126,
+            "FN": 239
+          },
+          {
+            "cls": "injection",
+            "support": 62001,
+            "precision": 0.9851281716782989,
+            "recall": 0.9743713811067564,
+            "f1": 0.9797202513683357,
+            "TP": 60412,
+            "FP": 912,
+            "FN": 1589
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 265,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 119,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 5426,
+            "precision": 0.8963414634146342,
+            "recall": 0.027091780316992258,
+            "f1": 0.05259391771019678,
+            "TP": 147,
+            "FP": 17,
+            "FN": 5279
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 546,
+            "FN": 0
+          }
+        ],
+        "window": 1,
+        "fit_seconds": 3.504396677017212,
+        "predict_seconds": 0.15823864936828613,
+        "labels_used": 250,
+        "context_rows": 100250
+      },
+      {
+        "rows": 408910,
+        "present_classes": [
+          "benign",
+          "ddos"
+        ],
+        "macro_f1_present": 0.9764158049635016,
+        "tail_f1_present": null,
+        "benign_fpr": 0.0015191469846365512,
+        "accuracy": 0.9278887774815974,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 374022,
+            "precision": 0.9998463964016183,
+            "recall": 0.9223815711375267,
+            "f1": 0.9595530869210893,
+            "TP": 344991,
+            "FP": 53,
+            "FN": 29031
+          },
+          {
+            "cls": "ddos",
+            "support": 34888,
+            "precision": 0.9997096568143545,
+            "recall": 0.986929603301995,
+            "f1": 0.9932785230059138,
+            "TP": 34432,
+            "FP": 10,
+            "FN": 456
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 446,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 22,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 476,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 28394,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 1,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 85,
+            "FN": 0
+          }
+        ],
+        "window": 2,
+        "fit_seconds": 3.5382561683654785,
+        "predict_seconds": 0.1750936508178711,
+        "labels_used": 350,
+        "context_rows": 100350
+      },
+      {
+        "rows": 408909,
+        "present_classes": [
+          "benign",
+          "password"
+        ],
+        "macro_f1_present": 0.8739631737840731,
+        "tail_f1_present": null,
+        "benign_fpr": 0.002812672829264439,
+        "accuracy": 0.7889799441929622,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 1,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 219054,
+            "precision": 0.996022198219673,
+            "recall": 0.6104020013330046,
+            "f1": 0.7569282675580741,
+            "TP": 133711,
+            "FP": 534,
+            "FN": 85343
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 264,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 125,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 1345,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 195,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 189855,
+            "precision": 0.9870060659257982,
+            "recall": 0.9950225171841669,
+            "f1": 0.9909980800100721,
+            "TP": 188910,
+            "FP": 2487,
+            "FN": 945
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 1,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 9,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 81327,
+            "FN": 0
+          }
+        ],
+        "window": 3,
+        "fit_seconds": 3.5545766353607178,
+        "predict_seconds": 0.18043184280395508,
+        "labels_used": 450,
+        "context_rows": 100450
+      },
+      {
+        "rows": 408909,
+        "present_classes": [
+          "benign",
+          "xss"
+        ],
+        "macro_f1_present": 0.9612526924707788,
+        "tail_f1_present": null,
+        "benign_fpr": 0.011471299132705158,
+        "accuracy": 0.9645642429000095,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 0,
+            "FN": 0
+          },
+          {
+            "cls": "benign",
+            "support": 99441,
+            "precision": 0.9629339598016183,
+            "recall": 0.9274343580615642,
+            "f1": 0.9448508318990246,
+            "TP": 92225,
+            "FP": 3550,
+            "FN": 7216
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 260,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 905,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 2870,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 221,
+            "FN": 0
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 102,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 24,
+            "FN": 0
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 18,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 309468,
+            "precision": 0.9788167160079551,
+            "recall": 0.9764951465094938,
+            "f1": 0.977654553042533,
+            "TP": 302194,
+            "FP": 6540,
+            "FN": 7274
+          }
+        ],
+        "window": 4,
+        "fit_seconds": 3.5807316303253174,
+        "predict_seconds": 0.1795508861541748,
+        "labels_used": 550,
+        "context_rows": 100550
+      },
+      {
+        "rows": 408908,
+        "present_classes": [
+          "backdoor",
+          "benign",
+          "mitm",
+          "ransomware"
+        ],
+        "macro_f1_present": 0.6095725465216574,
+        "tail_f1_present": 0.2271485001037012,
+        "benign_fpr": 0.0021745471903259167,
+        "accuracy": 0.9717907206511,
+        "classes": [
+          {
+            "cls": "backdoor",
+            "support": 36027,
+            "precision": 1.0,
+            "recall": 0.9995003747189608,
+            "f1": 0.9997501249375312,
+            "TP": 36009,
+            "FP": 0,
+            "FN": 18
+          },
+          {
+            "cls": "benign",
+            "support": 371199,
+            "precision": 0.9997721234757284,
+            "recall": 0.9691890333756287,
+            "f1": 0.9842430609416957,
+            "TP": 359762,
+            "FP": 82,
+            "FN": 11437
+          },
+          {
+            "cls": "ddos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 190,
+            "FN": 0
+          },
+          {
+            "cls": "dos",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 144,
+            "FN": 0
+          },
+          {
+            "cls": "injection",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 5,
+            "FN": 0
+          },
+          {
+            "cls": "mitm",
+            "support": 1044,
+            "precision": 0.17117117117117117,
+            "recall": 0.946360153256705,
+            "f1": 0.289906103286385,
+            "TP": 988,
+            "FP": 4784,
+            "FN": 56
+          },
+          {
+            "cls": "password",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 41,
+            "FN": 0
+          },
+          {
+            "cls": "ransomware",
+            "support": 638,
+            "precision": 0.0898711943793911,
+            "recall": 0.9623824451410659,
+            "f1": 0.1643908969210174,
+            "TP": 614,
+            "FP": 6218,
+            "FN": 24
+          },
+          {
+            "cls": "scanning",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 4,
+            "FN": 0
+          },
+          {
+            "cls": "xss",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "TP": 0,
+            "FP": 67,
+            "FN": 0
+          }
+        ],
+        "window": 5,
+        "fit_seconds": 3.5769851207733154,
+        "predict_seconds": 0.18282413482666016,
+        "labels_used": 750,
+        "context_rows": 100750
+      }
+    ]
+  },
+  "cost": {
+    "tabpfn_frozen": {
+      "fit_seconds": 0.0,
+      "predict_seconds": 0.02991199493408203
+    },
+    "tabpfn_context": {
+      "fit_seconds": 86.15552997589111,
+      "predict_seconds": 339.8485233783722
+    },
+    "xgb_frozen": {
+      "fit_seconds": 3.8537604808807373,
+      "predict_seconds": 0.6882457733154297
+    },
+    "xgb_retrain": {
+      "fit_seconds": 17.75494623184204,
+      "predict_seconds": 0.8761391639709473
+    }
+  }
+}

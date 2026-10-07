@@ -1,0 +1,124 @@
+{
+  "versions": [
+    {
+      "id": "v1",
+      "label": "tabpfn_intro_and_tailguard",
+      "start": "2026-08-01",
+      "note": "TabPFN memory study, ensembles, energy-gate expert track"
+    },
+    {
+      "id": "v2",
+      "label": "racepfn_structure_c0_sota_smoke",
+      "start": "2026-08-26",
+      "note": "residual experts, scorer/verifier, C0 composition campaign, SOTA PFN ports, routing correction"
+    },
+    {
+      "id": "v3",
+      "label": "data_quality_audit",
+      "start": "2026-09-11",
+      "note": "EXP40–44 contradiction/duplication/leakage audit"
+    },
+    {
+      "id": "v4",
+      "label": "conflict_free_expert_sv",
+      "start": "2026-09-16",
+      "note": "EXP47–63 on conflict-free splits: expert capability, S/V, K sweep, SOTA and cost"
+    },
+    {
+      "id": "v5",
+      "label": "context_optimisation_temporal",
+      "start": "2026-10-01",
+      "note": "EXP64–68: context composition feasibility, prompt-tuned contexts, temporal-arrival protocol"
+    },
+    {
+      "id": "v6",
+      "label": "sparse_label_context_detection",
+      "start": "2026-10-02",
+      "note": "연구 의도 재정의: 희소 라벨 공격 탐지. 순차 공격 도입은 설계안; raw 시간 재현/전후 적응 비교는 필수 아님. 신규 실험 미실행. docs/research/20261002/research_direction.md"
+    },
+    {
+      "id": "v7",
+      "label": "class_incremental_arrival",
+      "start": "2026-10-02",
+      "note": "EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨에서 XGB 재학습 vs TabPFN context 확장, seed 43. docs/research/20261002/exp69_protocol.md"
+    }
+  ],
+  "pins": {
+    "tabpfn/results/20261002_004752_4179324_toniot_exp68_temporal_arrival_s43": "v5",
+    "tabpfn/results/20261002_004935_4180483_toniot_exp68_temporal_arrival_s43": "v5",
+    "tabpfn/results/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43": "v5",
+    "tabpfn/results/20261002_exp69_class_arrival_s43": "v7",
+    "tabpfn/results/20261002_exp70_class_arrival_100k_s43": "v7"
+  },
+  "run_annotations": {
+    "tabpfn/results/20261001_174526_4085339_toniot_exp64_benign_diversity_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261001_174526_4085340_toniot_exp66_supcon_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261001_174728_4086382_cic2018_exp65_lito_lite_web_attacks_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261001_181859_4092618_toniot_exp67_prompt_tuned_s43": {
+      "status": "invalid",
+      "evidence": "invalid",
+      "note": "기존 작업 기록에서 NaN gradient로 무효 처리된 첫 실행. 후속 실행과 구분."
+    },
+    "tabpfn/results/20261001_182602_4095429_cic2018_exp65_lito_lite_web_attacks_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261001_182706_4096331_toniot_exp67_prompt_tuned_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261001_184332_4100935_toniot_exp67_prompt_tuned_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261001_185937_4104555_toniot_exp67_prompt_tuned_s44": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261001_190757_4106755_cic2018_exp67_prompt_tuned_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261001_191422_4108285_toniot_exp67_prompt_tuned_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/20261002_004752_4179324_toniot_exp68_temporal_arrival_s43": {
+      "evidence": "not_adopted",
+      "note": "사용자가 의도한 시나리오 아님. 동일 구간 class-aware 라벨 확보·평가로 엄격한 시간순 성능 주장 불가."
+    },
+    "tabpfn/results/20261002_004935_4180483_toniot_exp68_temporal_arrival_s43": {
+      "evidence": "not_adopted",
+      "note": "사용자가 의도한 시나리오 아님. 동일 구간 class-aware 라벨 확보·평가로 엄격한 시간순 성능 주장 불가."
+    },
+    "tabpfn/results/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43": {
+      "evidence": "not_adopted",
+      "note": "사용자가 의도한 시나리오 아님. 동일 구간 class-aware 라벨 확보·평가로 엄격한 시간순 성능 주장 불가."
+    },
+    "tabpfn/results/20260929_exp61_sota_local_s43": {
+      "evidence": "selected",
+      "note": "현재 발표·LaTeX의 탐색 근거. 단일 seed 43; 최종 untouched 평가 아님."
+    },
+    "tabpfn/results/20260930_exp63_k_sweep_s43": {
+      "evidence": "selected",
+      "note": "현재 발표·LaTeX의 탐색 근거. 단일 seed 43; 최종 untouched 평가 아님."
+    },
+    "tabpfn/results/20261002_exp69_class_arrival_s43": {
+      "evidence": "exploratory",
+      "note": "동일 누적 라벨, 실제 클래스 최초 출현 순서, seed 43. 입력 준비/실행 중; 결과 미검토."
+    },
+    "tabpfn/results/20261002_exp70_class_arrival_100k_s43": {
+      "evidence": "exploratory",
+      "note": "최종 100k, Benign 75k + 공격 25k; 승인된 클래스별 배분과 출현 순서; 기존 EXP69 사례 유지·증설. 실행 중."
+    }
+  }
+}

@@ -1,0 +1,23 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Per-class F1 on ToN-IoT (seed 43, test rows in descending order). Proposed = experts (K=4) + scorer/verifier (S1V0 policy), EXP63 K sweep.}
+\label{tab:classwise_toniot}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Class & Test rows & Global TabPFN-v3 & XGBoost (100k) & BoostPFN & LoCalPFN & DistPFN & XGBoost (full) & Proposed K=4 \\
+\midrule
+Benign & 1,474,302 & 0.9217 & 0.9385 & 0.9042 & 0.9184 & 0.9064 & 0.9389 & 0.9231 \\
+XSS & 343,854 & 0.8305 & 0.8734 & 0.7929 & 0.8469 & 0.8247 & 0.8714 & 0.8305 \\
+Password & 210,951 & 0.8921 & 0.8920 & 0.6728 & 0.8911 & 0.8909 & 0.8918 & 0.8921 \\
+DDoS & 103,338 & 0.9804 & 0.9842 & 0.9248 & 0.9786 & 0.9850 & 0.9928 & 0.9804 \\
+Injection & 68,891 & 0.9027 & 0.9128 & 0.4793 & 0.8925 & 0.9164 & 0.9759 & 0.9047 \\
+Backdoor & 40,030 & 0.9990 & 0.9990 & 0.9609 & 0.9988 & 0.9990 & 0.9924 & 0.9990 \\
+DoS & 22,458 & 0.9771 & 0.9563 & 0.3954 & 0.5554 & 0.9823 & 0.9814 & 0.9771 \\
+Scanning & 6,029 & 0.0394 & 0.0458 & 0.3281 & 0.0973 & 0.0060 & 0.0396 & 0.8587 \\
+MitM & 1,161 & 0.1322 & 0.2363 & 0.0468 & 0.1655 & 0.0512 & 0.3236 & 0.1322 \\
+Ransomware & 709 & 0.1208 & 0.1449 & 0.3608 & 0.1170 & 0.1204 & 0.1539 & 0.1196 \\
+\bottomrule
+\end{tabular}}
+\end{table}

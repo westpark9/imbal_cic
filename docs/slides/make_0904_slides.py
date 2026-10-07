@@ -9,6 +9,16 @@
 수치는 랩로그 0902.md §8s~§8ag, run dir, budget_diag summary, main.tex, 서베이 xlsx에서 가져온 값이며 DATA 블록에 모아 둔다.
 seed는 사용자 지시로 42~45 네 개만 표기한다(seed 46 붕괴·47·48은 슬라이드에서 제외, 랩로그 §8ad·§8ag 참조).
 """
+
+# Repository layout bootstrap: works in the workspace and portable source snapshots.
+from pathlib import Path as _LayoutPath
+import sys as _layout_sys
+_layout_root = next(p for p in _LayoutPath(__file__).resolve().parents
+                    if (p / 'scripts/common/experiment_paths.py').is_file())
+_layout_sys.path.insert(0, str(_layout_root / 'scripts/common'))
+from experiment_paths import bootstrap, repo_root, script_path, resolve_path, result_root, snapshot_path, read_record
+bootstrap(_layout_root)
+
 import re, sys, os
 from decimal import Decimal, ROUND_HALF_UP
 from pptx import Presentation

@@ -1,0 +1,10 @@
+\section{Research decisions and evidence status}
+\begin{itemize}
+\item The data-audit phase removed feature-identical conflicting-label rows for the current clean-data comparisons. Earlier datasets and results remain traceable in their original run folders.
+\item EXP61 established clean-data baselines and measured cost. EXP63 supplied direct expert and scorer/verifier diagnostics over K=2,4,6,8. K=4 remains the previously used representative setting; no test-maximum K is substituted into the headline comparison.
+\item On 2 October 2026, the presentation was revised around scarce-label attack detection. Aggregate F1 rankings are supporting evidence rather than the research objective.
+\item The user clarified that existing Claude-generated scenario experiments were not the intended design. EXP64--68 are preserved as separate exploratory records; their existence does not imply adoption into this claim. EXP68 in particular is not the accepted sequential protocol.
+\item Review of EXP68 found class-aware label selection within a window and evaluation using that window's collected labels. That procedure cannot establish strict predict-before-label streaming performance. Its field named benign\_fpr counts attacks predicted benign rather than false alarms on benign traffic. Original outputs are retained without silently rewriting their meaning.
+\item Actual raw timestamps and few-label before/after adaptation comparisons are not mandatory. OOD means out-of-distribution data or new attacks and remains a later extension.
+\end{itemize}
+\paragraph{Record structure.} Raw runs remain in place. Research-direction versions provide relative-link views and metadata for protocol, validity and adoption status. This manuscript contains selected evidence; detailed HTML/Markdown records preserve diagnostic history. Generated tables and their source hashes are maintained in \texttt{sources.json}. Narrative sections are edited independently and are not overwritten when tables are regenerated.

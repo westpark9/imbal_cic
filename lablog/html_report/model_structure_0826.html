@@ -100,6 +100,7 @@
   .edgeA { stroke:var(--acc); stroke-width:1.7; fill:none; }
   .acctext { fill:var(--acc); }
 </style>
+<style data-report-rule="num-align">td[data-num],th[data-num]{text-align:right;font-variant-numeric:tabular-nums}</style>
 </head>
 <body>
 
@@ -168,14 +169,14 @@
   <h3>⓪ 실험별 성능 요약 — 같은-run 판정 튜플 · vs XGB(0.7548 인용)</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th style="text-align:left">run · knob</th><th>system</th><th>vs global</th><th>vs XGB</th><th>oracle</th><th>vs random bank</th><th>정밀도 / 유해</th><th>호출</th><th style="text-align:left">생존 expert</th></tr></thead>
+      <thead><tr><th style="text-align:left">run · knob</th><th data-num="">system</th><th data-num="">vs global</th><th data-num="">vs XGB</th><th data-num="">oracle</th><th data-num="">vs random bank</th><th>정밀도 / 유해</th><th data-num="">호출</th><th style="text-align:left">생존 expert</th></tr></thead>
       <tbody>
-        <tr><th>exp23 · guide 정합 패키지</th><td>0.7001</td><td>+0.032</td><td style="color:var(--acc)">−0.055</td><td>0.8237</td><td>+0.062</td><td class="best">0.993 / 96</td><td class="best">1.046</td><td style="text-align:left">1 (dos) — single-pass 붕괴</td></tr>
-        <tr><th>exp23b · greedy pruning</th><td>0.6937</td><td>+0.025</td><td style="color:var(--acc)">−0.061</td><td>0.8122</td><td>+0.046</td><td>0.994 / 62</td><td>1.047</td><td style="text-align:left">2 (dos + easy-brute, 상관 .995)</td></tr>
-        <tr><th>exp23c · anchor 2000→200</th><td>0.6745</td><td>+0.003</td><td style="color:var(--acc)">−0.080</td><td class="best">0.8651</td><td>+0.104</td><td>0.980 / 680</td><td>1.061</td><td style="text-align:left">3 (dos + mega + bot-9행!)</td></tr>
-        <tr><th>exp23d · natural-200</th><td>0.6688</td><td>−0.005</td><td style="color:var(--acc)">−0.086</td><td>0.8323</td><td>+0.009</td><td>0.930 / 772</td><td>1.041</td><td style="text-align:left">3 (inf + web + mega)</td></tr>
-        <tr><th>exp23d · inverse-200</th><td>0.6578</td><td>−0.002</td><td style="color:var(--acc)">−0.097</td><td>0.8308</td><td>+0.050</td><td>0.960 / 294 · FPR 6×</td><td>1.103</td><td style="text-align:left">3 (inf혼합 + dos혼합 + mega)</td></tr>
-        <tr><th>exp23d · natural-2000</th><td>0.6514</td><td>−0.017</td><td style="color:var(--acc)">−0.103</td><td>0.8231</td><td>+0.002</td><td>0.990 / 23</td><td>1.050</td><td style="text-align:left">3 (dos + inf + web — 최상 구성)</td></tr>
+        <tr><th>exp23 · guide 정합 패키지</th><td data-num="">0.7001</td><td data-num="">+0.032</td><td style="color:var(--acc)" data-num="">−0.055</td><td data-num="">0.8237</td><td data-num="">+0.062</td><td class="best">0.993 / 96</td><td class="best" data-num="">1.046</td><td style="text-align:left">1 (dos) — single-pass 붕괴</td></tr>
+        <tr><th>exp23b · greedy pruning</th><td data-num="">0.6937</td><td data-num="">+0.025</td><td style="color:var(--acc)" data-num="">−0.061</td><td data-num="">0.8122</td><td data-num="">+0.046</td><td>0.994 / 62</td><td data-num="">1.047</td><td style="text-align:left">2 (dos + easy-brute, 상관 .995)</td></tr>
+        <tr><th>exp23c · anchor 2000→200</th><td data-num="">0.6745</td><td data-num="">+0.003</td><td style="color:var(--acc)" data-num="">−0.080</td><td class="best" data-num="">0.8651</td><td data-num="">+0.104</td><td>0.980 / 680</td><td data-num="">1.061</td><td style="text-align:left">3 (dos + mega + bot-9행!)</td></tr>
+        <tr><th>exp23d · natural-200</th><td data-num="">0.6688</td><td data-num="">−0.005</td><td style="color:var(--acc)" data-num="">−0.086</td><td data-num="">0.8323</td><td data-num="">+0.009</td><td>0.930 / 772</td><td data-num="">1.041</td><td style="text-align:left">3 (inf + web + mega)</td></tr>
+        <tr><th>exp23d · inverse-200</th><td data-num="">0.6578</td><td data-num="">−0.002</td><td style="color:var(--acc)" data-num="">−0.097</td><td data-num="">0.8308</td><td data-num="">+0.050</td><td>0.960 / 294 · FPR 6×</td><td data-num="">1.103</td><td style="text-align:left">3 (inf혼합 + dos혼합 + mega)</td></tr>
+        <tr><th>exp23d · natural-2000</th><td data-num="">0.6514</td><td data-num="">−0.017</td><td style="color:var(--acc)" data-num="">−0.103</td><td data-num="">0.8231</td><td data-num="">+0.002</td><td>0.990 / 23</td><td data-num="">1.050</td><td style="text-align:left">3 (dos + inf + web — 최상 구성)</td></tr>
       </tbody>
     </table>
   </div>
@@ -185,16 +186,16 @@
   <h3>⓪-1 클래스별 F1 — 실험 횡단 (Ours system 열, XGB 대비 상회는 강조)</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>global (run별 범위)</th><th>exp23</th><th>23b</th><th>23c</th><th>23d nat-200</th><th>23d inv-200</th><th>23d nat-2000</th><th>XGB (인용)</th></tr></thead>
+      <thead><tr><th>class</th><th data-num="">global (run별 범위)</th><th data-num="">exp23</th><th data-num="">23b</th><th data-num="">23c</th><th data-num="">23d nat-200</th><th data-num="">23d inv-200</th><th data-num="">23d nat-2000</th><th data-num="">XGB (인용)</th></tr></thead>
       <tbody>
-        <tr><th>benign</th><td>.978–.981</td><td>0.9817</td><td>0.9816</td><td>0.9862</td><td>0.9844</td><td>0.9792</td><td>0.9827</td><td>0.9943</td></tr>
-        <tr><th>bot</th><td>.9984</td><td class="best">0.9984</td><td class="best">0.9984</td><td class="best">0.9984</td><td class="best">0.9984</td><td class="best">0.9984</td><td class="best">0.9984</td><td>0.9978</td></tr>
-        <tr><th>brute_force</th><td>.7246</td><td>0.7246</td><td>0.7246</td><td>0.7246</td><td>0.7246</td><td>0.7246</td><td>0.7246</td><td>0.9159</td></tr>
-        <tr><th>ddos</th><td>.895–.947</td><td>0.8951</td><td>0.8973</td><td>0.9729</td><td>0.9209</td><td>0.9527</td><td>0.9223</td><td>0.9921</td></tr>
-        <tr><th>dos</th><td>.488–.539</td><td>0.6978</td><td>0.6661</td><td>0.5541</td><td>0.5604</td><td>0.6077</td><td>0.5131</td><td>0.7822</td></tr>
-        <tr><th>infiltration</th><td>.259–.424</td><td>0.4203</td><td>0.4238</td><td>0.4163</td><td>0.3189</td><td>0.2550</td><td>0.3876</td><td>0.4291</td></tr>
-        <tr><th>web_attacks</th><td>.161–.177</td><td class="best">0.1825</td><td>0.1644</td><td>0.0687</td><td class="best">0.1742</td><td>0.0873</td><td>0.0312</td><td>0.1724</td></tr>
-        <tr class="agg"><th>macro</th><td>.660–.673</td><td>0.7001</td><td>0.6937</td><td>0.6745</td><td>0.6688</td><td>0.6578</td><td>0.6514</td><td>0.7548</td></tr>
+        <tr><th>benign</th><td data-num="">.978–.981</td><td data-num="">0.9817</td><td data-num="">0.9816</td><td data-num="">0.9862</td><td data-num="">0.9844</td><td data-num="">0.9792</td><td data-num="">0.9827</td><td data-num="">0.9943</td></tr>
+        <tr><th>bot</th><td data-num="">.9984</td><td class="best" data-num="">0.9984</td><td class="best" data-num="">0.9984</td><td class="best" data-num="">0.9984</td><td class="best" data-num="">0.9984</td><td class="best" data-num="">0.9984</td><td class="best" data-num="">0.9984</td><td data-num="">0.9978</td></tr>
+        <tr><th>brute_force</th><td data-num="">.7246</td><td data-num="">0.7246</td><td data-num="">0.7246</td><td data-num="">0.7246</td><td data-num="">0.7246</td><td data-num="">0.7246</td><td data-num="">0.7246</td><td data-num="">0.9159</td></tr>
+        <tr><th>ddos</th><td data-num="">.895–.947</td><td data-num="">0.8951</td><td data-num="">0.8973</td><td data-num="">0.9729</td><td data-num="">0.9209</td><td data-num="">0.9527</td><td data-num="">0.9223</td><td data-num="">0.9921</td></tr>
+        <tr><th>dos</th><td data-num="">.488–.539</td><td data-num="">0.6978</td><td data-num="">0.6661</td><td data-num="">0.5541</td><td data-num="">0.5604</td><td data-num="">0.6077</td><td data-num="">0.5131</td><td data-num="">0.7822</td></tr>
+        <tr><th>infiltration</th><td data-num="">.259–.424</td><td data-num="">0.4203</td><td data-num="">0.4238</td><td data-num="">0.4163</td><td data-num="">0.3189</td><td data-num="">0.2550</td><td data-num="">0.3876</td><td data-num="">0.4291</td></tr>
+        <tr><th>web_attacks</th><td data-num="">.161–.177</td><td class="best" data-num="">0.1825</td><td data-num="">0.1644</td><td data-num="">0.0687</td><td class="best" data-num="">0.1742</td><td data-num="">0.0873</td><td data-num="">0.0312</td><td data-num="">0.1724</td></tr>
+        <tr class="agg"><th>macro</th><td data-num="">.660–.673</td><td data-num="">0.7001</td><td data-num="">0.6937</td><td data-num="">0.6745</td><td data-num="">0.6688</td><td data-num="">0.6578</td><td data-num="">0.6514</td><td data-num="">0.7548</td></tr>
       </tbody>
     </table>
   </div>
@@ -203,15 +204,15 @@
   <h3>⓪-2 막힌 지점 — oracle 잠재력이 어디서 죽는가 (회수 깔때기, 7 runs)</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th style="text-align:left">run</th><th>① 이득-실재 행<br>(expert가 이길 수 있는 행)</th><th>② 제안됨<br>(scorer·τ<sub>pre</sub> 통과)</th><th>제안 recall<br>②∩①/①</th><th>③ 채택<br>(verifier 통과)</th><th>helpful / harmful</th><th>utility 실현율</th></tr></thead>
+      <thead><tr><th style="text-align:left">run</th><th data-num="">① 이득-실재 행<br>(expert가 이길 수 있는 행)</th><th data-num="">② 제안됨<br>(scorer·τ<sub>pre</sub> 통과)</th><th data-num="">제안 recall<br>②∩①/①</th><th data-num="">③ 채택<br>(verifier 통과)</th><th data-num="">helpful / harmful</th><th data-num="">utility 실현율</th></tr></thead>
       <tbody>
-        <tr><th>(참고) guide-이전 구현 — 관문·pruning 없음</th><td>2,470,103</td><td>2,427,949</td><td class="best">0.951</td><td>2,129,434</td><td>57,565 / 8,524</td><td class="best">0.462</td></tr>
-        <tr><th>exp23</th><td>570,329</td><td>186,270</td><td>0.086</td><td>13,276</td><td>12,947 / 96</td><td>0.222</td></tr>
-        <tr><th>exp23b</th><td>836,958</td><td>191,098</td><td>0.156</td><td>10,862</td><td>10,377 / 62</td><td>0.149</td></tr>
-        <tr><th>exp23c</th><td>2,429,075</td><td>246,215</td><td>0.091</td><td>43,047</td><td>33,012 / 680</td><td>0.154</td></tr>
-        <tr><th>exp23d nat-200</th><td>3,131,163</td><td>164,948</td><td>0.047</td><td>30,576</td><td>10,325 / 772</td><td>0.192</td></tr>
-        <tr><th>exp23d inv-200</th><td>2,818,785</td><td>415,588</td><td>0.093</td><td>14,483</td><td>7,091 / 294</td><td>0.106</td></tr>
-        <tr><th>exp23d nat-2000</th><td>3,252,933</td><td>200,351</td><td>0.056</td><td>23,334</td><td>2,278 / 23</td><td>0.102</td></tr>
+        <tr><th>(참고) guide-이전 구현 — 관문·pruning 없음</th><td data-num="">2,470,103</td><td data-num="">2,427,949</td><td class="best" data-num="">0.951</td><td data-num="">2,129,434</td><td data-num="">57,565 / 8,524</td><td class="best" data-num="">0.462</td></tr>
+        <tr><th>exp23</th><td data-num="">570,329</td><td data-num="">186,270</td><td data-num="">0.086</td><td data-num="">13,276</td><td data-num="">12,947 / 96</td><td data-num="">0.222</td></tr>
+        <tr><th>exp23b</th><td data-num="">836,958</td><td data-num="">191,098</td><td data-num="">0.156</td><td data-num="">10,862</td><td data-num="">10,377 / 62</td><td data-num="">0.149</td></tr>
+        <tr><th>exp23c</th><td data-num="">2,429,075</td><td data-num="">246,215</td><td data-num="">0.091</td><td data-num="">43,047</td><td data-num="">33,012 / 680</td><td data-num="">0.154</td></tr>
+        <tr><th>exp23d nat-200</th><td data-num="">3,131,163</td><td data-num="">164,948</td><td data-num="">0.047</td><td data-num="">30,576</td><td data-num="">10,325 / 772</td><td data-num="">0.192</td></tr>
+        <tr><th>exp23d inv-200</th><td data-num="">2,818,785</td><td data-num="">415,588</td><td data-num="">0.093</td><td data-num="">14,483</td><td data-num="">7,091 / 294</td><td data-num="">0.106</td></tr>
+        <tr><th>exp23d nat-2000</th><td data-num="">3,252,933</td><td data-num="">200,351</td><td data-num="">0.056</td><td data-num="">23,334</td><td data-num="">2,278 / 23</td><td data-num="">0.102</td></tr>
       </tbody>
     </table>
   </div>
@@ -257,17 +258,17 @@
   <h3>③ exp23 상세 — §21 클래스별 F1, 같은 run·같은 split (test 4.02M)</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>Global TabPFN</th><th>Ours (제안)</th><th>XGBoost</th><th>dense oracle*</th><th>random bank*</th><th>proximity bank*</th></tr></thead>
+      <thead><tr><th>class</th><th data-num="">Global TabPFN</th><th data-num="">Ours (제안)</th><th data-num="">XGBoost</th><th data-num="">dense oracle*</th><th data-num="">random bank*</th><th data-num="">proximity bank*</th></tr></thead>
       <tbody>
-        <tr><th>benign</th><td class="">0.9799</td><td class="">0.9817</td><td class="best">0.9943</td><td class="orc">0.9920</td><td class="orc">0.9906</td><td class="orc">0.9894</td></tr>
-        <tr><th>bot</th><td class="best">0.9984</td><td class="best">0.9984</td><td class="">0.9978</td><td class="orc">0.9985</td><td class="orc">0.9984</td><td class="orc">0.9985</td></tr>
-        <tr><th>brute_force</th><td class="">0.7246</td><td class="">0.7246</td><td class="best">0.9159</td><td class="orc">0.8041</td><td class="orc">0.9159</td><td class="orc">0.8041</td></tr>
-        <tr><th>ddos</th><td class="">0.8951</td><td class="">0.8951</td><td class="best">0.9921</td><td class="orc">0.9897</td><td class="orc">0.9251</td><td class="orc">0.9921</td></tr>
-        <tr><th>dos</th><td class="">0.4881</td><td class="">0.6978</td><td class="best">0.7822</td><td class="orc">0.9949</td><td class="orc">0.7813</td><td class="orc">0.5611</td></tr>
-        <tr><th>infiltration</th><td class="">0.4204</td><td class="">0.4203</td><td class="best">0.4291</td><td class="orc">0.7549</td><td class="orc">0.5020</td><td class="orc">0.5761</td></tr>
-        <tr><th>web_attacks</th><td class="">0.1677</td><td class="best">0.1825</td><td class="">0.1724</td><td class="orc">0.2319</td><td class="orc">0.2194</td><td class="orc">0.1619</td></tr>
-        <tr class="agg"><th>macro 평균</th><td class="">0.6677</td><td class="">0.7001</td><td class="best">0.7548</td><td class="orc">0.8237</td><td class="orc">0.7618</td><td class="orc">0.7262</td></tr>
-        <tr class="agg"><th>weighted 평균</th><td class="">0.9545</td><td class="">0.9592</td><td class="best">0.9834</td><td class="orc">0.9842</td><td class="orc">0.9765</td><td class="orc">0.9740</td></tr>
+        <tr><th>benign</th><td class="" data-num="">0.9799</td><td class="" data-num="">0.9817</td><td class="best" data-num="">0.9943</td><td class="orc" data-num="">0.9920</td><td class="orc" data-num="">0.9906</td><td class="orc" data-num="">0.9894</td></tr>
+        <tr><th>bot</th><td class="best" data-num="">0.9984</td><td class="best" data-num="">0.9984</td><td class="" data-num="">0.9978</td><td class="orc" data-num="">0.9985</td><td class="orc" data-num="">0.9984</td><td class="orc" data-num="">0.9985</td></tr>
+        <tr><th>brute_force</th><td class="" data-num="">0.7246</td><td class="" data-num="">0.7246</td><td class="best" data-num="">0.9159</td><td class="orc" data-num="">0.8041</td><td class="orc" data-num="">0.9159</td><td class="orc" data-num="">0.8041</td></tr>
+        <tr><th>ddos</th><td class="" data-num="">0.8951</td><td class="" data-num="">0.8951</td><td class="best" data-num="">0.9921</td><td class="orc" data-num="">0.9897</td><td class="orc" data-num="">0.9251</td><td class="orc" data-num="">0.9921</td></tr>
+        <tr><th>dos</th><td class="" data-num="">0.4881</td><td class="" data-num="">0.6978</td><td class="best" data-num="">0.7822</td><td class="orc" data-num="">0.9949</td><td class="orc" data-num="">0.7813</td><td class="orc" data-num="">0.5611</td></tr>
+        <tr><th>infiltration</th><td class="" data-num="">0.4204</td><td class="" data-num="">0.4203</td><td class="best" data-num="">0.4291</td><td class="orc" data-num="">0.7549</td><td class="orc" data-num="">0.5020</td><td class="orc" data-num="">0.5761</td></tr>
+        <tr><th>web_attacks</th><td class="" data-num="">0.1677</td><td class="best" data-num="">0.1825</td><td class="" data-num="">0.1724</td><td class="orc" data-num="">0.2319</td><td class="orc" data-num="">0.2194</td><td class="orc" data-num="">0.1619</td></tr>
+        <tr class="agg"><th>macro 평균</th><td class="" data-num="">0.6677</td><td class="" data-num="">0.7001</td><td class="best" data-num="">0.7548</td><td class="orc" data-num="">0.8237</td><td class="orc" data-num="">0.7618</td><td class="orc" data-num="">0.7262</td></tr>
+        <tr class="agg"><th>weighted 평균</th><td class="" data-num="">0.9545</td><td class="" data-num="">0.9592</td><td class="best" data-num="">0.9834</td><td class="orc" data-num="">0.9842</td><td class="orc" data-num="">0.9765</td><td class="orc" data-num="">0.9740</td></tr>
       </tbody>
     </table>
   </div>
@@ -276,11 +277,11 @@
   <h3>④ exp23 상세 — §20.2 IID guardrail</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>method</th><th>balanced acc</th><th>macro-AUPRC</th><th>ECE (15-bin)</th><th>benign FPR</th></tr></thead>
+      <thead><tr><th>method</th><th data-num="">balanced acc</th><th data-num="">macro-AUPRC</th><th data-num="">ECE (15-bin)</th><th data-num="">benign FPR</th></tr></thead>
       <tbody>
-        <tr><th>global (corrected)</th><td>0.6547</td><td>0.6362</td><td>0.0418</td><td>0.002677</td></tr>
-        <tr><th>Ours</th><td class="best">0.6961</td><td class="best">0.6635</td><td class="best">0.0398</td><td>0.002703</td></tr>
-        <tr><th>XGBoost</th><td>0.7749</td><td>0.7426</td><td>0.0055</td><td>0.002662</td></tr>
+        <tr><th>global (corrected)</th><td data-num="">0.6547</td><td data-num="">0.6362</td><td data-num="">0.0418</td><td data-num="">0.002677</td></tr>
+        <tr><th>Ours</th><td class="best" data-num="">0.6961</td><td class="best" data-num="">0.6635</td><td class="best" data-num="">0.0398</td><td data-num="">0.002703</td></tr>
+        <tr><th>XGBoost</th><td data-num="">0.7749</td><td data-num="">0.7426</td><td data-num="">0.0055</td><td data-num="">0.002662</td></tr>
       </tbody>
     </table>
   </div>
@@ -310,32 +311,32 @@
   <p class="tfoot"><b>튜플:</b> system 0.6937 · global 0.6692 (+0.0245) · oracle 0.8122 · 정밀도 0.9941(harmful 62) · 호출 1.047 · τ=(12.47, 0).</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>global</th><th>RACE</th><th>oracle*</th></tr></thead>
+      <thead><tr><th>class</th><th data-num="">global</th><th data-num="">RACE</th><th data-num="">oracle*</th></tr></thead>
       <tbody>
-        <tr><th>benign</th><td>0.9801</td><td class="best">0.9816</td><td class="orc">0.9979</td></tr>
-        <tr><th>bot</th><td>0.9984</td><td>0.9984</td><td class="orc">0.9984</td></tr>
-        <tr><th>brute_force</th><td>0.7246</td><td>0.7246</td><td class="orc">0.8041</td></tr>
-        <tr><th>ddos</th><td>0.8973</td><td>0.8973</td><td class="orc">0.9964</td></tr>
-        <tr><th>dos</th><td>0.4942</td><td class="best">0.6661</td><td class="orc">0.9983</td></tr>
-        <tr><th>infiltration</th><td>0.4238</td><td>0.4238</td><td class="orc">0.8660</td></tr>
-        <tr><th>web_attacks</th><td>0.1659</td><td style="color:var(--acc)">0.1644</td><td class="orc">0.0244</td></tr>
-        <tr class="agg"><th>macro</th><td>0.6692</td><td class="best">0.6937</td><td class="orc">0.8122</td></tr>
+        <tr><th>benign</th><td data-num="">0.9801</td><td class="best" data-num="">0.9816</td><td class="orc" data-num="">0.9979</td></tr>
+        <tr><th>bot</th><td data-num="">0.9984</td><td data-num="">0.9984</td><td class="orc" data-num="">0.9984</td></tr>
+        <tr><th>brute_force</th><td data-num="">0.7246</td><td data-num="">0.7246</td><td class="orc" data-num="">0.8041</td></tr>
+        <tr><th>ddos</th><td data-num="">0.8973</td><td data-num="">0.8973</td><td class="orc" data-num="">0.9964</td></tr>
+        <tr><th>dos</th><td data-num="">0.4942</td><td class="best" data-num="">0.6661</td><td class="orc" data-num="">0.9983</td></tr>
+        <tr><th>infiltration</th><td data-num="">0.4238</td><td data-num="">0.4238</td><td class="orc" data-num="">0.8660</td></tr>
+        <tr><th>web_attacks</th><td data-num="">0.1659</td><td style="color:var(--acc)" data-num="">0.1644</td><td class="orc" data-num="">0.0244</td></tr>
+        <tr class="agg"><th>macro</th><td data-num="">0.6692</td><td class="best" data-num="">0.6937</td><td class="orc" data-num="">0.8122</td></tr>
       </tbody>
     </table>
   </div>
   <p class="tfoot">라우팅 지표: 제안 191,098 · 채택 10,862 · 제안 recall 0.156 · utility 실현 0.149 (†oracle = 행별 최적-모델 상한 참조).</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th>행</th><th>잔차 질량</th><th>mean r̄</th><th>생존</th></tr></thead>
+      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th data-num="">행</th><th data-num="">잔차 질량</th><th data-num="">mean r̄</th><th>생존</th></tr></thead>
       <tbody>
-        <tr><th>1</th><td style="text-align:left">dos 순수</td><td>21,299</td><td>0.155</td><td>16.5</td><td class="best">✓</td></tr>
-        <tr><th>2</th><td style="text-align:left"><b>brute 순수 (질량 최대)</b></td><td>17,610</td><td>0.351</td><td>45.1</td><td>✗</td></tr>
-        <tr><th>3</th><td style="text-align:left">inf 순수</td><td>15,628</td><td>0.285</td><td>43.3</td><td>✗</td></tr>
-        <tr><th>4</th><td style="text-align:left">dos 혼합</td><td>8,595</td><td>0.113</td><td>32.4</td><td>✗</td></tr>
-        <tr><th>5</th><td style="text-align:left">mega (benign 92%)</td><td>1,894,517</td><td>0.015</td><td>0.02</td><td>✗</td></tr>
-        <tr><th>6</th><td style="text-align:left">benign/web 경계</td><td>523</td><td>0.002</td><td>13.3</td><td>✗</td></tr>
-        <tr><th>7</th><td style="text-align:left">web 순수</td><td>140</td><td>0.003</td><td>2,343</td><td>✗</td></tr>
-        <tr><th>8</th><td style="text-align:left">easy-brute 혼합 (r̄ 낮음)</td><td>41,688</td><td>0.076</td><td>4.1</td><td class="best">✓</td></tr>
+        <tr><th>1</th><td style="text-align:left">dos 순수</td><td data-num="">21,299</td><td data-num="">0.155</td><td data-num="">16.5</td><td class="best">✓</td></tr>
+        <tr><th>2</th><td style="text-align:left"><b>brute 순수 (질량 최대)</b></td><td data-num="">17,610</td><td data-num="">0.351</td><td data-num="">45.1</td><td>✗</td></tr>
+        <tr><th>3</th><td style="text-align:left">inf 순수</td><td data-num="">15,628</td><td data-num="">0.285</td><td data-num="">43.3</td><td>✗</td></tr>
+        <tr><th>4</th><td style="text-align:left">dos 혼합</td><td data-num="">8,595</td><td data-num="">0.113</td><td data-num="">32.4</td><td>✗</td></tr>
+        <tr><th>5</th><td style="text-align:left">mega (benign 92%)</td><td data-num="">1,894,517</td><td data-num="">0.015</td><td data-num="">0.02</td><td>✗</td></tr>
+        <tr><th>6</th><td style="text-align:left">benign/web 경계</td><td data-num="">523</td><td data-num="">0.002</td><td data-num="">13.3</td><td>✗</td></tr>
+        <tr><th>7</th><td style="text-align:left">web 순수</td><td data-num="">140</td><td data-num="">0.003</td><td data-num="">2,343</td><td>✗</td></tr>
+        <tr><th>8</th><td style="text-align:left">easy-brute 혼합 (r̄ 낮음)</td><td data-num="">41,688</td><td data-num="">0.076</td><td data-num="">4.1</td><td class="best">✓</td></tr>
       </tbody>
     </table>
   </div>
@@ -345,31 +346,31 @@
   <p class="tfoot"><b>튜플:</b> system 0.6745 · global 0.6711 (<b>+0.0034</b>) · oracle <b>0.8651 (계열 최고)</b> · 정밀도 0.9798(harmful 680 · benign 591) · 호출 1.061 · τ=(9.81, 4.0) · ddos .910→<b>.973</b> · web .161→<b>.069 재붕괴</b>.</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>global</th><th>RACE</th><th>oracle*</th></tr></thead>
+      <thead><tr><th>class</th><th data-num="">global</th><th data-num="">RACE</th><th data-num="">oracle*</th></tr></thead>
       <tbody>
-        <tr><th>benign</th><td>0.9810</td><td class="best">0.9862</td><td class="orc">0.9939</td></tr>
-        <tr><th>bot</th><td>0.9984</td><td>0.9984</td><td class="orc">0.9986</td></tr>
-        <tr><th>brute_force</th><td>0.7246</td><td>0.7246</td><td class="orc">0.8041</td></tr>
-        <tr><th>ddos</th><td>0.9101</td><td class="best">0.9729</td><td class="orc">1.0000</td></tr>
-        <tr><th>dos</th><td>0.4987</td><td class="best">0.5541</td><td class="orc">0.9961</td></tr>
-        <tr><th>infiltration</th><td>0.4237</td><td style="color:var(--acc)">0.4163</td><td class="orc">0.9574</td></tr>
-        <tr><th>web_attacks</th><td>0.1613</td><td style="color:var(--acc)">0.0687</td><td class="orc">0.3056</td></tr>
-        <tr class="agg"><th>macro</th><td>0.6711</td><td class="best">0.6745</td><td class="orc">0.8651</td></tr>
+        <tr><th>benign</th><td data-num="">0.9810</td><td class="best" data-num="">0.9862</td><td class="orc" data-num="">0.9939</td></tr>
+        <tr><th>bot</th><td data-num="">0.9984</td><td data-num="">0.9984</td><td class="orc" data-num="">0.9986</td></tr>
+        <tr><th>brute_force</th><td data-num="">0.7246</td><td data-num="">0.7246</td><td class="orc" data-num="">0.8041</td></tr>
+        <tr><th>ddos</th><td data-num="">0.9101</td><td class="best" data-num="">0.9729</td><td class="orc" data-num="">1.0000</td></tr>
+        <tr><th>dos</th><td data-num="">0.4987</td><td class="best" data-num="">0.5541</td><td class="orc" data-num="">0.9961</td></tr>
+        <tr><th>infiltration</th><td data-num="">0.4237</td><td style="color:var(--acc)" data-num="">0.4163</td><td class="orc" data-num="">0.9574</td></tr>
+        <tr><th>web_attacks</th><td data-num="">0.1613</td><td style="color:var(--acc)" data-num="">0.0687</td><td class="orc" data-num="">0.3056</td></tr>
+        <tr class="agg"><th>macro</th><td data-num="">0.6711</td><td class="best" data-num="">0.6745</td><td class="orc" data-num="">0.8651</td></tr>
       </tbody>
     </table>
   </div>
   <p class="tfoot">라우팅 지표: 제안 246,215 · 채택 43,047 · 제안 recall 0.091 · utility 실현 0.154 (†oracle = 행별 최적-모델 상한 참조).</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th>행</th><th>잔차 질량</th><th>생존</th></tr></thead>
+      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th data-num="">행</th><th data-num="">잔차 질량</th><th>생존</th></tr></thead>
       <tbody>
-        <tr><th>2</th><td style="text-align:left"><b>brute 순수 (질량 최대 0.359)</b></td><td>17,610</td><td>0.359</td><td>✗</td></tr>
-        <tr><th>3</th><td style="text-align:left">inf 순수</td><td>15,519</td><td>0.280</td><td>✗</td></tr>
-        <tr><th>4</th><td style="text-align:left">dos 순수</td><td>21,146</td><td>0.154</td><td class="best">✓</td></tr>
-        <tr><th>5</th><td style="text-align:left">web 순수</td><td>140</td><td>0.003</td><td>✗</td></tr>
-        <tr><th>6</th><td style="text-align:left">mega (준-global)</td><td>1,936,355</td><td>0.089</td><td class="best">✓</td></tr>
-        <tr><th>7</th><td style="text-align:left"><b>bot 9행(!)</b></td><td>9</td><td>0.000</td><td class="best">✓</td></tr>
-        <tr><th>1·8</th><td style="text-align:left">dos 혼합 · benign/web 경계</td><td>9,221</td><td>0.115</td><td>✗</td></tr>
+        <tr><th>2</th><td style="text-align:left"><b>brute 순수 (질량 최대 0.359)</b></td><td data-num="">17,610</td><td data-num="">0.359</td><td>✗</td></tr>
+        <tr><th>3</th><td style="text-align:left">inf 순수</td><td data-num="">15,519</td><td data-num="">0.280</td><td>✗</td></tr>
+        <tr><th>4</th><td style="text-align:left">dos 순수</td><td data-num="">21,146</td><td data-num="">0.154</td><td class="best">✓</td></tr>
+        <tr><th>5</th><td style="text-align:left">web 순수</td><td data-num="">140</td><td data-num="">0.003</td><td>✗</td></tr>
+        <tr><th>6</th><td style="text-align:left">mega (준-global)</td><td data-num="">1,936,355</td><td data-num="">0.089</td><td class="best">✓</td></tr>
+        <tr><th>7</th><td style="text-align:left"><b>bot 9행(!)</b></td><td data-num="">9</td><td data-num="">0.000</td><td class="best">✓</td></tr>
+        <tr><th>1·8</th><td style="text-align:left">dos 혼합 · benign/web 경계</td><td data-num="">9,221</td><td data-num="">0.115</td><td>✗</td></tr>
       </tbody>
     </table>
   </div>
@@ -379,30 +380,30 @@
   <p class="tfoot"><b>튜플:</b> system 0.6688 · global 0.6734 (<b>−0.005, 계열 첫 global 미달</b>) · oracle 0.8323 · <b>random bank 0.8229 (격차 +0.009 소멸)</b> · harmful 772(전부 benign) · inf .420→<b>.319 붕괴</b> · recall 0.047.</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>global</th><th>RACE</th><th>oracle*</th></tr></thead>
+      <thead><tr><th>class</th><th data-num="">global</th><th data-num="">RACE</th><th data-num="">oracle*</th></tr></thead>
       <tbody>
-        <tr><th>benign</th><td>0.9806</td><td class="best">0.9844</td><td class="orc">0.9987</td></tr>
-        <tr><th>bot</th><td>0.9984</td><td>0.9984</td><td class="orc">0.9986</td></tr>
-        <tr><th>brute_force</th><td>0.7246</td><td>0.7246</td><td class="orc">0.8041</td></tr>
-        <tr><th>ddos</th><td>0.9024</td><td class="best">0.9209</td><td class="orc">0.9996</td></tr>
-        <tr><th>dos</th><td>0.5257</td><td class="best">0.5604</td><td class="orc">0.9055</td></tr>
-        <tr><th>infiltration</th><td>0.4204</td><td style="color:var(--acc)">0.3189</td><td class="orc">0.6593</td></tr>
-        <tr><th>web_attacks</th><td>0.1620</td><td class="best">0.1742</td><td class="orc">0.4605</td></tr>
-        <tr class="agg"><th>macro</th><td>0.6734</td><td style="color:var(--acc)">0.6688</td><td class="orc">0.8323</td></tr>
+        <tr><th>benign</th><td data-num="">0.9806</td><td class="best" data-num="">0.9844</td><td class="orc" data-num="">0.9987</td></tr>
+        <tr><th>bot</th><td data-num="">0.9984</td><td data-num="">0.9984</td><td class="orc" data-num="">0.9986</td></tr>
+        <tr><th>brute_force</th><td data-num="">0.7246</td><td data-num="">0.7246</td><td class="orc" data-num="">0.8041</td></tr>
+        <tr><th>ddos</th><td data-num="">0.9024</td><td class="best" data-num="">0.9209</td><td class="orc" data-num="">0.9996</td></tr>
+        <tr><th>dos</th><td data-num="">0.5257</td><td class="best" data-num="">0.5604</td><td class="orc" data-num="">0.9055</td></tr>
+        <tr><th>infiltration</th><td data-num="">0.4204</td><td style="color:var(--acc)" data-num="">0.3189</td><td class="orc" data-num="">0.6593</td></tr>
+        <tr><th>web_attacks</th><td data-num="">0.1620</td><td class="best" data-num="">0.1742</td><td class="orc" data-num="">0.4605</td></tr>
+        <tr class="agg"><th>macro</th><td data-num="">0.6734</td><td style="color:var(--acc)" data-num="">0.6688</td><td class="orc" data-num="">0.8323</td></tr>
       </tbody>
     </table>
   </div>
   <p class="tfoot">라우팅 지표: 제안 164,948 · 채택 30,576 · 제안 recall 0.047 · utility 실현 0.192 (†oracle = 행별 최적-모델 상한 참조).</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th>행</th><th>잔차 질량</th><th>생존</th></tr></thead>
+      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th data-num="">행</th><th data-num="">잔차 질량</th><th>생존</th></tr></thead>
       <tbody>
-        <tr><th>2</th><td style="text-align:left">brute 순수 (질량 최대 0.356)</td><td>17,610</td><td>0.356</td><td>✗</td></tr>
-        <tr><th>3</th><td style="text-align:left">dos 순수</td><td>21,243</td><td>0.154</td><td>✗</td></tr>
-        <tr><th>4</th><td style="text-align:left"><b>inf 순수 — 시리즈 첫 생존</b></td><td>15,579</td><td>0.284</td><td class="best">✓</td></tr>
-        <tr><th>6</th><td style="text-align:left"><b>web 순수 — 시리즈 첫 생존</b></td><td>135</td><td>0.003</td><td class="best">✓</td></tr>
-        <tr><th>8</th><td style="text-align:left">mega (준-global)</td><td>1,894,609</td><td>0.014</td><td class="best">✓</td></tr>
-        <tr><th>1·5·7</th><td style="text-align:left">easy-brute 혼합 · dos 혼합 · 경계</td><td>50,824</td><td>0.191</td><td>✗</td></tr>
+        <tr><th>2</th><td style="text-align:left">brute 순수 (질량 최대 0.356)</td><td data-num="">17,610</td><td data-num="">0.356</td><td>✗</td></tr>
+        <tr><th>3</th><td style="text-align:left">dos 순수</td><td data-num="">21,243</td><td data-num="">0.154</td><td>✗</td></tr>
+        <tr><th>4</th><td style="text-align:left"><b>inf 순수 — 시리즈 첫 생존</b></td><td data-num="">15,579</td><td data-num="">0.284</td><td class="best">✓</td></tr>
+        <tr><th>6</th><td style="text-align:left"><b>web 순수 — 시리즈 첫 생존</b></td><td data-num="">135</td><td data-num="">0.003</td><td class="best">✓</td></tr>
+        <tr><th>8</th><td style="text-align:left">mega (준-global)</td><td data-num="">1,894,609</td><td data-num="">0.014</td><td class="best">✓</td></tr>
+        <tr><th>1·5·7</th><td style="text-align:left">easy-brute 혼합 · dos 혼합 · 경계</td><td data-num="">50,824</td><td data-num="">0.191</td><td>✗</td></tr>
       </tbody>
     </table>
   </div>
@@ -412,28 +413,28 @@
   <p class="tfoot"><b>튜플:</b> system 0.6578 · global 0.6602 (−0.002) · oracle 0.8308 · <b>benign FPR 0.0148 (≈6×, §14 cal 제약은 지켰으나 §20.2 guardrail 실질 위반)</b> · ECE 0.0624 · web .177→.087 · K=4 선택(시리즈 유일).</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>global</th><th>RACE</th><th>oracle*</th></tr></thead>
+      <thead><tr><th>class</th><th data-num="">global</th><th data-num="">RACE</th><th data-num="">oracle*</th></tr></thead>
       <tbody>
-        <tr><th>benign</th><td>0.9776</td><td class="best">0.9792</td><td class="orc">0.9997</td></tr>
-        <tr><th>bot</th><td>0.9984</td><td>0.9984</td><td class="orc">0.9985</td></tr>
-        <tr><th>brute_force</th><td>0.7246</td><td>0.7246</td><td class="orc">0.8041</td></tr>
-        <tr><th>ddos</th><td>0.9468</td><td class="best">0.9527</td><td class="orc">0.9998</td></tr>
-        <tr><th>dos</th><td>0.5386</td><td class="best">0.6077</td><td class="orc">0.9953</td></tr>
-        <tr><th>infiltration</th><td>0.2588</td><td style="color:var(--acc)">0.2550</td><td class="orc">0.9929</td></tr>
-        <tr><th>web_attacks</th><td>0.1766</td><td style="color:var(--acc)">0.0873</td><td class="orc">0.0251</td></tr>
-        <tr class="agg"><th>macro</th><td>0.6602</td><td style="color:var(--acc)">0.6578</td><td class="orc">0.8308</td></tr>
+        <tr><th>benign</th><td data-num="">0.9776</td><td class="best" data-num="">0.9792</td><td class="orc" data-num="">0.9997</td></tr>
+        <tr><th>bot</th><td data-num="">0.9984</td><td data-num="">0.9984</td><td class="orc" data-num="">0.9985</td></tr>
+        <tr><th>brute_force</th><td data-num="">0.7246</td><td data-num="">0.7246</td><td class="orc" data-num="">0.8041</td></tr>
+        <tr><th>ddos</th><td data-num="">0.9468</td><td class="best" data-num="">0.9527</td><td class="orc" data-num="">0.9998</td></tr>
+        <tr><th>dos</th><td data-num="">0.5386</td><td class="best" data-num="">0.6077</td><td class="orc" data-num="">0.9953</td></tr>
+        <tr><th>infiltration</th><td data-num="">0.2588</td><td style="color:var(--acc)" data-num="">0.2550</td><td class="orc" data-num="">0.9929</td></tr>
+        <tr><th>web_attacks</th><td data-num="">0.1766</td><td style="color:var(--acc)" data-num="">0.0873</td><td class="orc" data-num="">0.0251</td></tr>
+        <tr class="agg"><th>macro</th><td data-num="">0.6602</td><td style="color:var(--acc)" data-num="">0.6578</td><td class="orc" data-num="">0.8308</td></tr>
       </tbody>
     </table>
   </div>
   <p class="tfoot">라우팅 지표: 제안 415,588 · 채택 14,483 · 제안 recall 0.093 · utility 실현 0.106 (†oracle = 행별 최적-모델 상한 참조).</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th>행</th><th>잔차 질량</th><th>생존</th></tr></thead>
+      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th data-num="">행</th><th data-num="">잔차 질량</th><th>생존</th></tr></thead>
       <tbody>
-        <tr><th>1</th><td style="text-align:left">inf 혼합 (inf 15,451 + web 134)</td><td>15,594</td><td>0.248</td><td class="best">✓</td></tr>
-        <tr><th>2</th><td style="text-align:left">brute 순수 (질량 최대 0.415)</td><td>17,610</td><td>0.415</td><td>✗</td></tr>
-        <tr><th>3</th><td style="text-align:left">dos 혼합 (benign 2,691 포함)</td><td>11,036</td><td>0.117</td><td class="best">✓</td></tr>
-        <tr><th>4</th><td style="text-align:left">mega (준-global)</td><td>1,955,760</td><td>0.220</td><td class="best">✓</td></tr>
+        <tr><th>1</th><td style="text-align:left">inf 혼합 (inf 15,451 + web 134)</td><td data-num="">15,594</td><td data-num="">0.248</td><td class="best">✓</td></tr>
+        <tr><th>2</th><td style="text-align:left">brute 순수 (질량 최대 0.415)</td><td data-num="">17,610</td><td data-num="">0.415</td><td>✗</td></tr>
+        <tr><th>3</th><td style="text-align:left">dos 혼합 (benign 2,691 포함)</td><td data-num="">11,036</td><td data-num="">0.117</td><td class="best">✓</td></tr>
+        <tr><th>4</th><td style="text-align:left">mega (준-global)</td><td data-num="">1,955,760</td><td data-num="">0.220</td><td class="best">✓</td></tr>
       </tbody>
     </table>
   </div>
@@ -443,29 +444,29 @@
   <p class="tfoot"><b>튜플:</b> system 0.6514 · global 0.6679 (<b>−0.017, 계열 최저</b>) · oracle 0.8231 · random 0.8214 (격차 +0.002) · helpful 2,278뿐 · web .161→<b>.031</b>.</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>global</th><th>RACE</th><th>oracle*</th></tr></thead>
+      <thead><tr><th>class</th><th data-num="">global</th><th data-num="">RACE</th><th data-num="">oracle*</th></tr></thead>
       <tbody>
-        <tr><th>benign</th><td>0.9807</td><td class="best">0.9827</td><td class="orc">0.9992</td></tr>
-        <tr><th>bot</th><td>0.9984</td><td>0.9984</td><td class="orc">0.9985</td></tr>
-        <tr><th>brute_force</th><td>0.7246</td><td>0.7246</td><td class="orc">0.8041</td></tr>
-        <tr><th>ddos</th><td>0.9183</td><td class="best">0.9223</td><td class="orc">0.9990</td></tr>
-        <tr><th>dos</th><td>0.5053</td><td class="best">0.5131</td><td class="orc">0.9932</td></tr>
-        <tr><th>infiltration</th><td>0.3877</td><td style="color:var(--acc)">0.3876</td><td class="orc">0.9443</td></tr>
-        <tr><th>web_attacks</th><td>0.1606</td><td style="color:var(--acc)">0.0312</td><td class="orc">0.0233</td></tr>
-        <tr class="agg"><th>macro</th><td>0.6679</td><td style="color:var(--acc)">0.6514</td><td class="orc">0.8231</td></tr>
+        <tr><th>benign</th><td data-num="">0.9807</td><td class="best" data-num="">0.9827</td><td class="orc" data-num="">0.9992</td></tr>
+        <tr><th>bot</th><td data-num="">0.9984</td><td data-num="">0.9984</td><td class="orc" data-num="">0.9985</td></tr>
+        <tr><th>brute_force</th><td data-num="">0.7246</td><td data-num="">0.7246</td><td class="orc" data-num="">0.8041</td></tr>
+        <tr><th>ddos</th><td data-num="">0.9183</td><td class="best" data-num="">0.9223</td><td class="orc" data-num="">0.9990</td></tr>
+        <tr><th>dos</th><td data-num="">0.5053</td><td class="best" data-num="">0.5131</td><td class="orc" data-num="">0.9932</td></tr>
+        <tr><th>infiltration</th><td data-num="">0.3877</td><td style="color:var(--acc)" data-num="">0.3876</td><td class="orc" data-num="">0.9443</td></tr>
+        <tr><th>web_attacks</th><td data-num="">0.1606</td><td style="color:var(--acc)" data-num="">0.0312</td><td class="orc" data-num="">0.0233</td></tr>
+        <tr class="agg"><th>macro</th><td data-num="">0.6679</td><td style="color:var(--acc)" data-num="">0.6514</td><td class="orc" data-num="">0.8231</td></tr>
       </tbody>
     </table>
   </div>
   <p class="tfoot">라우팅 지표: 제안 200,351 · 채택 23,334 · 제안 recall 0.056 · utility 실현 0.102 (†oracle = 행별 최적-모델 상한 참조).</p>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th>행</th><th>잔차 질량</th><th>생존</th></tr></thead>
+      <thead><tr><th>regime</th><th style="text-align:left">조성</th><th data-num="">행</th><th data-num="">잔차 질량</th><th>생존</th></tr></thead>
       <tbody>
-        <tr><th>1</th><td style="text-align:left"><b>dos 순수</b></td><td>20,941</td><td>0.145</td><td class="best">✓</td></tr>
-        <tr><th>2</th><td style="text-align:left">brute 순수 (질량 최대 0.375)</td><td>17,610</td><td>0.375</td><td>✗</td></tr>
-        <tr><th>3</th><td style="text-align:left"><b>inf 순수</b></td><td>15,715</td><td>0.252</td><td class="best">✓</td></tr>
-        <tr><th>7</th><td style="text-align:left"><b>web 순수</b></td><td>140</td><td>0.003</td><td class="best">✓</td></tr>
-        <tr><th>4·5·6·8</th><td style="text-align:left">dos/경계 혼합 · mega · bot-9행 · dos 소규모</td><td>1,945,594</td><td>0.225</td><td>✗</td></tr>
+        <tr><th>1</th><td style="text-align:left"><b>dos 순수</b></td><td data-num="">20,941</td><td data-num="">0.145</td><td class="best">✓</td></tr>
+        <tr><th>2</th><td style="text-align:left">brute 순수 (질량 최대 0.375)</td><td data-num="">17,610</td><td data-num="">0.375</td><td>✗</td></tr>
+        <tr><th>3</th><td style="text-align:left"><b>inf 순수</b></td><td data-num="">15,715</td><td data-num="">0.252</td><td class="best">✓</td></tr>
+        <tr><th>7</th><td style="text-align:left"><b>web 순수</b></td><td data-num="">140</td><td data-num="">0.003</td><td class="best">✓</td></tr>
+        <tr><th>4·5·6·8</th><td style="text-align:left">dos/경계 혼합 · mega · bot-9행 · dos 소규모</td><td data-num="">1,945,594</td><td data-num="">0.225</td><td>✗</td></tr>
       </tbody>
     </table>
   </div>
@@ -485,11 +486,11 @@
   <h3>㉔-0 성능 요약 — 같은-run 판정 튜플 · vs XGB</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th style="text-align:left">run · knob</th><th>system</th><th>vs global</th><th>vs XGB</th><th>oracle</th><th>제안 recall</th><th>정밀도 / 유해</th><th>호출</th><th style="text-align:left">생존 expert</th></tr></thead>
+      <thead><tr><th style="text-align:left">run · knob</th><th data-num="">system</th><th data-num="">vs global</th><th data-num="">vs XGB</th><th data-num="">oracle</th><th data-num="">제안 recall</th><th data-num="">정밀도 / 유해</th><th data-num="">호출</th><th style="text-align:left">생존 expert</th></tr></thead>
       <tbody>
-        <tr><th>exp24a · regime-조건부 pruning (20260827_144730)</th><td>0.6721</td><td>+0.026</td><td style="color:var(--acc)">−0.083</td><td>0.7815</td><td>0.204</td><td>0.9959 / 52</td><td>1.048</td><td style="text-align:left">5 (dos·inf·dos혼합·easy-brute·web)</td></tr>
-        <tr><th>exp24b · + sign-scorer (20260827_161322)</th><td>0.6824</td><td>+0.013</td><td style="color:var(--acc)">−0.072</td><td>0.8206</td><td>0.184</td><td>0.9848 / 241</td><td>1.039</td><td style="text-align:left">4 (easy-brute·inf·dos·web)</td></tr>
-        <tr><th>exp24b · pruning off 대조군 (20260827_174858)</th><td class="best">0.6978</td><td class="best">+0.028</td><td style="color:var(--acc)">−0.057</td><td>0.8294</td><td class="best">0.261</td><td class="best">0.9997 / 4</td><td>1.158</td><td style="text-align:left">5+mega (viable 전원)</td></tr>
+        <tr><th>exp24a · regime-조건부 pruning (20260827_144730)</th><td data-num="">0.6721</td><td data-num="">+0.026</td><td style="color:var(--acc)" data-num="">−0.083</td><td data-num="">0.7815</td><td data-num="">0.204</td><td data-num="">0.9959 / 52</td><td data-num="">1.048</td><td style="text-align:left">5 (dos·inf·dos혼합·easy-brute·web)</td></tr>
+        <tr><th>exp24b · + sign-scorer (20260827_161322)</th><td data-num="">0.6824</td><td data-num="">+0.013</td><td style="color:var(--acc)" data-num="">−0.072</td><td data-num="">0.8206</td><td data-num="">0.184</td><td data-num="">0.9848 / 241</td><td data-num="">1.039</td><td style="text-align:left">4 (easy-brute·inf·dos·web)</td></tr>
+        <tr><th>exp24b · pruning off 대조군 (20260827_174858)</th><td class="best" data-num="">0.6978</td><td class="best" data-num="">+0.028</td><td style="color:var(--acc)" data-num="">−0.057</td><td data-num="">0.8294</td><td class="best" data-num="">0.261</td><td class="best" data-num="">0.9997 / 4</td><td data-num="">1.158</td><td style="text-align:left">5+mega (viable 전원)</td></tr>
       </tbody>
     </table>
   </div>
@@ -498,16 +499,16 @@
   <h3>㉔-1 클래스별 F1 — global → system (oracle 참조)</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th>class</th><th>24a</th><th>24b</th><th>24b-off</th><th>XGB (인용)</th></tr></thead>
+      <thead><tr><th>class</th><th data-num="">24a</th><th data-num="">24b</th><th data-num="">24b-off</th><th data-num="">XGB (인용)</th></tr></thead>
       <tbody>
-        <tr><th>benign</th><td>.972→.974</td><td>.981→.988</td><td>.980→.982</td><td>0.9943</td></tr>
-        <tr><th>bot</th><td class="best">.998→.998</td><td class="best">.998→.998</td><td class="best">.998→.998</td><td>0.9978</td></tr>
-        <tr><th>brute_force</th><td>.725→.725</td><td>.725→.725</td><td>.725→.725</td><td>0.9159</td></tr>
-        <tr><th>ddos</th><td>.934→.936</td><td>.908→.910</td><td>.905→.905</td><td>0.9921</td></tr>
-        <tr><th>dos</th><td>.527→.705</td><td>.486→.720</td><td>.524→.718</td><td>0.7822</td></tr>
-        <tr><th>infiltration</th><td>.205→.205</td><td>.423→.425</td><td>.393→.393</td><td>0.4291</td></tr>
-        <tr><th>web_attacks</th><td>.162→.162</td><td style="color:var(--acc)">.163→.012</td><td>.164→.164</td><td>0.1724</td></tr>
-        <tr class="agg"><th>macro</th><td>.646→.672</td><td>.669→.682</td><td>.670→.698</td><td>0.7548</td></tr>
+        <tr><th>benign</th><td data-num="">.972→.974</td><td data-num="">.981→.988</td><td data-num="">.980→.982</td><td data-num="">0.9943</td></tr>
+        <tr><th>bot</th><td class="best" data-num="">.998→.998</td><td class="best" data-num="">.998→.998</td><td class="best" data-num="">.998→.998</td><td data-num="">0.9978</td></tr>
+        <tr><th>brute_force</th><td data-num="">.725→.725</td><td data-num="">.725→.725</td><td data-num="">.725→.725</td><td data-num="">0.9159</td></tr>
+        <tr><th>ddos</th><td data-num="">.934→.936</td><td data-num="">.908→.910</td><td data-num="">.905→.905</td><td data-num="">0.9921</td></tr>
+        <tr><th>dos</th><td data-num="">.527→.705</td><td data-num="">.486→.720</td><td data-num="">.524→.718</td><td data-num="">0.7822</td></tr>
+        <tr><th>infiltration</th><td data-num="">.205→.205</td><td data-num="">.423→.425</td><td data-num="">.393→.393</td><td data-num="">0.4291</td></tr>
+        <tr><th>web_attacks</th><td data-num="">.162→.162</td><td style="color:var(--acc)" data-num="">.163→.012</td><td data-num="">.164→.164</td><td data-num="">0.1724</td></tr>
+        <tr class="agg"><th>macro</th><td data-num="">.646→.672</td><td data-num="">.669→.682</td><td data-num="">.670→.698</td><td data-num="">0.7548</td></tr>
       </tbody>
     </table>
   </div>
@@ -533,13 +534,13 @@
   <h3>㉔-3 축-3 검증 — test-prior shift (§20.4): 가설 기각, 정직 기록</h3>
   <div class="tblwrap">
     <table>
-      <thead><tr><th style="text-align:left">macro-F1</th><th>natural</th><th>head-heavy</th><th>balanced</th><th>tail-heavy</th></tr></thead>
+      <thead><tr><th style="text-align:left">macro-F1</th><th data-num="">natural</th><th data-num="">head-heavy</th><th data-num="">balanced</th><th data-num="">tail-heavy</th></tr></thead>
       <tbody>
-        <tr><th>global</th><td>0.6698</td><td>0.6090</td><td>0.6756</td><td>0.5851</td></tr>
-        <tr><th>Ours</th><td>0.6978</td><td>0.6368</td><td>0.7073</td><td>0.6128</td></tr>
-        <tr><th>XGBoost</th><td>0.7548</td><td>0.6938</td><td>0.7686</td><td>0.6661</td></tr>
-        <tr><th>XGBoost + known-prior 보정</th><td>0.7548</td><td class="best">0.7200</td><td class="best">0.8691</td><td class="best">0.7681</td></tr>
-        <tr><th>RACE + 보정 (raw posterior)</th><td>0.6978</td><td>0.6439</td><td>0.7537</td><td>0.4815</td></tr>
+        <tr><th>global</th><td data-num="">0.6698</td><td data-num="">0.6090</td><td data-num="">0.6756</td><td data-num="">0.5851</td></tr>
+        <tr><th>Ours</th><td data-num="">0.6978</td><td data-num="">0.6368</td><td data-num="">0.7073</td><td data-num="">0.6128</td></tr>
+        <tr><th>XGBoost</th><td data-num="">0.7548</td><td data-num="">0.6938</td><td data-num="">0.7686</td><td data-num="">0.6661</td></tr>
+        <tr><th>XGBoost + known-prior 보정</th><td data-num="">0.7548</td><td class="best" data-num="">0.7200</td><td class="best" data-num="">0.8691</td><td class="best" data-num="">0.7681</td></tr>
+        <tr><th>RACE + 보정 (raw posterior)</th><td data-num="">0.6978</td><td data-num="">0.6439</td><td data-num="">0.7537</td><td data-num="">0.4815</td></tr>
       </tbody>
     </table>
   </div>

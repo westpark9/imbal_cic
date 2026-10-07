@@ -1,3 +1,13 @@
+
+# Repository layout bootstrap: works in the workspace and portable source snapshots.
+from pathlib import Path as _LayoutPath
+import sys as _layout_sys
+_layout_root = next(p for p in _LayoutPath(__file__).resolve().parents
+                    if (p / 'scripts/common/experiment_paths.py').is_file())
+_layout_sys.path.insert(0, str(_layout_root / 'scripts/common'))
+from experiment_paths import bootstrap, repo_root, script_path, resolve_path, result_root, snapshot_path, read_record
+bootstrap(_layout_root)
+
 import hashlib
 import json
 from pathlib import Path
@@ -42,7 +52,7 @@ class AutoCleanInputsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);ref=fixture(root,b'raw-data')
             np.save(root/'val_idx.npy',np.array([0]))
-            manifest=json.loads((root/'manifest.json').read_text())
+            manifest=read_record(root/'manifest.json')
             manifest['artifacts_sha256']['val_idx.npy']=sha256(root/'val_idx.npy')
             (root/'manifest.json').write_text(json.dumps(manifest))
             (root/'COMPLETE.json').write_text(json.dumps({'manifest_sha256':sha256(root/'manifest.json')}))

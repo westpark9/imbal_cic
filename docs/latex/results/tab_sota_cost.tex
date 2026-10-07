@@ -1,0 +1,19 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Measured cost on one RTX 4090 (24\,GB) with up to two jobs in parallel: elapsed times include resource contention and are not standalone latencies. LoCalPFN fit includes validation; its prediction includes kNN retrieval. DistPFN shares the Global fit and prediction.}
+\label{tab:sota_cost}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrc}
+\toprule
+Method & CIC fit (s) & CIC predict (s) & ToN fit (s) & ToN predict (s) & Peak GPU GiB (CIC / ToN) \\
+\midrule
+Global TabPFN-v3 (C0) & 36.4 & 1,099.3 & 36.7 & 821.7 & 2.92 / 2.94 \\
+XGBoost (same 100k) & 2.3 & 1.0 & 55.4 & 1.0 & 0.55 / 0.53 \\
+BoostPFN & 98.5 & 2,308.5 & 97.8 & 1,737.6 & 0.89 / 0.89 \\
+LoCalPFN (FT) & 3,196.3 & 17,300.8 & 5,783.1 & 11,144.8 & 7.54 / 7.54 \\
+DistPFN (v3) & 36.4 & 1,099.4 & 36.7 & 821.9 & 2.92 / 2.94 \\
+XGBoost (full train) & 107.8 & 1.0 & 143.2 & 1.1 & 2.20 / 1.59 \\
+\bottomrule
+\end{tabular}}
+\end{table}

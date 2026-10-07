@@ -1,0 +1,2853 @@
+{
+  "versions": [
+    {
+      "id": "v1",
+      "label": "tabpfn_intro_and_tailguard",
+      "start": "2026-08-01",
+      "note": "TabPFN memory study, ensembles, energy-gate expert track"
+    },
+    {
+      "id": "v2",
+      "label": "racepfn_structure_c0_sota_smoke",
+      "start": "2026-08-26",
+      "note": "residual experts, scorer/verifier, C0 composition campaign, SOTA PFN ports, routing correction"
+    },
+    {
+      "id": "v3",
+      "label": "data_quality_audit",
+      "start": "2026-09-11",
+      "note": "EXP40–44 contradiction/duplication/leakage audit"
+    },
+    {
+      "id": "v4",
+      "label": "conflict_free_expert_sv",
+      "start": "2026-09-16",
+      "note": "EXP47–63 on conflict-free splits: expert capability, S/V, K sweep, SOTA and cost"
+    },
+    {
+      "id": "v5",
+      "label": "context_optimisation_temporal",
+      "start": "2026-10-01",
+      "note": "EXP64–68: context composition feasibility, prompt-tuned contexts, temporal-arrival protocol"
+    },
+    {
+      "id": "v6",
+      "label": "sparse_label_context_detection",
+      "start": "2026-10-02",
+      "note": "연구 의도 재정의: 희소 라벨 공격 탐지. 순차 공격 도입은 설계안; raw 시간 재현/전후 적응 비교는 필수 아님. 신규 실험 미실행. docs/research/20261002/research_direction.md"
+    },
+    {
+      "id": "v7",
+      "label": "class_incremental_arrival",
+      "start": "2026-10-02",
+      "note": "EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨에서 XGB 재학습 vs TabPFN context 확장, seed 43. docs/research/20261002/exp69_protocol.md"
+    }
+  ],
+  "pins": {
+    "results/v1/s44/20260803_105858_414619_pid3592975_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_noextaux": "v1",
+    "results/v1/s44/20260803_110932_403950_pid3599800_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_noextaux": "v1",
+    "results/v1/s44/20260803_112327_345001_pid3607463_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_notgtood": "v1",
+    "results/v1/s44/20260803_112753_662148_pid3610595_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_bot_noextaux": "v1",
+    "results/v1/s44/20260803_130457_907211_pid3661760_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_bot_notgtood": "v1",
+    "results/v1/s44/20260804_112421_565949_pid171279_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_dos": "v1",
+    "results/v1/s44/20260804_112958_340309_pid174982_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_dos_noextaux": "v1",
+    "results/v1/s44/20260804_113540_694483_pid178731_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos": "v1",
+    "results/v1/s44/20260804_114022_359618_pid181851_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos_noextaux": "v1",
+    "results/v1/s44/20260804_114455_350329_pid184927_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos": "v1",
+    "results/v1/s44/20260804_114850_383714_pid187529_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance": "v1",
+    "results/v1/s44/20260804_114946_179509_pid188132_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance_noextaux": "v1",
+    "results/v1/s44/20260804_115041_793778_pid188774_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos": "v1",
+    "results/v1/s44/20260804_115137_020227_pid189352_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos_noextaux": "v1",
+    "results/v1/s44/20260804_115232_216934_pid190020_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos": "v1",
+    "results/v1/s44/20260804_115327_664906_pid190645_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos_noextaux": "v1",
+    "results/v1/s44/20260804_115426_765988_pid191295_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss": "v1",
+    "results/v1/s44/20260804_115530_609536_pid191992_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss_noextaux": "v1",
+    "results/v1/s44/20260804_115634_296438_pid192668_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection": "v1",
+    "results/v1/s44/20260804_115738_352170_pid193410_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection_noextaux": "v1",
+    "results/v1/s44/20260804_115842_399837_pid194142_nfv3_ton_iot_resolved_expert_pipeline_unseen_password": "v1",
+    "results/v1/s44/20260804_115946_517645_pid194798_nfv3_ton_iot_resolved_expert_pipeline_unseen_password_noextaux": "v1",
+    "results/v1/s44/20260804_120051_035011_pid195474_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning": "v1",
+    "results/v1/s44/20260804_120154_653156_pid196230_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning_noextaux": "v1",
+    "results/v1/s44/20260804_120258_436193_pid196895_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection": "v1",
+    "results/v1/s44/20260804_120402_330466_pid197601_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection_noextaux": "v1",
+    "results/v1/s44/20260804_120506_225556_pid198286_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning": "v1",
+    "results/v1/s44/20260804_120610_120055_pid198976_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning_noextaux": "v1",
+    "results/v1/s44/20260804_120856_863554_pid200977_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance": "v1",
+    "results/v1/s44/20260804_121259_810179_pid203517_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance_noextaux": "v1",
+    "results/v1/s44/20260804_121642_525891_pid205926_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos": "v1",
+    "results/v1/s44/20260804_122239_977673_pid209703_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos_noextaux": "v1",
+    "results/v1/s44/20260804_122818_451870_pid213354_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos": "v1",
+    "results/v1/s44/20260804_123403_307787_pid217021_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos_noextaux": "v1",
+    "results/v1/s44/20260804_123942_053647_pid220633_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss": "v1",
+    "results/v1/s44/20260804_124821_165998_pid226142_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss_noextaux": "v1",
+    "results/v1/s44/20260804_125735_271904_pid232080_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection": "v1",
+    "results/v1/s44/20260804_130751_914020_pid238564_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection_noextaux": "v1",
+    "results/v1/s44/20260804_131829_258608_pid245342_nfv3_ton_iot_resolved_expert_pipeline_unseen_password": "v1",
+    "results/v1/s44/20260804_132754_536084_pid251268_nfv3_ton_iot_resolved_expert_pipeline_unseen_password_noextaux": "v1",
+    "results/v1/s44/20260804_133745_648478_pid257603_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning": "v1",
+    "results/v1/s44/20260804_134804_644885_pid264526_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning_noextaux": "v1",
+    "results/v1/s44/20260804_135850_120937_pid275576_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection": "v1",
+    "results/v1/s44/20260804_140636_592925_pid283697_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection_noextaux": "v1",
+    "results/v1/s44/20260804_141405_944929_pid291102_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning": "v1",
+    "results/v1/s44/20260804_142242_402737_pid299648_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning_noextaux": "v1",
+    "results/v3/exp40/20260911_160256_3299866_nfv3_cic2018_exp40_dedup_xgb": "v3",
+    "results/v3/exp41/20260911_165635_3341259_nfv3_cic2018_exp41_dedup_dataset_xgb": "v3",
+    "tabpfn/results/v2/exp22/20260826_113339_nfv3_cic2018capped_exp22c_racectx": "v2",
+    "tabpfn/results/v2/exp22/20260826_130310_nfv3_cic2018_exp22c_racectx": "v2",
+    "tabpfn/results/v2/exp23/20260826_171819_nfv3_cic2018capped_exp23_raceguide": "v2",
+    "tabpfn/results/v2/exp23/20260826_172238_nfv3_cic2018capped_exp23_raceguide": "v2",
+    "tabpfn/results/v2/exp23/20260826_183417_nfv3_cic2018_exp23_raceguide": "v2",
+    "tabpfn/results/v2/exp23/20260827_000732_nfv3_cic2018capped_exp23b_greedy": "v2",
+    "tabpfn/results/v2/exp23/20260827_011706_nfv3_cic2018_exp23b_greedy": "v2",
+    "tabpfn/results/v2/exp23/20260827_011908_nfv3_cic2018capped_exp23c_anchor": "v2",
+    "tabpfn/results/v2/exp23/20260827_023651_nfv3_cic2018_exp23c_anchor": "v2",
+    "tabpfn/results/v2/exp23/20260827_023917_nfv3_cic2018capped_exp23d_anchmode_natural": "v2",
+    "tabpfn/results/v2/exp23/20260827_035659_nfv3_cic2018_exp23d_anchmode_natural": "v2",
+    "tabpfn/results/v2/exp23/20260827_051400_nfv3_cic2018_exp23d_anchmode_inverse": "v2",
+    "tabpfn/results/v2/exp23/20260827_063039_nfv3_cic2018_exp23d_anchmode_natural": "v2",
+    "tabpfn/results/v2/exp24/20260827_131521_nfv3_cic2018capped_exp24a_regprune": "v2",
+    "tabpfn/results/v2/exp24/20260827_144730_nfv3_cic2018_exp24a_regprune": "v2",
+    "tabpfn/results/v2/exp24/20260827_144821_nfv3_cic2018capped_exp24b_signscorer": "v2",
+    "tabpfn/results/v2/exp24/20260827_161322_nfv3_cic2018_exp24b_signscorer": "v2",
+    "tabpfn/results/v2/exp24/20260827_174858_nfv3_cic2018_exp24b_signscorer": "v2",
+    "tabpfn/results/v2/exp24/20260901_033336_nfv3_cic2018_exp24b_signscorer": "v2",
+    "tabpfn/results/v2/exp27/20260901_063105_nfv3_cic2018_exp27_ctxcover": "v2",
+    "tabpfn/results/v2/exp28/20260901_071409_nfv3_cic2018_exp28_equalmem": "v2",
+    "tabpfn/results/v2/exp25/20260901_122758_nfv3_cic2018_exp25_dump": "v2",
+    "tabpfn/results/v2/exp25/20260901_141326_nfv3_cic2018_exp25_dump": "v2",
+    "tabpfn/results/v2/exp26/20260901_143918_nfv3_cic2018capped_exp26_normgain": "v2",
+    "tabpfn/results/v2/exp26/20260901_162007_nfv3_cic2018_exp26_normgain": "v2",
+    "tabpfn/results/v2/exp25/20260901_190139_nfv3_cic2018_exp25b_detlite": "v2",
+    "tabpfn/results/v2/exp25/20260901_191613_nfv3_cic2018_exp25_dump": "v2",
+    "tabpfn/results/v2/exp25/20260901_205201_nfv3_cic2018_exp25b_detlite": "v2",
+    "tabpfn/results/v2/exp29/20260901_220323_nfv3_cic2018capped_exp29_combo": "v2",
+    "tabpfn/results/v2/exp29/20260901_232113_nfv3_cic2018_exp29_combo": "v2",
+    "tabpfn/results/v2/exp29/20260902_004817_nfv3_cic2018_exp29_combo": "v2",
+    "tabpfn/results/v2/exp29/20260902_021534_nfv3_cic2018_exp29_combo": "v2",
+    "tabpfn/results/v2/exp29/20260902_033127_nfv3_cic2018_exp29_combo": "v2",
+    "tabpfn/results/v2/exp29/20260902_044018_nfv3_cic2018_exp29_combo": "v2",
+    "tabpfn/results/v2/exp29/20260902_054439_nfv3_cic2018_exp29_combo": "v2",
+    "tabpfn/results/v2/exp25/20260902_055231_nfv3_cic2018_exp25_dump": "v2",
+    "tabpfn/results/v2/exp29/20260902_065237_nfv3_cic2018_exp29_combo": "v2",
+    "tabpfn/results/v2/exp30/20260902_223439_nfv3_cic2018capped_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260902_225616_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260902_233554_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260902_235656_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp31/20260903_000650_nfv3_cic2018capped_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp30/20260903_001440_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp31/20260903_003108_nfv3_cic2018capped_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp30/20260903_005042_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_015043_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_025002_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_033544_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_033627_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_042146_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_042210_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_051253_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_051308_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp31/20260903_060315_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_060437_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_063226_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp30/20260903_071619_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_072022_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_082151_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp31/20260903_091253_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_091415_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_094650_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_095403_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_104321_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_104347_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_114748_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_122210_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_122328_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp30/20260903_132033_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_141831_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_151625_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_154620_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260903_154827_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp32/20260903_155138_nfv3_cic2018capped_exp32_c0bag": "v2",
+    "tabpfn/results/v2/exp32/20260903_160832_nfv3_cic2018_exp32_c0bag": "v2",
+    "tabpfn/results/v2/exp32/20260903_164008_nfv3_cic2018_exp32_c0bag": "v2",
+    "tabpfn/results/v2/exp32/20260903_170148_nfv3_cic2018_exp32_c0bag": "v2",
+    "tabpfn/results/v2/exp33/20260903_170819_nfv3_cic2018capped_exp33_c0dupcap": "v2",
+    "tabpfn/results/v2/exp31/20260903_174111_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_174159_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_182702_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_182859_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp33/20260903_190018_nfv3_cic2018_exp33_c0dupcap": "v2",
+    "tabpfn/results/v2/exp33/20260903_190203_nfv3_cic2018_exp33_c0dupcap": "v2",
+    "tabpfn/results/v2/exp31/20260903_195007_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_195228_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_202445_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_202602_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp34/20260903_203223_nfv3_cic2018capped_exp34_c0select": "v2",
+    "tabpfn/results/v2/exp34/20260903_210522_nfv3_cic2018_exp34_c0select": "v2",
+    "tabpfn/results/v2/exp34/20260903_210759_nfv3_cic2018_exp34_c0select": "v2",
+    "tabpfn/results/v2/exp34/20260903_214545_nfv3_cic2018_exp34_c0select": "v2",
+    "tabpfn/results/v2/exp34/20260903_214632_nfv3_cic2018_exp34_c0select": "v2",
+    "tabpfn/results/v2/exp34/20260903_221949_nfv3_cic2018_exp34_c0select": "v2",
+    "tabpfn/results/v2/exp34/20260903_221952_nfv3_cic2018_exp34_c0select": "v2",
+    "tabpfn/results/v2/exp34/20260903_223312_nfv3_cic2018_exp34_c0select": "v2",
+    "tabpfn/results/v2/exp31/20260903_235255_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260903_235413_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_010654_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_010911_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_021924_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_022152_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_025507_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp30/20260904_040836_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260904_041034_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260904_052140_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260904_052327_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260904_063542_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp30/20260904_063638_nfv3_cic2018_exp30_c0share": "v2",
+    "tabpfn/results/v2/exp31/20260904_084619_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_084919_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_110003_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_110011_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_130628_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp31/20260904_130944_nfv3_cic2018_exp31_c0alloc": "v2",
+    "tabpfn/results/v2/exp35/20260904_154310_nfv3_cic2018_exp35_boostpfn": "v2",
+    "tabpfn/results/v2/exp35/20260904_154333_nfv3_cic2018_exp35_boostpfn": "v2",
+    "tabpfn/results/v2/exp37/20260904_160005_nfv3_cic2018_exp37_distpfn": "v2",
+    "tabpfn/results/v2/exp36/20260904_172920_nfv3_cic2018_exp36_localpfn_knn": "v2",
+    "tabpfn/results/v2/exp36/20260904_174104_nfv3_cic2018_exp36_localpfn_ft": "v2",
+    "tabpfn/results/v2/exp37/20260904_183615_nfv3_cic2018_exp37_distpfn": "v2",
+    "tabpfn/results/v2/exp35/20260904_185152_nfv3_cic2018_exp35_boostpfn": "v2",
+    "tabpfn/results/v2/exp35/20260904_185331_nfv3_cic2018_exp35_boostpfn": "v2",
+    "tabpfn/results/v2/exp36/20260905_012446_nfv3_cic2018_exp36_localpfn_knn": "v2",
+    "tabpfn/results/v2/exp36/20260905_020159_nfv3_cic2018_exp36_localpfn_ft": "v2",
+    "tabpfn/results/v2/exp37/20260907_174746_nfv3_cic2018_exp37_distpfn": "v2",
+    "tabpfn/results/v2/exp37/20260907_192325_nfv3_cic2018_exp37_distpfn": "v2",
+    "tabpfn/results/v2/exp37/20260907_194340_nfv3_cic2018_exp37_distpfn": "v2",
+    "tabpfn/results/v2/exp35/20260908_133300_nfv3_cic2018_exp35_boostpfn": "v2",
+    "tabpfn/results/v2/exp35/20260908_141527_nfv3_cic2018_exp35_boostpfn": "v2",
+    "tabpfn/results/v2/exp39/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing": "v2",
+    "tabpfn/results/v3/exp40/20260911_162208_nfv3_cic2018_exp40_dedup_tabpfn_none_s42": "v3",
+    "tabpfn/results/v3/exp40/20260911_163426_nfv3_cic2018_exp40_dedup_tabpfn_dedup_xy_s42": "v3",
+    "tabpfn/results/v3/exp40/20260911_164643_nfv3_cic2018_exp40_dedup_tabpfn_dedup_majority_s42": "v3",
+    "tabpfn/results/v3/exp40/20260911_165905_nfv3_cic2018_exp40_dedup_tabpfn_drop_conflict_s42": "v3",
+    "tabpfn/results/v3/exp41/20260911_171454_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s42": "v3",
+    "tabpfn/results/v3/exp41/20260911_174553_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s43": "v3",
+    "tabpfn/results/v3/exp41/20260911_181649_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s44": "v3",
+    "tabpfn/results/v3/exp41/20260911_184733_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s42": "v3",
+    "tabpfn/results/v3/exp41/20260911_185457_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s42": "v3",
+    "tabpfn/results/v3/exp41/20260911_185808_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s42": "v3",
+    "tabpfn/results/v3/exp41/20260911_190340_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s43": "v3",
+    "tabpfn/results/v3/exp41/20260911_191102_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s43": "v3",
+    "tabpfn/results/v3/exp41/20260911_191405_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s43": "v3",
+    "tabpfn/results/v3/exp41/20260911_191957_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s44": "v3",
+    "tabpfn/results/v3/exp41/20260911_192507_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s44": "v3",
+    "tabpfn/results/v3/exp41/20260911_192614_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s44": "v3",
+    "tabpfn/results/v3/exp42/20260914_132740_nfv3_cic2018_exp42_dedup_methods_dedup_xy_oracle_xgb_c0_xgb_full_s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_141501_nfv3_cic2018_exp42_dedup_methods_dedup_xy_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_141759_nfv3_cic2018_exp42_dedup_methods_dedup_majority_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_141916_nfv3_cic2018_exp42_dedup_methods_drop_conflict_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_142814_nfv3_cic2018_exp42_dedup_methods_original_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_144400_nfv3_cic2018_exp42_dedup_methods_dedup_xy_boostpfn_s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_144617_nfv3_cic2018_exp42_dedup_methods_dedup_majority_boostpfn_s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_144718_nfv3_cic2018_exp42_dedup_methods_drop_conflict_boostpfn_s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_144903_nfv3_cic2018_exp42_dedup_methods_original_boostpfn_s42": "v3",
+    "tabpfn/results/v3/exp43/20260914_154808_nfv3_cic2018_exp43_ours_natural_dedup_xy_s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_163155_nfv3_cic2018_exp42_dedup_methods_dedup_xy_localpfn_knn_s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_180238_nfv3_cic2018_exp42_dedup_methods_dedup_majority_localpfn_knn_s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_193320_nfv3_cic2018_exp42_dedup_methods_drop_conflict_localpfn_knn_s42": "v3",
+    "tabpfn/results/v3/exp42/20260914_225915_nfv3_cic2018_exp42_dedup_methods_original_localpfn_knn_s42": "v3",
+    "tabpfn/results/v3/exp44/20260914_232951_nfv3_cic2018_exp44_conflict_only_relabel_majority_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "v3",
+    "tabpfn/results/v3/exp44/20260914_233912_nfv3_cic2018_exp44_conflict_only_relabel_majority_boostpfn_s42": "v3",
+    "tabpfn/results/v3/exp44/20260915_000143_nfv3_cic2018_exp44_conflict_only_drop_vectors_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "v3",
+    "tabpfn/results/v3/exp44/20260915_000852_nfv3_cic2018_exp44_conflict_only_drop_vectors_boostpfn_s42": "v3",
+    "tabpfn/results/v3/exp45/20260915_101615_nfv3_toniotcapped_exp45_ton_frame_oracle_ours_c0_tabpfn_plain_xgb_c0_xgb_f_s42": "v3",
+    "tabpfn/results/v3/exp45/20260915_110229_nfv3_toniot_exp45_ton_frame_oracle_ours_c0_tabpfn_plain_xgb_c0_xgb_f_s42": "v3",
+    "tabpfn/results/v3/exp46/20260915_155115_nfv3_toniot_exp46_global_context_s42": "v3",
+    "tabpfn/results/v3/exp47/20260915_180000_nfv3_cic2018_exp47_clean_revalidation_s42": "v3",
+    "tabpfn/results/v4/exp48/20260916_021730_nfv3_toniot_exp48_clean_revalidation_s42": "v4",
+    "tabpfn/results/v4/exp49/20260917_203021_nfv3_botiot_exp49_clean_revalidation_s42": "v4",
+    "tabpfn/results/v4/exp49/20260917_210728_nfv3_botiot_exp49_clean_revalidation_naturalc0_s42": "v4",
+    "tabpfn/results/v4/exp52/20260918_104042_nfv3_toniot_exp52_confident_s42": "v4",
+    "tabpfn/results/v4/exp52/20260918_104042_nfv3_toniot_exp52_random_s42": "v4",
+    "tabpfn/results/v4/exp52/20260918_125849_nfv3_toniot_exp52_anchor200_s42": "v4",
+    "tabpfn/results/v4/exp53/20260918_135138_nfv3_toniot_exp53_context_purity": "v4",
+    "tabpfn/results/v4/exp54/20260918_155043_nfv3_toniot_exp54_expert_context_design": "v4",
+    "tabpfn/results/v4/exp54/20260918_160238_nfv3_toniot_exp54r2_expert_context_design": "v4",
+    "tabpfn/results/v4/exp57/20260922_143529_exp57_expert_quality_s42_44": "v4",
+    "tabpfn/results/v4/exp59/20260928_exp59_residual_oracle_s43": "v4",
+    "tabpfn/results/v4/exp60/20260929_exp60_counterexamples_s43": "v4",
+    "tabpfn/results/v4/exp61/20260929_exp61_sota_local_s43": "v4",
+    "tabpfn/results/v4/exp62/20260930_exp62_sv_current_bank_s43": "v4",
+    "tabpfn/results/v4/exp63/20260930_exp63_k_sweep_s43": "v4",
+    "tabpfn/results/v5/exp64/20261001_174526_4085339_toniot_exp64_benign_diversity_s43": "v5",
+    "tabpfn/results/v5/exp66/20261001_174526_4085340_toniot_exp66_supcon_s43": "v5",
+    "tabpfn/results/v5/exp65/20261001_174728_4086382_cic2018_exp65_lito_lite_web_attacks_s43": "v5",
+    "tabpfn/results/v5/exp67/20261001_181859_4092618_toniot_exp67_prompt_tuned_s43": "v5",
+    "tabpfn/results/v5/exp65/20261001_182602_4095429_cic2018_exp65_lito_lite_web_attacks_s43": "v5",
+    "tabpfn/results/v5/exp67/20261001_182706_4096331_toniot_exp67_prompt_tuned_s43": "v5",
+    "tabpfn/results/v5/exp67/20261001_184332_4100935_toniot_exp67_prompt_tuned_s43": "v5",
+    "tabpfn/results/v5/exp67/20261001_185937_4104555_toniot_exp67_prompt_tuned_s44": "v5",
+    "tabpfn/results/v5/exp67/20261001_190757_4106755_cic2018_exp67_prompt_tuned_s43": "v5",
+    "tabpfn/results/v5/exp67/20261001_191422_4108285_toniot_exp67_prompt_tuned_s43": "v5",
+    "tabpfn/results/v5/exp68/20261002_004752_4179324_toniot_exp68_temporal_arrival_s43": "v5",
+    "tabpfn/results/v5/exp68/20261002_004935_4180483_toniot_exp68_temporal_arrival_s43": "v5",
+    "tabpfn/results/v5/exp68/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43": "v5",
+    "tabpfn/results/v7/exp69/20261002_exp69_class_arrival_s43": "v7",
+    "tabpfn/results/v7/exp70/20261002_exp70_class_arrival_100k_s43": "v7",
+    "tabpfn/results/v4/exp50/exp50_hdn_verifier_cic2018": "v4",
+    "tabpfn/results/v4/exp50/exp50_hdn_verifier_toniot": "v4",
+    "tabpfn/results/v4/exp51/exp51_scorer_target_cic2018": "v4",
+    "tabpfn/results/v4/exp51/exp51_scorer_target_toniot": "v4",
+    "tabpfn/results/v4/exp55/exp55_expert_specialization_cic2018": "v4",
+    "tabpfn/results/v4/exp55/exp55_expert_specialization_ton_iot": "v4",
+    "tabpfn/results/v4/exp56/exp56_five_condition_20260922_0150": "v4",
+    "tabpfn/results/v4/exp56/exp56_five_condition_20260922_final": "v4",
+    "tabpfn/results/v4/exp56/exp56_label_free_20260922": "v4",
+    "tabpfn/results/v4/exp58/exp58_six_condition_20260922": "v4",
+    "tabpfn/results/v4/exp58/exp58_six_condition_20260922_attempt1": "v4",
+    "tabpfn/results/v4/exp61/exp61_input_check": "v4",
+    "tabpfn/results/v4/exp61/exp61_parallel_smoke": "v4",
+    "tabpfn/results/v4/exp61/exp61_synthetic_smoke_v1": "v4",
+    "tabpfn/results/v4/exp61/exp61_synthetic_smoke_v2": "v4",
+    "tabpfn/results/v1/multiclass/20260806_160307_nfv3_cic2018_tabpfn_multiclass": "v1",
+    "tabpfn/results/v1/multiclass/20260806_201324_cic2017_full_tabpfn_multiclass": "v1",
+    "tabpfn/results/v1/multiclass/20260810_091207_nfv3_cic2018_tabpfn_multiclass": "v1",
+    "tabpfn/results/v1/multiclass/20260810_101626_cic2017_full_tabpfn_multiclass": "v1",
+    "tabpfn/results/v1/multiclass/20260813_195433_nfv3_cic2018_tabpfn_multiclass": "v1",
+    "tabpfn/results/v1/multiclass/20260814_180936_nfv3_cic2018_tabpfn_multiclass": "v1",
+    "tabpfn/results/v1/exp1/20260817_072033_nfv3_cic2018_exp1_1m": "v1",
+    "tabpfn/results/v1/exp1/20260817_081129_cic2017_full_exp1_1m": "v1",
+    "tabpfn/results/v1/exp1/20260817_090418_nfv3_botiot_exp1_1m": "v1",
+    "tabpfn/results/v1/exp1/20260817_093806_nfv3_toniot_exp1_1m": "v1",
+    "tabpfn/results/v1/exp2/20260817_161427_nfv3_cic2018_exp2_fullxgb": "v1",
+    "tabpfn/results/v1/exp2/20260817_162124_nfv3_botiot_exp2_fullxgb": "v1",
+    "tabpfn/results/v1/exp2/20260817_163506_nfv3_toniot_exp2_fullxgb": "v1",
+    "tabpfn/results/v1/exp2/20260817_163718_cic2017_full_exp2_fullxgb": "v1",
+    "tabpfn/results/v1/exp2/20260817_165633_nfv3_cic2018_exp2_fullxgb_82": "v1",
+    "tabpfn/results/v1/exp2/20260817_170135_nfv3_botiot_exp2_fullxgb_82": "v1",
+    "tabpfn/results/v1/exp2/20260817_172106_nfv3_toniot_exp2_fullxgb_82": "v1",
+    "tabpfn/results/v1/exp2/20260817_172358_cic2017_full_exp2_fullxgb_82": "v1",
+    "tabpfn/results/v1/exp1/20260818_030904_cic2017_full_exp1_1m": "v1",
+    "tabpfn/results/v1/exp1/20260818_042459_nfv3_cic2018_exp1_1m": "v1",
+    "tabpfn/results/v1/exp1/20260818_053139_nfv3_botiot_exp1_1m": "v1",
+    "tabpfn/results/v1/exp1/20260818_071152_nfv3_toniot_exp1_1m": "v1",
+    "tabpfn/results/v1/exp2/20260818_110611_cic2017_full_exp2_fullxgb": "v1",
+    "tabpfn/results/v1/exp2/20260818_111317_nfv3_cic2018_exp2_fullxgb": "v1",
+    "tabpfn/results/v1/exp2/20260818_111717_nfv3_botiot_exp2_fullxgb": "v1",
+    "tabpfn/results/v1/exp2/20260818_113117_nfv3_toniot_exp2_fullxgb": "v1",
+    "tabpfn/results/v1/exp4/20260820_114150_nfv3_cic2018_exp4_tailbag": "v1",
+    "tabpfn/results/v1/exp4/20260820_115223_nfv3_cic2018_exp4_tailbag": "v1",
+    "tabpfn/results/v1/exp5/20260820_155551_nfv3_cic2018_exp5_viewmoe": "v1",
+    "tabpfn/results/v1/exp6/20260820_173651_nfv3_cic2018_exp6_bal50k": "v1",
+    "tabpfn/results/v1/exp6/20260820_173924_nfv3_cic2018_exp6_web_hn": "v1",
+    "tabpfn/results/v1/exp6/20260820_174153_nfv3_cic2018_exp6_web_ctrl": "v1",
+    "tabpfn/results/v1/exp6/20260820_174432_nfv3_cic2018_exp6_inf_hn": "v1",
+    "tabpfn/results/v1/exp6/20260820_174702_nfv3_cic2018_exp6_dos_pair": "v1",
+    "tabpfn/results/v1/exp6/20260820_174929_nfv3_cic2018_exp6_bal50k_evval": "v1",
+    "tabpfn/results/v1/exp6/20260820_175200_nfv3_cic2018_exp6_web_hn_evval": "v1",
+    "tabpfn/results/v1/exp6/20260820_175428_nfv3_cic2018_exp6_web_ctrl_evval": "v1",
+    "tabpfn/results/v1/exp6/20260820_175700_nfv3_cic2018_exp6_inf_hn_evval": "v1",
+    "tabpfn/results/v1/exp6/20260820_175927_nfv3_cic2018_exp6_dos_pair_evval": "v1",
+    "tabpfn/results/v1/exp5/20260820_192744_nfv3_cic2018_exp5_viewmoe_evval": "v1",
+    "tabpfn/results/v1/exp7/20260820_230418_nfv3_cic2018_exp7_ood_unseen_bot": "v1",
+    "tabpfn/results/v1/exp8/20260820_233957_nfv3_cic2018_exp8_expertood_unseen_bot": "v1",
+    "tabpfn/results/v1/exp8/20260820_234000_nfv3_cic2018_exp8_expertood_unseen_infiltration": "v1",
+    "tabpfn/results/v1/exp8/20260820_234942_nfv3_cic2018_exp8_expertood_unseen_brute_force": "v1",
+    "tabpfn/results/v1/exp8/20260820_235104_nfv3_cic2018_exp8_expertood_unseen_web_attacks": "v1",
+    "tabpfn/results/v1/exp8/20260821_000048_nfv3_cic2018_exp8_expertood_unseen_ddos": "v1",
+    "tabpfn/results/v1/exp8/20260821_000219_nfv3_cic2018_exp8_expertood_unseen_dos": "v1",
+    "tabpfn/results/v1/exp9/20260821_012414_nfv3_cic2018_exp9_eft_unseen_brute_force": "v1",
+    "tabpfn/results/v1/exp10/20260821_023608_nfv3_cic2018_exp10_hce": "v1",
+    "tabpfn/results/v1/exp10/20260821_024951_nfv3_cic2018_exp10_hce_evval": "v1",
+    "tabpfn/results/v1/exp11/20260821_040136_nfv3_cic2018_exp11_activation": "v1",
+    "tabpfn/results/v1/exp11/20260821_044136_nfv3_cic2018_exp11_activation": "v1",
+    "tabpfn/results/v1/exp11/20260821_054359_nfv3_cic2018_exp11_activation": "v1",
+    "tabpfn/results/v1/exp12/20260821_060221_nfv3_cic2018_exp12b_system": "v1",
+    "tabpfn/results/v1/exp11/20260821_065113_nfv3_cic2018_exp11_activation": "v1",
+    "tabpfn/results/v1/exp12/20260821_070437_nfv3_cic2018_exp12c_system": "v1",
+    "tabpfn/results/v1/exp13/20260821_080323_nfv3_cic2018_exp13_tta": "v1",
+    "tabpfn/results/v1/exp13/20260821_082218_nfv3_cic2018_exp13_tta": "v1",
+    "tabpfn/results/v1/exp13/20260821_102249_nfv3_cic2018_exp13_tta": "v1",
+    "tabpfn/results/v1/exp14/20260821_135538_nfv3_toniot_exp14_system": "v1",
+    "tabpfn/results/v1/exp15/20260821_151521_nfv3_cic2018_exp15_prep": "v1",
+    "tabpfn/results/v1/exp14/20260821_161948_nfv3_toniot_exp14_system": "v1",
+    "tabpfn/results/v1/exp15/20260821_174945_nfv3_cic2018_exp15_prep": "v1",
+    "tabpfn/results/v1/exp16/20260821_181141_nfv3_cic2018_exp16_dedup": "v1",
+    "tabpfn/results/v1/exp17/20260821_181408_nfv3_cic2018_exp17_selector": "v1",
+    "tabpfn/results/v1/exp16/20260821_192317_nfv3_cic2018_exp16_dedup": "v1",
+    "tabpfn/results/v1/exp17/20260821_200914_nfv3_cic2018_exp17_selector": "v1",
+    "tabpfn/results/v1/exp19/20260821_220347_nfv3_cic2018_exp19_return": "v1",
+    "tabpfn/results/v1/exp18/20260821_220410_nfv3_cic2018_exp18_dedup_bench": "v1",
+    "tabpfn/results/v1/exp19/20260821_225628_nfv3_cic2018_exp19_return": "v1",
+    "tabpfn/results/v1/exp18/20260821_233323_nfv3_cic2018_exp18_dedup_bench": "v1",
+    "tabpfn/results/v1/exp20/20260822_154151_nfv3_cic2018_exp20_probsel": "v1",
+    "tabpfn/results/v1/exp21/20260822_155345_nfv3_cic2018_exp21_eglobal": "v1",
+    "tabpfn/results/v1/exp21/20260822_173034_nfv3_cic2018_exp21_eglobal": "v1",
+    "tabpfn/results/v1/exp20/20260822_182345_nfv3_cic2018_exp20b_probsplit": "v1",
+    "tabpfn/results/v1/exp21/20260822_182509_nfv3_cic2018_exp21b_esplit": "v1",
+    "tabpfn/results/v1/exp20/20260822_190957_nfv3_cic2018_exp20b_probsplit": "v1",
+    "tabpfn/results/v1/exp21/20260822_202415_nfv3_cic2018_exp21b_esplit": "v1",
+    "tabpfn/results/v1/exp22/20260825_133516_nfv3_cic2018capped_exp22_racepfn": "v1",
+    "tabpfn/results/v1/exp22/20260825_142540_nfv3_cic2018_exp22_racepfn": "v1",
+    "tabpfn/results/v1/exp22/20260825_161943_nfv3_cic2018capped_exp22b_racephi": "v1",
+    "tabpfn/results/v1/exp22/20260825_163104_nfv3_cic2018capped_exp22b_racephi": "v1",
+    "tabpfn/results/v1/exp22/20260825_174233_nfv3_cic2018_exp22b_racephi": "v1"
+  },
+  "run_annotations": {
+    "tabpfn/results/v4/exp61/20260929_exp61_sota_local_s43": {
+      "evidence": "selected",
+      "note": "현재 발표·LaTeX의 탐색 근거. 단일 seed 43; 최종 untouched 평가 아님."
+    },
+    "tabpfn/results/v4/exp63/20260930_exp63_k_sweep_s43": {
+      "evidence": "selected",
+      "note": "현재 발표·LaTeX의 탐색 근거. 단일 seed 43; 최종 untouched 평가 아님."
+    },
+    "tabpfn/results/v5/exp64/20261001_174526_4085339_toniot_exp64_benign_diversity_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp66/20261001_174526_4085340_toniot_exp66_supcon_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp65/20261001_174728_4086382_cic2018_exp65_lito_lite_web_attacks_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp67/20261001_181859_4092618_toniot_exp67_prompt_tuned_s43": {
+      "status": "invalid",
+      "evidence": "invalid",
+      "note": "기존 작업 기록에서 NaN gradient로 무효 처리된 첫 실행. 후속 실행과 구분."
+    },
+    "tabpfn/results/v5/exp65/20261001_182602_4095429_cic2018_exp65_lito_lite_web_attacks_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp67/20261001_182706_4096331_toniot_exp67_prompt_tuned_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp67/20261001_184332_4100935_toniot_exp67_prompt_tuned_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp67/20261001_185937_4104555_toniot_exp67_prompt_tuned_s44": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp67/20261001_190757_4106755_cic2018_exp67_prompt_tuned_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp67/20261001_191422_4108285_toniot_exp67_prompt_tuned_s43": {
+      "evidence": "exploratory",
+      "note": "별도 Claude 실행 기록. 이번 주장에 자동 채택하지 않음; 조건별 검토 필요."
+    },
+    "tabpfn/results/v5/exp68/20261002_004752_4179324_toniot_exp68_temporal_arrival_s43": {
+      "evidence": "not_adopted",
+      "note": "사용자가 의도한 시나리오 아님. 동일 구간 class-aware 라벨 확보·평가로 엄격한 시간순 성능 주장 불가."
+    },
+    "tabpfn/results/v5/exp68/20261002_004935_4180483_toniot_exp68_temporal_arrival_s43": {
+      "evidence": "not_adopted",
+      "note": "사용자가 의도한 시나리오 아님. 동일 구간 class-aware 라벨 확보·평가로 엄격한 시간순 성능 주장 불가."
+    },
+    "tabpfn/results/v5/exp68/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43": {
+      "evidence": "not_adopted",
+      "note": "사용자가 의도한 시나리오 아님. 동일 구간 class-aware 라벨 확보·평가로 엄격한 시간순 성능 주장 불가."
+    },
+    "tabpfn/results/v7/exp69/20261002_exp69_class_arrival_s43": {
+      "evidence": "exploratory",
+      "note": "동일 누적 라벨, 실제 클래스 최초 출현 순서, seed 43. 입력 준비/실행 중; 결과 미검토."
+    },
+    "tabpfn/results/v7/exp70/20261002_exp70_class_arrival_100k_s43": {
+      "evidence": "exploratory",
+      "note": "최종 100k, Benign 75k + 공격 25k; 승인된 클래스별 배분과 출현 순서; 기존 EXP69 사례 유지·증설. 실행 중."
+    }
+  },
+  "schema": 2,
+  "path_aliases": {
+    "scripts/analyze_exp59_expert_capability.py": "scripts/v4/exp59/analyze_exp59_expert_capability.py",
+    "scripts/analyze_nfv3_embedding.py": "scripts/common/analyze_nfv3_embedding.py",
+    "scripts/analyze_nfv3_temporal.py": "scripts/common/analyze_nfv3_temporal.py",
+    "scripts/build_exp56_report_section.py": "scripts/v4/exp56/build_exp56_report_section.py",
+    "scripts/build_exp57_followup_report.py": "scripts/v4/exp57/build_exp57_followup_report.py",
+    "scripts/build_exp59_report.py": "scripts/v4/exp59/build_exp59_report.py",
+    "scripts/build_exp60_report.py": "scripts/v4/exp60/build_exp60_report.py",
+    "scripts/build_exp61_report.py": "scripts/v4/exp61/build_exp61_report.py",
+    "scripts/build_latex_results.py": "scripts/common/build_latex_results.py",
+    "scripts/build_merged_expert_report.py": "scripts/common/build_merged_expert_report.py",
+    "scripts/check_exp59_report.py": "scripts/v4/exp59/check_exp59_report.py",
+    "scripts/check_exp60_report.py": "scripts/v4/exp60/check_exp60_report.py",
+    "scripts/check_exp61_report.py": "scripts/v4/exp61/check_exp61_report.py",
+    "scripts/check_merged_expert_report.py": "scripts/common/check_merged_expert_report.py",
+    "scripts/exp22b_z_scatter.py": "scripts/v1/exp22/exp22b_z_scatter.py",
+    "scripts/exp24_prior_shift_eval.py": "scripts/v2/exp24/exp24_prior_shift_eval.py",
+    "scripts/exp37_distpfn_variants.py": "scripts/v2/exp37/exp37_distpfn_variants.py",
+    "scripts/exp39_calibration_audit.py": "scripts/v2/exp39/exp39_calibration_audit.py",
+    "scripts/exp39_stage_audit.py": "scripts/v2/exp39/exp39_stage_audit.py",
+    "scripts/exp40_dedup_xgb.py": "scripts/v3/exp40/exp40_dedup_xgb.py",
+    "scripts/exp41_dedup_dataset_xgb.py": "scripts/v3/exp41/exp41_dedup_dataset_xgb.py",
+    "scripts/exp57_prepare_inputs.py": "scripts/common/exp57_prepare_inputs.py",
+    "scripts/exp61_utils.py": "scripts/common/exp61_utils.py",
+    "scripts/exp69_class_arrival.py": "scripts/v7/exp69/exp69_class_arrival.py",
+    "scripts/exp_utils.py": "scripts/common/exp_utils.py",
+    "scripts/finalize_exp59.py": "scripts/v4/exp59/finalize_exp59.py",
+    "scripts/finalize_exp60.py": "scripts/v4/exp60/finalize_exp60.py",
+    "scripts/materialize_nfv3_pools_s43.py": "scripts/common/materialize_nfv3_pools_s43.py",
+    "scripts/monitor_exp57_runs.py": "scripts/v4/exp57/monitor_exp57_runs.py",
+    "scripts/nfv3_expert_data_composition.py": "scripts/common/nfv3_expert_data_composition.py",
+    "scripts/prepare_exp59_partial.py": "scripts/v4/exp59/prepare_exp59_partial.py",
+    "scripts/preprocess_cic2017_full_raw.py": "scripts/common/preprocess_cic2017_full_raw.py",
+    "scripts/preprocess_nfv3_cic2018_scenarios.py": "scripts/common/preprocess_nfv3_cic2018_scenarios.py",
+    "scripts/preprocess_nfv3_energy_suite.py": "scripts/common/preprocess_nfv3_energy_suite.py",
+    "scripts/race_budget_diag.py": "scripts/common/race_budget_diag.py",
+    "scripts/race_offline_eval.py": "scripts/common/race_offline_eval.py",
+    "scripts/race_scenario_label_diag.py": "scripts/common/race_scenario_label_diag.py",
+    "scripts/render_exp59_capability.py": "scripts/v4/exp59/render_exp59_capability.py",
+    "scripts/render_exp63_capability.py": "scripts/v4/exp63/render_exp63_capability.py",
+    "scripts/render_run_tables.py": "scripts/common/render_run_tables.py",
+    "scripts/report_order.py": "scripts/common/report_order.py",
+    "scripts/report_typography.py": "scripts/common/report_typography.py",
+    "scripts/run_exp57_external.py": "scripts/v4/exp57/run_exp57_external.py",
+    "scripts/run_exp61_sota.py": "scripts/v4/exp61/run_exp61_sota.py",
+    "scripts/run_exp62_local.py": "scripts/v4/exp62/run_exp62_local.py",
+    "scripts/run_exp63_local.py": "scripts/v4/exp63/run_exp63_local.py",
+    "scripts/s43_nfv3_independent_expert_energy.py": "scripts/v1/s43/s43_nfv3_independent_expert_energy.py",
+    "scripts/s44_nfv3_resolved_expert_pipeline.py": "scripts/v1/s44/s44_nfv3_resolved_expert_pipeline.py",
+    "scripts/s44_unseen_tradeoff_summary.py": "scripts/v1/s44/s44_unseen_tradeoff_summary.py",
+    "scripts/setup_exp57_env.py": "scripts/common/setup_exp57_env.py",
+    "scripts/setup_exp61_env.py": "scripts/common/setup_exp61_env.py",
+    "scripts/supervise_exp60.py": "scripts/v4/exp60/supervise_exp60.py",
+    "tabpfn/scripts/cic2018_conflict_clean.py": "tabpfn/scripts/common/cic2018_conflict_clean.py",
+    "tabpfn/scripts/exp47_audit.py": "tabpfn/scripts/v3/exp47/exp47_audit.py",
+    "tabpfn/scripts/exp47_trace.py": "tabpfn/scripts/v3/exp47/exp47_trace.py",
+    "tabpfn/scripts/exp48_trace.py": "tabpfn/scripts/v4/exp48/exp48_trace.py",
+    "tabpfn/scripts/exp49_trace.py": "tabpfn/scripts/v4/exp49/exp49_trace.py",
+    "tabpfn/scripts/exp53_context_purity_diag.py": "tabpfn/scripts/v4/exp53/exp53_context_purity_diag.py",
+    "tabpfn/scripts/exp54_expert_context_design.py": "tabpfn/scripts/v4/exp54/exp54_expert_context_design.py",
+    "tabpfn/scripts/exp54r2_expert_context_design.py": "tabpfn/scripts/v4/exp54/exp54r2_expert_context_design.py",
+    "tabpfn/scripts/exp55_expert_specialization_oracle.py": "tabpfn/scripts/v4/exp55/exp55_expert_specialization_oracle.py",
+    "tabpfn/scripts/exp56_five_condition_evaluation.py": "tabpfn/scripts/v4/exp56/exp56_five_condition_evaluation.py",
+    "tabpfn/scripts/exp56_label_free_revision.py": "tabpfn/scripts/v4/exp56/exp56_label_free_revision.py",
+    "tabpfn/scripts/exp57_expert_quality_suite.py": "tabpfn/scripts/v4/exp57/exp57_expert_quality_suite.py",
+    "tabpfn/scripts/exp58_bank_oracle_upper_bound.py": "tabpfn/scripts/v4/exp58/exp58_bank_oracle_upper_bound.py",
+    "tabpfn/scripts/exp59_fresh_worker.py": "tabpfn/scripts/v4/exp59/exp59_fresh_worker.py",
+    "tabpfn/scripts/exp59_residual_membership_oracle.py": "tabpfn/scripts/v4/exp59/exp59_residual_membership_oracle.py",
+    "tabpfn/scripts/exp60_counterexamples.py": "tabpfn/scripts/v4/exp60/exp60_counterexamples.py",
+    "tabpfn/scripts/exp61_sota_worker.py": "tabpfn/scripts/v4/exp61/exp61_sota_worker.py",
+    "tabpfn/scripts/exp62_sv_current_bank.py": "tabpfn/scripts/v4/exp62/exp62_sv_current_bank.py",
+    "tabpfn/scripts/exp63_k_sweep.py": "tabpfn/scripts/v4/exp63/exp63_k_sweep.py",
+    "tabpfn/scripts/exp64_benign_diversity_c0.py": "tabpfn/scripts/v5/exp64/exp64_benign_diversity_c0.py",
+    "tabpfn/scripts/exp65_lito_lite_synthesis.py": "tabpfn/scripts/v5/exp65/exp65_lito_lite_synthesis.py",
+    "tabpfn/scripts/exp66_supcon_prototype_embedding.py": "tabpfn/scripts/v5/exp66/exp66_supcon_prototype_embedding.py",
+    "tabpfn/scripts/exp67_prompt_tuned_context.py": "tabpfn/scripts/v5/exp67/exp67_prompt_tuned_context.py",
+    "tabpfn/scripts/exp68_temporal_arrival.py": "tabpfn/scripts/v5/exp68/exp68_temporal_arrival.py",
+    "tabpfn/scripts/exp6_combination_lab.py": "tabpfn/scripts/v1/exp6/exp6_combination_lab.py",
+    "tabpfn/scripts/exp6x_context_common.py": "tabpfn/scripts/common/exp6x_context_common.py",
+    "tabpfn/scripts/nfv3_cic2018_multiclass_test_colab.ipynb": "tabpfn/scripts/v1/multiclass/nfv3_cic2018_multiclass_test_colab.ipynb",
+    "tabpfn/scripts/nfv3_conflict_clean.py": "tabpfn/scripts/common/nfv3_conflict_clean.py",
+    "tabpfn/scripts/nfv3_multiclass_test_v2.py": "tabpfn/scripts/v1/multiclass/nfv3_multiclass_test_v2.py",
+    "tabpfn/scripts/nfv3_v3_c0_context.py": "tabpfn/scripts/common/nfv3_v3_c0_context.py",
+    "tabpfn/scripts/nfv3_v3_common.py": "tabpfn/scripts/common/nfv3_v3_common.py",
+    "tabpfn/scripts/nfv3_v3_exp10_hce_classification.py": "tabpfn/scripts/v1/exp10/nfv3_v3_exp10_hce_classification.py",
+    "tabpfn/scripts/nfv3_v3_exp11_expert_activation.py": "tabpfn/scripts/v1/exp11/nfv3_v3_exp11_expert_activation.py",
+    "tabpfn/scripts/nfv3_v3_exp11b_activation_negatives.py": "tabpfn/scripts/v1/exp11/nfv3_v3_exp11b_activation_negatives.py",
+    "tabpfn/scripts/nfv3_v3_exp11c_balanced_head.py": "tabpfn/scripts/v1/exp11/nfv3_v3_exp11c_balanced_head.py",
+    "tabpfn/scripts/nfv3_v3_exp11d_symmetric_negatives.py": "tabpfn/scripts/v1/exp11/nfv3_v3_exp11d_symmetric_negatives.py",
+    "tabpfn/scripts/nfv3_v3_exp12b_system_eval.py": "tabpfn/scripts/v1/exp12/nfv3_v3_exp12b_system_eval.py",
+    "tabpfn/scripts/nfv3_v3_exp12c_system_eval.py": "tabpfn/scripts/v1/exp12/nfv3_v3_exp12c_system_eval.py",
+    "tabpfn/scripts/nfv3_v3_exp13_tta_tiebreak.py": "tabpfn/scripts/v1/exp13/nfv3_v3_exp13_tta_tiebreak.py",
+    "tabpfn/scripts/nfv3_v3_exp14_ton_system.py": "tabpfn/scripts/v1/exp14/nfv3_v3_exp14_ton_system.py",
+    "tabpfn/scripts/nfv3_v3_exp15_prep_system.py": "tabpfn/scripts/v1/exp15/nfv3_v3_exp15_prep_system.py",
+    "tabpfn/scripts/nfv3_v3_exp16_dedup_system.py": "tabpfn/scripts/v1/exp16/nfv3_v3_exp16_dedup_system.py",
+    "tabpfn/scripts/nfv3_v3_exp17_selector.py": "tabpfn/scripts/v1/exp17/nfv3_v3_exp17_selector.py",
+    "tabpfn/scripts/nfv3_v3_exp18_dedup_benchmark.py": "tabpfn/scripts/v1/exp18/nfv3_v3_exp18_dedup_benchmark.py",
+    "tabpfn/scripts/nfv3_v3_exp19_benign_return.py": "tabpfn/scripts/v1/exp19/nfv3_v3_exp19_benign_return.py",
+    "tabpfn/scripts/nfv3_v3_exp1_1m_both.py": "tabpfn/scripts/v1/exp1/nfv3_v3_exp1_1m_both.py",
+    "tabpfn/scripts/nfv3_v3_exp20_prob_selector.py": "tabpfn/scripts/v1/exp20/nfv3_v3_exp20_prob_selector.py",
+    "tabpfn/scripts/nfv3_v3_exp20b_prob_split.py": "tabpfn/scripts/v1/exp20/nfv3_v3_exp20b_prob_split.py",
+    "tabpfn/scripts/nfv3_v3_exp21_energy_global.py": "tabpfn/scripts/v1/exp21/nfv3_v3_exp21_energy_global.py",
+    "tabpfn/scripts/nfv3_v3_exp21b_energy_split.py": "tabpfn/scripts/v1/exp21/nfv3_v3_exp21b_energy_split.py",
+    "tabpfn/scripts/nfv3_v3_exp22_racepfn.py": "tabpfn/scripts/v1/exp22/nfv3_v3_exp22_racepfn.py",
+    "tabpfn/scripts/nfv3_v3_exp22b_racepfn_phi.py": "tabpfn/scripts/v1/exp22/nfv3_v3_exp22b_racepfn_phi.py",
+    "tabpfn/scripts/nfv3_v3_exp22c_racepfn_context.py": "tabpfn/scripts/v2/exp22/nfv3_v3_exp22c_racepfn_context.py",
+    "tabpfn/scripts/nfv3_v3_exp23_racepfn_guide.py": "tabpfn/scripts/v2/exp23/nfv3_v3_exp23_racepfn_guide.py",
+    "tabpfn/scripts/nfv3_v3_exp23b_racepfn_greedy.py": "tabpfn/scripts/v2/exp23/nfv3_v3_exp23b_racepfn_greedy.py",
+    "tabpfn/scripts/nfv3_v3_exp23c_racepfn_anchor.py": "tabpfn/scripts/v2/exp23/nfv3_v3_exp23c_racepfn_anchor.py",
+    "tabpfn/scripts/nfv3_v3_exp23d_racepfn_anchmode.py": "tabpfn/scripts/v2/exp23/nfv3_v3_exp23d_racepfn_anchmode.py",
+    "tabpfn/scripts/nfv3_v3_exp24a_racepfn_regprune.py": "tabpfn/scripts/v2/exp24/nfv3_v3_exp24a_racepfn_regprune.py",
+    "tabpfn/scripts/nfv3_v3_exp24b_racepfn_signscorer.py": "tabpfn/scripts/v2/exp24/nfv3_v3_exp24b_racepfn_signscorer.py",
+    "tabpfn/scripts/nfv3_v3_exp25_racepfn_dump.py": "tabpfn/scripts/v2/exp25/nfv3_v3_exp25_racepfn_dump.py",
+    "tabpfn/scripts/nfv3_v3_exp25b_racepfn_detlite.py": "tabpfn/scripts/v2/exp25/nfv3_v3_exp25b_racepfn_detlite.py",
+    "tabpfn/scripts/nfv3_v3_exp26_racepfn_normgain.py": "tabpfn/scripts/v2/exp26/nfv3_v3_exp26_racepfn_normgain.py",
+    "tabpfn/scripts/nfv3_v3_exp27_racepfn_ctxcover.py": "tabpfn/scripts/v2/exp27/nfv3_v3_exp27_racepfn_ctxcover.py",
+    "tabpfn/scripts/nfv3_v3_exp28_racepfn_equalmem.py": "tabpfn/scripts/v2/exp28/nfv3_v3_exp28_racepfn_equalmem.py",
+    "tabpfn/scripts/nfv3_v3_exp29_racepfn_combo.py": "tabpfn/scripts/v2/exp29/nfv3_v3_exp29_racepfn_combo.py",
+    "tabpfn/scripts/nfv3_v3_exp2_full_xgb.py": "tabpfn/scripts/v1/exp2/nfv3_v3_exp2_full_xgb.py",
+    "tabpfn/scripts/nfv3_v3_exp30_c0share.py": "tabpfn/scripts/v2/exp30/nfv3_v3_exp30_c0share.py",
+    "tabpfn/scripts/nfv3_v3_exp31_c0alloc.py": "tabpfn/scripts/v2/exp31/nfv3_v3_exp31_c0alloc.py",
+    "tabpfn/scripts/nfv3_v3_exp32_c0bag.py": "tabpfn/scripts/v2/exp32/nfv3_v3_exp32_c0bag.py",
+    "tabpfn/scripts/nfv3_v3_exp33_c0dupcap.py": "tabpfn/scripts/v2/exp33/nfv3_v3_exp33_c0dupcap.py",
+    "tabpfn/scripts/nfv3_v3_exp34_c0select.py": "tabpfn/scripts/v2/exp34/nfv3_v3_exp34_c0select.py",
+    "tabpfn/scripts/nfv3_v3_exp35_boostpfn.py": "tabpfn/scripts/v2/exp35/nfv3_v3_exp35_boostpfn.py",
+    "tabpfn/scripts/nfv3_v3_exp36_localpfn.py": "tabpfn/scripts/v2/exp36/nfv3_v3_exp36_localpfn.py",
+    "tabpfn/scripts/nfv3_v3_exp37_distpfn.py": "tabpfn/scripts/v2/exp37/nfv3_v3_exp37_distpfn.py",
+    "tabpfn/scripts/nfv3_v3_exp38_frozen_cache.py": "tabpfn/scripts/v2/exp38/nfv3_v3_exp38_frozen_cache.py",
+    "tabpfn/scripts/nfv3_v3_exp39_decision_routing.py": "tabpfn/scripts/v2/exp39/nfv3_v3_exp39_decision_routing.py",
+    "tabpfn/scripts/nfv3_v3_exp3_full_tabpfn_bagging.py": "tabpfn/scripts/v1/exp3/nfv3_v3_exp3_full_tabpfn_bagging.py",
+    "tabpfn/scripts/nfv3_v3_exp40_dedup_tabpfn.py": "tabpfn/scripts/v3/exp40/nfv3_v3_exp40_dedup_tabpfn.py",
+    "tabpfn/scripts/nfv3_v3_exp41_dedup_dataset_tabpfn.py": "tabpfn/scripts/v3/exp41/nfv3_v3_exp41_dedup_dataset_tabpfn.py",
+    "tabpfn/scripts/nfv3_v3_exp42_dedup_methods.py": "tabpfn/scripts/v3/exp42/nfv3_v3_exp42_dedup_methods.py",
+    "tabpfn/scripts/nfv3_v3_exp43_ours_majfill.py": "tabpfn/scripts/v3/exp43/nfv3_v3_exp43_ours_majfill.py",
+    "tabpfn/scripts/nfv3_v3_exp44_conflict_only.py": "tabpfn/scripts/v3/exp44/nfv3_v3_exp44_conflict_only.py",
+    "tabpfn/scripts/nfv3_v3_exp45_ton_frame.py": "tabpfn/scripts/v3/exp45/nfv3_v3_exp45_ton_frame.py",
+    "tabpfn/scripts/nfv3_v3_exp46_ton_global_context.py": "tabpfn/scripts/v3/exp46/nfv3_v3_exp46_ton_global_context.py",
+    "tabpfn/scripts/nfv3_v3_exp47_clean_revalidation.py": "tabpfn/scripts/v3/exp47/nfv3_v3_exp47_clean_revalidation.py",
+    "tabpfn/scripts/nfv3_v3_exp48_ton_clean_revalidation.py": "tabpfn/scripts/v4/exp48/nfv3_v3_exp48_ton_clean_revalidation.py",
+    "tabpfn/scripts/nfv3_v3_exp49_bot_clean_revalidation.py": "tabpfn/scripts/v4/exp49/nfv3_v3_exp49_bot_clean_revalidation.py",
+    "tabpfn/scripts/nfv3_v3_exp4_tail_anchored_bagging.py": "tabpfn/scripts/v1/exp4/nfv3_v3_exp4_tail_anchored_bagging.py",
+    "tabpfn/scripts/nfv3_v3_exp50_hdn_verifier.py": "tabpfn/scripts/v4/exp50/nfv3_v3_exp50_hdn_verifier.py",
+    "tabpfn/scripts/nfv3_v3_exp51_scorer_target.py": "tabpfn/scripts/v4/exp51/nfv3_v3_exp51_scorer_target.py",
+    "tabpfn/scripts/nfv3_v3_exp52_context_run.py": "tabpfn/scripts/v4/exp52/nfv3_v3_exp52_context_run.py",
+    "tabpfn/scripts/nfv3_v3_exp52_expert_context.py": "tabpfn/scripts/v4/exp52/nfv3_v3_exp52_expert_context.py",
+    "tabpfn/scripts/nfv3_v3_exp5_energy_view_moe.py": "tabpfn/scripts/v1/exp5/nfv3_v3_exp5_energy_view_moe.py",
+    "tabpfn/scripts/nfv3_v3_exp6_context_recipes.py": "tabpfn/scripts/v1/exp6/nfv3_v3_exp6_context_recipes.py",
+    "tabpfn/scripts/nfv3_v3_exp7_tabpfn_energy_ood.py": "tabpfn/scripts/v1/exp7/nfv3_v3_exp7_tabpfn_energy_ood.py",
+    "tabpfn/scripts/nfv3_v3_exp8_expert_family_ood.py": "tabpfn/scripts/v1/exp8/nfv3_v3_exp8_expert_family_ood.py",
+    "tabpfn/scripts/nfv3_v3_exp9_energy_score_finetune.py": "tabpfn/scripts/v1/exp9/nfv3_v3_exp9_energy_score_finetune.py",
+    "results/20260803_105858_414619_pid3592975_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_noextaux": "results/v1/s44/20260803_105858_414619_pid3592975_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_noextaux",
+    "results/20260803_110932_403950_pid3599800_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_noextaux": "results/v1/s44/20260803_110932_403950_pid3599800_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_noextaux",
+    "results/20260803_112327_345001_pid3607463_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_notgtood": "results/v1/s44/20260803_112327_345001_pid3607463_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos_notgtood",
+    "results/20260803_112753_662148_pid3610595_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_bot_noextaux": "results/v1/s44/20260803_112753_662148_pid3610595_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_bot_noextaux",
+    "results/20260803_130457_907211_pid3661760_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_bot_notgtood": "results/v1/s44/20260803_130457_907211_pid3661760_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_bot_notgtood",
+    "results/20260804_112421_565949_pid171279_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_dos": "results/v1/s44/20260804_112421_565949_pid171279_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_dos",
+    "results/20260804_112958_340309_pid174982_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_dos_noextaux": "results/v1/s44/20260804_112958_340309_pid174982_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_dos_noextaux",
+    "results/20260804_113540_694483_pid178731_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos": "results/v1/s44/20260804_113540_694483_pid178731_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos",
+    "results/20260804_114022_359618_pid181851_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos_noextaux": "results/v1/s44/20260804_114022_359618_pid181851_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos_noextaux",
+    "results/20260804_114455_350329_pid184927_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos": "results/v1/s44/20260804_114455_350329_pid184927_nfv3_cse_cic_ids2018_resolved_expert_pipeline_unseen_ddos-dos",
+    "results/20260804_114850_383714_pid187529_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance": "results/v1/s44/20260804_114850_383714_pid187529_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance",
+    "results/20260804_114946_179509_pid188132_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance_noextaux": "results/v1/s44/20260804_114946_179509_pid188132_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance_noextaux",
+    "results/20260804_115041_793778_pid188774_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos": "results/v1/s44/20260804_115041_793778_pid188774_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos",
+    "results/20260804_115137_020227_pid189352_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos_noextaux": "results/v1/s44/20260804_115137_020227_pid189352_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos_noextaux",
+    "results/20260804_115232_216934_pid190020_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos": "results/v1/s44/20260804_115232_216934_pid190020_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos",
+    "results/20260804_115327_664906_pid190645_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos_noextaux": "results/v1/s44/20260804_115327_664906_pid190645_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos_noextaux",
+    "results/20260804_115426_765988_pid191295_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss": "results/v1/s44/20260804_115426_765988_pid191295_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss",
+    "results/20260804_115530_609536_pid191992_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss_noextaux": "results/v1/s44/20260804_115530_609536_pid191992_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss_noextaux",
+    "results/20260804_115634_296438_pid192668_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection": "results/v1/s44/20260804_115634_296438_pid192668_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection",
+    "results/20260804_115738_352170_pid193410_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection_noextaux": "results/v1/s44/20260804_115738_352170_pid193410_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection_noextaux",
+    "results/20260804_115842_399837_pid194142_nfv3_ton_iot_resolved_expert_pipeline_unseen_password": "results/v1/s44/20260804_115842_399837_pid194142_nfv3_ton_iot_resolved_expert_pipeline_unseen_password",
+    "results/20260804_115946_517645_pid194798_nfv3_ton_iot_resolved_expert_pipeline_unseen_password_noextaux": "results/v1/s44/20260804_115946_517645_pid194798_nfv3_ton_iot_resolved_expert_pipeline_unseen_password_noextaux",
+    "results/20260804_120051_035011_pid195474_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning": "results/v1/s44/20260804_120051_035011_pid195474_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning",
+    "results/20260804_120154_653156_pid196230_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning_noextaux": "results/v1/s44/20260804_120154_653156_pid196230_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning_noextaux",
+    "results/20260804_120258_436193_pid196895_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection": "results/v1/s44/20260804_120258_436193_pid196895_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection",
+    "results/20260804_120402_330466_pid197601_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection_noextaux": "results/v1/s44/20260804_120402_330466_pid197601_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection_noextaux",
+    "results/20260804_120506_225556_pid198286_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning": "results/v1/s44/20260804_120506_225556_pid198286_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning",
+    "results/20260804_120610_120055_pid198976_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning_noextaux": "results/v1/s44/20260804_120610_120055_pid198976_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning_noextaux",
+    "results/20260804_120856_863554_pid200977_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance": "results/v1/s44/20260804_120856_863554_pid200977_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance",
+    "results/20260804_121259_810179_pid203517_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance_noextaux": "results/v1/s44/20260804_121259_810179_pid203517_nfv3_bot_iot_resolved_expert_pipeline_unseen_reconnaissance_noextaux",
+    "results/20260804_121642_525891_pid205926_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos": "results/v1/s44/20260804_121642_525891_pid205926_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos",
+    "results/20260804_122239_977673_pid209703_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos_noextaux": "results/v1/s44/20260804_122239_977673_pid209703_nfv3_bot_iot_resolved_expert_pipeline_unseen_ddos_noextaux",
+    "results/20260804_122818_451870_pid213354_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos": "results/v1/s44/20260804_122818_451870_pid213354_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos",
+    "results/20260804_123403_307787_pid217021_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos_noextaux": "results/v1/s44/20260804_123403_307787_pid217021_nfv3_bot_iot_resolved_expert_pipeline_unseen_dos_noextaux",
+    "results/20260804_123942_053647_pid220633_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss": "results/v1/s44/20260804_123942_053647_pid220633_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss",
+    "results/20260804_124821_165998_pid226142_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss_noextaux": "results/v1/s44/20260804_124821_165998_pid226142_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss_noextaux",
+    "results/20260804_125735_271904_pid232080_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection": "results/v1/s44/20260804_125735_271904_pid232080_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection",
+    "results/20260804_130751_914020_pid238564_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection_noextaux": "results/v1/s44/20260804_130751_914020_pid238564_nfv3_ton_iot_resolved_expert_pipeline_unseen_injection_noextaux",
+    "results/20260804_131829_258608_pid245342_nfv3_ton_iot_resolved_expert_pipeline_unseen_password": "results/v1/s44/20260804_131829_258608_pid245342_nfv3_ton_iot_resolved_expert_pipeline_unseen_password",
+    "results/20260804_132754_536084_pid251268_nfv3_ton_iot_resolved_expert_pipeline_unseen_password_noextaux": "results/v1/s44/20260804_132754_536084_pid251268_nfv3_ton_iot_resolved_expert_pipeline_unseen_password_noextaux",
+    "results/20260804_133745_648478_pid257603_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning": "results/v1/s44/20260804_133745_648478_pid257603_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning",
+    "results/20260804_134804_644885_pid264526_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning_noextaux": "results/v1/s44/20260804_134804_644885_pid264526_nfv3_ton_iot_resolved_expert_pipeline_unseen_scanning_noextaux",
+    "results/20260804_135850_120937_pid275576_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection": "results/v1/s44/20260804_135850_120937_pid275576_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection",
+    "results/20260804_140636_592925_pid283697_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection_noextaux": "results/v1/s44/20260804_140636_592925_pid283697_nfv3_ton_iot_resolved_expert_pipeline_unseen_xss-injection_noextaux",
+    "results/20260804_141405_944929_pid291102_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning": "results/v1/s44/20260804_141405_944929_pid291102_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning",
+    "results/20260804_142242_402737_pid299648_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning_noextaux": "results/v1/s44/20260804_142242_402737_pid299648_nfv3_ton_iot_resolved_expert_pipeline_unseen_password-scanning_noextaux",
+    "results/20260911_160256_3299866_nfv3_cic2018_exp40_dedup_xgb": "results/v3/exp40/20260911_160256_3299866_nfv3_cic2018_exp40_dedup_xgb",
+    "results/20260911_165635_3341259_nfv3_cic2018_exp41_dedup_dataset_xgb": "results/v3/exp41/20260911_165635_3341259_nfv3_cic2018_exp41_dedup_dataset_xgb",
+    "results/scripts_analysis": "results/common/analysis",
+    "tabpfn/results/20260826_113339_nfv3_cic2018capped_exp22c_racectx": "tabpfn/results/v2/exp22/20260826_113339_nfv3_cic2018capped_exp22c_racectx",
+    "tabpfn/results/20260826_130310_nfv3_cic2018_exp22c_racectx": "tabpfn/results/v2/exp22/20260826_130310_nfv3_cic2018_exp22c_racectx",
+    "tabpfn/results/20260826_171819_nfv3_cic2018capped_exp23_raceguide": "tabpfn/results/v2/exp23/20260826_171819_nfv3_cic2018capped_exp23_raceguide",
+    "tabpfn/results/20260826_172238_nfv3_cic2018capped_exp23_raceguide": "tabpfn/results/v2/exp23/20260826_172238_nfv3_cic2018capped_exp23_raceguide",
+    "tabpfn/results/20260826_183417_nfv3_cic2018_exp23_raceguide": "tabpfn/results/v2/exp23/20260826_183417_nfv3_cic2018_exp23_raceguide",
+    "tabpfn/results/20260827_000732_nfv3_cic2018capped_exp23b_greedy": "tabpfn/results/v2/exp23/20260827_000732_nfv3_cic2018capped_exp23b_greedy",
+    "tabpfn/results/20260827_011706_nfv3_cic2018_exp23b_greedy": "tabpfn/results/v2/exp23/20260827_011706_nfv3_cic2018_exp23b_greedy",
+    "tabpfn/results/20260827_011908_nfv3_cic2018capped_exp23c_anchor": "tabpfn/results/v2/exp23/20260827_011908_nfv3_cic2018capped_exp23c_anchor",
+    "tabpfn/results/20260827_023651_nfv3_cic2018_exp23c_anchor": "tabpfn/results/v2/exp23/20260827_023651_nfv3_cic2018_exp23c_anchor",
+    "tabpfn/results/20260827_023917_nfv3_cic2018capped_exp23d_anchmode_natural": "tabpfn/results/v2/exp23/20260827_023917_nfv3_cic2018capped_exp23d_anchmode_natural",
+    "tabpfn/results/20260827_035659_nfv3_cic2018_exp23d_anchmode_natural": "tabpfn/results/v2/exp23/20260827_035659_nfv3_cic2018_exp23d_anchmode_natural",
+    "tabpfn/results/20260827_051400_nfv3_cic2018_exp23d_anchmode_inverse": "tabpfn/results/v2/exp23/20260827_051400_nfv3_cic2018_exp23d_anchmode_inverse",
+    "tabpfn/results/20260827_063039_nfv3_cic2018_exp23d_anchmode_natural": "tabpfn/results/v2/exp23/20260827_063039_nfv3_cic2018_exp23d_anchmode_natural",
+    "tabpfn/results/20260827_131521_nfv3_cic2018capped_exp24a_regprune": "tabpfn/results/v2/exp24/20260827_131521_nfv3_cic2018capped_exp24a_regprune",
+    "tabpfn/results/20260827_144730_nfv3_cic2018_exp24a_regprune": "tabpfn/results/v2/exp24/20260827_144730_nfv3_cic2018_exp24a_regprune",
+    "tabpfn/results/20260827_144821_nfv3_cic2018capped_exp24b_signscorer": "tabpfn/results/v2/exp24/20260827_144821_nfv3_cic2018capped_exp24b_signscorer",
+    "tabpfn/results/20260827_161322_nfv3_cic2018_exp24b_signscorer": "tabpfn/results/v2/exp24/20260827_161322_nfv3_cic2018_exp24b_signscorer",
+    "tabpfn/results/20260827_174858_nfv3_cic2018_exp24b_signscorer": "tabpfn/results/v2/exp24/20260827_174858_nfv3_cic2018_exp24b_signscorer",
+    "tabpfn/results/20260901_033336_nfv3_cic2018_exp24b_signscorer": "tabpfn/results/v2/exp24/20260901_033336_nfv3_cic2018_exp24b_signscorer",
+    "tabpfn/results/20260901_063105_nfv3_cic2018_exp27_ctxcover": "tabpfn/results/v2/exp27/20260901_063105_nfv3_cic2018_exp27_ctxcover",
+    "tabpfn/results/20260901_071409_nfv3_cic2018_exp28_equalmem": "tabpfn/results/v2/exp28/20260901_071409_nfv3_cic2018_exp28_equalmem",
+    "tabpfn/results/20260901_122758_nfv3_cic2018_exp25_dump": "tabpfn/results/v2/exp25/20260901_122758_nfv3_cic2018_exp25_dump",
+    "tabpfn/results/20260901_141326_nfv3_cic2018_exp25_dump": "tabpfn/results/v2/exp25/20260901_141326_nfv3_cic2018_exp25_dump",
+    "tabpfn/results/20260901_143918_nfv3_cic2018capped_exp26_normgain": "tabpfn/results/v2/exp26/20260901_143918_nfv3_cic2018capped_exp26_normgain",
+    "tabpfn/results/20260901_162007_nfv3_cic2018_exp26_normgain": "tabpfn/results/v2/exp26/20260901_162007_nfv3_cic2018_exp26_normgain",
+    "tabpfn/results/20260901_190139_nfv3_cic2018_exp25b_detlite": "tabpfn/results/v2/exp25/20260901_190139_nfv3_cic2018_exp25b_detlite",
+    "tabpfn/results/20260901_191613_nfv3_cic2018_exp25_dump": "tabpfn/results/v2/exp25/20260901_191613_nfv3_cic2018_exp25_dump",
+    "tabpfn/results/20260901_205201_nfv3_cic2018_exp25b_detlite": "tabpfn/results/v2/exp25/20260901_205201_nfv3_cic2018_exp25b_detlite",
+    "tabpfn/results/20260901_220323_nfv3_cic2018capped_exp29_combo": "tabpfn/results/v2/exp29/20260901_220323_nfv3_cic2018capped_exp29_combo",
+    "tabpfn/results/20260901_232113_nfv3_cic2018_exp29_combo": "tabpfn/results/v2/exp29/20260901_232113_nfv3_cic2018_exp29_combo",
+    "tabpfn/results/20260902_004817_nfv3_cic2018_exp29_combo": "tabpfn/results/v2/exp29/20260902_004817_nfv3_cic2018_exp29_combo",
+    "tabpfn/results/20260902_021534_nfv3_cic2018_exp29_combo": "tabpfn/results/v2/exp29/20260902_021534_nfv3_cic2018_exp29_combo",
+    "tabpfn/results/20260902_033127_nfv3_cic2018_exp29_combo": "tabpfn/results/v2/exp29/20260902_033127_nfv3_cic2018_exp29_combo",
+    "tabpfn/results/20260902_044018_nfv3_cic2018_exp29_combo": "tabpfn/results/v2/exp29/20260902_044018_nfv3_cic2018_exp29_combo",
+    "tabpfn/results/20260902_054439_nfv3_cic2018_exp29_combo": "tabpfn/results/v2/exp29/20260902_054439_nfv3_cic2018_exp29_combo",
+    "tabpfn/results/20260902_055231_nfv3_cic2018_exp25_dump": "tabpfn/results/v2/exp25/20260902_055231_nfv3_cic2018_exp25_dump",
+    "tabpfn/results/20260902_065237_nfv3_cic2018_exp29_combo": "tabpfn/results/v2/exp29/20260902_065237_nfv3_cic2018_exp29_combo",
+    "tabpfn/results/20260902_223439_nfv3_cic2018capped_exp30_c0share": "tabpfn/results/v2/exp30/20260902_223439_nfv3_cic2018capped_exp30_c0share",
+    "tabpfn/results/20260902_225616_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260902_225616_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260902_233554_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260902_233554_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260902_235656_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260902_235656_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_000650_nfv3_cic2018capped_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_000650_nfv3_cic2018capped_exp31_c0alloc",
+    "tabpfn/results/20260903_001440_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_001440_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_003108_nfv3_cic2018capped_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_003108_nfv3_cic2018capped_exp31_c0alloc",
+    "tabpfn/results/20260903_005042_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_005042_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_015043_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_015043_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_025002_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_025002_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_033544_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_033544_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_033627_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_033627_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_042146_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_042146_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_042210_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_042210_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_051253_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_051253_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_051308_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_051308_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_060315_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_060315_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_060437_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_060437_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_063226_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_063226_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_071619_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_071619_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_072022_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_072022_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_082151_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_082151_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_091253_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_091253_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_091415_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_091415_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_094650_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_094650_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_095403_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_095403_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_104321_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_104321_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_104347_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_104347_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_114748_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_114748_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_122210_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_122210_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_122328_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_122328_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_132033_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_132033_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_141831_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_141831_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_151625_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_151625_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_154620_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_154620_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_154827_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260903_154827_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260903_155138_nfv3_cic2018capped_exp32_c0bag": "tabpfn/results/v2/exp32/20260903_155138_nfv3_cic2018capped_exp32_c0bag",
+    "tabpfn/results/20260903_160832_nfv3_cic2018_exp32_c0bag": "tabpfn/results/v2/exp32/20260903_160832_nfv3_cic2018_exp32_c0bag",
+    "tabpfn/results/20260903_164008_nfv3_cic2018_exp32_c0bag": "tabpfn/results/v2/exp32/20260903_164008_nfv3_cic2018_exp32_c0bag",
+    "tabpfn/results/20260903_170148_nfv3_cic2018_exp32_c0bag": "tabpfn/results/v2/exp32/20260903_170148_nfv3_cic2018_exp32_c0bag",
+    "tabpfn/results/20260903_170819_nfv3_cic2018capped_exp33_c0dupcap": "tabpfn/results/v2/exp33/20260903_170819_nfv3_cic2018capped_exp33_c0dupcap",
+    "tabpfn/results/20260903_174111_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_174111_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_174159_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_174159_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_182702_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_182702_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_182859_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_182859_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_190018_nfv3_cic2018_exp33_c0dupcap": "tabpfn/results/v2/exp33/20260903_190018_nfv3_cic2018_exp33_c0dupcap",
+    "tabpfn/results/20260903_190203_nfv3_cic2018_exp33_c0dupcap": "tabpfn/results/v2/exp33/20260903_190203_nfv3_cic2018_exp33_c0dupcap",
+    "tabpfn/results/20260903_195007_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_195007_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_195228_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_195228_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_202445_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_202445_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_202602_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_202602_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_203223_nfv3_cic2018capped_exp34_c0select": "tabpfn/results/v2/exp34/20260903_203223_nfv3_cic2018capped_exp34_c0select",
+    "tabpfn/results/20260903_210522_nfv3_cic2018_exp34_c0select": "tabpfn/results/v2/exp34/20260903_210522_nfv3_cic2018_exp34_c0select",
+    "tabpfn/results/20260903_210759_nfv3_cic2018_exp34_c0select": "tabpfn/results/v2/exp34/20260903_210759_nfv3_cic2018_exp34_c0select",
+    "tabpfn/results/20260903_214545_nfv3_cic2018_exp34_c0select": "tabpfn/results/v2/exp34/20260903_214545_nfv3_cic2018_exp34_c0select",
+    "tabpfn/results/20260903_214632_nfv3_cic2018_exp34_c0select": "tabpfn/results/v2/exp34/20260903_214632_nfv3_cic2018_exp34_c0select",
+    "tabpfn/results/20260903_221949_nfv3_cic2018_exp34_c0select": "tabpfn/results/v2/exp34/20260903_221949_nfv3_cic2018_exp34_c0select",
+    "tabpfn/results/20260903_221952_nfv3_cic2018_exp34_c0select": "tabpfn/results/v2/exp34/20260903_221952_nfv3_cic2018_exp34_c0select",
+    "tabpfn/results/20260903_223312_nfv3_cic2018_exp34_c0select": "tabpfn/results/v2/exp34/20260903_223312_nfv3_cic2018_exp34_c0select",
+    "tabpfn/results/20260903_235255_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_235255_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260903_235413_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260903_235413_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_010654_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_010654_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_010911_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_010911_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_021924_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_021924_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_022152_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_022152_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_025507_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_025507_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_040836_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260904_040836_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260904_041034_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260904_041034_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260904_052140_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260904_052140_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260904_052327_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260904_052327_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260904_063542_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260904_063542_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260904_063638_nfv3_cic2018_exp30_c0share": "tabpfn/results/v2/exp30/20260904_063638_nfv3_cic2018_exp30_c0share",
+    "tabpfn/results/20260904_084619_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_084619_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_084919_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_084919_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_110003_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_110003_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_110011_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_110011_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_130628_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_130628_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_130944_nfv3_cic2018_exp31_c0alloc": "tabpfn/results/v2/exp31/20260904_130944_nfv3_cic2018_exp31_c0alloc",
+    "tabpfn/results/20260904_154310_nfv3_cic2018_exp35_boostpfn": "tabpfn/results/v2/exp35/20260904_154310_nfv3_cic2018_exp35_boostpfn",
+    "tabpfn/results/20260904_154333_nfv3_cic2018_exp35_boostpfn": "tabpfn/results/v2/exp35/20260904_154333_nfv3_cic2018_exp35_boostpfn",
+    "tabpfn/results/20260904_160005_nfv3_cic2018_exp37_distpfn": "tabpfn/results/v2/exp37/20260904_160005_nfv3_cic2018_exp37_distpfn",
+    "tabpfn/results/20260904_172920_nfv3_cic2018_exp36_localpfn_knn": "tabpfn/results/v2/exp36/20260904_172920_nfv3_cic2018_exp36_localpfn_knn",
+    "tabpfn/results/20260904_174104_nfv3_cic2018_exp36_localpfn_ft": "tabpfn/results/v2/exp36/20260904_174104_nfv3_cic2018_exp36_localpfn_ft",
+    "tabpfn/results/20260904_183615_nfv3_cic2018_exp37_distpfn": "tabpfn/results/v2/exp37/20260904_183615_nfv3_cic2018_exp37_distpfn",
+    "tabpfn/results/20260904_185152_nfv3_cic2018_exp35_boostpfn": "tabpfn/results/v2/exp35/20260904_185152_nfv3_cic2018_exp35_boostpfn",
+    "tabpfn/results/20260904_185331_nfv3_cic2018_exp35_boostpfn": "tabpfn/results/v2/exp35/20260904_185331_nfv3_cic2018_exp35_boostpfn",
+    "tabpfn/results/20260905_012446_nfv3_cic2018_exp36_localpfn_knn": "tabpfn/results/v2/exp36/20260905_012446_nfv3_cic2018_exp36_localpfn_knn",
+    "tabpfn/results/20260905_020159_nfv3_cic2018_exp36_localpfn_ft": "tabpfn/results/v2/exp36/20260905_020159_nfv3_cic2018_exp36_localpfn_ft",
+    "tabpfn/results/20260907_174746_nfv3_cic2018_exp37_distpfn": "tabpfn/results/v2/exp37/20260907_174746_nfv3_cic2018_exp37_distpfn",
+    "tabpfn/results/20260907_192325_nfv3_cic2018_exp37_distpfn": "tabpfn/results/v2/exp37/20260907_192325_nfv3_cic2018_exp37_distpfn",
+    "tabpfn/results/20260907_194340_nfv3_cic2018_exp37_distpfn": "tabpfn/results/v2/exp37/20260907_194340_nfv3_cic2018_exp37_distpfn",
+    "tabpfn/results/20260908_133300_nfv3_cic2018_exp35_boostpfn": "tabpfn/results/v2/exp35/20260908_133300_nfv3_cic2018_exp35_boostpfn",
+    "tabpfn/results/20260908_141527_nfv3_cic2018_exp35_boostpfn": "tabpfn/results/v2/exp35/20260908_141527_nfv3_cic2018_exp35_boostpfn",
+    "tabpfn/results/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing": "tabpfn/results/v2/exp39/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing",
+    "tabpfn/results/20260911_162208_nfv3_cic2018_exp40_dedup_tabpfn_none_s42": "tabpfn/results/v3/exp40/20260911_162208_nfv3_cic2018_exp40_dedup_tabpfn_none_s42",
+    "tabpfn/results/20260911_163426_nfv3_cic2018_exp40_dedup_tabpfn_dedup_xy_s42": "tabpfn/results/v3/exp40/20260911_163426_nfv3_cic2018_exp40_dedup_tabpfn_dedup_xy_s42",
+    "tabpfn/results/20260911_164643_nfv3_cic2018_exp40_dedup_tabpfn_dedup_majority_s42": "tabpfn/results/v3/exp40/20260911_164643_nfv3_cic2018_exp40_dedup_tabpfn_dedup_majority_s42",
+    "tabpfn/results/20260911_165905_nfv3_cic2018_exp40_dedup_tabpfn_drop_conflict_s42": "tabpfn/results/v3/exp40/20260911_165905_nfv3_cic2018_exp40_dedup_tabpfn_drop_conflict_s42",
+    "tabpfn/results/20260911_171454_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s42": "tabpfn/results/v3/exp41/20260911_171454_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s42",
+    "tabpfn/results/20260911_174553_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s43": "tabpfn/results/v3/exp41/20260911_174553_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s43",
+    "tabpfn/results/20260911_181649_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s44": "tabpfn/results/v3/exp41/20260911_181649_nfv3_cic2018_exp41_dedup_dataset_tabpfn_original_s44",
+    "tabpfn/results/20260911_184733_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s42": "tabpfn/results/v3/exp41/20260911_184733_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s42",
+    "tabpfn/results/20260911_185457_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s42": "tabpfn/results/v3/exp41/20260911_185457_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s42",
+    "tabpfn/results/20260911_185808_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s42": "tabpfn/results/v3/exp41/20260911_185808_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s42",
+    "tabpfn/results/20260911_190340_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s43": "tabpfn/results/v3/exp41/20260911_190340_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s43",
+    "tabpfn/results/20260911_191102_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s43": "tabpfn/results/v3/exp41/20260911_191102_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s43",
+    "tabpfn/results/20260911_191405_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s43": "tabpfn/results/v3/exp41/20260911_191405_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s43",
+    "tabpfn/results/20260911_191957_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s44": "tabpfn/results/v3/exp41/20260911_191957_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_xy_s44",
+    "tabpfn/results/20260911_192507_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s44": "tabpfn/results/v3/exp41/20260911_192507_nfv3_cic2018_exp41_dedup_dataset_tabpfn_dedup_majority_s44",
+    "tabpfn/results/20260911_192614_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s44": "tabpfn/results/v3/exp41/20260911_192614_nfv3_cic2018_exp41_dedup_dataset_tabpfn_drop_conflict_s44",
+    "tabpfn/results/20260914_132740_nfv3_cic2018_exp42_dedup_methods_dedup_xy_oracle_xgb_c0_xgb_full_s42": "tabpfn/results/v3/exp42/20260914_132740_nfv3_cic2018_exp42_dedup_methods_dedup_xy_oracle_xgb_c0_xgb_full_s42",
+    "tabpfn/results/20260914_141501_nfv3_cic2018_exp42_dedup_methods_dedup_xy_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "tabpfn/results/v3/exp42/20260914_141501_nfv3_cic2018_exp42_dedup_methods_dedup_xy_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42",
+    "tabpfn/results/20260914_141759_nfv3_cic2018_exp42_dedup_methods_dedup_majority_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "tabpfn/results/v3/exp42/20260914_141759_nfv3_cic2018_exp42_dedup_methods_dedup_majority_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42",
+    "tabpfn/results/20260914_141916_nfv3_cic2018_exp42_dedup_methods_drop_conflict_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "tabpfn/results/v3/exp42/20260914_141916_nfv3_cic2018_exp42_dedup_methods_drop_conflict_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42",
+    "tabpfn/results/20260914_142814_nfv3_cic2018_exp42_dedup_methods_original_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "tabpfn/results/v3/exp42/20260914_142814_nfv3_cic2018_exp42_dedup_methods_original_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42",
+    "tabpfn/results/20260914_144400_nfv3_cic2018_exp42_dedup_methods_dedup_xy_boostpfn_s42": "tabpfn/results/v3/exp42/20260914_144400_nfv3_cic2018_exp42_dedup_methods_dedup_xy_boostpfn_s42",
+    "tabpfn/results/20260914_144617_nfv3_cic2018_exp42_dedup_methods_dedup_majority_boostpfn_s42": "tabpfn/results/v3/exp42/20260914_144617_nfv3_cic2018_exp42_dedup_methods_dedup_majority_boostpfn_s42",
+    "tabpfn/results/20260914_144718_nfv3_cic2018_exp42_dedup_methods_drop_conflict_boostpfn_s42": "tabpfn/results/v3/exp42/20260914_144718_nfv3_cic2018_exp42_dedup_methods_drop_conflict_boostpfn_s42",
+    "tabpfn/results/20260914_144903_nfv3_cic2018_exp42_dedup_methods_original_boostpfn_s42": "tabpfn/results/v3/exp42/20260914_144903_nfv3_cic2018_exp42_dedup_methods_original_boostpfn_s42",
+    "tabpfn/results/20260914_154808_nfv3_cic2018_exp43_ours_natural_dedup_xy_s42": "tabpfn/results/v3/exp43/20260914_154808_nfv3_cic2018_exp43_ours_natural_dedup_xy_s42",
+    "tabpfn/results/20260914_163155_nfv3_cic2018_exp42_dedup_methods_dedup_xy_localpfn_knn_s42": "tabpfn/results/v3/exp42/20260914_163155_nfv3_cic2018_exp42_dedup_methods_dedup_xy_localpfn_knn_s42",
+    "tabpfn/results/20260914_180238_nfv3_cic2018_exp42_dedup_methods_dedup_majority_localpfn_knn_s42": "tabpfn/results/v3/exp42/20260914_180238_nfv3_cic2018_exp42_dedup_methods_dedup_majority_localpfn_knn_s42",
+    "tabpfn/results/20260914_193320_nfv3_cic2018_exp42_dedup_methods_drop_conflict_localpfn_knn_s42": "tabpfn/results/v3/exp42/20260914_193320_nfv3_cic2018_exp42_dedup_methods_drop_conflict_localpfn_knn_s42",
+    "tabpfn/results/20260914_225915_nfv3_cic2018_exp42_dedup_methods_original_localpfn_knn_s42": "tabpfn/results/v3/exp42/20260914_225915_nfv3_cic2018_exp42_dedup_methods_original_localpfn_knn_s42",
+    "tabpfn/results/20260914_232951_nfv3_cic2018_exp44_conflict_only_relabel_majority_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "tabpfn/results/v3/exp44/20260914_232951_nfv3_cic2018_exp44_conflict_only_relabel_majority_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42",
+    "tabpfn/results/20260914_233912_nfv3_cic2018_exp44_conflict_only_relabel_majority_boostpfn_s42": "tabpfn/results/v3/exp44/20260914_233912_nfv3_cic2018_exp44_conflict_only_relabel_majority_boostpfn_s42",
+    "tabpfn/results/20260915_000143_nfv3_cic2018_exp44_conflict_only_drop_vectors_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42": "tabpfn/results/v3/exp44/20260915_000143_nfv3_cic2018_exp44_conflict_only_drop_vectors_distpfn_oracle_ours_c0_tabpfn_plain_xgb__s42",
+    "tabpfn/results/20260915_000852_nfv3_cic2018_exp44_conflict_only_drop_vectors_boostpfn_s42": "tabpfn/results/v3/exp44/20260915_000852_nfv3_cic2018_exp44_conflict_only_drop_vectors_boostpfn_s42",
+    "tabpfn/results/20260915_101615_nfv3_toniotcapped_exp45_ton_frame_oracle_ours_c0_tabpfn_plain_xgb_c0_xgb_f_s42": "tabpfn/results/v3/exp45/20260915_101615_nfv3_toniotcapped_exp45_ton_frame_oracle_ours_c0_tabpfn_plain_xgb_c0_xgb_f_s42",
+    "tabpfn/results/20260915_110229_nfv3_toniot_exp45_ton_frame_oracle_ours_c0_tabpfn_plain_xgb_c0_xgb_f_s42": "tabpfn/results/v3/exp45/20260915_110229_nfv3_toniot_exp45_ton_frame_oracle_ours_c0_tabpfn_plain_xgb_c0_xgb_f_s42",
+    "tabpfn/results/20260915_155115_nfv3_toniot_exp46_global_context_s42": "tabpfn/results/v3/exp46/20260915_155115_nfv3_toniot_exp46_global_context_s42",
+    "tabpfn/results/20260915_180000_nfv3_cic2018_exp47_clean_revalidation_s42": "tabpfn/results/v3/exp47/20260915_180000_nfv3_cic2018_exp47_clean_revalidation_s42",
+    "tabpfn/results/20260916_021730_nfv3_toniot_exp48_clean_revalidation_s42": "tabpfn/results/v4/exp48/20260916_021730_nfv3_toniot_exp48_clean_revalidation_s42",
+    "tabpfn/results/20260917_203021_nfv3_botiot_exp49_clean_revalidation_s42": "tabpfn/results/v4/exp49/20260917_203021_nfv3_botiot_exp49_clean_revalidation_s42",
+    "tabpfn/results/20260917_210728_nfv3_botiot_exp49_clean_revalidation_naturalc0_s42": "tabpfn/results/v4/exp49/20260917_210728_nfv3_botiot_exp49_clean_revalidation_naturalc0_s42",
+    "tabpfn/results/20260918_104042_nfv3_toniot_exp52_confident_s42": "tabpfn/results/v4/exp52/20260918_104042_nfv3_toniot_exp52_confident_s42",
+    "tabpfn/results/20260918_104042_nfv3_toniot_exp52_random_s42": "tabpfn/results/v4/exp52/20260918_104042_nfv3_toniot_exp52_random_s42",
+    "tabpfn/results/20260918_125849_nfv3_toniot_exp52_anchor200_s42": "tabpfn/results/v4/exp52/20260918_125849_nfv3_toniot_exp52_anchor200_s42",
+    "tabpfn/results/20260918_135138_nfv3_toniot_exp53_context_purity": "tabpfn/results/v4/exp53/20260918_135138_nfv3_toniot_exp53_context_purity",
+    "tabpfn/results/20260918_155043_nfv3_toniot_exp54_expert_context_design": "tabpfn/results/v4/exp54/20260918_155043_nfv3_toniot_exp54_expert_context_design",
+    "tabpfn/results/20260918_160238_nfv3_toniot_exp54r2_expert_context_design": "tabpfn/results/v4/exp54/20260918_160238_nfv3_toniot_exp54r2_expert_context_design",
+    "tabpfn/results/20260922_143529_exp57_expert_quality_s42_44": "tabpfn/results/v4/exp57/20260922_143529_exp57_expert_quality_s42_44",
+    "tabpfn/results/20260928_exp59_residual_oracle_s43": "tabpfn/results/v4/exp59/20260928_exp59_residual_oracle_s43",
+    "tabpfn/results/20260929_exp60_counterexamples_s43": "tabpfn/results/v4/exp60/20260929_exp60_counterexamples_s43",
+    "tabpfn/results/20260929_exp61_sota_local_s43": "tabpfn/results/v4/exp61/20260929_exp61_sota_local_s43",
+    "tabpfn/results/20260930_exp62_sv_current_bank_s43": "tabpfn/results/v4/exp62/20260930_exp62_sv_current_bank_s43",
+    "tabpfn/results/20260930_exp63_k_sweep_s43": "tabpfn/results/v4/exp63/20260930_exp63_k_sweep_s43",
+    "tabpfn/results/20261001_174526_4085339_toniot_exp64_benign_diversity_s43": "tabpfn/results/v5/exp64/20261001_174526_4085339_toniot_exp64_benign_diversity_s43",
+    "tabpfn/results/20261001_174526_4085340_toniot_exp66_supcon_s43": "tabpfn/results/v5/exp66/20261001_174526_4085340_toniot_exp66_supcon_s43",
+    "tabpfn/results/20261001_174728_4086382_cic2018_exp65_lito_lite_web_attacks_s43": "tabpfn/results/v5/exp65/20261001_174728_4086382_cic2018_exp65_lito_lite_web_attacks_s43",
+    "tabpfn/results/20261001_181859_4092618_toniot_exp67_prompt_tuned_s43": "tabpfn/results/v5/exp67/20261001_181859_4092618_toniot_exp67_prompt_tuned_s43",
+    "tabpfn/results/20261001_182602_4095429_cic2018_exp65_lito_lite_web_attacks_s43": "tabpfn/results/v5/exp65/20261001_182602_4095429_cic2018_exp65_lito_lite_web_attacks_s43",
+    "tabpfn/results/20261001_182706_4096331_toniot_exp67_prompt_tuned_s43": "tabpfn/results/v5/exp67/20261001_182706_4096331_toniot_exp67_prompt_tuned_s43",
+    "tabpfn/results/20261001_184332_4100935_toniot_exp67_prompt_tuned_s43": "tabpfn/results/v5/exp67/20261001_184332_4100935_toniot_exp67_prompt_tuned_s43",
+    "tabpfn/results/20261001_185937_4104555_toniot_exp67_prompt_tuned_s44": "tabpfn/results/v5/exp67/20261001_185937_4104555_toniot_exp67_prompt_tuned_s44",
+    "tabpfn/results/20261001_190757_4106755_cic2018_exp67_prompt_tuned_s43": "tabpfn/results/v5/exp67/20261001_190757_4106755_cic2018_exp67_prompt_tuned_s43",
+    "tabpfn/results/20261001_191422_4108285_toniot_exp67_prompt_tuned_s43": "tabpfn/results/v5/exp67/20261001_191422_4108285_toniot_exp67_prompt_tuned_s43",
+    "tabpfn/results/20261002_004752_4179324_toniot_exp68_temporal_arrival_s43": "tabpfn/results/v5/exp68/20261002_004752_4179324_toniot_exp68_temporal_arrival_s43",
+    "tabpfn/results/20261002_004935_4180483_toniot_exp68_temporal_arrival_s43": "tabpfn/results/v5/exp68/20261002_004935_4180483_toniot_exp68_temporal_arrival_s43",
+    "tabpfn/results/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43": "tabpfn/results/v5/exp68/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43",
+    "tabpfn/results/20261002_exp69_class_arrival_s43": "tabpfn/results/v7/exp69/20261002_exp69_class_arrival_s43",
+    "tabpfn/results/20261002_exp70_class_arrival_100k_s43": "tabpfn/results/v7/exp70/20261002_exp70_class_arrival_100k_s43",
+    "tabpfn/results/exp50_hdn_verifier_cic2018": "tabpfn/results/v4/exp50/exp50_hdn_verifier_cic2018",
+    "tabpfn/results/exp50_hdn_verifier_toniot": "tabpfn/results/v4/exp50/exp50_hdn_verifier_toniot",
+    "tabpfn/results/exp51_scorer_target_cic2018": "tabpfn/results/v4/exp51/exp51_scorer_target_cic2018",
+    "tabpfn/results/exp51_scorer_target_toniot": "tabpfn/results/v4/exp51/exp51_scorer_target_toniot",
+    "tabpfn/results/exp55_expert_specialization_cic2018": "tabpfn/results/v4/exp55/exp55_expert_specialization_cic2018",
+    "tabpfn/results/exp55_expert_specialization_ton_iot": "tabpfn/results/v4/exp55/exp55_expert_specialization_ton_iot",
+    "tabpfn/results/exp56_five_condition_20260922_0150": "tabpfn/results/v4/exp56/exp56_five_condition_20260922_0150",
+    "tabpfn/results/exp56_five_condition_20260922_final": "tabpfn/results/v4/exp56/exp56_five_condition_20260922_final",
+    "tabpfn/results/exp56_label_free_20260922": "tabpfn/results/v4/exp56/exp56_label_free_20260922",
+    "tabpfn/results/exp58_six_condition_20260922": "tabpfn/results/v4/exp58/exp58_six_condition_20260922",
+    "tabpfn/results/exp58_six_condition_20260922_attempt1": "tabpfn/results/v4/exp58/exp58_six_condition_20260922_attempt1",
+    "tabpfn/results/exp61_input_check": "tabpfn/results/v4/exp61/exp61_input_check",
+    "tabpfn/results/exp61_parallel_smoke": "tabpfn/results/v4/exp61/exp61_parallel_smoke",
+    "tabpfn/results/exp61_synthetic_smoke_v1": "tabpfn/results/v4/exp61/exp61_synthetic_smoke_v1",
+    "tabpfn/results/exp61_synthetic_smoke_v2": "tabpfn/results/v4/exp61/exp61_synthetic_smoke_v2",
+    "tabpfn/results_past/20260806_160307_nfv3_cic2018_tabpfn_multiclass": "tabpfn/results/v1/multiclass/20260806_160307_nfv3_cic2018_tabpfn_multiclass",
+    "tabpfn/results_past/20260806_201324_cic2017_full_tabpfn_multiclass": "tabpfn/results/v1/multiclass/20260806_201324_cic2017_full_tabpfn_multiclass",
+    "tabpfn/results_past/20260810_091207_nfv3_cic2018_tabpfn_multiclass": "tabpfn/results/v1/multiclass/20260810_091207_nfv3_cic2018_tabpfn_multiclass",
+    "tabpfn/results_past/20260810_101626_cic2017_full_tabpfn_multiclass": "tabpfn/results/v1/multiclass/20260810_101626_cic2017_full_tabpfn_multiclass",
+    "tabpfn/results_past/20260813_195433_nfv3_cic2018_tabpfn_multiclass": "tabpfn/results/v1/multiclass/20260813_195433_nfv3_cic2018_tabpfn_multiclass",
+    "tabpfn/results_past/20260814_180936_nfv3_cic2018_tabpfn_multiclass": "tabpfn/results/v1/multiclass/20260814_180936_nfv3_cic2018_tabpfn_multiclass",
+    "tabpfn/results_past/20260817_072033_nfv3_cic2018_exp1_1m": "tabpfn/results/v1/exp1/20260817_072033_nfv3_cic2018_exp1_1m",
+    "tabpfn/results_past/20260817_081129_cic2017_full_exp1_1m": "tabpfn/results/v1/exp1/20260817_081129_cic2017_full_exp1_1m",
+    "tabpfn/results_past/20260817_090418_nfv3_botiot_exp1_1m": "tabpfn/results/v1/exp1/20260817_090418_nfv3_botiot_exp1_1m",
+    "tabpfn/results_past/20260817_093806_nfv3_toniot_exp1_1m": "tabpfn/results/v1/exp1/20260817_093806_nfv3_toniot_exp1_1m",
+    "tabpfn/results_past/20260817_161427_nfv3_cic2018_exp2_fullxgb": "tabpfn/results/v1/exp2/20260817_161427_nfv3_cic2018_exp2_fullxgb",
+    "tabpfn/results_past/20260817_162124_nfv3_botiot_exp2_fullxgb": "tabpfn/results/v1/exp2/20260817_162124_nfv3_botiot_exp2_fullxgb",
+    "tabpfn/results_past/20260817_163506_nfv3_toniot_exp2_fullxgb": "tabpfn/results/v1/exp2/20260817_163506_nfv3_toniot_exp2_fullxgb",
+    "tabpfn/results_past/20260817_163718_cic2017_full_exp2_fullxgb": "tabpfn/results/v1/exp2/20260817_163718_cic2017_full_exp2_fullxgb",
+    "tabpfn/results_past/20260817_165633_nfv3_cic2018_exp2_fullxgb_82": "tabpfn/results/v1/exp2/20260817_165633_nfv3_cic2018_exp2_fullxgb_82",
+    "tabpfn/results_past/20260817_170135_nfv3_botiot_exp2_fullxgb_82": "tabpfn/results/v1/exp2/20260817_170135_nfv3_botiot_exp2_fullxgb_82",
+    "tabpfn/results_past/20260817_172106_nfv3_toniot_exp2_fullxgb_82": "tabpfn/results/v1/exp2/20260817_172106_nfv3_toniot_exp2_fullxgb_82",
+    "tabpfn/results_past/20260817_172358_cic2017_full_exp2_fullxgb_82": "tabpfn/results/v1/exp2/20260817_172358_cic2017_full_exp2_fullxgb_82",
+    "tabpfn/results_past/20260818_030904_cic2017_full_exp1_1m": "tabpfn/results/v1/exp1/20260818_030904_cic2017_full_exp1_1m",
+    "tabpfn/results_past/20260818_042459_nfv3_cic2018_exp1_1m": "tabpfn/results/v1/exp1/20260818_042459_nfv3_cic2018_exp1_1m",
+    "tabpfn/results_past/20260818_053139_nfv3_botiot_exp1_1m": "tabpfn/results/v1/exp1/20260818_053139_nfv3_botiot_exp1_1m",
+    "tabpfn/results_past/20260818_071152_nfv3_toniot_exp1_1m": "tabpfn/results/v1/exp1/20260818_071152_nfv3_toniot_exp1_1m",
+    "tabpfn/results_past/20260818_110611_cic2017_full_exp2_fullxgb": "tabpfn/results/v1/exp2/20260818_110611_cic2017_full_exp2_fullxgb",
+    "tabpfn/results_past/20260818_111317_nfv3_cic2018_exp2_fullxgb": "tabpfn/results/v1/exp2/20260818_111317_nfv3_cic2018_exp2_fullxgb",
+    "tabpfn/results_past/20260818_111717_nfv3_botiot_exp2_fullxgb": "tabpfn/results/v1/exp2/20260818_111717_nfv3_botiot_exp2_fullxgb",
+    "tabpfn/results_past/20260818_113117_nfv3_toniot_exp2_fullxgb": "tabpfn/results/v1/exp2/20260818_113117_nfv3_toniot_exp2_fullxgb",
+    "tabpfn/results_past/20260820_114150_nfv3_cic2018_exp4_tailbag": "tabpfn/results/v1/exp4/20260820_114150_nfv3_cic2018_exp4_tailbag",
+    "tabpfn/results_past/20260820_115223_nfv3_cic2018_exp4_tailbag": "tabpfn/results/v1/exp4/20260820_115223_nfv3_cic2018_exp4_tailbag",
+    "tabpfn/results_past/20260820_155551_nfv3_cic2018_exp5_viewmoe": "tabpfn/results/v1/exp5/20260820_155551_nfv3_cic2018_exp5_viewmoe",
+    "tabpfn/results_past/20260820_173651_nfv3_cic2018_exp6_bal50k": "tabpfn/results/v1/exp6/20260820_173651_nfv3_cic2018_exp6_bal50k",
+    "tabpfn/results_past/20260820_173924_nfv3_cic2018_exp6_web_hn": "tabpfn/results/v1/exp6/20260820_173924_nfv3_cic2018_exp6_web_hn",
+    "tabpfn/results_past/20260820_174153_nfv3_cic2018_exp6_web_ctrl": "tabpfn/results/v1/exp6/20260820_174153_nfv3_cic2018_exp6_web_ctrl",
+    "tabpfn/results_past/20260820_174432_nfv3_cic2018_exp6_inf_hn": "tabpfn/results/v1/exp6/20260820_174432_nfv3_cic2018_exp6_inf_hn",
+    "tabpfn/results_past/20260820_174702_nfv3_cic2018_exp6_dos_pair": "tabpfn/results/v1/exp6/20260820_174702_nfv3_cic2018_exp6_dos_pair",
+    "tabpfn/results_past/20260820_174929_nfv3_cic2018_exp6_bal50k_evval": "tabpfn/results/v1/exp6/20260820_174929_nfv3_cic2018_exp6_bal50k_evval",
+    "tabpfn/results_past/20260820_175200_nfv3_cic2018_exp6_web_hn_evval": "tabpfn/results/v1/exp6/20260820_175200_nfv3_cic2018_exp6_web_hn_evval",
+    "tabpfn/results_past/20260820_175428_nfv3_cic2018_exp6_web_ctrl_evval": "tabpfn/results/v1/exp6/20260820_175428_nfv3_cic2018_exp6_web_ctrl_evval",
+    "tabpfn/results_past/20260820_175700_nfv3_cic2018_exp6_inf_hn_evval": "tabpfn/results/v1/exp6/20260820_175700_nfv3_cic2018_exp6_inf_hn_evval",
+    "tabpfn/results_past/20260820_175927_nfv3_cic2018_exp6_dos_pair_evval": "tabpfn/results/v1/exp6/20260820_175927_nfv3_cic2018_exp6_dos_pair_evval",
+    "tabpfn/results_past/20260820_192744_nfv3_cic2018_exp5_viewmoe_evval": "tabpfn/results/v1/exp5/20260820_192744_nfv3_cic2018_exp5_viewmoe_evval",
+    "tabpfn/results_past/20260820_230418_nfv3_cic2018_exp7_ood_unseen_bot": "tabpfn/results/v1/exp7/20260820_230418_nfv3_cic2018_exp7_ood_unseen_bot",
+    "tabpfn/results_past/20260820_233957_nfv3_cic2018_exp8_expertood_unseen_bot": "tabpfn/results/v1/exp8/20260820_233957_nfv3_cic2018_exp8_expertood_unseen_bot",
+    "tabpfn/results_past/20260820_234000_nfv3_cic2018_exp8_expertood_unseen_infiltration": "tabpfn/results/v1/exp8/20260820_234000_nfv3_cic2018_exp8_expertood_unseen_infiltration",
+    "tabpfn/results_past/20260820_234942_nfv3_cic2018_exp8_expertood_unseen_brute_force": "tabpfn/results/v1/exp8/20260820_234942_nfv3_cic2018_exp8_expertood_unseen_brute_force",
+    "tabpfn/results_past/20260820_235104_nfv3_cic2018_exp8_expertood_unseen_web_attacks": "tabpfn/results/v1/exp8/20260820_235104_nfv3_cic2018_exp8_expertood_unseen_web_attacks",
+    "tabpfn/results_past/20260821_000048_nfv3_cic2018_exp8_expertood_unseen_ddos": "tabpfn/results/v1/exp8/20260821_000048_nfv3_cic2018_exp8_expertood_unseen_ddos",
+    "tabpfn/results_past/20260821_000219_nfv3_cic2018_exp8_expertood_unseen_dos": "tabpfn/results/v1/exp8/20260821_000219_nfv3_cic2018_exp8_expertood_unseen_dos",
+    "tabpfn/results_past/20260821_012414_nfv3_cic2018_exp9_eft_unseen_brute_force": "tabpfn/results/v1/exp9/20260821_012414_nfv3_cic2018_exp9_eft_unseen_brute_force",
+    "tabpfn/results_past/20260821_023608_nfv3_cic2018_exp10_hce": "tabpfn/results/v1/exp10/20260821_023608_nfv3_cic2018_exp10_hce",
+    "tabpfn/results_past/20260821_024951_nfv3_cic2018_exp10_hce_evval": "tabpfn/results/v1/exp10/20260821_024951_nfv3_cic2018_exp10_hce_evval",
+    "tabpfn/results_past/20260821_040136_nfv3_cic2018_exp11_activation": "tabpfn/results/v1/exp11/20260821_040136_nfv3_cic2018_exp11_activation",
+    "tabpfn/results_past/20260821_044136_nfv3_cic2018_exp11_activation": "tabpfn/results/v1/exp11/20260821_044136_nfv3_cic2018_exp11_activation",
+    "tabpfn/results_past/20260821_054359_nfv3_cic2018_exp11_activation": "tabpfn/results/v1/exp11/20260821_054359_nfv3_cic2018_exp11_activation",
+    "tabpfn/results_past/20260821_060221_nfv3_cic2018_exp12b_system": "tabpfn/results/v1/exp12/20260821_060221_nfv3_cic2018_exp12b_system",
+    "tabpfn/results_past/20260821_065113_nfv3_cic2018_exp11_activation": "tabpfn/results/v1/exp11/20260821_065113_nfv3_cic2018_exp11_activation",
+    "tabpfn/results_past/20260821_070437_nfv3_cic2018_exp12c_system": "tabpfn/results/v1/exp12/20260821_070437_nfv3_cic2018_exp12c_system",
+    "tabpfn/results_past/20260821_080323_nfv3_cic2018_exp13_tta": "tabpfn/results/v1/exp13/20260821_080323_nfv3_cic2018_exp13_tta",
+    "tabpfn/results_past/20260821_082218_nfv3_cic2018_exp13_tta": "tabpfn/results/v1/exp13/20260821_082218_nfv3_cic2018_exp13_tta",
+    "tabpfn/results_past/20260821_102249_nfv3_cic2018_exp13_tta": "tabpfn/results/v1/exp13/20260821_102249_nfv3_cic2018_exp13_tta",
+    "tabpfn/results_past/20260821_135538_nfv3_toniot_exp14_system": "tabpfn/results/v1/exp14/20260821_135538_nfv3_toniot_exp14_system",
+    "tabpfn/results_past/20260821_151521_nfv3_cic2018_exp15_prep": "tabpfn/results/v1/exp15/20260821_151521_nfv3_cic2018_exp15_prep",
+    "tabpfn/results_past/20260821_161948_nfv3_toniot_exp14_system": "tabpfn/results/v1/exp14/20260821_161948_nfv3_toniot_exp14_system",
+    "tabpfn/results_past/20260821_174945_nfv3_cic2018_exp15_prep": "tabpfn/results/v1/exp15/20260821_174945_nfv3_cic2018_exp15_prep",
+    "tabpfn/results_past/20260821_181141_nfv3_cic2018_exp16_dedup": "tabpfn/results/v1/exp16/20260821_181141_nfv3_cic2018_exp16_dedup",
+    "tabpfn/results_past/20260821_181408_nfv3_cic2018_exp17_selector": "tabpfn/results/v1/exp17/20260821_181408_nfv3_cic2018_exp17_selector",
+    "tabpfn/results_past/20260821_192317_nfv3_cic2018_exp16_dedup": "tabpfn/results/v1/exp16/20260821_192317_nfv3_cic2018_exp16_dedup",
+    "tabpfn/results_past/20260821_200914_nfv3_cic2018_exp17_selector": "tabpfn/results/v1/exp17/20260821_200914_nfv3_cic2018_exp17_selector",
+    "tabpfn/results_past/20260821_220347_nfv3_cic2018_exp19_return": "tabpfn/results/v1/exp19/20260821_220347_nfv3_cic2018_exp19_return",
+    "tabpfn/results_past/20260821_220410_nfv3_cic2018_exp18_dedup_bench": "tabpfn/results/v1/exp18/20260821_220410_nfv3_cic2018_exp18_dedup_bench",
+    "tabpfn/results_past/20260821_225628_nfv3_cic2018_exp19_return": "tabpfn/results/v1/exp19/20260821_225628_nfv3_cic2018_exp19_return",
+    "tabpfn/results_past/20260821_233323_nfv3_cic2018_exp18_dedup_bench": "tabpfn/results/v1/exp18/20260821_233323_nfv3_cic2018_exp18_dedup_bench",
+    "tabpfn/results_past/20260822_154151_nfv3_cic2018_exp20_probsel": "tabpfn/results/v1/exp20/20260822_154151_nfv3_cic2018_exp20_probsel",
+    "tabpfn/results_past/20260822_155345_nfv3_cic2018_exp21_eglobal": "tabpfn/results/v1/exp21/20260822_155345_nfv3_cic2018_exp21_eglobal",
+    "tabpfn/results_past/20260822_173034_nfv3_cic2018_exp21_eglobal": "tabpfn/results/v1/exp21/20260822_173034_nfv3_cic2018_exp21_eglobal",
+    "tabpfn/results_past/20260822_182345_nfv3_cic2018_exp20b_probsplit": "tabpfn/results/v1/exp20/20260822_182345_nfv3_cic2018_exp20b_probsplit",
+    "tabpfn/results_past/20260822_182509_nfv3_cic2018_exp21b_esplit": "tabpfn/results/v1/exp21/20260822_182509_nfv3_cic2018_exp21b_esplit",
+    "tabpfn/results_past/20260822_190957_nfv3_cic2018_exp20b_probsplit": "tabpfn/results/v1/exp20/20260822_190957_nfv3_cic2018_exp20b_probsplit",
+    "tabpfn/results_past/20260822_202415_nfv3_cic2018_exp21b_esplit": "tabpfn/results/v1/exp21/20260822_202415_nfv3_cic2018_exp21b_esplit",
+    "tabpfn/results_past/20260825_133516_nfv3_cic2018capped_exp22_racepfn": "tabpfn/results/v1/exp22/20260825_133516_nfv3_cic2018capped_exp22_racepfn",
+    "tabpfn/results_past/20260825_142540_nfv3_cic2018_exp22_racepfn": "tabpfn/results/v1/exp22/20260825_142540_nfv3_cic2018_exp22_racepfn",
+    "tabpfn/results_past/20260825_161943_nfv3_cic2018capped_exp22b_racephi": "tabpfn/results/v1/exp22/20260825_161943_nfv3_cic2018capped_exp22b_racephi",
+    "tabpfn/results_past/20260825_163104_nfv3_cic2018capped_exp22b_racephi": "tabpfn/results/v1/exp22/20260825_163104_nfv3_cic2018capped_exp22b_racephi",
+    "tabpfn/results_past/20260825_174233_nfv3_cic2018_exp22b_racephi": "tabpfn/results/v1/exp22/20260825_174233_nfv3_cic2018_exp22b_racephi",
+    "tabpfn/results_past/exp2_full_xgb_6220_vs_82.csv": "tabpfn/results/v1/exp2/analysis/exp2_full_xgb_6220_vs_82.csv",
+    "tabpfn/results_past/exp2_full_xgb_6220_vs_82.png": "tabpfn/results/v1/exp2/analysis/exp2_full_xgb_6220_vs_82.png",
+    "tabpfn/results_past/exp2_full_xgb_summary.csv": "tabpfn/results/v1/exp2/analysis/exp2_full_xgb_summary.csv",
+    "tabpfn/results_past/exp2_full_xgb_summary.png": "tabpfn/results/v1/exp2/analysis/exp2_full_xgb_summary.png",
+    "tabpfn/results_past/exp2_full_xgb_summary_82.csv": "tabpfn/results/v1/exp2/analysis/exp2_full_xgb_summary_82.csv",
+    "tabpfn/results_past/exp2_full_xgb_summary_82.png": "tabpfn/results/v1/exp2/analysis/exp2_full_xgb_summary_82.png",
+    "tabpfn/results_past/exp6_combination_lab.csv": "tabpfn/results/v1/exp6/analysis/exp6_combination_lab.csv",
+    "tabpfn/results_past/exp8_sweep_3a_all.csv": "tabpfn/results/v1/exp8/analysis/exp8_sweep_3a_all.csv"
+  },
+  "scripts": [
+    {
+      "path": "scripts/common/analyze_nfv3_embedding.py",
+      "original_path": "scripts/analyze_nfv3_embedding.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/analyze_nfv3_temporal.py",
+      "original_path": "scripts/analyze_nfv3_temporal.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/build_latex_results.py",
+      "original_path": "scripts/build_latex_results.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/build_merged_expert_report.py",
+      "original_path": "scripts/build_merged_expert_report.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/check_merged_expert_report.py",
+      "original_path": "scripts/check_merged_expert_report.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/exp57_prepare_inputs.py",
+      "original_path": "scripts/exp57_prepare_inputs.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/exp61_utils.py",
+      "original_path": "scripts/exp61_utils.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/exp_utils.py",
+      "original_path": "scripts/exp_utils.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/experiment_paths.py",
+      "original_path": null,
+      "version": null,
+      "experiment": null,
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/common/materialize_nfv3_pools_s43.py",
+      "original_path": "scripts/materialize_nfv3_pools_s43.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/migrate_layout.py",
+      "original_path": null,
+      "version": null,
+      "experiment": null,
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/common/nfv3_expert_data_composition.py",
+      "original_path": "scripts/nfv3_expert_data_composition.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/preprocess_cic2017_full_raw.py",
+      "original_path": "scripts/preprocess_cic2017_full_raw.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/preprocess_nfv3_cic2018_scenarios.py",
+      "original_path": "scripts/preprocess_nfv3_cic2018_scenarios.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/preprocess_nfv3_energy_suite.py",
+      "original_path": "scripts/preprocess_nfv3_energy_suite.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/race_budget_diag.py",
+      "original_path": "scripts/race_budget_diag.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/race_offline_eval.py",
+      "original_path": "scripts/race_offline_eval.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/race_scenario_label_diag.py",
+      "original_path": "scripts/race_scenario_label_diag.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/render_run_tables.py",
+      "original_path": "scripts/render_run_tables.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/report_order.py",
+      "original_path": "scripts/report_order.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/report_typography.py",
+      "original_path": "scripts/report_typography.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/setup_exp57_env.py",
+      "original_path": "scripts/setup_exp57_env.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/common/setup_exp61_env.py",
+      "original_path": "scripts/setup_exp61_env.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/results_versions.py",
+      "original_path": "scripts/results_versions.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/sync_html_reports.py",
+      "original_path": "scripts/sync_html_reports.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/v1/exp22/exp22b_z_scatter.py",
+      "original_path": "scripts/exp22b_z_scatter.py",
+      "version": "v1",
+      "experiment": "exp22",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v1/s43/s43_nfv3_independent_expert_energy.py",
+      "original_path": "scripts/s43_nfv3_independent_expert_energy.py",
+      "version": "v1",
+      "experiment": "s43",
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/v1/s44/s44_nfv3_resolved_expert_pipeline.py",
+      "original_path": "scripts/s44_nfv3_resolved_expert_pipeline.py",
+      "version": "v1",
+      "experiment": "s44",
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/v1/s44/s44_unseen_tradeoff_summary.py",
+      "original_path": "scripts/s44_unseen_tradeoff_summary.py",
+      "version": "v1",
+      "experiment": "s44",
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/v2/exp24/exp24_prior_shift_eval.py",
+      "original_path": "scripts/exp24_prior_shift_eval.py",
+      "version": "v2",
+      "experiment": "exp24",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v2/exp37/exp37_distpfn_variants.py",
+      "original_path": "scripts/exp37_distpfn_variants.py",
+      "version": "v2",
+      "experiment": "exp37",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v2/exp39/exp39_calibration_audit.py",
+      "original_path": "scripts/exp39_calibration_audit.py",
+      "version": "v2",
+      "experiment": "exp39",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v2/exp39/exp39_stage_audit.py",
+      "original_path": "scripts/exp39_stage_audit.py",
+      "version": "v2",
+      "experiment": "exp39",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v3/exp40/exp40_dedup_xgb.py",
+      "original_path": "scripts/exp40_dedup_xgb.py",
+      "version": "v3",
+      "experiment": "exp40",
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/v3/exp41/exp41_dedup_dataset_xgb.py",
+      "original_path": "scripts/exp41_dedup_dataset_xgb.py",
+      "version": "v3",
+      "experiment": "exp41",
+      "result_scope": "root"
+    },
+    {
+      "path": "scripts/v4/exp56/build_exp56_report_section.py",
+      "original_path": "scripts/build_exp56_report_section.py",
+      "version": "v4",
+      "experiment": "exp56",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp57/build_exp57_followup_report.py",
+      "original_path": "scripts/build_exp57_followup_report.py",
+      "version": "v4",
+      "experiment": "exp57",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp57/monitor_exp57_runs.py",
+      "original_path": "scripts/monitor_exp57_runs.py",
+      "version": "v4",
+      "experiment": "exp57",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp57/run_exp57_external.py",
+      "original_path": "scripts/run_exp57_external.py",
+      "version": "v4",
+      "experiment": "exp57",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp59/analyze_exp59_expert_capability.py",
+      "original_path": "scripts/analyze_exp59_expert_capability.py",
+      "version": "v4",
+      "experiment": "exp59",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp59/build_exp59_report.py",
+      "original_path": "scripts/build_exp59_report.py",
+      "version": "v4",
+      "experiment": "exp59",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp59/check_exp59_report.py",
+      "original_path": "scripts/check_exp59_report.py",
+      "version": "v4",
+      "experiment": "exp59",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp59/finalize_exp59.py",
+      "original_path": "scripts/finalize_exp59.py",
+      "version": "v4",
+      "experiment": "exp59",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp59/prepare_exp59_partial.py",
+      "original_path": "scripts/prepare_exp59_partial.py",
+      "version": "v4",
+      "experiment": "exp59",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp59/render_exp59_capability.py",
+      "original_path": "scripts/render_exp59_capability.py",
+      "version": "v4",
+      "experiment": "exp59",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp60/build_exp60_report.py",
+      "original_path": "scripts/build_exp60_report.py",
+      "version": "v4",
+      "experiment": "exp60",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp60/check_exp60_report.py",
+      "original_path": "scripts/check_exp60_report.py",
+      "version": "v4",
+      "experiment": "exp60",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp60/finalize_exp60.py",
+      "original_path": "scripts/finalize_exp60.py",
+      "version": "v4",
+      "experiment": "exp60",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp60/supervise_exp60.py",
+      "original_path": "scripts/supervise_exp60.py",
+      "version": "v4",
+      "experiment": "exp60",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp61/build_exp61_report.py",
+      "original_path": "scripts/build_exp61_report.py",
+      "version": "v4",
+      "experiment": "exp61",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp61/check_exp61_report.py",
+      "original_path": "scripts/check_exp61_report.py",
+      "version": "v4",
+      "experiment": "exp61",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp61/run_exp61_sota.py",
+      "original_path": "scripts/run_exp61_sota.py",
+      "version": "v4",
+      "experiment": "exp61",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp62/run_exp62_local.py",
+      "original_path": "scripts/run_exp62_local.py",
+      "version": "v4",
+      "experiment": "exp62",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp63/render_exp63_capability.py",
+      "original_path": "scripts/render_exp63_capability.py",
+      "version": "v4",
+      "experiment": "exp63",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v4/exp63/run_exp63_local.py",
+      "original_path": "scripts/run_exp63_local.py",
+      "version": "v4",
+      "experiment": "exp63",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "scripts/v7/exp69/exp69_class_arrival.py",
+      "original_path": "scripts/exp69_class_arrival.py",
+      "version": "v7",
+      "experiment": "exp69",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/common/cic2018_conflict_clean.py",
+      "original_path": "tabpfn/scripts/cic2018_conflict_clean.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/common/exp6x_context_common.py",
+      "original_path": "tabpfn/scripts/exp6x_context_common.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/common/nfv3_conflict_clean.py",
+      "original_path": "tabpfn/scripts/nfv3_conflict_clean.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/common/nfv3_v3_c0_context.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_c0_context.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/common/nfv3_v3_common.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_common.py",
+      "version": null,
+      "experiment": null,
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp1/nfv3_v3_exp1_1m_both.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp1_1m_both.py",
+      "version": "v1",
+      "experiment": "exp1",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp10/nfv3_v3_exp10_hce_classification.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp10_hce_classification.py",
+      "version": "v1",
+      "experiment": "exp10",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp11/nfv3_v3_exp11_expert_activation.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp11_expert_activation.py",
+      "version": "v1",
+      "experiment": "exp11",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp11/nfv3_v3_exp11b_activation_negatives.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp11b_activation_negatives.py",
+      "version": "v1",
+      "experiment": "exp11",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp11/nfv3_v3_exp11c_balanced_head.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp11c_balanced_head.py",
+      "version": "v1",
+      "experiment": "exp11",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp11/nfv3_v3_exp11d_symmetric_negatives.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp11d_symmetric_negatives.py",
+      "version": "v1",
+      "experiment": "exp11",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp12/nfv3_v3_exp12b_system_eval.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp12b_system_eval.py",
+      "version": "v1",
+      "experiment": "exp12",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp12/nfv3_v3_exp12c_system_eval.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp12c_system_eval.py",
+      "version": "v1",
+      "experiment": "exp12",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp13/nfv3_v3_exp13_tta_tiebreak.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp13_tta_tiebreak.py",
+      "version": "v1",
+      "experiment": "exp13",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp14/nfv3_v3_exp14_ton_system.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp14_ton_system.py",
+      "version": "v1",
+      "experiment": "exp14",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp15/nfv3_v3_exp15_prep_system.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp15_prep_system.py",
+      "version": "v1",
+      "experiment": "exp15",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp16/nfv3_v3_exp16_dedup_system.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp16_dedup_system.py",
+      "version": "v1",
+      "experiment": "exp16",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp17/nfv3_v3_exp17_selector.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp17_selector.py",
+      "version": "v1",
+      "experiment": "exp17",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp18/nfv3_v3_exp18_dedup_benchmark.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp18_dedup_benchmark.py",
+      "version": "v1",
+      "experiment": "exp18",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp19/nfv3_v3_exp19_benign_return.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp19_benign_return.py",
+      "version": "v1",
+      "experiment": "exp19",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp2/nfv3_v3_exp2_full_xgb.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp2_full_xgb.py",
+      "version": "v1",
+      "experiment": "exp2",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp20/nfv3_v3_exp20_prob_selector.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp20_prob_selector.py",
+      "version": "v1",
+      "experiment": "exp20",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp20/nfv3_v3_exp20b_prob_split.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp20b_prob_split.py",
+      "version": "v1",
+      "experiment": "exp20",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp21/nfv3_v3_exp21_energy_global.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp21_energy_global.py",
+      "version": "v1",
+      "experiment": "exp21",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp21/nfv3_v3_exp21b_energy_split.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp21b_energy_split.py",
+      "version": "v1",
+      "experiment": "exp21",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp22/nfv3_v3_exp22_racepfn.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp22_racepfn.py",
+      "version": "v1",
+      "experiment": "exp22",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp22/nfv3_v3_exp22b_racepfn_phi.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp22b_racepfn_phi.py",
+      "version": "v1",
+      "experiment": "exp22",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp3/nfv3_v3_exp3_full_tabpfn_bagging.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp3_full_tabpfn_bagging.py",
+      "version": "v1",
+      "experiment": "exp3",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp4/nfv3_v3_exp4_tail_anchored_bagging.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp4_tail_anchored_bagging.py",
+      "version": "v1",
+      "experiment": "exp4",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp5/nfv3_v3_exp5_energy_view_moe.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp5_energy_view_moe.py",
+      "version": "v1",
+      "experiment": "exp5",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp6/exp6_combination_lab.py",
+      "original_path": "tabpfn/scripts/exp6_combination_lab.py",
+      "version": "v1",
+      "experiment": "exp6",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp6/nfv3_v3_exp6_context_recipes.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp6_context_recipes.py",
+      "version": "v1",
+      "experiment": "exp6",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp7/nfv3_v3_exp7_tabpfn_energy_ood.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp7_tabpfn_energy_ood.py",
+      "version": "v1",
+      "experiment": "exp7",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp8/nfv3_v3_exp8_expert_family_ood.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp8_expert_family_ood.py",
+      "version": "v1",
+      "experiment": "exp8",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/exp9/nfv3_v3_exp9_energy_score_finetune.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp9_energy_score_finetune.py",
+      "version": "v1",
+      "experiment": "exp9",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/multiclass/nfv3_cic2018_multiclass_test_colab.ipynb",
+      "original_path": "tabpfn/scripts/nfv3_cic2018_multiclass_test_colab.ipynb",
+      "version": "v1",
+      "experiment": "multiclass",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v1/multiclass/nfv3_multiclass_test_v2.py",
+      "original_path": "tabpfn/scripts/nfv3_multiclass_test_v2.py",
+      "version": "v1",
+      "experiment": "multiclass",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp22/nfv3_v3_exp22c_racepfn_context.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp22c_racepfn_context.py",
+      "version": "v2",
+      "experiment": "exp22",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp23/nfv3_v3_exp23_racepfn_guide.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp23_racepfn_guide.py",
+      "version": "v2",
+      "experiment": "exp23",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp23/nfv3_v3_exp23b_racepfn_greedy.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp23b_racepfn_greedy.py",
+      "version": "v2",
+      "experiment": "exp23",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp23/nfv3_v3_exp23c_racepfn_anchor.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp23c_racepfn_anchor.py",
+      "version": "v2",
+      "experiment": "exp23",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp23/nfv3_v3_exp23d_racepfn_anchmode.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp23d_racepfn_anchmode.py",
+      "version": "v2",
+      "experiment": "exp23",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp24/nfv3_v3_exp24a_racepfn_regprune.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp24a_racepfn_regprune.py",
+      "version": "v2",
+      "experiment": "exp24",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp24/nfv3_v3_exp24b_racepfn_signscorer.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp24b_racepfn_signscorer.py",
+      "version": "v2",
+      "experiment": "exp24",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp25/nfv3_v3_exp25_racepfn_dump.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp25_racepfn_dump.py",
+      "version": "v2",
+      "experiment": "exp25",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp25/nfv3_v3_exp25b_racepfn_detlite.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp25b_racepfn_detlite.py",
+      "version": "v2",
+      "experiment": "exp25",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp26/nfv3_v3_exp26_racepfn_normgain.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp26_racepfn_normgain.py",
+      "version": "v2",
+      "experiment": "exp26",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp27/nfv3_v3_exp27_racepfn_ctxcover.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp27_racepfn_ctxcover.py",
+      "version": "v2",
+      "experiment": "exp27",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp28/nfv3_v3_exp28_racepfn_equalmem.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp28_racepfn_equalmem.py",
+      "version": "v2",
+      "experiment": "exp28",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp29/nfv3_v3_exp29_racepfn_combo.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp29_racepfn_combo.py",
+      "version": "v2",
+      "experiment": "exp29",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp30/nfv3_v3_exp30_c0share.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp30_c0share.py",
+      "version": "v2",
+      "experiment": "exp30",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp31/nfv3_v3_exp31_c0alloc.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp31_c0alloc.py",
+      "version": "v2",
+      "experiment": "exp31",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp32/nfv3_v3_exp32_c0bag.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp32_c0bag.py",
+      "version": "v2",
+      "experiment": "exp32",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp33/nfv3_v3_exp33_c0dupcap.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp33_c0dupcap.py",
+      "version": "v2",
+      "experiment": "exp33",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp34/nfv3_v3_exp34_c0select.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp34_c0select.py",
+      "version": "v2",
+      "experiment": "exp34",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp35/nfv3_v3_exp35_boostpfn.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp35_boostpfn.py",
+      "version": "v2",
+      "experiment": "exp35",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp36/nfv3_v3_exp36_localpfn.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp36_localpfn.py",
+      "version": "v2",
+      "experiment": "exp36",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp37/nfv3_v3_exp37_distpfn.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp37_distpfn.py",
+      "version": "v2",
+      "experiment": "exp37",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp38/nfv3_v3_exp38_frozen_cache.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp38_frozen_cache.py",
+      "version": "v2",
+      "experiment": "exp38",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v2/exp39/nfv3_v3_exp39_decision_routing.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp39_decision_routing.py",
+      "version": "v2",
+      "experiment": "exp39",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp40/nfv3_v3_exp40_dedup_tabpfn.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp40_dedup_tabpfn.py",
+      "version": "v3",
+      "experiment": "exp40",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp41/nfv3_v3_exp41_dedup_dataset_tabpfn.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp41_dedup_dataset_tabpfn.py",
+      "version": "v3",
+      "experiment": "exp41",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp42/nfv3_v3_exp42_dedup_methods.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp42_dedup_methods.py",
+      "version": "v3",
+      "experiment": "exp42",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp43/nfv3_v3_exp43_ours_majfill.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp43_ours_majfill.py",
+      "version": "v3",
+      "experiment": "exp43",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp44/nfv3_v3_exp44_conflict_only.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp44_conflict_only.py",
+      "version": "v3",
+      "experiment": "exp44",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp45/nfv3_v3_exp45_ton_frame.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp45_ton_frame.py",
+      "version": "v3",
+      "experiment": "exp45",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp46/nfv3_v3_exp46_ton_global_context.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp46_ton_global_context.py",
+      "version": "v3",
+      "experiment": "exp46",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp47/exp47_audit.py",
+      "original_path": "tabpfn/scripts/exp47_audit.py",
+      "version": "v3",
+      "experiment": "exp47",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp47/exp47_trace.py",
+      "original_path": "tabpfn/scripts/exp47_trace.py",
+      "version": "v3",
+      "experiment": "exp47",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v3/exp47/nfv3_v3_exp47_clean_revalidation.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp47_clean_revalidation.py",
+      "version": "v3",
+      "experiment": "exp47",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp48/exp48_trace.py",
+      "original_path": "tabpfn/scripts/exp48_trace.py",
+      "version": "v4",
+      "experiment": "exp48",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp48/nfv3_v3_exp48_ton_clean_revalidation.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp48_ton_clean_revalidation.py",
+      "version": "v4",
+      "experiment": "exp48",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp49/exp49_trace.py",
+      "original_path": "tabpfn/scripts/exp49_trace.py",
+      "version": "v4",
+      "experiment": "exp49",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp49/nfv3_v3_exp49_bot_clean_revalidation.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp49_bot_clean_revalidation.py",
+      "version": "v4",
+      "experiment": "exp49",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp50/nfv3_v3_exp50_hdn_verifier.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp50_hdn_verifier.py",
+      "version": "v4",
+      "experiment": "exp50",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp51/nfv3_v3_exp51_scorer_target.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp51_scorer_target.py",
+      "version": "v4",
+      "experiment": "exp51",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp52/nfv3_v3_exp52_context_run.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp52_context_run.py",
+      "version": "v4",
+      "experiment": "exp52",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp52/nfv3_v3_exp52_expert_context.py",
+      "original_path": "tabpfn/scripts/nfv3_v3_exp52_expert_context.py",
+      "version": "v4",
+      "experiment": "exp52",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp53/exp53_context_purity_diag.py",
+      "original_path": "tabpfn/scripts/exp53_context_purity_diag.py",
+      "version": "v4",
+      "experiment": "exp53",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp54/exp54_expert_context_design.py",
+      "original_path": "tabpfn/scripts/exp54_expert_context_design.py",
+      "version": "v4",
+      "experiment": "exp54",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp54/exp54r2_expert_context_design.py",
+      "original_path": "tabpfn/scripts/exp54r2_expert_context_design.py",
+      "version": "v4",
+      "experiment": "exp54",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp55/exp55_expert_specialization_oracle.py",
+      "original_path": "tabpfn/scripts/exp55_expert_specialization_oracle.py",
+      "version": "v4",
+      "experiment": "exp55",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp56/exp56_five_condition_evaluation.py",
+      "original_path": "tabpfn/scripts/exp56_five_condition_evaluation.py",
+      "version": "v4",
+      "experiment": "exp56",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp56/exp56_label_free_revision.py",
+      "original_path": "tabpfn/scripts/exp56_label_free_revision.py",
+      "version": "v4",
+      "experiment": "exp56",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp57/exp57_expert_quality_suite.py",
+      "original_path": "tabpfn/scripts/exp57_expert_quality_suite.py",
+      "version": "v4",
+      "experiment": "exp57",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp58/exp58_bank_oracle_upper_bound.py",
+      "original_path": "tabpfn/scripts/exp58_bank_oracle_upper_bound.py",
+      "version": "v4",
+      "experiment": "exp58",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp59/exp59_fresh_worker.py",
+      "original_path": "tabpfn/scripts/exp59_fresh_worker.py",
+      "version": "v4",
+      "experiment": "exp59",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp59/exp59_residual_membership_oracle.py",
+      "original_path": "tabpfn/scripts/exp59_residual_membership_oracle.py",
+      "version": "v4",
+      "experiment": "exp59",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp60/exp60_counterexamples.py",
+      "original_path": "tabpfn/scripts/exp60_counterexamples.py",
+      "version": "v4",
+      "experiment": "exp60",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp61/exp61_sota_worker.py",
+      "original_path": "tabpfn/scripts/exp61_sota_worker.py",
+      "version": "v4",
+      "experiment": "exp61",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp62/exp62_sv_current_bank.py",
+      "original_path": "tabpfn/scripts/exp62_sv_current_bank.py",
+      "version": "v4",
+      "experiment": "exp62",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v4/exp63/exp63_k_sweep.py",
+      "original_path": "tabpfn/scripts/exp63_k_sweep.py",
+      "version": "v4",
+      "experiment": "exp63",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v5/exp64/exp64_benign_diversity_c0.py",
+      "original_path": "tabpfn/scripts/exp64_benign_diversity_c0.py",
+      "version": "v5",
+      "experiment": "exp64",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v5/exp65/exp65_lito_lite_synthesis.py",
+      "original_path": "tabpfn/scripts/exp65_lito_lite_synthesis.py",
+      "version": "v5",
+      "experiment": "exp65",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v5/exp66/exp66_supcon_prototype_embedding.py",
+      "original_path": "tabpfn/scripts/exp66_supcon_prototype_embedding.py",
+      "version": "v5",
+      "experiment": "exp66",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v5/exp67/exp67_prompt_tuned_context.py",
+      "original_path": "tabpfn/scripts/exp67_prompt_tuned_context.py",
+      "version": "v5",
+      "experiment": "exp67",
+      "result_scope": "tabpfn"
+    },
+    {
+      "path": "tabpfn/scripts/v5/exp68/exp68_temporal_arrival.py",
+      "original_path": "tabpfn/scripts/exp68_temporal_arrival.py",
+      "version": "v5",
+      "experiment": "exp68",
+      "result_scope": "tabpfn"
+    }
+  ],
+  "experiments": {
+    "v4/exp59": {
+      "version": "v4",
+      "id": "exp59",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v4/exp59/analyze_exp59_expert_capability.py",
+        "scripts/v4/exp59/build_exp59_report.py",
+        "scripts/v4/exp59/check_exp59_report.py",
+        "scripts/v4/exp59/finalize_exp59.py",
+        "scripts/v4/exp59/prepare_exp59_partial.py",
+        "scripts/v4/exp59/render_exp59_capability.py",
+        "tabpfn/scripts/v4/exp59/exp59_fresh_worker.py",
+        "tabpfn/scripts/v4/exp59/exp59_residual_membership_oracle.py"
+      ]
+    },
+    "v4/exp56": {
+      "version": "v4",
+      "id": "exp56",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v4/exp56/build_exp56_report_section.py",
+        "tabpfn/scripts/v4/exp56/exp56_five_condition_evaluation.py",
+        "tabpfn/scripts/v4/exp56/exp56_label_free_revision.py"
+      ]
+    },
+    "v4/exp57": {
+      "version": "v4",
+      "id": "exp57",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v4/exp57/build_exp57_followup_report.py",
+        "scripts/v4/exp57/monitor_exp57_runs.py",
+        "scripts/v4/exp57/run_exp57_external.py",
+        "tabpfn/scripts/v4/exp57/exp57_expert_quality_suite.py"
+      ]
+    },
+    "v4/exp60": {
+      "version": "v4",
+      "id": "exp60",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v4/exp60/build_exp60_report.py",
+        "scripts/v4/exp60/check_exp60_report.py",
+        "scripts/v4/exp60/finalize_exp60.py",
+        "scripts/v4/exp60/supervise_exp60.py",
+        "tabpfn/scripts/v4/exp60/exp60_counterexamples.py"
+      ]
+    },
+    "v4/exp61": {
+      "version": "v4",
+      "id": "exp61",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v4/exp61/build_exp61_report.py",
+        "scripts/v4/exp61/check_exp61_report.py",
+        "scripts/v4/exp61/run_exp61_sota.py",
+        "tabpfn/scripts/v4/exp61/exp61_sota_worker.py"
+      ]
+    },
+    "v1/exp22": {
+      "version": "v1",
+      "id": "exp22",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v1/exp22/exp22b_z_scatter.py",
+        "tabpfn/scripts/v1/exp22/nfv3_v3_exp22_racepfn.py",
+        "tabpfn/scripts/v1/exp22/nfv3_v3_exp22b_racepfn_phi.py"
+      ]
+    },
+    "v2/exp24": {
+      "version": "v2",
+      "id": "exp24",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v2/exp24/exp24_prior_shift_eval.py",
+        "tabpfn/scripts/v2/exp24/nfv3_v3_exp24a_racepfn_regprune.py",
+        "tabpfn/scripts/v2/exp24/nfv3_v3_exp24b_racepfn_signscorer.py"
+      ]
+    },
+    "v2/exp37": {
+      "version": "v2",
+      "id": "exp37",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v2/exp37/exp37_distpfn_variants.py",
+        "tabpfn/scripts/v2/exp37/nfv3_v3_exp37_distpfn.py"
+      ]
+    },
+    "v2/exp39": {
+      "version": "v2",
+      "id": "exp39",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v2/exp39/exp39_calibration_audit.py",
+        "scripts/v2/exp39/exp39_stage_audit.py",
+        "tabpfn/scripts/v2/exp39/nfv3_v3_exp39_decision_routing.py"
+      ]
+    },
+    "v3/exp40": {
+      "version": "v3",
+      "id": "exp40",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v3/exp40/exp40_dedup_xgb.py",
+        "tabpfn/scripts/v3/exp40/nfv3_v3_exp40_dedup_tabpfn.py"
+      ]
+    },
+    "v3/exp41": {
+      "version": "v3",
+      "id": "exp41",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v3/exp41/exp41_dedup_dataset_xgb.py",
+        "tabpfn/scripts/v3/exp41/nfv3_v3_exp41_dedup_dataset_tabpfn.py"
+      ]
+    },
+    "v7/exp69": {
+      "version": "v7",
+      "id": "exp69",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v7/exp69/exp69_class_arrival.py"
+      ]
+    },
+    "v4/exp63": {
+      "version": "v4",
+      "id": "exp63",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v4/exp63/render_exp63_capability.py",
+        "scripts/v4/exp63/run_exp63_local.py",
+        "tabpfn/scripts/v4/exp63/exp63_k_sweep.py"
+      ]
+    },
+    "v4/exp62": {
+      "version": "v4",
+      "id": "exp62",
+      "scopes": [
+        "root",
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v4/exp62/run_exp62_local.py",
+        "tabpfn/scripts/v4/exp62/exp62_sv_current_bank.py"
+      ]
+    },
+    "v1/s43": {
+      "version": "v1",
+      "id": "s43",
+      "scopes": [
+        "root"
+      ],
+      "entrypoints": [
+        "scripts/v1/s43/s43_nfv3_independent_expert_energy.py"
+      ]
+    },
+    "v1/s44": {
+      "version": "v1",
+      "id": "s44",
+      "scopes": [
+        "root"
+      ],
+      "entrypoints": [
+        "scripts/v1/s44/s44_nfv3_resolved_expert_pipeline.py",
+        "scripts/v1/s44/s44_unseen_tradeoff_summary.py"
+      ]
+    },
+    "v3/exp47": {
+      "version": "v3",
+      "id": "exp47",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v3/exp47/exp47_audit.py",
+        "tabpfn/scripts/v3/exp47/exp47_trace.py",
+        "tabpfn/scripts/v3/exp47/nfv3_v3_exp47_clean_revalidation.py"
+      ]
+    },
+    "v4/exp48": {
+      "version": "v4",
+      "id": "exp48",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp48/exp48_trace.py",
+        "tabpfn/scripts/v4/exp48/nfv3_v3_exp48_ton_clean_revalidation.py"
+      ]
+    },
+    "v4/exp49": {
+      "version": "v4",
+      "id": "exp49",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp49/exp49_trace.py",
+        "tabpfn/scripts/v4/exp49/nfv3_v3_exp49_bot_clean_revalidation.py"
+      ]
+    },
+    "v4/exp53": {
+      "version": "v4",
+      "id": "exp53",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp53/exp53_context_purity_diag.py"
+      ]
+    },
+    "v4/exp54": {
+      "version": "v4",
+      "id": "exp54",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp54/exp54_expert_context_design.py",
+        "tabpfn/scripts/v4/exp54/exp54r2_expert_context_design.py"
+      ]
+    },
+    "v4/exp55": {
+      "version": "v4",
+      "id": "exp55",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp55/exp55_expert_specialization_oracle.py"
+      ]
+    },
+    "v4/exp58": {
+      "version": "v4",
+      "id": "exp58",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp58/exp58_bank_oracle_upper_bound.py"
+      ]
+    },
+    "v5/exp64": {
+      "version": "v5",
+      "id": "exp64",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v5/exp64/exp64_benign_diversity_c0.py"
+      ]
+    },
+    "v5/exp65": {
+      "version": "v5",
+      "id": "exp65",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v5/exp65/exp65_lito_lite_synthesis.py"
+      ]
+    },
+    "v5/exp66": {
+      "version": "v5",
+      "id": "exp66",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v5/exp66/exp66_supcon_prototype_embedding.py"
+      ]
+    },
+    "v5/exp67": {
+      "version": "v5",
+      "id": "exp67",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v5/exp67/exp67_prompt_tuned_context.py"
+      ]
+    },
+    "v5/exp68": {
+      "version": "v5",
+      "id": "exp68",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v5/exp68/exp68_temporal_arrival.py"
+      ]
+    },
+    "v1/exp6": {
+      "version": "v1",
+      "id": "exp6",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp6/exp6_combination_lab.py",
+        "tabpfn/scripts/v1/exp6/nfv3_v3_exp6_context_recipes.py"
+      ]
+    },
+    "v1/multiclass": {
+      "version": "v1",
+      "id": "multiclass",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/multiclass/nfv3_cic2018_multiclass_test_colab.ipynb",
+        "tabpfn/scripts/v1/multiclass/nfv3_multiclass_test_v2.py"
+      ]
+    },
+    "v1/exp10": {
+      "version": "v1",
+      "id": "exp10",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp10/nfv3_v3_exp10_hce_classification.py"
+      ]
+    },
+    "v1/exp11": {
+      "version": "v1",
+      "id": "exp11",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp11/nfv3_v3_exp11_expert_activation.py",
+        "tabpfn/scripts/v1/exp11/nfv3_v3_exp11b_activation_negatives.py",
+        "tabpfn/scripts/v1/exp11/nfv3_v3_exp11c_balanced_head.py",
+        "tabpfn/scripts/v1/exp11/nfv3_v3_exp11d_symmetric_negatives.py"
+      ]
+    },
+    "v1/exp12": {
+      "version": "v1",
+      "id": "exp12",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp12/nfv3_v3_exp12b_system_eval.py",
+        "tabpfn/scripts/v1/exp12/nfv3_v3_exp12c_system_eval.py"
+      ]
+    },
+    "v1/exp13": {
+      "version": "v1",
+      "id": "exp13",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp13/nfv3_v3_exp13_tta_tiebreak.py"
+      ]
+    },
+    "v1/exp14": {
+      "version": "v1",
+      "id": "exp14",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp14/nfv3_v3_exp14_ton_system.py"
+      ]
+    },
+    "v1/exp15": {
+      "version": "v1",
+      "id": "exp15",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp15/nfv3_v3_exp15_prep_system.py"
+      ]
+    },
+    "v1/exp16": {
+      "version": "v1",
+      "id": "exp16",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp16/nfv3_v3_exp16_dedup_system.py"
+      ]
+    },
+    "v1/exp17": {
+      "version": "v1",
+      "id": "exp17",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp17/nfv3_v3_exp17_selector.py"
+      ]
+    },
+    "v1/exp18": {
+      "version": "v1",
+      "id": "exp18",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp18/nfv3_v3_exp18_dedup_benchmark.py"
+      ]
+    },
+    "v1/exp19": {
+      "version": "v1",
+      "id": "exp19",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp19/nfv3_v3_exp19_benign_return.py"
+      ]
+    },
+    "v1/exp1": {
+      "version": "v1",
+      "id": "exp1",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp1/nfv3_v3_exp1_1m_both.py"
+      ]
+    },
+    "v1/exp20": {
+      "version": "v1",
+      "id": "exp20",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp20/nfv3_v3_exp20_prob_selector.py",
+        "tabpfn/scripts/v1/exp20/nfv3_v3_exp20b_prob_split.py"
+      ]
+    },
+    "v1/exp21": {
+      "version": "v1",
+      "id": "exp21",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp21/nfv3_v3_exp21_energy_global.py",
+        "tabpfn/scripts/v1/exp21/nfv3_v3_exp21b_energy_split.py"
+      ]
+    },
+    "v2/exp22": {
+      "version": "v2",
+      "id": "exp22",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp22/nfv3_v3_exp22c_racepfn_context.py"
+      ]
+    },
+    "v2/exp23": {
+      "version": "v2",
+      "id": "exp23",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp23/nfv3_v3_exp23_racepfn_guide.py",
+        "tabpfn/scripts/v2/exp23/nfv3_v3_exp23b_racepfn_greedy.py",
+        "tabpfn/scripts/v2/exp23/nfv3_v3_exp23c_racepfn_anchor.py",
+        "tabpfn/scripts/v2/exp23/nfv3_v3_exp23d_racepfn_anchmode.py"
+      ]
+    },
+    "v2/exp25": {
+      "version": "v2",
+      "id": "exp25",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp25/nfv3_v3_exp25_racepfn_dump.py",
+        "tabpfn/scripts/v2/exp25/nfv3_v3_exp25b_racepfn_detlite.py"
+      ]
+    },
+    "v2/exp26": {
+      "version": "v2",
+      "id": "exp26",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp26/nfv3_v3_exp26_racepfn_normgain.py"
+      ]
+    },
+    "v2/exp27": {
+      "version": "v2",
+      "id": "exp27",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp27/nfv3_v3_exp27_racepfn_ctxcover.py"
+      ]
+    },
+    "v2/exp28": {
+      "version": "v2",
+      "id": "exp28",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp28/nfv3_v3_exp28_racepfn_equalmem.py"
+      ]
+    },
+    "v2/exp29": {
+      "version": "v2",
+      "id": "exp29",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp29/nfv3_v3_exp29_racepfn_combo.py"
+      ]
+    },
+    "v1/exp2": {
+      "version": "v1",
+      "id": "exp2",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp2/nfv3_v3_exp2_full_xgb.py"
+      ]
+    },
+    "v2/exp30": {
+      "version": "v2",
+      "id": "exp30",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp30/nfv3_v3_exp30_c0share.py"
+      ]
+    },
+    "v2/exp31": {
+      "version": "v2",
+      "id": "exp31",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp31/nfv3_v3_exp31_c0alloc.py"
+      ]
+    },
+    "v2/exp32": {
+      "version": "v2",
+      "id": "exp32",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp32/nfv3_v3_exp32_c0bag.py"
+      ]
+    },
+    "v2/exp33": {
+      "version": "v2",
+      "id": "exp33",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp33/nfv3_v3_exp33_c0dupcap.py"
+      ]
+    },
+    "v2/exp34": {
+      "version": "v2",
+      "id": "exp34",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp34/nfv3_v3_exp34_c0select.py"
+      ]
+    },
+    "v2/exp35": {
+      "version": "v2",
+      "id": "exp35",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp35/nfv3_v3_exp35_boostpfn.py"
+      ]
+    },
+    "v2/exp36": {
+      "version": "v2",
+      "id": "exp36",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp36/nfv3_v3_exp36_localpfn.py"
+      ]
+    },
+    "v2/exp38": {
+      "version": "v2",
+      "id": "exp38",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v2/exp38/nfv3_v3_exp38_frozen_cache.py"
+      ]
+    },
+    "v1/exp3": {
+      "version": "v1",
+      "id": "exp3",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp3/nfv3_v3_exp3_full_tabpfn_bagging.py"
+      ]
+    },
+    "v3/exp42": {
+      "version": "v3",
+      "id": "exp42",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v3/exp42/nfv3_v3_exp42_dedup_methods.py"
+      ]
+    },
+    "v3/exp43": {
+      "version": "v3",
+      "id": "exp43",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v3/exp43/nfv3_v3_exp43_ours_majfill.py"
+      ]
+    },
+    "v3/exp44": {
+      "version": "v3",
+      "id": "exp44",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v3/exp44/nfv3_v3_exp44_conflict_only.py"
+      ]
+    },
+    "v3/exp45": {
+      "version": "v3",
+      "id": "exp45",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v3/exp45/nfv3_v3_exp45_ton_frame.py"
+      ]
+    },
+    "v3/exp46": {
+      "version": "v3",
+      "id": "exp46",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v3/exp46/nfv3_v3_exp46_ton_global_context.py"
+      ]
+    },
+    "v1/exp4": {
+      "version": "v1",
+      "id": "exp4",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp4/nfv3_v3_exp4_tail_anchored_bagging.py"
+      ]
+    },
+    "v4/exp50": {
+      "version": "v4",
+      "id": "exp50",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp50/nfv3_v3_exp50_hdn_verifier.py"
+      ]
+    },
+    "v4/exp51": {
+      "version": "v4",
+      "id": "exp51",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp51/nfv3_v3_exp51_scorer_target.py"
+      ]
+    },
+    "v4/exp52": {
+      "version": "v4",
+      "id": "exp52",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v4/exp52/nfv3_v3_exp52_context_run.py",
+        "tabpfn/scripts/v4/exp52/nfv3_v3_exp52_expert_context.py"
+      ]
+    },
+    "v1/exp5": {
+      "version": "v1",
+      "id": "exp5",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp5/nfv3_v3_exp5_energy_view_moe.py"
+      ]
+    },
+    "v1/exp7": {
+      "version": "v1",
+      "id": "exp7",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp7/nfv3_v3_exp7_tabpfn_energy_ood.py"
+      ]
+    },
+    "v1/exp8": {
+      "version": "v1",
+      "id": "exp8",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp8/nfv3_v3_exp8_expert_family_ood.py"
+      ]
+    },
+    "v1/exp9": {
+      "version": "v1",
+      "id": "exp9",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "tabpfn/scripts/v1/exp9/nfv3_v3_exp9_energy_score_finetune.py"
+      ]
+    },
+    "v7/exp70": {
+      "version": "v7",
+      "id": "exp70",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v7/exp69/exp69_class_arrival.py"
+      ],
+      "protocol": "docs/research/20261002/exp70_protocol.md",
+      "config": "tabpfn/configs/exp70_allocation.json",
+      "note": "Shares the EXP69 runner; final accumulated context allocation is in the EXP70 configuration."
+    }
+  },
+  "layout_migration": "configs/experiments/migrations/20261007_layout/manifest.json"
+}

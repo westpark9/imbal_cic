@@ -1,0 +1,17 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Feasibility of the four follow-up approaches (2026-10-01, seed 43, single runs). Subsample = stratified screening subset with 20k rows per class; it inflates tail precision and is used only for relative comparison.}
+\label{tab:feasibility}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{p{3.4cm}p{4.6cm}p{5.2cm}p{2.6cm}}
+\toprule
+Approach & Change & Result (full test unless noted) & Verdict \\
+\midrule
+1 Benign diversity (ToN) & C0 benign rows re-selected (time / k-center / inverse density / hard) & 0.830 $\rightarrow$ 0.813--0.834 (subsample) & no effect \\
+2 LITO-style synthesis (CIC web) & 224 real rows $\rightarrow$ 2,000 synthetic, 1479 self-authenticated & macro 0.7824 $\rightarrow$ synthetic 0.7680; real duplicates 0.7997 (web F1 0.210 $\rightarrow$ 0.320) & synthesis rejected; tail ratio is a knob \\
+3 SupCon prototype embedding (ToN) & 16-d encoder trained on the route pool, appended to features & 0.836 $\rightarrow$ 0.827 (raw+emb), 0.836 (emb) (subsample) & no effect \\
+4 Context optimisation (ICD / prompt tuning) & context features optimised by gradient through the frozen TabPFN, natural-ratio train queries, 300 steps & ToN 3,000-row context: 0.7100 / 0.7455 (seeds 43/44); CIC 2,100-row: 0.7829; balanced-query objective 0.6720 & exceeds the 100k random C0 (ToN 0.6796, CIC 0.7824) \\
+\bottomrule
+\end{tabular}}
+\end{table}

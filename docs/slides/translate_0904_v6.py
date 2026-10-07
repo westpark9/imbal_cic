@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 """0904_labmeeting_tabpfn5.pptx → 6.pptx: 서식·배치는 그대로, 한국어 문구만 영어로 치환.
 같은 서식의 연속 run을 합친 뒤 문구 단위로 사전 치환한다. 사전에 없는 한글 문구는 경고로 출력."""
+
+# Repository layout bootstrap: works in the workspace and portable source snapshots.
+from pathlib import Path as _LayoutPath
+import sys as _layout_sys
+_layout_root = next(p for p in _LayoutPath(__file__).resolve().parents
+                    if (p / 'scripts/common/experiment_paths.py').is_file())
+_layout_sys.path.insert(0, str(_layout_root / 'scripts/common'))
+from experiment_paths import bootstrap, repo_root, script_path, resolve_path, result_root, snapshot_path, read_record
+bootstrap(_layout_root)
+
 import re, sys, os
 from pptx import Presentation
 from pptx.util import Pt, Emu

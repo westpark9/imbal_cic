@@ -1,0 +1,258 @@
+동일 feature 를 공유하는 클래스
+행 : 원래 라벨      열 : 동일 feature 의 다른 라벨        셀 : 행 클래스 전체 대비 비율 (%)
+
+
+
+
+빈칸 : 0% ·: 1% 미만 회색 : 동일 클래스 같은 행의 중복 집계로 합산 불가                                                %
+                                                                      0   25   50   75   100
+
+
+
+Web attack: 1,764 + 432 − 중복 429 = 1,767 행 제거 · 771 행 잔존                                  데이터 검토   1
+정제 이후 클래스 분포
+전체 데이터 기준 (train + validation + test) · 행 수와 데이터셋 내 클래스 비중 (%)
+
+
+CIC2018                                                                  ToN-IoT
+ 클래스                  정제 전            정제 후            비중 전 → 후           클래스          정제 전           정제 후          비중 전 → 후
+
+Benign                 17,514,626      12,798,328       87.07 → 86.74    Backdoor       203,384        200,688         0.74 → 1.86
+
+Bot                      207,703          207,703          1.03 → 1.41   Benign       16,792,214      6,446,120      61.02 → 59.65
+
+Brute force              575,194          188,414         2.86 → 1.28    DDoS           4,141,256      925,247        15.05 → 8.56
+
+DDoS                    1,324,350       1,316,025         6.58 → 8.92    DoS            203,456         113,655        0.74 → 1.05
+
+DoS                      302,966          197,415          1.51 → 1.34   Injection       381,777       341,263         1.39 → 3.16
+
+Infiltration             188,152          46,761          0.94 → 0.32    MitM                6,013       5,446       0.022 → 0.050
+
+Web attack                 2,538             771        0.013 → 0.005    Password      1,594,777      1,061,699        5.79 → 9.82
+
+합계                    20,115,529       14,755,417          100 → 100     Ransomware          3,971       3,604       0.014 → 0.033
+
+                                                                         Scanning      1,358,977        39,069        4.94 → 0.36
+
+                                                                         XSS           2,834,435      1,670,497      10.30 → 15.46
+ Infiltration 75.1% 감소
+ Web attack 69.6% 감소 · 정제 후 771 행                                        합계           27,520,260     10,807,288         100 → 100
+
+
+
+
+정제 후에도 남는 클래스 불균형 · CIC2018 Web attack 771 행 , ToN Scanning 39,069 행                                              데이터 검토        2
+Global 과 residual expert 구조
+학습 데이터의 역할 분리 · Global 구성 / Expert 구성 / S·V 학습
+
+
+           Global 풀 · 공통 context                        Expert 풀 · residual 과 expert                    Route 풀 · S/V 학습
+
+
+오프라인 · 모델 구성
+
+
+      Global 구성                    Residual 계산                Residual 군집               Expert 구성                   S/V 학습
+      공통 context 로               입력 표현 · 예측 확률                 실패 특성에 따라                  공통 anchor                Global·expert 의
+      기본 분류기 구성                 정답과의 차이 · 오류 크기               K 개 군집으로 분할              + 군집별 특화 block             교정 · 훼손 사례 학습
+
+
+
+온라인 · 입력별 예측
+
+
+      Global 예측                      Scorer                    Expert 추론                  Verifier                   최종 예측
+                                    Expert 선택                                            Expert 예측의
+      기본 클래스 예측                                             선택한 context 로 분류                                     채택 시 expert 예측
+                                    호출 여부 판단                                             채택 여부 판단
+
+
+
+
+                                                 호출 또는 채택 조건 미충족 → Global 예측 유지
+
+
+
+Backbone 고정 · context 로 expert 구성 · S/V 로 예측 교체 여부 결정                                                                  모델 소개         3
+Global 의 클래스별 성능과 expert 의 병목
+정제 데이터 · seed 43 · 기존 residual context 의 진단 · S/V 적용 전
+
+
+
+
+ 기존 e3 · Infiltration                                                    기존 e3 · Injection
+ 담당영역 F1 0.440 → 0.967                                                   담당영역 F1 0.159 → 0.939
+
+ 입력유사군 Precision 12.4% · FP 7,935 → 21,535                               입력유사군 Precision 8.7% · FP 581 → 14,222
+
+
+
+담당영역 : 정답 residual 배정 · 입력유사군 : 입력 표현과 Global 확률로 배정 · 화살표 : Global → Expert
+
+
+
+담당 오류를 고치는 능력과 유사한 다른 클래스를 구분하는 능력을 함께 개선                                                                         모델 소개   4
+정제 데이터의 SOTA 분류 성능
+Seed 43 · 동일 C0 100,000 행 · CIC2018 test 304 만 행 / ToN test 227 만 행
+
+
+ 방법                                               CIC2018 Macro-F1      ToN Macro-F1                    학습 풀 행 수 · CIC / ToN
+
+ Global TabPFN v3                                        0.7824              0.6796                           100,000
+
+ XGBoost                                                 0.7821             0.6983                            100,000
+
+ BoostPFN                                                0.7148              0.5866                           100,000
+
+ LoCalPFN · FT                                           0.7024              0.6462                           100,000
+
+ DistPFN · v3                                            0.7839              0.6682                           100,000
+
+ XGBoost · 전체 train                                      0.7795              0.7162                        866 만 / 467 만
+
+전체 train XGB: 추가 학습량을 허용한 참고 기준 · Global: expert·S/V 적용 전 기본 분류기
+
+
+ CIC2018 · 클래스별 차이 · 공통 100k                                         ToN · 클래스별 차이 · 공통 100k
+ Infiltration 최고 F1 0.3055 · DistPFN                                 MitM 최고 F1 0.2363 · XGB
+ Web attack 최고 F1 0.3321 · XGB                                       Scanning 최고 F1 0.3281 · BoostPFN
+
+
+
+동일 10 만 행 기준 최고 Macro-F1 · CIC2018 DistPFN 0.7839 · ToN XGB 0.6983                                                   SOTA 비교   5
+SOTA 학습 · 추론 비용
+RTX 4090 24GB · 최대 2 개 작업 병렬 · 자원 경합을 포함한 경과 시간
+
+
+ 방법                                    CIC 학습 ( 초 )     CIC 추론 ( 초 )   ToN 학습 ( 초 )   ToN 추론 ( 초 )   GPU GiB
+                                                                                                     CIC / ToN
+ Global TabPFN v3                           36.4          1,099.3          36.7          821.7       2.92 / 2.94
+
+ XGBoost                                     2.3            1.0            55.4            1.0       0.55 / 0.53
+
+ BoostPFN                                   98.5          2,308.5          97.8          1,737.6     0.89 / 0.89
+
+ LoCalPFN · FT                             3,196.3        17,300.8        5,783.1       11,144.8     7.54 / 7.54
+
+ DistPFN · v3                               36.4          1,099.4          36.7          821.9       2.92 / 2.94
+
+ XGBoost · 전체 train                         107.8           1.0           143.2            1.1       2.20 / 1.59
+
+
+LoCalPFN 학습에 validation 포함 · 전체 test 추론에 kNN 검색 포함
+
+DistPFN 은 Global fit· 추론 공유 · prior 보정 추가 시간 약 0.19 초
+
+GPU: 1 초 간격 프로세스별 최대값 · 단독 실행 속도 비교와 구분
+
+
+LoCalPFN 전체 test 추론 · CIC2018 4.81 시간 · ToN 3.10 시간                                                   SOTA 비교      6
+담당 영역과 입력 유사군의 분류 능력                                                                             초안 · TBD
+
+
+
+
+관점 A · 담당 residual 영역                            관점 B · 입력 유사군
+
+ 대표 expert · 클래스 : TBD                           대표 expert · 클래스 : TBD
+
+ 지표                      Global         Expert   지표                      Global          Expert
+
+ Precision                TBD            TBD     Precision                TBD              TBD
+
+ Recall                   TBD            TBD     Recall                   TBD              TBD
+
+ F1                       TBD            TBD     F1                       TBD              TBD
+
+
+
+ 교정 : TBD                    훼손 : TBD            교정 : TBD                    훼손 : TBD
+
+
+
+
+ 해석            TBD
+
+
+                                                                                        Expert 평가       7
+Scorer 와 verifier 의 기여                                            초안 · TBD
+
+
+
+
+구성                          CIC2018   ToN-IoT   호출 · 채택   교정 · 훼손
+
+Global                       TBD       TBD        TBD       TBD
+
+S·V 없음                       TBD       TBD        TBD       TBD
+
+S만                           TBD       TBD        TBD       TBD
+
+V만                           TBD       TBD        TBD       TBD
+
+S+V                          TBD       TBD        TBD       TBD
+
+
+
+ Context · gate 설정    TBD
+
+
+ 해석             TBD
+
+
+                                                          구성요소 비교        8
+제안 모델의 최종 성능과 비용
+검증된 expert·S/V 구성의 최종 비교
+
+
+구성                                   CIC2018   ToN   학습 정보    호출 비용
+
+
+Expert · S/V 없음                        TBD     TBD    TBD       TBD
+
+
+Expert · S 만                           TBD     TBD    TBD       TBD
+
+
+Expert · V 만                           TBD     TBD    TBD       TBD
+
+
+Expert · S+V                           TBD     TBD    TBD       TBD
+
+
+
+
+ 비교 기준 : 5 장의 SOTA 성능 · 6 장의 측정 비용
+
+ Expert·route 의 추가 학습 행 수와 조건부 추론 비용을 포함한 비교
+
+
+
+
+                                                             최종 모델 비교   9
+확인된 효과와 다음 개선                                        초안 · TBD
+
+
+
+
+Context 구성         Expert 구분 능력    최종 모델 성능
+
+
+
+
+             TBD             TBD              TBD
+
+
+다음 개선
+
+
+
+                             TBD
+
+
+ 발표 결론       TBD
+
+
+                                                    결론     10
+

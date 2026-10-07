@@ -2,6 +2,20 @@
 
 Working manual for `imbalcic/`. Read before touching code. Last rewritten 2026-08-14.
 
+## Current layout (2026-10-07; supersedes old paths below)
+
+Code lives in `scripts/vN/experiment/` or `tabpfn/scripts/vN/experiment/`;
+shared helpers live in each `scripts/common/`. Results live in
+`results/vN/experiment/run_id/` or `tabpfn/results/vN/experiment/run_id/`.
+`results_past` has been integrated. Original result bytes and source snapshots
+are preserved; active code has path-only migration changes and regression checks.
+Use `python scripts/results_versions.py find exp70` to locate an experiment,
+or `where OLD_PATH` to resolve a historical reference. The registry is
+`configs/experiments/registry.json`; see `docs/research/20261002/experiment_versioning.md`.
+Research-version creation/switching requires an explicit user request or confirmation.
+The earlier research claims and conventions below are historical; follow current
+`AGENTS.md` and `docs/research/20261002/research_direction.md` for the agreed direction.
+
 This folder is a lean copy of `imbal_cic/` holding only the **currently active** work. Everything
 older lives in the original `imbal_cic/` (unchanged), and the 44 archived experiment scripts are
 summarized in **`../SRC_HISTORY.md`** — read that before proposing any method change.
@@ -34,20 +48,27 @@ Any proposed change should say which of these two numbers it attacks.
 ## Running
 
 ```bash
-pip install -r requirements.txt      # xgboost>=2.0, torch==2.6.0+cu124, sklearn, imbalanced-learn
-pip install tabpfn                   # or use the local editable install — see Data section below
+python scripts/common/setup_exp57_env.py --prefix /workspace/envs/imbal --gpu 0
+# SOTA baselines: same common environment plus requirements-sota.txt
+python scripts/common/setup_exp61_env.py --prefix /workspace/envs/imbal --gpu 0
 ```
+
+The prefix paths above are examples; use persistent storage on the actual machine.
+As of 2026-10-06, `requirements.txt` combines the common and EXP57 dependencies;
+`requirements-sota.txt` includes it and adds the SOTA packages. The setup commands
+select and constrain the CUDA PyTorch build. Original dependency specifications are
+preserved in `configs/environments/archive/20261006_before_requirements_merge/`.
 
 **Always run from this folder's root** — `scripts/s4x` scripts resolve `scripts/` via `REPO_ROOT` and
 data paths CWD-relative.
 
 ```bash
 # s44: resolved expert pipeline (the paper track)
-python scripts/s44_nfv3_resolved_expert_pipeline.py --target cse_cic_ids2018 --unseen bot
-python scripts/s43_nfv3_independent_expert_energy.py --target ton_iot     # gates only, no resolution
+python scripts/v1/s44/s44_nfv3_resolved_expert_pipeline.py --target cse_cic_ids2018 --unseen bot
+python scripts/v1/s43/s43_nfv3_independent_expert_energy.py --target ton_iot     # gates only, no resolution
 
 # sweep summary over existing s44 runs
-python scripts/s44_unseen_tradeoff_summary.py
+python scripts/v1/s44/s44_unseen_tradeoff_summary.py
 
 # TabPFN track (defaults resolve to this folder's data/ and the ckpt symlink)
 python tabpfn/nfv3_multiclass_test_v2.py --target-dataset cic2018_capped
@@ -60,7 +81,7 @@ of CWD — there is no local `tabpfn_src` copy in this folder.
 **External PFN baselines** live vendored under `tabpfn/third_party/` (BoostPFN with its v1 port,
 LoCalPFN, DistPFN; `UPSTREAM.txt` in each gives the upstream commit). Their 103 MB TabPFN-v1
 checkpoint is not tracked — run `bash tabpfn/third_party/fetch_checkpoints.sh` once. The adapter
-scripts `tabpfn/scripts/nfv3_v3_exp35_boostpfn.py` / `exp36_localpfn.py` import that code at runtime
+scripts `tabpfn/scripts/v2/exp35/nfv3_v3_exp35_boostpfn.py` / `exp36_localpfn.py` import that code at runtime
 (`--boostpfn-root` / `--localpfn-root`); `exp37_distpfn.py` re-implements DistPFN's 5-line
 adjustment and imports nothing from the clone. Port details: `tabpfn/third_party/boostpfn_port/`.
 
@@ -89,7 +110,7 @@ near-perfect, suspect leakage, not success.
 - **One script = one frozen experiment.** New idea → copy the nearest predecessor to a new file
   with a new suffix. Never retrofit a script that already has runs in `results/` — those are the
   reproducibility record.
-- **`scripts/exp_utils.py` is the shared library** for s43/s44 and the tabpfn scripts. Changing a
+- **`scripts/common/exp_utils.py` is the shared library** for s43/s44 and the tabpfn scripts. Changing a
   helper changes past experiments' code paths — add a new helper alongside, don't edit in place.
 - **`configs/nfv3_experts.json` is required** by s43/s44 (`--expert-config`): it defines the
   per-dataset expert → family grouping.

@@ -1,0 +1,20 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Per-class F1 on CIC-IDS2018 (seed 43, test rows in descending order). Proposed = experts (K=6) + scorer/verifier (S1V0 policy), EXP63 K sweep; bold marks the row maximum.}
+\label{tab:classwise_cic2018}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Class & Test rows & Global TabPFN-v3 & XGBoost (100k) & BoostPFN & LoCalPFN & DistPFN & XGBoost (full) & Proposed K=6 \\
+\midrule
+Benign & 2,652,203 & 0.9965 & 0.9933 & 0.9937 & 0.9921 & 0.9968 & 0.9887 & 0.9965 \\
+DDoS & 262,680 & 0.9922 & \textbf{0.9998} & 0.9906 & 0.9433 & 0.9931 & 0.9036 & 0.9922 \\
+Bot & 41,542 & 0.9985 & 0.9976 & 0.9942 & 0.9972 & 0.9982 & 0.9977 & 0.9985 \\
+DoS & 39,483 & 0.9920 & \textbf{0.9998} & 0.9598 & 0.7309 & 0.9919 & \textbf{0.9999} & 0.9920 \\
+Brute force & 37,696 & \textbf{0.9997} & 0.9995 & \textbf{0.9997} & \textbf{0.9999} & \textbf{0.9997} & 0.9996 & \textbf{0.9997} \\
+Infiltration & 8,742 & 0.2879 & 0.1528 & 0.0653 & 0.1350 & 0.3055 & 0.2927 & 0.2880 \\
+Web attack & 127 & 0.2102 & 0.3321 & 0.0000 & 0.1183 & 0.2024 & 0.2745 & 0.2102 \\
+\bottomrule
+\end{tabular}}
+\end{table}

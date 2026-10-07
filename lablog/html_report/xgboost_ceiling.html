@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style><style data-report-rule="num-align">td[data-num],th[data-num]{text-align:right;font-variant-numeric:tabular-nums}</style>
+</head><body>
 <title>왜 XGBoost를 못 넘는가</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -289,12 +290,12 @@ td.name{color:var(--ink-2)}
     <figure>
       <p class="fig-title">Fig 4 — 분할 변경 전후 (global 기준)</p>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>클래스</th><th class="num">기존 분할</th><th class="num">층화 분할</th><th class="num">XGB c0</th><th class="num">XGB full</th></tr></thead>
+        <thead><tr><th>클래스</th><th class="num" data-num="">기존 분할</th><th class="num" data-num="">층화 분할</th><th class="num" data-num="">XGB c0</th><th class="num" data-num="">XGB full</th></tr></thead>
         <tbody>
-          <tr><td class="name">brute_force</td><td class="num">0.7246</td><td class="num" style="color:var(--ok)">0.9159</td><td class="num">0.7246</td><td class="num">0.9159</td></tr>
-          <tr><td class="name">dos</td><td class="num">0.5237</td><td class="num" style="color:var(--ok)">0.7552+</td><td class="num">0.7820</td><td class="num">0.7822</td></tr>
-          <tr><td class="name">ddos</td><td class="num">0.9047</td><td class="num" style="color:var(--warn)">0.83~0.90</td><td class="num">0.9997</td><td class="num">0.9921</td></tr>
-          <tr><td class="name"><strong>macro</strong></td><td class="num">0.6698</td><td class="num"><strong>0.7207</strong></td><td class="num">0.7283</td><td class="num">0.7548</td></tr>
+          <tr><td class="name">brute_force</td><td class="num" data-num="">0.7246</td><td class="num" style="color:var(--ok)" data-num="">0.9159</td><td class="num" data-num="">0.7246</td><td class="num" data-num="">0.9159</td></tr>
+          <tr><td class="name">dos</td><td class="num" data-num="">0.5237</td><td class="num" style="color:var(--ok)" data-num="">0.7552+</td><td class="num" data-num="">0.7820</td><td class="num" data-num="">0.7822</td></tr>
+          <tr><td class="name">ddos</td><td class="num" data-num="">0.9047</td><td class="num" style="color:var(--warn)" data-num="">0.83~0.90</td><td class="num" data-num="">0.9997</td><td class="num" data-num="">0.9921</td></tr>
+          <tr><td class="name"><strong>macro</strong></td><td class="num" data-num="">0.6698</td><td class="num" data-num=""><strong>0.7207</strong></td><td class="num" data-num="">0.7283</td><td class="num" data-num="">0.7548</td></tr>
         </tbody>
       </table></div>
       <figcaption>부작용 하나: 층화가 C0의 ddos 몫을 다른 scenario에 내주면서 ddos가 소폭
@@ -352,19 +353,19 @@ td.name{color:var(--ink-2)}
     <figure>
       <p class="fig-title">Fig 2a — expert 뱅크 구성과 제안/채택 (exp29 r3)</p>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>expert</th><th class="num">블록 행</th><th>구성 (지배 클래스)</th>
-          <th class="num">scorer가 제안</th><th class="num">verifier가 채택</th><th class="num">채택률</th></tr></thead>
+        <thead><tr><th>expert</th><th class="num" data-num="">블록 행</th><th>구성 (지배 클래스)</th>
+          <th class="num" data-num="">scorer가 제안</th><th class="num" data-num="">verifier가 채택</th><th class="num" data-num="">채택률</th></tr></thead>
         <tbody>
-          <tr><td class="name">e1</td><td class="num">15,892</td><td class="name">infiltration 100%</td>
-            <td class="num">36,780</td><td class="num">33,587</td><td class="num" style="color:var(--ok)">91.3%</td></tr>
-          <tr><td class="name">e2</td><td class="num">40,275</td><td class="name">brute_force 96%</td>
-            <td class="num">289,705</td><td class="num">1,414</td><td class="num">0.5%</td></tr>
-          <tr><td class="name">e3</td><td class="num">405</td><td class="name">ddos 100%</td>
-            <td class="num">247,864</td><td class="num">4,725</td><td class="num">1.9%</td></tr>
-          <tr><td class="name">e4</td><td class="num">186,000</td><td class="name">benign 86% 잡탕 (유일하게 selector 작동)</td>
-            <td class="num">22,045</td><td class="num">2,492</td><td class="num">11.3%</td></tr>
-          <tr><td class="name">e5</td><td class="num">112</td><td class="name">web_attacks 100%</td>
-            <td class="num" style="color:var(--warn)">590,025</td><td class="num" style="color:var(--warn)">6</td><td class="num" style="color:var(--warn)">0.0%</td></tr>
+          <tr><td class="name">e1</td><td class="num" data-num="">15,892</td><td class="name">infiltration 100%</td>
+            <td class="num" data-num="">36,780</td><td class="num" data-num="">33,587</td><td class="num" style="color:var(--ok)" data-num="">91.3%</td></tr>
+          <tr><td class="name">e2</td><td class="num" data-num="">40,275</td><td class="name">brute_force 96%</td>
+            <td class="num" data-num="">289,705</td><td class="num" data-num="">1,414</td><td class="num" data-num="">0.5%</td></tr>
+          <tr><td class="name">e3</td><td class="num" data-num="">405</td><td class="name">ddos 100%</td>
+            <td class="num" data-num="">247,864</td><td class="num" data-num="">4,725</td><td class="num" data-num="">1.9%</td></tr>
+          <tr><td class="name">e4</td><td class="num" data-num="">186,000</td><td class="name">benign 86% 잡탕 (유일하게 selector 작동)</td>
+            <td class="num" data-num="">22,045</td><td class="num" data-num="">2,492</td><td class="num" data-num="">11.3%</td></tr>
+          <tr><td class="name">e5</td><td class="num" data-num="">112</td><td class="name">web_attacks 100%</td>
+            <td class="num" style="color:var(--warn)" data-num="">590,025</td><td class="num" style="color:var(--warn)" data-num="">6</td><td class="num" style="color:var(--warn)" data-num="">0.0%</td></tr>
         </tbody>
       </table></div>
       <figcaption>
@@ -472,21 +473,21 @@ td.name{color:var(--ink-2)}
       </table></div>
       <p class="sd-note" style="margin:16px 0 10px"><strong>Panel B — 개선 불필요 행 (global 정답)</strong>: 여기 낸 제안은 이득이 없고 훼손 위험만 있음</p>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>클래스</th><th class="num">정답 행</th><th class="num">제안 포함</th>
-          <th class="num">채택</th><th class="num" style="color:var(--warn)">훼손 − (정답→오답)</th>
-          <th class="num">채택·무해 (답 유지)</th></tr></thead>
+        <thead><tr><th>클래스</th><th class="num" data-num="">정답 행</th><th class="num" data-num="">제안 포함</th>
+          <th class="num" data-num="">채택</th><th class="num" style="color:var(--warn)" data-num="">훼손 − (정답→오답)</th>
+          <th class="num" data-num="">채택·무해 (답 유지)</th></tr></thead>
         <tbody>
-          <tr><td class="name">benign</td><td class="num">3,496,379</td>
-            <td class="num" style="color:var(--warn)"><strong>891,217</strong></td>
-            <td class="num">291</td><td class="num" style="color:var(--warn)"><strong>141</strong></td><td class="num">150</td></tr>
-          <tr><td class="name">ddos</td><td class="num">191,585</td><td class="num">124,661</td>
-            <td class="num">2,629</td><td class="num">0</td><td class="num">2,629</td></tr>
-          <tr><td class="name">infiltration</td><td class="num">10,158</td><td class="num">8,887</td>
-            <td class="num" style="color:var(--warn)"><strong>8,586</strong></td><td class="num">0</td><td class="num">8,586</td></tr>
-          <tr><td class="name">brute_force</td><td class="num">115,020</td><td class="num">77,344</td>
-            <td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
-          <tr><td class="name">dos</td><td class="num">36,761</td><td class="num">7,734</td>
-            <td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+          <tr><td class="name">benign</td><td class="num" data-num="">3,496,379</td>
+            <td class="num" style="color:var(--warn)" data-num=""><strong>891,217</strong></td>
+            <td class="num" data-num="">291</td><td class="num" style="color:var(--warn)" data-num=""><strong>141</strong></td><td class="num" data-num="">150</td></tr>
+          <tr><td class="name">ddos</td><td class="num" data-num="">191,585</td><td class="num" data-num="">124,661</td>
+            <td class="num" data-num="">2,629</td><td class="num" data-num="">0</td><td class="num" data-num="">2,629</td></tr>
+          <tr><td class="name">infiltration</td><td class="num" data-num="">10,158</td><td class="num" data-num="">8,887</td>
+            <td class="num" style="color:var(--warn)" data-num=""><strong>8,586</strong></td><td class="num" data-num="">0</td><td class="num" data-num="">8,586</td></tr>
+          <tr><td class="name">brute_force</td><td class="num" data-num="">115,020</td><td class="num" data-num="">77,344</td>
+            <td class="num" data-num="">0</td><td class="num" data-num="">0</td><td class="num" data-num="">0</td></tr>
+          <tr><td class="name">dos</td><td class="num" data-num="">36,761</td><td class="num" data-num="">7,734</td>
+            <td class="num" data-num="">0</td><td class="num" data-num="">0</td><td class="num" data-num="">0</td></tr>
         </tbody>
       </table></div>
       <figcaption>
@@ -536,16 +537,16 @@ td.name{color:var(--ink-2)}
       <figure>
         <p class="fig-title">Fig 5a — 클래스별 자격 조건 (기존 단위)</p>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>클래스</th><th class="num">n<sub>c</sub> (학습 풀)</th><th class="num">w<sub>c</sub></th>
-            <th class="num">필요 NLL (21.145/w)</th><th class="num">p(정답) 조건</th><th class="num">오답 중 자격</th></tr></thead>
+          <thead><tr><th>클래스</th><th class="num" data-num="">n<sub>c</sub> (학습 풀)</th><th class="num" data-num="">w<sub>c</sub></th>
+            <th class="num" data-num="">필요 NLL (21.145/w)</th><th class="num" data-num="">p(정답) 조건</th><th class="num" data-num="">오답 중 자격</th></tr></thead>
           <tbody>
-            <tr><td class="name">web_attacks</td><td class="num">1,522</td><td class="num">1,132.8</td><td class="num">0.019</td><td class="num">&lt; 0.981</td><td class="num">100%</td></tr>
-            <tr><td class="name">infiltration</td><td class="num">112,891</td><td class="num">15.27</td><td class="num">1.38</td><td class="num">&lt; 0.250</td><td class="num">99.0%</td></tr>
-            <tr><td class="name">bot</td><td class="num">124,621</td><td class="num">13.84</td><td class="num">1.53</td><td class="num">&lt; 0.217</td><td class="num">99.2%</td></tr>
-            <tr><td class="name">dos</td><td class="num">181,779</td><td class="num">9.49</td><td class="num">2.23</td><td class="num">&lt; 0.108</td><td class="num">34.9%</td></tr>
-            <tr><td class="name">brute_force</td><td class="num">345,116</td><td class="num">5.00</td><td class="num">4.23</td><td class="num">&lt; 0.015</td><td class="num">100%</td></tr>
-            <tr><td class="name">ddos</td><td class="num">794,609</td><td class="num">2.17</td><td class="num">9.74</td><td class="num">&lt; 5.9×10<sup>−5</sup></td><td class="num" style="color:var(--warn)"><strong>0%</strong></td></tr>
-            <tr><td class="name">benign</td><td class="num">10,508,775</td><td class="num">0.164</td><td class="num">128.9</td><td class="num">&lt; 10<sup>−56</sup></td><td class="num" style="color:var(--warn)"><strong>0%</strong></td></tr>
+            <tr><td class="name">web_attacks</td><td class="num" data-num="">1,522</td><td class="num" data-num="">1,132.8</td><td class="num" data-num="">0.019</td><td class="num" data-num="">&lt; 0.981</td><td class="num" data-num="">100%</td></tr>
+            <tr><td class="name">infiltration</td><td class="num" data-num="">112,891</td><td class="num" data-num="">15.27</td><td class="num" data-num="">1.38</td><td class="num" data-num="">&lt; 0.250</td><td class="num" data-num="">99.0%</td></tr>
+            <tr><td class="name">bot</td><td class="num" data-num="">124,621</td><td class="num" data-num="">13.84</td><td class="num" data-num="">1.53</td><td class="num" data-num="">&lt; 0.217</td><td class="num" data-num="">99.2%</td></tr>
+            <tr><td class="name">dos</td><td class="num" data-num="">181,779</td><td class="num" data-num="">9.49</td><td class="num" data-num="">2.23</td><td class="num" data-num="">&lt; 0.108</td><td class="num" data-num="">34.9%</td></tr>
+            <tr><td class="name">brute_force</td><td class="num" data-num="">345,116</td><td class="num" data-num="">5.00</td><td class="num" data-num="">4.23</td><td class="num" data-num="">&lt; 0.015</td><td class="num" data-num="">100%</td></tr>
+            <tr><td class="name">ddos</td><td class="num" data-num="">794,609</td><td class="num" data-num="">2.17</td><td class="num" data-num="">9.74</td><td class="num" data-num="">&lt; 5.9×10<sup>−5</sup></td><td class="num" style="color:var(--warn)" data-num=""><strong>0%</strong></td></tr>
+            <tr><td class="name">benign</td><td class="num" data-num="">10,508,775</td><td class="num" data-num="">0.164</td><td class="num" data-num="">128.9</td><td class="num" data-num="">&lt; 10<sup>−56</sup></td><td class="num" style="color:var(--warn)" data-num=""><strong>0%</strong></td></tr>
           </tbody>
         </table></div>
         <figcaption>ddos는 p(정답) &lt; 0.00006 수준으로 확신에 차서 틀려야 자격이 생기는데,
@@ -654,13 +655,13 @@ td.name{color:var(--ink-2)}
     <figure>
       <p class="fig-title">Fig 7 — 동일 설정 반복 결과</p>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>파이프라인</th><th class="num">global 대역</th><th class="num">시스템 delta</th><th class="num">harmful</th><th>비고</th></tr></thead>
+        <thead><tr><th>파이프라인</th><th class="num" data-num="">global 대역</th><th class="num" data-num="">시스템 delta</th><th class="num" data-num="">harmful</th><th>비고</th></tr></thead>
         <tbody>
-          <tr><td class="name">기존 분할 ×3</td><td class="num" style="color:var(--warn)">0.027</td>
-            <td class="num" style="color:var(--warn)">+.028 / −.015 / +.013</td><td class="num">4~1,132</td>
+          <tr><td class="name">기존 분할 ×3</td><td class="num" style="color:var(--warn)" data-num="">0.027</td>
+            <td class="num" style="color:var(--warn)" data-num="">+.028 / −.015 / +.013</td><td class="num" data-num="">4~1,132</td>
             <td class="name">개선/개악 판정의 부호가 run마다 뒤집힘</td></tr>
-          <tr><td class="name"><strong>층화 분할 ×3</strong></td><td class="num" style="color:var(--ok)"><strong>0.0011</strong></td>
-            <td class="num">0 / +.007 / +.018</td><td class="num">0~214</td>
+          <tr><td class="name"><strong>층화 분할 ×3</strong></td><td class="num" style="color:var(--ok)" data-num=""><strong>0.0011</strong></td>
+            <td class="num" data-num="">0 / +.007 / +.018</td><td class="num" data-num="">0~214</td>
             <td class="name">게이트 셧다운 7회 중 4회</td></tr>
         </tbody>
       </table></div>
@@ -691,28 +692,28 @@ td.name{color:var(--ink-2)}
   <figure>
     <p class="fig-title">Fig 8 — 클래스별 F1과 안전 지표 (exp29 r3, 동일 run)</p>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>클래스</th><th class="num">XGB full</th><th class="num">global</th>
-        <th class="num">시스템</th><th class="num">oracle</th><th>시스템 vs XGB</th></tr></thead>
+      <thead><tr><th>클래스</th><th class="num" data-num="">XGB full</th><th class="num" data-num="">global</th>
+        <th class="num" data-num="">시스템</th><th class="num" data-num="">oracle</th><th data-num="">시스템 vs XGB</th></tr></thead>
       <tbody>
-        <tr><td class="name">benign</td><td class="num">0.9943</td><td class="num">0.9845</td><td class="num">0.9882</td><td class="num">0.9991</td><td class="name">−0.006</td></tr>
-        <tr><td class="name">bot</td><td class="num">0.9978</td><td class="num">0.9984</td><td class="num">0.9984</td><td class="num">0.9985</td><td class="name" style="color:var(--ok)">+0.001</td></tr>
-        <tr><td class="name">brute_force</td><td class="num">0.9159</td><td class="num">0.9159</td><td class="num">0.9159</td><td class="num">0.9159</td><td class="name">0 (동일)</td></tr>
-        <tr><td class="name">ddos</td><td class="num">0.9921</td><td class="num">0.8394</td><td class="num">0.9014</td><td class="num">0.9939</td><td class="name" style="color:var(--warn)">−0.091</td></tr>
-        <tr><td class="name">dos</td><td class="num">0.7822</td><td class="num">0.7552</td><td class="num">0.7629</td><td class="num">0.7820</td><td class="name">−0.019</td></tr>
-        <tr><td class="name">infiltration</td><td class="num">0.4291</td><td class="num">0.3880</td><td class="num">0.3891</td><td class="num" style="color:var(--ok)">0.9615</td><td class="name" style="color:var(--warn)">−0.040</td></tr>
-        <tr><td class="name">web_attacks</td><td class="num">0.1724</td><td class="num">0.1671</td><td class="num">0.2207</td><td class="num">0.2532</td><td class="name" style="color:var(--ok)">+0.048</td></tr>
-        <tr><td class="name"><strong>macro</strong></td><td class="num"><strong>0.7548</strong></td><td class="num">0.7212</td><td class="num"><strong>0.7395</strong></td><td class="num">0.8435</td><td class="name">−0.015</td></tr>
-        <tr><td class="name">tail (bot·inf·web)</td><td class="num">0.5331</td><td class="num">0.5178</td><td class="num" style="color:var(--ok)"><strong>0.5361</strong></td><td class="num">0.7377</td><td class="name" style="color:var(--ok)">+0.003</td></tr>
-        <tr><td class="name">weighted</td><td class="num">0.9834</td><td class="num">0.9640</td><td class="num">0.9714</td><td class="num">0.9927</td><td class="name">−0.012</td></tr>
+        <tr><td class="name">benign</td><td class="num" data-num="">0.9943</td><td class="num" data-num="">0.9845</td><td class="num" data-num="">0.9882</td><td class="num" data-num="">0.9991</td><td class="name" data-num="">−0.006</td></tr>
+        <tr><td class="name">bot</td><td class="num" data-num="">0.9978</td><td class="num" data-num="">0.9984</td><td class="num" data-num="">0.9984</td><td class="num" data-num="">0.9985</td><td class="name" style="color:var(--ok)" data-num="">+0.001</td></tr>
+        <tr><td class="name">brute_force</td><td class="num" data-num="">0.9159</td><td class="num" data-num="">0.9159</td><td class="num" data-num="">0.9159</td><td class="num" data-num="">0.9159</td><td class="name" data-num="">0 (동일)</td></tr>
+        <tr><td class="name">ddos</td><td class="num" data-num="">0.9921</td><td class="num" data-num="">0.8394</td><td class="num" data-num="">0.9014</td><td class="num" data-num="">0.9939</td><td class="name" style="color:var(--warn)" data-num="">−0.091</td></tr>
+        <tr><td class="name">dos</td><td class="num" data-num="">0.7822</td><td class="num" data-num="">0.7552</td><td class="num" data-num="">0.7629</td><td class="num" data-num="">0.7820</td><td class="name" data-num="">−0.019</td></tr>
+        <tr><td class="name">infiltration</td><td class="num" data-num="">0.4291</td><td class="num" data-num="">0.3880</td><td class="num" data-num="">0.3891</td><td class="num" style="color:var(--ok)" data-num="">0.9615</td><td class="name" style="color:var(--warn)" data-num="">−0.040</td></tr>
+        <tr><td class="name">web_attacks</td><td class="num" data-num="">0.1724</td><td class="num" data-num="">0.1671</td><td class="num" data-num="">0.2207</td><td class="num" data-num="">0.2532</td><td class="name" style="color:var(--ok)" data-num="">+0.048</td></tr>
+        <tr><td class="name"><strong>macro</strong></td><td class="num" data-num=""><strong>0.7548</strong></td><td class="num" data-num="">0.7212</td><td class="num" data-num=""><strong>0.7395</strong></td><td class="num" data-num="">0.8435</td><td class="name" data-num="">−0.015</td></tr>
+        <tr><td class="name">tail (bot·inf·web)</td><td class="num" data-num="">0.5331</td><td class="num" data-num="">0.5178</td><td class="num" style="color:var(--ok)" data-num=""><strong>0.5361</strong></td><td class="num" data-num="">0.7377</td><td class="name" style="color:var(--ok)" data-num="">+0.003</td></tr>
+        <tr><td class="name">weighted</td><td class="num" data-num="">0.9834</td><td class="num" data-num="">0.9640</td><td class="num" data-num="">0.9714</td><td class="num" data-num="">0.9927</td><td class="name" data-num="">−0.012</td></tr>
       </tbody>
     </table></div>
     <div class="tbl-wrap" style="margin-top:14px"><table>
-      <thead><tr><th>안전 지표</th><th class="num">XGB</th><th class="num">global</th><th class="num">시스템</th></tr></thead>
+      <thead><tr><th>안전 지표</th><th class="num" data-num="">XGB</th><th class="num" data-num="">global</th><th class="num" data-num="">시스템</th></tr></thead>
       <tbody>
-        <tr><td class="name">balanced accuracy</td><td class="num">0.7749</td><td class="num">0.7226</td><td class="num">0.7732</td></tr>
-        <tr><td class="name">macro-AUPRC</td><td class="num">0.7426</td><td class="num">0.7105</td><td class="num">0.7157</td></tr>
-        <tr><td class="name">ECE (낮을수록 좋음)</td><td class="num">0.0055</td><td class="num">0.0127</td><td class="num" style="color:var(--warn)">0.0185</td></tr>
-        <tr><td class="name">benign FPR</td><td class="num">0.00266</td><td class="num">0.00187</td><td class="num">0.00191</td></tr>
+        <tr><td class="name">balanced accuracy</td><td class="num" data-num="">0.7749</td><td class="num" data-num="">0.7226</td><td class="num" data-num="">0.7732</td></tr>
+        <tr><td class="name">macro-AUPRC</td><td class="num" data-num="">0.7426</td><td class="num" data-num="">0.7105</td><td class="num" data-num="">0.7157</td></tr>
+        <tr><td class="name">ECE (낮을수록 좋음)</td><td class="num" data-num="">0.0055</td><td class="num" data-num="">0.0127</td><td class="num" style="color:var(--warn)" data-num="">0.0185</td></tr>
+        <tr><td class="name">benign FPR</td><td class="num" data-num="">0.00266</td><td class="num" data-num="">0.00187</td><td class="num" data-num="">0.00191</td></tr>
       </tbody>
     </table></div>
     <figcaption>
@@ -726,37 +727,37 @@ td.name{color:var(--ink-2)}
 
   <h2 style="margin-top:36px">어떻게 개선할 것인가</h2>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>#</th><th>수리 대상</th><th>무엇을 바꾸나</th><th>겨냥하는 증상 (근거)</th><th class="num">기대</th></tr></thead>
+    <thead><tr><th data-num="">#</th><th>수리 대상</th><th>무엇을 바꾸나</th><th>겨냥하는 증상 (근거)</th><th class="num">기대</th></tr></thead>
     <tbody>
-      <tr><td class="num">0</td><td class="name"><strong>병목 분해 진단</strong></td>
+      <tr><td class="num" data-num="">0</td><td class="name"><strong>병목 분해 진단</strong></td>
         <td class="name">r3 dump 오프라인: scorer 완전 개방 시 회수 상한 vs 완벽 선택 시 verifier 상한</td>
         <td class="name">새 파이프라인에서 A/B 병목 서열 미측정 (+1.7% 근거는 옛 구조)</td>
         <td class="num">GPU 0</td></tr>
-      <tr><td class="num">1</td><td class="name"><strong>scorer 타깃: ΔNLL 단위 + 크기 복원</strong></td>
+      <tr><td class="num" data-num="">1</td><td class="name"><strong>scorer 타깃: ΔNLL 단위 + 크기 복원</strong></td>
         <td class="name">U를 b·(G/w<sub>c</sub>)−λc로, sign 분류 대신 기대이득(또는 ΔNLL 문턱)</td>
         <td class="name">남발의 원인 = 크기를 버리는 sign 타깃 + λ=0. ΔNLL 단위면 web 인플레는 소거되고 ddos의 ~2nat 이득은 보존 → 남발을 잡아도 ddos 구제가 안 죽음</td>
         <td class="num">낭비 호출↓</td></tr>
-      <tr><td class="num">2</td><td class="name"><strong>verifier 예측력</strong></td>
+      <tr><td class="num" data-num="">2</td><td class="name"><strong>verifier 예측력</strong></td>
         <td class="name">특징(h_post)에 regime·서명 정보 보강 or sign 추정기</td>
         <td class="name">inf: 자격 99%인데 구제 49행 — 예측↔실제 상관 ≤0.15, oracle 0.9615</td>
         <td class="num">~+0.01</td></tr>
-      <tr><td class="num">3</td><td class="name"><strong>게이트 폴백</strong></td>
+      <tr><td class="num" data-num="">3</td><td class="name"><strong>게이트 폴백</strong></td>
         <td class="name">보정 제약 불충족 시 τ_pre=∞ 대신 "최소 안전 채택" 규칙</td>
         <td class="name">셧다운 4/7 — delta가 0이 되는 run들</td>
         <td class="num">안정화</td></tr>
-      <tr><td class="num">4</td><td class="name"><strong>C0 ddos 몫</strong></td>
+      <tr><td class="num" data-num="">4</td><td class="name"><strong>C0 ddos 몫</strong></td>
         <td class="name">층화 시 클래스별 C0 예산 보전 (one knob)</td>
         <td class="name">ddos global 0.905→0.839 하락 — 층화가 ddos 슬롯 잠식</td>
         <td class="num">~+0.01</td></tr>
-      <tr><td class="num">5</td><td class="name"><strong>뱅크 단순화</strong></td>
+      <tr><td class="num" data-num="">5</td><td class="name"><strong>뱅크 단순화</strong></td>
         <td class="name">K 격자(1~4) + regime 최소 크기 규칙(112·405행짜리 expert 방지)</td>
         <td class="name">K 요동 2↔5, 미세 regime의 anchor 지배(블록<1%) — Gate 1 기각 반영</td>
         <td class="num">재현성↑</td></tr>
-      <tr><td class="num">6</td><td class="name">개입 행 확률 보정</td>
+      <tr><td class="num" data-num="">6</td><td class="name">개입 행 확률 보정</td>
         <td class="name">교체된 행의 posterior 재보정</td>
         <td class="name">ECE 0.0127→0.0185 악화</td>
         <td class="num">ECE↓</td></tr>
-      <tr><td class="num">7</td><td class="name">fp32 A/B 판정 (run B 진행 중)</td>
+      <tr><td class="num" data-num="">7</td><td class="name">fp32 A/B 판정 (run B 진행 중)</td>
         <td class="name">해시 비교</td>
         <td class="name">향후 프로토콜 (1회 vs ×3)</td>
         <td class="num">—</td></tr>

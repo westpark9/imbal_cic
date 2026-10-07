@@ -1,0 +1,80 @@
+{
+  "requested_at": "2026-09-22T17:22:16+09:00",
+  "request": "로컬·외부 실험이 모두 끝나면 현재 0918 탭에 이어서 HTML 보고서를 갱신",
+  "state": "partial_report_updated_waiting_for_missing_results",
+  "automatic_html_publisher_running": false,
+  "resume_trigger": "외부 seed 42 완료 알림과 결과 전달 후 로컬 seed 43·44 완료 여부를 확인하고 보고서 갱신",
+  "report": "/home/user/Desktop/imbalcic/lablog/html_report/scorer_verifier_target_0918.html",
+  "integrated_report": "/home/user/Desktop/imbalcic/lablog/html_report/post_tabpfn.html",
+  "online_artifact": "https://claude.ai/code/artifact/688578fa-0974-4310-a8a4-200b6c9bad28",
+  "local_run_root": "/home/user/Desktop/imbalcic/tabpfn/results/20260922_143529_exp57_expert_quality_s42_44",
+  "local_jobs": [
+    "cic2018_s43",
+    "toniot_s43",
+    "cic2018_s44",
+    "toniot_s44"
+  ],
+  "external_jobs": [
+    "cic2018_s42",
+    "toniot_s42"
+  ],
+  "external_state": "exp57_external_s42 directory absent from local checkout and freshly fetched origin/main",
+  "ready_results": {
+    "five_conditions": "/home/user/Desktop/imbalcic/tabpfn/results/exp56_label_free_20260922",
+    "oracle_bounds": "/home/user/Desktop/imbalcic/tabpfn/results/exp58_six_condition_20260922"
+  },
+  "report_requirements": [
+    "기존 0918 탭 끝에 후속 결과를 추가하고 기존 결과의 bank·데이터 범위와 구분",
+    "새 K=4 bank는 두 데이터 모두 K<C. 세 context 대조를 실제 seed 42/43/44로 반복",
+    "기존 다섯 비교에 정정한 여섯 번째 oracle 상한을 추가. EXP58은 기존 EXP47·48 bank 기준임을 명시",
+    "expert 생성 품질: global 대비 식별력·오탐, 같은 예산·클래스 비율 무작위 대조 대비 추가 가치, 영역 상수 대조 및 취약 클래스 잔여 오류를 근거로 판단",
+    "AP·test ROC상의 R@FPR와 validation 고정 임계값의 test recall/FPR을 구분",
+    "전면 적용·calibration·시간 사분위·그룹 bootstrap 결과를 그림 및 표로 설명",
+    "bootstrap 구간은 global 대비 차이이며 무작위 context 대비 차이의 구간으로 오기하지 않음",
+    "expert 번호는 각 seed 내 담당 영역 기준이며 서로 다른 seed의 번호를 같은 의미로 가정하지 않음",
+    "동일 개발 holdout 재평가임을 명시. 새 독립 test나 scorer/verifier 재학습으로 쓰지 않음",
+    "한국어 폰트 통일, 클래스 샘플 수 내림차순, expert 번호 순 유지, 비교 최고값 bold",
+    "라우팅 이득 회수 비율은 추가하지 않음",
+    "현재 사용자가 요청한 결과 해석 범위만 추가; 환경 설치 Q&A 등은 HTML에 쓰지 않음",
+    "원본 수정 후 sync_html_reports.py 및 --check 실행",
+    "온라인 아티팩트는 편집 도구 접근 가능 여부 확인 후 같은 URL 갱신. 불가하면 로컬 동기화와 온라인 미갱신을 구분",
+    "사용자가 Git 반영을 직접 하기로 했으므로 임의 push 하지 않음"
+  ],
+  "eta_as_of_kst": "2026-09-22 17:20",
+  "eta_no_retry": {
+    "cic2018_s43": "completed 16:41; elapsed 89.3 minutes",
+    "toniot_s43": "17:45–18:05",
+    "cic2018_s44": "19:15–20:00",
+    "toniot_s44": "20:20–21:20"
+  },
+  "eta_basis": "CIC seed43 actual 5359.55s; ToN current model completion intervals; sequential local GPU queue. Retry delays not included.",
+  "external_launch": {
+    "root": "/home/jovyan/mspark/imbalcic/tabpfn/results/exp57_external_s42",
+    "pid": 21546,
+    "jobs": [
+      "cic2018_s42",
+      "toniot_s42"
+    ],
+    "source": "user terminal output"
+  },
+  "updated_at": "2026-09-23T13:05:49+09:00",
+  "included_complete_jobs": [
+    "cic2018_s43",
+    "toniot_s43",
+    "toniot_s44"
+  ],
+  "missing_external_jobs": [
+    "cic2018_s42",
+    "toniot_s42"
+  ],
+  "failed_local_jobs": [
+    "cic2018_s44"
+  ],
+  "report_manifest": "docs/research/20260923/exp57_report_manifest.json",
+  "local_html_updated": true,
+  "integrated_html_synced": true,
+  "git_push_performed": false,
+  "online_artifact_updated": false,
+  "online_artifact_reason": "No connected document session or Claude artifact editing tool is available.",
+  "last_checked_remote_commit": "4651c0f"
+}

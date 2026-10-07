@@ -15,12 +15,14 @@
 
 ## 마운트에 실행 환경 저장
 
-`pip install -r requirements-exp57.txt`만으로는 장비 드라이버와 PyTorch의 CUDA 빌드가 맞는다고 보장되지 않는다. **Conda 환경 자체를 마운트 경로에 만들고, 드라이버에 맞는 PyTorch wheel을 먼저 고정한다.** Conda를 새로 만드는 것만으로 호환 문제가 해결되는 것은 아니다.
+2026-10-06 환경 명세 정리: `requirements-exp57.txt`는 루트 `requirements.txt`로 통합했고 아래 설치 명령은 유지한다. 이전 명세는 `configs/environments/archive/20261006_before_requirements_merge/`에 보존했다.
+
+`pip install -r requirements.txt`만으로는 장비 드라이버와 PyTorch의 CUDA 빌드가 맞는다고 보장되지 않는다. **Conda 환경 자체를 마운트 경로에 만들고, 드라이버에 맞는 PyTorch wheel을 먼저 고정한다.** Conda를 새로 만드는 것만으로 호환 문제가 해결되는 것은 아니다.
 
 업데이트한 저장소 루트에서 다음을 실행한다. `/workspace`는 예시이므로 실제 영구 마운트 경로로 바꾼다. `--prefix`는 기존 base 환경이 아닌 새 전용 경로여야 한다. 첫 생성 때는 Conda 또는 Miniforge가 필요하다.
 
 ```bash
-python scripts/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
+python scripts/common/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
 ```
 
 스크립트는 Python 3.12 환경을 만들고 `nvidia-smi`에 표시되는 **드라이버의 CUDA 지원 버전**에 따라 아래 중 하나를 선택한다. 시스템에 설치된 `nvcc` 버전과 같아야 한다는 뜻은 아니다. CUDA minor compatibility에 기대지 않는 보수적인 선택이며, 마지막에 GPU 연산으로 확인한다.
@@ -39,7 +41,7 @@ python scripts/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
 같은 경로가 마운트되고 호환되는 OS·장비라면 재접속 후 라이브러리를 다시 설치할 필요 없이 **저장한 환경의 Python**을 사용한다. 활성화나 base Conda 재설치도 필요 없다. 새 노드에서 호환성을 재확인하려면 다음 명령을 실행한다. 설정이 같으면 패키지 설치는 생략하고 GPU 검증만 반복한다.
 
 ```bash
-/workspace/envs/exp57/bin/python scripts/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
+/workspace/envs/exp57/bin/python scripts/common/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
 ```
 
 다른 드라이버 때문에 선택되는 torch 빌드가 바뀌면 기존 환경을 덮어쓰지 않고 중단한다. 그 경우 `/workspace/envs/exp57-cu124`처럼 새 `--prefix`를 지정한다. 설치 캐시도 마운트의 `envs/.exp57-cache/`에 보존한다. `conda create -n ...`만 사용하면 환경이 임시 홈 디렉터리에 생성되어 재접속 때 사라질 수 있다.
@@ -53,7 +55,7 @@ python scripts/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
 ```bash
 EXP57_PY=/workspace/envs/exp57/bin/python
 
-"$EXP57_PY" scripts/run_exp57_external.py \
+"$EXP57_PY" scripts/v4/exp57/run_exp57_external.py \
   --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl \
   --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt \
   --datasets cic2018 toniot \
@@ -68,8 +70,8 @@ EXP57_PY=/workspace/envs/exp57/bin/python
 한 GPU에서 두 데이터는 순차 실행한다. GPU가 두 개라면 위 명령 대신 데이터별로 나눌 수 있다.
 
 ```bash
-"$EXP57_PY" scripts/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets cic2018 --seeds 42 --gpu 0 --root tabpfn/results/exp57_external_cic_s42 --detach
-"$EXP57_PY" scripts/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets toniot --seeds 42 --gpu 1 --root tabpfn/results/exp57_external_ton_s42 --detach
+"$EXP57_PY" scripts/v4/exp57/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets cic2018 --seeds 42 --gpu 0 --root tabpfn/results/exp57_external_cic_s42 --detach
+"$EXP57_PY" scripts/v4/exp57/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets toniot --seeds 42 --gpu 1 --root tabpfn/results/exp57_external_ton_s42 --detach
 ```
 
 두 프로세스를 동시에 실행하면 host RAM도 두 작업의 데이터 준비·학습을 수용해야 한다. 같은 데이터의 split을 동시에 준비할 경우 잠금으로 중복 생성을 막는다. 검증에 성공한 완성 디렉터리만 재사용 대상으로 공개한다.

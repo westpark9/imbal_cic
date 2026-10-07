@@ -1,0 +1,29 @@
+# Common environment for XGBoost/MoE and TabPFN-v3 experiments.
+# Python >= 3.12. Core pins retain the EXP57 environment specification.
+# GPU setup (selects and constrains a driver-compatible PyTorch CUDA wheel):
+#   python scripts/setup_exp57_env.py --prefix /workspace/envs/imbal --gpu 0
+# SOTA setup adds requirements-sota.txt through scripts/setup_exp61_env.py.
+# Installing this file alone does not select a CUDA build for your driver.
+
+# Numerical/data processing and machine learning
+numpy==2.4.4
+pandas==3.0.2
+scipy==1.17.1
+scikit-learn==1.8.0
+xgboost==3.2.0
+imbalanced-learn==0.14.1
+joblib==1.5.3
+threadpoolctl==3.6.0
+tabpfn==8.2.0
+
+# The setup script pins the exact CUDA build; allow its supported profiles.
+torch>=2.5
+# Retained for the legacy CIFAR experiments; resolved against the torch constraint.
+torchvision>=0.15.0
+# Retained CUDA 12 acceleration dependency; TabPFN itself does not require CuPy.
+cupy-cuda12x>=12.0.0
+
+# Visualisation and progress (shared by core experiments and SOTA)
+matplotlib==3.10.8
+seaborn>=0.12.0
+tqdm==4.67.3

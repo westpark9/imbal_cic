@@ -55,6 +55,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size
   text-transform:uppercase;color:var(--c1);margin:0 0 6px}
 .section-divider h2{font-size:22px;margin:0}
 </style>
+<style data-report-rule="num-align">td[data-num],th[data-num]{text-align:right;font-variant-numeric:tabular-nums}</style>
 </head>
 <body>
 <div class="wrap">
@@ -75,12 +76,12 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--br);font-size
 run에서 자연-비례 1M context로 재-fit (같은 분할·같은 평가 행).</p>
 
 <div class="tw"><table>
-<tr><th>expert</th><th>소유 클래스</th><th class="n">context 실측</th><th class="n">holdout</th></tr>
-<tr><td>benign</td><td>benign</td><td class="n">200,000 + 공격 filler 19,998 (9클래스 ×2,222)</td><td class="n">15,000</td></tr>
-<tr><td>flood</td><td>ddos · dos</td><td class="n">ddos 190,634 + dos 9,366</td><td class="n">30,000</td></tr>
-<tr><td>probe_access</td><td>scanning · password</td><td class="n">password 107,983 + scanning 92,017</td><td class="n">30,000</td></tr>
-<tr><td>application</td><td>injection · xss</td><td class="n">xss 176,259 + injection 23,741</td><td class="n">30,000</td></tr>
-<tr><td>stealth_malware</td><td>backdoor · mitm · ransomware</td><td class="n">backdoor 107,030 + mitm 2,886 + ransomware 1,906 (전량)</td><td class="n">16,197</td></tr>
+<tr><th>expert</th><th>소유 클래스</th><th class="n">context 실측</th><th class="n" data-num="">holdout</th></tr>
+<tr><td>benign</td><td>benign</td><td class="n">200,000 + 공격 filler 19,998 (9클래스 ×2,222)</td><td class="n" data-num="">15,000</td></tr>
+<tr><td>flood</td><td>ddos · dos</td><td class="n">ddos 190,634 + dos 9,366</td><td class="n" data-num="">30,000</td></tr>
+<tr><td>probe_access</td><td>scanning · password</td><td class="n">password 107,983 + scanning 92,017</td><td class="n" data-num="">30,000</td></tr>
+<tr><td>application</td><td>injection · xss</td><td class="n">xss 176,259 + injection 23,741</td><td class="n" data-num="">30,000</td></tr>
+<tr><td>stealth_malware</td><td>backdoor · mitm · ransomware</td><td class="n">backdoor 107,030 + mitm 2,886 + ransomware 1,906 (전량)</td><td class="n" data-num="">16,197</td></tr>
 </table></div>
 
 <p class="dim">게이트 음성의 aux = 외부 공격 5 family (bot_iot recon 20,000 + cic2018
@@ -329,14 +330,14 @@ ton에는 oracle(완벽 배정) 측정이 없어 두 시리즈만 표시.</figca
 
 <div class="tw"><table>
 <tr><th>class</th><th class="n">support</th><th class="n">global F1</th><th class="n key-col">시스템 F1</th><th>왜 이렇게 됐나</th></tr>
-<tr><td>ddos</td><td class="n">828,252</td><td class="n no">0.202</td><td class="n key-col ok">0.917</td><td>global recall 0.113 병리를 flood context가 0.953으로 — 시스템 최대 순이득</td></tr>
-<tr><td>password</td><td class="n">318,956</td><td class="n">0.539</td><td class="n key-col ok">0.817</td><td>발화 94.8% × 조건부 — recall 0.948 vs global 0.433</td></tr>
-<tr><td>xss</td><td class="n">566,887</td><td class="n">0.526</td><td class="n key-col ok">0.705</td><td>발화 96.9%; benign 유입으로 precision 0.639에 머묾</td></tr>
-<tr><td>backdoor</td><td class="n">40,678</td><td class="n">0.919</td><td class="n key-col">0.906</td><td>사실상 동급</td></tr>
-<tr><td>scanning</td><td class="n">271,796</td><td class="n no">0.000</td><td class="n key-col no">0.013</td><td>양쪽 전멸 — 데이터 병리(train 중복 97.4% + 라벨 충돌), 방법 무관</td></tr>
-<tr><td>dos</td><td class="n">40,692</td><td class="n">0.798</td><td class="n key-col no">0.540</td><td>발화 80.6%·recall 0.806인데 precision 0.406 — flood 조건부 안에서 ddos의 4.7%(≈3.9만 행)가 dos로 유입 (taxonomy-내 혼동, exp8 한계의 재확인)</td></tr>
-<tr><td>injection</td><td class="n">76,356</td><td class="n">0.413</td><td class="n key-col no">0.061</td><td>benign→application 202만 행 중 일부가 injection으로 환전 → precision 0.032</td></tr>
 <tr><td class="key-col">benign</td><td class="n">3,358,444</td><td class="n">0.790</td><td class="n key-col no">0.365</td><td>발화율 0.241이 그대로 recall — 손실의 원천</td></tr>
+<tr><td>ddos</td><td class="n">828,252</td><td class="n no">0.202</td><td class="n key-col ok">0.917</td><td>global recall 0.113 병리를 flood context가 0.953으로 — 시스템 최대 순이득</td></tr>
+<tr><td>xss</td><td class="n">566,887</td><td class="n">0.526</td><td class="n key-col ok">0.705</td><td>발화 96.9%; benign 유입으로 precision 0.639에 머묾</td></tr>
+<tr><td>password</td><td class="n">318,956</td><td class="n">0.539</td><td class="n key-col ok">0.817</td><td>발화 94.8% × 조건부 — recall 0.948 vs global 0.433</td></tr>
+<tr><td>scanning</td><td class="n">271,796</td><td class="n no">0.000</td><td class="n key-col no">0.013</td><td>양쪽 전멸 — 데이터 병리(train 중복 97.4% + 라벨 충돌), 방법 무관</td></tr>
+<tr><td>injection</td><td class="n">76,356</td><td class="n">0.413</td><td class="n key-col no">0.061</td><td>benign→application 202만 행 중 일부가 injection으로 환전 → precision 0.032</td></tr>
+<tr><td>dos</td><td class="n">40,692</td><td class="n">0.798</td><td class="n key-col no">0.540</td><td>발화 80.6%·recall 0.806인데 precision 0.406 — flood 조건부 안에서 ddos의 4.7%(≈3.9만 행)가 dos로 유입 (taxonomy-내 혼동, exp8 한계의 재확인)</td></tr>
+<tr><td>backdoor</td><td class="n">40,678</td><td class="n">0.919</td><td class="n key-col">0.906</td><td>사실상 동급</td></tr>
 <tr><td>mitm</td><td class="n">1,204</td><td class="n">0.089</td><td class="n key-col">0.012</td><td rowspan="2">발화율은 85.9/90.6으로 높지만 support가 1,204/795라 미세 유입에도 precision 붕괴 — 초희소 tail은 별도 처방 필요</td></tr>
 <tr><td>ransomware</td><td class="n">795</td><td class="n">0.148</td><td class="n key-col">0.026</td></tr>
 <tr><td><b>macro</b></td><td class="n">5,504,060</td><td class="n"><b>0.4423</b></td><td class="n key-col"><b>0.4362</b></td><td>±0.01 밴드 내 동급 — 이득(ddos·password·xss)과 손실(benign 계열)의 상쇄전</td></tr>
@@ -351,11 +352,11 @@ ton에는 oracle(완벽 배정) 측정이 없어 두 시리즈만 표시.</figca
 <h3>benign — 붕괴의 절반 이상이 라벨 충돌</h3>
 
 <div class="tw"><table>
-<tr><th>test benign 3,358,444행의 지위</th><th class="n">비율</th><th class="n">정확 발화</th><th>승자 분포</th></tr>
-<tr><td>train에 <b>benign으로만</b> 존재하는 벡터</td><td class="n">23.0%</td><td class="n">0.719</td><td>benign 72% · stealth 13%</td></tr>
-<tr><td class="key-col">benign·공격 <b>양쪽 라벨</b>로 존재 (충돌)</td><td class="n key-col"><b>53.5%</b></td><td class="n key-col no">0.000</td><td class="key-col">application <b>99%</b></td></tr>
-<tr><td>공격으로만 존재</td><td class="n">2.4%</td><td class="n no">0.001</td><td>probe_access 73%</td></tr>
-<tr><td>train에 없는 새 벡터</td><td class="n">21.0%</td><td class="n">0.360</td><td>benign 36% · application 26%</td></tr>
+<tr><th>test benign 3,358,444행의 지위</th><th class="n" data-num="">비율</th><th class="n" data-num="">정확 발화</th><th>승자 분포</th></tr>
+<tr><td>train에 <b>benign으로만</b> 존재하는 벡터</td><td class="n" data-num="">23.0%</td><td class="n" data-num="">0.719</td><td>benign 72% · stealth 13%</td></tr>
+<tr><td class="key-col">benign·공격 <b>양쪽 라벨</b>로 존재 (충돌)</td><td class="n key-col" data-num=""><b>53.5%</b></td><td class="n key-col no" data-num="">0.000</td><td class="key-col">application <b>99%</b></td></tr>
+<tr><td>공격으로만 존재</td><td class="n" data-num="">2.4%</td><td class="n no" data-num="">0.001</td><td>probe_access 73%</td></tr>
+<tr><td>train에 없는 새 벡터</td><td class="n" data-num="">21.0%</td><td class="n" data-num="">0.360</td><td>benign 36% · application 26%</td></tr>
 </table></div>
 
 <p>충돌 덩어리 180만 행은 <b>distinct 벡터 단 1,501개로 축퇴</b>하고, 상위 1개 벡터가
@@ -368,10 +369,10 @@ ton에는 oracle(완벽 배정) 측정이 없어 두 시리즈만 표시.</figca
 <h3>scanning — 사실상 전량이 benign과 동일 벡터</h3>
 
 <div class="tw"><table>
-<tr><th>test scanning 271,796행의 지위</th><th class="n">비율</th><th class="n">정확 발화</th><th>승자 분포</th></tr>
-<tr><td>train에 scanning으로만 존재</td><td class="n">0.0% (27행)</td><td class="n">0.630</td><td>probe_access 63%</td></tr>
-<tr><td class="key-col">scanning·benign <b>양쪽 라벨</b>로 존재 (충돌)</td><td class="n key-col"><b>97.4%</b></td><td class="n key-col no">0.002</td><td class="key-col">benign <b>100%</b></td></tr>
-<tr><td>train에 없는 새 벡터</td><td class="n">2.2%</td><td class="n">0.256</td><td>benign 45% · probe 26%</td></tr>
+<tr><th>test scanning 271,796행의 지위</th><th class="n" data-num="">비율</th><th class="n" data-num="">정확 발화</th><th>승자 분포</th></tr>
+<tr><td>train에 scanning으로만 존재</td><td class="n" data-num="">0.0% (27행)</td><td class="n" data-num="">0.630</td><td>probe_access 63%</td></tr>
+<tr><td class="key-col">scanning·benign <b>양쪽 라벨</b>로 존재 (충돌)</td><td class="n key-col" data-num=""><b>97.4%</b></td><td class="n key-col no" data-num="">0.002</td><td class="key-col">benign <b>100%</b></td></tr>
+<tr><td>train에 없는 새 벡터</td><td class="n" data-num="">2.2%</td><td class="n" data-num="">0.256</td><td>benign 45% · probe 26%</td></tr>
 </table></div>
 
 <p>충돌 26.5만 행 = distinct 벡터 325개, 상위 1개가 50.9%. scanning에는 자기만의
@@ -512,15 +513,15 @@ argmax(오배정 행은 benign으로 <b>반환</b>). exp21과 exp20은 이 구�
 
 <p class="dim">초록 = 4열 전체 행-최고 · 빨강 = 주목할 붕괴. 우리 열은 음영(key-col).</p>
 <div class="tw"><table>
-<tr><th>class</th><th class="n key-col">exp21 (energy)</th><th class="n">exp20 (확률+CE)</th><th class="n">그냥 TabPFN (1M)</th><th class="n">XGB (full pool)</th></tr>
-<tr><td>benign</td><td class="n key-col">0.9917</td><td class="n">0.9917</td><td class="n">0.9918</td><td class="n ok">0.9943</td></tr>
-<tr><td>bot</td><td class="n key-col">0.9945</td><td class="n">0.9945</td><td class="n ok">0.9984</td><td class="n">0.9978</td></tr>
-<tr><td>brute_force</td><td class="n key-col">0.9159</td><td class="n">0.9159</td><td class="n">0.9159</td><td class="n">0.9159</td></tr>
-<tr><td>ddos</td><td class="n key-col">0.9853</td><td class="n">0.9850</td><td class="n">0.9627</td><td class="n ok">0.9921</td></tr>
-<tr><td>dos</td><td class="n key-col">0.7553</td><td class="n">0.7556</td><td class="n ok">0.7827</td><td class="n">0.7822</td></tr>
-<tr><td>infiltration</td><td class="n key-col">0.3147</td><td class="n">0.3484</td><td class="n no">0.0968</td><td class="n ok">0.4291</td></tr>
-<tr><td class="key-col">web_attacks</td><td class="n key-col ok"><b>0.2300</b></td><td class="n no">0.0736</td><td class="n">0.1601</td><td class="n">0.1724</td></tr>
-<tr><td><b>macro</b></td><td class="n key-col"><b>0.7411</b></td><td class="n"><b>0.7235</b></td><td class="n"><b>0.7012</b></td><td class="n ok"><b>0.7548</b></td></tr>
+<tr><th>class</th><th class="n key-col" data-num="">exp21 (energy)</th><th class="n" data-num="">exp20 (확률+CE)</th><th class="n" data-num="">그냥 TabPFN (1M)</th><th class="n" data-num="">XGB (full pool)</th></tr>
+<tr><td>benign</td><td class="n key-col" data-num="">0.9917</td><td class="n" data-num="">0.9917</td><td class="n" data-num="">0.9918</td><td class="n ok" data-num="">0.9943</td></tr>
+<tr><td>bot</td><td class="n key-col" data-num="">0.9945</td><td class="n" data-num="">0.9945</td><td class="n ok" data-num="">0.9984</td><td class="n" data-num="">0.9978</td></tr>
+<tr><td>brute_force</td><td class="n key-col" data-num="">0.9159</td><td class="n" data-num="">0.9159</td><td class="n" data-num="">0.9159</td><td class="n" data-num="">0.9159</td></tr>
+<tr><td>ddos</td><td class="n key-col" data-num="">0.9853</td><td class="n" data-num="">0.9850</td><td class="n" data-num="">0.9627</td><td class="n ok" data-num="">0.9921</td></tr>
+<tr><td>dos</td><td class="n key-col" data-num="">0.7553</td><td class="n" data-num="">0.7556</td><td class="n ok" data-num="">0.7827</td><td class="n" data-num="">0.7822</td></tr>
+<tr><td>infiltration</td><td class="n key-col" data-num="">0.3147</td><td class="n" data-num="">0.3484</td><td class="n no" data-num="">0.0968</td><td class="n ok" data-num="">0.4291</td></tr>
+<tr><td class="key-col">web_attacks</td><td class="n key-col ok" data-num=""><b>0.2300</b></td><td class="n no" data-num="">0.0736</td><td class="n" data-num="">0.1601</td><td class="n" data-num="">0.1724</td></tr>
+<tr><td><b>macro</b></td><td class="n key-col" data-num=""><b>0.7411</b></td><td class="n" data-num=""><b>0.7235</b></td><td class="n" data-num=""><b>0.7012</b></td><td class="n ok" data-num=""><b>0.7548</b></td></tr>
 </table></div>
 
 <p class="dim">그냥 TabPFN = 자연-비례 1M context의 기록 run(va100 추첨 — global 수치는
@@ -661,9 +662,9 @@ energy 하나로 통일, global+반환의 이중 안전판. <b>exp21이 새 기�
 20260822_202415). 결과는 2×2 교차:</p>
 
 <div class="tw"><table>
-<tr><th></th><th class="n">energy (선택 신호)</th><th class="n">확률+CE (선택 신호)</th></tr>
-<tr><td class="key-col"><b>병합 tail {inf,web}</b></td><td class="n ok"><b>0.7411</b> (exp21, 챔피언)</td><td class="n">0.7235 (exp20)</td></tr>
-<tr><td><b>분리 inf / web</b></td><td class="n no"><b>0.6885</b> (exp21b — web 0.064·inf 0.112)</td><td class="n"><b>0.7262</b> (exp20b — web 0.213·inf 0.237)</td></tr>
+<tr><th></th><th class="n" data-num="">energy (선택 신호)</th><th class="n" data-num="">확률+CE (선택 신호)</th></tr>
+<tr><td class="key-col"><b>병합 tail {inf,web}</b></td><td class="n ok" data-num=""><b>0.7411</b> (exp21, 챔피언)</td><td class="n" data-num="">0.7235 (exp20)</td></tr>
+<tr><td><b>분리 inf / web</b></td><td class="n no" data-num=""><b>0.6885</b> (exp21b — web 0.064·inf 0.112)</td><td class="n" data-num=""><b>0.7262</b> (exp20b — web 0.213·inf 0.237)</td></tr>
 </table></div>
 
 <div class="key">
@@ -741,15 +742,15 @@ precision이 0.034로 침수 — 을 정면으로 푼다. 게이트는 그대로
 </div>
 
 <div class="tw"><table>
-<tr><th>class</th><th class="n key-col">exp19 시스템</th><th class="n">같은-run global</th><th class="n">exp12c 기준</th><th>읽기</th></tr>
-<tr><td>benign</td><td class="n key-col ok">0.9900</td><td class="n">0.9901</td><td class="n">0.9741</td><td>P .989 / R .991 — global급 회복</td></tr>
-<tr><td class="key-col">web_attacks</td><td class="n key-col ok">0.2248</td><td class="n no">0.0000</td><td class="n">0.0647</td><td>P 0.034→<b>0.131</b>, R 0.790 유지 — XGB √가중 bar(0.2427)에 −0.018</td></tr>
-<tr><td>infiltration</td><td class="n key-col ok">0.2625</td><td class="n">0.0236</td><td class="n">0.1178</td><td>역대 최고 — √가중의 inf(0.2404)도 상회, 희생 없는 개선</td></tr>
-<tr><td>ddos</td><td class="n key-col">0.9854</td><td class="n">0.9348</td><td class="n">0.9939</td><td>−0.009 (밴드 내)</td></tr>
-<tr><td>dos</td><td class="n key-col">0.7553</td><td class="n">0.7812</td><td class="n">0.7805</td><td><b>유일한 밴드-밖 대가</b>: flood 오반환 ~8.3k행 → recall 0.641→0.607 (−0.025)</td></tr>
-<tr><td>brute_force</td><td class="n key-col">0.9159</td><td class="n no">0.4934</td><td class="n">0.9159</td><td>유지 (global은 추첨-붕괴)</td></tr>
-<tr><td>bot</td><td class="n key-col">0.9978</td><td class="n">0.9984</td><td class="n">0.9963</td><td>동급</td></tr>
-<tr><td><b>macro</b></td><td class="n key-col ok"><b>0.7331</b></td><td class="n"><b>0.6031</b></td><td class="n"><b>0.6919</b></td><td>기록 bar 0.7012 최초 상회 · 오라클 0.7347 근접</td></tr>
+<tr><th>class</th><th class="n key-col" data-num="">exp19 시스템</th><th class="n" data-num="">같은-run global</th><th class="n" data-num="">exp12c 기준</th><th>읽기</th></tr>
+<tr><td>benign</td><td class="n key-col ok" data-num="">0.9900</td><td class="n" data-num="">0.9901</td><td class="n" data-num="">0.9741</td><td>P .989 / R .991 — global급 회복</td></tr>
+<tr><td class="key-col">web_attacks</td><td class="n key-col ok" data-num="">0.2248</td><td class="n no" data-num="">0.0000</td><td class="n" data-num="">0.0647</td><td>P 0.034→<b>0.131</b>, R 0.790 유지 — XGB √가중 bar(0.2427)에 −0.018</td></tr>
+<tr><td>infiltration</td><td class="n key-col ok" data-num="">0.2625</td><td class="n" data-num="">0.0236</td><td class="n" data-num="">0.1178</td><td>역대 최고 — √가중의 inf(0.2404)도 상회, 희생 없는 개선</td></tr>
+<tr><td>ddos</td><td class="n key-col" data-num="">0.9854</td><td class="n" data-num="">0.9348</td><td class="n" data-num="">0.9939</td><td>−0.009 (밴드 내)</td></tr>
+<tr><td>dos</td><td class="n key-col" data-num="">0.7553</td><td class="n" data-num="">0.7812</td><td class="n" data-num="">0.7805</td><td><b>유일한 밴드-밖 대가</b>: flood 오반환 ~8.3k행 → recall 0.641→0.607 (−0.025)</td></tr>
+<tr><td>brute_force</td><td class="n key-col" data-num="">0.9159</td><td class="n no" data-num="">0.4934</td><td class="n" data-num="">0.9159</td><td>유지 (global은 추첨-붕괴)</td></tr>
+<tr><td>bot</td><td class="n key-col" data-num="">0.9978</td><td class="n" data-num="">0.9984</td><td class="n" data-num="">0.9963</td><td>동급</td></tr>
+<tr><td><b>macro</b></td><td class="n key-col ok" data-num=""><b>0.7331</b></td><td class="n" data-num=""><b>0.6031</b></td><td class="n" data-num=""><b>0.6919</b></td><td>기록 bar 0.7012 최초 상회 · 오라클 0.7347 근접</td></tr>
 </table></div>
 
 <p class="dim">강건성 부수 증거: 이번 run의 게이트는 §12n 지터로 benign→tail 누수가
@@ -763,22 +764,22 @@ precision이 0.034로 침수 — 을 정면으로 푼다. 게이트는 그대로
 즉 <b>개선은 전부 분류 단계에서 나왔다</b>:</p>
 
 <div class="tw"><table>
-<tr><th>class</th><th class="n">발화율 (이번 run)</th><th class="n">발화율 (exp12c)</th><th class="n">× 도착조건부(반환 생존)</th><th class="n">= recall</th></tr>
-<tr><td>benign</td><td class="n">0.9461</td><td class="n">0.9575</td><td class="n ok">1.0000</td><td class="n">0.9907*</td></tr>
-<tr><td>web_attacks</td><td class="n">0.9077</td><td class="n">0.8585</td><td class="n">0.8701</td><td class="n">0.7898</td></tr>
-<tr><td>infiltration</td><td class="n">0.3242</td><td class="n">0.2972</td><td class="n">0.8405</td><td class="n">0.2725</td></tr>
-<tr><td>ddos</td><td class="n">0.9921</td><td class="n">0.9894</td><td class="n">0.9790</td><td class="n">0.9713</td></tr>
-<tr><td>dos</td><td class="n">0.6432</td><td class="n">0.6412</td><td class="n">0.9435</td><td class="n">0.6068</td></tr>
+<tr><th>class</th><th class="n" data-num="">발화율 (이번 run)</th><th class="n" data-num="">발화율 (exp12c)</th><th class="n" data-num="">× 도착조건부(반환 생존)</th><th class="n" data-num="">= recall</th></tr>
+<tr><td>benign</td><td class="n" data-num="">0.9461</td><td class="n" data-num="">0.9575</td><td class="n ok" data-num="">1.0000</td><td class="n" data-num="">0.9907*</td></tr>
+<tr><td>web_attacks</td><td class="n" data-num="">0.9077</td><td class="n" data-num="">0.8585</td><td class="n" data-num="">0.8701</td><td class="n" data-num="">0.7898</td></tr>
+<tr><td>infiltration</td><td class="n" data-num="">0.3242</td><td class="n" data-num="">0.2972</td><td class="n" data-num="">0.8405</td><td class="n" data-num="">0.2725</td></tr>
+<tr><td>ddos</td><td class="n" data-num="">0.9921</td><td class="n" data-num="">0.9894</td><td class="n" data-num="">0.9790</td><td class="n" data-num="">0.9713</td></tr>
+<tr><td>dos</td><td class="n" data-num="">0.6432</td><td class="n" data-num="">0.6412</td><td class="n" data-num="">0.9435</td><td class="n" data-num="">0.6068</td></tr>
 </table></div>
 
 <p class="dim">* benign recall은 발화분(0.946) + 타 expert에서의 반환분이 합쳐져 0.991.
 도착조건부가 1.0 미만인 곳 = 반환의 대가(진짜 소유 행의 오반환).</p>
 
 <div class="tw"><table>
-<tr><th>expert</th><th class="n">승리</th><th class="n">반환</th><th class="n key-col">반환 순도(진짜 benign)</th><th>구성·판정</th></tr>
-<tr><td class="key-col">tail</td><td class="n">200,963</td><td class="n">157,408</td><td class="n key-col ok"><b>0.988</b></td><td>benign 155,473 · inf 오반환 1,722 · dos 75 — <b>반환이 침수를 정확히 겨냥</b>. 잔류 benign 3.2만이 inf/web로 남은 침수의 전부</td></tr>
-<tr><td>bf_bot</td><td class="n">177,784</td><td class="n">182</td><td class="n key-col">0.929</td><td>무해</td></tr>
-<tr><td>flood</td><td class="n">302,347</td><td class="n">8,316</td><td class="n key-col no">0.065</td><td>ddos 5,523·dos 2,203 <b>오반환</b> — dos −0.025 대가의 원인 확정. 개선 후보: <b>expert별 반환</b>(flood 조건부에는 benign 블록 축소/제거)</td></tr>
+<tr><th>expert</th><th class="n" data-num="">승리</th><th class="n" data-num="">반환</th><th class="n key-col" data-num="">반환 순도(진짜 benign)</th><th>구성·판정</th></tr>
+<tr><td class="key-col">tail</td><td class="n" data-num="">200,963</td><td class="n" data-num="">157,408</td><td class="n key-col ok" data-num=""><b>0.988</b></td><td>benign 155,473 · inf 오반환 1,722 · dos 75 — <b>반환이 침수를 정확히 겨냥</b>. 잔류 benign 3.2만이 inf/web로 남은 침수의 전부</td></tr>
+<tr><td>bf_bot</td><td class="n" data-num="">177,784</td><td class="n" data-num="">182</td><td class="n key-col" data-num="">0.929</td><td>무해</td></tr>
+<tr><td>flood</td><td class="n" data-num="">302,347</td><td class="n" data-num="">8,316</td><td class="n key-col no" data-num="">0.065</td><td>ddos 5,523·dos 2,203 <b>오반환</b> — dos −0.025 대가의 원인 확정. 개선 후보: <b>expert별 반환</b>(flood 조건부에는 benign 블록 축소/제거)</td></tr>
 </table></div>
 
 <p class="dim">결론: 선택 단계는 문제도 개선도 아니었고(불변), 승리는 tail 조건부의
@@ -1034,15 +1035,15 @@ macro가 12c에 미달(0.6499 vs 0.6919) — holdout-학습 선택기도 benign�
 <h3>클래스별 결과 — 시스템 vs 같은-run global vs 기준(exp12c)</h3>
 
 <div class="tw"><table>
-<tr><th>class</th><th class="n key-col">exp17 시스템</th><th class="n">같은-run global</th><th class="n">exp12c 기준</th><th>읽기</th></tr>
-<tr><td>benign</td><td class="n key-col no">0.7787</td><td class="n">0.9917</td><td class="n">0.9741</td><td>선택 64.3% — 124만 행이 inf로 (아래 차트)</td></tr>
-<tr><td>bot</td><td class="n key-col">0.9984</td><td class="n">0.9982</td><td class="n">0.9963</td><td>동급</td></tr>
-<tr><td>brute_force</td><td class="n key-col ok">0.9158</td><td class="n no">0.4934</td><td class="n">0.9159</td><td>global-출구가 추첨-붕괴로부터 구제 (아래 경고 박스)</td></tr>
-<tr><td>ddos</td><td class="n key-col">0.9418</td><td class="n">0.9411</td><td class="n">0.9939</td><td>global 선택분 10.1%의 손실</td></tr>
-<tr><td>dos</td><td class="n key-col">0.7812</td><td class="n">0.7812</td><td class="n">0.7805</td><td>mislabel 블록 — 세 방법 동일 (아래 삭제-불가 박스)</td></tr>
-<tr><td>infiltration</td><td class="n key-col no">0.0476</td><td class="n">0.1375</td><td class="n">0.1178</td><td>benign 유입으로 precision 0.024</td></tr>
-<tr><td>web_attacks</td><td class="n key-col ok">0.0857</td><td class="n">0.0039</td><td class="n">0.0647</td><td>web 선택 94.9% + 결정적 라벨 — 12c 상회</td></tr>
-<tr><td><b>macro</b></td><td class="n key-col"><b>0.6499</b></td><td class="n"><b>0.6210</b></td><td class="n"><b>0.6919</b></td><td>자기-run global +0.029 · 12c −0.042 → <b>#2 재현 기각</b></td></tr>
+<tr><th>class</th><th class="n key-col" data-num="">exp17 시스템</th><th class="n" data-num="">같은-run global</th><th class="n" data-num="">exp12c 기준</th><th>읽기</th></tr>
+<tr><td>benign</td><td class="n key-col no" data-num="">0.7787</td><td class="n" data-num="">0.9917</td><td class="n" data-num="">0.9741</td><td>선택 64.3% — 124만 행이 inf로 (아래 차트)</td></tr>
+<tr><td>bot</td><td class="n key-col" data-num="">0.9984</td><td class="n" data-num="">0.9982</td><td class="n" data-num="">0.9963</td><td>동급</td></tr>
+<tr><td>brute_force</td><td class="n key-col ok" data-num="">0.9158</td><td class="n no" data-num="">0.4934</td><td class="n" data-num="">0.9159</td><td>global-출구가 추첨-붕괴로부터 구제 (아래 경고 박스)</td></tr>
+<tr><td>ddos</td><td class="n key-col" data-num="">0.9418</td><td class="n" data-num="">0.9411</td><td class="n" data-num="">0.9939</td><td>global 선택분 10.1%의 손실</td></tr>
+<tr><td>dos</td><td class="n key-col" data-num="">0.7812</td><td class="n" data-num="">0.7812</td><td class="n" data-num="">0.7805</td><td>mislabel 블록 — 세 방법 동일 (아래 삭제-불가 박스)</td></tr>
+<tr><td>infiltration</td><td class="n key-col no" data-num="">0.0476</td><td class="n" data-num="">0.1375</td><td class="n" data-num="">0.1178</td><td>benign 유입으로 precision 0.024</td></tr>
+<tr><td>web_attacks</td><td class="n key-col ok" data-num="">0.0857</td><td class="n" data-num="">0.0039</td><td class="n" data-num="">0.0647</td><td>web 선택 94.9% + 결정적 라벨 — 12c 상회</td></tr>
+<tr><td><b>macro</b></td><td class="n key-col" data-num=""><b>0.6499</b></td><td class="n" data-num=""><b>0.6210</b></td><td class="n" data-num=""><b>0.6919</b></td><td>자기-run global +0.029 · 12c −0.042 → <b>#2 재현 기각</b></td></tr>
 </table></div>
 
 <p><b>판정 요약</b>: 공격 선택은 82.9–100%로 성공(global-출구가 brute를 구제, web은
@@ -1239,12 +1240,12 @@ benign 350만 행 — benign의 0.05%만 오분류해도 거짓 양성 1,700개�
 base-rate 구조입니다. 판정은 항상 "대상 클래스 F1 + macro + benign 유지"의 묶음.</p>
 
 <div class="tw"><table>
-<tr><th>class</th><th class="n">XGB full pool</th><th class="n key-col">XGB + √가중 (기준선)</th><th class="n">TabPFN 비례 1M</th></tr>
-<tr><td>benign / bot / brute / ddos</td><td class="n">0.92–0.99</td><td class="n key-col">0.92–0.99</td><td class="n">0.92–0.99</td></tr>
-<tr><td>dos</td><td class="n">0.7822</td><td class="n key-col">0.7822</td><td class="n">0.7815</td></tr>
-<tr><td>infiltration</td><td class="n">0.4291</td><td class="n key-col"><span class="no">0.2404</span></td><td class="n">0.4185</td></tr>
-<tr><td>web_attacks</td><td class="n">0.1724</td><td class="n key-col"><b>0.2427</b></td><td class="n">0.1615</td></tr>
-<tr><td>macro</td><td class="n">0.7548</td><td class="n key-col"><span class="no">0.7373</span></td><td class="n">0.7518</td></tr>
+<tr><th>class</th><th class="n" data-num="">XGB full pool</th><th class="n key-col" data-num="">XGB + √가중 (기준선)</th><th class="n" data-num="">TabPFN 비례 1M</th></tr>
+<tr><td>benign / bot / brute / ddos</td><td class="n" data-num="">0.92–0.99</td><td class="n key-col" data-num="">0.92–0.99</td><td class="n" data-num="">0.92–0.99</td></tr>
+<tr><td>dos</td><td class="n" data-num="">0.7822</td><td class="n key-col" data-num="">0.7822</td><td class="n" data-num="">0.7815</td></tr>
+<tr><td>infiltration</td><td class="n" data-num="">0.4291</td><td class="n key-col" data-num=""><span class="no">0.2404</span></td><td class="n" data-num="">0.4185</td></tr>
+<tr><td>web_attacks</td><td class="n" data-num="">0.1724</td><td class="n key-col" data-num=""><b>0.2427</b></td><td class="n" data-num="">0.1615</td></tr>
+<tr><td>macro</td><td class="n" data-num="">0.7548</td><td class="n key-col" data-num=""><span class="no">0.7373</span></td><td class="n" data-num="">0.7518</td></tr>
 </table></div>
 
 <p class="dim">√가중이 web 최고(0.2427)라 기준선이지만 infiltration 반토막·macro 하락이
@@ -1554,15 +1555,15 @@ dos의 oracle 1.0은 그룹 강제가 brute 출구를 막아 생기는 가공치
 </figure>
 
 <div class="tw"><table>
-<tr><th>class</th><th class="n">oracle</th><th class="n">global</th><th class="n key-col">시스템</th><th>왜 이렇게 됐나</th></tr>
-<tr><td>infiltration</td><td class="n">0.994</td><td class="n">0.097</td><td class="n key-col ok">0.118</td><td>게이트 특징 공간의 inf↔benign 분리 천장(AUROC ~0.81). recall 0.291로 global의 5.7배지만 benign 유입이 precision을 0.074로 침수 — 이종 특징(XGB margin) 주입 대기</td></tr>
-<tr><td class="key-col">web_attacks</td><td class="n">0.754</td><td class="n">0.160</td><td class="n key-col no">0.065</td><td>배정 자체는 역대 최고(도착 86% × 조건부 92% = recall 0.788)인데 benign→tail 누수 중 1.11만 행이 web 예측에 꽂혀 precision 0.034. benign:web=6882:1 산수: precision 0.5에 누수 &lt;0.15% 필요(현재 4.2%). oracle이 1.0이 아닌 것도 그룹 내 inf→web 혼동 탓</td></tr>
-<tr><td>dos</td><td class="n">1.000</td><td class="n">0.783</td><td class="n key-col">0.781</td><td>slowhttptest 21,110행 = ftp-bruteforce와 바이트-동일 vector인 기록된 mislabel — 시스템·global이 같은 행에서 같이 실패, 원리적 분리 불가. 라벨 교정 시 0.991/0.993</td></tr>
-<tr><td>brute_force</td><td class="n">1.000</td><td class="n">0.916</td><td class="n key-col">0.916</td><td>precision 0.845 손실 전부가 같은 mislabel의 반대면(slowhttptest가 brute로 유입) — 교정 시 양쪽 1.000</td></tr>
-<tr><td>benign</td><td class="n">1.000</td><td class="n">0.992</td><td class="n key-col">0.974</td><td>게이트 오발화 4.2%(14.8만 행)가 그대로 recall 상한 — oracle과의 갭 전부가 배정 단계</td></tr>
-<tr><td>ddos</td><td class="n">1.000</td><td class="n">0.963</td><td class="n key-col ok">0.994</td><td>global이 잃는 recall(0.928)을 flood context가 회복 — 구조의 순이득</td></tr>
-<tr><td>bot</td><td class="n">0.999</td><td class="n">0.998</td><td class="n key-col">0.996</td><td>세 방법 사실상 동일 — 손실 없음</td></tr>
-<tr><td><b>macro</b></td><td class="n"><b>0.964</b></td><td class="n"><b>0.7012</b></td><td class="n key-col"><span class="no">0.6919</span></td><td>조건부 정확도는 0.98–1.00으로 이미 oracle급 — 시스템 손실은 100% 배정 단계 (아래 인수분해). 판정: global 미달</td></tr>
+<tr><th>class</th><th class="n" data-num="">oracle</th><th class="n" data-num="">global</th><th class="n key-col" data-num="">시스템</th><th>왜 이렇게 됐나</th></tr>
+<tr><td>infiltration</td><td class="n" data-num="">0.994</td><td class="n" data-num="">0.097</td><td class="n key-col ok" data-num="">0.118</td><td>게이트 특징 공간의 inf↔benign 분리 천장(AUROC ~0.81). recall 0.291로 global의 5.7배지만 benign 유입이 precision을 0.074로 침수 — 이종 특징(XGB margin) 주입 대기</td></tr>
+<tr><td class="key-col">web_attacks</td><td class="n" data-num="">0.754</td><td class="n" data-num="">0.160</td><td class="n key-col no" data-num="">0.065</td><td>배정 자체는 역대 최고(도착 86% × 조건부 92% = recall 0.788)인데 benign→tail 누수 중 1.11만 행이 web 예측에 꽂혀 precision 0.034. benign:web=6882:1 산수: precision 0.5에 누수 &lt;0.15% 필요(현재 4.2%). oracle이 1.0이 아닌 것도 그룹 내 inf→web 혼동 탓</td></tr>
+<tr><td>dos</td><td class="n" data-num="">1.000</td><td class="n" data-num="">0.783</td><td class="n key-col" data-num="">0.781</td><td>slowhttptest 21,110행 = ftp-bruteforce와 바이트-동일 vector인 기록된 mislabel — 시스템·global이 같은 행에서 같이 실패, 원리적 분리 불가. 라벨 교정 시 0.991/0.993</td></tr>
+<tr><td>brute_force</td><td class="n" data-num="">1.000</td><td class="n" data-num="">0.916</td><td class="n key-col" data-num="">0.916</td><td>precision 0.845 손실 전부가 같은 mislabel의 반대면(slowhttptest가 brute로 유입) — 교정 시 양쪽 1.000</td></tr>
+<tr><td>benign</td><td class="n" data-num="">1.000</td><td class="n" data-num="">0.992</td><td class="n key-col" data-num="">0.974</td><td>게이트 오발화 4.2%(14.8만 행)가 그대로 recall 상한 — oracle과의 갭 전부가 배정 단계</td></tr>
+<tr><td>ddos</td><td class="n" data-num="">1.000</td><td class="n" data-num="">0.963</td><td class="n key-col ok" data-num="">0.994</td><td>global이 잃는 recall(0.928)을 flood context가 회복 — 구조의 순이득</td></tr>
+<tr><td>bot</td><td class="n" data-num="">0.999</td><td class="n" data-num="">0.998</td><td class="n key-col" data-num="">0.996</td><td>세 방법 사실상 동일 — 손실 없음</td></tr>
+<tr><td><b>macro</b></td><td class="n" data-num=""><b>0.964</b></td><td class="n" data-num=""><b>0.7012</b></td><td class="n key-col" data-num=""><span class="no">0.6919</span></td><td>조건부 정확도는 0.98–1.00으로 이미 oracle급 — 시스템 손실은 100% 배정 단계 (아래 인수분해). 판정: global 미달</td></tr>
 </table></div>
 
 
@@ -1574,14 +1575,14 @@ dos의 oracle 1.0은 그룹 강제가 brute 출구를 막아 생기는 가공치
 손실은 전부 배정(활성) 단계에서 난다:</p>
 
 <div class="tw"><table>
-<tr><th>class</th><th class="n">발화율</th><th class="n">× 조건부 정확도</th><th class="n">= 시스템 recall</th><th class="n">global recall</th></tr>
-<tr><td>benign</td><td class="n">0.9575</td><td class="n ok">1.0000</td><td class="n">0.9575</td><td class="n">0.9993</td></tr>
-<tr><td>ddos</td><td class="n">0.9894</td><td class="n ok">1.0000</td><td class="n">0.9894</td><td class="n">0.9282</td></tr>
-<tr><td>dos</td><td class="n">0.6412</td><td class="n ok">1.0000</td><td class="n">0.6412</td><td class="n">0.6430</td></tr>
-<tr><td>bot</td><td class="n">0.9970</td><td class="n ok">1.0000</td><td class="n">0.9970</td><td class="n">0.9969</td></tr>
-<tr><td>brute_force</td><td class="n">0.9998</td><td class="n ok">1.0000</td><td class="n">0.9998</td><td class="n">0.9998</td></tr>
-<tr><td>infiltration</td><td class="n">0.2972</td><td class="n ok">0.9800</td><td class="n">0.2913</td><td class="n">0.0513</td></tr>
-<tr><td class="key-col">web_attacks</td><td class="n">0.8585</td><td class="n ok">0.9176</td><td class="n">0.7878</td><td class="n">0.4420</td></tr>
+<tr><th>class</th><th class="n" data-num="">발화율</th><th class="n" data-num="">× 조건부 정확도</th><th class="n" data-num="">= 시스템 recall</th><th class="n" data-num="">global recall</th></tr>
+<tr><td>benign</td><td class="n" data-num="">0.9575</td><td class="n ok" data-num="">1.0000</td><td class="n" data-num="">0.9575</td><td class="n" data-num="">0.9993</td></tr>
+<tr><td>ddos</td><td class="n" data-num="">0.9894</td><td class="n ok" data-num="">1.0000</td><td class="n" data-num="">0.9894</td><td class="n" data-num="">0.9282</td></tr>
+<tr><td>dos</td><td class="n" data-num="">0.6412</td><td class="n ok" data-num="">1.0000</td><td class="n" data-num="">0.6412</td><td class="n" data-num="">0.6430</td></tr>
+<tr><td>bot</td><td class="n" data-num="">0.9970</td><td class="n ok" data-num="">1.0000</td><td class="n" data-num="">0.9970</td><td class="n" data-num="">0.9969</td></tr>
+<tr><td>brute_force</td><td class="n" data-num="">0.9998</td><td class="n ok" data-num="">1.0000</td><td class="n" data-num="">0.9998</td><td class="n" data-num="">0.9998</td></tr>
+<tr><td>infiltration</td><td class="n" data-num="">0.2972</td><td class="n ok" data-num="">0.9800</td><td class="n" data-num="">0.2913</td><td class="n" data-num="">0.0513</td></tr>
+<tr><td class="key-col">web_attacks</td><td class="n" data-num="">0.8585</td><td class="n ok" data-num="">0.9176</td><td class="n" data-num="">0.7878</td><td class="n" data-num="">0.4420</td></tr>
 </table></div>
 
 <div class="key g">

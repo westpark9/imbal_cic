@@ -1,3 +1,13 @@
+
+# Repository layout bootstrap: works in the workspace and portable source snapshots.
+from pathlib import Path as _LayoutPath
+import sys as _layout_sys
+_layout_root = next(p for p in _LayoutPath(__file__).resolve().parents
+                    if (p / 'scripts/common/experiment_paths.py').is_file())
+_layout_sys.path.insert(0, str(_layout_root / 'scripts/common'))
+from experiment_paths import bootstrap, repo_root, script_path, resolve_path, result_root, snapshot_path, read_record
+bootstrap(_layout_root)
+
 import json
 from pathlib import Path
 import sys
@@ -58,7 +68,7 @@ class PersistentEnvironmentTests(unittest.TestCase):
                                  "torch==2.6.0+cu124\n")
                 dependency_install = next(c for c in commands if "-r" in c)
                 self.assertIn("-c", dependency_install)
-                self.assertEqual(json.loads((prefix / "exp57_setup.json").read_text())["state"], "ready")
+                self.assertEqual(read_record(prefix / "exp57_setup.json")["state"], "ready")
                 commands.clear()
                 with patch.object(setup.shutil, "which", side_effect=AssertionError("Conda must not be needed")):
                     setup.setup(prefix, profile, "0")

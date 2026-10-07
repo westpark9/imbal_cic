@@ -1,0 +1,40 @@
+\documentclass[11pt]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{textcomp}
+\usepackage{hyperref}
+\title{Experiment record: context-composed TabPFN for long-tailed NetFlow intrusion detection}
+\author{Generated from saved runs by \texttt{scripts/build\_latex\_results.py}}
+\date{2026-10-02}
+\begin{document}
+\maketitle
+\section{Claim and research question}
+A frozen tabular foundation model (TabPFN-v3) adapts to newly appearing attack traffic by changing its context rows rather than its weights. On the same 100k training rows its macro-F1 matches XGBoost (Table~\ref{tab:sota_overall}); the research question is what to put into a context budget that is far smaller than the available training data so that tail attacks are recovered, and how adaptation cost (labels, time) compares with retraining. The target is tail recovery and benign false positives, not all-class macro-F1.
+\section{Data and protocol}
+NetFlow-v3 CIC-IDS2018 and ToN-IoT, chronological splits per attack scenario, exact-duplicate label conflicts removed (2026-09-15/16 fixed splits). Test rows: CIC-IDS2018 3,042,473; ToN-IoT 2,271,723. All numbers are seed 43 unless stated; test is a previously observed development holdout, so no result below is a final claim.
+\section{Baselines on the cleaned data (EXP61)}
+\input{results/tab_sota_overall}
+\input{results/tab_sota_cost}
+\input{results/tab_classwise_cic2018}
+\input{results/tab_classwise_toniot}
+\section{Residual experts and scorer/verifier (EXP59, EXP62, EXP63)}
+\input{results/tab_residual_oracle}
+\input{results/tab_sv_by_k}
+\section{Where the benign confusion comes from (2026-10-01 diagnosis)}
+Nearest-neighbour distances of Global\textquotesingle s errors to the training pool (standardised 46-dimensional L2; a typical benign row is 0.01 from training benign): Scanning misses lie 0.60 from training Scanning and 2.92 from benign (a context prior problem, fixed by an expert with a Scanning block plus the verifier: F1 0.039 to 0.90); Infiltration false positives lie 0.11 / 0.17 from both (overlapping region, a feature limit shared by every method); Ransomware false positives lie 0.12 from training Ransomware and 2.84 from benign (near-duplicate label contradictions); MitM false positives lie about 10 from every training class (a benign block that only exists in the test period, i.e. drift).
+\section{Context composition feasibility (EXP64--67, 2026-10-01)}
+\input{results/tab_feasibility}
+\section{Temporal-arrival protocol (EXP68)}
+\input{results/tab_temporal_arrival}
+\section{Decision log (branch points)}
+\begin{itemize}
+\item 2026-09-15: data-audit experiments (EXP40--44) closed; contradictions are reported as per-class ceilings, not removed from the headline benchmark; focus moved to improving the context-composed model.
+\item 2026-09-22: residual oracle redefined (label-assisted assignment, designated expert scored as is); union-of-experts oracles are no longer cited as expert capability.
+\item 2026-09-29: class-level specialist substitution without row routing and the open-set leg were rejected by the author; the model structure (global $\rightarrow$ scorer $\rightarrow$ top-1 expert $\rightarrow$ verifier) is fixed.
+\item 2026-09-30: EXP60 (random vs. nearby counterexample contexts) withdrawn from the evidence base; EXP61 SOTA on cleaned data and EXP62/63 S/V completed; three report tabs merged.
+\item 2026-10-01: the earlier A/B interpretation (``experts are good in their own region but cannot separate similar classes\textquotesingle\textquotesingle) was retracted in favour of direct same-population evaluation; four follow-up approaches screened, only context optimisation produced new information.
+\item 2026-10-02: the deck and the protocol were reframed claim-first: adaptation without retraining, tail recovery as the target, temporal-arrival evaluation.
+\end{itemize}
+\end{document}
