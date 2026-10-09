@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linear and Spatial Filtering 강의 스크립트</title>
+<style>
+  :root{
+    --bg:#fbfaf8; --fg:#23211e; --muted:#6b665e; --line:#e2ded6;
+    --accent:#8a5a2b; --accent-soft:#f3ece2; --card:#ffffff; --code:#f2efe9;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#171614; --fg:#eae7e1; --muted:#a29c92; --line:#332f2a;
+      --accent:#d6a56a; --accent-soft:#25211c; --card:#1e1c19; --code:#232019;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#171614; --fg:#eae7e1; --muted:#a29c92; --line:#332f2a;
+    --accent:#d6a56a; --accent-soft:#25211c; --card:#1e1c19; --code:#232019;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    line-height:1.85; font-size:16.5px; letter-spacing:-0.01em;
+  }
+  .wrap{max-width:820px; margin:0 auto; padding:56px 16px 120px}
+  header.top{border-bottom:2px solid var(--fg); padding-bottom:22px; margin-bottom:40px}
+  .course{font-size:13px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase}
+  h1{font-size:30px; margin:10px 0 8px; line-height:1.3}
+  .sub{color:var(--muted); font-size:15px; margin:0}
+  .toc{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 24px; margin:0 0 48px}
+  .toc h2{font-size:14px; letter-spacing:.08em; color:var(--muted); margin:0 0 12px; text-transform:uppercase}
+  .toc ol{margin:0; padding-left:20px; columns:2; column-gap:28px}
+  .toc li{margin:3px 0; font-size:14.5px; break-inside:avoid}
+  .toc a{color:var(--fg); text-decoration:none; border-bottom:1px solid transparent}
+  .toc a:hover{border-bottom-color:var(--accent); color:var(--accent)}
+  @media (max-width:640px){ .toc ol{columns:1} }
+  section.slide{margin:0 0 44px; scroll-margin-top:20px}
+  .slide-head{display:flex; align-items:baseline; gap:12px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:16px}
+  .num{flex:none; font-size:12.5px; font-weight:700; color:#fff; background:var(--accent); border-radius:5px; padding:2px 8px; letter-spacing:.03em}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .num{color:#171614} }
+  :root[data-theme="dark"] .num{color:#171614}
+  h2.title{font-size:20px; margin:0; line-height:1.4}
+  p{margin:0 0 14px}
+  .key{background:var(--accent-soft); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0}
+  .key b{color:var(--accent)}
+  ul.pts{margin:8px 0 14px; padding-left:20px}
+  ul.pts li{margin:5px 0}
+  code, .f{font-family:"SF Mono",Menlo,Consolas,monospace; background:var(--code); padding:1px 6px; border-radius:4px; font-size:14.5px}
+  .qa{border:1px dashed var(--line); border-radius:10px; padding:14px 18px; margin:16px 0; background:var(--card)}
+  .qa .q{font-weight:700; margin-bottom:6px}
+  .qa .q::before{content:"Q. "; color:var(--accent)}
+  table.k{border-collapse:collapse; margin:10px 0 16px; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:14px}
+  table.k td{border:1px solid var(--line); padding:6px 12px; text-align:center; background:var(--card)}
+  footer{margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="course">Computer Vision (EE6102) · 2026 Fall</div>
+  <h1>Lecture 03 — Linear and Spatial Filtering<br>한국어 강의 스크립트</h1>
+  <p class="sub">슬라이드 38장을 말로 풀어 설명하는 형식으로 정리했습니다. 이웃 픽셀을 이용하는 처리, 즉 컨볼루션의 이론과 구현을 다룹니다.</p>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#s2">이번 강의의 로드맵</a></li>
+    <li><a href="#s3">영상 필터링이란</a></li>
+    <li><a href="#s4">선형 필터링과 커널</a></li>
+    <li><a href="#s5">선형 시스템과 행렬 표현</a></li>
+    <li><a href="#s6">임펄스 응답과 컨볼루션</a></li>
+    <li><a href="#s8">컨볼루션 vs 상호상관</a></li>
+    <li><a href="#s12">분리 가능 필터</a></li>
+    <li><a href="#s14">Sobel 커널 예제</a></li>
+    <li><a href="#s16">서브샘플링 예제</a></li>
+    <li><a href="#s19">시불변 시스템과 Toeplitz 행렬</a></li>
+    <li><a href="#s20">분리 불가능 컨볼루션</a></li>
+    <li><a href="#s25">적분 영상과 박스 필터</a></li>
+    <li><a href="#s26">반복 박스 필터로 가우시안 근사</a></li>
+    <li><a href="#s29">가우시안 필터링</a></li>
+    <li><a href="#s34">평균 필터링</a></li>
+    <li><a href="#s36">샤프닝 필터링</a></li>
+  </ol>
+</nav>
+
+<section class="slide" id="s1">
+  <div class="slide-head"><span class="num">Slide 1</span><h2 class="title">도입 — Linear and Spatial Filtering</h2></div>
+  <p>오늘은 선형 및 공간 필터링을 다룹니다. 지난 시간의 점 처리에서는 픽셀 하나만 보고 값을 바꿨습니다. 그래서 잡음을 없앨 수도, 경계를 강조할 수도 없었습니다. 오늘부터는 <b>이웃 픽셀을 함께 봅니다</b>. 그 순간부터 훨씬 풍부한 일들이 가능해집니다.</p>
+  <p>오늘의 핵심 개념은 단 하나, <b>컨볼루션(convolution)</b>입니다. 블러링도, 샤프닝도, 에지 검출도, 그리고 여러분이 나중에 배울 CNN의 합성곱층도 전부 같은 연산입니다. 그래서 오늘은 이 연산을 여러 각도에서 — 수식으로, 행렬로, 임펄스 응답의 중첩으로 — 반복해서 보게 됩니다.</p>
+</section>
+
+<section class="slide" id="s2">
+  <div class="slide-head"><span class="num">Slide 2</span><h2 class="title">이번 강의의 로드맵</h2></div>
+  <p>슬라이드에 나열된 목차를 먼저 훑어 두면 전체 흐름을 잡기 좋습니다.</p>
+  <ul class="pts">
+    <li><b>2차원 선형 시스템의 수학</b> — 이론적 기초</li>
+    <li><b>분리 가능성(separability)</b> — 계산량을 극적으로 줄이는 핵심 성질</li>
+    <li><b>시불변 선형 시스템과 2차원 컨볼루션</b> — 필터링의 정확한 정의</li>
+    <li><b>빠른 박스 필터링을 위한 적분 영상(integral image)</b> — 실시간 구현 기법</li>
+    <li><b>2차원 주파수 응답</b> — 4강으로 넘어가는 다리</li>
+    <li><b>블러링과 샤프닝</b> — 대표적 응용</li>
+    <li><b>존플레이트(zoneplate)</b> — 주파수 특성을 눈으로 확인하는 도구</li>
+    <li><b>영상 샘플링과 에일리어싱</b></li>
+    <li><b>위너 필터링(Wiener filtering)</b></li>
+    <li><b>비선형 잡음 제거 / 샤프닝</b></li>
+  </ul>
+  <p>뒤쪽 네 항목(주파수 응답, 존플레이트, 에일리어싱, 위너 필터)은 주파수 영역 이해가 필요해서 4강에서 본격적으로 다루게 됩니다. 오늘은 앞쪽 여섯 항목에 집중합니다.</p>
+</section>
+
+<section class="slide" id="s3">
+  <div class="slide-head"><span class="num">Slide 3</span><h2 class="title">영상 필터링이란</h2></div>
+  <p>영상 필터링의 정의는 이렇습니다. <b>각 픽셀의 국소 이웃(local neighborhood)에 대한 어떤 함수를 이용해서 그 픽셀 값을 수정하는 것.</b></p>
+  <p>슬라이드에는 3×3 숫자 블록이 있습니다.</p>
+  <table class="k"><tr><td>1</td><td>5</td><td>3</td></tr><tr><td>4</td><td>5</td><td>1</td></tr><tr><td>1</td><td>1</td><td>7</td></tr></table>
+  <p>우리는 <b>가운데 픽셀에 주목</b>합니다. 현재 값은 5입니다. 필터 함수는 이 가운데 픽셀의 새 값을 주변 8개를 포함한 9개 값으로부터 계산합니다. 슬라이드의 예에서는 <b>5 → 7</b>로 바뀝니다.</p>
+  <p>그리고 이 "함수"를 부르는 이름이 여러 가지입니다. <b>Function, Convolution, Kernel, Impulse Response.</b> 맥락에 따라 다른 이름을 쓰지만 결국 같은 대상을 가리킵니다. 이 용어들이 왜 같은 것인지가 오늘 슬라이드 6~7에서 밝혀집니다.</p>
+  <p>중요한 점 하나. 이 계산은 <b>모든 픽셀에 대해 독립적으로</b> 수행됩니다. 즉 원본 영상을 읽으면서 새 영상에 쓰는 것이지, 방금 바꾼 값을 다시 입력으로 쓰는 것이 아닙니다. 구현할 때 입력 버퍼와 출력 버퍼를 반드시 분리해야 하는 이유입니다.</p>
+</section>
+
+<section class="slide" id="s4">
+  <div class="slide-head"><span class="num">Slide 4</span><h2 class="title">선형 필터링과 커널</h2></div>
+  <p>필터링 중 가장 단순하면서 가장 중요한 형태가 <b>선형 필터링</b>입니다. 여기에는 상호상관(cross-correlation)과 컨볼루션(convolution) 두 가지가 있는데, 차이는 잠시 뒤에 보겠습니다.</p>
+  <p>선형 필터링의 정의: <b>각 픽셀을 그 이웃들의 선형 결합, 즉 가중합(weighted sum)으로 대체한다.</b> 그리고 그 가중치를 모아 놓은 것을 <b>커널(kernel)</b>이라고 부릅니다. 마스크(mask), 필터(filter)라고도 합니다.</p>
+  <p>슬라이드의 계산을 직접 따라가 봅시다. 영상 데이터와 커널이 이렇습니다.</p>
+  <p>영상:</p>
+  <table class="k"><tr><td>1</td><td>5</td><td>3</td></tr><tr><td>4</td><td>5</td><td>1</td></tr><tr><td>1</td><td>1</td><td>7</td></tr></table>
+  <p>커널:</p>
+  <table class="k"><tr><td>0</td><td>0</td><td>0</td></tr><tr><td>0</td><td>0.5</td><td>0</td></tr><tr><td>0</td><td>1</td><td>0.5</td></tr></table>
+  <p>대응하는 위치끼리 곱해서 모두 더합니다.</p>
+  <p><code>1·0 + 5·0 + 3·0 + 4·0 + 5·0.5 + 1·0 + 1·0 + 1·1 + 7·0.5 = 2.5 + 1 + 3.5 = 7</code></p>
+  <p>그래서 가운데 값 5가 7이 됩니다. 앞 슬라이드의 "5 → 7"이 어떻게 나왔는지 이제 확인되었습니다.</p>
+  <p>여기서 짚어야 할 점. <b>커널의 가중치를 어떻게 설계하느냐에 따라 완전히 다른 필터가 됩니다.</b> 모두 양수이고 합이 1이면 평활화(블러)가 되고, 양수와 음수가 섞여 있고 합이 0이면 미분(에지 검출)이 되고, 가운데가 크고 주변이 음수이며 합이 1이면 샤프닝이 됩니다. 오늘 뒤에서 이 세 가지를 모두 보게 됩니다.</p>
+</section>
+
+<section class="slide" id="s5">
+  <div class="slide-head"><span class="num">Slide 5</span><h2 class="title">선형 영상 처리 — 정의와 행렬 표현</h2></div>
+  <p>이제 이론을 정립합시다. 영상 처리 시스템 <code>S(·)</code>가 <b>선형</b>이라는 것은 <b>중첩의 원리(superposition principle)</b>가 성립한다는 뜻입니다.</p>
+  <p><code>S{α·f[x,y] + β·g[x,y]} = α·S{f[x,y]} + β·S{g[x,y]}</code> &nbsp; (모든 실수 α, β에 대해)</p>
+  <p>말로 풀면, "두 영상을 섞은 뒤 처리한 결과"와 "각각 처리한 뒤 섞은 결과"가 같다는 것입니다. 이 성질 하나 덕분에 어마어마한 이론적 무기를 얻게 됩니다. 복잡한 입력을 단순한 조각들로 쪼개서 각각 처리한 다음 더하면 되기 때문입니다. 슬라이드 6~7의 임펄스 분해가 정확히 그 전략입니다.</p>
+  <p>그리고 <b>모든 선형 영상 처리 시스템은 행렬 곱으로 쓸 수 있습니다.</b></p>
+  <p><code>g = H f</code></p>
+  <p>여기서 영상의 모든 픽셀을 하나의 열벡터로 줄 세웁니다.</p>
+  <p><code>f = [f<sub>0,0</sub>, f<sub>1,0</sub>, ..., f<sub>N−1,0</sub>, ..., f<sub>0,L−1</sub>, ..., f<sub>N−1,L−1</sub>]<sup>T</sup></code></p>
+  <p>주의할 점으로 슬라이드가 덧붙입니다. <b>행렬 H가 정사각일 필요는 없습니다.</b> 출력 영상의 크기가 입력과 다를 수 있기 때문입니다. 서브샘플링이 그런 예입니다.</p>
+  <p>다만 실용적 관점을 하나 말씀드리면, 이 표현은 <b>이론적으로는 완벽하지만 계산에는 쓸 수 없습니다</b>. 512×512 영상이면 <code>f</code>가 262,144차원 벡터이고 <code>H</code>는 262,144 × 262,144 행렬, 즉 약 700억 개의 원소입니다. 그래서 우리에게는 구조가 필요합니다. 그 구조가 바로 <b>분리 가능성</b>과 <b>시불변성</b>이고, 오늘 강의의 나머지 대부분이 이 두 구조를 활용하는 이야기입니다.</p>
+</section>
+
+<section class="slide" id="s6">
+  <div class="slide-head"><span class="num">Slide 6</span><h2 class="title">임펄스 응답과 컨볼루션 — 1차원</h2></div>
+  <p>왜 "임펄스 응답"이 중요한지를 1차원에서 먼저 봅시다.</p>
+  <p>출발점은 이 항등식입니다. <b>어떤 이산 신호든 이동된 임펄스들의 가중합으로 표현할 수 있습니다.</b></p>
+  <p><code>x[n] = Σ<sub>k</sub> x[k]·δ[n − k]</code></p>
+  <p>당연해 보이지만 중요합니다. 신호 <code>x[n]</code>을 "n=k 위치에 크기 x[k]인 막대들의 모음"으로 분해한 것입니다.</p>
+  <p>이제 시스템이 LTI(선형 시불변)라고 합시다. 임펄스 응답이 <code>h[n]</code>이라면, 이동된 임펄스 <code>δ[n−k]</code>에 대한 응답은 <b>같은 만큼 이동된 임펄스 응답</b> <code>h[n−k]</code>입니다. (시불변성이 여기서 쓰입니다.)</p>
+  <p>그러면 선형성에 의해, 입력 전체에 대한 출력은 각 응답의 가중합입니다.</p>
+  <p><code>y[n] = Σ<sub>k</sub> x[k]·h[n − k]</code></p>
+  <p>이것이 <b>컨볼루션</b>입니다. 슬라이드가 정리한 대로, <b>"컨볼루션은 크기가 조정되고 위치가 이동된 임펄스 응답들의 합"</b>입니다.</p>
+  <div class="key"><b>왜 이게 대단한가.</b> 시스템이 LTI이기만 하면, 그 시스템을 완전히 알기 위해 필요한 것은 <b>임펄스 응답 <code>h</code> 하나뿐</b>입니다. 모든 가능한 입력에 대한 응답을 <code>h</code>로부터 계산할 수 있습니다. 슬라이드 3에서 kernel, impulse response, convolution을 같은 것의 다른 이름이라고 한 이유가 여기 있습니다.</div>
+</section>
+
+<section class="slide" id="s7">
+  <div class="slide-head"><span class="num">Slide 7</span><h2 class="title">임펄스 응답과 컨볼루션 — 2차원 일반형</h2></div>
+  <p>이제 2차원으로 확장하되, <b>아직 시불변성은 가정하지 않은</b> 가장 일반적인 형태를 씁니다.</p>
+  <p><code>g[α, β] = Σ<sub>x=0..N−1</sub> Σ<sub>y=0..L−1</sub> f[x, y] · h[x, α, y, β]</code></p>
+  <p>여기서 <code>h[x, α, y, β]</code>는 인덱스가 네 개입니다. "입력 위치 <code>(x,y)</code>가 출력 위치 <code>(α,β)</code>에 얼마나 기여하는가"를 나타냅니다. 이것이 슬라이드 5의 행렬 <code>H</code>를 4차원 인덱스로 다시 쓴 것입니다.</p>
+  <p>그럼 <code>h</code>의 의미를 확인해 봅시다. 입력으로 <code>(a,b)</code> 위치의 단위 임펄스를 넣습니다.</p>
+  <p><code>f[x,y] = δ[x−a, y−b] = 1 (x=a 이고 y=b), 0 (그 외)</code></p>
+  <p>이것을 위 식에 대입하면, 델타 함수의 성질에 의해 합에서 <code>x=a, y=b</code> 항만 살아남습니다.</p>
+  <p><code>g[α, β] = h[a, α, b, β]</code></p>
+  <p>즉 <b><code>h</code>는 문자 그대로 임펄스 응답입니다.</b> 한 점에 불을 켰을 때 출력에 나타나는 패턴 전체가 <code>h</code>입니다.</p>
+  <p>여기서 중요한 관찰. 이 일반형에서는 <b>입력 위치마다 임펄스 응답의 모양이 다를 수 있습니다.</b> 즉 영상의 왼쪽 위에서의 블러와 오른쪽 아래에서의 블러가 다를 수 있습니다. 실제 렌즈가 그렇습니다(주변부가 더 흐림). 이런 시스템은 선형이지만 시불변은 아닙니다. 그래서 컨볼루션으로 쓸 수 없고, 계산량도 훨씬 큽니다.</p>
+</section>
+
+<section class="slide" id="s8">
+  <div class="slide-head"><span class="num">Slide 8</span><h2 class="title">컨볼루션 vs 상호상관 (FYI)</h2></div>
+  <p>용어 정리 슬라이드입니다. 두 연산의 차이는 딱 하나, <b>커널을 뒤집느냐</b>입니다.</p>
+  <ul class="pts">
+    <li><b>상호상관(cross-correlation)</b>: 커널을 <b>뒤집지 않고</b> 그대로 얹어서 곱하고 더합니다. <code>Σ f[x+i, y+j]·h[i, j]</code></li>
+    <li><b>컨볼루션(convolution)</b>: 커널을 <b>상하좌우로 뒤집은 뒤</b> 곱하고 더합니다. <code>Σ f[x−i, y−j]·h[i, j]</code></li>
+  </ul>
+  <p>왜 컨볼루션은 뒤집을까요. 슬라이드 6의 유도에서 <code>h[n−k]</code>가 자연스럽게 나왔기 때문입니다. 즉 뒤집기는 인위적인 규칙이 아니라 "임펄스 응답의 중첩"이라는 물리적 해석에서 필연적으로 따라오는 것입니다. 그 덕분에 컨볼루션은 교환법칙과 결합법칙이 성립하고, 푸리에 변환에서 곱셈이 되는 좋은 성질을 갖습니다(4강).</p>
+  <p>실무적으로는 이렇게 기억하시면 됩니다.</p>
+  <ul class="pts">
+    <li><b>커널이 대칭</b>이면(가우시안, 박스 필터 등) 뒤집어도 같으므로 <b>둘이 완전히 동일</b>합니다. 실제로 우리가 쓰는 평활화 커널은 대부분 대칭입니다.</li>
+    <li>비대칭 커널(Sobel 등)에서는 결과의 <b>부호나 방향이 반대</b>가 됩니다.</li>
+    <li>많은 라이브러리의 "convolution" 함수가 실제로는 상호상관을 계산합니다. CNN의 "합성곱층"도 사실 상호상관입니다. 가중치를 학습으로 정하기 때문에 뒤집든 말든 결과가 같아서 문제가 되지 않습니다.</li>
+  </ul>
+</section>
+
+<section class="slide" id="s9">
+  <div class="slide-head"><span class="num">Slide 9</span><h2 class="title">해석 #1 — 임펄스 응답의 중첩</h2></div>
+  <p>컨볼루션을 이해하는 첫 번째 관점입니다. <b>출력 쪽에서 바라보는 관점</b>이라고 할 수 있습니다.</p>
+  <p>입력 영상의 각 픽셀을 하나의 "점광원"이라고 생각하십시오. 각 점광원은 출력에 <b>자기 밝기만큼 크기가 조정되고, 자기 위치만큼 이동된 임펄스 응답</b>을 하나씩 흩뿌립니다. 그렇게 흩뿌려진 수많은 패턴들이 모두 겹쳐 쌓인 것이 출력 영상입니다.</p>
+  <p>이 관점은 물리적 현상을 설명할 때 특히 자연스럽습니다. 예를 들어 초점이 안 맞은 카메라를 생각해 보십시오. 장면의 한 점이 센서에서 작은 원반으로 퍼지는데, 그 원반이 바로 임펄스 응답, 즉 <b>점 확산 함수(Point Spread Function, PSF)</b>입니다. 4강에서 흐린 영상을 다룰 때 이 개념을 다시 만나게 됩니다.</p>
+</section>
+
+<section class="slide" id="s10">
+  <div class="slide-head"><span class="num">Slide 10</span><h2 class="title">해석 #2 — 이웃 픽셀 값의 선형 결합</h2></div>
+  <p>두 번째 관점은 <b>입력 쪽에서 바라보는 관점</b>입니다.</p>
+  <p>출력 픽셀 하나를 정하고, "이 값을 만들기 위해 어떤 입력들이 필요한가"를 묻습니다. 답은 슬라이드 4에서 본 그대로입니다. 그 위치를 중심으로 커널을 얹고, 겹치는 입력 픽셀들을 커널 가중치로 곱해서 더하면 됩니다.</p>
+  <p>두 해석은 수학적으로 완전히 같은 식이지만, 사고의 방향이 반대입니다.</p>
+  <ul class="pts">
+    <li><b>해석 1(흩뿌리기, scatter)</b>: 입력 하나가 출력 여러 곳에 기여한다. → 물리적 이해에 좋습니다.</li>
+    <li><b>해석 2(모으기, gather)</b>: 출력 하나가 입력 여러 곳을 모은다. → <b>구현에 좋습니다.</b> 출력 픽셀마다 독립적으로 계산할 수 있어서 병렬화가 쉽고, 메모리 쓰기 충돌이 없기 때문입니다. GPU 구현은 거의 항상 이 방식입니다.</li>
+  </ul>
+</section>
+
+<section class="slide" id="s11">
+  <div class="slide-head"><span class="num">Slide 11</span><h2 class="title">행렬 H와 h[x, α, y, β]의 관계</h2></div>
+  <p>슬라이드 5의 거대 행렬 <code>H</code>와 슬라이드 7의 4차원 임펄스 응답 <code>h[x,α,y,β]</code>가 어떻게 대응하는지를 그림으로 보여 주는 슬라이드입니다.</p>
+  <p>핵심은 이렇습니다. 2차원 영상을 열벡터로 줄 세우면(래스터 순서로 펼치면), 2차원 위치 <code>(x,y)</code>가 1차원 인덱스 하나로 바뀝니다. 마찬가지로 출력 위치 <code>(α,β)</code>도 하나의 인덱스가 됩니다. 그러면 4개였던 인덱스가 2개로 줄고, <code>h</code>는 그냥 커다란 2차원 행렬 <code>H</code>의 원소가 됩니다.</p>
+  <p>즉 <b>두 표현은 같은 것을 다른 방식으로 정리한 것</b>일 뿐입니다. 다만 2차원 구조를 1차원으로 펼치면 "위아래로 인접한 픽셀"이 벡터에서는 멀리 떨어지게 되므로, 행렬 <code>H</code>는 특이한 블록 구조를 갖게 됩니다. 이 구조가 슬라이드 20~21의 <b>블록 Toeplitz 행렬</b>입니다.</p>
+</section>
+
+<section class="slide" id="s12">
+  <div class="slide-head"><span class="num">Slide 12</span><h2 class="title">분리 가능한 선형 영상 처리 (Separable)</h2></div>
+  <p>이제 계산량을 획기적으로 줄이는 첫 번째 구조, <b>분리 가능성</b>입니다.</p>
+  <p>임펄스 응답이 가로 방향 성분과 세로 방향 성분의 곱으로 쓰일 때 분리 가능하다고 합니다.</p>
+  <p><code>h[x, α, y, β] = h<sub>x</sub>[x, α] · h<sub>y</sub>[y, β]</code></p>
+  <p>이것을 일반식에 넣으면</p>
+  <p><code>g[α, β] = Σ<sub>x</sub> Σ<sub>y</sub> f[x,y] · h<sub>x</sub>[x,α] · h<sub>y</sub>[y,β]</code></p>
+  <p>가 되는데, 여기서 핵심 조작이 나옵니다. <code>h<sub>y</sub>[y,β]</code>는 <code>x</code>와 무관하므로 <b>안쪽 합에서 빼낼 수 있습니다</b>. 그러면 이중 합이 "1차원 처리를 두 번" 하는 형태로 분해됩니다.</p>
+  <p>결과적으로 처리 순서를 두 가지로 할 수 있습니다.</p>
+  <ul class="pts">
+    <li>행 방향으로 먼저, 그다음 열 방향으로</li>
+    <li>열 방향으로 먼저, 그다음 행 방향으로</li>
+  </ul>
+  <p>어느 쪽이든 결과는 같습니다.</p>
+  <div class="key"><b>왜 중요한가 — 계산량.</b> <code>k×k</code> 커널을 2차원으로 직접 적용하면 픽셀당 곱셈이 <code>k²</code>번입니다. 분리해서 적용하면 <code>k + k = 2k</code>번입니다. <code>k = 11</code>이면 121번이 22번으로, 약 <b>5.5배</b> 빨라집니다. <code>k = 31</code>이면 961번이 62번으로 <b>15배 이상</b>입니다. 커널이 클수록 이득이 커집니다.</div>
+</section>
+
+<section class="slide" id="s13">
+  <div class="slide-head"><span class="num">Slide 13</span><h2 class="title">분리 가능 처리의 행렬 표현</h2></div>
+  <p>입력과 출력 영상을 (펼치지 않고) 행렬 <code>F</code>, <code>G</code>로 그대로 두면, 분리 가능한 처리는 아주 깔끔한 형태가 됩니다.</p>
+  <p><code>G = H<sub>y</sub><sup>T</sup> F H<sub>x</sub></code></p>
+  <p>양쪽에서 곱하는 형태입니다. 왼쪽 곱은 세로 방향(열 단위) 처리를, 오른쪽 곱은 가로 방향(행 단위) 처리를 담당합니다.</p>
+  <p>출력 영상 <code>G</code>의 크기는 <code>L<sub>g</sub> × N<sub>g</sub></code>입니다. 그리고 <b>연산이 영상 크기를 바꾸지 않는 경우에만 <code>H<sub>x</sub></code>와 <code>H<sub>y</sub></code>가 정사각 행렬</b>이 됩니다. 크기를 줄이는 서브샘플링 같은 경우는 직사각 행렬이 됩니다.</p>
+  <p>이 표현의 장점은, 슬라이드 5의 262,144×262,144 괴물 행렬이 두 개의 <b>512×512 행렬</b>로 줄었다는 것입니다. 저장 공간으로 따지면 약 10만 배의 절약입니다. 이것이 구조를 활용한다는 것의 의미입니다.</p>
+</section>
+
+<section class="slide" id="s14">
+  <div class="slide-head"><span class="num">Slide 14</span><h2 class="title">예제 — 분리 가능한 Sobel 커널 (1)</h2></div>
+  <p>가장 유명한 분리 가능 커널 예제입니다. 세로 에지를 검출하는 Sobel 커널은 이렇게 생겼습니다.</p>
+  <table class="k"><tr><td>−1</td><td>0</td><td>1</td></tr><tr><td>−2</td><td>0</td><td>2</td></tr><tr><td>−1</td><td>0</td><td>1</td></tr></table>
+  <p>이 커널이 다음과 같이 두 개의 1차원 벡터의 외적(outer product)으로 분해됩니다.</p>
+  <p><code>[1, 2, 1]<sup>T</sup> × [−1, 0, 1]</code></p>
+  <p>직접 확인해 보십시오. 1행은 1×[−1,0,1] = [−1,0,1], 2행은 2×[−1,0,1] = [−2,0,2], 3행은 1×[−1,0,1] = [−1,0,1]. 정확히 맞습니다.</p>
+  <p>그리고 두 인수의 의미가 뚜렷합니다.</p>
+  <ul class="pts">
+    <li><code>[−1, 0, 1]</code> — 가로 방향 <b>미분</b>(중앙 차분)입니다. 좌우 값의 차이를 구하므로 세로 방향 에지에 반응합니다.</li>
+    <li><code>[1, 2, 1]</code> — 세로 방향 <b>평활화</b>(이항 가중 평균)입니다. 잡음에 대한 민감도를 낮춥니다.</li>
+  </ul>
+  <p>즉 Sobel은 <b>"한 방향으로 미분하고, 그와 직교하는 방향으로 평활화한다"</b>는 설계 철학을 담고 있습니다. 미분은 본질적으로 잡음을 증폭하므로(고주파를 강조하므로), 직교 방향의 평활화로 그것을 보완하는 것입니다. 이 구조를 이해하면 Sobel 커널의 숫자를 외울 필요가 없습니다.</p>
+</section>
+
+<section class="slide" id="s15">
+  <div class="slide-head"><span class="num">Slide 15</span><h2 class="title">예제 — 분리 가능한 Sobel 커널 (2)</h2></div>
+  <p>앞의 분해를 실제 계산으로 확인하는 슬라이드입니다. 결론은 한 문장입니다.</p>
+  <p class="key"><b>분리 가능한 2차원 커널은 연속된 두 번의 1차원 컨볼루션으로 구현할 수 있고, 최종 결과는 완전히 동일하다.</b></p>
+  <p>구현 절차는 이렇습니다. 먼저 영상의 모든 행에 대해 <code>[−1,0,1]</code>로 1차원 컨볼루션을 합니다. 그 중간 결과의 모든 열에 대해 <code>[1,2,1]</code>로 1차원 컨볼루션을 합니다. 끝입니다. 순서를 바꿔도 결과는 같습니다.</p>
+  <p>픽셀당 곱셈 횟수를 세어 보면 2차원 직접 계산은 9번, 분리 구현은 3+3=6번입니다. 3×3에서는 이득이 크지 않지만, 커널이 커지면 앞에서 본 대로 차이가 급격히 벌어집니다.</p>
+</section>
+
+<section class="slide" id="s16">
+  <div class="slide-head"><span class="num">Slide 16</span><h2 class="title">예제 — 서브샘플링</h2></div>
+  <p>분리 가능성이 컨볼루션에만 국한되지 않는다는 것을 보여 주는 예제입니다. 가로·세로 각각 2:1로 샘플을 솎아내는 서브샘플링을 생각해 봅시다. 8×8 영상이 4×4가 됩니다.</p>
+  <p>이 연산도 분리 가능합니다. <b>가로 방향 1차원 2:1 서브샘플링</b>을 한 뒤 <b>세로 방향 1차원 2:1 서브샘플링</b>을 하면, 2차원으로 한 번에 한 것과 같은 결과가 나옵니다. 행렬로는 앞에서 본 그 형태입니다.</p>
+  <p><code>G = H<sub>y</sub><sup>T</sup> F H<sub>x</sub></code></p>
+  <p>여기서 <code>H<sub>x</sub></code>는 8개 샘플을 4개로 보내는 직사각 행렬입니다. 즉 짝수 번째 열만 남기는 행렬이죠. 큰 2차원 연산자를 만들 필요 없이 x와 y 방향으로 독립적으로 1차원 처리를 적용하면 됩니다.</p>
+  <div class="key"><b>슬라이드가 강조하는 주의사항.</b> 서브샘플링은 <b>선형 연산이지만, 시불변 컨볼루션 필터는 아닙니다.</b> 왜 그럴까요? 입력을 한 픽셀 옮기면 출력이 한 픽셀 옮겨지는 것이 아니라, <b>완전히 다른 샘플들이 선택</b>되기 때문입니다. 즉 짝수 샘플을 취하다가 홀수 샘플을 취하게 되어 결과가 전혀 달라집니다. 이런 성질을 시가변(shift-varying), 더 정확히는 주기적 시변(periodically shift-varying)이라고 합니다.</div>
+  <p>이 구분이 왜 중요하냐면, 컨볼루션이 아니므로 <b>푸리에 영역에서 단순한 곱셈이 되지 않기 때문</b>입니다. 그래서 4강에서 다운샘플링의 주파수 효과(에일리어싱, 스펙트럼 folding)를 별도로 유도해야 합니다.</p>
+</section>
+
+<section class="slide" id="s17">
+  <div class="slide-head"><span class="num">Slide 17</span><h2 class="title">더 나은 2:1 축소 기법</h2></div>
+  <p>단순 솎아내기보다 나은 방법을 보여 주는 슬라이드입니다. 핵심은 <b>솎아내기 전에 평활화를 먼저 하는 것</b>입니다.</p>
+  <p>왜 그럴까요. 샘플 수를 절반으로 줄이면 표현할 수 있는 최고 주파수도 절반이 됩니다. 그런데 원본에 그보다 높은 주파수 성분이 남아 있으면, 그것이 사라지는 것이 아니라 <b>낮은 주파수로 되접혀 들어옵니다(folding)</b>. 이것이 에일리어싱입니다. 줄무늬 옷을 찍었을 때 나타나는 무늬 왜곡(모아레), 사진을 축소했을 때 생기는 이상한 패턴이 모두 이것입니다.</p>
+  <p>해결책은 명확합니다. <b>먼저 저역통과 필터로 고주파를 제거한 다음 솎아내는 것</b>입니다. 그러면 접혀 들어올 고주파 자체가 없으므로 에일리어싱이 생기지 않습니다. 대신 영상이 약간 부드러워지는데, 어차피 축소된 영상에서는 그 디테일을 표현할 수 없으므로 손해가 아닙니다.</p>
+  <p>1강 슬라이드 6에서 "prefiltering before subsampling to avoid aliasing"이라고 언급했던 것이 바로 이것입니다. 4강 슬라이드 35~36에서 존플레이트 영상으로 이 효과를 눈으로 직접 확인하게 됩니다.</p>
+</section>
+
+<section class="slide" id="s18">
+  <div class="slide-head"><span class="num">Slide 18</span><h2 class="title">예제 — 필터링 (이동 평균)</h2></div>
+  <p>가장 단순한 필터를 예로 듭니다. 각 픽셀을 <b>가로(또는 세로)로 이웃한 두 픽셀의 평균</b>으로 대체하는 것입니다. 2차원으로 합치면 2×2 박스 평활화 커널이 됩니다.</p>
+  <p><code>(1/4) × </code></p>
+  <table class="k"><tr><td>1</td><td>1</td></tr><tr><td>1</td><td>1</td></tr></table>
+  <p>이 커널의 성격을 정리하면 이렇습니다.</p>
+  <ul class="pts">
+    <li><b>이동 평균 필터(moving average filter)</b>로 구현할 수 있습니다. 즉 평활화 연산자입니다.</li>
+    <li>2차원 형태는 <code>g = H<sub>y</sub><sup>T</sup> f H<sub>x</sub></code>로, 즉 <b>분리 가능</b>합니다. 가로로 [1,1]/2, 세로로 [1,1]/2를 각각 적용하면 됩니다.</li>
+    <li><b>시불변(shift-invariant) 연산</b>입니다. 앞의 서브샘플링과 대조됩니다. 단, <b>영상 경계는 예외</b>입니다.</li>
+  </ul>
+  <p>마지막 단서에 대해 조금 더 설명하겠습니다. 영상 가장자리에서는 커널의 일부가 영상 바깥으로 나갑니다. 없는 값을 어떻게 처리할 것인가에 따라 결과가 달라지므로, 그 부분에서는 엄밀한 시불변성이 깨집니다. 실무에서 쓰는 방법은 몇 가지가 있습니다. 바깥을 0으로 채우기(zero padding, 가장자리가 어두워지는 부작용), 가장자리 값을 복제하기(replicate, 가장 흔함), 거울처럼 반사하기(reflect), 반대편으로 순환하기(wrap, 푸리에 기반 구현에서 자연스러움).</p>
+</section>
+
+<section class="slide" id="s19">
+  <div class="slide-head"><span class="num">Slide 19</span><h2 class="title">시불변 시스템과 Toeplitz 행렬</h2></div>
+  <p>이제 두 번째 구조, <b>시불변성(shift invariance)</b>을 형식화합니다.</p>
+  <p>시스템이 시불변이면 임펄스 응답이 <b>절대 위치가 아니라 상대 위치에만 의존</b>합니다. 수식으로는</p>
+  <p><code>h<sub>x</sub>[x, α] = h<sub>siv,x</sub>[α − x]</code>, &nbsp; <code>h<sub>y</sub>[y, β] = h<sub>siv,y</sub>[β − y]</code></p>
+  <p>인덱스가 두 개에서 <b>그 차이 하나로</b> 줄었다는 점이 핵심입니다. 이것이 저장 공간과 계산량의 절감으로 직결됩니다.</p>
+  <p>이것을 대입하면 처리식이 이렇게 됩니다.</p>
+  <p><code>g[α, β] = Σ<sub>x</sub> Σ<sub>y</sub> f[x,y] · h<sub>siv,x</sub>[α−x] · h<sub>siv,y</sub>[β−y]</code></p>
+  <p>이것이 바로 <b>2차원 분리 가능 컨볼루션</b>, 즉 우리가 "필터링"이라고 부르는 연산의 정확한 형태입니다.</p>
+  <p>행렬 관점에서는 <code>H<sub>x</sub></code>와 <code>H<sub>y</sub></code>가 정사각이면서 <b>Toeplitz 행렬</b>이 됩니다. Toeplitz 행렬이란 <b>대각선 방향으로 값이 일정한</b> 행렬입니다. 한 행을 오른쪽으로 한 칸씩 밀어서 다음 행을 만드는 형태죠. 각 행이 "같은 커널을 한 칸씩 이동시킨 것"이므로 당연한 결과입니다.</p>
+  <div class="key"><b>구조가 주는 이득 정리.</b> 아무 구조 없는 선형 시스템은 N²×N² 행렬이 필요합니다(512×512 영상에서 약 700억 개 원소). 분리 가능하면 N×N 두 개로 줄고(약 50만 개). 여기에 시불변까지 더하면 <b>길이 k짜리 벡터 두 개</b>면 충분합니다(11탭이면 22개). 이것이 필터링이 실시간으로 가능한 이유입니다.</div>
+</section>
+
+<section class="slide" id="s20">
+  <div class="slide-head"><span class="num">Slide 20</span><h2 class="title">분리 불가능한 2차원 컨볼루션</h2></div>
+  <p>모든 커널이 분리 가능한 것은 아닙니다. 시불변이지만 분리 불가능한 필터도 얼마든지 있습니다. 이 경우 일반식은</p>
+  <p><code>g[α, β] = Σ<sub>x</sub> Σ<sub>y</sub> f[x, y] · h<sub>siv</sub>[α−x, β−y]</code></p>
+  <p>입니다. 여전히 <b>차이 인덱스만</b> 나타나므로 시불변이고, 진짜 2차원 컨볼루션입니다. 다만 가로·세로의 곱으로 쪼갤 수 없으므로 픽셀당 <code>k²</code>번의 곱셈이 필요합니다.</p>
+  <p>행렬로 보면 <code>g = H f</code>이고, 이때 <code>H</code>는 <b>블록 Toeplitz 행렬</b>입니다. 즉 행렬이 블록 단위로 Toeplitz 구조를 가지고, 각 블록도 내부적으로 Toeplitz입니다. (이런 구조를 BTTB, block-Toeplitz-with-Toeplitz-blocks라고 부릅니다.)</p>
+  <p>대표적인 분리 불가능 커널로는 라플라시안 커널이나 방향성 있는 Gabor 필터 등이 있습니다. 참고로 분리 가능성 판정법은 간단합니다. <b>커널 행렬의 랭크가 1이면 분리 가능</b>합니다. 랭크가 1이라는 것은 모든 행이 하나의 벡터의 배수라는 뜻이고, 그러면 외적으로 쓸 수 있기 때문입니다. 이 판정법이 슬라이드 32에서 가우시안에 적용됩니다.</p>
+</section>
+
+<section class="slide" id="s21">
+  <div class="slide-head"><span class="num">Slide 21</span><h2 class="title">분리 불가능 컨볼루션에서 H의 구조</h2></div>
+  <p>앞에서 말한 블록 Toeplitz 구조를 그림으로 보여 주는 슬라이드입니다. 행렬 전체를 블록으로 나누어 보면 대각선 방향으로 같은 블록이 반복되고, 각 블록 안을 들여다보면 또 대각선 방향으로 같은 값이 반복됩니다.</p>
+  <p>왜 이런 이중 구조가 나올까요. 영상을 행 단위로 이어 붙여 벡터를 만들었기 때문입니다. <b>가로 방향 이동</b>은 벡터 안에서 한 칸 이동 → 블록 <b>내부</b>의 Toeplitz 구조. <b>세로 방향 이동</b>은 벡터에서 한 행 길이만큼 점프 → <b>블록 간</b>의 Toeplitz 구조. 이렇게 2차원의 두 방향이 서로 다른 스케일의 반복 구조로 나타나는 것입니다.</p>
+  <p>덧붙이면, 이 행렬은 원소의 대부분이 0인 희소 행렬입니다. 커널 크기 밖의 픽셀은 기여하지 않기 때문입니다. 그래서 실제 구현은 행렬을 만들지 않고 커널로 직접 계산합니다. 다만 이 행렬 관점은 나중에 영상 복원(deconvolution)을 역문제로 정식화할 때 대단히 유용해집니다.</p>
+</section>
+
+<section class="slide" id="s22">
+  <div class="slide-head"><span class="num">Slide 22</span><h2 class="title">컨볼루션 — 임펄스 응답의 중첩 (시각화)</h2></div>
+  <p>슬라이드 9의 해석 #1을 실제 영상으로 시각화한 것입니다.</p>
+  <p>입력의 밝은 점 하나하나가 출력에 커널 모양의 작은 패턴을 남기고, 그 패턴들이 서로 겹쳐 쌓여 최종 영상이 만들어지는 과정을 볼 수 있습니다. 밝은 점일수록 진한 패턴을 남깁니다.</p>
+  <p>이 그림이 잘 보여 주는 것은, <b>컨볼루션의 결과가 커널의 모양을 "물려받는다"</b>는 점입니다. 커널이 원형이면 점광원이 원형으로 번지고, 커널이 한 방향으로 길쭉하면 그 방향으로 늘어진 번짐이 생깁니다. 야경 사진에서 손이 흔들렸을 때 불빛이 선분으로 늘어나는 것이 바로 이 현상이고, 4강에서 모션 블러로 다시 다룹니다.</p>
+</section>
+
+<section class="slide" id="s23">
+  <div class="slide-head"><span class="num">Slide 23</span><h2 class="title">컨볼루션 — 이웃 픽셀의 선형 결합 (시각화)</h2></div>
+  <p>이번에는 슬라이드 10의 해석 #2를 시각화한 것입니다. 커널이 영상 위를 훑고 지나가면서, 각 위치에서 겹치는 픽셀들을 가중합해 출력 한 픽셀을 만들어내는 과정입니다.</p>
+  <p>두 슬라이드를 나란히 보면서 확인해야 할 것은 <b>같은 연산을 두 방향에서 보고 있다는 사실</b>입니다. 어느 쪽으로 이해하셔도 되지만, 두 관점을 자유롭게 오갈 수 있으면 이후의 내용이 훨씬 편해집니다. 특히 블러를 되돌리는 문제(deconvolution)를 다룰 때 "흩뿌려진 것을 어떻게 모을 것인가"라는 관점이 필요해집니다.</p>
+</section>
+
+<section class="slide" id="s24">
+  <div class="slide-head"><span class="num">Slide 24</span><h2 class="title">컨볼루션 예제 — 5×5 박스 필터로 블러</h2></div>
+  <p>구체적인 블러 예제입니다. 커널은 모든 원소가 1인 5×5 행렬을 25로 나눈 것, 즉 <b>5×5 박스 필터</b>입니다.</p>
+  <p>그리고 슬라이드가 이것을 이렇게 분해해서 보여 줍니다.</p>
+  <p><code>(1/25)·[5×5 모두 1] = (1/5)·[1 1 1 1 1] * (1/5)·[1 1 1 1 1]<sup>T</sup></code></p>
+  <p>즉 가로 방향 길이 5의 평균 필터와 세로 방향 길이 5의 평균 필터의 곱입니다. <b>박스 필터는 분리 가능</b>하다는 것을 다시 확인할 수 있습니다. 랭크로 확인해도 마찬가지입니다. 모든 행이 [1,1,1,1,1]로 같으므로 랭크가 1입니다.</p>
+  <p>결과 영상은 예상대로 흐려집니다. 가는 디테일과 잡음이 함께 줄어드는데, 이것이 평활화 필터의 본질적 성격입니다. <b>잡음 제거와 디테일 보존은 같은 손잡이의 양쪽 끝</b>이라는 점을 기억하십시오.</p>
+  <p>다만 박스 필터는 품질 면에서 최선이 아닙니다. 4강 슬라이드 24에서 보겠지만 박스 필터의 주파수 응답은 sinc 함수 형태라서 <b>측엽(sidelobe)이 크고, 특정 주파수가 부호를 뒤집어 통과</b>합니다. 그 결과 가는 줄무늬가 반전되어 보이는 등의 아티팩트가 생길 수 있습니다. 그래서 품질이 중요하면 가우시안을 씁니다.</p>
+</section>
+
+<section class="slide" id="s25">
+  <div class="slide-head"><span class="num">Slide 25</span><h2 class="title">적분 영상을 이용한 박스 필터링</h2></div>
+  <p>박스 필터는 품질은 평범하지만, <b>속도에서 결정적인 장점</b>이 있습니다. 적분 영상(integral image, summed-area table)을 쓰면 <b>커널 크기와 무관하게 상수 시간</b>에 계산할 수 있기 때문입니다.</p>
+  <p>적분 영상은 이렇게 정의됩니다.</p>
+  <p><code>I(x, y) = Σ<sub>x' ≤ x</sub> Σ<sub>y' ≤ y</sub> f(x', y')</code></p>
+  <p>즉 원점부터 <code>(x,y)</code>까지의 직사각형 영역의 합입니다. 이 표는 영상을 한 번만 훑으면 점화식으로 만들 수 있습니다.</p>
+  <p>그러면 임의의 직사각형 영역 <code>[x₁..x₂] × [y₁..y₂]</code>의 합을 <b>단 네 번의 조회와 세 번의 덧셈·뺄셈</b>으로 구할 수 있습니다.</p>
+  <p><code>합 = I(x₂,y₂) − I(x₁−1,y₂) − I(x₂,y₁−1) + I(x₁−1,y₁−1)</code></p>
+  <p>포함-배제 원리입니다. 큰 직사각형에서 위쪽과 왼쪽을 빼면 겹친 부분이 두 번 빠지므로 다시 한 번 더해 줍니다.</p>
+  <div class="key"><b>계산 복잡도.</b> <code>k×k</code> 박스 필터를 직접 계산하면 픽셀당 <code>O(k²)</code>, 분리 구현으로도 <code>O(k)</code>입니다. 적분 영상을 쓰면 <b><code>O(1)</code></b>, 즉 커널이 3×3이든 101×101이든 같은 시간이 걸립니다. 이것이 Viola-Jones 얼굴 검출이나 SURF 특징 추출이 실시간으로 동작할 수 있었던 비결입니다.</div>
+  <p>주의할 점 하나. 적분 영상은 값이 누적되므로 큰 영상에서는 수치가 매우 커집니다. 8비트 영상이라도 반드시 32비트 이상의 정수형이나 부동소수점으로 저장해야 오버플로가 나지 않습니다.</p>
+</section>
+
+<section class="slide" id="s26">
+  <div class="slide-head"><span class="num">Slide 26</span><h2 class="title">반복 박스 필터링으로 가우시안 근사 (1)</h2></div>
+  <p>여기서 아름다운 아이디어가 등장합니다. <b>박스 필터는 빠르지만 품질이 나쁘고, 가우시안은 품질이 좋지만 느립니다. 그렇다면 박스 필터를 여러 번 반복해서 가우시안을 근사하면 어떨까요?</b></p>
+  <p>박스 커널은 이렇게 정의됩니다.</p>
+  <p><code>h<sub>box</sub>(x) = 1/w (|x| ≤ w/2), 0 (그 외)</code> &nbsp; 또는 이산 형태로 <code>h<sub>box</sub> = (1/w)·[1, 1, ..., 1]</code></p>
+  <p>이 커널로 <b>N번 반복해서 컨볼루션</b>하면 결과가 점점 가우시안에 가까워집니다.</p>
+  <p>왜 그럴까요. 이것은 사실 <b>중심극한정리(Central Limit Theorem)</b>의 신호 처리 버전입니다. 커널을 확률 분포로 보면, 컨볼루션은 독립 확률변수의 합에 대응합니다. 균등분포(박스)를 여러 번 더하면 그 합의 분포가 정규분포로 수렴한다는 것이 중심극한정리이고, 여기서 정확히 같은 일이 일어납니다.</p>
+  <p>그리고 결정적인 이점이 있습니다. <b>각각의 박스 필터는 적분 영상으로 O(1)에 계산할 수 있습니다.</b> 그러므로 N번 반복해도 전체 계산량은 <code>O(N)</code>이고, <b>가우시안의 σ와 무관</b>합니다. σ를 아무리 키워도 속도가 그대로입니다.</p>
+</section>
+
+<section class="slide" id="s27">
+  <div class="slide-head"><span class="num">Slide 27</span><h2 class="title">반복 박스 필터링으로 가우시안 근사 (2)</h2></div>
+  <p>반복 횟수 N에 따른 커널 모양의 변화를 그림으로 보여 주는 슬라이드입니다.</p>
+  <ul class="pts">
+    <li><b>N = 1</b>: 직사각형입니다. 가장자리가 수직으로 끊깁니다. 가우시안과는 전혀 다릅니다.</li>
+    <li><b>N = 2</b>: 삼각형이 됩니다. 박스와 박스의 컨볼루션은 정확히 삼각 함수(tent function)입니다. 이미 연속적인 모양이 되었습니다.</li>
+    <li><b>N = 3</b>: 구간별 2차 함수(quadratic B-spline)가 됩니다. 눈으로 보기에 벌써 종 모양입니다.</li>
+    <li><b>N = 4</b>: 3차 B-spline입니다. <b>실용적으로 가우시안과 구별하기 어려울 정도</b>입니다.</li>
+  </ul>
+  <p>실무에서는 보통 <b>3~4회면 충분</b>하다고 봅니다. 그래서 많은 그래픽 라이브러리와 모바일 앱의 "가우시안 블러"가 내부적으로는 박스 필터 3회 반복으로 구현되어 있습니다.</p>
+</section>
+
+<section class="slide" id="s28">
+  <div class="slide-head"><span class="num">Slide 28</span><h2 class="title">반복 박스 필터링 — 개념 정리</h2></div>
+  <p>슬라이드가 요약한 내용을 그대로 정리하겠습니다.</p>
+  <ul class="pts">
+    <li>이것은 <b>분리 가능한 평활화 연산</b>입니다. 가로와 세로로 각각 1차원 박스를 적용하면 됩니다.</li>
+    <li><b>가우시안은 반복 박스 필터링으로 근사</b>할 수 있습니다: <code>Gaussian ≈ Box · Box · Box · Box</code> (N회 반복)</li>
+    <li><b>N이 커질수록 결과가 가우시안에 가까워집니다.</b></li>
+    <li><b>각 박스 필터는 적분 영상으로 효율적으로 계산</b>할 수 있습니다.</li>
+  </ul>
+  <p>최종 메시지는 이것입니다. <b>빠른 박스 필터링이 있으면 가우시안 평활화를 효율적으로 근사할 수 있다.</b></p>
+  <p>이 접근이 왜 공학적으로 훌륭한지 한 번 더 강조하고 싶습니다. "이상적인 것(가우시안)을 그대로 구현한다"가 아니라, "값싼 연산(박스)을 반복해서 이상적인 것에 수렴시킨다"는 발상입니다. 이런 사고방식은 영상 처리 전반에서 반복적으로 나타납니다.</p>
+</section>
+
+<section class="slide" id="s29">
+  <div class="slide-head"><span class="num">Slide 29</span><h2 class="title">가우시안 필터링</h2></div>
+  <p>이제 가우시안 자체를 봅시다. 2차원 가우시안 커널은 이렇습니다.</p>
+  <p><code>G<sub>σ</sub>(x, y) = (1 / (2πσ²)) · exp( −(x² + y²) / (2σ²) )</code></p>
+  <p>앞의 <code>1/(2πσ²)</code>는 정규화 상수로, 전체 적분이 1이 되게 합니다. 이것이 중요한 이유는 <b>필터가 영상의 전체 밝기를 바꾸지 않게</b> 하기 위함입니다. 커널의 합이 1이어야 평평한 영역이 그대로 유지됩니다.</p>
+  <p>가우시안이 평활화 필터의 표준이 된 이유는 여러 가지입니다.</p>
+  <ul class="pts">
+    <li><b>분리 가능</b>합니다. <code>exp(−(x²+y²)/2σ²) = exp(−x²/2σ²)·exp(−y²/2σ²)</code>. 지수의 덧셈이 곱셈으로 분해되기 때문입니다.</li>
+    <li><b>회전 대칭(isotropic)</b>입니다. <code>x²+y² = r²</code>이므로 방향에 무관합니다. 즉 어느 방향으로도 똑같이 번집니다. 박스 필터는 대각선 방향과 축 방향의 특성이 달라서 이 성질이 없습니다.</li>
+    <li><b>푸리에 변환도 가우시안</b>입니다. 그래서 주파수 응답에 측엽이 없고, 박스 필터 같은 아티팩트가 생기지 않습니다.</li>
+    <li><b>가우시안끼리의 컨볼루션은 다시 가우시안</b>입니다. σ가 <code>√(σ₁² + σ₂²)</code>로 합쳐집니다. 이 성질이 나중에 스케일 스페이스 이론과 SIFT 같은 특징점 검출의 기초가 됩니다.</li>
+  </ul>
+  <p>구현 팁. 커널 크기는 보통 <code>⌈6σ⌉ + 1</code> 정도로 잡습니다. 가우시안의 값이 ±3σ 밖에서는 무시할 만큼 작아지기 때문입니다.</p>
+</section>
+
+<section class="slide" id="s30">
+  <div class="slide-head"><span class="num">Slide 30</span><h2 class="title">σ에 따른 가우시안 필터링 결과</h2></div>
+  <p><code>σ = 1, 5, 10, 30</code>으로 필터링한 결과를 비교하는 슬라이드입니다.</p>
+  <ul class="pts">
+    <li><b>σ = 1</b>: 아주 미세한 잡음만 제거됩니다. 디테일은 거의 그대로입니다.</li>
+    <li><b>σ = 5</b>: 질감과 가는 디테일이 사라지기 시작합니다. 잡음 제거 효과는 뚜렷합니다.</li>
+    <li><b>σ = 10</b>: 주요 형태만 남습니다. 얼굴이라면 이목구비의 대략적 배치 정도만 보입니다.</li>
+    <li><b>σ = 30</b>: 거의 색 얼룩 수준입니다. 대략적인 밝기 분포만 남습니다.</li>
+  </ul>
+  <p>여기서 <b>σ는 "얼마나 큰 스케일의 구조를 남길 것인가"를 정하는 파라미터</b>라는 관점이 중요합니다. σ보다 작은 구조는 지워지고 σ보다 큰 구조는 남습니다. 그래서 가우시안은 단순한 블러 도구가 아니라 <b>스케일을 선택하는 도구</b>입니다. 여러 σ로 필터링한 영상들을 쌓으면 <b>스케일 스페이스(scale space)</b>가 되고, 이것이 크기에 무관한 특징점 검출의 기반이 됩니다.</p>
+</section>
+
+<section class="slide" id="s31">
+  <div class="slide-head"><span class="num">Slide 31</span><h2 class="title">가우시안 커널 생성 방법 (FYI)</h2></div>
+  <p>실제로 커널 숫자를 만드는 절차를 보여 주는 참고 슬라이드입니다. 절차는 이렇습니다.</p>
+  <ul class="pts">
+    <li>커널 크기를 정합니다(보통 <code>6σ</code> 정도, 홀수로).</li>
+    <li>중심을 (0,0)으로 두고 각 위치 <code>(x,y)</code>에서 <code>exp(−(x²+y²)/(2σ²))</code>를 계산합니다.</li>
+    <li>전체 합으로 나눠서 <b>정규화</b>합니다. 이 단계가 중요합니다. 커널을 유한하게 잘라냈기 때문에 이론적 정규화 상수를 쓰면 합이 정확히 1이 되지 않기 때문입니다.</li>
+  </ul>
+  <p>참고로 이항 계수를 쓰는 근사도 자주 씁니다. 예를 들어 <code>[1,2,1]/4</code>, <code>[1,4,6,4,1]/16</code>은 정수 연산만으로 가우시안을 근사할 수 있어서 하드웨어 구현에서 선호됩니다. 파스칼의 삼각형이 이항분포이고, 이항분포는 중심극한정리에 의해 가우시안에 수렴하기 때문입니다. 슬라이드 26의 아이디어와 같은 뿌리입니다.</p>
+</section>
+
+<section class="slide" id="s32">
+  <div class="slide-head"><span class="num">Slide 32</span><h2 class="title">가우시안 필터는 분리 가능한가?</h2></div>
+  <p>답은 <b>"그렇다, 커널 크기와 무관하게 항상"</b>입니다. 슬라이드는 11×11 커널을 예로 들어 이것을 확인합니다.</p>
+  <p>확인 방법이 두 가지입니다.</p>
+  <p><b>방법 1 — 수식.</b> 앞에서 본 대로 지수 함수의 성질에서 바로 나옵니다.</p>
+  <p><code>exp(−(x²+y²)/2σ²) = exp(−x²/2σ²) · exp(−y²/2σ²)</code></p>
+  <p><b>방법 2 — 행렬 랭크.</b> 11×11 커널 행렬을 직접 들여다보면, <b>모든 행이 같은 하나의 벡터를 스칼라배한 것</b>입니다. 즉 선형 독립인 행이 하나뿐이므로 <code>rank(G) = 1</code>입니다. 그리고 랭크 1 행렬은 항상 두 벡터의 외적으로 쓸 수 있습니다. 따라서 분리 가능합니다.</p>
+  <p>이 두 번째 방법은 일반적인 판정법으로 쓸 수 있으니 기억해 두십시오. <b>어떤 커널이 주어졌을 때 분리 가능한지 알고 싶으면 랭크를 계산하십시오.</b> 랭크가 1이면 분리 가능하고, SVD를 하면 두 개의 1차원 벡터를 바로 얻을 수 있습니다. 랭크가 r이면 r개의 분리 가능한 필터의 합으로 근사할 수도 있습니다(저랭크 근사).</p>
+</section>
+
+<section class="slide" id="s33">
+  <div class="slide-head"><span class="num">Slide 33</span><h2 class="title">가우시안 필터링 — 종합</h2></div>
+  <p>가우시안 필터링의 결과와 특성을 종합적으로 보여 주는 슬라이드입니다. 지금까지의 내용을 한 번 정리하고 넘어갑시다.</p>
+  <ul class="pts">
+    <li>가우시안은 <b>등방성</b>이고 <b>분리 가능</b>하며, 주파수 응답이 매끄러워 <b>아티팩트가 없습니다</b>.</li>
+    <li>σ가 평활화의 <b>스케일</b>을 결정합니다.</li>
+    <li>직접 구현하면 <code>O(k)</code>(분리 구현), 박스 근사를 쓰면 <code>O(1)</code>입니다.</li>
+  </ul>
+  <p>그리고 가우시안 필터의 <b>근본적 한계</b>도 함께 알아야 합니다. 가우시안은 위치에 무관하게 똑같이 적용되므로, <b>잡음을 지우면서 에지도 함께 지웁니다</b>. 필터는 "여기가 에지인지 잡음인지"를 구분하지 않습니다. 둘 다 고주파일 뿐이니까요.</p>
+  <p>이 한계를 극복하려면 필터가 영상의 내용에 따라 달라져야 합니다. 즉 <b>비선형 필터</b>가 필요합니다. 양방향 필터(bilateral filter), 비국소 평균(non-local means), 그리고 4강 마지막에 다룰 소프트 코어링(soft coring) 방식이 모두 이 방향의 답입니다.</p>
+</section>
+
+<section class="slide" id="s34">
+  <div class="slide-head"><span class="num">Slide 34</span><h2 class="title">평균 필터링 (Mean Filtering) — 1</h2></div>
+  <p>평균 필터로 돌아옵니다. 가장 단순한 평활화 필터죠. 여기서 가우시안과 비교해 봅시다.</p>
+  <ul class="pts">
+    <li><b>평균(박스) 필터</b>: 창 안의 모든 픽셀에 <b>똑같은 가중치</b>를 줍니다. 가장자리에 있는 픽셀이나 중심에 있는 픽셀이나 동등하게 취급합니다.</li>
+    <li><b>가우시안 필터</b>: 중심에서 멀어질수록 <b>가중치가 줄어듭니다</b>. 가까운 픽셀을 더 신뢰하는 것이죠.</li>
+  </ul>
+  <p>어느 쪽이 더 자연스러울까요. 가우시안입니다. 물리적으로도, 지각적으로도 "가까운 것이 더 관련이 크다"가 타당합니다. 박스 필터는 창 경계에서 가중치가 급격히 0으로 떨어지는데, 이 불연속이 주파수 영역의 측엽(ringing)을 만들어냅니다.</p>
+  <p>그럼에도 박스 필터를 쓰는 이유는 딱 하나, <b>속도</b>입니다. 적분 영상으로 O(1)에 계산되니까요. 그리고 앞에서 본 대로 여러 번 반복하면 가우시안이 되니, 실무에서는 두 세계의 장점을 모두 취할 수 있습니다.</p>
+</section>
+
+<section class="slide" id="s35">
+  <div class="slide-head"><span class="num">Slide 35</span><h2 class="title">평균 필터링 (Mean Filtering) — 2</h2></div>
+  <p>평균 필터의 실제 적용 결과를 여러 커널 크기로 비교하는 슬라이드입니다. 3×3, 5×5, 9×9로 커질수록 흐려짐이 심해집니다.</p>
+  <p>여기서 박스 필터 특유의 아티팩트를 하나 눈여겨보십시오. 가는 줄무늬가 있는 영역에서, 단순히 흐려지는 것이 아니라 <b>줄무늬가 반전되어 보이거나 이상한 패턴이 생기는 경우</b>가 있습니다. 앞에서 언급한 sinc 측엽의 음수 부분 때문입니다. 특정 주파수가 부호가 뒤집힌 채로 통과하는 것이죠.</p>
+  <p>이 현상은 커널의 주파수 응답을 봐야 제대로 설명됩니다. 그래서 4강 슬라이드 23~24에서 5×5 박스 필터를 주파수 영역에서 다시 분석하게 됩니다. "왜 이런 일이 생기는가"에 대한 답이 거기서 완성됩니다.</p>
+</section>
+
+<section class="slide" id="s36">
+  <div class="slide-head"><span class="num">Slide 36</span><h2 class="title">샤프닝 필터링 (Sharpening)</h2></div>
+  <p>이제 반대 방향입니다. 흐리게 하는 것이 아니라 <b>선명하게</b> 만드는 필터입니다. 슬라이드의 그림이 절차를 그대로 보여 줍니다.</p>
+  <p><b>1단계 (윗줄):</b> Original → Blurred → <b>Detail</b>. 원본을 블러한 뒤, <b>원본에서 블러 영상을 뺍니다</b>. 그러면 디테일 성분만 남습니다.</p>
+  <p><code>detail = original − blurred</code></p>
+  <p>왜 이렇게 될까요. 블러는 저역통과 필터, 즉 <b>낮은 주파수만 남깁니다</b>. 그러므로 원본에서 저주파를 빼면 <b>고주파 성분</b>만 남습니다. 에지와 가는 디테일이 여기에 들어 있습니다. 즉 <b>고역통과 필터를 저역통과 필터로부터 만든 것</b>입니다. 별도의 고역통과 커널을 설계할 필요가 없다는 점이 우아합니다.</p>
+  <p><b>2단계 (아랫줄):</b> Original + Detail → <b>Sharpened</b>. 원본에 그 디테일을 다시 더합니다. 보통은 배율 <code>λ</code>를 곱해서 강도를 조절합니다.</p>
+  <p><code>sharpened = original + λ · (original − blurred)</code></p>
+  <p>이 기법의 이름이 <b>언샤프 마스킹(unsharp masking)</b>입니다. 흐린("unsharp") 영상을 마스크로 써서 선명하게 만든다는 뜻이고, 디지털 이전 암실 작업에서 유래한 이름입니다. 포토샵의 "언샤프 마스크" 필터가 정확히 이 연산입니다.</p>
+  <p>여기서 1강 슬라이드 26의 <b>마하 밴드</b>를 떠올려 보십시오. 인간의 시각 시스템도 경계 근처에서 대비를 강화합니다. 즉 우리 눈은 이미 언샤프 마스킹을 하고 있고, 이 필터는 그것을 흉내 내는 셈입니다. 그래서 결과가 "부자연스럽게 강조된" 느낌이 아니라 "선명해진" 느낌으로 지각됩니다.</p>
+  <p>주의할 점. <b>λ를 너무 키우면 에지 주변에 밝고 어두운 테두리(halo, overshoot)가 생깁니다.</b> 그리고 고주파를 증폭하므로 <b>잡음도 함께 증폭</b>됩니다. 이것이 오늘 강의의 마지막 트레이드오프입니다.</p>
+</section>
+
+<section class="slide" id="s37">
+  <div class="slide-head"><span class="num">Slide 37</span><h2 class="title">평활화로 평균 필터를 쓰는 경우</h2></div>
+  <p>샤프닝의 첫 단계인 "블러"에 어떤 필터를 쓸 것인가에 따라 결과가 달라집니다. 먼저 평균 필터를 쓰는 경우입니다.</p>
+  <p>평균 필터의 성격을 슬라이드가 다시 정리합니다.</p>
+  <ul class="pts">
+    <li>각 출력 픽셀은 국소 이웃 픽셀들의 <b>평균</b>입니다.</li>
+    <li>잡음 제거(평활화)에 <b>단순하고 효과적</b>입니다.</li>
+    <li><b>균일한 커널과의 컨볼루션(또는 상호상관)과 동등</b>합니다.</li>
+  </ul>
+  <p>그리고 반드시 함께 기억해야 할 단서가 붙습니다. <b>평균 필터는 영상을 흐리게 합니다. 잡음을 줄이지만 에지와 미세한 디테일도 함께 뭉갭니다.</b></p>
+  <p>언샤프 마스킹의 관점에서 보면, 이 성질이 오히려 유리하게 작용합니다. 블러가 강할수록 <code>original − blurred</code>에 더 많은 성분이 남으므로 샤프닝 효과가 커지기 때문입니다. 다만 박스 필터의 측엽 때문에 결과에 각진 아티팩트가 생길 수 있다는 점은 감수해야 합니다.</p>
+</section>
+
+<section class="slide" id="s38">
+  <div class="slide-head"><span class="num">Slide 38</span><h2 class="title">평활화로 가우시안 필터를 쓰는 경우 / 마무리</h2></div>
+  <p>마지막 슬라이드입니다. 블러 단계에 가우시안을 쓰면 어떻게 될까요.</p>
+  <p>가우시안은 주파수 응답이 매끄럽기 때문에, 그것으로 만든 디테일 성분도 깨끗합니다. 그래서 <b>결과에 링잉이나 각진 아티팩트가 훨씬 적습니다</b>. 그리고 σ를 조절해서 <b>어느 스케일의 디테일을 강조할지</b>를 선택할 수 있습니다. σ가 작으면 아주 가는 디테일만, σ가 크면 더 큰 구조까지 강조됩니다. 실제 사진 편집 도구에서 언샤프 마스크의 "반경(radius)" 슬라이더가 바로 이 σ입니다.</p>
+  <p>참고로 가우시안 언샤프 마스킹은 <b>DoG(Difference of Gaussians)</b>와 밀접한 관계가 있습니다. 서로 다른 σ의 가우시안 두 개의 차이는 대역통과 필터가 되고, 이것이 라플라시안 가우시안의 좋은 근사가 됩니다. SIFT의 특징점 검출이 정확히 이 구조를 씁니다.</p>
+  <div class="key"><b>오늘 강의 정리.</b><br>
+  ① 이웃을 보는 순간 필터링이 시작됩니다. 선형 + 시불변이면 그 처리는 <b>컨볼루션</b>이고, 커널 하나가 시스템 전체를 결정합니다.<br>
+  ② 이론적으로는 거대한 행렬이지만, <b>분리 가능성</b>과 <b>시불변성</b>이라는 구조 덕분에 실제 계산은 O(k), 심지어 적분 영상을 쓰면 O(1)까지 내려갑니다.<br>
+  ③ 평활화(저역통과)와 샤프닝(고역통과)은 반대 방향이지만, <b>샤프닝은 평활화로부터 만들어집니다</b>(언샤프 마스킹).<br>
+  ④ 그리고 모든 곳에 트레이드오프가 있습니다. 잡음을 줄이면 디테일이 흐려지고, 디테일을 강조하면 잡음이 증폭됩니다.<br>
+  다음 시간에는 이 모든 것을 <b>주파수 영역</b>에서 다시 보겠습니다. 거기서는 컨볼루션이 단순한 곱셈이 되고, 오늘 남겨 둔 질문들(박스 필터의 아티팩트, 에일리어싱, 블러 제거)에 대한 답이 나옵니다.</div>
+</section>
+
+<footer>
+  Computer Vision (EE6102) · 2026 Fall — Lecture 03 Linear and Spatial Filtering 한국어 강의 스크립트<br>
+  슬라이드 원본의 내용을 기준으로, 그림으로만 제시된 부분은 해당 주제의 표준적인 설명으로 보강했습니다.
+</footer>
+
+</div>
+</body>
+</html>
