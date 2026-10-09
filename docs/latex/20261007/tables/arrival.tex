@@ -1,0 +1,15 @@
+\begin{table*}[t]
+\centering
+\caption{Final stage of the separate attack-introduction experiment (seed 43; 100,000 cumulative examples per dataset). No experts or S/V are used. Times are for final-stage updating and the complete final test batch; GPU jobs run sequentially. These are not cumulative times over all stages.}
+\label{tab:arrival}
+\begin{tabular}{@{}ll S[table-format=1.4] S[table-format=2.2] S[table-format=2.2] S[table-format=3.2]@{}}
+\toprule
+Dataset & Method & {Macro-F1} & {Benign FPR (\%)} & {Update (s)} & {Infer (s)} \\
+\midrule
+CIC2018 & XGBoost & 0.7759 & 2.10 & 1.98 & 1.44 \\
+CIC2018 & TabPFN & 0.7864 & 0.14 & 16.98 & 522.63 \\
+ToN-IoT & XGBoost & 0.7130 & 11.03 & 3.59 & 1.61 \\
+ToN-IoT & TabPFN & 0.6951 & 13.33 & 17.15 & 391.50 \\
+\bottomrule
+\end{tabular}
+\end{table*}

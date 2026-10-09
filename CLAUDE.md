@@ -2,6 +2,17 @@
 
 Working manual for `imbalcic/`. Read before touching code. Last rewritten 2026-08-14.
 
+## Mandatory literature discussion rule (2026-10-07)
+
+Follow `AGENTS.md` → “논문 작성: 선행연구 Discussion 필수” when editing a paper.
+Every standalone prior-work discussion (one paper or a thematic group) must be
+followed by a Discussion paragraph connecting its evidenced gap/limitation to a
+specific proposed mechanism and the evidence needed to validate that response.
+End each Related Work topic with `\paragraph{Discussion.}`; a final Discussion
+section does not replace these local paragraphs. Do not invent a limitation or
+claim an unresolved design has already filled the gap. The user-provided working
+manuscript and bibliography are `docs/latex/main.tex` and `docs/latex/ref.bib`.
+
 ## Current layout (2026-10-07; supersedes old paths below)
 
 Code lives in `scripts/vN/experiment/` or `tabpfn/scripts/vN/experiment/`;
