@@ -43,21 +43,17 @@ def bullet(doc, text, lead=None):
         r = p.add_run(lead); r.bold = True
     p.add_run(text); return p
 
-def img(doc, path, width=6.3, caption=None):
+def img(doc, path, width=6.3, caption=None):   # caption 인자는 무시(캡션 제거)
     if path and os.path.exists(path):
         doc.add_picture(path, width=Inches(width))
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        if caption:
-            c = doc.add_paragraph(); r = c.add_run(caption); r.italic = True; r.font.size = Pt(9)
-            c.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-def quant(doc, lines):
-    p = doc.add_paragraph(); r = p.add_run("정량 결과"); r.bold = True
+def quant(doc, lines):                          # '정량 결과' 라벨 없이 수치만
     for ln in lines:
         b = doc.add_paragraph(ln); b.paragraph_format.left_indent = Inches(0.25); b.paragraph_format.space_after = Pt(0)
 
-def interp(doc, text="해석 (왜 그런 결과가 나오는가)"):
-    para(doc, text, bold=True)
+def interp(doc, text=None):                     # '해석' 섹션 라벨 제거 (no-op)
+    return
 
 
 def build():
@@ -107,9 +103,6 @@ def build():
                 "U(파랑 색차)에서 어둡게 나타난다(오렌지는 R이 크고 B가 작기 때문).", lead="그림 관찰: ")
     bullet(doc, "사람 눈의 밝기 민감도를 반영한 가중합(G에 0.587로 최대 가중치). 구조·에지가 대부분 담긴다.", lead="Y (휘도): ")
     bullet(doc, "U는 파랑 색차(∝ B−Y), V는 빨강 색차(∝ R−Y). 상관계수가 1.000이라 정확히 비례함을 확인.", lead="U, V (색차): ")
-    bullet(doc, "성조기의 파란 캔톤·우주복 파란 부분이 U에서, 빨간 줄무늬·빨간 부분이 V에서 밝게 보인다. "
-                "imshow가 값의 최소~최대를 검정~흰색으로 자동 스케일하므로, 파란 화소는 B−Y가 큰 양수 → U에서 흰색.", lead="영상으로 확인: ")
-    bullet(doc, "밝기(Y)와 색(U,V)을 분리하므로 이후 향상을 Y에만 적용하면 색을 보존한 채 대비만 조정할 수 있다(Part A 전략).", lead="의의: ")
 
     # A2
     h(doc, "A-2. 히스토그램 계산", 2)
@@ -176,21 +169,16 @@ def build():
     para(doc, "타일 히스토그램을 clip limit로 자르고 초과분을 균등 재분배한 뒤 국소 CDF로 매핑, 타일 중심 간 "
               "쌍선형 보간으로 경계 아티팩트 제거. clip = 0.01, 0.05 비교.")
     img(doc, FA["A7"], caption="그림 A7. 원본/AHE/CLAHE와 히스토그램")
-    quant(doc, ["타일 64×64=4096, clip=0.01 → clip_count=40",
-                "가장 어두운 타일%s: Y=0 이 %d개(%.0f%%)" % (mA["clahe_tile"], mA["clahe_tile_zero_count"], 100 * mA["clahe_tile_zero_frac"]),
-                "입력 0 → 출력:  AHE(클립없음) %d  |  CLAHE clip=0.01 %d  |  clip=0.05 %d"
-                % (mA["clahe_map0_ahe"], mA["clahe_map0_clip01"], mA["clahe_map0_clip05"])])
-    interp(doc, "해석 (논의)")
-    bullet(doc, "CLAHE(clip=0.01)는 AHE에 있던 블로킹·얼룩 잡음이 사라져 자연스럽고, clip=0.05는 대비가 더 강하다. "
-                "히스토그램을 보면 AHE는 뾰족한 스파이크가 많은 반면 CLAHE는 눌려 있다(0 근처 큰 막대는 어두운 배경 화소).", lead="그림 관찰: ")
-    bullet(doc, "AHE의 타일 내부는 밝기 범위가 좁아 CDF가 가팔라져(대비 이득 폭주) 잡음을 증폭한다. clip이 그 봉우리를 잘라 기울기에 상한을 둔다.", lead="잡음 완화 이유: ")
-    bullet(doc, "clip은 '타일 입력 히스토그램'에 적용된다(지시사항과 동일). 이는 매핑(LUT)을 만드는 재료이며, "
-                "결과 영상 히스토그램의 막대 높이를 직접 자르는 게 아니다.", lead="clip이 적용되는 대상: ")
-    bullet(doc, "값이 0인 화소 %d개가 매핑 후에도 한 출력값으로 모이기 때문(잡음 아님). clip은 그 위치만 바꾼다"
-                "(AHE 0→%d 를 clip 0→%d 로). 점 매핑이라 한 입력값을 여러 출력으로 쪼갤 수 없다."
-                % (mA["clahe_tile_zero_count"], mA["clahe_map0_ahe"], mA["clahe_map0_clip01"]), lead="0 근처 스파이크가 남는 이유: ")
-    bullet(doc, "너무 작으면 ≈ 원본(봉우리가 다 잘려 히스토그램이 평평→CDF 직선→항등 매핑, 향상 미미); "
-                "너무 크면 ≈ AHE(봉우리 통과→과대비·배경 잡음 증폭).", lead="clip이 너무 작/크면: ")
+    quant(doc, ["타일 64×64=4096: clip=0.01 → clip_count=40, clip=0.05 → clip_count=204"])
+    bullet(doc, "CLAHE(clip=0.01)는 AHE에 있던 블로킹·얼룩 잡음이 사라져 자연스럽고, clip=0.05는 국소 대비가 더 강하다. "
+                "히스토그램을 보면 AHE는 뾰족한 스파이크가 많은 반면 CLAHE는 눌려 있다.", lead="그림 관찰: ")
+    bullet(doc, "AHE의 타일 내부는 밝기 범위가 좁아 국소 CDF가 가팔라져(대비 이득 폭주) 잡음을 증폭한다. clip이 "
+                "히스토그램 봉우리를 잘라 CDF 기울기에 상한을 둬서, 평탄 타일에서 이득이 폭주하지 못하게 한다.", lead="CLAHE가 AHE보다 잡음이 적은 이유: ")
+    bullet(doc, "clip limit이 곧 '국소 대비 이득의 상한'(국소 CDF의 최대 기울기)이다. clip이 클수록 CDF가 더 가팔라질 수 "
+                "있어 국소 대비가 강해지고(AHE 쪽), 작을수록 CDF가 평평해져 국소 대비가 약해진다(원본 쪽). 즉 clip을 "
+                "올리면 그 상한 내에서 국소 대비가 커진다.", lead="clip limit이 국소 대비에 미치는 영향: ")
+    bullet(doc, "너무 작으면 ≈ 원본(봉우리가 다 잘려 히스토그램 평평→CDF 직선→항등 매핑, 향상 미미); "
+                "너무 크면 ≈ AHE(봉우리 통과→과대비·배경 잡음 증폭). 중간 clip이 균형.", lead="clip이 너무 작/크면: ")
 
     # A8
     h(doc, "A-8. 비트평면 분해 (Bit-Plane Slicing)", 2)
@@ -270,10 +258,9 @@ def build():
     interp(doc)
     bullet(doc, "입력(동전 영상)의 에지·질감이 g_s·g_f에서 똑같이 부드럽게 뭉개지고, 오른쪽 아래 차이맵 |g_s−g_f|는 "
                 "완전히 검정(최댓값 ~1e-13)이라 두 결과가 사실상 같음을 한눈에 보여준다.", lead="그림 관찰: ")
-    bullet(doc, "선형 합성곱이 되게 하는 zero-padding은 conv2d_fft 내부((M+m-1, N+n-1)로 패딩→곱→'same' crop)에서 "
-                "일어난다. spectrum_of_kernel()은 H(u,v)를 '그리기 위한' 패딩일 뿐 필터링엔 안 쓴다.", lead="zero-padding 위치: ")
-    bullet(doc, "과제의 번호 매긴 'display'는 1~4(입력·응답)이고, 공간결과 g_s·주파수결과 g_f는 계산해서 "
-                "비교(MSE/PSNR/SSIM)하라는 항목 — 아랫줄에 표시했다.", lead="g_s의 위치: ")
+    bullet(doc, "입력 스펙트럼 |F|는 중앙(DC·저주파)이 가장 밝고 가장자리(고주파)로 갈수록 어둡다 — 영상에 매끄러운 "
+                "넓은 영역이 많아 에너지가 저주파에 몰리기 때문. log|H_b|는 중앙이 밝고 바깥으로 사라지는 저역통과 응답이고, "
+                "log(1+|G_f|)=|H_b F|는 |F|에서 고주파가 더 깎여 중앙에 더 집중된다(블러 영상은 고주파 에너지가 적다).", lead="스펙트럼 읽기: ")
     bullet(doc, "합성곱 정리로 두 방법이 같은 선형 합성곱을 계산하므로 결과가 부동소수점 반올림만 빼면 동일"
                 "(MSE ~1e-26, PSNR >300 dB, SSIM=1). 차이맵 |g_s−g_f| 최댓값 ~1e-13이 확인.", lead="왜 공간=주파수: ")
 
@@ -289,19 +276,15 @@ def build():
     # B3
     h(doc, "B-3. 주파수 영역 분석", 2)
     para(doc, "각 필터에 대해 |F|, |H|, |G|=|HF|를 비교한다. 중심화 스펙트럼에서 중앙=저주파, 가장자리=고주파.")
-    img(doc, FB["B3_blur"], width=6.5, caption="그림 B3-1. 블러: |F|, |H_b|, |G|")
-    img(doc, FB["B3_sharpen"], width=6.5, caption="그림 B3-2. 샤프닝: |F|, |H_s|, |G|")
-    img(doc, FB["B3_profile"], width=6.6, caption="그림 B3-3. |H| 중앙행 단면(선형): 블러는 감쇠(저역통과), 샤프닝은 증가(고역통과)")
-    quant(doc, ["|H_b|: DC = %.3f, 고주파 끝 = %.3f  (1보다 작은 값으로 곱함 → 고주파 감쇠)" % (mB["Hb_dc"], mB["Hb_edge"]),
-                "|H_s|: DC = %.3f, 고주파 끝 = %.3f  (1보다 큰 값으로 곱함 → 고주파 증폭)" % (mB["Hs_dc"], mB["Hs_edge"])])
-    interp(doc)
-    bullet(doc, "B3-3 그래프에서 파란 곡선(|H_b|)은 중앙(DC)에서 1 → 가장자리로 내려가고, 빨간 곡선(|H_s|)은 가장자리로 "
-                "올라간다. B3-1/B3-2의 2D |H| 영상도 블러는 중앙 밝음, 샤프닝은 중앙 어둡고 모서리 밝음으로 대비된다.", lead="그림 관찰: ")
-    bullet(doc, "그림 B3-1에서 블러 |H_b|는 중앙이 밝고 가장자리로 어둡다. 단면(B3-3)이 정확히 보여줌 — |H_b|=1(DC)에서 "
-                "≈0.33까지 감소(중간에 0인 null). 모든 고주파가 1보다 작은 값으로 곱해져 |G|의 바깥(고주파) 에너지가 "
-                "깎임 → 흐려짐 = 저역통과.", lead="블러가 고주파를 감쇠함을 어떻게 아나: ")
-    bullet(doc, "샤프닝 |H_s|=1(DC)에서 가장자리 ≈5로 증가 → 고주파 증폭 → |G|의 바깥 에너지 증가 → 에지 강조.", lead="샤프닝이 고주파 강조: ")
-    bullet(doc, "에지는 급격한 밝기 변화 = 강한 고주파. 고주파를 키우면 에지가 또렷, 깎으면 뭉개짐.", lead="에지와 고주파: ")
+    img(doc, FB["B3_blur"], width=6.6)
+    img(doc, FB["B3_sharpen"], width=6.6)
+    bullet(doc, "블러 |H_b|는 중앙이 밝고 가장자리로 어둡다. 샤프닝 |H_s|는 반대로 중앙이 어둡고 모서리로 밝다.", lead="그림 관찰: ")
+    bullet(doc, "중앙=저주파, 가장자리=고주파. |H_b|가 중앙(저주파)에서 밝고(≈1) 가장자리(고주파)에서 어두우므로, "
+                "|G|=|H_b||F|에서 저주파는 통과하고 고주파는 감쇠된다 → 저역통과이고, 그래서 영상이 흐려진다. 추가 그래프 "
+                "없이 이 2D 스펙트럼만으로 바로 읽을 수 있다.", lead="블러가 저역통과인 이유: ")
+    bullet(doc, "|H_s|는 중앙이 어둡고 가장자리가 밝으므로 |G|=|H_s||F|에서 고주파가 증폭된다 → 고역통과이고, 그래서 "
+                "에지·디테일이 또렷해진다.", lead="샤프닝이 고주파를 강조하는 이유: ")
+    bullet(doc, "에지는 급격한 밝기 변화 = 강한 고주파. 고주파를 키우면 에지가 또렷해지고, 깎으면 뭉개진다.", lead="에지와 고주파: ")
 
     # B4
     h(doc, "B-4. 임펄스 응답 검증", 2)
@@ -309,37 +292,38 @@ def build():
     img(doc, FB["B4_blur"], width=6.8, caption="그림 B4-1. 블러: δ, δ의 평탄한 FFT, 출력(중앙 9×9), h_b, |H_b|")
     img(doc, FB["B4_sharpen"], width=6.8, caption="그림 B4-2. 샤프닝: δ, δ의 평탄한 FFT, 출력(중앙 9×9), h_s, |H_s|")
     quant(doc, ["max |출력중앙 − h|:  블러 = %.1e,  샤프닝 = %.1e" % (mB["impulse_err_blur"], mB["impulse_err_sharpen"])])
-    interp(doc)
-    bullet(doc, "출력(중앙 9×9) 패널을 보면 블러는 가운데 균일한 밝은 사각 블록, 샤프닝은 가운데 밝고 상하좌우가 어두운 "
-                "십자 모양 — 각각 h_b, h_s의 모양 그대로다. δ의 FFT 패널은 한 가지 색으로 균일(평탄)하다.", lead="그림 관찰: ")
-    bullet(doc, "바로 h다. 블러는 중앙에 작은 균일 3×3 블록, 샤프닝은 중앙(+5) 밝고 상하좌우(−1) 어두운 십자.", lead="출력 h*δ는: ")
-    bullet(doc, "위치 이동된 임펄스는 모든 주파수에서 크기 1 → log|FFT(δ)|가 균일(두 필터 모두 동일). "
-                "(자동 스케일이면 ~1e-16 반올림이 무늬처럼 증폭돼 색 범위를 고정해 진짜 평탄하게 표시.)", lead="δ의 FFT가 평탄한 이유: ")
-    bullet(doc, "평탄한 δ가 모든 주파수를 균일 입력하므로 출력이 시스템의 전체 주파수응답 H(u,v)를 드러낸다. "
-                "log|H| 패널은 필터마다 다름(블러=중앙 밝음/저역통과, 샤프닝=중앙 어둡고 모서리 밝음/고역통과) — "
-                "h가 다르므로 H도 다르다. 그래서 h를 임펄스 응답이라 부른다.", lead="δ-FFT는 같은데 |H|가 다른 이유: ")
+    bullet(doc, "출력 h*δ는 (중앙 9×9로 잘라 표시 — h가 3×3뿐이라 31×31 출력의 나머지는 모두 0이다) 정확히 h다: "
+                "블러는 균일한 밝은 블록, 샤프닝은 중앙이 밝고 상하좌우가 어두운 십자. δ의 FFT 패널이 한 가지 색으로 "
+                "균일한 것은 |FFT(δ)|가 모든 주파수에서 1이기 때문이다(그 한 색은 상수값에 대한 컬러맵 색일 뿐).", lead="그림 관찰: ")
+    bullet(doc, "단위 임펄스 δ를 넣으면 출력이 h*δ = h가 되므로, h는 말 그대로 '시스템의 임펄스에 대한 응답'이다 "
+                "(그래서 impulse response). δ가 모든 주파수를 똑같이 포함하므로 이 한 번의 입력이 LTI 시스템 전체"
+                "(공간응답 h, 주파수응답 H)를 드러낸다. 측정 오차는 ~0.", lead="왜 h를 임펄스 응답이라 부르나: ")
 
     # B5
     h(doc, "B-5. 가우시안 기반 선명화 (Unsharp Masking)", 2)
     para(doc, "가우시안 저역통과로 f_L을 얻고 고주파 f_H = f − f_L을 더해 선명화: g = (1+k)f − k·f_L.")
-    img(doc, FB["B5_1"], width=6.2, caption="그림 B5-1. σ별 가우시안 커널·f_L·f_H (σ에만 의존, k는 여기서 안 씀)")
-    img(doc, FB["B5_2"], width=6.6, caption="그림 B5-2. 선명화 결과(원본 포함, σ→열, k→행)")
-    img(doc, FB["B5_3"], width=6.8, caption="그림 B5-3. 원본/블러/고주파/선명화 스펙트럼 (대표값 σ=3.0, k=2.0)")
-    img(doc, FB["B5_4"], width=6.2, caption="그림 B5-4. Unsharp masking vs 고정 샤프닝 커널 h_s")
-    interp(doc)
-    bullet(doc, "B5-1에서 σ=1의 f_H는 가는 에지만, σ=3의 f_H는 더 굵은 윤곽까지 담는다. B5-2의 k=2 행을 보면 에지 주변에 "
-                "밝은 테두리(halo)가 생기고, 고정 커널 h_s 결과(B5-4)는 σ=1·k=1 unsharp과 비슷한 인상을 준다.", lead="그림 관찰: ")
-    bullet(doc, "f_L은 저주파(저역통과)라 f_H = f − f_L은 저주파가 상쇄되고 고주파(에지·디테일)만 남음(가우시안 고역통과).", lead="왜 블러를 빼면 고주파: ")
-    bullet(doc, "σ가 클수록 더 넓은 대역을 '저주파'로 제거 → f_H가 더 넓은 대역(굵은 에지 포함). 작을수록 미세 디테일만(B5-1).", lead="σ의 영향: ")
-    bullet(doc, "k는 고주파를 더하는 강도. 클수록 선명하나 너무 크면 에지 오버슈트(halo/링잉)·잡음 증폭·포화(B5-2의 k=2 행).", lead="k의 영향: ")
-    bullet(doc, "고정 커널 h_s는 아주 작은 블러·고정 강도의 unsharp 특수 경우. Unsharp masking은 σ(대역)·k(강도)를 "
-                "독립 조절해 h_s가 못 하는 '굵은 구조 선명화'(σ 크게)도 가능(B5-4).", lead="고정 커널 h_s와 비교: ")
+    para(doc, "4×5 그림 두 장: 각 변형이 '이미지 행 + |F| 스펙트럼 행'을 차지하고, 열은 원본 f, 가우시안 커널, 블러 f_L, "
+              "고주파 f_H, 선명화 g. 첫 장은 σ를 다르게(k 고정), 둘째 장은 k를 다르게(σ 고정).")
+    img(doc, FB["B5_sigma"], width=6.9)
+    img(doc, FB["B5_k"], width=6.9)
+    img(doc, FB["B5_vs_fixed"], width=6.2)
+    bullet(doc, "σ가 클수록 커널이 넓어지고 그 스펙트럼은 더 좁은 중앙 블롭이 된다(더 많은 대역을 '저주파'로 제거) → "
+                "f_H가 더 굵은 윤곽을 담고, σ=3의 f_H 스펙트럼이 σ=1보다 넓은 대역을 덮는다. k를 키우면 선명화 영상의 "
+                "에지 테두리(halo)가 밝아진다.", lead="그림 관찰: ")
+    bullet(doc, "f_L은 저주파(저역통과)라 f_H = f − f_L은 저주파가 상쇄되고 고주파(에지·디테일)만 남는다(가우시안 고역통과, f_H 스펙트럼 열에서 확인).", lead="왜 블러를 빼면 고주파: ")
+    bullet(doc, "σ가 클수록 더 넓은 대역을 '저주파'로 제거 → f_H가 더 넓은 대역(굵은 에지 포함). 작을수록 미세 디테일만.", lead="σ의 영향: ")
+    bullet(doc, "k는 고주파를 더하는 강도. 클수록 선명하나 너무 크면 에지 오버슈트(halo/링잉)·잡음 증폭·포화.", lead="k의 영향: ")
+    bullet(doc, "고정 3×3 커널 h_s는 아주 작은 블러·고정 강도의 unsharp 특수 경우라 가장 미세한 디테일만 선명화할 수 있다. "
+                "Unsharp masking은 σ(대역)·k(강도)를 독립 조절해, σ를 크게(=3) 하면 고정 h_s가 못 하는 '굵은 구조 선명화'도 "
+                "가능하다(비교 그림 참조).", lead="고정 커널 h_s와 비교: ")
 
     # B6
     h(doc, "B-6. 논의 — 합성곱 정리", 2)
     para(doc, "g(x,y) = h(x,y) * f(x,y)   ⟺   G(u,v) = H(u,v) F(u,v).")
-    bullet(doc, "복소지수는 LTI 시스템의 고유함수라, h로 합성곱하는 것은 각 주파수 성분에 H(u,v)를 곱하는 것과 같다. "
-                "공간의 '미끄러뜨려 더하기'가 주파수에선 성분별 곱 — 큰 커널에선 FFT(O(N²logN))가 직접합성곱(O(N²k²))보다 유리.", lead="왜 합성곱=곱: ")
+    bullet(doc, "영상을 2차원 사인파들의 합(푸리에 성분)으로 본다. LTI 시스템은 각 사인파에 따로 작용하는데, 입력이 "
+                "단일 주파수 e^{j2π(ux+vy)}이면 출력은 '같은 주파수'에 복소수 H(u,v)만 곱해진 것이다(사인파가 시스템의 "
+                "고유함수). 따라서 필터링은 각 푸리에 성분 F(u,v)에 H(u,v)를 곱하는 것(G=HF)과 같다. 즉 공간의 합성곱이 "
+                "주파수영역에서는 '성분별 곱'에 대응한다 — 큰 커널에선 FFT(O(N²logN))가 직접합성곱(O(N²k²))보다 유리.", lead="왜 합성곱이 곱에 대응하나: ")
     para(doc, "실무에서 작은 차이가 생기는 이유", bold=True)
     bullet(doc, "FFT 곱은 본질적으로 순환(circular) 합성곱 — 영상이 가장자리에서 반대편으로 감겨(wrap-around) 오른쪽 "
                 "끝이 왼쪽에 샌다. (M+m-1, N+n-1)로 zero-padding하면 그 감김이 패딩 영역에만 생겨 선형이 되고 'same'으로 자른다.", lead="순환 합성곱 / zero-padding: ")
@@ -350,10 +334,25 @@ def build():
     # =================================================================
     # PART C
     # =================================================================
-    rC = Cm.run_all(); mC = rC["metrics"]; FC = rC["figures"]
+    rC = Cm.run_all(); inputs = rC["inputs"]; primary = inputs[0]
+
+    def k_table(rows, bestP, bestS):
+        tbl = doc.add_table(rows=1, cols=4); tbl.style = "Table Grid"
+        for j, ht in enumerate(["K", "MSE", "PSNR (dB)", "SSIM"]):
+            cpar = tbl.rows[0].cells[j]; cpar.text = ""
+            rr = cpar.paragraphs[0].add_run(ht); rr.bold = True; rr.font.size = Pt(9)
+        for K, m_, ps, ss in rows:
+            cells = tbl.add_row().cells; note = ""
+            if K == bestP: note += "  (PSNR 최고)"
+            if K == bestS: note += "  (SSIM 최고)"
+            for j, v in enumerate(["%.0e%s" % (K, note), "%.5f" % m_, "%.2f" % ps, "%.4f" % ss]):
+                cells[j].text = ""; rr = cells[j].paragraphs[0].add_run(v); rr.font.size = Pt(9)
+        doc.add_paragraph()
+
     h(doc, "Part C. Wiener 필터 (영상 복원)", 1)
     para(doc, "열화 모델: g = h*f + n (h는 점확산함수 PSF, n은 가산 잡음). PSF는 15×15 가우시안(σ=2.5)이며 "
-              "sum(h)=1로 정규화하고, 입력 f는 [0,1]로 정규화한다. Wiener 필터를 직접 설계하고 정규화 상수 K를 스윕한다.")
+              "sum(h)=1로 정규화하고, 입력 f는 [0,1]로 정규화한다. Wiener 필터를 직접 설계하고 정규화 상수 K를 스윕하며, "
+              "입력 영상 %d장에 대해 실험한다." % len(inputs))
     para(doc, "사용 파라미터", bold=True)
     for s in ["PSF: 15×15 가우시안, σ=2.5, sum=1 정규화",
               "잡음: 평균 0 가우시안, RMS=0.03 (실제 RMS를 정확히 맞춤)",
@@ -363,50 +362,44 @@ def build():
 
     h(doc, "C-1. 블러 영상 생성", 2)
     para(doc, "g_b = h*f (주파수영역 곱으로 구현, H는 zero-phase PSF의 FFT).")
-    img(doc, FC["C1"], caption="그림 C1. 원본, PSF, 블러 영상")
-    quant(doc, ["PSF 합 = %.6f (정규화)" % mC["psf_sum"]])
+    img(doc, primary["figs"]["blur"])
+    quant(doc, ["PSF 합 = %.6f (정규화)" % rC["psf_sum"]])
     bullet(doc, "PSF는 가운데가 밝은 작은 가우시안 점으로 보이고, 블러 영상(카메라맨)은 전체 윤곽이 뿌옇게 번져 "
                 "삼각대·배경 건물 경계가 흐려진다.", lead="그림 관찰: ")
 
     h(doc, "C-2. 평균 0 가우시안 잡음 추가", 2)
     para(doc, "g = g_b + n. 생성한 잡음을 재스케일해 실제 RMS를 목표값에 정확히 맞춘다.")
-    img(doc, FC["C2"], caption="그림 C2. 블러 vs 블러+잡음")
-    quant(doc, ["실제 잡음 RMS = %.5f (목표 0.03000)" % mC["noise_rms"]])
+    img(doc, primary["figs"]["noise"])
+    quant(doc, ["실제 잡음 RMS = %.5f (목표 0.03000)" % primary["noise_rms"]])
     bullet(doc, "오른쪽(블러+잡음)은 매끄러운 하늘·잔디 영역에 오돌토돌한 그레인이 뚜렷이 얹혀 있어, 왼쪽 블러 영상과 구별된다.", lead="그림 관찰: ")
 
     h(doc, "C-3. Wiener 필터로 복원", 2)
     para(doc, "F̂(u,v) = [ H*(u,v) / (|H(u,v)|² + K) ]·G(u,v), 그리고 복원 = IFFT(F̂). K는 잡음/신호 전력비를 "
               "근사하며, K=0이면 역필터(inverse filter).")
-    img(doc, FC["C3"], caption="그림 C3. 원본, 열화, Wiener 복원(K=1e-2)")
+    img(doc, primary["figs"]["restore"])
     bullet(doc, "복원(K=1e-2) 영상은 가운데 열화 영상의 흐림이 걷혀 카메라맨·삼각대 윤곽이 또렷해지고 잡음도 억제되어, 원본에 상당히 가까워진다.", lead="그림 관찰: ")
 
     h(doc, "C-4. K의 효과", 2)
-    img(doc, FC["C4"], width=6.8, caption="그림 C4. K = 1e-6 … 1e-1 복원 영상")
-    tbl = doc.add_table(rows=1, cols=4); tbl.style = "Table Grid"
-    for j, ht in enumerate(["K", "MSE", "PSNR (dB)", "SSIM"]):
-        cpar = tbl.rows[0].cells[j]; cpar.text = ""
-        rr = cpar.paragraphs[0].add_run(ht); rr.bold = True; rr.font.size = Pt(9)
-    bestP = mC["best_psnr_K"]; bestS = mC["best_ssim_K"]
-    for K, m_, ps, ss in mC["table"]:
-        cells = tbl.add_row().cells
-        note = ""
-        if K == bestP: note += "  (PSNR 최고)"
-        if K == bestS: note += "  (SSIM 최고)"
-        vals = ["%.0e%s" % (K, note), "%.5f" % m_, "%.2f" % ps, "%.4f" % ss]
-        for j, v in enumerate(vals):
-            cells[j].text = ""; rr = cells[j].paragraphs[0].add_run(v); rr.font.size = Pt(9)
-    doc.add_paragraph()
-    interp(doc, "해석 (논의)")
+    para(doc, "기본 입력(%s)에 대한 K 스윕:" % primary["label"])
+    img(doc, primary["figs"]["sweep"], width=6.8)
+    k_table(primary["table"], primary["best_psnr_K"], primary["best_ssim_K"])
     bullet(doc, "K=1e-6은 화면이 잡음으로 완전히 덮여 피사체가 안 보이고, K=1e-4는 겨우 윤곽만, K=1e-3부터 선명해지며 "
                 "잔여 잡음, K=1e-2가 가장 깨끗하고 선명, K=1e-1은 더 매끈하지만 약간 흐릿(배경 건물이 뭉개짐)하다.", lead="그림 관찰: ")
     bullet(doc, "|H|²이 0에 가까운 고주파에서 1/|H|²이 폭발해 역필터에 가까워져 잡음을 극단적으로 증폭한다"
                 "(K=1e-6에서 PSNR ~5 dB — 선명해 보여도 잡음에 파묻힘).", lead="K가 너무 작으면: ")
     bullet(doc, "분모가 K에 지배되어 필터가 H*/K에 가까워지고, 역필터링이 약해져 흐릿한(과평활) 복원이 된다(잡음은 적지만 해상도 손실).", lead="K가 너무 크면: ")
     bullet(doc, "K는 잡음 억제 ↔ 디블러 선명도의 트레이드오프를 조절한다. K ≈ S_n/S_f(잡음대신호 전력비)일 때 최적에 가깝다.", lead="K의 역할: ")
-    bullet(doc, "PSNR 최고는 K=%.0e(~%.1f dB)로 화소오차 균형이 가장 좋다. SSIM은 더 큰 K=%.0e에서 최고인데, "
-                "SSIM이 잔존 잡음(구조 교란)에 더 민감해 조금 더 평활한 복원을 선호하기 때문이다. 즉 '최적 K'는 "
-                "화소오차냐 지각적 구조냐에 따라 달라질 수 있다."
-                % (bestP, max(r[2] for r in mC["table"]), bestS), lead="최적 K: ")
+
+    h(doc, "C-5. 다른 입력들에 대한 결과", 2)
+    para(doc, "같은 열화 + Wiener 복원을 다른 입력 영상들에도 반복해, 최적 K가 영상 내용에 따라 어떻게 달라지는지 확인한다.")
+    for r in inputs[1:]:
+        h(doc, "입력: %s" % r["label"], 3)
+        img(doc, r["figs"]["deg"])
+        img(doc, r["figs"]["sweep"], width=6.8)
+        k_table(r["table"], r["best_psnr_K"], r["best_ssim_K"])
+    best_list = ", ".join("%s: PSNR@%.0e·SSIM@%.0e" % (r["label"], r["best_psnr_K"], r["best_ssim_K"]) for r in inputs)
+    bullet(doc, "최적 K는 영상마다 다르다(%s). 더 매끄러운 영상일수록 큰 K를 더 잘 견딘다 — 이는 K ≈ S_n/S_f 에 부합하며, "
+                "최적 정규화는 잡음뿐 아니라 신호 자체의 스펙트럼에 달려 있다." % best_list, lead="입력별 비교: ")
 
     doc.add_paragraph()
     para(doc, "전체 요약", bold=True, size=12)

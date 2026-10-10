@@ -438,47 +438,12 @@ ax[1,1].bar(np.arange(256), compute_hist(quantize8(Y_clahe1)), width=1.0, color=
 show(ax[1,2], Y_clahe2, "CLAHE clip=0.05", vmin=0, vmax=255)
 plt.tight_layout(); savefig("A7_CLAHE"); plt.show()
 """)
-code(r"""
-# ---- 확인: clip은 '입력(타일) 히스토그램'의 막대 높이를 자를 뿐, 결과 스파이크의 '개수'는 못 줄인다 ----
-nt = 8; th = tw = M // nt; npix = th * tw
-print("tile = %dx%d = %d px, clip=0.01 -> clip_count(가로 limit)=%d" % (th, tw, npix, max(1, int(0.01*npix))))
-
-qq = quantize8(Y)
-# 가장 어두운 타일 찾기
-cand = [(np.mean(qq[i*th:(i+1)*th, j*tw:(j+1)*tw] <= 2), i, j) for i in range(nt) for j in range(nt)]
-frac0, ti, tj = max(cand)
-tile = qq[ti*th:(ti+1)*th, tj*tw:(tj+1)*tw]
-h = compute_hist(tile)
-print("가장 어두운 타일(%d,%d): %d px 중 Y==0 이 %d개 (%.0f%%)" % (ti, tj, npix, int(h[0]), 100*h[0]/npix))
-
-def lut0_after_clip(h, cc):
-    excess = np.maximum(h - cc, 0).sum()
-    hc = np.minimum(h, cc) + excess / 256.0
-    return np.round(255 * np.cumsum(hc) / hc.sum())[0]
-
-print("입력값 0 -> 출력값:")
-print("  AHE(클립 없음)    : 0 -> %d  (어두운 타일이 통째로 밝아짐 = 과증폭)" % int(np.round(255*np.cumsum(h)/h.sum())[0]))
-print("  CLAHE clip=0.01   : 0 -> %d  (어둡게 유지)" % int(lut0_after_clip(h, max(1,int(0.01*npix)))))
-print("  CLAHE clip=0.05   : 0 -> %d  (어둡게 유지)" % int(lut0_after_clip(h, max(1,int(0.05*npix)))))
-print("=> 어느 경우든 그 %d개 화소는 '한 출력값'으로 모임 => 결과 hist에 같은 높이의 스파이크가 남음." % int(h[0]))
-print("   clip은 스파이크의 '위치'만 바꿀 뿐 '높이(개수)'는 못 줄인다.")
-""")
 md(r"""
 **해석 (Discuss)**
-- **그림 관찰**: CLAHE(0.01)는 AHE에 있던 블로킹·얼룩 잡음이 사라져 자연스럽고, 0.05는 대비가 더 강하다. 히스토그램을 보면 AHE는 뾰족한 스파이크가 많고 CLAHE는 눌려 있다(0 근처 큰 막대는 어두운 배경 화소).
-- **CLAHE가 AHE보다 잡음 증폭이 적은 이유**: AHE에서 **타일 내부는 전체 영상보다 밝기 분포 범위가 좁다**(국소적으로 거의 평탄). 좁은 범위에 화소가 몰리면 그 레벨에서 히스토그램이 뾰족한 피크가 되고, CDF가 그 지점에서 **급격히 가팔라져(=대비 이득 폭주)** 미세 잡음까지 증폭된다. CLAHE는 그 **피크를 clip limit로 잘라** CDF 기울기(대비 이득)에 상한을 둔다 → 잡음 과증폭 완화. 잘린 양은 전 레벨에 **균등 재분배**되어 밝기 손실이 없고, 타일 간 **쌍선형 보간**으로 경계 불연속(블로킹)도 사라진다.
-- **왜 결과 히스토그램의 0 근처 큰 막대는 clip해도 남아 있나 — "세 가지 히스토그램" 구분이 핵심**:
-  1. **타일 입력 히스토그램**(타일 안 원본 화소값 분포): **clip은 바로 이것에 적용된다** — 지시사항("타일로 나눠 히스토그램 만들고 클리핑")과 **정확히 동일**하다. ✅
-  2. 이 1번을 clip·재분배해서 만든 **CDF → 매핑(LUT)**. 즉 "매핑을 만드는 히스토그램" = 1번과 **같은 것**이다(내가 이전에 '매핑할 hist'라 부른 게 바로 1번이라 혼동을 준 표현이었다).
-  3. **결과 영상 히스토그램**(매핑·보간을 거친 최종 출력 화소들의 분포): **우리가 그림으로 그려서 본 그 히스토그램**.
-  - clip은 **1번(입력)** 을 잘라 *매핑의 기울기(=대비 이득)* 에만 상한을 둘 뿐, **3번(출력)의 막대 높이를 직접 깎지 않는다.** 이 영상은 순흑(Y≤2)이 약 13%인 큰 암부라, 그 많은 화소가 매핑 후에도 여전히 낮은 출력값으로 모여 3번에 큰 막대로 남는다(=잡음이 아니라 "넓은 균일 암부"의 반영).
-  - **구체적 예(이 영상, 위 출력 셀로 검증)**: 64×64 타일 중 가장 어두운 타일은 4096개 중 **3559개(87%)가 Y=0**. 클립이 없으면(AHE) 입력 0이 **0→222** 로 사상되어 어두운 타일이 통째로 밝아진다(=과증폭). clip=0.01이면 **0→3** 으로 어둡게 유지된다. 그러나 **두 경우 모두 그 3559개 화소는 '한 출력값'으로 모이므로** 결과 히스토그램엔 높이 3559짜리 스파이크가 남는다 — clip은 그 스파이크의 **위치(222→3)만 바꿀 뿐 높이(개수)는 못 줄인다**. (clip이 막대 높이를 자르는 건 '입력 히스토그램'에서지, 이 '결과 히스토그램'에서가 아니다.)
-  - 요약: **"타일 입력 히스토그램을 자르는 것"(clip)과 "결과 히스토그램의 막대가 낮아지는 것"은 별개**다. clip이 막는 것은 출력 막대 높이가 아니라, **평탄 타일에서 CDF가 급해져 생기는 가짜 대비(잡음) 증폭**(예: 0→222 같은 폭주)이다.
-- **clip limit가 대비에 미치는 영향**: clip이 **클수록** 피크를 거의 안 잘라 HE/AHE에 가까워져 대비는 커지나 잡음도 증가(위 결과에서 clip=0.05가 0.01보다 대비가 강함). **작을수록(=클리핑 강함)** 잡음 증폭은 완화되지만 대비 향상도 약해진다.
-- **너무 작/크면 (이유)**:
-  - **너무 작으면 ≈ 원본 (이유)**: clip limit은 사실상 "허용하는 **최대 대비 이득**"이다. 이 값이 아주 작으면 히스토그램에서 **대비를 만드는 봉우리(peak)가 거의 다 잘려** 나가고, 그 잘린 양이 전 레벨에 고루 재분배되어 히스토그램이 **거의 평평(uniform)** 해진다. 그런데 **평평한 히스토그램의 CDF는 기울기가 일정한 직선**이고, 직선 CDF로 만든 변환은 $s=(L-1)CDF(k)\approx(L-1)\dfrac{k}{255}=k$, 즉 **각 밝기를 자기 자신으로 보내는 항등(identity) 변환**이다 → 출력이 입력과 거의 같다(=원본). 직관: "히스토그램 모양(=어디에 화소가 몰렸는지)"이 바로 대비를 재배치할 정보인데, 봉우리를 다 깎으면 그 정보가 사라져 **아무 것도 바꾸지 않게** 된다. 그래서 대비 향상은 미미하고 잡음도 생기지 않는다.
-  - **너무 크면 ≈ AHE**: 뾰족한 피크(튀는 값)까지 거의 그대로 통과시켜 CDF가 가팔라짐 → 클리핑이 없는 AHE와 사실상 동일 → **배경·평탄 영역의 잡음이 증폭**되고 과대비가 된다.
-  - 따라서 잡음 억제와 대비 향상이 균형을 이루는 **중간 clip** 이 바람직하다.
+- **그림 관찰**: CLAHE(0.01)는 AHE에 있던 블로킹·얼룩 잡음이 사라져 자연스럽고, 0.05는 국소 대비가 더 강하다. 히스토그램을 보면 AHE는 뾰족한 스파이크가 많고 CLAHE는 눌려 있다.
+- **CLAHE가 AHE보다 잡음이 적은 이유**: AHE의 타일 내부는 밝기 범위가 좁아 국소 CDF가 가팔라져(대비 이득 폭주) 잡음을 증폭한다. clip이 히스토그램 봉우리를 잘라 CDF 기울기에 상한을 둬서, 평탄 타일에서 이득이 폭주하지 못하게 한다. 잘린 양은 균등 재분배되고, 타일 간 쌍선형 보간으로 블로킹도 사라진다.
+- **clip limit이 국소 대비에 미치는 영향**: clip limit이 곧 '국소 대비 이득의 상한'(국소 CDF의 최대 기울기)이다. clip이 **클수록** CDF가 더 가팔라질 수 있어 국소 대비가 강해지고(AHE 쪽), **작을수록** CDF가 평평해져 국소 대비가 약해진다(원본 쪽). 즉 clip을 올리면 그 상한 내에서 국소 대비가 커진다.
+- **너무 작/크면**: 너무 작으면 ≈ 원본(봉우리가 다 잘려 히스토그램 평평→CDF 직선→항등 매핑, 향상 미미); 너무 크면 ≈ AHE(봉우리 통과→과대비·배경 잡음 증폭). 중간 clip이 균형.
 """)
 
 # ---- A8 bit-plane ----
@@ -653,9 +618,8 @@ print("[Blur] spatial vs frequency:  MSE=%.3e  PSNR=%.2f dB  SSIM=%.8f"
 md(r"""
 **해석**
 - **그림 관찰**: 입력(동전 영상)의 에지·질감이 $g_s$·$g_f$에서 똑같이 뭉개지고, 차이맵 $|g_s-g_f|$는 완전히 검정(최댓값 ~1e-13)이라 두 결과가 사실상 같음을 한눈에 보여준다.
-- **zero-padding은 어디서 하나(피드백1)**: 선형 합성곱이 되게 하는 zero-padding은 `conv2d_fft` 내부에서 일어난다(`(M+m-1,N+n-1)`로 패딩→곱→crop). `spectrum_of_kernel`은 $H(u,v)$를 **그리기 위한** 패딩일 뿐 필터링엔 안 쓴다.
-- **$g_s$는 display 리스트 어디?**: 과제의 번호 매긴 "display"는 1~4(입력·응답)이고, 공간결과 $g_s$·주파수결과 $g_f$는 **계산해서 비교(MSE/PSNR/SSIM)** 하라는 항목 — 아랫줄에 표시했다.
-- **왜 공간=주파수(피드백2)**: 합성곱 정리로 두 방법은 **같은 선형 합성곱**을 계산한다. 그래서 결과가 부동소수점 반올림만 빼면 동일(MSE $\sim10^{-26}$, PSNR $>300$dB, SSIM$=1$). 차이맵 $|g_s-g_f|$ 최댓값 $\sim10^{-13}$이 이를 확인.
+- **스펙트럼 읽기**: 입력 $|F|$는 중앙(DC·저주파)이 가장 밝고 가장자리(고주파)로 어둡다 — 영상에 매끄러운 넓은 영역이 많아 에너지가 저주파에 몰리기 때문. $\log|H_b|$는 중앙이 밝고 바깥으로 사라지는 저역통과 응답, $\log(1+|G_f|)=|H_b F|$는 $|F|$에서 고주파가 더 깎여 중앙에 더 집중된다.
+- **왜 공간=주파수**: 합성곱 정리로 두 방법은 **같은 선형 합성곱**을 계산한다. 그래서 결과가 부동소수점 반올림만 빼면 동일(MSE $\sim10^{-26}$, PSNR $>300$dB, SSIM$=1$). 차이맵 $|g_s-g_f|$ 최댓값 $\sim10^{-13}$이 이를 확인.
 """)
 
 # ---- B2 sharpen ----
@@ -689,25 +653,13 @@ for name, h, tag in [("Blur h_b", hb, "blur"), ("Sharpen h_s", hs, "sharpen")]:
     show(ax[1], logmag(H), "|H(u,v)| (%s)" % name, cmap=SPEC)
     show(ax[2], logmag(G), "|G|=|H F| output", cmap=SPEC)
     plt.suptitle(name, y=1.02); plt.tight_layout(); savefig("B3_spectra_" + tag); plt.show()
-
-# |H| 중앙행 단면(선형): blur는 감쇠(저역통과), sharpen은 증가(고역통과)를 '수치로' 확인
-Hb = np.abs(np.fft.fftshift(np.fft.fft2(hb, s=f.shape)))
-Hs = np.abs(np.fft.fftshift(np.fft.fft2(hs, s=f.shape)))
-cx = f.shape[0]//2; u = np.arange(f.shape[1]) - f.shape[1]//2
-fig, ax = plt.subplots(1, 2, figsize=(13, 4))
-ax[0].plot(u, Hb[cx,:]); ax[0].axhline(1, color='k', ls='--', lw=0.7)
-ax[0].set_title("|H_b| central row (blur): 1 at DC, decays -> LOW-PASS"); ax[0].set_xlabel("freq u (0=DC)"); ax[0].grid(alpha=0.3)
-ax[1].plot(u, Hs[cx,:], color='C3'); ax[1].axhline(1, color='k', ls='--', lw=0.7)
-ax[1].set_title("|H_s| central row (sharpen): grows -> HIGH-PASS"); ax[1].set_xlabel("freq u (0=DC)"); ax[1].grid(alpha=0.3)
-plt.tight_layout(); savefig("B3_response_profile"); plt.show()
-print("|H_b| DC=%.3f edge=%.3f  |  |H_s| DC=%.3f edge=%.3f" % (Hb[cx,cx], Hb[cx,0], Hs[cx,cx], Hs[cx,0]))
 """)
 md(r"""
-**해석 (피드백3 — 그림과 연결)** — 중심=저주파, 가장자리=고주파.
-- **그림 관찰**: B3-3 그래프에서 파란 곡선(|H_b|)은 중앙(DC)에서 1 → 가장자리로 내려가고, 빨간 곡선(|H_s|)은 가장자리로 올라간다. 2D |H| 영상도 블러는 중앙 밝음, 샤프닝은 중앙 어둡고 모서리 밝음으로 대비된다.
-- **blur가 고주파를 감쇠함을 어떻게 아나**: $|H_b|$ 영상은 **중앙(저주파)이 밝고 가장자리(고주파)로 어둡다**. 중앙행 단면이 정확히 보여줌 — $|H_b|=1$(DC)에서 $\approx0.33$까지 감소(중간에 0인 null). 모든 고주파가 1보다 작은 값으로 곱해져 $|G|=|H||F|$의 바깥(고주파) 에너지가 깎임 → 흐려짐 = **저역통과**.
-- **sharpen은 왜 고주파 강조**: $|H_s|=1$(DC)에서 가장자리 $\approx5$로 **증가** → 고주파 증폭 = **고역통과**.
-- **에지/디테일과 고주파**: 에지는 급격한 밝기 변화 = 강한 고주파. 고주파를 키우면 에지가 또렷, 깎으면 뭉개짐.
+**해석 (그림과 연결)** — 중심=저주파, 가장자리=고주파.
+- **그림 관찰**: 블러 $|H_b|$는 중앙이 밝고 가장자리로 어둡고, 샤프닝 $|H_s|$는 반대로 중앙이 어둡고 모서리로 밝다.
+- **블러가 저역통과인 이유**: $|H_b|$가 중앙(저주파)에서 밝고 가장자리(고주파)에서 어두우므로 $|G|=|H_b||F|$에서 저주파는 통과·고주파는 감쇠 → 저역통과 → 흐려짐. 추가 그래프 없이 이 2D 스펙트럼만으로 바로 읽을 수 있다.
+- **샤프닝이 고주파를 강조하는 이유**: $|H_s|$가 중앙이 어둡고 가장자리가 밝으므로 $|G|$에서 고주파가 증폭 → 고역통과 → 에지·디테일이 또렷해진다.
+- **에지와 고주파**: 에지는 급격한 밝기 변화 = 강한 고주파. 고주파를 키우면 또렷, 깎으면 뭉개진다.
 """)
 
 # ---- B4 impulse verification ----
@@ -732,11 +684,9 @@ for name, h, tag in [("Blur", hb, "blur"), ("Sharpen", hs, "sharpen")]:
     plt.tight_layout(); savefig("B4_impulse_" + tag); plt.show()
 """)
 md(r"""
-**해석 (피드백4)**
-- **그림 관찰**: 출력(중앙 9×9) 패널을 보면 블러는 가운데 균일한 밝은 블록, 샤프닝은 가운데 밝고 상하좌우가 어두운 십자 — 각각 $h_b$, $h_s$ 모양 그대로다. $\delta$의 FFT 패널은 한 색으로 균일(평탄).
-- **output $h*\delta$는?**: 바로 $h$다. blur는 중앙에 작은 균일 3×3 블록(그래서 가운데가 밝아짐), sharpen은 중앙(+5) 밝고 상하좌우(−1) 어두운 십자.
-- **$\delta$의 FFT가 평탄한 이유**: 위치 이동된 임펄스는 **모든 주파수에서 크기 1** → $\log|FFT(\delta)|$가 균일(두 필터 모두 **동일**). (색 범위를 고정 안 하면 $10^{-16}$ 반올림이 자동 스케일로 증폭돼 무늬처럼 보임 → vmin/vmax 고정해 진짜 평탄하게 표시.)
-- **$\delta$-FFT는 같은데 $\log|H|$는 왜 다른가**: 평탄한 $\delta$가 모든 주파수를 균일 입력하므로 출력이 시스템의 **전체 주파수응답 $H(u,v)$** 를 드러냄 — blur는 **중앙 밝음(저역통과)**, sharpen은 **중앙 어둡고 모서리 밝음(고역통과)**. $h$가 필터마다 다르니 $H$도 다르다. 그래서 $h$를 **임펄스 응답**이라 부른다. (오차 $\sim0$.)
+**해석**
+- **그림 관찰**: 출력 $h*\delta$는 (중앙 9×9로 잘라 표시 — $h$가 3×3뿐이라 31×31 출력의 나머지는 모두 0) 정확히 $h$다: 블러는 균일한 밝은 블록, 샤프닝은 중앙이 밝고 상하좌우가 어두운 십자. $\delta$의 FFT 패널이 한 색으로 균일한 것은 $|FFT(\delta)|$가 모든 주파수에서 1이기 때문(그 한 색은 상수값에 대한 컬러맵 색).
+- **왜 $h$를 임펄스 응답이라 부르나**: 단위 임펄스 $\delta$를 넣으면 출력이 $h*\delta=h$가 되므로, $h$는 말 그대로 '시스템의 임펄스에 대한 응답'이다. $\delta$가 모든 주파수를 똑같이 포함하므로 이 한 번의 입력이 LTI 시스템 전체(공간응답 $h$, 주파수응답 $H$)를 드러낸다. (오차 $\sim0$.)
 """)
 
 # ---- B5 gaussian unsharp ----
@@ -747,64 +697,58 @@ $$g=(1+k)f-k\,f_L.$$
 **파라미터**: $\sigma\in\{1.0,\,3.0\}$, $k\in\{1.0,\,2.0\}$. 가우시안 커널 크기는 $\lceil6\sigma\rceil$(홀수).
 """)
 code(r"""
-sigmas = [1.0, 3.0]; ks = [1.0, 2.0]
-fLs = {s: conv2d(f, gaussian_kernel(s)) for s in sigmas}
+COLS = ["original f", "Gaussian kernel", "blurred f_L", "high-freq f_H", "sharpened g"]
+def components(sigma):
+    gk = gaussian_kernel(sigma); fL = conv2d(f, gk); return gk, fL, f - fL
 
-# (1) 성분: 커널/f_L/f_H (sigma에만 의존, k는 여기서 안 쓰임) + 피드백5: k 고정값 혼동 해소
-fig, ax = plt.subplots(len(sigmas), 3, figsize=(12, 7.5))
-for i, s in enumerate(sigmas):
-    gk = gaussian_kernel(s); fL = fLs[s]; fH = f - fL
-    show(ax[i,0], gk, "Gaussian kernel sigma=%.1f" % s, cmap='viridis')
-    show(ax[i,1], fL, "blurred f_L sigma=%.1f" % s)
-    show(ax[i,2], fH, "high-freq f_H=f-f_L sigma=%.1f" % s)
-plt.suptitle("components (depend on sigma only; k not used here)", y=1.0)
-plt.tight_layout(); savefig("B5_1_components"); plt.show()
+def b5_panel(variants, title, tag):
+    # variants: (label, gk, fL, fH, g). 변형마다 '이미지 행 + |F| 스펙트럼 행' (5열)
+    nrows = 2*len(variants)
+    fig, ax = plt.subplots(nrows, 5, figsize=(16, 3.05*nrows))
+    cmaps = ['gray','viridis','gray','gray','gray']
+    for vi,(lbl,gk,fL,fH,g) in enumerate(variants):
+        ri = 2*vi; imgs = [f, gk, fL, fH, np.clip(g,0,255)]
+        for c in range(5): show(ax[ri,c], imgs[c], "%s  [%s]" % (COLS[c], lbl), cmap=cmaps[c])
+        specs = [spectrum_of_image(f), spectrum_of_kernel(gk, f.shape),
+                 spectrum_of_image(fL), spectrum_of_image(fH), spectrum_of_image(g)]
+        for c in range(5): show(ax[ri+1,c], specs[c], "|F| of " + COLS[c], cmap=SPEC)
+    plt.suptitle(title, y=1.0); plt.tight_layout(); savefig(tag); plt.show()
 
-# (2) 선명화 결과: 원본 포함(피드백5), sigma=가로/k=세로
-fig, ax = plt.subplots(len(ks), len(sigmas)+1, figsize=(13, 8))
-for ri, k in enumerate(ks):
-    show(ax[ri,0], f, "original f (k=%.1f row)" % k)
-    for ci, s in enumerate(sigmas):
-        g = (1+k)*f - k*fLs[s]
-        show(ax[ri,ci+1], np.clip(g,0,255), "sharpened sigma=%.1f, k=%.1f" % (s, k))
-plt.suptitle("sharpened g=(1+k)f - k f_L  (sigma -> columns, k -> rows)", y=1.0)
-plt.tight_layout(); savefig("B5_2_sharpened"); plt.show()
+# (A) sigma 다르게 (k 고정=2): 행 = [sigma1 이미지, sigma1 |F|, sigma3 이미지, sigma3 |F|]
+k_fix = 2.0
+vs = []
+for s in [1.0, 3.0]:
+    gk, fL, fH = components(s); vs.append(("sigma=%.0f, k=%.0f" % (s, k_fix), gk, fL, fH, (1+k_fix)*f - k_fix*fL))
+b5_panel(vs, "B5 vary sigma (k=%.0f fixed): image row + |F| spectrum row" % k_fix, "B5_1_vary_sigma")
 
-# (3) 스펙트럼: 대표 설정 sigma=3, k=2 (피드백5: 조건 명시)
-s0, k0 = 3.0, 2.0; fL = fLs[s0]; fH = f - fL; g = (1+k0)*f - k0*fL
-fig, ax = plt.subplots(1, 4, figsize=(16, 4))
-show(ax[0], spectrum_of_image(f), "|F| original", cmap=SPEC)
-show(ax[1], spectrum_of_image(fL), "|F| blurred f_L", cmap=SPEC)
-show(ax[2], spectrum_of_image(fH), "|F| high-freq f_H", cmap=SPEC)
-show(ax[3], spectrum_of_image(g), "|F| sharpened g", cmap=SPEC)
-plt.suptitle("spectra (representative: sigma=%.1f, k=%.1f)" % (s0, k0), y=1.02)
-plt.tight_layout(); savefig("B5_3_spectra"); plt.show()
+# (B) k 다르게 (sigma 고정=3)
+s_fix = 3.0; gk3, fL3, fH3 = components(s_fix)
+vk = [("sigma=%.0f, k=%.0f" % (s_fix,k), gk3, fL3, fH3, (1+k)*f - k*fL3) for k in [1.0, 2.0]]
+b5_panel(vk, "B5 vary k (sigma=%.0f fixed): image row + |F| spectrum row" % s_fix, "B5_2_vary_k")
 
-# (4) 고정 커널 h_s 와 비교 (피드백6)
-g_unsharp = 2.0*f - 1.0*fLs[1.0]   # sigma=1, k=1
-g_fixed = conv2d(f, hs)
+# (C) 고정 3x3 커널 h_s 와 비교 (굵은 구조 선명화를 위해 sigma=3 사용)
+g_unsharp = 2.0*f - 1.0*fL3   # sigma=3, k=1
 fig, ax = plt.subplots(1, 3, figsize=(14, 4.6))
 show(ax[0], f, "original f")
-show(ax[1], np.clip(g_fixed,0,255), "fixed kernel h_s (B2)")
-show(ax[2], np.clip(g_unsharp,0,255), "unsharp sigma=1.0, k=1.0")
-plt.suptitle("vs fixed kernel: unsharp lets sigma(band) & k(strength) be tuned independently", y=1.02)
-plt.tight_layout(); savefig("B5_4_vs_fixed"); plt.show()
+show(ax[1], np.clip(conv2d(f, hs),0,255), "fixed 3x3 kernel h_s")
+show(ax[2], np.clip(g_unsharp,0,255), "unsharp sigma=3, k=1")
+plt.suptitle("vs fixed kernel: large-sigma unsharp sharpens coarse structure the fixed 3x3 h_s cannot", y=1.02)
+plt.tight_layout(); savefig("B5_3_vs_fixed"); plt.show()
 """)
 md(r"""
-**해석 (피드백5·6 — 그림과 연결)**
-- **그림 관찰**: B5-1에서 $\sigma=1$의 $f_H$는 가는 에지만, $\sigma=3$은 더 굵은 윤곽까지 담는다. B5-2의 $k=2$ 행엔 에지 주변 밝은 테두리(halo)가 보이고, 고정 커널 $h_s$ 결과(B5-4)는 $\sigma=1,k=1$ unsharp과 비슷한 인상.
-- **원본 포함·레이아웃**: B5-2에 **원본 $f$를 각 행에 함께** 두고 $\sigma$를 **가로**, $k$를 **세로**로 배치. B5-1의 커널/$f_L$/$f_H$는 **$\sigma$에만 의존**(여기선 $k$를 안 씀). B5-3 스펙트럼은 대표값 $\sigma{=}3,k{=}2$ 임을 제목에 명시.
-- **왜 블러를 빼면 고주파?**: $f_L$은 저주파(저역통과), $f_H=f-f_L$은 저주파가 상쇄되고 **고주파(에지·디테일)** 만 남음(가우시안 고역통과) — B5-1·B5-3에서 확인.
-- **$\sigma$ 영향**: $\sigma$ 클수록 더 넓은 대역을 "저주파"로 제거 → $f_H$가 **더 넓은 대역(굵은 에지 포함)**. 작을수록 미세 디테일만.
-- **$k$ 영향**: 고주파를 더하는 강도. 클수록 선명하나 **너무 크면** 에지 오버슈트(halo/링잉)·잡음 증폭·포화 (B5-2의 $k=2$ 행).
-- **고정 커널 $h_s$와 비교(피드백6)**: $h_s$는 **아주 작은 블러·고정 강도**의 unsharp 특수 경우. Unsharp masking은 $\sigma$(대역)·$k$(강도)를 **독립 조절**해 $h_s$가 못 하는 "굵은 구조 선명화"($\sigma$ 크게)도 가능 (B5-4 비교).
+**해석 (그림과 연결)** — 4×5 그림 두 장(각 변형 = 이미지 행 + |F| 스펙트럼 행), 열 = 원본·커널·블러 $f_L$·고주파 $f_H$·선명화 $g$.
+- **그림 관찰**: $\sigma$가 클수록 커널이 넓어지고 그 스펙트럼은 더 좁은 중앙 블롭 → $f_H$가 더 굵은 윤곽을 담고, $\sigma=3$의 $f_H$ 스펙트럼이 $\sigma=1$보다 넓은 대역을 덮는다. $k$를 키우면 선명화 영상의 에지 테두리(halo)가 밝아진다.
+- **왜 블러를 빼면 고주파?**: $f_L$은 저주파, $f_H=f-f_L$은 저주파가 상쇄되고 **고주파(에지·디테일)** 만 남음(가우시안 고역통과, $f_H$ 스펙트럼 열에서 확인).
+- **$\sigma$ 영향**: $\sigma$ 클수록 더 넓은 대역을 "저주파"로 제거 → $f_H$가 더 넓은 대역(굵은 에지 포함). 작을수록 미세 디테일만.
+- **$k$ 영향**: 고주파를 더하는 강도. 클수록 선명하나 너무 크면 에지 오버슈트(halo/링잉)·잡음 증폭·포화.
+- **고정 커널 $h_s$와 비교**: $h_s$는 아주 작은 블러·고정 강도의 unsharp 특수 경우라 가장 미세한 디테일만 선명화. Unsharp masking은 $\sigma$(대역)·$k$(강도)를 독립 조절해 $\sigma$를 크게(=3) 하면 $h_s$가 못 하는 "굵은 구조 선명화"도 가능.
 """)
 
 # ---- B6 discussion ----
 md(r"""
 ## B-6. Discussion — Convolution Theorem
 $$g(x,y)=h(x,y)*f(x,y)\quad\Longleftrightarrow\quad G(u,v)=H(u,v)\,F(u,v)$$
-- **왜 합성곱 = 곱?**: 복소지수 $e^{j\cdots}$ 는 LTI 시스템의 **고유함수**라, $h$ 로 합성곱하는 것은 각 주파수 성분에 $H(u,v)$ 를 곱하는 것과 같다. 공간의 "미끄러뜨려 더하기"가 주파수에선 성분별 곱. 큰 커널에선 FFT($O(N^2\log N)$)가 직접합성곱($O(N^2k^2)$)보다 유리.
+- **왜 합성곱이 곱에 대응하나?**: 영상을 2차원 사인파들의 합(푸리에 성분)으로 본다. LTI 시스템은 각 사인파에 따로 작용하는데, 입력이 단일 주파수 $e^{j2\pi(ux+vy)}$ 이면 출력은 **같은 주파수**에 복소수 $H(u,v)$ 만 곱해진 것이다(사인파가 시스템의 고유함수). 따라서 필터링은 각 푸리에 성분 $F(u,v)$ 에 $H(u,v)$ 를 곱하는 것($G=HF$)과 같다 — 공간의 합성곱이 주파수영역에선 '성분별 곱'에 대응. 큰 커널에선 FFT($O(N^2\log N)$)가 직접합성곱($O(N^2k^2)$)보다 유리.
 
 **실무에서 작은 차이가 생기는 이유 (자세히 — 피드백7)**
 - **zero-padding / 순환 합성곱**: FFT 곱은 본질적으로 **순환(circular) 합성곱** 이다. 즉 영상이 한쪽 끝에서 **반대편으로 감겨(wrap-around)** 오른쪽 끝 화소가 왼쪽에 섞인다. 신호를 $(M+m-1,N+n-1)$ 로 **zero-padding** 하면 그 "감김"이 추가한 0 영역에만 생겨서 결과가 **선형 합성곱**이 되고, 다시 'same'으로 잘라낸다. (패딩이 부족하면 테두리가 오염된다.)
@@ -938,7 +882,36 @@ md(r"""
 - **$K$ 가 너무 작으면** (→ 역필터): $|H|^2$ 가 0에 가까운 고주파에서 $1/|H|^2$ 가 폭발해 **잡음이 극단적으로 증폭**된다(위 $K=10^{-6}$ 에서 PSNR 음수). 선명해 보여도 잡음에 파묻힌다.
 - **$K$ 가 너무 크면**: 분모가 $K$ 에 지배되어 필터가 $H^{*}/K$ 에 가까워지고, 역필터링이 약해져 **흐릿한(과평활) 복원**이 된다 → 잡음은 적지만 해상도 손실.
 - **$K$ 와 잡음/선명도**: $K$ 는 **잡음 억제 ↔ 선명도(디블러링)** 사이의 트레이드오프를 조절한다. $K\approx S_n/S_f$ (잡음대신호 전력비)일 때 최적에 가깝다.
-- **최적값**: 본 실험에서 **PSNR 최고는 $K=10^{-2}$**(약 25 dB)로, 잡음 증폭과 디블러의 균형이 가장 좋다. 흥미롭게도 **SSIM은 더 큰 $K=10^{-1}$ 에서 최고**인데, 이는 SSIM이 잔존 잡음(구조 교란)에 더 민감해 조금 더 평활한 복원을 선호하기 때문이다. 즉 "최적 $K$"는 어떤 지표(화소오차 vs 지각적 구조)를 중시하느냐에 따라 달라질 수 있다.
+- **최적값**: 기본 입력에서 **PSNR 최고는 $K=10^{-2}$**(약 25 dB). **SSIM은 더 큰 $K=10^{-1}$ 에서 최고**인데, SSIM이 잔존 잡음(구조 교란)에 더 민감해 조금 더 평활한 복원을 선호하기 때문이다.
+""")
+
+# ---- C5 다른 입력들 ----
+md(r"""
+## C-5. 다른 입력들에 대한 결과
+같은 열화 + Wiener 복원을 다른 입력 영상들(`wiener_filter_input_2`, `..._rocket`)에도 반복해, 최적 $K$가 영상 내용에 따라 어떻게 달라지는지 확인한다.
+""")
+code(r"""
+extra_inputs = ["wiener_filter_input_2.png", "wiener_filter_input_rocket.png"]
+for name in extra_inputs:
+    fx = np.array(Image.open(os.path.join(IMG_DIR, name)).convert('L'), dtype=np.float64) / 255.0
+    Hx = psf2otf(psf, fx.shape)
+    gbx = np.real(np.fft.ifft2(Hx * np.fft.fft2(fx)))
+    nx = rng.normal(0, 1, fx.shape); nx = nx - nx.mean()
+    nx = nx * (RMS_TARGET / np.sqrt(np.mean(nx**2)))
+    gx = gbx + nx
+    rows = []
+    fig, ax = plt.subplots(1, len(Ks)+1, figsize=(20, 3.6))
+    show(ax[0], gx, "%s\ndegraded g" % name, vmin=0, vmax=1)
+    for i, K in enumerate(Ks):
+        rc = np.clip(wiener_restore(gx, Hx, K), 0, 1)
+        rows.append((K, mse(fx, rc), psnr(fx, rc, 1.0), ssim(fx, rc, 1.0)))
+        show(ax[i+1], rc, "K=%.0e\nPSNR=%.2f" % (K, rows[-1][2]), vmin=0, vmax=1)
+    plt.suptitle("K sweep - " + name, y=1.02); plt.tight_layout(); savefig("C5_" + name.split('.')[0]); plt.show()
+    bp = max(rows, key=lambda t: t[2]); bs = max(rows, key=lambda t: t[3])
+    print("[%s] best PSNR K=%.0e (%.2f dB) , best SSIM K=%.0e (%.4f)" % (name, bp[0], bp[2], bs[0], bs[3]))
+""")
+md(r"""
+**입력별 비교**: 최적 $K$는 영상마다 다르다(예: rocket 영상은 $K=10^{-1}$이 PSNR·SSIM 모두 최고). 더 매끄러운 영상일수록 큰 $K$를 더 잘 견딘다 — $K\approx S_n/S_f$ 에 부합하며, 최적 정규화는 신호 자체의 스펙트럼에 달려 있다.
 """)
 
 md(r"""

@@ -48,25 +48,19 @@ def bullet(doc, text, bold_lead=None):
     p.add_run(text)
     return p
 
-def img(doc, path, width=6.3, caption=None):
+def img(doc, path, width=6.3, caption=None):   # caption ignored (no captions)
     if path and os.path.exists(path):
         doc.add_picture(path, width=Inches(width))
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        if caption:
-            c = doc.add_paragraph()
-            r = c.add_run(caption); r.italic = True; r.font.size = Pt(9)
-            c.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-def quant(doc, lines):
-    p = doc.add_paragraph()
-    r = p.add_run("Quantitative results"); r.bold = True
+def quant(doc, lines):                          # numbers only, no "Quantitative results" label
     for ln in lines:
         b = doc.add_paragraph(ln)
         b.paragraph_format.left_indent = Inches(0.25)
         b.paragraph_format.space_after = Pt(0)
 
-def interp_head(doc, text="Interpretation (why the result occurs)"):
-    para(doc, text, bold=True)
+def interp_head(doc, text=None):                # no-op (remove the "Interpretation" header)
+    return
 
 
 # =====================================================================
@@ -79,7 +73,7 @@ def build():
 
     # ---------- Title / overview ----------
     doc.add_heading("Homework 1 - Computer Vision", level=0)
-    para(doc, "Point Processing | Spatial & Frequency-Domain Filtering | Wiener Restoration",
+    para(doc, "Point Processing, Spatial & Frequency-Domain Filtering, Wiener Restoration",
          italic=True, size=12, align=WD_ALIGN_PARAGRAPH.CENTER)
     doc.add_paragraph()
     para(doc, "Overview", bold=True, size=12)
@@ -138,12 +132,6 @@ def build():
     bullet(doc, "the blue-minus-luma and red-minus-luma color differences. The measured "
                 "correlations are 1.000, confirming exact proportionality to B-Y and R-Y.",
            bold_lead="U is proportional to (B-Y) and V to (R-Y): ")
-    bullet(doc, "blue regions (the star field of the flag, blue parts of the suit) appear bright "
-                "in U, and red regions (the red stripes, red parts of the suit) appear bright in V. "
-                "imshow auto-scales min..max to black..white, so a blue pixel (large positive B-Y) "
-                "becomes white in U.", bold_lead="Reading the U/V images: ")
-    bullet(doc, "separating brightness (Y) from color (U,V) lets us enhance contrast on Y alone "
-                "while preserving color - the core strategy of Part A.", bold_lead="Why this matters: ")
 
     # ---- A2 ----
     h(doc, "A-2. Histogram Computation", 2)
@@ -235,32 +223,21 @@ def build():
               "a local CDF forms the mapping, and bilinear interpolation between tile centers removes "
               "boundary artifacts. clip = 0.01 and 0.05 are compared.")
     img(doc, F["A7"], caption="Figure A7. Original / AHE / CLAHE with histograms.")
-    quant(doc, [
-        "Tile size 64x64 = 4096, clip=0.01 -> clip_count = 40",
-        "Darkest tile %s: %d pixels with Y=0 (%.0f%%)"
-        % (m["clahe_tile"], m["clahe_tile_zero_count"], 100 * m["clahe_tile_zero_frac"]),
-        "Input 0 -> output:  AHE (no clip) %d  |  CLAHE clip=0.01 %d  |  clip=0.05 %d"
-        % (m["clahe_map0_ahe"], m["clahe_map0_clip01"], m["clahe_map0_clip05"]),
-    ])
-    interp_head(doc, "Interpretation / Discussion")
+    quant(doc, ["Tile 64x64 = 4096 px: clip = 0.01 -> clip_count = 40, clip = 0.05 -> clip_count = 204"])
     bullet(doc, "CLAHE (clip=0.01) removes the blocking/blotchy noise of AHE and looks natural; clip=0.05 has "
-                "stronger contrast. The AHE histogram has many sharp spikes while CLAHE's is suppressed (the "
-                "tall bar near 0 is the dark background).", bold_lead="Observed in the figure: ")
-    bullet(doc, "in AHE a tile's narrow brightness range makes the CDF steep (runaway contrast gain), "
-                "amplifying noise. Clipping caps those peaks, bounding the slope.",
-           bold_lead="Why CLAHE amplifies less noise: ")
-    bullet(doc, "clip is applied to the tile INPUT histogram (exactly as the assignment states). That "
-                "histogram is the material for building the mapping (LUT); it is not a cap on the bars "
-                "of the OUTPUT image histogram.", bold_lead="What clip acts on: ")
-    bullet(doc, "the %d pixels with value 0 all map to a single output value (point mapping), so they "
-                "pile into one output bin regardless of clipping. Clipping only moves where they land "
-                "(AHE 0->%d vs. CLAHE 0->%d); it cannot reduce the count. The near-0 spike therefore "
-                "reflects a genuinely large dark region, not noise."
-                % (m["clahe_tile_zero_count"], m["clahe_map0_ahe"], m["clahe_map0_clip01"]),
-           bold_lead="Why the near-0 spike persists: ")
+                "stronger local contrast. The AHE histogram has many sharp spikes while CLAHE's is suppressed.",
+           bold_lead="Observed in the figure: ")
+    bullet(doc, "in AHE a tile's narrow brightness range makes the local CDF steep (runaway contrast gain), "
+                "amplifying noise. The clip limit caps the histogram peaks, bounding the CDF slope, so the "
+                "gain can no longer blow up in flat tiles.", bold_lead="Why CLAHE amplifies less noise than AHE: ")
+    bullet(doc, "the clip limit IS the cap on the local-contrast gain (the maximum slope of the local CDF). "
+                "A larger clip allows a steeper CDF -> stronger local contrast (toward AHE); a smaller clip "
+                "flattens the CDF -> weaker local contrast (toward the original). So raising the clip limit "
+                "increases local contrast, within the limit it sets.", bold_lead="How the clip limit affects local contrast: ")
     bullet(doc, "too small ~= original (peaks fully clipped -> near-uniform histogram -> linear CDF -> "
                 "near-identity mapping, little enhancement); too large ~= AHE (peaks pass -> steep CDF -> "
-                "over-contrast and background-noise amplification).", bold_lead="Clip limit too small / too large: ")
+                "over-contrast and background-noise amplification). A moderate clip balances the two.",
+           bold_lead="Clip limit too small / too large: ")
 
     # ---- A8 ----
     h(doc, "A-8. Bit-Plane Slicing", 2)
@@ -375,13 +352,12 @@ def build():
     bullet(doc, "the input (coins) edges/texture are softened identically in g_s and g_f, and the "
                 "difference map |g_s - g_f| is completely black (max ~1e-13), showing at a glance that the "
                 "two results are the same.", bold_lead="Observed in the figure: ")
-    bullet(doc, "the zero-padding that makes the FFT compute LINEAR convolution lives inside conv2d_fft "
-                "(pad to (M+m-1, N+n-1), multiply, crop 'same'). spectrum_of_kernel() only pads the kernel "
-                "to image size to DISPLAY H(u,v); it is not used for the filtering itself.",
-           bold_lead="Where the zero-padding happens: ")
-    bullet(doc, "the assignment's numbered 'display' list is items 1-4 (inputs and responses). The spatial "
-                "result g_s and frequency result g_f are the quantities to be computed and compared "
-                "(MSE/PSNR/SSIM), shown here in the bottom row.", bold_lead="Where g_s appears: ")
+    bullet(doc, "the input spectrum |F| is brightest at the center (DC / low frequencies) and fades toward "
+                "the edges/corners (high frequencies), because the image has large smooth areas so most of "
+                "its energy is at low frequencies. log|H_b| is a bright central blob fading outward - the box "
+                "filter's low-pass response. log(1+|G_f|) = |H_b F| is |F| with its high frequencies further "
+                "attenuated, so it is even more concentrated at the center (the blurred image has less "
+                "high-frequency energy).", bold_lead="Reading the spectra: ")
     bullet(doc, "by the convolution theorem the two methods compute the SAME linear convolution, so the "
                 "results are identical up to floating-point round-off (MSE ~1e-26, PSNR >300 dB, SSIM=1). "
                 "The |g_s - g_f| panel confirms it (max ~1e-13).", bold_lead="Why spatial and frequency match: ")
@@ -402,28 +378,20 @@ def build():
     # ---- B3 ----
     h(doc, "B-3. Frequency-Domain Analysis", 2)
     para(doc, "For each filter we compare |F|, |H|, and |G| = |H F|. In the centered spectra the DC/low "
-              "frequencies are at the middle and high frequencies toward the edges/corners.")
-    img(doc, FB["B3_blur"], width=6.5, caption="Figure B3-1. Blur: |F|, |H_b|, |G|.")
-    img(doc, FB["B3_sharpen"], width=6.5, caption="Figure B3-2. Sharpen: |F|, |H_s|, |G|.")
-    img(doc, FB["B3_profile"], width=6.6,
-        caption="Figure B3-3. Central-row profile of |H| (linear scale): blur decays (low-pass), sharpen grows (high-pass).")
-    quant(doc, [
-        "|H_b|: DC = %.3f, high-freq edge = %.3f  (multiplier < 1 -> attenuates high freq)" % (mB["Hb_dc"], mB["Hb_edge"]),
-        "|H_s|: DC = %.3f, high-freq edge = %.3f  (multiplier > 1 -> amplifies high freq)" % (mB["Hs_dc"], mB["Hs_edge"]),
-    ])
-    interp_head(doc)
-    bullet(doc, "in B3-3 the blue curve (|H_b|) starts at 1 at DC and falls toward the edges, while the red "
-                "curve (|H_s|) rises toward the edges; the 2D |H| images likewise contrast (blur bright "
-                "center, sharpen dark center / bright corners).", bold_lead="Observed in the figure: ")
-    bullet(doc, "in Figure B3-1 the blur |H_b| is brightest at the center and darkens toward the edges; the "
-                "profile (B3-3) makes it exact: |H_b| = 1 at DC and falls to ~0.33 (with nulls). Every high-"
-                "frequency component of F is multiplied by a number < 1, so |G| loses its outer (high-freq) "
-                "energy and the image blurs. That is literally what a low-pass filter does.",
-           bold_lead="How we know blur attenuates high freq: ")
-    bullet(doc, "the sharpen |H_s| = 1 at DC and rises to ~5 at the edges, so high frequencies are boosted; "
-                "|G| gains outer energy and edges are enhanced.", bold_lead="Why sharpen emphasizes high freq: ")
-    bullet(doc, "an edge is an abrupt intensity change, which contains strong high-frequency content. So "
-                "boosting high freq sharpens edges; attenuating it smears them.", bold_lead="Edges and high freq: ")
+              "frequencies are at the middle and the high frequencies toward the edges/corners.")
+    img(doc, FB["B3_blur"], width=6.6)
+    img(doc, FB["B3_sharpen"], width=6.6)
+    bullet(doc, "the blur |H_b| is bright at the center and dark toward the edges; the sharpen |H_s| is the "
+                "opposite - dark at the center and bright toward the corners.", bold_lead="Observed in the figure: ")
+    bullet(doc, "center = low freq, edges = high freq. |H_b| is bright (near 1) at the center and dark at the "
+                "edges, so in |G| = |H_b||F| the low frequencies pass through while the high frequencies are "
+                "attenuated - that is a low-pass filter, and it is why the image blurs. We can read this "
+                "directly from the spectra, no extra plot needed.", bold_lead="Why blur is low-pass: ")
+    bullet(doc, "|H_s| is dark at the center and bright at the edges, so |G| = |H_s||F| boosts the high "
+                "frequencies - a high-pass emphasis, which is why edges and fine detail become sharper.",
+           bold_lead="Why sharpen emphasizes high freq: ")
+    bullet(doc, "an edge is an abrupt intensity change, which contains strong high-frequency content; so "
+                "boosting high freq sharpens edges while attenuating it smears them.", bold_lead="Edges and high freq: ")
 
     # ---- B4 ----
     h(doc, "B-4. Verification of the Impulse Response", 2)
@@ -431,55 +399,55 @@ def build():
     img(doc, FB["B4_blur"], width=6.8, caption="Figure B4-1. Blur: delta, flat FFT of delta, output (center 9x9), h_b, |H_b|.")
     img(doc, FB["B4_sharpen"], width=6.8, caption="Figure B4-2. Sharpen: delta, flat FFT of delta, output (center 9x9), h_s, |H_s|.")
     quant(doc, ["max |output_center - h|:  blur = %.1e,  sharpen = %.1e" % (mB["impulse_err_blur"], mB["impulse_err_sharpen"])])
-    interp_head(doc)
-    bullet(doc, "the output (center 9x9) panel shows a uniform bright block for blur and a bright-center / "
-                "dark-cross for sharpen - exactly h_b and h_s; the delta-FFT panel is a single uniform color "
-                "(flat).", bold_lead="Observed in the figure: ")
-    bullet(doc, "it equals h. For blur the center shows a small uniform 3x3 block; for sharpen a bright "
-                "center (+5) with a dark cross of -1 neighbors.", bold_lead="What the output h*delta is: ")
-    bullet(doc, "a shifted impulse has magnitude 1 at EVERY frequency, so log|FFT(delta)| is flat (uniform) "
-                "- IDENTICAL for both filters. (If auto-scaled, ~1e-16 round-off would make it look textured; "
-                "we fix the color range so it reads as truly flat.)", bold_lead="Why the delta spectrum is flat: ")
-    bullet(doc, "the flat delta excites all frequencies equally, so the output reveals the system's full "
-                "frequency response H(u,v); its spatial form is h. The log|H| panels DIFFER between filters "
-                "(blur = bright center/low-pass; sharpen = dark center, bright corners/high-pass) precisely "
-                "because h differs - that is why h is called the impulse response.",
-           bold_lead="Why the delta FFT is the same but |H| differs: ")
+    bullet(doc, "the output h*delta (shown as the center 9x9 crop, since h is only 3x3 so the rest of the "
+                "31x31 output is zero) is exactly h: a uniform bright block for blur, a bright center with a "
+                "dark cross for sharpen. The FFT-of-delta panel is one uniform color because |FFT(delta)| = 1 "
+                "at every frequency (the single color is just the colormap value for that constant).",
+           bold_lead="Observed in the figure: ")
+    bullet(doc, "feeding the unit impulse delta gives output h*delta = h, so h is literally the system's "
+                "response to an impulse - hence 'impulse response'. Because delta contains every frequency "
+                "equally, this one test input reveals the whole LTI system (its spatial response h, "
+                "equivalently its frequency response H). The measured error is ~0.",
+           bold_lead="Why h is called the impulse response: ")
 
     # ---- B5 ----
     h(doc, "B-5. Gaussian-based Image Sharpening (Unsharp Masking)", 2)
     para(doc, "Blur with a Gaussian low-pass to get f_L, take the high-frequency part f_H = f - f_L, and "
               "add it back: g = (1+k)f - k f_L.")
-    img(doc, FB["B5_1"], width=6.2, caption="Figure B5-1. Gaussian kernel, blurred f_L, and high-freq f_H for each sigma (these depend on sigma only; k is not used here).")
-    img(doc, FB["B5_2"], width=6.6, caption="Figure B5-2. Sharpened results with original for reference (sigma -> columns, k -> rows).")
-    img(doc, FB["B5_3"], width=6.8, caption="Figure B5-3. Spectra of original, blurred, high-freq, sharpened for the representative setting sigma=3.0, k=2.0.")
-    img(doc, FB["B5_4"], width=6.2, caption="Figure B5-4. Unsharp masking vs. the fixed sharpening kernel h_s.")
-    interp_head(doc)
-    bullet(doc, "in B5-1 the sigma=1 f_H holds only thin edges while sigma=3 captures thicker outlines; the "
-                "k=2 row (B5-2) shows bright halos around edges, and the fixed-kernel h_s result (B5-4) looks "
-                "similar to sigma=1, k=1 unsharp.", bold_lead="Observed in the figure: ")
+    para(doc, "Two 4x5 figures are shown: each variant occupies an image row and a |F| spectrum row; columns "
+              "are original f, Gaussian kernel, blurred f_L, high-freq f_H, sharpened g. The first figure "
+              "varies sigma (k fixed), the second varies k (sigma fixed).")
+    img(doc, FB["B5_sigma"], width=6.9)
+    img(doc, FB["B5_k"], width=6.9)
+    img(doc, FB["B5_vs_fixed"], width=6.2)
+    bullet(doc, "larger sigma makes a wider kernel whose spectrum is a narrower central blob (removes more of "
+                "the spectrum as 'low'), so f_H holds thicker outlines; the f_H spectrum for sigma=3 covers a "
+                "broader band than sigma=1. Raising k brightens the edge halos in the sharpened image.",
+           bold_lead="Observed in the figure: ")
     bullet(doc, "f_L is the low-pass (low-freq) part, so f_H = f - f_L cancels the low freqs and keeps the "
-                "high freqs (edges/detail) - a Gaussian-based high-pass.", bold_lead="Why subtracting the blur extracts high freq: ")
+                "high freqs (edges/detail) - a Gaussian-based high-pass (visible in the f_H spectrum column).",
+           bold_lead="Why subtracting the blur extracts high freq: ")
     bullet(doc, "larger sigma treats more of the spectrum as 'low' and removes it, so f_H contains a broader "
-                "band (thicker edges); smaller sigma extracts only the finest detail (see B5-1).",
-           bold_lead="Effect of sigma: ")
+                "band (thicker edges); smaller sigma extracts only the finest detail.", bold_lead="Effect of sigma: ")
     bullet(doc, "k scales how much high-freq is added back: larger k is sharper, but too large produces edge "
-                "overshoot (halos/ringing), noise amplification and clipping (see the k=2 row in B5-2).",
-           bold_lead="Effect of k: ")
-    bullet(doc, "the fixed kernel h_s (B-2) is essentially one special case of unsharp masking with a fixed, "
-                "tiny blur and a fixed strength. Unsharp masking generalizes it: sigma sets WHICH band is "
-                "treated as detail and k sets the strength, and the two are tuned independently (B5-4). The "
-                "fixed h_s gives a single, strong, fine-detail sharpening; unsharp masking with large sigma "
-                "sharpens coarser structure, which h_s cannot do.", bold_lead="Comparison with the fixed kernel h_s: ")
+                "overshoot (halos/ringing), noise amplification and clipping.", bold_lead="Effect of k: ")
+    bullet(doc, "the fixed 3x3 kernel h_s is essentially one special case of unsharp masking with a fixed, "
+                "tiny blur and a fixed strength, so it can only sharpen the finest detail. Unsharp masking "
+                "lets sigma set WHICH band is treated as detail and k set the strength independently; with a "
+                "large sigma (=3) it sharpens coarse structure that the fixed 3x3 h_s cannot reach (see the "
+                "comparison figure).", bold_lead="Comparison with the fixed kernel h_s: ")
 
     # ---- B6 ----
     h(doc, "B-6. Discussion - Convolution Theorem", 2)
     para(doc, "g(x,y) = h(x,y) * f(x,y)   <->   G(u,v) = H(u,v) F(u,v).")
-    bullet(doc, "a complex exponential is an eigenfunction of any linear shift-invariant (LTI) system, so "
-                "convolving by h simply multiplies each frequency component of F by H(u,v). The spatial "
-                "'slide-and-sum' therefore becomes a per-frequency multiply - and for large kernels the FFT "
-                "route (O(N^2 log N)) is cheaper than direct convolution (O(N^2 k^2)).",
-           bold_lead="Why convolution = multiplication: ")
+    bullet(doc, "write the image as a sum of 2-D sinusoids (its Fourier components). A linear shift-invariant "
+                "system acts on each sinusoid separately: if the input is a single frequency e^{j2pi(ux+vy)}, "
+                "the output is the SAME frequency scaled by the complex number H(u,v) (the sinusoid is an "
+                "eigenfunction of the system). Filtering therefore just multiplies each Fourier component "
+                "F(u,v) by H(u,v), which is exactly G = H F. So convolution in space corresponds to a "
+                "per-frequency scaling in the Fourier domain - and for large kernels the FFT route "
+                "(O(N^2 log N)) is cheaper than direct convolution (O(N^2 k^2)).",
+           bold_lead="Why convolution corresponds to multiplication: ")
     para(doc, "Why the two can differ slightly in practice:", bold=True)
     bullet(doc, "the plain FFT product computes CIRCULAR convolution, which wraps the image around its "
                 "edges (the right edge bleeds into the left). Padding to (M+m-1, N+n-1) adds enough zeros "
@@ -496,13 +464,26 @@ def build():
     # PART C. Wiener Filter
     # =================================================================
     resC = Cm.run_all()
-    mC = resC["metrics"]; FC = resC["figures"]
+    inputs = resC["inputs"]; primary = inputs[0]
+
+    def k_table(rows, bestP, bestS):
+        tbl = doc.add_table(rows=1, cols=4); tbl.style = "Table Grid"
+        for j, ht in enumerate(["K", "MSE", "PSNR (dB)", "SSIM"]):
+            c = tbl.rows[0].cells[j]; c.text = ""
+            rr = c.paragraphs[0].add_run(ht); rr.bold = True; rr.font.size = Pt(9)
+        for K, m_, ps, ss in rows:
+            cells = tbl.add_row().cells; note = ""
+            if K == bestP: note += "  (best PSNR)"
+            if K == bestS: note += "  (best SSIM)"
+            for j, v in enumerate(["%.0e%s" % (K, note), "%.5f" % m_, "%.2f" % ps, "%.4f" % ss]):
+                cells[j].text = ""; rr = cells[j].paragraphs[0].add_run(v); rr.font.size = Pt(9)
+        doc.add_paragraph()
 
     h(doc, "Part C. Wiener Filter", 1)
     para(doc, "Degradation model: g = h*f + n, where h is the point-spread function (PSF) and n is "
               "additive noise. The PSF is a 15x15 Gaussian (sigma = 2.5) normalized so sum(h) = 1; the "
               "input f is normalized to [0,1]. The Wiener filter is designed from scratch and its "
-              "regularization constant K is swept.")
+              "regularization constant K is swept. The experiment is run on %d input images." % len(inputs))
     para(doc, "Parameters", bold=True)
     for s in [
         "PSF: 15x15 Gaussian, sigma = 2.5, normalized to sum = 1",
@@ -517,16 +498,16 @@ def build():
     # C-1
     h(doc, "C-1. Generate a Blurred Image", 2)
     para(doc, "g_b = h*f, implemented as a frequency-domain multiply (H = FFT of the zero-phase PSF).")
-    img(doc, FC["C1"], caption="Figure C1. Original, PSF, and blurred image.")
-    quant(doc, ["PSF sum = %.6f (normalized)" % mC["psf_sum"]])
+    img(doc, primary["figs"]["blur"])
+    quant(doc, ["PSF sum = %.6f (normalized)" % resC["psf_sum"]])
     bullet(doc, "the PSF appears as a small bright Gaussian dot, and the blurred cameraman is softened "
                 "overall, with tripod and background building edges smeared.", bold_lead="Observed in the figure: ")
 
     # C-2
     h(doc, "C-2. Add Zero-mean Gaussian Noise", 2)
     para(doc, "g = g_b + n. The generated noise is rescaled so its actual RMS equals the target.")
-    img(doc, FC["C2"], caption="Figure C2. Blurred vs. blurred + noisy.")
-    quant(doc, ["actual noise RMS = %.5f (target 0.03000)" % mC["noise_rms"]])
+    img(doc, primary["figs"]["noise"])
+    quant(doc, ["actual noise RMS = %.5f (target 0.03000)" % primary["noise_rms"]])
     bullet(doc, "the right image (blurred+noisy) shows visible grain on the smooth sky/grass, distinguishing "
                 "it from the left blurred image.", bold_lead="Observed in the figure: ")
 
@@ -534,31 +515,15 @@ def build():
     h(doc, "C-3. Restore with a Wiener Filter", 2)
     para(doc, "F_hat(u,v) = [ H*(u,v) / (|H(u,v)|^2 + K) ] G(u,v), then restored = IFFT(F_hat). "
               "K approximates the noise-to-signal power ratio; K = 0 is the plain inverse filter.")
-    img(doc, FC["C3"], caption="Figure C3. Original, degraded, and Wiener-restored (K = 1e-2).")
+    img(doc, primary["figs"]["restore"])
     bullet(doc, "the restored (K=1e-2) image removes the blur of the degraded image, sharpening the "
                 "cameraman/tripod outline and suppressing noise, coming close to the original.", bold_lead="Observed in the figure: ")
 
     # C-4
     h(doc, "C-4. Effect of K", 2)
-    img(doc, FC["C4"], width=6.8, caption="Figure C4. Restored images for K = 1e-6 ... 1e-1.")
-    # metrics table
-    tbl = doc.add_table(rows=1, cols=4)
-    tbl.style = "Table Grid"
-    for j, htext in enumerate(["K", "MSE", "PSNR (dB)", "SSIM"]):
-        c = tbl.rows[0].cells[j]; c.text = ""
-        rr = c.paragraphs[0].add_run(htext); rr.bold = True; rr.font.size = Pt(9)
-    bestP = mC["best_psnr_K"]; bestS = mC["best_ssim_K"]
-    for K, m_, ps, ss in mC["table"]:
-        cells = tbl.add_row().cells
-        note = ""
-        if K == bestP: note += "  (best PSNR)"
-        if K == bestS: note += "  (best SSIM)"
-        vals = ["%.0e%s" % (K, note), "%.5f" % m_, "%.2f" % ps, "%.4f" % ss]
-        for j, v in enumerate(vals):
-            cells[j].text = ""
-            rr = cells[j].paragraphs[0].add_run(v); rr.font.size = Pt(9)
-    doc.add_paragraph()
-    interp_head(doc, "Interpretation / Discussion")
+    para(doc, "K sweep on the primary input (%s):" % primary["label"])
+    img(doc, primary["figs"]["sweep"], width=6.8)
+    k_table(primary["table"], primary["best_psnr_K"], primary["best_ssim_K"])
     bullet(doc, "K=1e-6 is completely buried in noise with no visible subject; K=1e-4 shows only a faint "
                 "outline; from K=1e-3 it sharpens with residual noise; K=1e-2 is cleanest and sharpest; "
                 "K=1e-1 is smoother but slightly blurry (background buildings washed out).", bold_lead="Observed in the figure: ")
@@ -569,11 +534,20 @@ def build():
                 "the restoration is over-smoothed (less noise but lost resolution).", bold_lead="K too large: ")
     bullet(doc, "K trades off noise suppression against deblurring sharpness; the optimum is near "
                 "K ~= S_n/S_f (noise-to-signal power ratio).", bold_lead="Role of K: ")
-    bullet(doc, "PSNR is highest at K = %.0e (~%.1f dB), the best pixel-error balance. SSIM is highest at a "
-                "larger K = %.0e, because SSIM penalizes residual noise (structural distortion) more and "
-                "prefers a slightly smoother restoration. So the 'best' K depends on whether pixel error or "
-                "perceptual structure matters more."
-                % (bestP, max(r[2] for r in mC["table"]), bestS), bold_lead="Best K: ")
+
+    # C-5 additional inputs
+    h(doc, "C-5. Results on Additional Inputs", 2)
+    para(doc, "The same degradation + Wiener restoration is repeated on the other input images to check how "
+              "the optimum K depends on image content.")
+    for r in inputs[1:]:
+        h(doc, "Input: %s" % r["label"], 3)
+        img(doc, r["figs"]["deg"])
+        img(doc, r["figs"]["sweep"], width=6.8)
+        k_table(r["table"], r["best_psnr_K"], r["best_ssim_K"])
+    best_list = ", ".join("%s: PSNR@%.0e / SSIM@%.0e" % (r["label"], r["best_psnr_K"], r["best_ssim_K"]) for r in inputs)
+    bullet(doc, "the optimum K varies with the image (%s). Smoother images tolerate a larger K; this matches "
+                "K ~= S_n/S_f - the best regularization depends on the signal's own spectrum, not just the noise."
+                % best_list, bold_lead="Across inputs: ")
 
     # ---- overall summary ----
     doc.add_paragraph()

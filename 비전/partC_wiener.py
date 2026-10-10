@@ -86,75 +86,92 @@ def save(fig, tag):
     return path
 
 
-def run_all(img_path=IMG_PATH):
-    os.makedirs(OUT_DIR, exist_ok=True)
-    rng = np.random.default_rng(0)           # fixed seed -> reproducible noise
-    f1 = np.array(Image.open(img_path).convert("L"), dtype=np.float64) / 255.0
-    res = {"figures": {}, "metrics": {}}
-    F = res["figures"]; met = res["metrics"]
-    met["shape"] = f1.shape
+# input images to test (first is the primary, shown in full)
+INPUTS = [
+    ("primary", "wiener_filter_input.png",   "cameraman"),
+    ("img2",    "wiener_filter_input_2.png", "input 2"),
+    ("rocket",  "wiener_filter_input_rocket.png", "rocket"),
+]
 
-    psf = gaussian_psf(15, 2.5)
+
+def run_one(path, key, label, psf, rng, full=False):
+    """Run the full Wiener experiment on one image. Returns a dict with figures + table."""
+    f1 = np.array(Image.open(path).convert("L"), dtype=np.float64) / 255.0
     H = psf2otf(psf, f1.shape)
-    met["psf_sum"] = float(psf.sum())
-
-    # ---- C1: blur ----
-    gb = np.real(np.fft.ifft2(H * np.fft.fft2(f1)))
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    show(ax[0], f1, "Original f(x,y)", vmin=0, vmax=1)
-    show(ax[1], psf, "PSF h(x,y) 15x15 sigma=2.5", cmap="viridis")
-    show(ax[2], gb, "Blurred g_b = h*f", vmin=0, vmax=1)
-    F["C1"] = save(fig, "C1_blur")
-
-    # ---- C2: add noise RMS=0.03 ----
-    n = rng.normal(0.0, 1.0, f1.shape)
-    n = n - n.mean()
-    n = n * (RMS_TARGET / np.sqrt(np.mean(n**2)))
-    met["noise_rms"] = float(np.sqrt(np.mean(n**2)))
+    gb = np.real(np.fft.ifft2(H * np.fft.fft2(f1)))           # C1 blur
+    n = rng.normal(0.0, 1.0, f1.shape); n = n - n.mean()
+    n = n * (RMS_TARGET / np.sqrt(np.mean(n**2)))             # C2 noise (exact RMS)
     g = gb + n
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    show(ax[0], gb, "Blurred g_b", vmin=0, vmax=1)
-    show(ax[1], g, "Blurred + noisy g", vmin=0, vmax=1)
-    F["C2"] = save(fig, "C2_noise")
+    out = {"key": key, "label": label, "figs": {}, "noise_rms": float(np.sqrt(np.mean(n**2)))}
+    figs = out["figs"]
 
-    # ---- C3: Wiener restore (representative K) ----
-    restored_demo = wiener_restore(g, H, 1e-2)
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    show(ax[0], f1, "Original", vmin=0, vmax=1)
-    show(ax[1], g, "Degraded g", vmin=0, vmax=1)
-    show(ax[2], np.clip(restored_demo, 0, 1), "Wiener restored (K=1e-2)", vmin=0, vmax=1)
-    F["C3"] = save(fig, "C3_wiener_demo")
+    if full:
+        fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+        show(ax[0], f1, "Original f(x,y)", vmin=0, vmax=1)
+        show(ax[1], psf, "PSF h(x,y) 15x15 sigma=2.5", cmap="viridis")
+        show(ax[2], gb, "Blurred g_b = h*f", vmin=0, vmax=1)
+        figs["blur"] = save(fig, "C_%s_blur" % key)
 
-    # ---- C4: K sweep + metrics table ----
+        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+        show(ax[0], gb, "Blurred g_b", vmin=0, vmax=1)
+        show(ax[1], g, "Blurred + noisy g", vmin=0, vmax=1)
+        figs["noise"] = save(fig, "C_%s_noise" % key)
+
+        fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+        show(ax[0], f1, "Original", vmin=0, vmax=1)
+        show(ax[1], g, "Degraded g", vmin=0, vmax=1)
+        show(ax[2], np.clip(wiener_restore(g, H, 1e-2), 0, 1), "Wiener restored (K=1e-2)", vmin=0, vmax=1)
+        figs["restore"] = save(fig, "C_%s_restore" % key)
+    else:
+        # compact degradation panel for the extra inputs
+        fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+        show(ax[0], f1, "Original (%s)" % label, vmin=0, vmax=1)
+        show(ax[1], gb, "Blurred", vmin=0, vmax=1)
+        show(ax[2], g, "Blurred + noisy", vmin=0, vmax=1)
+        figs["deg"] = save(fig, "C_%s_degraded" % key)
+
+    # K sweep + table
     rows = []
     fig, ax = plt.subplots(1, len(KS), figsize=(18, 4))
     for i, K in enumerate(KS):
         rc = np.clip(wiener_restore(g, H, K), 0, 1)
-        m = mse(f1, rc); ps = psnr(f1, rc, 1.0); ss = ssim(f1, rc, 1.0)
-        rows.append((K, m, ps, ss))
+        mm = mse(f1, rc); ps = psnr(f1, rc, 1.0); ss = ssim(f1, rc, 1.0)
+        rows.append((K, mm, ps, ss))
         show(ax[i], rc, "K=%.0e\nPSNR=%.2f" % (K, ps), vmin=0, vmax=1)
-    F["C4"] = save(fig, "C4_K_sweep")
-    met["table"] = rows
-    met["best_psnr_K"] = max(rows, key=lambda t: t[2])[0]
-    met["best_ssim_K"] = max(rows, key=lambda t: t[3])[0]
-    return res
+    fig.suptitle("K sweep - %s" % label, y=1.02)
+    figs["sweep"] = save(fig, "C_%s_Ksweep" % key)
+    out["table"] = rows
+    out["best_psnr_K"] = max(rows, key=lambda t: t[2])[0]
+    out["best_ssim_K"] = max(rows, key=lambda t: t[3])[0]
+    return out
 
 
-def _print(m):
-    print("=" * 56); print("Part C  Quantitative results"); print("=" * 56)
-    print("input %dx%d | PSF sum=%.6f | noise RMS=%.5f (target %.3f)"
-          % (m["shape"][0], m["shape"][1], m["psf_sum"], m["noise_rms"], RMS_TARGET))
-    print("%-10s | %-9s | %-9s | %-7s" % ("K", "MSE", "PSNR(dB)", "SSIM"))
-    print("-" * 46)
-    for K, mm, ps, ss in m["table"]:
-        print("%-10.0e | %-9.5f | %-9.2f | %-7.4f" % (K, mm, ps, ss))
-    print("best PSNR at K=%.0e ; best SSIM at K=%.0e" % (m["best_psnr_K"], m["best_ssim_K"]))
-    print("=" * 56)
+def run_all():
+    os.makedirs(OUT_DIR, exist_ok=True)
+    rng = np.random.default_rng(0)
+    psf = gaussian_psf(15, 2.5)
+    results = []
+    for i, (key, name, label) in enumerate(INPUTS):
+        path = os.path.join("images", name)
+        if not os.path.exists(path):
+            continue
+        results.append(run_one(path, key, label, psf, rng, full=(i == 0)))
+    return {"psf_sum": float(psf.sum()), "inputs": results}
+
+
+def _print(res):
+    print("=" * 60); print("Part C  Quantitative results"); print("=" * 60)
+    print("PSF sum = %.6f ; noise RMS target = %.3f ; inputs = %d"
+          % (res["psf_sum"], RMS_TARGET, len(res["inputs"])))
+    for r in res["inputs"]:
+        print("\n[%s]  noise RMS=%.5f" % (r["label"], r["noise_rms"]))
+        print("  %-10s  %-9s  %-9s  %-7s" % ("K", "MSE", "PSNR(dB)", "SSIM"))
+        for K, mm, ps, ss in r["table"]:
+            print("  %-10.0e  %-9.5f  %-9.2f  %-7.4f" % (K, mm, ps, ss))
+        print("  best PSNR at K=%.0e , best SSIM at K=%.0e" % (r["best_psnr_K"], r["best_ssim_K"]))
+    print("=" * 60)
 
 
 if __name__ == "__main__":
     r = run_all()
-    _print(r["metrics"])
-    print("figures saved to '%s/':" % OUT_DIR)
-    for k, v in r["figures"].items():
-        print("  [%s] %s" % (k, v))
+    _print(r)
