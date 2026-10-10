@@ -69,7 +69,6 @@ KO_EDITS = [
 ]
 
 EN_EDITS = [
-('Document status:', 'The three submitted scripts reproduce Parts A, B and C. Figures and quantitative tables use their saved experiment results.'),
 ('Input: a color RGB image', 'The input is a 512x512 RGB image (point_processing_input_rgb.png). Enhancement is applied to Y while retaining U and V. This retains chrominance coordinates; it does not guarantee unchanged hue and saturation after changing luminance and clipping the reconstructed RGB values.'),
 ('U is proportional to', 'U and V are approximately proportional to B-Y and R-Y, respectively. The supplied matrix coefficients are rounded, so correlations displayed as 1.000 do not prove exact proportionality.'),
 ('the mean rises', 'The mean increases from 115.4 to 129.5, whereas the global standard deviation decreases from 75.1 to 71.4. Increased brightness therefore does not imply increased global contrast. Black input maps to approximately 28, a dark gray, and contrast changes differently across populated and sparse intensity intervals.'),
@@ -126,12 +125,15 @@ def finalize_report(doc, lang):
     p=find(doc,'A-4.')
     insert_para(doc,p._p, '백분위수는 양자화된 Y의 히스토그램 CDF가 0.02와 0.98에 처음 도달하는 레벨로 선택한다. 이번 입력에서는 r_min=0, r_max=235이다.' if ko else 'The percentile levels are the first levels at which the histogram CDF of quantized Y reaches 0.02 and 0.98. They are r_min=0 and r_max=235 for this input.')
 
-    # Quantitative comparisons for each enhancement experiment.
-    for prefix,names in [('A-5.',['Original','Gamma 0.5','Gamma 1.0','Gamma 2.0']),('A-6.',['Original','HE','AHE']),('A-7.',['Original','AHE','CLAHE 0.01','CLAHE 0.05'])]:
-        anchor=find(doc,prefix)._p
-        rows=[[r[0]]+[f'{v:.3f}' for v in r[1:]] for r in a['metrics']['enhancement_stats'] if r[0] in names]
-        anchor=insert_para(doc,anchor,'휘도 통계: 전체 평균·표준편차와 64×64 타일 64개의 표준편차 평균. 타일 표준편차는 구조·대비·잡음을 함께 포함하므로 잡음만의 지표가 아니다.' if ko else 'Luminance statistics: whole-image mean and standard deviation, and mean standard deviation across 64 tiles of 64x64 pixels. Tile variation includes structure, contrast and noise; it is not a noise-only metric.')
-        insert_table(doc,anchor,['방법','평균','전체 표준편차','타일 표준편차 평균'] if ko else ['Method','Mean','Global std','Mean tile std'],rows)
+    # Concise measurements accompany each experiment; no extra tables.
+    stats={row[0]:row[1:] for row in a['metrics']['enhancement_stats']}
+    texts={
+        'A-5.': ('휘도 평균: 원본 %.3f, γ=0.5 %.3f, γ=1 %.3f, γ=2 %.3f.' if ko else 'Mean luminance: original %.3f; gamma=0.5 %.3f; gamma=1 %.3f; gamma=2 %.3f.') % tuple(stats[n][0] for n in ['Original','Gamma 0.5','Gamma 1.0','Gamma 2.0']),
+        'A-6.': ('64×64 타일 표준편차의 평균: 원본 %.3f, HE %.3f, AHE %.3f. 이 값에는 구조·대비·잡음이 함께 포함된다.' if ko else 'Mean standard deviation across 64x64 tiles: original %.3f; HE %.3f; AHE %.3f. This includes structure, contrast and noise.') % tuple(stats[n][2] for n in ['Original','HE','AHE']),
+        'A-7.': ('타일 표준편차의 평균: AHE %.3f, CLAHE clip=0.01 %.3f, clip=0.05 %.3f. 이는 잡음만의 측정값이 아니다.' if ko else 'Mean tile standard deviation: AHE %.3f; CLAHE clip=0.01 %.3f; clip=0.05 %.3f. This is not a noise-only measurement.') % tuple(stats[n][2] for n in ['AHE','CLAHE 0.01','CLAHE 0.05']),
+    }
+    for prefix,text in texts.items():
+        insert_para(doc,find(doc,prefix)._p,text)
 
     p=find(doc,'Part B.')
     anchor=insert_para(doc,p._p,'구현과 지표 조건' if ko else 'Implementation and metric settings',True)
@@ -141,50 +143,21 @@ def finalize_report(doc, lang):
     insert_para(doc,p._p,('전체 평균: 입력 %.3f, zero 경계 샤프닝 %.3f.' if ko else 'Whole-image mean: input %.3f; sharpening with zero boundaries %.3f.') % (b['metrics']['mean_input'],b['metrics']['mean_sharpen']))
     p=find(doc,'B-4.')
     insert_para(doc,p._p,'31×31 배열 중앙을 표시 좌표의 원점으로 두어 단위 임펄스를 배치한다. 배열 인덱스상으로는 이동된 임펄스이므로 출력도 같은 위치로 이동한 h이다. 이동은 Fourier 위상에 영향을 주지만 크기는 모든 주파수에서 1이다. 공간·FFT 임펄스 출력도 함께 수치 검증한다.' if ko else 'The center of the 31x31 array is the displayed coordinate origin of the impulse. In array-index coordinates this is a shifted impulse, producing the correspondingly shifted h. The shift changes Fourier phase but not its constant unit magnitude. Spatial and FFT impulse outputs are also checked numerically.')
-    p=find(doc,'B-6.')
+    p=find(doc,'σ의 영향:' if ko else 'Effect of sigma:')
     prev=p._p.getprevious()
     prev=insert_para(doc,prev,'공간·주파수 영역 검증' if ko else 'Spatial and frequency verification',True)
-    prev=insert_para(doc,prev,'모든 σ,k 조합에 대해 두 영역에서 f_L을 각각 계산하고 g=(1+k)f−k f_L을 구성했다. 커널 크기는 2⌈3σ⌉+1로 7×7 또는 19×19이다. 아래 비율은 공간영역 출력 중 [0,255] 밖의 화소 비율이며 표시 전에 계산했다.' if ko else 'For every sigma,k pair, compute f_L independently in both domains and form g=(1+k)f-k f_L. Kernel size is 2*ceil(3*sigma)+1, giving 7x7 or 19x19. The last column gives the fraction of the spatial output outside [0,255], measured before display clipping.')
-    rows=[[f'{r[0]:.0f}',f'{r[1]:.0f}',str(r[2]),f'{r[3]:.2e}',f'{r[4]:.2f}',f'{r[5]:.6f}',f'{r[7]:.3f}%'] for r in b['metrics']['unsharp_comparison']]
-    prev=insert_table(doc,prev,['σ','k','크기' if ko else 'Size','MSE','PSNR dB','SSIM','범위 밖' if ko else 'Out of range'],rows)
-    prev=insert_picture(doc,prev,b['figures']['B5_domains'],6.0)
+    rows=b['metrics']['unsharp_comparison']
+    prev=insert_para(doc,prev,'σ=1·3, k=1·2의 네 조합에서 공간영역과 주파수영역 결과를 비교했다. Gaussian 커널 크기는 2⌈3σ⌉+1로 7×7 또는 19×19이다. 네 조합의 MSE 범위는 %.2e~%.2e, PSNR은 %.2f~%.2f dB이며, SSIM은 표시 정밀도에서 모두 1이다.' % (min(r[3] for r in rows),max(r[3] for r in rows),min(r[4] for r in rows),max(r[4] for r in rows)) if ko else 'The four combinations of sigma=1 or 3 and k=1 or 2 were evaluated in both domains. Gaussian kernel size is 2*ceil(3*sigma)+1, giving 7x7 or 19x19. MSE ranges from %.2e to %.2e, PSNR from %.2f to %.2f dB, and SSIM is one at displayed precision for every pair.' % (min(r[3] for r in rows),max(r[3] for r in rows),min(r[4] for r in rows),max(r[4] for r in rows)))
+    prev=insert_picture(doc,prev,b['figures']['B5_domains'],5.8)
     insert_para(doc,prev,'모든 조합의 SSIM은 표시 정밀도에서 1이며, 차이는 부동소수점 반올림 수준이다. σ=3에서 k를 1에서 2로 늘리면 범위 밖 비율이 2.673%에서 7.665%로 증가한다. 이는 강한 선명화가 포화와 halo를 증가시킨다는 해석을 뒷받침한다.' if ko else 'SSIM is one at the displayed precision for every pair, and differences are at round-off scale. At sigma=3, increasing k from 1 to 2 raises the out-of-range fraction from 2.673% to 7.665%, supporting the interpretation of increased saturation and halos with stronger sharpening.')
 
     p=find(doc,'Part C.')
     anchor=insert_para(doc,p._p,'비너 필터의 목적' if ko else 'Purpose of the Wiener filter',True)
     anchor=insert_para(doc,anchor,'비너 필터(Wiener filter)는 흐려지고 잡음이 더해진 영상에서 원본을 추정하는 복원 방법이다. Gaussian blur는 에지·미세 질감을 약하게 만든다. 이를 단순히 역으로 증폭하면 잡음도 함께 커진다. 비너 필터는 흐림의 역복원과 잡음 증폭 억제를 함께 고려하며, 여기서는 K로 그 균형을 조절한다. 원본은 성능 평가에만 사용하고 복원 계산에는 열화 영상 g, 알려진 PSF의 H, 선택한 K만 사용한다.' if ko else 'The Wiener filter estimates an original image from an observation that has been blurred and corrupted by noise. Gaussian blur attenuates edges and fine texture; directly inverting this attenuation also amplifies noise. The filter balances deblurring and suppression of noise amplification through K. The original is used for evaluation only; restoration uses g, the known PSF response H, and the selected K.')
     anchor=insert_para(doc,anchor,'열화·복원은 동일한 주기적 경계(순환 합성곱) 모델을 사용한다. PSF를 영상 크기로 패딩하고 중심을 배열 원점으로 이동해 H를 만든다. B의 zero 경계 선형 합성곱과는 경계조건이 다르다. 잡음 시드는 0이고 세 영상에 같은 난수 생성기를 순차 사용하며, 가산 후 g는 클리핑하지 않는다.' if ko else 'Degradation and restoration use the same periodic boundary model (circular convolution). Pad the PSF to the image size and shift its center to the array origin before forming H. This differs from the zero-boundary linear convolution in B. Noise uses seed 0 with one generator sequentially across the three images. The noisy observation g is not clipped.')
-    insert_para(doc,anchor,'기존 K 비교표는 복원값을 [0,1]로 클리핑한 뒤 원본과 비교한다. 아래에 원시 복원값의 지표도 별도로 제시하여 비선형 클리핑의 영향을 구분한다. 작은 K에서 PSNR 차이가 특히 크다.' if ko else 'The main K tables compare the original against restoration clipped to [0,1]. Separate raw-output tables below expose the effect of this nonlinear clipping, which is especially large at small K.')
-    p=find(doc,'C-5.')
-    prev=p._p.getprevious()
-    primary=c['inputs'][0]
-    prev=insert_para(doc,prev,'클리핑 전 복원 지표와 범위 밖 화소 비율' if ko else 'Raw restoration metrics and out-of-range fraction',True)
-    rows=[[f'{r[0]:.0e}',f'{r[1]:.5f}',f'{r[2]:.2f}',f'{r[3]:.4f}',f'{r[4]:.3f}%'] for r in primary['raw_table']]
-    prev=insert_table(doc,prev,['K','MSE','PSNR dB','SSIM','범위 밖' if ko else 'Out of range'],rows)
-    insert_para(doc,prev,'본 기본 영상의 clipping 후 PSNR 최고는 K=10⁻²(25.04 dB), SSIM 최고는 K=10⁻¹(0.6987)이다. 따라서 최고 복원값을 말할 때는 기준 지표와 탐색 후보를 함께 명시한다. 원시 결과의 K=10⁻⁶은 화소 약 94.06%가 [0,1] 밖에 있어 clipping이 지표에 큰 영향을 준다.' if ko else 'For the primary input, clipped-output PSNR is highest at K=1e-2 (25.04 dB), whereas SSIM is highest at K=1e-1 (0.6987). A best result must therefore name its metric and tested candidates. At K=1e-6, about 94.06% of raw pixels lie outside [0,1], making clipping highly consequential.')
+    p=find(doc,'C-4.')
+    insert_para(doc,p._p,'평가 기준: 복원값을 [0,1]로 클리핑한 뒤 원본과 비교한다. 아래 K 비교표와 C-5의 표는 모두 이 기준을 사용한다.' if ko else 'Evaluation: clip the restored values to [0,1] before comparison with the original. The K table below and the tables in C-5 all use this convention.')
 
-    # Correct comparison-table claims and make complexity refer to this code.
-    tab=next(t for t in doc.tables if len(t.columns)==8)
-    brief_ko=[('중앙 범위 선형 확장','중앙 범위의 일정 이득; 양 끝 포화','좁은 동적범위'),('CDF 기반 구간별 조정','빈도가 높은 강도 구간의 변동 확대','전역 대비 조정'),('국소 대비 증가','미세 변동과 경계 불연속 증폭','불균일한 국소 대비'),('제어된 국소 대비','빈도 제한과 경계 보간','저조도·국소 대비'),('밝기에 따른 톤 조정','γ<1: 암부 잡음 증폭 가능','감마·톤 조정')]
-    brief_en=[('Linear central-range expansion','Constant central gain; clipped tails','Narrow dynamic range'),('CDF-dependent redistribution','Stronger gain in populated intensity bands','Global contrast'),('Local contrast increase','Fine variation and tile boundaries amplified','Uneven local contrast'),('Controlled local contrast','Local clipping and boundary interpolation','Low-light/local contrast'),('Intensity-dependent tone mapping','gamma<1 can amplify dark-region noise','Gamma/tone adjustment')]
-    for row,values in zip(tab.rows[1:],brief_ko if ko else brief_en):
-        for idx,value in zip([3,4,7],values): row.cells[idx].text=value
-    for row in tab.rows[1:]:
-        name=row.cells[0].text
-        if 'Gamma' in name or '감마' in name:
-            row.cells[4].text='γ<1은 암부 잡음, γ>1은 밝은 영역의 잡음을 증폭할 수 있음' if ko else 'gamma<1 can amplify dark-region noise; gamma>1 can amplify bright-region noise'
-        if name in ['CLAHE']:
-            row.cells[4].text='타일 빈도 제한으로 대비 이득 완화; 보간은 경계 불연속 감소' if ko else 'Clipping moderates local gain; interpolation reduces tile discontinuities'
-        if 'Gamma' not in name and '감마' not in name:
-            row.cells[6].text='O(LMN + TL)' if name in ['AHE','CLAHE'] else 'O(LMN + L)'
-    p=find(doc,'A-9.')
-    insert_para(doc,p._p,'복잡도는 현재 레벨별 전체 화소 비교 구현 기준이다. L=256, T=64이며, L을 고정하면 영상 화소수에 대해 선형이다. 단일 패스 계수 구현이라면 히스토그램 계산을 O(MN+L)로 줄일 수 있다.' if ko else 'Complexity describes this implementation, which scans all pixels for each intensity level. L=256 and T=64; with fixed L the cost is linear in pixel count. A single-pass counting implementation can reduce histogram computation to O(MN+L).')
-    # The comparison table already contains the A9 conclusions. Avoid a
-    # duplicate summary becoming an otherwise empty landscape page.
-    summary=find(doc,'요약' if ko else 'Summary')
-    summary_body=summary._p.getnext()
-    summary_body.getparent().remove(summary_body)
-    summary._p.getparent().remove(summary._p)
     format_document(doc,ko)
 
 def format_document(doc, ko):
@@ -208,23 +181,11 @@ def format_document(doc, ko):
         p.paragraph_format.widow_control=True
         if p._p.xpath('.//w:drawing'): p.paragraph_format.keep_together=True
         p.paragraph_format.keep_together=True
-        if p.text in ['클리핑 전 복원 지표와 범위 밖 화소 비율','Raw restoration metrics and out-of-range fraction','공간·주파수 영역 검증','Spatial and frequency verification']:
+        if p.text in ['대비 스트레칭','히스토그램 평활화','AHE','CLAHE','감마 보정','Contrast stretching','Histogram equalization','Gamma correction','공간·주파수 영역 검증','Spatial and frequency verification']:
             p.paragraph_format.keep_with_next=True
-    # Reduce comparison thumbnails so the landscape table and summary fit together.
-    for t in doc.tables:
-        if len(t.columns)==8:
-            for row in t.rows[1:]:
-                for col,width in [(1,.82),(5,1.1)]:
-                    for extent in row.cells[col]._tc.xpath('.//wp:extent'):
-                        ratio=Inches(width)/int(extent.get('cx'))
-                        extent.set('cx',str(int(Inches(width))));extent.set('cy',str(int(int(extent.get('cy'))*ratio)))
-                    for ext in row.cells[col]._tc.xpath('.//a:xfrm/a:ext'):
-                        ratio=Inches(width)/int(ext.get('cx'))
-                        ext.set('cx',str(int(Inches(width))));ext.set('cy',str(int(int(ext.get('cy'))*ratio)))
     for t in doc.tables:
         t.autofit=False
-        if len(t.columns)==8: widths=[1.08,1.16,.64,1.38,1.51,1.46,1.04,1.3]
-        else: widths=[7.2/len(t.columns)]*len(t.columns)
+        widths=[7.2/len(t.columns)]*len(t.columns)
         for j,w in enumerate(widths): t.columns[j].width=Inches(w)
         for i,row in enumerate(t.rows):
             pr=row._tr.get_or_add_trPr()

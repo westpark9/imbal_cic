@@ -10,27 +10,9 @@ def code(s): C.append(nbf.v4.new_code_cell(s.strip("\n")))
 
 # Cell 1
 md(r"""
-# Homework 1 — Computer Vision (CV)
-## From-scratch Image Processing: Point Processing · Spatial/Frequency Filtering · Wiener Restoration
+# Homework 1 — Computer Vision
 
-본 노트북은 강의노트 4개(Image Foundation / Point Processing / Linear & Spatial Filtering / Frequency Domain)를
-바탕으로, 과제 지시에 따라 **핵심 영상처리 연산을 built-in 없이 직접(from scratch) 구현**하고 그 결과를 해석한다.
-
-**General Instructions 준수 사항**
-- 언어: Python. 영상처리 핵심 연산(색공간 변환, 히스토그램/평활화, 합성곱, CLAHE, Wiener 등)은 직접 구현.
-- 허용된 built-in: 기본 배열연산(`numpy`), **FFT/IFFT**(`numpy.fft`), 이미지 로딩(`PIL`), 시각화(`matplotlib`).
-- 필요한 산술은 **float64**로 수행하며 색인·비트 연산에는 정수를 사용한다.
-- 각 실험마다 **사용 파라미터 명시 + 정량 결과 + 해석(왜 그런 결과가 나오는가)** 을 제시한다.
-
-**입력 이미지** (`images/` 폴더, 모두 512×512):
-- 컬러 RGB: `point_processing_input_rgb.png` — Part A
-- 그레이스케일: `spatial_frequency_filtering_input.png` — Part B
-- 그레이스케일: `wiener_filter_input.png` (대체: `wiener_filter_input_2.png`, `wiener_filter_input_rocket.png`) — Part C
-
-> 설명은 한국어를 위주로 하되, 핵심 용어는 영어를 병기한다.
-> display되는 모든 그림(이미지·히스토그램)은 문제 번호에 따라 `output/` 폴더에 PNG로 저장된다 (예: `A1_rgb_yuv.png`, `B3_spectra_blur.png`, `C4_K_sweep.png`).
-B파트는 제출용 partB_filtering.py를 같은 폴더에 두고 사용한다.
-
+제출 코드는 `homework1_cv.py`를 참고하며, 실행 결과 그림은 `output/` 폴더에 저장된다. 이 노트북은 A/B/C 결과를 확인하기 위한 검토용 자료이다.
 """)
 
 # Cell 2
@@ -521,13 +503,12 @@ md(r"""
 md(r"""
 ## A-9. Comparison and Discussion
 
-각 방법의 **결과 영상**과 **히스토그램**을 비교 표 안에 열로 직접 넣어 대비 향상·잡음을 한눈에 비교한다.
-(아래 코드가 썸네일을 `output/` 에 `A9_<method>_img.png`, `A9_<method>_hist.png` 로 저장하고, 그 다음 표가 이를 불러온다.)
+앞의 결과 영상과 히스토그램을 바탕으로 처리 범위, 대비, 잡음, 계산 복잡도와 적용 대상을 비교한다.
 """)
 
 # Cell 31
 code(r"""
-# ---- A-9 비교표용 썸네일 저장: 각 방법의 '결과 영상' + '히스토그램'을 표 셀 안에 넣기 위함 ----
+# ---- A-9 방법별 결과 영상과 히스토그램을 개별 파일로 저장 ----
 Y_g05 = gamma_correct(Y, 0.5)
 methods = [
     ("orig",    "Original Y",       Yq),
@@ -549,7 +530,7 @@ for key, name, img in methods:
     plt.xlim(0, 255); plt.yticks([]); plt.xticks([0, 128, 255], fontsize=7)
     plt.savefig(os.path.join(OUT_DIR, "A9_%s_hist.png" % key), dpi=90, bbox_inches='tight', pad_inches=0.03)
     plt.close(fig)
-print("saved A9 comparison thumbnails (img + hist) to", OUT_DIR)
+print("saved A9 result images and histograms to", OUT_DIR)
 """)
 
 # Cell 32
@@ -563,7 +544,7 @@ md(r"""
 # Cell 33
 md(r"""
 # Part B. Spatial and Frequency Domain Filtering
-두 영역의 zero 경계 선형 합성곱을 비교한다. 구현의 단일 기준은 제출용 `partB_filtering.py`이며, 이 노트북은 같은 함수를 호출해 그림과 지표를 표시한다.
+두 영역의 zero 경계 선형 합성곱을 비교한다. 구현의 단일 기준은 제출용 `homework1_cv.py`이며, 이 노트북은 같은 함수를 호출해 그림과 지표를 표시한다.
 FFT 크기는 (M+m−1,N+n−1)이다. 커널을 좌상단에 배치하고 역변환한 전체 결과의 (m//2,n//2)부터 M×N 크롭하여 정렬한다. F,H,G는 같은 패딩 격자의 배열이고 G=HF는 크롭 전 스펙트럼이다.
 SSIM: 11×11 Gaussian 창, σ=1.5, C1=(0.01L)²,C2=(0.03L)², zero-padding과 경계 포함 전체 평균. PSNR peak/SSIM L은 B=255,C=1이다. B는 clipping 전 float 결과끼리 비교한다.
 
@@ -571,14 +552,14 @@ SSIM: 11×11 Gaussian 창, σ=1.5, C1=(0.01L)²,C2=(0.03L)², zero-padding과 �
 
 # Cell 34
 code(r"""
-import partB_filtering as B
+import homework1_cv as hw
 from IPython.display import display, Image as DisplayImage
 import importlib
-importlib.reload(B)
-b_results = B.run_all()
+importlib.reload(hw)
+b_results = hw.run_part_b()
 bm = b_results["metrics"]
 print("Input:",bm["shape"],"; kernel sizes 3x3, 7x7, 19x19")
-print("Core implementations: partB_filtering.py (conv2d, conv2d_fft, ssim)")
+print("Core implementations: homework1_cv.py (b_conv2d, b_conv2d_fft, b_ssim)")
 def show_b(key):
     display(DisplayImage(filename=b_results["figures"][key]))
 
@@ -820,7 +801,7 @@ for i, K in enumerate(Ks):
     show(ax[i], rc, "K=%.0e\nPSNR=%.2f" % (K, ps), vmin=0, vmax=1)
 plt.tight_layout(); savefig("C4_K_sweep"); plt.show()
 
-# ----- 결과 표 (table) -----
+# ----- 결과 표: [0,1] 클리핑 후 원본과 비교 -----
 print("%-10s | %-10s | %-10s | %-8s" % ("K", "MSE", "PSNR(dB)", "SSIM"))
 print("-" * 46)
 best = max(results, key=lambda t: t[2])
@@ -828,18 +809,13 @@ for K, m, ps, ss in results:
     mark = "  <-- best" if (K, m, ps, ss) == best else ""
     print("%-10.0e | %-10.5f | %-10.2f | %-8.4f%s" % (K, m, ps, ss, mark))
 print("\nBest K = %.0e (max PSNR)" % best[0])
-print("Raw restoration (before clipping):")
-print("K MSE PSNR SSIM out_of_range_percent")
-for K in Ks:
-    raw = wiener_restore(g,H,K)
-    print("%.0e %.5f %.2f %.4f %.3f" % (K,mse(f1,raw),psnr(f1,raw,1.0),ssim(f1,raw,1.0),100*np.mean((raw<0)|(raw>1))))
 
 """)
 
 # Cell 61
 md(r"""
 **해석**
-주 비교표는 [0,1]로 clipping한 복원값의 지표이다. 별도 표는 원시 복원값으로 계산한다. K=10⁻⁶에서 원시 PSNR은 −16.37 dB, clipping 후에는 5.04 dB이다. 약 94.06%의 원시 화소가 범위를 벗어나 후처리 영향이 크다.
+비교표는 [0,1]로 clipping한 복원값의 지표이다. 원시 복원 지표는 통합 스크립트가 results_C.json에 저장한다. K=10⁻⁶에서 원시 PSNR은 −16.37 dB, clipping 후에는 5.04 dB이다. 약 94.06%의 원시 화소가 범위를 벗어나 후처리 영향이 크다.
 작은 K는 |H|²≫K인 곳에서 1/H에 접근하여 흐림과 함께 잡음도 크게 역증폭한다. 큰 K는 잡음 증폭을 줄이지만 세부 구조와 밝기도 약화시킬 수 있다(DC 이득 1/(1+K)). 기본 입력의 clipping 후 PSNR 최고는 K=10⁻²(25.04 dB), SSIM 최고는 K=10⁻¹(0.6987)이다. 최고값은 지표와 탐색한 후보에 따라 다르다.
 
 """)
@@ -876,13 +852,6 @@ for name in extra_inputs:
 md(r"""
 **입력별 비교**
 이번 후보와 잡음 시드에서 cameraman과 input 2는 PSNR 기준 K=10⁻², SSIM 기준 K=10⁻¹이 최고이다. rocket은 둘 다 K=10⁻¹이다. 영상의 스펙트럼과 평가 지표에 따른 차이이며 모든 매끄러운 영상에 대해 같은 K가 최적이라는 일반 법칙은 아니다.
-
-""")
-
-# Cell 65
-md(r"""
-## 전체 요약
-A에서는 직접 구현한 전역·국소 향상 방법의 밝기, 대비와 아티팩트를 비교했다. B에서는 같은 zero 경계와 커널 정렬을 사용해 blur, sharpening, Gaussian unsharp의 공간/주파수 결과가 반올림 수준에서 일치함을 확인했다. Sharpening은 고역강조이다. C에서는 주기적 열화 모델의 Wiener 복원을 수행하고 K와 clipping 전후 평가가 결과 해석에 미치는 영향을 확인했다.
 
 """)
 

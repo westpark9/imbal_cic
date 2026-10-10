@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Homework 1 한국어 Word 보고서 생성기.
-partA/partB/partC 의 run_all() 로 figure(output/)와 정량결과를 얻어
+homework1_cv.py가 저장한 results_A/B/C.json과 그림(output/)을 읽어
 그림 + 정량결과 + 해석(한국어)을 담은 Homework1_Report_KO.docx 를 만든다.
 
 실행:  python build_report_ko.py
@@ -67,18 +67,8 @@ def build():
     doc.add_heading("컴퓨터비전 과제 1", level=0)
     para(doc, "점처리 · 공간/주파수 필터링 · Wiener 복원", italic=True, size=12, align=WD_ALIGN_PARAGRAPH.CENTER)
     doc.add_paragraph()
-    para(doc, "개요", bold=True, size=12)
-    para(doc, "본 보고서는 과제 1의 세 문제를 다룬다: (A) 점처리 및 히스토그램 기반 영상 향상, "
-              "(B) 공간·주파수 영역 필터링, (C) Wiener 필터. 모든 핵심 영상처리 연산은 built-in 없이 "
-              "직접(from scratch) 구현했다. 허용 built-in은 numpy(기본 배열연산), numpy.fft(FFT/IFFT, B·C에서 사용), "
-              "PIL(이미지 로딩), matplotlib(시각화)이며, 모든 중간 계산은 부동소수점(float64)으로 수행한다.")
-    para(doc, "각 실험마다 그림, 정량 결과, 그리고 '왜 그런 결과가 나오는가'에 대한 간단한 해석을 제시한다.", italic=True, size=9)
-    para(doc, "코드는 partA_point_processing.py / partB_filtering.py / partC_wiener.py 로 제출하며, 본 보고서의 "
-              "모든 그림은 해당 스크립트가 output/ 에 생성한 것이다.", italic=True, size=9)
+    para(doc, '코드는 homework1_cv.py를 참고하며, 실행 결과 그림은 output/ 폴더에 저장된다.')
 
-    # =================================================================
-    # PART A
-    # =================================================================
     h(doc, "Part A. 점처리 및 히스토그램 기반 영상 향상", 1)
     para(doc, "입력: 컬러 RGB 영상(point_processing_input_rgb.png, %dx%d). 점처리는 각 화소를 독립적으로 "
               "변환하고, 히스토그램 기반 기법은 밝기 분포를 재배치해 대비를 개선한다. 모든 향상은 휘도 Y에만 "
@@ -195,49 +185,19 @@ def build():
     bullet(doc, "상위 4비트가 중요한 근거: ① 가중치 합 16+32+64+128=240 으로 최대값 255의 약 94%%, "
                 "② 재구성 PSNR≈%.1f dB·육안으로도 거의 동일. 하위 비트 손실로 매끄러운 그라데이션에 약한 윤곽선(false contour) 발생." % mA["bitplane_PSNR"])
 
-    # A9 (landscape 표)
-    sec = doc.add_section(WD_SECTION.NEW_PAGE); sec.orientation = WD_ORIENT.LANDSCAPE
-    sec.page_width, sec.page_height = sec.page_height, sec.page_width
-    h(doc, "A-9. 비교 및 논의", 2)
-    para(doc, "각 방법의 결과 영상과 히스토그램을 표 안에 함께 제시하여 대비 향상·잡음을 직접 비교한다.")
-    rows = [
-        ("Contrast stretching", "stretch", "전역", "낮음 (동적범위 선형 확장, 분포 모양 유지)",
-         "전 구간 균일 증폭(선형), 이득=(L−1)/(r_max−r_min) — 보통 작음", "O(MN)", "동적범위 좁은(뿌연) 영상, 전처리"),
-        ("Histogram equalization", "he", "전역", "높음 (분포 균일화)",
-         "밀집 밝기대에서 선택적 증폭(비선형) — 스트레칭보다 강함", "O(MN+L)", "전반적 대비가 낮은 영상"),
-        ("AHE", "ahe", "국소", "매우 높음 (국소)",
-         "높음 — 평탄 타일에서 좁은 밝기범위를 펴 잡음 증폭 + 블로킹", "타일 수·크기에 따라 다름", "국소 대비가 중요한 영상"),
-        ("CLAHE", "clahe", "국소", "높음 (clip로 제어)",
-         "낮음 — clip으로 기울기 상한 + 보간으로 블로킹 제거", "AHE + 클리핑·보간 → 구현/파라미터에 따라 다름", "의료·저조도 등 실무 표준"),
-        ("Gamma correction", "gamma", "전역 (점)", "톤 곡선 조정(밝기 재배치)",
-         "낮음 — 단조 점변환이라 새 잡음 안 만듦(γ 큰 암부에선 기존 잡음 부각 가능)", "O(MN)", "디스플레이 감마/노출 보정"),
-    ]
-    headers = ["방법", "결과 영상", "처리 범위", "대비 향상", "잡음 민감도", "히스토그램", "계산복잡도", "적합 응용"]
-    table = doc.add_table(rows=1, cols=len(headers)); table.style = "Table Grid"
-    for j, ht in enumerate(headers):
-        cpar = table.rows[0].cells[j]; cpar.text = ""
-        rr = cpar.paragraphs[0].add_run(ht); rr.bold = True; rr.font.size = Pt(9)
-    for (name, key, scope, contrast, noise, cost, app) in rows:
-        cells = table.add_row().cells
-        cells[0].text = ""; cells[0].paragraphs[0].add_run(name).bold = True
-        ip, hp = TH.get(key, (None, None))
-        if ip and os.path.exists(ip): cells[1].paragraphs[0].add_run().add_picture(ip, width=Inches(1.05))
-        if hp and os.path.exists(hp): cells[5].paragraphs[0].add_run().add_picture(hp, width=Inches(1.35))
-        for idx, txt in [(2, scope), (3, contrast), (4, noise), (6, cost), (7, app)]:
-            cells[idx].text = ""; rr = cells[idx].paragraphs[0].add_run(txt); rr.font.size = Pt(8.5)
-    for row in table.rows:
-        for cell in row.cells:
-            for p in cell.paragraphs: p.paragraph_format.space_after = Pt(0)
-    doc.add_paragraph()
-    para(doc, "요약", bold=True)
-    para(doc, "전역 방법(스트레칭·HE·감마)은 빠르고 단순하지만 국소 대비에 한계가 있고, 국소 방법(AHE·CLAHE)은 "
-              "국소 대비에 강하나 잡음·비용이 커진다. CLAHE는 clip limit와 보간으로 두 극단을 절충한 실무 표준이다.")
+    h(doc, 'A-9. 비교 및 논의', 2)
+    para(doc, '아래 복잡도는 밝기 레벨마다 전체 화소를 비교하는 현재 구현 기준이다. M×N은 영상 크기, L=256, T=64이다. L과 T를 고정하면 화소 수에 대해 선형이며, 단일 패스 히스토그램 계수는 O(MN+L)로 구현할 수 있다.')
+    para(doc, '대비 스트레칭', bold=True)
+    para(doc, '전역 처리로 선택한 중앙 밝기 범위를 일정한 이득으로 확장하고 양 끝은 클리핑한다. 이득이 큰 구간에서는 신호와 잡음이 함께 증폭될 수 있다. 현재 히스토그램 구현의 복잡도는 O(LMN+L)이며, 동적범위가 좁은 영상의 전처리에 적합하다.')
+    para(doc, '히스토그램 평활화', bold=True)
+    para(doc, '전역 CDF에 따라 밝기 구간별 대비를 조절한다. 빈도가 높은 강도 구간의 변동과 잡음도 확대될 수 있으며, 밝기 상승이 전체 표준편차 상승을 보장하지는 않는다. 복잡도는 O(LMN+L)이며, 전역 밝기 분포를 재조정할 때 사용한다.')
+    para(doc, 'AHE', bold=True)
+    para(doc, '타일별 국소 처리로 불균일한 대비를 개선한다. 평탄한 타일의 미세 변동도 크게 증폭하며, 본 구현은 타일 간 보간이 없어 경계 불연속이 나타난다. 복잡도는 O(LMN+TL)이며, 영역별 대비가 다른 영상에 적합하지만 잡음과 타일 경계를 함께 살펴야 한다.')
+    para(doc, 'CLAHE', bold=True)
+    para(doc, '타일 히스토그램의 큰 빈도를 제한해 국소 대비 이득을 완화하고, 보간으로 타일 경계 불연속을 줄인다. clip limit가 크면 세부 대비와 잡음 증폭이 함께 커질 수 있다. 복잡도는 O(LMN+TL)이며, 저조도 영상이나 국소 대비를 제어하며 개선할 때 적합하다.')
+    para(doc, '감마 보정', bold=True)
+    para(doc, '전역 점처리로 밝기에 따라 다른 이득을 적용한다. γ<1은 암부를, γ>1은 밝은 영역을 상대적으로 확장하므로 해당 영역의 잡음도 증폭할 수 있다. 복잡도는 O(MN)이며, 감마 및 톤 조정에 적합하다.')
 
-    # =================================================================
-    # PART B
-    # =================================================================
-    secp = doc.add_section(WD_SECTION.NEW_PAGE); secp.orientation = WD_ORIENT.PORTRAIT
-    secp.page_width, secp.page_height = secp.page_height, secp.page_width
     rB = B.run_all(); mB = rB["metrics"]; FB = rB["figures"]
 
     h(doc, "Part B. 공간·주파수 영역 필터링", 1)
@@ -396,20 +356,14 @@ def build():
     para(doc, "같은 열화 + Wiener 복원을 다른 입력 영상들에도 반복해, 최적 K가 영상 내용에 따라 어떻게 달라지는지 확인한다.")
     for r in inputs[1:]:
         h(doc, "입력: %s" % r["label"], 3)
-        img(doc, r["figs"]["deg"])
-        img(doc, r["figs"]["sweep"], width=6.8)
+        img(doc, r["figs"]["deg"], width=5.8)
+        img(doc, r["figs"]["sweep"], width=6.4)
         k_table(r["table"], r["best_psnr_K"], r["best_ssim_K"])
     best_list = ", ".join("%s: PSNR@%.0e·SSIM@%.0e" % (r["label"], r["best_psnr_K"], r["best_ssim_K"]) for r in inputs)
     bullet(doc, "최적 K는 영상마다 다르다(%s). 더 매끄러운 영상일수록 큰 K를 더 잘 견딘다 — 이는 K ≈ S_n/S_f 에 부합하며, "
                 "최적 정규화는 잡음뿐 아니라 신호 자체의 스펙트럼에 달려 있다." % best_list, lead="입력별 비교: ")
 
     doc.add_paragraph()
-    para(doc, "전체 요약", bold=True, size=12)
-    para(doc, "Part A는 점처리·히스토그램 향상을 직접 구현해 전역(HE·스트레칭·감마)과 국소(AHE·CLAHE) 방법의 "
-              "대비/잡음 트레이드오프를 비교했다. Part B는 합성곱 정리를 검증(선형 합성곱용 zero-padding으로 공간·주파수 "
-              "결과가 반올림 수준까지 동일)하고 블러=저역통과, 샤프닝=고역통과임을 확인했다. Part C는 가우시안 블러+잡음 "
-              "열화에 Wiener 필터를 설계해 정규화 상수 K가 잡음 억제와 디블러 선명도의 균형을 어떻게 조절하는지 정량적으로 보였다.")
-
     finalize_report(doc, "ko")
     doc.save(DOCX); print("saved", DOCX)
 
