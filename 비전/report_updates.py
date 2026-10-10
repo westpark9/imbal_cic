@@ -161,7 +161,7 @@ def finalize_report(doc, lang):
     format_document(doc,ko)
 
 def format_document(doc, ko):
-    font='Malgun Gothic' if ko else 'Calibri'
+    font='Malgun Gothic' if ko else 'Times New Roman'
     for sec in doc.sections:
         sec.top_margin=sec.bottom_margin=Inches(.65)
         sec.left_margin=sec.right_margin=Inches(.65)
@@ -183,6 +183,14 @@ def format_document(doc, ko):
         p.paragraph_format.keep_together=True
         if p.text in ['대비 스트레칭','히스토그램 평활화','AHE','CLAHE','감마 보정','Contrast stretching','Histogram equalization','Gamma correction','공간·주파수 영역 검증','Spatial and frequency verification']:
             p.paragraph_format.keep_with_next=True
+        if not ko:
+            for r in p.runs:
+                r.font.name=font
+                rf=r._r.get_or_add_rPr().get_or_add_rFonts()
+                for key in ['ascii','hAnsi','eastAsia','cs']:
+                    rf.set(qn('w:'+key),font)
+                for key in ['asciiTheme','hAnsiTheme','eastAsiaTheme','cstheme']:
+                    rf.attrib.pop(qn('w:'+key),None)
     for t in doc.tables:
         t.autofit=False
         widths=[7.2/len(t.columns)]*len(t.columns)

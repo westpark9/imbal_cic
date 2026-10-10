@@ -24,7 +24,7 @@ DOCX = "Homework1_Report.docx"
 
 
 # ---------- docx helpers ----------
-def set_base_font(doc, font="Calibri", size=10.5):
+def set_base_font(doc, font="Times New Roman", size=10.5):
     st = doc.styles["Normal"]
     st.font.name = font
     st.font.size = Pt(size)
@@ -42,7 +42,8 @@ def para(doc, text, bold=False, italic=False, size=None, color=None, align=None)
     return p
 
 def bullet(doc, text, bold_lead=None):
-    p = doc.add_paragraph(style="List Bullet")
+    # Keep the explanatory paragraph and optional lead without list formatting.
+    p = doc.add_paragraph(style="Normal")
     if bold_lead:
         r = p.add_run(bold_lead); r.bold = True
     p.add_run(text)
