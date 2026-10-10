@@ -14,14 +14,17 @@ Run:  python partC_wiener.py
 """
 
 import os
+import json
+from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from PIL import Image
 
-IMG_PATH = os.path.join("images", "wiener_filter_input.png")   # alt: wiener_filter_input_2 / _rocket
-OUT_DIR = "output"
+IMG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "wiener_filter_input.png")   # alt: wiener_filter_input_2 / _rocket
+BASE_DIR = Path(__file__).resolve().parent
+OUT_DIR = str(BASE_DIR / "output")
 RMS_TARGET = 0.03
 KS = [1e-6, 1e-4, 1e-3, 1e-2, 1e-1]
 
@@ -132,15 +135,21 @@ def run_one(path, key, label, psf, rng, full=False):
 
     # K sweep + table
     rows = []
+    raw_rows = []
     fig, ax = plt.subplots(1, len(KS), figsize=(18, 4))
     for i, K in enumerate(KS):
-        rc = np.clip(wiener_restore(g, H, K), 0, 1)
+        restored = wiener_restore(g, H, K)
+        rc = np.clip(restored, 0, 1)
+        raw_rows.append((K,mse(f1,restored),psnr(f1,restored,1.0),ssim(f1,restored,1.0),float(100*np.mean((restored<0)|(restored>1)))))
         mm = mse(f1, rc); ps = psnr(f1, rc, 1.0); ss = ssim(f1, rc, 1.0)
         rows.append((K, mm, ps, ss))
         show(ax[i], rc, "K=%.0e\nPSNR=%.2f" % (K, ps), vmin=0, vmax=1)
     fig.suptitle("K sweep - %s" % label, y=1.02)
     figs["sweep"] = save(fig, "C_%s_Ksweep" % key)
     out["table"] = rows
+    out["raw_table"] = raw_rows
+    out["noise_mean"] = float(n.mean())
+    out["degraded_metrics"] = [mse(f1,g),psnr(f1,g,1.0),ssim(f1,g,1.0)]
     out["best_psnr_K"] = max(rows, key=lambda t: t[2])[0]
     out["best_ssim_K"] = max(rows, key=lambda t: t[3])[0]
     return out
@@ -152,9 +161,9 @@ def run_all():
     psf = gaussian_psf(15, 2.5)
     results = []
     for i, (key, name, label) in enumerate(INPUTS):
-        path = os.path.join("images", name)
+        path = os.path.join(BASE_DIR, "images", name)
         if not os.path.exists(path):
-            continue
+            raise FileNotFoundError(path)
         results.append(run_one(path, key, label, psf, rng, full=(i == 0)))
     return {"psf_sum": float(psf.sum()), "inputs": results}
 
@@ -168,10 +177,26 @@ def _print(res):
         print("  %-10s  %-9s  %-9s  %-7s" % ("K", "MSE", "PSNR(dB)", "SSIM"))
         for K, mm, ps, ss in r["table"]:
             print("  %-10.0e  %-9.5f  %-9.2f  %-7.4f" % (K, mm, ps, ss))
+        print("  Raw restoration: K MSE PSNR SSIM clipped_percent")
+        for row in r["raw_table"]:
+            print("  %.0e %.6f %.2f %.4f %.3f" % tuple(row))
         print("  best PSNR at K=%.0e , best SSIM at K=%.0e" % (r["best_psnr_K"], r["best_ssim_K"]))
     print("=" * 60)
 
 
+def portable_results(value):
+    """Keep cached experiment paths valid when the project folder is moved."""
+    if isinstance(value, dict):
+        return {k: portable_results(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [portable_results(v) for v in value]
+    if isinstance(value, str) and value.endswith(".png"):
+        return "output/" + Path(value).name
+    return value
+
+
 if __name__ == "__main__":
     r = run_all()
+    with open(BASE_DIR / "results_C.json", "w", encoding="utf-8") as stream:
+        json.dump(portable_results(r), stream, indent=2, default=float)
     _print(r)

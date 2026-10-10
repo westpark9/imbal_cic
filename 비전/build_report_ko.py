@@ -13,9 +13,11 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.section import WD_ORIENT, WD_SECTION
 from docx.oxml.ns import qn
 
-import partA_point_processing as A
-import partB_filtering as B
-import partC_wiener as Cm
+from report_updates import Results, finalize_report, BASE
+A = Results("A")
+B = Results("B")
+Cm = Results("C")
+os.chdir(BASE)
 
 DOCX = "Homework1_Report_KO.docx"
 
@@ -408,6 +410,7 @@ def build():
               "결과가 반올림 수준까지 동일)하고 블러=저역통과, 샤프닝=고역통과임을 확인했다. Part C는 가우시안 블러+잡음 "
               "열화에 Wiener 필터를 설계해 정규화 상수 K가 잡음 억제와 디블러 선명도의 균형을 어떻게 조절하는지 정량적으로 보였다.")
 
+    finalize_report(doc, "ko")
     doc.save(DOCX); print("saved", DOCX)
 
 

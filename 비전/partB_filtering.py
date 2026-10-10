@@ -22,14 +22,17 @@ Parameters:
 """
 
 import os
+import json
+from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from PIL import Image
 
-IMG_PATH = os.path.join("images", "spatial_frequency_filtering_input.png")
-OUT_DIR = "output"
+IMG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "spatial_frequency_filtering_input.png")
+BASE_DIR = Path(__file__).resolve().parent
+OUT_DIR = str(BASE_DIR / "output")
 SPEC = "magma"   # colormap for spectra
 
 
@@ -49,15 +52,22 @@ def conv2d(f, h):
             out += hf[i, j] * fp[i:i+f.shape[0], j:j+f.shape[1]]
     return out
 
-def conv2d_fft(f, h):
-    """Frequency-domain LINEAR convolution: zero-pad to (M+m-1,N+n-1), multiply, crop 'same'."""
-    f = f.astype(np.float64); h = h.astype(np.float64)
+def conv2d_fft(f, h, return_spectra=False):
+    """Zero-extended linear convolution. Unshifted kernel, then centered 'same' crop.
+
+    F, H and G use the identical full-convolution grid. A top-left kernel origin
+    adds a phase delay; cropping by its radius aligns the odd-kernel output.
+    """
+    f = np.asarray(f, dtype=np.float64); h = np.asarray(h, dtype=np.float64)
     M, N = f.shape; m, n = h.shape
-    P, Q = M + m - 1, N + n - 1            # <-- zero-padding that makes it LINEAR (not circular)
-    F = np.fft.fft2(f, (P, Q)); H = np.fft.fft2(h, (P, Q))
-    g = np.real(np.fft.ifft2(F * H))
-    si, sj = (m - 1) // 2, (n - 1) // 2
-    return g[si:si+M, sj:sj+N]
+    if m % 2 == 0 or n % 2 == 0:
+        raise ValueError("This centered implementation requires odd kernel dimensions")
+    shape = (M+m-1, N+n-1)
+    F = np.fft.fft2(f, shape); H = np.fft.fft2(h, shape); G = F * H
+    full = np.fft.ifft2(G).real
+    si, sj = m//2, n//2
+    same = full[si:si+M, sj:sj+N]
+    return (same, F, H, G) if return_spectra else same
 
 def logmag(X):
     """Centered log-magnitude spectrum: log(1 + |fftshift(X)|)."""
@@ -123,23 +133,25 @@ hs = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float64)
 
 
 def _overview_fig(f, h, hname, tag, clip_spatial):
-    """B1/B2 shared layout: row1 inputs/responses, row2 results + difference."""
-    g_s = conv2d(f, h)          # spatial
-    g_f = conv2d_fft(f, h)      # frequency (linear conv)
-    diff = np.abs(g_s - g_f)
-    fig, ax = plt.subplots(2, 4, figsize=(16, 8))
-    show(ax[0, 0], f, "1) input f(x,y)")
-    show(ax[0, 1], spectrum_of_image(f), "2) log|F(u,v)|", cmap=SPEC)
-    show(ax[0, 2], h, "3) impulse response %s" % hname)
-    show(ax[0, 3], spectrum_of_kernel(h, f.shape), "4) log|H(u,v)|", cmap=SPEC)
-    disp_s = np.clip(g_s, 0, 255) if clip_spatial else g_s
-    disp_f = np.clip(g_f, 0, 255) if clip_spatial else g_f
-    show(ax[1, 0], disp_s, "spatial  g_s = h * f")
-    show(ax[1, 1], disp_f, "frequency  g_f = F^-1{H F}")
-    show(ax[1, 2], spectrum_of_image(g_f), "log(1+|G_f|) of output", cmap=SPEC)
-    show(ax[1, 3], diff, "|g_s - g_f|  (max=%.1e)" % diff.max())
-    path = save(fig, tag)
-    return path, g_s, g_f
+    g_s = conv2d(f, h)
+    g_f, F, H, G = conv2d_fft(f, h, return_spectra=True)
+    diff = np.abs(g_s-g_f)
+    sf, sh, sg = logmag(F), logmag(H), logmag(G)
+    top = max(sf.max(), sg.max())
+    fig, ax = plt.subplots(2,4,figsize=(16,8),layout="constrained")
+    show(ax[0,0], f, "Input f", vmin=0, vmax=255)
+    show(ax[0,1], sf, "log(1+|F|), padded grid", cmap=SPEC, vmin=0, vmax=top)
+    show(ax[0,2], h, "Impulse response " + hname, vmin=min(0,h.min()), vmax=h.max())
+    for (i,j), v in np.ndenumerate(h):
+        ax[0,2].text(j,i,"%.3f" % v,ha="center",va="center",color="red",fontsize=11)
+    show(ax[0,3], sh, "log(1+|H|), padded grid", cmap=SPEC, vmin=0, vmax=sh.max())
+    show(ax[1,0], np.clip(g_s,0,255), "Spatial result (display clipped)", vmin=0,vmax=255)
+    show(ax[1,1], np.clip(g_f,0,255), "FFT result (same crop)", vmin=0,vmax=255)
+    show(ax[1,2], sg, "log(1+|G|), G=H F before crop", cmap=SPEC,vmin=0,vmax=top)
+    show(ax[1,3], diff/1e-12, "Absolute difference / 1e-12",cmap="magma",vmin=0,vmax=1.2)
+    fig.colorbar(ax[1,3].images[0],ax=ax[1,3],shrink=.8,label="Error in units of 1e-12")
+    fig.suptitle("F and G share a log scale; max absolute error = %.3e" % diff.max())
+    return save(fig,tag), g_s, g_f
 
 
 def run_all(img_path=IMG_PATH):
@@ -158,16 +170,17 @@ def run_all(img_path=IMG_PATH):
     met["sharp_mse"] = mse(gs_s, gs_f); met["sharp_psnr"] = psnr(gs_s, gs_f, 255); met["sharp_ssim"] = ssim(gs_s, gs_f, 255)
 
     # ---- B3 Frequency analysis (|F|,|H|,|G|) + response cross-section ----
-    F_sp = spectrum_of_image(f)
     for name, h, tag in [("Blur h_b", hb, "blur"), ("Sharpen h_s", hs, "sharpen")]:
-        H = np.fft.fft2(h, s=f.shape)
-        G = H * np.fft.fft2(f)
-        fig, ax = plt.subplots(1, 3, figsize=(15, 4.4))
-        show(ax[0], F_sp, "|F(u,v)|  input", cmap=SPEC)
-        show(ax[1], logmag(H), "|H(u,v)|  (%s)" % name, cmap=SPEC)
-        show(ax[2], logmag(G), "|G|=|H F|  output", cmap=SPEC)
-        fig.suptitle(name, y=1.02)
-        F["B3_" + tag] = save(fig, "B3_spectra_" + tag)
+        _, Fs, Hs, Gs = conv2d_fft(f, h, return_spectra=True)
+        spectra = [logmag(Fs),logmag(Hs),logmag(Gs)]
+        vmax = max(spectra[0].max(),spectra[2].max())
+        fig, ax = plt.subplots(1,3,figsize=(15,4.8),layout="constrained")
+        for j,title in enumerate(["log(1+|F|)","log(1+|H|)","log(1+|G|), G=H F"]):
+            show(ax[j],spectra[j],title,cmap=SPEC,vmin=0,
+                 vmax=spectra[1].max() if j==1 else vmax)
+            fig.colorbar(ax[j].images[0],ax=ax[j],shrink=.8)
+        fig.suptitle(name + " - same padded grid; F and G share the scale")
+        F["B3_"+tag] = save(fig,"B3_spectra_"+tag)
 
     # ---- B4 Impulse-response verification ----
     sz = 31
@@ -175,6 +188,8 @@ def run_all(img_path=IMG_PATH):
     c = sz // 2; r = 4  # crop half-size for visibility
     for name, h, tag in [("Blur", hb, "blur"), ("Sharpen", hs, "sharpen")]:
         out = conv2d(delta, h)
+        out_fft = conv2d_fft(delta, h)
+        met["impulse_fft_err_"+tag] = float(np.max(np.abs(out-out_fft)))
         kh, kw = h.shape
         patch = out[c-kh//2:c-kh//2+kh, c-kw//2:c-kw//2+kw]
         err = float(np.max(np.abs(patch - h)))
@@ -186,7 +201,9 @@ def run_all(img_path=IMG_PATH):
         show(ax[1], logmag(np.fft.fft2(delta)), "log|FFT(delta)|  (FLAT = all freqs equal)",
              cmap=SPEC, vmin=0.0, vmax=1.0)
         show(ax[2], out[c-r:c+r+1, c-r:c+r+1], "output h*delta  (center 9x9)")
-        show(ax[3], h, "impulse response h")
+        show(ax[3], h, "impulse response h", vmin=min(0,h.min()), vmax=h.max())
+        for (hi,hj), value in np.ndenumerate(h):
+            ax[3].text(hj,hi,"%.3f" % value,ha="center",va="center",color="red",fontsize=10)
         show(ax[4], spectrum_of_kernel(h, (sz, sz)), "log|H(u,v)|", cmap=SPEC)
         fig.suptitle("%s :  max|output_center - h| = %.2e" % (name, err), y=1.05)
         F["B4_" + tag] = save(fig, "B4_impulse_" + tag)
@@ -238,9 +255,28 @@ def run_all(img_path=IMG_PATH):
     show(ax[0], f, "original f")
     show(ax[1], np.clip(g_fixed, 0, 255), "fixed 3x3 kernel h_s")
     show(ax[2], np.clip(g_unsharp, 0, 255), "unsharp sigma=3, k=1")
-    fig.suptitle("B5 vs fixed kernel: large-sigma unsharp sharpens coarse structure the fixed 3x3 h_s cannot", y=1.02)
+    fig.suptitle("B5 comparison: fixed frequency gain vs adjustable Gaussian scale and strength", y=1.02)
     F["B5_vs_fixed"] = save(fig, "B5_3_vs_fixed")
 
+    # B5 verification in both domains, for every sigma/k combination.
+    met["unsharp_comparison"] = []
+    fig, ax = plt.subplots(4,3,figsize=(12,14),layout="constrained")
+    for row,(sigma,k) in enumerate([(1.,1.),(1.,2.),(3.,1.),(3.,2.)]):
+        gk = gaussian_kernel(sigma)
+        fLs = conv2d(f,gk); fLf = conv2d_fft(f,gk)
+        us = (1+k)*f-k*fLs; uf = (1+k)*f-k*fLf
+        met["unsharp_comparison"].append([sigma,k,gk.shape[0],mse(us,uf),
+                                           psnr(us,uf,255),ssim(us,uf,255),
+                                           float(np.max(np.abs(us-uf))),
+                                           float(100*np.mean((us<0)|(us>255)))])
+        label = "sigma=%.0f, k=%.0f" % (sigma,k)
+        show(ax[row,0],np.clip(us,0,255),"Spatial: "+label,vmin=0,vmax=255)
+        show(ax[row,1],np.clip(uf,0,255),"FFT: "+label,vmin=0,vmax=255)
+        show(ax[row,2],np.abs(us-uf)/1e-12,"Difference / 1e-12",cmap=SPEC,vmin=0,vmax=1.2)
+        fig.colorbar(ax[row,2].images[0],ax=ax[row,2],shrink=.8)
+    F["B5_domains"] = save(fig,"B5_4_domains")
+    met["mean_input"] = float(f.mean())
+    met["mean_sharpen"] = float(gs_s.mean())
     return res
 
 
@@ -250,11 +286,27 @@ def _print(m):
     print("[Blur]    spatial vs freq:  MSE=%.3e  PSNR=%.1f dB  SSIM=%.6f" % (m["blur_mse"], m["blur_psnr"], m["blur_ssim"]))
     print("[Sharpen] spatial vs freq:  MSE=%.3e  PSNR=%.1f dB  SSIM=%.6f" % (m["sharp_mse"], m["sharp_psnr"], m["sharp_ssim"]))
     print("impulse h*delta=h error:  blur=%.1e  sharpen=%.1e" % (m["impulse_err_blur"], m["impulse_err_sharpen"]))
+    print("B5: sigma k size MSE PSNR SSIM max_error out_of_range_percent")
+    for row in m["unsharp_comparison"]:
+        print("%.0f %.0f %d %.3e %.2f %.8f %.3e %.3f" % tuple(row))
     print("=" * 60)
+
+
+def portable_results(value):
+    """Keep cached experiment paths valid when the project folder is moved."""
+    if isinstance(value, dict):
+        return {k: portable_results(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [portable_results(v) for v in value]
+    if isinstance(value, str) and value.endswith(".png"):
+        return "output/" + Path(value).name
+    return value
 
 
 if __name__ == "__main__":
     r = run_all()
+    with open(BASE_DIR / "results_B.json", "w", encoding="utf-8") as stream:
+        json.dump(portable_results(r), stream, indent=2, default=float)
     _print(r["metrics"])
     print("figures saved to '%s/':" % OUT_DIR)
     for k, v in r["figures"].items():

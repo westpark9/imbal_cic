@@ -22,14 +22,17 @@ Parameters (summary):
 """
 
 import os
+import json
+from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")                 # headless: save to files only (no window)
 import matplotlib.pyplot as plt
 from PIL import Image
 
-IMG_PATH = os.path.join("images", "point_processing_input_rgb.png")
-OUT_DIR = "output"
+IMG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "point_processing_input_rgb.png")
+BASE_DIR = Path(__file__).resolve().parent
+OUT_DIR = str(BASE_DIR / "output")
 L = 256
 
 # RGB->YUV matrix given in the assignment (BT.601-style)
@@ -98,11 +101,15 @@ def hist_equalize(q):
     return lut[q], lut, cdf
 
 def contrast_stretch(img, p_low=2, p_high=98):
-    """Piecewise-linear stretch with r_min,r_max at the 2nd/98th percentiles."""
-    rmin = np.percentile(img, p_low)
-    rmax = np.percentile(img, p_high)
-    s = (img - rmin) / (rmax - rmin) * (L - 1)
-    return np.clip(s, 0, L - 1), rmin, rmax
+    """Choose percentile levels from the 8-bit luminance histogram CDF."""
+    if not 0 <= p_low < p_high <= 100:
+        raise ValueError("Require 0 <= p_low < p_high <= 100")
+    h = compute_hist(quantize8(img)); cdf = np.cumsum(h) / h.sum()
+    rmin = float(np.flatnonzero(cdf >= p_low / 100.0)[0])
+    rmax = float(np.flatnonzero(cdf >= p_high / 100.0)[0])
+    if rmax <= rmin:
+        return img.astype(np.float64).copy(), rmin, rmax
+    return np.clip((img-rmin)/(rmax-rmin)*(L-1), 0, L-1), rmin, rmax
 
 def gamma_correct(img, gamma):
     """s = 255 * (r/255)^gamma, c = 1."""
@@ -253,14 +260,29 @@ def run_all(img_path=IMG_PATH, make_a9_thumbs=True):
     # ---- A7. CLAHE ----
     Y_clahe1 = clahe(Y, nt=8, clip=0.01)
     Y_clahe2 = clahe(Y, nt=8, clip=0.05)
-    fig, ax = plt.subplots(2, 3, figsize=(15, 9))
-    show(ax[0, 0], Yq, "Original Y", vmin=0, vmax=255)
-    show(ax[0, 1], Y_ahe, "AHE", vmin=0, vmax=255)
-    show(ax[0, 2], Y_clahe1, "CLAHE clip=0.01", vmin=0, vmax=255)
-    ax[1, 0].bar(np.arange(256), compute_hist(quantize8(Y_ahe)), width=1.0); ax[1, 0].set_title("Hist: AHE")
-    ax[1, 1].bar(np.arange(256), compute_hist(quantize8(Y_clahe1)), width=1.0, color="C2"); ax[1, 1].set_title("Hist: CLAHE 0.01")
-    show(ax[1, 2], Y_clahe2, "CLAHE clip=0.05", vmin=0, vmax=255)
+    images = [Yq, Y_ahe, Y_clahe1, Y_clahe2]
+    titles = ["Original Y", "AHE", "CLAHE clip=0.01", "CLAHE clip=0.05"]
+    hs = [compute_hist(quantize8(v)) for v in images]
+    ymax = 1.05 * max(h.max() for h in hs)
+    fig, ax = plt.subplots(2, 4, figsize=(16, 8))
+    for j, (v, title, h) in enumerate(zip(images, titles, hs)):
+        show(ax[0, j], v, title, vmin=0, vmax=255)
+        ax[1, j].bar(np.arange(256), h, width=1)
+        ax[1, j].set(xlim=(0,255), ylim=(0,ymax), title="Histogram: " + title,
+                     xlabel="Intensity", ylabel="Pixel count")
+    fig.tight_layout()
     res["figures"]["A7"] = save(fig, "A7_CLAHE")
+
+    # Descriptive contrast statistics; these do not isolate image noise.
+    met["enhancement_stats"] = []
+    variants = [("Original", Y), ("Stretch", Y_cs), ("HE", Y_eq),
+                ("Gamma 0.5", gamma_correct(Y,0.5)), ("Gamma 1.0", gamma_correct(Y,1.0)),
+                ("Gamma 2.0", gamma_correct(Y,2.0)), ("AHE", Y_ahe),
+                ("CLAHE 0.01", Y_clahe1), ("CLAHE 0.05", Y_clahe2)]
+    for label, v in variants:
+        tiles = [v[i*64:(i+1)*64,j*64:(j+1)*64] for i in range(8) for j in range(8)]
+        met["enhancement_stats"].append([label, float(v.mean()), float(v.std()),
+                                          float(np.mean([t.std() for t in tiles]))])
 
     # CLAHE auxiliary metric: mapping of input 0 in the darkest tile (clip effect)
     nt = 8; th = tw = Mh // nt; npix = th * tw
@@ -335,11 +357,27 @@ def _print_metrics(m):
     print("CLAHE darkest tile %s: Y=0 count %d (%.0f%%),  input 0 -> output  AHE %d / clip0.01 %d / clip0.05 %d"
           % (m["clahe_tile"], m["clahe_tile_zero_count"], 100 * m["clahe_tile_zero_frac"],
              m["clahe_map0_ahe"], m["clahe_map0_clip01"], m["clahe_map0_clip05"]))
+    print("Enhancement statistics: method / mean / global std / mean tile std")
+    for row in m["enhancement_stats"]:
+        print("%-12s %.3f %.3f %.3f" % tuple(row))
     print("=" * 60)
+
+
+def portable_results(value):
+    """Keep cached experiment paths valid when the project folder is moved."""
+    if isinstance(value, dict):
+        return {k: portable_results(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [portable_results(v) for v in value]
+    if isinstance(value, str) and value.endswith(".png"):
+        return "output/" + Path(value).name
+    return value
 
 
 if __name__ == "__main__":
     result = run_all()
+    with open(BASE_DIR / "results_A.json", "w", encoding="utf-8") as stream:
+        json.dump(portable_results(result), stream, indent=2, default=float)
     _print_metrics(result["metrics"])
     print("figures saved to '%s/' :" % OUT_DIR)
     for k, v in result["figures"].items():

@@ -3,7 +3,7 @@
 Homework 1 report generator (English, full-assignment format).
 
 The report is structured to cover the entire assignment (Part A / B / C). Part A is
-filled in now; Parts B and C are placeholders to be completed later. For Part A it runs
+complete. Results are loaded from results_A/B/C.json. The experiment scripts run
 partA_point_processing.run_all() to obtain the figures (in output/) and the quantitative
 results, and assembles figures + numbers + interpretation into Homework1_Report.docx.
 
@@ -16,9 +16,11 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.section import WD_ORIENT, WD_SECTION
 from docx.oxml.ns import qn
 
-import partA_point_processing as A
-import partB_filtering as B
-import partC_wiener as Cm
+from report_updates import Results, finalize_report, BASE
+A = Results("A")
+B = Results("B")
+Cm = Results("C")
+os.chdir(BASE)
 
 DOCX = "Homework1_Report.docx"
 
@@ -315,7 +317,7 @@ def build():
               "practical standard.")
 
     # =================================================================
-    # PART B / C placeholders (format covers the whole assignment)
+    # PART B AND C
     # =================================================================
     secp = doc.add_section(WD_SECTION.NEW_PAGE)
     secp.orientation = WD_ORIENT.PORTRAIT
@@ -560,6 +562,7 @@ def build():
               "showed quantitatively how the regularization constant K balances noise suppression against "
               "deblurring sharpness.")
 
+    finalize_report(doc, "en")
     doc.save(DOCX)
     print("saved", DOCX)
 
