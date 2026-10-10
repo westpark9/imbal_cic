@@ -588,7 +588,8 @@ Mf, Nf = f.shape
 print("f shape:", f.shape, "range:", f.min(), f.max())
 
 def conv2d_fft(f, h):
-    # 주파수영역 선형 합성곱: (M+m-1, N+n-1) zero-pad -> 곱 -> IFFT -> 'same' crop
+    # 주파수영역 '선형' 합성곱: (M+m-1, N+n-1) zero-pad -> FFT 곱 -> IFFT -> 'same' crop
+    # ★ 선형 합성곱이 되게 만드는 zero-padding이 '바로 여기'서 일어난다 (순환 합성곱 방지)
     f = f.astype(np.float64); h = h.astype(np.float64)
     M, N = f.shape; m, n = h.shape
     P, Q = M + m - 1, N + n - 1
@@ -598,82 +599,70 @@ def conv2d_fft(f, h):
     return g[si:si+M, sj:sj+N]
 
 def logmag(X):
-    # 중심화 로그 크기 스펙트럼
-    return np.log1p(np.abs(np.fft.fftshift(X)))
-
+    return np.log1p(np.abs(np.fft.fftshift(X)))    # 중심화 로그 크기 스펙트럼 log(1+|fftshift|)
 def spectrum_of_image(img):
     return logmag(np.fft.fft2(img))
-
 def spectrum_of_kernel(h, shape):
-    return logmag(np.fft.fft2(h, s=shape))   # 커널을 영상 크기로 zero-pad하여 주파수응답 표시
+    return logmag(np.fft.fft2(h, s=shape))         # H(u,v) '표시용'만: 영상 크기로 zero-pad (필터링엔 안 씀)
+def gaussian_kernel(sigma):
+    rad = max(1, int(np.ceil(3 * sigma)))
+    ax = np.arange(-rad, rad + 1); xx, yy = np.meshgrid(ax, ax)
+    g = np.exp(-(xx**2 + yy**2) / (2 * sigma**2)); return g / g.sum()
 
+SPEC = 'magma'
 hb = np.ones((3, 3)) / 9.0
 hs = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float64)
 print("blur kernel sum =", hb.sum(), ", sharpen kernel sum =", hs.sum())
+
+def overview_fig(f, h, hname, tag, clip_spatial):
+    # B1/B2 공통 레이아웃: 윗줄=입력/응답(1~4), 아랫줄=공간결과/주파수결과/출력스펙트럼/차이
+    g_s = conv2d(f, h); g_f = conv2d_fft(f, h); diff = np.abs(g_s - g_f)
+    fig, ax = plt.subplots(2, 4, figsize=(16, 8))
+    show(ax[0,0], f, "1) input f(x,y)")
+    show(ax[0,1], spectrum_of_image(f), "2) log|F(u,v)|", cmap=SPEC)
+    show(ax[0,2], h, "3) impulse response " + hname)
+    show(ax[0,3], spectrum_of_kernel(h, f.shape), "4) log|H(u,v)|", cmap=SPEC)
+    ds = np.clip(g_s,0,255) if clip_spatial else g_s
+    df_ = np.clip(g_f,0,255) if clip_spatial else g_f
+    show(ax[1,0], ds, "spatial  g_s = h * f")
+    show(ax[1,1], df_, "frequency  g_f = F^-1{H F}")
+    show(ax[1,2], spectrum_of_image(g_f), "log(1+|G_f|) of output", cmap=SPEC)
+    show(ax[1,3], diff, "|g_s - g_f|  (max=%.1e)" % diff.max())
+    plt.tight_layout(); savefig(tag); plt.show()
+    return g_s, g_f
 """)
 
 # ---- B1 blur ----
 md(r"""
 ## B-1. Blur Filtering
 $$h_b=\tfrac{1}{9}\begin{bmatrix}1&1&1\\1&1&1\\1&1&1\end{bmatrix}$$
-공간: $g_s=h_b * f$. 주파수: $G_f=H_b F,\ g_f=\mathcal F^{-1}\{G_f\}$. 두 결과를 MSE/PSNR/SSIM으로 비교.
+윗줄 = 과제 요구 4개(입력 $f$, $\log|F|$, 임펄스응답 $h_b$, $\log|H_b|$). 아랫줄 = 공간결과 $g_s$, 주파수결과 $g_f$, 출력 스펙트럼 $\log(1+|G_f|)$, **차이 $|g_s-g_f|$**.
 """)
 code(r"""
-gb_s = conv2d(f, hb)         # spatial
-gb_f = conv2d_fft(f, hb)     # frequency (linear conv)
-
-fig, ax = plt.subplots(2, 3, figsize=(15, 9))
-show(ax[0,0], f, "f(x,y)")
-show(ax[0,1], spectrum_of_image(f), "log|F(u,v)|", cmap='magma')
-show(ax[0,2], hb, "h_b(x,y) (impulse response)")
-show(ax[1,0], spectrum_of_kernel(hb, f.shape), "log|H_b(u,v)|", cmap='magma')
-show(ax[1,1], gb_s, "spatial  g_s = h_b * f")
-show(ax[1,2], spectrum_of_image(gb_f), "log(1+|G_f|) of output", cmap='magma')
-plt.tight_layout(); savefig("B1_1_blur_overview"); plt.show()
-
-fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-show(ax[0], gb_s, "spatial result")
-show(ax[1], gb_f, "frequency result")
-plt.tight_layout(); savefig("B1_2_blur_spatial_vs_freq"); plt.show()
-
-print("[Blur] spatial vs frequency")
-print("  MSE  = %.3e" % mse(gb_s, gb_f))
-print("  PSNR = %.2f dB" % psnr(gb_s, gb_f, 255))
-print("  SSIM = %.8f" % ssim(gb_s, gb_f, 255))
+gb_s, gb_f = overview_fig(f, hb, "h_b", "B1_blur", clip_spatial=False)
+print("[Blur] spatial vs frequency:  MSE=%.3e  PSNR=%.2f dB  SSIM=%.8f"
+      % (mse(gb_s, gb_f), psnr(gb_s, gb_f, 255), ssim(gb_s, gb_f, 255)))
 """)
 md(r"""
-**해석**: 두 결과의 MSE는 $\sim10^{-24}$(기계정밀도), PSNR은 사실상 $\infty$, SSIM$=1$ → **동일**하다.
-이는 합성곱 정리 $h*f \leftrightarrow HF$ 의 수치적 검증이다. 미세한 차이는 부동소수점 반올림뿐이며,
-**선형 합성곱이 되도록 zero-padding** 했기 때문에 순환 합성곱으로 인한 경계 불일치가 없다.
+**해석**
+- **zero-padding은 어디서 하나(피드백1)**: 선형 합성곱이 되게 하는 zero-padding은 `conv2d_fft` 내부에서 일어난다(`(M+m-1,N+n-1)`로 패딩→곱→crop). `spectrum_of_kernel`은 $H(u,v)$를 **그리기 위한** 패딩일 뿐 필터링엔 안 쓴다.
+- **$g_s$는 display 리스트 어디?**: 과제의 번호 매긴 "display"는 1~4(입력·응답)이고, 공간결과 $g_s$·주파수결과 $g_f$는 **계산해서 비교(MSE/PSNR/SSIM)** 하라는 항목 — 아랫줄에 표시했다.
+- **왜 공간=주파수(피드백2)**: 합성곱 정리로 두 방법은 **같은 선형 합성곱**을 계산한다. 그래서 결과가 부동소수점 반올림만 빼면 동일(MSE $\sim10^{-26}$, PSNR $>300$dB, SSIM$=1$). 차이맵 $|g_s-g_f|$ 최댓값 $\sim10^{-13}$이 이를 확인.
 """)
 
 # ---- B2 sharpen ----
 md(r"""
 ## B-2. Sharpening Filtering
 $$h_s=\begin{bmatrix}0&-1&0\\-1&5&-1\\0&-1&0\end{bmatrix}$$
-(= 원본 + 라플라시안 기반 에지강조; 계수합 1이라 평균밝기 보존.)
+(= 원본 + 라플라시안 기반 에지강조; 계수합 1이라 평균밝기 보존.) 레이아웃은 B-1과 동일.
 """)
 code(r"""
-gs_s = conv2d(f, hs)
-gs_f = conv2d_fft(f, hs)
-
-fig, ax = plt.subplots(2, 3, figsize=(15, 9))
-show(ax[0,0], f, "f(x,y)")
-show(ax[0,1], spectrum_of_image(f), "log|F(u,v)|", cmap='magma')
-show(ax[0,2], hs, "h_s(x,y)")
-show(ax[1,0], spectrum_of_kernel(hs, f.shape), "log|H_s(u,v)|", cmap='magma')
-show(ax[1,1], np.clip(gs_s,0,255), "spatial  g_s = h_s * f")
-show(ax[1,2], spectrum_of_image(gs_f), "log(1+|G_f|) of output", cmap='magma')
-plt.tight_layout(); savefig("B2_sharpen_overview"); plt.show()
-
-print("[Sharpen] spatial vs frequency")
-print("  MSE  = %.3e" % mse(gs_s, gs_f))
-print("  PSNR = %.2f dB" % psnr(gs_s, gs_f, 255))
-print("  SSIM = %.8f" % ssim(gs_s, gs_f, 255))
+gs_s, gs_f = overview_fig(f, hs, "h_s", "B2_sharpen", clip_spatial=True)
+print("[Sharpen] spatial vs frequency:  MSE=%.3e  PSNR=%.2f dB  SSIM=%.8f"
+      % (mse(gs_s, gs_f), psnr(gs_s, gs_f, 255), ssim(gs_s, gs_f, 255)))
 """)
 md(r"""
-**해석**: 샤프닝 역시 공간/주파수 결과가 동일(수치오차 제외). 출력은 에지에서 과충(overshoot)/부족(undershoot)으로
-$[0,255]$ 를 벗어날 수 있어 표시할 때만 클리핑한다(지표 비교는 원본 float로 수행).
+**해석**: 샤프닝도 공간/주파수 결과가 동일(반올림 제외, 차이맵 참조). 출력은 에지에서 오버/언더슈트로 $[0,255]$를 벗어나 **표시할 때만 클리핑**한다(지표는 원본 float로 계산).
 """)
 
 # ---- B3 frequency analysis ----
@@ -684,20 +673,30 @@ md(r"""
 code(r"""
 F_sp = spectrum_of_image(f)
 for name, h, tag in [("Blur h_b", hb, "blur"), ("Sharpen h_s", hs, "sharpen")]:
-    H = np.fft.fft2(h, s=f.shape)
-    G = H * np.fft.fft2(f)
-    fig, ax = plt.subplots(1, 3, figsize=(15, 4.2))
-    show(ax[0], F_sp, "|F(u,v)|  (input)", cmap='magma')
-    show(ax[1], logmag(H), "|H(u,v)|  (%s)" % name, cmap='magma')
-    show(ax[2], logmag(G), "|G|=|H F|  output", cmap='magma')
+    H = np.fft.fft2(h, s=f.shape); G = H * np.fft.fft2(f)
+    fig, ax = plt.subplots(1, 3, figsize=(15, 4.4))
+    show(ax[0], F_sp, "|F(u,v)| input", cmap=SPEC)
+    show(ax[1], logmag(H), "|H(u,v)| (%s)" % name, cmap=SPEC)
+    show(ax[2], logmag(G), "|G|=|H F| output", cmap=SPEC)
     plt.suptitle(name, y=1.02); plt.tight_layout(); savefig("B3_spectra_" + tag); plt.show()
+
+# |H| 중앙행 단면(선형): blur는 감쇠(저역통과), sharpen은 증가(고역통과)를 '수치로' 확인
+Hb = np.abs(np.fft.fftshift(np.fft.fft2(hb, s=f.shape)))
+Hs = np.abs(np.fft.fftshift(np.fft.fft2(hs, s=f.shape)))
+cx = f.shape[0]//2; u = np.arange(f.shape[1]) - f.shape[1]//2
+fig, ax = plt.subplots(1, 2, figsize=(13, 4))
+ax[0].plot(u, Hb[cx,:]); ax[0].axhline(1, color='k', ls='--', lw=0.7)
+ax[0].set_title("|H_b| central row (blur): 1 at DC, decays -> LOW-PASS"); ax[0].set_xlabel("freq u (0=DC)"); ax[0].grid(alpha=0.3)
+ax[1].plot(u, Hs[cx,:], color='C3'); ax[1].axhline(1, color='k', ls='--', lw=0.7)
+ax[1].set_title("|H_s| central row (sharpen): grows -> HIGH-PASS"); ax[1].set_xlabel("freq u (0=DC)"); ax[1].grid(alpha=0.3)
+plt.tight_layout(); savefig("B3_response_profile"); plt.show()
+print("|H_b| DC=%.3f edge=%.3f  |  |H_s| DC=%.3f edge=%.3f" % (Hb[cx,cx], Hb[cx,0], Hs[cx,cx], Hs[cx,0]))
 """)
 md(r"""
-**해석 (Discuss)** — 스펙트럼은 중심이 저주파(low frequency), 가장자리가 고주파(high frequency).
-- **왜 blur는 저역통과(low-pass)인가**: 박스필터의 주파수응답은 2D sinc 형태로 **중심(저주파)=1, 고주파로 갈수록 감쇠**. 따라서 $|G|=|H||F|$ 에서 고주파가 깎여 영상이 흐려진다.
-- **감쇠되는 성분**: 고주파(에지·미세 텍스처)가 주로 감쇠된다.
-- **왜 sharpen은 고주파 강조인가**: $h_s$ 의 응답은 저주파$\approx1$, **고주파에서 1보다 큰 이득**($5-4\cos$ 형태)을 가져 고주파를 증폭한다.
-- **에지/디테일과 고주파의 관계**: 에지는 급격한 밝기 변화 = 넓은 주파수에 걸친 **강한 고주파 성분**. 그래서 고주파를 키우면 에지가 또렷해지고, 깎으면 뭉개진다.
+**해석 (피드백3 — 그림과 연결)** — 중심=저주파, 가장자리=고주파.
+- **blur가 고주파를 감쇠함을 어떻게 아나**: $|H_b|$ 영상은 **중앙(저주파)이 밝고 가장자리(고주파)로 어둡다**. 중앙행 단면이 정확히 보여줌 — $|H_b|=1$(DC)에서 $\approx0.33$까지 감소(중간에 0인 null). 모든 고주파가 1보다 작은 값으로 곱해져 $|G|=|H||F|$의 바깥(고주파) 에너지가 깎임 → 흐려짐 = **저역통과**.
+- **sharpen은 왜 고주파 강조**: $|H_s|=1$(DC)에서 가장자리 $\approx5$로 **증가** → 고주파 증폭 = **고역통과**.
+- **에지/디테일과 고주파**: 에지는 급격한 밝기 변화 = 강한 고주파. 고주파를 키우면 에지가 또렷, 깎으면 뭉개짐.
 """)
 
 # ---- B4 impulse verification ----
@@ -706,27 +705,26 @@ md(r"""
 임펄스 $\delta(x,y)$ 에 필터를 적용하면 출력이 곧 임펄스응답 $h$ 가 된다: $h*\delta=h$.
 """)
 code(r"""
-sz = 31
-delta = np.zeros((sz, sz)); delta[sz//2, sz//2] = 1.0   # 중심 임펄스
-
+sz = 31; delta = np.zeros((sz, sz)); delta[sz//2, sz//2] = 1.0   # 중심 임펄스
+c = sz//2; r = 4
 for name, h, tag in [("Blur", hb, "blur"), ("Sharpen", hs, "sharpen")]:
-    out = conv2d(delta, h)
-    kh, kw = h.shape
-    patch = out[sz//2-kh//2:sz//2-kh//2+kh, sz//2-kw//2:sz//2-kw//2+kw]  # 커널 크기만큼 발췌
-    err = np.max(np.abs(patch - h))                  # h와 일치하는지
+    out = conv2d(delta, h); kh, kw = h.shape
+    patch = out[c-kh//2:c-kh//2+kh, c-kw//2:c-kw//2+kw]; err = np.max(np.abs(patch - h))
     fig, ax = plt.subplots(1, 5, figsize=(16, 3.4))
     show(ax[0], delta, "delta(x,y)")
-    show(ax[1], logmag(np.fft.fft2(delta)), "log|FFT(delta)| (flat)", cmap='magma')
-    show(ax[2], out, "output h*delta")
+    # |FFT(delta)|=1 모든 주파수 -> log(1+1)=0.693 상수(평탄). vmin/vmax 고정 안 하면 1e-16 잡음이 무늬처럼 증폭됨
+    show(ax[1], logmag(np.fft.fft2(delta)), "log|FFT(delta)| (FLAT=all freqs equal)", cmap=SPEC, vmin=0.0, vmax=1.0)
+    show(ax[2], out[c-r:c+r+1, c-r:c+r+1], "output h*delta (center 9x9)")
     show(ax[3], h, "impulse response h")
-    show(ax[4], spectrum_of_kernel(h, (sz, sz)), "log|H(u,v)|", cmap='magma')
+    show(ax[4], spectrum_of_kernel(h, (sz, sz)), "log|H(u,v)|", cmap=SPEC)
     plt.suptitle("%s :  max|output_center - h| = %.2e" % (name, err), y=1.05)
     plt.tight_layout(); savefig("B4_impulse_" + tag); plt.show()
 """)
 md(r"""
-**해석**: 임펄스 입력의 스펙트럼은 모든 주파수에서 크기가 일정(평탄)하다. 시스템이 **선형 시불변(LTI)** 이므로
-모든 주파수를 균일 입력했을 때의 응답이 곧 시스템 특성이며, 그 공간영역 표현이 $h$ 다. 그래서 $h*\delta=h$ 가 성립하고,
-$h$ 를 **임펄스 응답(impulse response)** 이라 부른다. (위 오차는 $\sim10^{-16}$.)
+**해석 (피드백4)**
+- **output $h*\delta$는?**: 바로 $h$다. blur는 중앙에 작은 균일 3×3 블록(그래서 가운데가 밝아짐), sharpen은 중앙(+5) 밝고 상하좌우(−1) 어두운 십자.
+- **$\delta$의 FFT가 평탄한 이유**: 위치 이동된 임펄스는 **모든 주파수에서 크기 1** → $\log|FFT(\delta)|$가 균일(두 필터 모두 **동일**). (색 범위를 고정 안 하면 $10^{-16}$ 반올림이 자동 스케일로 증폭돼 무늬처럼 보임 → vmin/vmax 고정해 진짜 평탄하게 표시.)
+- **$\delta$-FFT는 같은데 $\log|H|$는 왜 다른가**: 평탄한 $\delta$가 모든 주파수를 균일 입력하므로 출력이 시스템의 **전체 주파수응답 $H(u,v)$** 를 드러냄 — blur는 **중앙 밝음(저역통과)**, sharpen은 **중앙 어둡고 모서리 밝음(고역통과)**. $h$가 필터마다 다르니 $H$도 다르다. 그래서 $h$를 **임펄스 응답**이라 부른다. (오차 $\sim0$.)
 """)
 
 # ---- B5 gaussian unsharp ----
@@ -737,62 +735,68 @@ $$g=(1+k)f-k\,f_L.$$
 **파라미터**: $\sigma\in\{1.0,\,3.0\}$, $k\in\{1.0,\,2.0\}$. 가우시안 커널 크기는 $\lceil6\sigma\rceil$(홀수).
 """)
 code(r"""
-def gaussian_kernel(sigma):
-    rad = max(1, int(np.ceil(3 * sigma)))
-    ax = np.arange(-rad, rad + 1)
-    xx, yy = np.meshgrid(ax, ax)
-    g = np.exp(-(xx**2 + yy**2) / (2 * sigma**2))
-    return g / g.sum()
-
 sigmas = [1.0, 3.0]; ks = [1.0, 2.0]
+fLs = {s: conv2d(f, gaussian_kernel(s)) for s in sigmas}
 
-# (1) sigma별 커널 / 블러 / 고주파 성분
-fig, ax = plt.subplots(len(sigmas), 3, figsize=(13, 8))
-fLs = {}
+# (1) 성분: 커널/f_L/f_H (sigma에만 의존, k는 여기서 안 쓰임) + 피드백5: k 고정값 혼동 해소
+fig, ax = plt.subplots(len(sigmas), 3, figsize=(12, 7.5))
 for i, s in enumerate(sigmas):
-    gk = gaussian_kernel(s); fL = conv2d(f, gk); fH = f - fL; fLs[s] = fL
-    show(ax[i,0], gk, "Gaussian kernel  sigma=%.1f" % s, cmap='viridis')
-    show(ax[i,1], fL, "blurred f_L  sigma=%.1f" % s)
-    show(ax[i,2], fH, "high-freq f_H=f-f_L  sigma=%.1f" % s)
-plt.tight_layout(); savefig("B5_1_kernels_blur_highfreq"); plt.show()
+    gk = gaussian_kernel(s); fL = fLs[s]; fH = f - fL
+    show(ax[i,0], gk, "Gaussian kernel sigma=%.1f" % s, cmap='viridis')
+    show(ax[i,1], fL, "blurred f_L sigma=%.1f" % s)
+    show(ax[i,2], fH, "high-freq f_H=f-f_L sigma=%.1f" % s)
+plt.suptitle("components (depend on sigma only; k not used here)", y=1.0)
+plt.tight_layout(); savefig("B5_1_components"); plt.show()
 
-# (2) (sigma,k) 조합별 샤프닝 결과
-fig, ax = plt.subplots(len(sigmas), len(ks), figsize=(10, 9))
-for i, s in enumerate(sigmas):
-    fL = fLs[s]
-    for j, k in enumerate(ks):
-        g = (1 + k) * f - k * fL
-        show(ax[i,j], np.clip(g, 0, 255), "sigma=%.1f, k=%.1f" % (s, k))
-plt.tight_layout(); savefig("B5_2_sharpened_combos"); plt.show()
+# (2) 선명화 결과: 원본 포함(피드백5), sigma=가로/k=세로
+fig, ax = plt.subplots(len(ks), len(sigmas)+1, figsize=(13, 8))
+for ri, k in enumerate(ks):
+    show(ax[ri,0], f, "original f (k=%.1f row)" % k)
+    for ci, s in enumerate(sigmas):
+        g = (1+k)*f - k*fLs[s]
+        show(ax[ri,ci+1], np.clip(g,0,255), "sharpened sigma=%.1f, k=%.1f" % (s, k))
+plt.suptitle("sharpened g=(1+k)f - k f_L  (sigma -> columns, k -> rows)", y=1.0)
+plt.tight_layout(); savefig("B5_2_sharpened"); plt.show()
 
-# (3) 스펙트럼 비교 (대표 설정 sigma=3, k=2)
-s, k = 3.0, 2.0
-fL = fLs[s]; fH = f - fL; g = (1 + k) * f - k * fL
+# (3) 스펙트럼: 대표 설정 sigma=3, k=2 (피드백5: 조건 명시)
+s0, k0 = 3.0, 2.0; fL = fLs[s0]; fH = f - fL; g = (1+k0)*f - k0*fL
 fig, ax = plt.subplots(1, 4, figsize=(16, 4))
-show(ax[0], spectrum_of_image(f), "|F| original", cmap='magma')
-show(ax[1], spectrum_of_image(fL), "|F| blurred", cmap='magma')
-show(ax[2], spectrum_of_image(fH), "|F| high-freq", cmap='magma')
-show(ax[3], spectrum_of_image(g), "|F| sharpened", cmap='magma')
+show(ax[0], spectrum_of_image(f), "|F| original", cmap=SPEC)
+show(ax[1], spectrum_of_image(fL), "|F| blurred f_L", cmap=SPEC)
+show(ax[2], spectrum_of_image(fH), "|F| high-freq f_H", cmap=SPEC)
+show(ax[3], spectrum_of_image(g), "|F| sharpened g", cmap=SPEC)
+plt.suptitle("spectra (representative: sigma=%.1f, k=%.1f)" % (s0, k0), y=1.02)
 plt.tight_layout(); savefig("B5_3_spectra"); plt.show()
+
+# (4) 고정 커널 h_s 와 비교 (피드백6)
+g_unsharp = 2.0*f - 1.0*fLs[1.0]   # sigma=1, k=1
+g_fixed = conv2d(f, hs)
+fig, ax = plt.subplots(1, 3, figsize=(14, 4.6))
+show(ax[0], f, "original f")
+show(ax[1], np.clip(g_fixed,0,255), "fixed kernel h_s (B2)")
+show(ax[2], np.clip(g_unsharp,0,255), "unsharp sigma=1.0, k=1.0")
+plt.suptitle("vs fixed kernel: unsharp lets sigma(band) & k(strength) be tuned independently", y=1.02)
+plt.tight_layout(); savefig("B5_4_vs_fixed"); plt.show()
 """)
 md(r"""
-**해석 (Discuss)**
-- **왜 블러를 빼면 고주파가 추출되나**: $f_L$ 은 저역통과 결과(저주파). $f_H=f-f_L$ 은 저주파가 상쇄되고 **고주파(에지·디테일)** 만 남는다 → 가우시안을 이용한 고역통과(high-pass).
-- **$\sigma$ 의 영향**: $\sigma$ 가 클수록 더 많은 주파수를 "저주파"로 간주해 제거하므로 $f_H$ 가 더 넓은 대역(더 굵은 에지 포함)을 담는다. 작을수록 아주 미세한 디테일만 추출.
-- **$k$ 의 영향**: $k$ 는 고주파를 더하는 강도. 클수록 선명해지나, **너무 크면** 에지 주변 오버슈트로 **halo/링잉**과 잡음 증폭, 과포화가 발생.
-- **고정 커널 $h_s$ 와 비교**: $h_s$ 는 $\sigma,k$ 가 고정된 특수 경우. Unsharp masking은 $\sigma$(대역)과 $k$(강도)를 **독립 조절**할 수 있어 더 유연하다.
+**해석 (피드백5·6 — 그림과 연결)**
+- **원본 포함·레이아웃**: B5-2에 **원본 $f$를 각 행에 함께** 두고 $\sigma$를 **가로**, $k$를 **세로**로 배치. B5-1의 커널/$f_L$/$f_H$는 **$\sigma$에만 의존**(여기선 $k$를 안 씀). B5-3 스펙트럼은 대표값 $\sigma{=}3,k{=}2$ 임을 제목에 명시.
+- **왜 블러를 빼면 고주파?**: $f_L$은 저주파(저역통과), $f_H=f-f_L$은 저주파가 상쇄되고 **고주파(에지·디테일)** 만 남음(가우시안 고역통과) — B5-1·B5-3에서 확인.
+- **$\sigma$ 영향**: $\sigma$ 클수록 더 넓은 대역을 "저주파"로 제거 → $f_H$가 **더 넓은 대역(굵은 에지 포함)**. 작을수록 미세 디테일만.
+- **$k$ 영향**: 고주파를 더하는 강도. 클수록 선명하나 **너무 크면** 에지 오버슈트(halo/링잉)·잡음 증폭·포화 (B5-2의 $k=2$ 행).
+- **고정 커널 $h_s$와 비교(피드백6)**: $h_s$는 **아주 작은 블러·고정 강도**의 unsharp 특수 경우. Unsharp masking은 $\sigma$(대역)·$k$(강도)를 **독립 조절**해 $h_s$가 못 하는 "굵은 구조 선명화"($\sigma$ 크게)도 가능 (B5-4 비교).
 """)
 
 # ---- B6 discussion ----
 md(r"""
 ## B-6. Discussion — Convolution Theorem
 $$g(x,y)=h(x,y)*f(x,y)\quad\Longleftrightarrow\quad G(u,v)=H(u,v)\,F(u,v)$$
-- **공간 합성곱 = 주파수 곱**: 합성곱은 신호를 복소지수(고유함수)로 분해했을 때 각 주파수 성분에 $H(u,v)$ 를 곱하는 것과 같다. 그래서 공간에서의 "미끄러뜨려 더하기"가 주파수에서는 단순 곱이 된다. 계산복잡도도 $O(N^2 k^2)$ 직접합성곱 대 $O(N^2\log N)$ FFT로 큰 커널에서 유리.
-- **실무에서 작은 차이가 생기는 이유**:
-  - **zero-padding**: 선형 vs 순환 합성곱 차이. 패딩이 부족하면 wrap-around 오염.
-  - **circular convolution**: FFT는 본질적으로 순환. 적절한 패딩 없이는 경계가 반대편과 섞인다.
-  - **boundary handling**: zero/replicate/reflect 등 경계조건이 다르면 테두리 값이 달라진다(본 과제는 양쪽 모두 zero로 통일).
-  - **numerical precision**: float64 반올림으로 $\sim10^{-12}$ 수준 차이는 불가피.
+- **왜 합성곱 = 곱?**: 복소지수 $e^{j\cdots}$ 는 LTI 시스템의 **고유함수**라, $h$ 로 합성곱하는 것은 각 주파수 성분에 $H(u,v)$ 를 곱하는 것과 같다. 공간의 "미끄러뜨려 더하기"가 주파수에선 성분별 곱. 큰 커널에선 FFT($O(N^2\log N)$)가 직접합성곱($O(N^2k^2)$)보다 유리.
+
+**실무에서 작은 차이가 생기는 이유 (자세히 — 피드백7)**
+- **zero-padding / 순환 합성곱**: FFT 곱은 본질적으로 **순환(circular) 합성곱** 이다. 즉 영상이 한쪽 끝에서 **반대편으로 감겨(wrap-around)** 오른쪽 끝 화소가 왼쪽에 섞인다. 신호를 $(M+m-1,N+n-1)$ 로 **zero-padding** 하면 그 "감김"이 추가한 0 영역에만 생겨서 결과가 **선형 합성곱**이 되고, 다시 'same'으로 잘라낸다. (패딩이 부족하면 테두리가 오염된다.)
+- **boundary handling(경계처리)**: 공간 합성곱은 영상 밖 화소를 뭘로 볼지(경계조건)를 정해야 한다(여기선 **0**). 두 방법이 서로 다른 경계(zero / replicate / reflect / wrap)를 쓰면 **테두리 화소만** 값이 달라진다. 본 과제는 양쪽 모두 zero라 테두리까지 일치.
+- **numerical precision(수치 정밀도)**: FFT/IFFT는 유한정밀 부동소수점 연산이라, 수학적으로 똑같아도 반올림 오차가 $\sim10^{-12}\!\sim\!10^{-13}$ 수준으로 쌓인다. 그래서 MSE가 정확히 0이 아니라 $\sim10^{-26}$ 로 나온다.
 """)
 
 # =====================================================================
