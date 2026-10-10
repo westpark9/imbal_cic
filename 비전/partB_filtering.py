@@ -169,23 +169,6 @@ def run_all(img_path=IMG_PATH):
         fig.suptitle(name, y=1.02)
         F["B3_" + tag] = save(fig, "B3_spectra_" + tag)
 
-    # central horizontal cross-section of |H| (linear), proves low-pass vs high-pass
-    Hb = np.abs(np.fft.fftshift(np.fft.fft2(hb, s=f.shape)))
-    Hs = np.abs(np.fft.fftshift(np.fft.fft2(hs, s=f.shape)))
-    cx = f.shape[0] // 2
-    u = np.arange(f.shape[1]) - f.shape[1] // 2
-    fig, ax = plt.subplots(1, 2, figsize=(13, 4))
-    ax[0].plot(u, Hb[cx, :]); ax[0].axhline(1, color="k", ls="--", lw=0.7)
-    ax[0].set_title("|H_b| central row (blur): peak at center, decays -> LOW-PASS")
-    ax[0].set_xlabel("frequency (u, 0=DC)"); ax[0].set_ylabel("|H_b|"); ax[0].grid(alpha=0.3)
-    ax[1].plot(u, Hs[cx, :], color="C3"); ax[1].axhline(1, color="k", ls="--", lw=0.7)
-    ax[1].set_title("|H_s| central row (sharpen): grows to the edges -> HIGH-PASS")
-    ax[1].set_xlabel("frequency (u, 0=DC)"); ax[1].set_ylabel("|H_s|"); ax[1].grid(alpha=0.3)
-    plt.tight_layout()
-    F["B3_profile"] = save(fig, "B3_response_profile")
-    met["Hb_dc"] = float(Hb[cx, cx]); met["Hb_edge"] = float(Hb[cx, 0])
-    met["Hs_dc"] = float(Hs[cx, cx]); met["Hs_edge"] = float(Hs[cx, 0])
-
     # ---- B4 Impulse-response verification ----
     sz = 31
     delta = np.zeros((sz, sz)); delta[sz//2, sz//2] = 1.0
@@ -210,49 +193,53 @@ def run_all(img_path=IMG_PATH):
         met["impulse_err_" + tag] = err
 
     # ---- B5 Gaussian-based unsharp masking ----
-    sigmas = [1.0, 3.0]; ks = [1.0, 2.0]
-    fLs = {s: conv2d(f, gaussian_kernel(s)) for s in sigmas}
+    COLS = ["original f", "Gaussian kernel", "blurred f_L", "high-freq f_H", "sharpened g"]
 
-    # (1) components per sigma (depend on sigma only; k not involved)
-    fig, ax = plt.subplots(len(sigmas), 3, figsize=(12, 7.5))
-    for i, s in enumerate(sigmas):
-        gk = gaussian_kernel(s); fL = fLs[s]; fH = f - fL
-        show(ax[i, 0], gk, "Gaussian kernel  sigma=%.1f" % s, cmap="viridis")
-        show(ax[i, 1], fL, "blurred f_L  sigma=%.1f" % s)
-        show(ax[i, 2], fH, "high-freq f_H = f - f_L  sigma=%.1f" % s)
-    fig.suptitle("B5 components (depend on sigma only; k is not used here)", y=1.0)
-    F["B5_1"] = save(fig, "B5_1_components")
+    def components(sigma):
+        gk = gaussian_kernel(sigma); fL = conv2d(f, gk); fH = f - fL
+        return gk, fL, fH
 
-    # (2) sharpened results: original + sigma across columns, k across rows
-    fig, ax = plt.subplots(len(ks), len(sigmas) + 1, figsize=(13, 8))
-    for ri, k in enumerate(ks):
-        show(ax[ri, 0], f, "original f  (k=%.1f row)" % k)
-        for ci, s in enumerate(sigmas):
-            g = (1 + k) * f - k * fLs[s]
-            show(ax[ri, ci + 1], np.clip(g, 0, 255), "sharpened  sigma=%.1f, k=%.1f" % (s, k))
-    fig.suptitle("B5 sharpened g=(1+k)f - k f_L   (sigma -> columns, k -> rows)", y=1.0)
-    F["B5_2"] = save(fig, "B5_2_sharpened")
+    def b5_panel(variants, title, tag):
+        # variants: list of (label, gk, fL, fH, g). 2 rows per variant: image row + |F| spectrum row.
+        nrows = 2 * len(variants)
+        fig, ax = plt.subplots(nrows, 5, figsize=(16, 3.05 * nrows))
+        cmaps = ["gray", "viridis", "gray", "gray", "gray"]
+        for vi, (lbl, gk, fL, fH, g) in enumerate(variants):
+            ri = 2 * vi
+            imgs = [f, gk, fL, fH, np.clip(g, 0, 255)]
+            for c in range(5):
+                show(ax[ri, c], imgs[c], "%s  [%s]" % (COLS[c], lbl), cmap=cmaps[c])
+            specs = [spectrum_of_image(f), spectrum_of_kernel(gk, f.shape),
+                     spectrum_of_image(fL), spectrum_of_image(fH), spectrum_of_image(g)]
+            for c in range(5):
+                show(ax[ri + 1, c], specs[c], "|F| of " + COLS[c], cmap=SPEC)
+        fig.suptitle(title, y=1.0)
+        plt.tight_layout()
+        return save(fig, tag)
 
-    # (3) spectra for a representative setting
-    s0, k0 = 3.0, 2.0
-    fL = fLs[s0]; fH = f - fL; g = (1 + k0) * f - k0 * fL
-    fig, ax = plt.subplots(1, 4, figsize=(16, 4))
-    show(ax[0], spectrum_of_image(f), "|F| original", cmap=SPEC)
-    show(ax[1], spectrum_of_image(fL), "|F| blurred f_L", cmap=SPEC)
-    show(ax[2], spectrum_of_image(fH), "|F| high-freq f_H", cmap=SPEC)
-    show(ax[3], spectrum_of_image(g), "|F| sharpened g", cmap=SPEC)
-    fig.suptitle("B5 spectra  (representative: sigma=%.1f, k=%.1f)" % (s0, k0), y=1.02)
-    F["B5_3"] = save(fig, "B5_3_spectra")
+    # (A) vary sigma (k fixed) : rows = [sigma=1 image, sigma=1 |F|, sigma=3 image, sigma=3 |F|]
+    k_fix = 2.0
+    var_sigma = []
+    for s in [1.0, 3.0]:
+        gk, fL, fH = components(s)
+        var_sigma.append(("sigma=%.0f, k=%.0f" % (s, k_fix), gk, fL, fH, (1 + k_fix) * f - k_fix * fL))
+    F["B5_sigma"] = b5_panel(var_sigma, "B5 - vary sigma (k=%.0f fixed);  each variant: image row + |F| spectrum row" % k_fix, "B5_1_vary_sigma")
 
-    # (4) compare unsharp masking vs the fixed sharpening kernel h_s
-    g_unsharp = (1 + 1.0) * f - 1.0 * fLs[1.0]   # sigma=1, k=1
+    # (B) vary k (sigma fixed = 3)
+    s_fix = 3.0
+    gk3, fL3, fH3 = components(s_fix)
+    var_k = [("sigma=%.0f, k=%.0f" % (s_fix, k), gk3, fL3, fH3, (1 + k) * f - k * fL3) for k in [1.0, 2.0]]
+    F["B5_k"] = b5_panel(var_k, "B5 - vary k (sigma=%.0f fixed);  each variant: image row + |F| spectrum row" % s_fix, "B5_2_vary_k")
+
+    # (C) compare with the fixed 3x3 sharpening kernel h_s (use sigma=3 for coarse-structure sharpening)
+    g_unsharp = (1 + 1.0) * f - 1.0 * fL3        # sigma=3, k=1
     g_fixed = conv2d(f, hs)
     fig, ax = plt.subplots(1, 3, figsize=(14, 4.6))
     show(ax[0], f, "original f")
-    show(ax[1], np.clip(g_fixed, 0, 255), "fixed kernel h_s (B2)")
-    show(ax[2], np.clip(g_unsharp, 0, 255), "unsharp  sigma=1.0, k=1.0")
-    fig.suptitle("B5 vs fixed kernel: unsharp masking lets sigma(band) and k(strength) be tuned independently", y=1.02)
-    F["B5_4"] = save(fig, "B5_4_vs_fixed")
+    show(ax[1], np.clip(g_fixed, 0, 255), "fixed 3x3 kernel h_s")
+    show(ax[2], np.clip(g_unsharp, 0, 255), "unsharp sigma=3, k=1")
+    fig.suptitle("B5 vs fixed kernel: large-sigma unsharp sharpens coarse structure the fixed 3x3 h_s cannot", y=1.02)
+    F["B5_vs_fixed"] = save(fig, "B5_3_vs_fixed")
 
     return res
 
@@ -262,8 +249,6 @@ def _print(m):
     print("input size            : %dx%d" % m["shape"])
     print("[Blur]    spatial vs freq:  MSE=%.3e  PSNR=%.1f dB  SSIM=%.6f" % (m["blur_mse"], m["blur_psnr"], m["blur_ssim"]))
     print("[Sharpen] spatial vs freq:  MSE=%.3e  PSNR=%.1f dB  SSIM=%.6f" % (m["sharp_mse"], m["sharp_psnr"], m["sharp_ssim"]))
-    print("|H_b|: DC=%.3f edge=%.3f  (decays -> low-pass)" % (m["Hb_dc"], m["Hb_edge"]))
-    print("|H_s|: DC=%.3f edge=%.3f  (grows  -> high-pass)" % (m["Hs_dc"], m["Hs_edge"]))
     print("impulse h*delta=h error:  blur=%.1e  sharpen=%.1e" % (m["impulse_err_blur"], m["impulse_err_sharpen"]))
     print("=" * 60)
 
