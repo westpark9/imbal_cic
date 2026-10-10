@@ -15,6 +15,7 @@ from docx.enum.section import WD_ORIENT, WD_SECTION
 from docx.oxml.ns import qn
 
 from report_updates import Results, finalize_report, BASE
+from report_presentation import apply_presentation
 A = Results("A")
 B = Results("B")
 Cm = Results("C")
@@ -481,6 +482,7 @@ def build():
     # ---- overall summary ----
     doc.add_paragraph()
     finalize_report(doc, "en")
+    apply_presentation(doc, "en", rebuilding=True)
     doc.save(DOCX)
     print("saved", DOCX)
 
