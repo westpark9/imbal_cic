@@ -13,6 +13,14 @@ section does not replace these local paragraphs. Do not invent a limitation or
 claim an unresolved design has already filled the gap. The user-provided working
 manuscript and bibliography are `docs/latex/main.tex` and `docs/latex/ref.bib`.
 
+User instruction (2026-10-12): preserve the original title, **TAILGUARD: An
+Uncertainty-Driven Ensemble Against Long-Tailed Cyber Threats**. Change it only
+on an explicit user request. In Section 2.3, treat BoostPFN, LoCalPFN, and DistPFN
+as one comparison group with a single closing Discussion that retains the
+method-specific distinctions. Write Introduction contributions as bullets stating
+the implemented contribution and its difference from prior approaches; distinguish
+design contributions from verified performance or cost gains.
+
 ## Current layout (2026-10-07; supersedes old paths below)
 
 Code lives in `scripts/vN/experiment/` or `tabpfn/scripts/vN/experiment/`;

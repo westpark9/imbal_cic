@@ -1,4 +1,5 @@
-% Working manuscript, revised 2026-10-07. Original: 20261007/original/.
+% Working manuscript, revised 2026-10-12. Original: 20261007/original/.
+% Keep the user-approved original title; change only on explicit user request.
 % ASIACCS 2027: standard ACM two-column layout, no font/margin overrides.
 % DOI, ISBN, submission ID and anonymous artifact URL remain unassigned.
 \documentclass[sigconf,anonymous,pbalance]{acmart}
@@ -14,12 +15,13 @@
 \acmDOI{}
 \acmISBN{}
 \acmConference[ASIACCS '27]{ACM Asia Conference on Computer and Communications Security}{July 12--16, 2027}{Macau}
-\IfFileExists{tables/quality.tex}{\newcommand{\paperassetroot}{.}}{\newcommand{\paperassetroot}{20261007}}
+\IfFileExists{tables/quality.tex}{\newcommand{\paperassetroot}{.}}{\newcommand{\paperassetroot}{20261012}}
 \newcommand{\globalidx}{\mathrm{G}}
 \newcommand{\ctx}{\mathcal{C}}
 
 \begin{document}
-\title{TAILGUARD: Selective Context Experts for Long-Tailed Intrusion Detection}
+\title{TAILGUARD: An Uncertainty-Driven Ensemble
+Against Long-Tailed Cyber Threats}
 \author{Anonymous}
 
 \begin{abstract}
@@ -45,7 +47,7 @@ An intrusion detector must use newly available attack examples while retaining i
 \keywords{intrusion detection, long-tailed classification, tabular foundation models, in-context learning, selective expert activation}
 \maketitle
 
-\noindent\textit{Working draft, 7 October 2026.} The architecture and evaluation remain under development. Reported results are existing single-seed observations; pending evaluations are identified explicitly.
+\noindent\textit{Working draft, 12 October 2026.} The architecture and evaluation remain under development. Reported results are existing single-seed observations; pending evaluations are identified explicitly.
 
 \section{Introduction}
 \label{sec:intro}
@@ -59,8 +61,16 @@ TAILGUARD investigates this combination. The current implementation constructs c
 
 The current evidence has two distinct roles. Static comparisons on conflict-filtered CIC2018 and ToN-IoT characterize the context-expert system against tabular baselines. A separate experiment introducing attack classes compares a single TabPFN with a refitted XGBoost on identical cumulative examples. That experiment motivates the update question but does not evaluate an updating expert bank. The present system improves some ToN-IoT attacks, especially Scanning, while the CIC2018 policy retains Global predictions throughout. These mixed outcomes make it necessary to assess which corrections transfer to an executable selection policy rather than treating the existence of a correct expert prediction as a deployed result.
 
-\paragraph{Scope and contributions of this draft.}
-We present (i) a context-expert design that separates residual-based specialization from query-time activation and adoption; (ii) an evaluation that distinguishes expert predictions, policy decisions, and changes to Global correctness; and (iii) exploratory static and update comparisons that report attack-wise outcomes together with data access and computational cost. We do not claim a universal performance advantage, a demonstrated online speedup, or detection of attacks for which no labelled examples are available. Those claims require additional evidence.
+Our contributions concern the design of TAILGUARD and the evidence needed to assess its use in long-tailed intrusion detection:
+\begin{itemize}
+\item \textbf{Residual-guided specialization through context.}
+We construct a bank of experts by combining a shared labelled anchor with blocks selected from clusters of Global residual information. Specialization changes the evidence supplied to one frozen TabPFN backbone, rather than training separate expert weights. This connects expert construction to the reference detector's error patterns while retaining shared class coverage, instead of assigning each expert an exclusive attack class.
+\item \textbf{Separate decisions to invoke an expert and adopt its output.}
+We learn a pre-inference scorer for potential corrective value and a post-inference verifier for prediction adoption, using a separate route-training pool. Their combination makes specialization conditional on its estimated benefit over a retained Global decision: selecting an expert does not commit the system to replacing Global. The proposed contribution is this decision structure for residual-guided context experts, rather than expert routing alone.
+\item \textbf{An evaluation of corrections, retention, and update cost.}
+We evaluate expert corrections and new errors on common populations, then measure which changes the complete policy retains. Alongside static tabular baselines, a separate single-model comparison measures TabPFN context expansion against XGBoost refitting on identical cumulative examples. These measurements distinguish available corrections from realized detector gains and report update and inference cost, providing evidence that aggregate F1 or label-assisted assignment alone cannot supply.
+\end{itemize}
+The implemented design and exploratory findings are contributions of this draft; consistent tail gains and an online cost advantage remain hypotheses to be tested.
 
 \section{Related Work}
 \label{sec:related}
@@ -79,29 +89,30 @@ TabPFN learns a prediction procedure through pretraining on synthetic tabular ta
 Strong general tabular performance does not determine which labelled examples should represent an imbalanced IDS dataset, nor whether changing that representation improves rare-attack detection without increasing false alarms. We investigate a Global context together with specialized contexts instead of assuming that one context is adequate for every query. The relevant evidence is the gain of the complete context-and-selection system over the same Global predictor, including cases where specialization introduces new errors. This is a problem addressed by our design, not a guarantee supplied by pretraining.
 
 \subsection{Context and Posterior Adaptation}
-\paragraph{BoostPFN.}
+\paragraph{BoostPFN}
 BoostPFN~\cite{wang2025boostpfn} treats PFNs as weak learners to extend their use to larger datasets through boosting. It is a direct comparison for exploiting a training pool through multiple smaller PFN contexts rather than placing the entire pool in one model input.
 
-\paragraph{Discussion.}
-The distinction we investigate is how multiple predictions are used: our experts offer candidate corrections to a retained Global decision, with a query-specific activation and adoption policy. This differs from using boosting to build an aggregate predictor. Whether that distinction improves attack-wise precision and recall is empirical; it must be tested at stated data and compute budgets, without treating BoostPFN's general scaling objective as a demonstrated weakness on IDS data.
-
-\paragraph{LoCalPFN.}
+\paragraph{LoCalPFN}
 LoCalPFN~\cite{thomas2024retrieval} combines nearest-neighbour context retrieval with task-specific fine-tuning. It adapts the predictor to local subsets and directly addresses the limitations of a single context for larger and more complex tabular tasks. Our evaluated LoCalPFN baseline includes its fine-tuning stage.
 
-\paragraph{Discussion.}
-Local relevance and predicted corrective value are different criteria. Our current approach constructs a reusable context bank from Global residual information, then estimates whether a bank member should intervene on a query. It retains a frozen TabPFN backbone in the proposed configuration. We must therefore compare the effect of context specialization and selection while reporting LoCalPFN's fine-tuning and retrieval costs explicitly. Neither feature proximity nor residual membership is assumed to guarantee superior classification.
-
-\paragraph{DistPFN.}
+\paragraph{DistPFN}
 DistPFN~\cite{lee2026distpfn} adjusts test-time class probabilities using the context class prior and aggregated model predictions to address label shift, without additional model training. We evaluate its posterior adjustment on the stored Global TabPFN-v3 probabilities, rather than replacing the Global context.
 
 \paragraph{Discussion.}
-Posterior adjustment addresses class-prior effects; our proposed mechanism changes the labelled examples available to a candidate predictor and controls when its output is adopted. The comparison asks whether this additional mechanism yields useful corrections beyond prior adjustment. Our DistPFN implementation uses aggregate predictions over the unlabelled test batch, which is disclosed as batch-level information access. Its cost includes the Global computation, and its protocol should not be presented as a strictly causal streaming method.
+These methods address complementary adaptation problems: BoostPFN builds an aggregate predictor through boosting, LoCalPFN combines local context retrieval with fine-tuning, and DistPFN corrects posterior class-prior effects. For our IDS objective, the remaining question is when a specialized prediction should replace an existing Global decision, especially if gaining recall on an attack also creates false positives on benign traffic or other attacks. TAILGUARD investigates a reusable residual-guided context bank with a frozen backbone and separate invocation and adoption decisions. Its contexts provide candidate corrections, while the selection policy estimates their value relative to Global. This mechanism must be assessed through attack-wise precision and recall, corrections and new errors, and measured cost. Comparisons must also disclose differing information access and adaptation work, including LoCalPFN's fine-tuning and DistPFN's use of aggregate unlabelled test predictions. Their different objectives alone do not establish an IDS performance limitation or a TAILGUARD advantage.
 
 \subsection{Long-Tailed Expert Specialization}
-RIDE~\cite{wang2020long} combines multiple distribution-aware experts with a diversity objective and dynamic routing for long-tailed recognition. It provides a relevant precedent for using expertise and conditional computation to address class imbalance. Its learned expert construction is distinct from changing the labelled context supplied to a shared pretrained tabular predictor.
+\paragraph{Learning complementary experts.}
+RIDE~\cite{wang2020long} combines multiple distribution-aware experts with a diversity objective and dynamic routing for long-tailed recognition. ACE~\cite{Cai_2021_ICCV} trains complementary experts on class subsets and uses a distribution-adaptive optimizer to coordinate their learning. These approaches provide precedents for constructing diverse specialists under class imbalance; RIDE also makes conditional expert computation an existing part of this literature.
 
 \paragraph{Discussion.}
-Our design specializes through context composition and learns intervention decisions relative to a Global reference. This raises a specific question: can a context expert correct difficult attacks while avoiding erroneous replacements on other classes? We evaluate raw expert predictions on common populations and the corrections actually retained by the selection policy. The existence of experts, or a favourable label-assisted assignment, is insufficient to establish this property. We do not claim novelty from the generic use of experts or routing alone.
+RIDE and ACE learn specialization through expert parameters and training objectives. Our setting instead requires constructing specialized labelled contexts for a shared frozen predictor. TAILGUARD uses Global residual patterns to select specialty blocks and a common anchor to retain class coverage, so an expert need not own a disjoint class subset. The research question is whether this context-based specialization produces useful corrections without attracting false positives from other classes. We therefore evaluate experts on common populations and distinguish their predictions from the changes retained by the policy. This tests a different construction mechanism; it does not claim that learned experts or routing are themselves new, or that residual clustering guarantees useful specialization.
+
+\paragraph{Expert aggregation.}
+SADE~\cite{Zhang_2022} learns diverse experts for different class distributions and uses self-supervised test-time aggregation when the test class distribution is unknown. BalPoE~\cite{Aimar_2023_CVPR} extends logit adjustment to a product of experts, with calibration supporting its balanced-error objective and mixup used to improve calibration. These methods show that how expert outputs are combined, and the distribution for which they are calibrated, are central to long-tailed recognition.
+
+\paragraph{Discussion.}
+SADE addresses adaptation of aggregation to an unknown test distribution, while BalPoE targets a balanced decision rule through calibrated expert combination. Neither objective alone determines whether invoking a particular context expert will improve a retained Global prediction. We address that decision with a scorer before expert inference and a verifier after inference, allowing the system to keep Global even after calling an expert. Evaluation must measure corrections and new errors together with attack-wise precision, recall, and benign false alarms. Calibration across contexts remains a validation requirement: the verifier is a learned decision rule, not a calibration guarantee. Our current experiments assess this intervention mechanism and do not establish superiority under unknown class priors or distribution shift.
 
 \section{Preliminaries}
 \label{sec:prelim}

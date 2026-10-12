@@ -1,0 +1,18 @@
+\begin{table*}[t]
+\centering
+\caption{Static-baseline elapsed times on a shared RTX 4090 (up to two concurrent workers). These include contention, not isolated latency. Global timing is from its baseline run, separate from the cached expert-policy evaluation. LoCalPFN includes validation in fit and retrieval in inference; DistPFN includes the shared Global computation. No online conditional-service latency is claimed for the proposed system.}
+\label{tab:cost}
+\begin{tabular}{@{}l *{4}{S[table-format=5.1]}@{}}
+\toprule
+ & \multicolumn{2}{c}{CIC2018} & \multicolumn{2}{c}{ToN-IoT} \\
+Method & {Fit (s)} & {Infer (s)} & {Fit (s)} & {Infer (s)} \\
+\midrule
+Global TabPFN-v3 & 36.4 & 1099.3 & 36.7 & 821.7 \\
+XGBoost (100k) & 2.3 & 1.0 & 55.4 & 1.0 \\
+BoostPFN & 98.5 & 2308.5 & 97.8 & 1737.6 \\
+LoCalPFN (FT) & 3196.3 & 17300.8 & 5783.1 & 11144.8 \\
+DistPFN (v3) & 36.4 & 1099.4 & 36.7 & 821.9 \\
+XGBoost (full) & 107.8 & 1.0 & 143.2 & 1.1 \\
+\bottomrule
+\end{tabular}
+\end{table*}

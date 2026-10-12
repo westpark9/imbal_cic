@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\caption{Static macro-F1 (seed 43). The first five methods share the Global training IDs. Full XGBoost uses the clean training pool; the proposed system also uses expert and route pools. These last two rows are not equal-information comparisons with the first five.}
+\label{tab:static}
+\begin{tabular}{@{}l *{2}{S[table-format=1.4]}@{}}
+\toprule
+Method & {CIC2018} & {ToN-IoT} \\
+\midrule
+\multicolumn{3}{l}{Same 100,000 training IDs} \\
+Global TabPFN-v3 & 0.7824 & 0.6796 \\
+XGBoost (100k) & 0.7821 & 0.6983 \\
+BoostPFN & 0.7148 & 0.5866 \\
+LoCalPFN (FT) & 0.7024 & 0.6462 \\
+DistPFN (v3) & 0.7839 & 0.6682 \\
+\midrule
+\multicolumn{3}{l}{Additional training information} \\
+XGBoost (full) & 0.7795 & 0.7162 \\
+Proposed ($K=4$) & 0.7824 & 0.7617 \\
+\bottomrule
+\end{tabular}
+\end{table}
