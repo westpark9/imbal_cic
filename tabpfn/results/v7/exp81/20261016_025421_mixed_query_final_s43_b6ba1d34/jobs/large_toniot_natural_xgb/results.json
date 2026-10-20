@@ -1,0 +1,368 @@
+{
+  "dataset": "toniot",
+  "case": "natural",
+  "method": "xgb",
+  "seed": 43,
+  "evaluation": "final_full_test",
+  "test_order": "seed43_mixed",
+  "batch": 8192,
+  "test_rows": 2271723,
+  "training_rows": 100000,
+  "final_stage": 5,
+  "source_model_dir": "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_xgb/stage_5",
+  "source_fit_metrics": {
+    "method": "xgb",
+    "dataset": "toniot",
+    "update_seconds": 2.856753561005462,
+    "cost_repetitions": [
+      {
+        "construct_seconds": 0.00020346400560811162,
+        "fit_seconds": 2.8535999199957587,
+        "first_batch_seconds": 0.03427981599816121,
+        "first_batch_rows": 1024,
+        "update_seconds": 2.853803384001367
+      },
+      {
+        "construct_seconds": 0.020861889992374927,
+        "fit_seconds": 2.8460882069921354,
+        "first_batch_seconds": 0.03306091399281286,
+        "first_batch_rows": 1024,
+        "update_seconds": 2.8669500969845103
+      },
+      {
+        "construct_seconds": 0.018780810001771897,
+        "fit_seconds": 2.8398519119946286,
+        "first_batch_seconds": 0.032956308001303114,
+        "first_batch_rows": 1024,
+        "update_seconds": 2.8586327219964005
+      }
+    ],
+    "update_median_seconds": 2.8586327219964005,
+    "train_rows": 100000,
+    "validation_rows": 0,
+    "class_names": [
+      "benign",
+      "scanning",
+      "dos",
+      "injection",
+      "ddos",
+      "password",
+      "xss",
+      "ransomware",
+      "backdoor",
+      "mitm"
+    ],
+    "train_class_counts": [
+      75000,
+      168,
+      644,
+      1899,
+      5785,
+      6009,
+      9308,
+      20,
+      1136,
+      31
+    ],
+    "phases": [
+      {
+        "phase": "construct",
+        "seconds": 0.00020346400560811162,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 2.8535999199957587,
+        "complete": true
+      },
+      {
+        "phase": "construct",
+        "seconds": 0.020861889992374927,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 2.8460882069921354,
+        "complete": true
+      },
+      {
+        "phase": "construct",
+        "seconds": 0.018780810001771897,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 2.8398519119946286,
+        "complete": true
+      }
+    ],
+    "peak_gpu_gib": 0.541015625,
+    "stage": 5,
+    "case": "natural",
+    "select_seconds": 0.002950177004095167,
+    "train_ids_sha256": "79553cf98a0159d6f76d100b42c365ff6f3a2f0e7210cc5735fd9608e9ba36af",
+    "global_class_indices": [
+      1,
+      8,
+      3,
+      4,
+      2,
+      6,
+      9,
+      7,
+      0,
+      5
+    ]
+  },
+  "source_hashes": {
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_xgb/stage_5/fit_metrics.json": "fddd22ef900dc81c50b3984a1804ee5c4432cbe08a1ac6c6e61e22b435fcfe61",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_xgb/stage_5/train_ids.npy": "20e88ae202e75de1f59ec93a0f5ad82b962aca4fdeaaf49d4cc4903a7c51cffe",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_xgb/stage_5/model.ubj": "89e3a06a0476a1e5bdca6b55cc04bd0cab1033a22775ae053cb89ebaedd5e463"
+  },
+  "metrics": {
+    "rows": 2271723,
+    "confusion": [
+      [
+        39968,
+        50,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        10
+      ],
+      [
+        60,
+        1327515,
+        1103,
+        243,
+        1668,
+        75,
+        50629,
+        1374,
+        0,
+        91635
+      ],
+      [
+        0,
+        1211,
+        100377,
+        237,
+        1241,
+        0,
+        53,
+        0,
+        0,
+        219
+      ],
+      [
+        0,
+        130,
+        0,
+        22146,
+        1,
+        0,
+        0,
+        0,
+        0,
+        181
+      ],
+      [
+        0,
+        1617,
+        268,
+        11,
+        65760,
+        3,
+        256,
+        0,
+        0,
+        976
+      ],
+      [
+        0,
+        253,
+        5,
+        9,
+        14,
+        696,
+        179,
+        0,
+        0,
+        5
+      ],
+      [
+        0,
+        169,
+        19,
+        0,
+        119,
+        0,
+        210559,
+        0,
+        0,
+        85
+      ],
+      [
+        0,
+        198,
+        8,
+        0,
+        0,
+        0,
+        0,
+        502,
+        0,
+        1
+      ],
+      [
+        0,
+        5969,
+        14,
+        1,
+        1,
+        0,
+        1,
+        0,
+        41,
+        2
+      ],
+      [
+        0,
+        876,
+        229,
+        5,
+        646,
+        0,
+        103,
+        0,
+        0,
+        341995
+      ]
+    ],
+    "macro_f1": 0.7742855578358904,
+    "benign_false_positive_rate": 0.09956372574954114,
+    "attack_to_benign": 10473,
+    "wrong_attack_family": 4904,
+    "attack_detection_recall": 0.9868664105911432,
+    "classes": [
+      {
+        "name": "backdoor",
+        "support": 40030,
+        "precision": 0.9985010492655142,
+        "recall": 0.9984511616287784,
+        "f1": 0.9984761048240026,
+        "TP": 39968,
+        "FP": 60,
+        "FN": 62
+      },
+      {
+        "name": "benign",
+        "support": 1474302,
+        "precision": 0.9921725755387941,
+        "recall": 0.9004362742504589,
+        "f1": 0.9440811580598018,
+        "TP": 1327515,
+        "FP": 10473,
+        "FN": 146787
+      },
+      {
+        "name": "ddos",
+        "support": 103338,
+        "precision": 0.9838470962999265,
+        "recall": 0.9713464553213725,
+        "f1": 0.9775568140317389,
+        "TP": 100377,
+        "FP": 1648,
+        "FN": 2961
+      },
+      {
+        "name": "dos",
+        "support": 22458,
+        "precision": 0.9776620165989758,
+        "recall": 0.9861074004808976,
+        "f1": 0.9818665484371536,
+        "TP": 22146,
+        "FP": 506,
+        "FN": 312
+      },
+      {
+        "name": "injection",
+        "support": 68891,
+        "precision": 0.9468682505399568,
+        "recall": 0.9545513927798986,
+        "f1": 0.9506942988701831,
+        "TP": 65760,
+        "FP": 3690,
+        "FN": 3131
+      },
+      {
+        "name": "mitm",
+        "support": 1161,
+        "precision": 0.8992248062015504,
+        "recall": 0.599483204134367,
+        "f1": 0.7193798449612403,
+        "TP": 696,
+        "FP": 78,
+        "FN": 465
+      },
+      {
+        "name": "password",
+        "support": 210951,
+        "precision": 0.8043357017342807,
+        "recall": 0.998141748557722,
+        "f1": 0.890819514692288,
+        "TP": 210559,
+        "FP": 51221,
+        "FN": 392
+      },
+      {
+        "name": "ransomware",
+        "support": 709,
+        "precision": 0.267590618336887,
+        "recall": 0.7080394922425952,
+        "f1": 0.388394584139265,
+        "TP": 502,
+        "FP": 1374,
+        "FN": 207
+      },
+      {
+        "name": "scanning",
+        "support": 6029,
+        "precision": 1.0,
+        "recall": 0.006800464421960524,
+        "f1": 0.013509060955518945,
+        "TP": 41,
+        "FP": 0,
+        "FN": 5988
+      },
+      {
+        "name": "xss",
+        "support": 343854,
+        "precision": 0.7859984509628621,
+        "recall": 0.9945936356709534,
+        "f1": 0.8780776493877116,
+        "TP": 341995,
+        "FP": 93114,
+        "FN": 1859
+      }
+    ]
+  },
+  "predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp79/20261016_022105_saved100k_finalfull_s43_7f90866d/jobs/toniot_natural_xgb/predictions.npy",
+  "serving_seconds": 1.9312630240456201,
+  "training_rerun": false,
+  "restoration_mismatches": 0,
+  "scope": "large",
+  "prediction_storage_order": "original",
+  "full_reinference": false,
+  "mixed_audit_rows": 8192,
+  "mixed_audit_mismatches": 0,
+  "query_order_sha256": "616e70bb8af3dba232a21060b95892b029227166ca865583a5abbc38a113cb4a",
+  "reuse_reason": "Row-wise predictor without batch posterior correction; mixed-query audit matched original predictions",
+  "serving_seconds_scope": "Original full-test inference measurement; full predictions reused after mixed-query audit",
+  "inherited_metadata_from_source_result": {},
+  "note": "Saved model, unchanged training/context; seed43 mixed query evaluation or explicitly audited prediction reuse; update costs retain their original preparation measurements"
+}

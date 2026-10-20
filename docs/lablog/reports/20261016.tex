@@ -1,0 +1,1138 @@
+% !TeX root = 20261016.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-10-16}{표본 예산·context 정책과 최종 모델 평가}
+
+\section*{목적과 이 보고서의 범위}
+
+저장 모델의 최종 전체 test 재평가와 신규 공격당 10–400개 라벨의 context 정책 비교를 정리했다. 채택할 모델 비교는 EXP81의 혼합 query, 예산별 비교는 EXP83이다. EXP78–80의 이전 수치는 정정 경위를 보여주는 진단 자료다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{대규모 학습 조건의 최종 모델 전체 test 재평가}
+2026-10-16 사용자는 부록의 내부 날짜 별칭을 실험 조건으로 바꾸고, 소규모 실험과 같은 공격 도입 단계에서 표본 수가 어떻게 달라지는지 표시하도록 요청했다. 또한 대규모 결과를 최종 모델 전체 test 평가로 맞출 수 있는지 질문했다. 저장된 EXP72/\allowbreak{}73의 마지막 단계 모델과 context, 제안 모델의 S/\allowbreak{}V 상태가 모두 남아 있어 학습을 다시 실행하지 않고 추론만 수행한다. 연구 버전은 v7을 유지하며 실행 설정에 기록했다.
+
+비교는 CIC2018·ToN, 공격 자연비율·균등 배분, XGB·TabPFN·제안 모델·BoostPFN·DistPFN의 20개 결과다. LoCalPFN은 이전 사용자 요청에 따라 새 평가에서 제외한다. 학습 100,000개와 기존 별도 검증은 그대로 유지하고 모델이나 임계값을 새로 선택하지 않는다. 단일 TabPFN 확률을 DistPFN과 공유해 기반 모델 추론을 중복 수행하지 않는다.
+
+기존 순차 재생은 공격 도입 단계별 모델 버전의 예측을 모아 전체 혼동행렬을 계산했다. 1,000행/\allowbreak{}초는 모델 처리 속도가 아니라 평가 flow의 가상 유입률이며, 갱신이 끝나기 전에는 이전 버전을 사용하도록 하는 조건이었다. 이번 평가에서는 마지막 버전 하나로 전체 고정 test를 예측하므로 유입률·갱신 지연·큐 대기를 적용하지 않는다. 처음 설정은 EXP77/\allowbreak{}78과 같은 원본 test 순서와 8,192개 query 배치다. 복구한 모델은 기존 재생의 한 query 배치를 다시 예측해 저장된 라벨과 정확히 일치하는지 검사한다. 원 모델 파일의 해시와 예측 파일을 보존하고 전체 혼동행렬·Macro-F1을 독립 재계산한다.
+
+실행 중 원본 test 순서의 배치 구성을 점검했다. CIC2018은 372개 배치 중 366개, ToN은 278개 중 271개가 단일 클래스였다. 기존 재생의 1,024개 배치에서는 단일 클래스 배치가 없었다. 이는 현재 query 배치의 평균 posterior를 사용하는 DistPFN의 결과에 영향을 줄 수 있는 조건 차이다. 배치 구성 진단은 평가 후 해석을 위한 기록이며 학습·정책 선택에 test 라벨을 사용하지 않았다. 사용자에게 고정 seed로 query 배치를 섞은 평가를 제안했으며, 이 진단만으로 특정 변화량의 인과적 원인을 확정하지 않는다.
+
+갱신 비용 해석도 범위를 구분한다. 소규모에서 대규모로 바뀔 때 XGB의 후속 갱신 합계는 CIC2018 2.61초에서 4.17–5.09초, ToN 5.62초에서 11.09–12.31초다. PFN은 각각 1.26초에서 41.00–44.30초, 1.54초에서 48.56–50.45초다. 두 모델의 생성 함수와 설정은 같고 XGB는 매 단계 새로운 300 boosting rounds·최대 깊이 8·CUDA histogram 모델을 학습한다. 가중치 재학습을 하지 않는다는 사실만으로 PFN 갱신이 항상 저렴하다는 결론을 낼 수 없다. XGBoost 공식 설명의 histogram 기반 분할 탐색과 GPU 병렬 계산은 이 구현의 연산 방식을 설명하지만, 관측된 시간 증가율을 각 연산에 분해한 프로파일링 결과는 아니다. 후속 판단은 작은 context의 품질·비용 범위와 context 선택 방법에 근거해야 한다.
+
+원본 실행은 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp72/\allowbreak{}\allowbreak{}20261014\allowbreak{}\_\allowbreak{}\allowbreak{}134735\_\allowbreak{}\allowbreak{}replay\_\allowbreak{}\allowbreak{}1\allowbreak{}00k\_\allowbreak{}\allowbreak{}xgb\_\allowbreak{}\allowbreak{}tabpfn\_\allowbreak{}\allowbreak{}s\allowbreak{}43\_\allowbreak{}\allowbreak{}de8b4\allowbreak{}a78} 및 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp73/\allowbreak{}\allowbreak{}20261014\allowbreak{}\_\allowbreak{}\allowbreak{}154250\_\allowbreak{}\allowbreak{}replay\_\allowbreak{}\allowbreak{}c\allowbreak{}urrent\_\allowbreak{}\allowbreak{}s\allowbreak{}ota\_\allowbreak{}\allowbreak{}100k\allowbreak{}\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}b0f\allowbreak{}8a9dc}다. 재평가 실행은 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp79/\allowbreak{}\allowbreak{}20261016\allowbreak{}\_\allowbreak{}\allowbreak{}022105\_\allowbreak{}\allowbreak{}saved100\allowbreak{}k\_\allowbreak{}\allowbreak{}finalf\allowbreak{}ull\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}7f90866d\allowbreak{}}다. 원본 평가와 재평가를 구별한다.
+
+
+
+\section{신규 공격당 200·400개 라벨 비교}
+2026-10-16 사용자가 신규 공격 샘플 수를 늘리는 방향을 제안했고 후속 질문에 “200·400개 추가 비교”를 선택했다. EXP78의 10·20·50·100개 조건을 유지한 채, 초기 1,000개와 seed 43 한 번을 고정하고 XGB와 FT 없는 누적 TabPFN만 추가 비교한다. 기존 100개 ID를 보존하고 해당 클래스의 남은 학습 pool에서 정해진 seed로 추가 사례를 선택한다. 100개는 200개의 부분집합, 200개는 400개의 부분집합이다. Test를 샘플 선택이나 모델 설정에 사용하지 않는다.
+
+CIC2018의 Web attacks 학습 pool은 450개여서 모든 신규 클래스에 같은 수를 복제 없이 제공할 수 있는 확장 범위로 200·400개를 정했다. 초기 Benign750·초기 공격125개씩은 그대로다. 최종 공개 라벨 예산은 CIC2018 1,800/\allowbreak{}2,600개, ToN 2,400/\allowbreak{}3,800개다. 이 변화는 신규 클래스의 데이터 수뿐 아니라 학습 class prior도 바꾸므로 표본 수 하나의 순수 효과로 해석하지 않는다.
+
+XGB는 각 단계 누적 라벨로 새 모델을 학습한다. TabPFN은 사전학습 가중치를 유지한 채 누적 context를 다시 fit하며 가중치 해시를 확인한다. 갱신 비용은 초기 단계를 제외한 표본 선택·모델 구성·fit의 합계이며 추론 시간과 분리한다. 모든 조건은 마지막 모델로 동일한 전체 test를 평가한다. Seed 반복은 수행하지 않는다.
+
+사전 점검에서 초기 사례 보존, 클래스당 정확한 표본 수, 100⊂200⊂400 중첩 관계, train/\allowbreak{}test 행 ID 분리를 확인했다. 완료 후 저장 예측으로 혼동행렬·Macro-F1, 동일 입력 ID, 가중치 고정, 비용 합계를 독립 검증한다. GPU 동시 실행으로 비용 측정이 간섭되지 않도록 EXP79 종료 후 실행한다. 설정은 EXP80 프로토콜, 실행은 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp80/\allowbreak{}\allowbreak{}20261016\allowbreak{}\_\allowbreak{}\allowbreak{}022614\_\allowbreak{}\allowbreak{}new200\_\allowbreak{}\allowbreak{}4\allowbreak{}00\_\allowbreak{}\allowbreak{}noft\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}c6f6\allowbreak{}ea24}에 등록했다.
+
+
+
+\section{최종 모델 평가의 query 배치 구성 통제}
+사용자가 대규모 실험도 마지막 모델 하나로 전체 test를 평가해 소규모 결과와 기준을 맞추도록 요청했다. EXP79는 저장된 모델을 복구해 원본 test 순서로 평가한다. 이 과정에서 원본 test가 클래스별로 거의 묶여 있다는 점을 확인했다. CIC2018의 8,192행 배치 372개 중 366개, ToN의 278개 중 271개가 단일 클래스다. 과거 순차 재생은 같은 test의 순서를 섞어 사용했고 단일 클래스 배치가 없었다. 진단 결과는 사후 해석을 위한 것이며 모델 선택이나 학습에 test 라벨을 사용한 것은 아니다.
+
+DistPFN 보정은 각 query 배치의 평균 예측 확률을 사용한다. 따라서 클래스별로 묶인 파일 순서는 다른 입력 분포 가정을 만들 수 있다. 이를 분리하기 위해 test 행 인덱스만 \texttt{default\_\allowbreak{}\allowbreak{}rng(43).\allowbreak{}permutat\allowbreak{}ion}으로 섞는다. 특징·라벨을 보지 않고 순서를 정하며 표본을 제거하지 않는다. 사용자에게 혼합 배치 기준과 원본 순서 유지 중 선택을 질문했고, 기존 결과를 보존한 별도 혼합 배치 진단을 진행한다고 안내했다. 이는 사용자 요청 범위 안의 평가 조건 점검이며 별도 시드 반복, 신규 모델 학습이나 test 기반 하이퍼파라미터 선택이 아니다.
+
+소규모 신규 공격당 100개와 대규모 자연·균등 배분의 여섯 조건에서 저장된 FT 없는 PFN을 복구하고, 전체 test의 확률을 8,192개 혼합 query 배치로 다시 계산한다. DistPFN은 바로 그 배치의 posterior만 이용한다. 확률과 예측은 원래 행 ID 위치에 저장한다. 동일한 저장 확률을 원본 순서의 배치로 다시 묶어 보정한 대응 실험도 산출한다. 이 대응 비교는 모델과 확률 자체를 고정하므로 두 보정 결과의 차이를 배치 구성 변화로 귀속할 수 있다. 반면 과거 순차 재생과의 차이에는 배치 크기와 사용 모델 버전도 섞여 있어 이 한 요인만으로 설명하지 않는다.
+
+XGB, 제안 모델, BoostPFN은 현재 배치 평균 posterior를 사용하지 않는 행별 예측기다. 모델을 복구해 혼합 query 8,192개에서 저장된 예측과 정확히 일치하는지 확인한다. 일치하면 기존 전체 test 예측을 재사용하고 그 사실을 기록한다. 불일치하면 전체 test를 혼합 순서로 다시 평가한다. 신규 공격당 10·20·50·200·400개 PFN도 같은 혼합 query로 순서 민감도를 점검한다. 감사 표본 일치와 전체 재추론은 결과 메타데이터에서 구분하며, 감사 일치만으로 모든 query의 부동소수점 결과가 항상 같음을 증명했다고 표현하지 않는다.
+
+XGB와 PFN의 갱신 시간은 학습/\allowbreak{}context 준비 단계의 원래 측정값을 유지한다. 이번 추론 순서 변경을 새 갱신 비용으로 합산하지 않는다. EXP79·80을 포함한 기존 실행은 그대로 보존하고 EXP81을 별도 등록한다. 검증은 전체 test 포함, 저장 순서 복원, 독립 혼동행렬·Macro-F1, 동일 확률에 대한 두 DistPFN 보정, 모델 파일 해시, 재사용 예측의 혼합 query 감사를 확인한다. 발표 수치는 검증 완료 후 갱신하며 HTML과 원고에는 자동 반영하지 않는다.
+
+실행: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp81/\allowbreak{}\allowbreak{}20261016\allowbreak{}\_\allowbreak{}\allowbreak{}025421\_\allowbreak{}\allowbreak{}mixed\_\allowbreak{}\allowbreak{}qu\allowbreak{}ery\_\allowbreak{}\allowbreak{}fina\allowbreak{}l\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}b6\allowbreak{}ba1d34}. 설정: exp81\_\allowbreak{}protocol.json. 구현: mixed\_\allowbreak{}query\_\allowbreak{}eval.py. 검증: verify\_\allowbreak{}mixed.py.
+
+
+
+\section{신규 공격 표본 수별 TabPFN context 유지 정책}
+사용자는 기존 신규 공격당 100개 조건의 누적·버퍼 비교를 10·20·50·100·200·400개로 확장하도록 요청했다. 승인된 연구 버전 v7 안의 EXP83으로 실행한다. 초기 FT 결과와 단계별 예측 합산 결과를 이번 비교에 섞지 않으며, 여섯 표본 수 모두 \textbf{FT 없는 사전학습 v3의 최종 모델}을 평가한다. Seed는 43 한 번이고 LoCalPFN 및 제안 앙상블은 이번 비교에 포함하지 않는다.
+
+초기 1,000개는 정상 750개와 최초 두 공격 각 125개로 고정한다. EXP77·78·80의 정확히 같은 공개 사례 ID와 단계 순서를 재사용한다. 신규 공격 종류별 10·20·50·100·200·400개는 중첩 표본이며, 모든 정책에 같은 사례를 같은 순서로 제공한다. 최종 공개 사례 수는 CIC2018에서 1,040·1,080·1,200·1,400·1,800·2,600개, ToN에서 1,070·1,140·1,350·1,700·2,400·3,800개다. 한 단계에 두 공격이 도입되면 해당 단계의 추가량은 설정값의 두 배다.
+
+누적 정책은 공개된 사례 전부를 context로 사용한다. 버퍼 정책은 항상 1,000개를 유지하면서 신규 공급량만큼 기존 사례를 삭제하고 신규 사례 전부를 넣는다. FIFO는 확보 순서가 가장 오래된 사례부터 삭제하며, 실제 데이터의 노후화 정도를 추정하는 방법은 아니다. 무작위 삭제는 기존 EXP76의 단계별 고정 seed를 사용한다. 유사도 삭제는 기존 context만으로 적합한 표준화 공간에서 신규 학습 사례까지의 최소 유클리드 거리가 작은 기존 사례부터 삭제한다. 세 정책 모두 기존 클래스마다 최소 1개를 남기고, 한번 삭제한 사례를 나중에 다시 가져오지 않는다. Test 특징·정답은 context 선택과 삭제에 사용하지 않는다.
+
+모델과 추론 설정은 기존 v3 checkpoint, 4 estimators, \texttt{fit\_\allowbreak{}\allowbreak{}with\allowbreak{}\_\allowbreak{}\allowbreak{}cache}, CPU cache, context subsampling 없음으로 유지한다. 각 단계의 \texttt{fit}은 context 준비·캐시 재구성이고 gradient fine-tuning은 수행하지 않는다. 단계마다 가중치 digest가 기존 사전학습 기준과 일치하는지 검증한다. 초기 1,000개와 신규 표본, 클래스 보존, 버퍼 크기, 삭제 이력의 조건을 실제 학습 데이터로 사전 검증한다.
+
+성능은 마지막 단계 모델로 CIC2018 3,042,473개, ToN 2,271,723개의 고정 test 전체를 평가한다. EXP81과 같은 라벨 독립 seed-43 혼합 순서와 배치 8,192개를 사용하며, 예측은 원본 행 순서에 맞춰 저장한다. 중간 단계의 예측을 합산하거나 단계별 평균으로 대체하지 않는다. Macro-F1, 클래스별 precision/\allowbreak{}recall/\allowbreak{}F1, 정상 오탐률과 최종 context의 클래스별 수를 기록한다. 누적 PFN은 저장된 모델을 재사용하되 100개 이외의 조건도 전체 혼합 순서로 재평가하고, 100개는 이미 완료된 전체 혼합 평가를 재사용한다. XGB는 동일 공개 사례로 누적 재학습했던 저장 결과를 재사용하고 혼합 배치에서 확인한다.
+
+갱신 비용은 초기 단계를 제외한 선택·모델 구성·fit 시간의 합계다. 초기 준비, 전체 추론, 체크포인트 기록, 해시 검증은 제외한다. 누적 PFN·XGB의 비용은 기존 실행에서 측정한 값을 재사용하고, 버퍼 정책은 이번 실행에서 새로 측정한다. 결과에는 비용 출처를 명시하며 다른 실행 사이의 작은 시간 차이를 확정적인 정책 효과로 해석하지 않는다. 삭제 정책의 계산 비용도 선택 시간에 포함한다.
+
+버퍼는 누적 정책보다 보유 사례가 적으며, 신규 공급량이 많을수록 기존 정상·공격 사례의 비율도 크게 바뀔 수 있다. 따라서 변화의 원인을 표본 수 하나로 단정하지 않고 최종 클래스별 배분과 오탐·누락을 함께 분석한다. 특히 ToN의 공격당 400개 조건에서 두 클래스가 함께 도입되는 단계는 버퍼 1,000개 중 800개가 신규 사례로 바뀐다. 최소 1개 보존은 클래스 출력 가능성을 보장하는 하한이며 충분한 탐지 품질을 보장하지 않는다. 개선 판단은 클래스별 보존량과 validation 기반의 배분 설계로 연결하고, 이번 test 결과로 정책이나 문턱을 재조정하지 않는다.
+
+실행 완료 후 독립 혼동행렬 계산으로 지표를 검산하고 CSV·그림·서술형 결과 기록을 남긴다. 이번 요청에서는 슬라이드·HTML·원고를 자동 수정하지 않는다.
+
+설계 원본: exp83\_\allowbreak{}protocol.json. 실행 코드: context\_\allowbreak{}budget\_\allowbreak{}sweep.py.
+
+
+
+\section{최종 모델 평가의 비교 기준과 도표}
+\section{소규모 시나리오의 단계·클래스별 공급량}
+정제된 기존 IDS 표본의 라벨을 순차 공개한다. 초기 정상 750개와 두 공격 각 125개로 1,000개를 구성하며, 이후 신규 공격 종류마다 $n$개를 공급한다. $n$은 10, 20, 50, 100, 200, 400이다. 초기 집합과 클래스 내 중첩 표본을 정책 간 동일하게 유지한다. 아래 단계는 발표용 1부터 표시하며 실행 코드의 stage는 0부터 시작한다.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.20437\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.41071\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18056\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20437\linewidth-2\tabcolsep\relax}}
+\toprule
+CIC2018 단계 & 신규 공개 클래스 & 공급량 & 누적 라벨 수 \\ \midrule
+\endfirsthead
+CIC2018 단계 & 신규 공개 클래스 & 공급량 & 누적 라벨 수 \\ \midrule
+\endhead
+{}1 & Benign 750, brute force 125, DoS 125 & 1,000 & 1,000 \\
+{}2 & ddos & 1n & 1,000 + 1n \\
+{}3 & web\_\allowbreak{}attacks & 1n & 1,000 + 2n \\
+{}4 & infiltration & 1n & 1,000 + 3n \\
+{}5 & bot & 1n & 1,000 + 4n \\
+\bottomrule
+\end{longtable}
+\endgroup
+CIC2018의 최종 평가 표본은 3,042,473개다. 학습 사례 수와 test 표본 수는 다르다.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.18640\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.41447\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18640\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21272\linewidth-2\tabcolsep\relax}}
+\toprule
+ToN 단계 & 신규 공개 클래스 & 공급량 & 누적 라벨 수 \\ \midrule
+\endfirsthead
+ToN 단계 & 신규 공개 클래스 & 공급량 & 누적 라벨 수 \\ \midrule
+\endhead
+{}1 & Benign 750, DoS 125, scanning 125 & 1,000 & 1,000 \\
+{}2 & injection, ddos & 2n & 1,000 + 2n \\
+{}3 & password & 1n & 1,000 + 3n \\
+{}4 & xss & 1n & 1,000 + 4n \\
+{}5 & ransomware, backdoor & 2n & 1,000 + 6n \\
+{}6 & mitm & 1n & 1,000 + 7n \\
+\bottomrule
+\end{longtable}
+\endgroup
+ToN의 최종 평가 표본은 2,271,723개다. 학습 사례 수와 test 표본 수는 다르다.
+누적 정책은 모든 공개 사례를 사용하고, FIFO·무작위·유사도 정책은 1,000개 버퍼를 유지한다. FIFO는 확보 순서가 오래된 사례, 유사도는 신규 학습 사례와 가까운 기존 사례를 삭제한다. 기존 클래스마다 최소 1개를 남긴다. 고정 context는 EXP76·77의 별도 기준선이며 이번 10--400개 확장에는 포함하지 않았다.
+\section{FT 없는 PFN과 SOTA의 최종 모델 비교}
+EXP81에서 query 행 ID를 seed 43으로 섞고 8,192개씩 전체 test를 평가했다. 추가 가중치 학습이나 test 기반 문턱 조정은 없다. 일부 행별 예측기는 혼합 query 감사 후 기존 전체 예측을 재사용했고, PFN 확률과 DistPFN 보정은 전체를 다시 계산했다. 동일 모델의 학습 예산과 Global에 실제 투입된 context 수는 다를 수 있다.
+\reportfigure{figures/exp81_small.pdf}{초기 1,000개 +\allowbreak{} 신규 공격당 100개. CIC2018 1,400개, ToN 1,700개 라벨 예산. 마지막 모델의 전체 혼합 test; seed 43, Macro-F1 (\%).}
+소규모 제안 모델은 Global/expert/route/tune/cal에 라벨을 나눠 사용하며, ToN Global은 695개다. 따라서 단일 PFN의 전체 1,700개 context와 같은 입력을 사용하는 구조 대조가 아니다. EXP82에서 낮은 결과를 재현했고, 역할 분할과 채택 검증의 표본 부족을 개선 대상으로 확인했다.
+\reportfigure{figures/exp81_large.pdf}{최종 학습 100,000개(정상 75,000·공격 25,000)의 저장 모델 재평가. 공격 내 자연·균등 배분을 구별. 별도 validation 라벨이 있으며 소규모 조건과 단순 크기 대조가 아니다.}
+대규모에서 추가 validation은 제안 모델의 확률 보정과 expert 채택 문턱 선택에 사용했다. 다른 비교군은 해당 검증 라벨을 사용하지 않았다. BoostPFN의 원 구현 기반 모델 등 구현 차이는 당시 프로토콜에 보존한다. LoCalPFN은 최근 실행에서 사용자 요청에 따라 제외했다. 이 그림은 순차 도입을 마친 마지막 상태의 비교이며, 도입 중 갱신 지연의 영향은 보여주지 않는다.
+\section{신규 공격당 10--400개: 누적과 고정 버퍼}
+EXP83은 FT 없는 v3, 4 estimators, CPU cache, context subsampling 없음, seed 43 한 번이다. XGB는 같은 누적 공개 사례로 재학습한 기준선이다. 마지막 모델로 같은 전체 test를 혼합 순서에서 평가했다. 초기 준비와 전체 추론을 제외한 후속 갱신 합계만 비용으로 표시한다.
+\reportfigure{figures/exp83_context_scores.pdf}{신규 공격당 확보 라벨 수별 최종 Macro-F1 (\%). 버퍼 세 정책의 용량은 모두 1,000개이며 누적 PFN과 XGB는 공개 라벨 전부를 사용한다.}
+\reportfigure{figures/exp83_context_performance.pdf}{표본 수에 따른 최종 탐지 품질. 신규 표본 수 변화는 클래스 비율과 기존 사례 보존량도 바꾸므로 크기 하나의 인과 효과로 해석하지 않는다.}
+\reportfigure{figures/exp83_context_cost.pdf}{초기 이후 단계의 선택·모델 구성·fit 시간 합계(초). 초기 준비·전체 추론·기록·검증 시간 제외. 누적 PFN·XGB는 이전 실측 재사용, 버퍼는 신규 실측이다.}
+서로 다른 실행의 작은 시간 차이를 확정적인 정책 효과로 해석하지 않는다. 작은 context의 갱신 이점이 전체 추론을 포함한 운영 총비용의 이점을 뜻하지도 않는다.
+\reportfigure{figures/exp83_context_counts_cic2018.pdf}{CIC2018 최종 context 구성. 정상·기존 공격·신규 공격의 보유량을 구별하며 최소 클래스 보존과 충분한 탐지 품질은 다른 조건이다.}
+\reportfigure{figures/exp83_context_counts_toniot.pdf}{ToN 최종 context 구성. 정상·기존 공격·신규 공격의 보유량을 구별하며 최소 클래스 보존과 충분한 탐지 품질은 다른 조건이다.}
+신규 공격당 400개에서 FIFO는 두 데이터 모두 정상 사례를 1개만 남겼다. 같은 크기의 무작위·유사도 버퍼도 서로 다른 성능을 보였다. 개선 방향은 기존 정상·공격의 보존 할당량과 신규 대표 사례 선택을 함께 설계하는 것이다. 배분 기준은 validation 또는 교차적합으로 검증하고 현재 test로 튜닝하지 않는다.
+클래스별 F1과 context 수는 부록에, 전체 precision/recall/F1·혼동 건수·단계 비용은 \path{data/exp83_per_class.csv}, \path{data/exp83_stage_values.csv}, \path{data/exp83_budget_values.csv}에 있다.
+
+
+\section{2026-10-16 · EXP78 신규 공격 라벨 예산과 FT 없는 DistPFN}
+\label{report:20261016_exp78_results}
+\recordnote{원본 query 순서의 역사 기록이다. 특히 DistPFN 수치는 EXP81의 혼합 query 평가로 대체한다. FT 없는 표본 수별 비교의 최신 근거는 EXP83이다.}
+랩미팅 보고를 위해 seed 43 한 번으로 비교했다. 초기 1,000개(Benign 750개, 기존 공격 두 클래스 각각 125개)는 유지하고, 이후 도입 공격당 라벨 수만 100·50·20·10개로 줄였다. 동일 클래스의 작은 학습 집합은 큰 집합에 포함되며 세 모델은 같은 사례를 사용한다. 초기 FT 조건은 EXP77의 동일한 10 epoch checkpoint를 공유하고 이후 가중치를 바꾸지 않는다. 최종 모델로 기존 전체 test를 평가했으며 단계별 예측을 합산하지 않았다.
+
+XGB는 각 단계 누적 라벨로 새 모델을 재학습하고, PFN은 누적 context와 캐시를 갱신한다. 표시 비용은 초기 단계를 제외한 후속 갱신 시간의 합계로 통일했다. 초기 준비와 모든 추론은 그래프에서 제외하되 원시 측정은 보존했다. 100개 조건과 초기 FT checkpoint는 EXP77에서 재사용했고 50·20·10개 조건만 새로 실행했다.
+
+\subsection{FT 없는 DistPFN}
+DistPFN은 사전학습 가중치를 유지한 누적 PFN의 예측 확률에 현재 query 배치의 평균 예측 분포와 context 클래스 비율을 이용한 보정을 적용했다. 초기 FT와 추가 가중치 학습, query 정답 사용은 없다. 저장 모델 복원 후 보정 전 예측은 두 데이터셋의 전체 test에서 EXP77과 모두 일치했다. 동일한 context 준비를 공유하므로 갱신 비용은 FT 없는 PFN의 기존 실측값을 재사용했다. 확률 보정은 추론 시 연산이므로 갱신 비용에 포함하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21250\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.28750\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.26250\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.23750\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 & Macro-F1 (\%) & 정상 FPR (\%) & 후속 갱신 (초) \\ \midrule
+\endfirsthead
+데이터셋 & Macro-F1 (\%) & 정상 FPR (\%) & 후속 갱신 (초) \\ \midrule
+\endhead
+{}CIC2018 & 77.56 & 0.518 & 1.26 \\
+{}ToN & 75.64 & 17.522 & 1.54 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{라벨 예산 결과}
+각 클래스 표본 수는 신규 학습 라벨 수이며, 평가 표본 수는 예산에 따라 바뀌지 않는다. 신규 공격 F1 평균은 마지막 상태에서 새로 도입한 공격 클래스별 F1의 단순 평균이고 시간 단계 평균이 아니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11464\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13316\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11464\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18871\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15168\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17019\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12698\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 & 신규 클래스당 라벨 & 누적 라벨 & 모델 & Macro-F1 (\%) & 신규 공격 F1 평균 (\%) & 후속 갱신 (초) \\ \midrule
+\endfirsthead
+데이터셋 & 신규 클래스당 라벨 & 누적 라벨 & 모델 & Macro-F1 (\%) & 신규 공격 F1 평균 (\%) & 후속 갱신 (초) \\ \midrule
+\endhead
+{}cic2018 & 100 & 1,400 & xgb & 72.16 & 52.02 & 2.61 \\
+{}cic2018 & 100 & 1,400 & pfn\_\allowbreak{}pretrained & 73.12 & 53.41 & 1.26 \\
+{}cic2018 & 100 & 1,400 & pfn\_\allowbreak{}ft\_\allowbreak{}accumulate & 72.76 & 52.88 & 1.22 \\
+{}cic2018 & 50 & 1,200 & xgb & 71.28 & 51.66 & 2.37 \\
+{}cic2018 & 50 & 1,200 & pfn\_\allowbreak{}pretrained & 73.95 & 54.66 & 1.27 \\
+{}cic2018 & 50 & 1,200 & pfn\_\allowbreak{}ft\_\allowbreak{}accumulate & 72.19 & 51.70 & 1.24 \\
+{}cic2018 & 20 & 1,080 & xgb & 72.55 & 52.29 & 2.04 \\
+{}cic2018 & 20 & 1,080 & pfn\_\allowbreak{}pretrained & 71.90 & 50.99 & 1.24 \\
+{}cic2018 & 20 & 1,080 & pfn\_\allowbreak{}ft\_\allowbreak{}accumulate & 71.67 & 50.72 & 1.37 \\
+{}cic2018 & 10 & 1,040 & xgb & 71.05 & 49.77 & 1.87 \\
+{}cic2018 & 10 & 1,040 & pfn\_\allowbreak{}pretrained & 71.54 & 50.48 & 1.24 \\
+{}cic2018 & 10 & 1,040 & pfn\_\allowbreak{}ft\_\allowbreak{}accumulate & 71.40 & 50.23 & 1.25 \\
+{}toniot & 100 & 1,700 & xgb & 63.12 & 65.57 & 5.62 \\
+{}toniot & 100 & 1,700 & pfn\_\allowbreak{}pretrained & 66.61 & 64.52 & 1.54 \\
+{}toniot & 100 & 1,700 & pfn\_\allowbreak{}ft\_\allowbreak{}accumulate & 65.87 & 63.52 & 1.55 \\
+{}toniot & 50 & 1,350 & xgb & 61.40 & 65.17 & 5.05 \\
+{}toniot & 50 & 1,350 & pfn\_\allowbreak{}pretrained & 61.94 & 63.60 & 1.61 \\
+{}toniot & 50 & 1,350 & pfn\_\allowbreak{}ft\_\allowbreak{}accumulate & 59.46 & 61.45 & 1.57 \\
+{}toniot & 20 & 1,140 & xgb & 58.71 & 60.61 & 4.54 \\
+{}toniot & 20 & 1,140 & pfn\_\allowbreak{}pretrained & 58.96 & 61.47 & 1.59 \\
+{}toniot & 20 & 1,140 & pfn\_\allowbreak{}ft\_\allowbreak{}accumulate & 56.92 & 60.52 & 1.56 \\
+{}toniot & 10 & 1,070 & xgb & 57.25 & 59.05 & 4.24 \\
+{}toniot & 10 & 1,070 & pfn\_\allowbreak{}pretrained & 57.64 & 58.98 & 1.59 \\
+{}toniot & 10 & 1,070 & pfn\_\allowbreak{}ft\_\allowbreak{}accumulate & 54.93 & 57.77 & 1.56 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{관찰 결과}
+CIC2018에서 신규 공격당 라벨을 100개에서 10개로 줄였을 때 최종 Macro-F1은 XGB 72.16\%  \ensuremath{\rightarrow}  71.05\%, FT 없는 PFN 73.12\%  \ensuremath{\rightarrow}  71.54\%, 초기 FT PFN 72.76\%  \ensuremath{\rightarrow}  71.40\%로 바뀌었다. 초기 두 공격과 Benign 학습 사례는 같으며, 이 변화는 신규 context 감소 후 전체 클래스의 마지막 예측에서 관찰한 값이다.
+
+ToN에서 신규 공격당 라벨을 100개에서 10개로 줄였을 때 최종 Macro-F1은 XGB 63.12\%  \ensuremath{\rightarrow}  57.25\%, FT 없는 PFN 66.61\%  \ensuremath{\rightarrow}  57.64\%, 초기 FT PFN 65.87\%  \ensuremath{\rightarrow}  54.93\%로 바뀌었다. 초기 두 공격과 Benign 학습 사례는 같으며, 이 변화는 신규 context 감소 후 전체 클래스의 마지막 예측에서 관찰한 값이다.
+
+\subsection{해석과 후속 판단}
+이 비교는 초기 적응 데이터가 같은 상황에서 신규 공격의 라벨 확보량이 줄어드는 영향을 확인한다. 초기 공격까지 같은 수로 줄이는 전체 데이터 효율 실험과 구분한다. 초기 FT의 결과와 신규 context의 효과를 분리할 수 있으며, 어느 방법이 일반적으로 우세한지는 단일 seed만으로 확정하지 않는다. 평균 점수의 변화는 클래스별 F1과 정상 오탐률을 함께 보고 해석한다.
+
+초기 1,000개를 고정하고 신규 라벨만 줄이면 신규 공격의 context 내 비율도 함께 낮아진다. 따라서 관찰된 점수 변화를 표본 다양성 감소만의 효과로 해석하지 않는다. 표본 수 자체의 영향을 더 분리할 필요가 생기면 context 클래스 비율 또는 확률 보정 조건을 통제한 대조군을 후속으로 둔다.
+
+갱신 시간은 단일 실행의 관찰값이다. 모델을 예측할 때 드는 비용을 포함한 총 운영비 절감의 근거로 확대하지 않는다. DistPFN은 현재 배치의 예측 분포를 이용하므로, 배치 구성 변경에 따른 영향은 별도 검증 대상이다. 기존 EXP77의 FT 있는 DistPFN 결과와 다른 context 정책 결과는 그대로 보존한다.
+
+\subsection{산출물과 검증}
+\par\noindent \textbullet\enspace 라벨 예산 그래프
+
+
+\par\noindent \textbullet\enspace 클래스별 F1 그래프
+
+
+\par\noindent \textbullet\enspace 라벨 예산 수치
+
+
+\par\noindent \textbullet\enspace 클래스별 수치
+
+
+\par\noindent \textbullet\enspace 실행: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp78/\allowbreak{}\allowbreak{}20261016\allowbreak{}\_\allowbreak{}\allowbreak{}005435\_\allowbreak{}\allowbreak{}noft\_\allowbreak{}\allowbreak{}dis\allowbreak{}t\_\allowbreak{}\allowbreak{}new100\allowbreak{}\_\allowbreak{}\allowbreak{}50\_\allowbreak{}\allowbreak{}20\_\allowbreak{}\allowbreak{}1\allowbreak{}0\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}52\allowbreak{}588487}
+
+
+\par\noindent \textbullet\enspace 결과
+
+
+\par\noindent \textbullet\enspace 독립 검증
+
+
+\par\noindent \textbullet\enspace 슬라이드 본문 7장 유지. 6장 세 모델 비교, 7장 FT 없는 DistPFN과 같은 갱신 비용 기준 반영. HTML과 원고·Overleaf는 수정하지 않음.
+
+
+
+
+\section{2026-10-16 · 저장된 10만 개 학습 모델의 최종 전체 test 평가}
+\label{report:20261016_exp79_results}
+\recordnote{클래스가 묶인 원본 query 순서의 진단 결과다. 현재 최종 비교에는 EXP81을 사용한다.}
+기존 마지막 단계 모델을 복구해 가중치 학습과 기준 선택을 반복하지 않고 전체 test를 평가했다. 기존 재생의 query 한 배치에서 모든 모델의 저장 예측을 정확히 재현했고, 원본 모델 파일의 해시와 새 전체 예측의 혼동행렬·Macro-F1을 검증했다. LoCalPFN은 기존 사용자 요청대로 제외했다. 아래는 원본 test 순서, query 8,192개 배치의 Macro-F1 (\%)다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 공격 배분 & XGB & TabPFN & 제안 모델 & BoostPFN & DistPFN \\ \midrule
+\endfirsthead
+데이터 & 공격 배분 & XGB & TabPFN & 제안 모델 & BoostPFN & DistPFN \\ \midrule
+\endhead
+{}cic2018 & natural & 75.66 & 77.04 & 75.99 & 71.47 & 82.34 \\
+{}cic2018 & uniform & 78.12 & 78.58 & 79.00 & 74.22 & 83.26 \\
+{}toniot & natural & 77.43 & 70.01 & 69.82 & 65.69 & 74.87 \\
+{}toniot & uniform & 71.22 & 69.53 & 70.78 & 65.77 & 76.79 \\
+\bottomrule
+\end{longtable}
+\endgroup
+이 결과는 과거의 단계별 서비스 버전 예측 합산과 다르다. 마지막 모델 하나가 이전 단계의 클래스까지 포함한 전체 test를 예측한다. 재학습 없이 평가 기준을 맞출 수 있었으나, 파일의 원본 순서가 대부분 단일 클래스 배치를 형성함을 확인했다. DistPFN의 현재 배치 posterior 보정은 이 조건에 민감할 수 있으므로 원본 순서 결과를 보존하고 EXP81 혼합 배치 평가를 발표 근거로 사용한다.
+
+별도 검증 데이터는 제안 모델에서 잔차 구성에 사용할 Global 확률의 temperature와 S/\allowbreak{}V expert 채택 문턱을 선택하는 데 사용했다. S/\allowbreak{}V 가중치 자체는 route 학습 역할의 데이터로 학습한다. XGB·단일 PFN·BoostPFN·DistPFN은 별도 검증 라벨을 사용하지 않는다. 소규모 제안 모델의 검증은 전체 예산 안에 포함되므로, 대규모와의 비교는 학습량만 바꾼 통제 실험이 아니다.
+
+큰 context에서 PFN 준비가 느린 것은 가중치 fine-tuning을 반복했기 때문이 아니다. 전체 누적 context의 전처리·표현·캐시를 다시 준비했다. XGB는 동일한 GPU histogram 설정으로 누적 재학습했으며 실측 증가 폭은 PFN보다 작았다. PFN 채택의 비용 근거는 작은 context에서 확인한 범위로 제한하고, 대규모까지 자동 확대하지 않는다. 구체적인 실측 비용과 설정은 프로토콜에 기록했다.
+
+근거: results.json, verification.json. 최종 발표 기준: EXP81 결과.
+
+
+
+\section{2026-10-16 · 신규 공격당 200·400개 추가 비교 결과}
+\label{report:20261016_exp80_results}
+\recordnote{아래 누적 PFN 결과의 원본 순서를 보존한다. 최신 전체 혼합 query 재평가와 버퍼 비교는 EXP83이다.}
+사용자가 승인한 200·400개 조건을 seed 43 한 번씩 완료했다. 초기 1,000개 ID는 고정하고 기존 100개 신규 사례를 포함하도록 200·400개를 중첩 구성했다. XGB는 매 단계 누적으로 새 모델을 학습하고 PFN은 사전학습 가중치를 고정한 누적 context를 사용했다. 두 방법에 같은 사례를 공급했으며 최종 모델로 같은 전체 test를 평가했다.
+
+cic2018 신규 200개에서 XGB 71.40\%, PFN 72.36\%로 차이는 +\allowbreak{}0.96\%p다. cic2018 신규 400개에서 XGB 70.69\%, PFN 71.29\%로 차이는 +\allowbreak{}0.60\%p다. toniot 신규 200개에서 XGB 64.75\%, PFN 69.84\%로 차이는 +\allowbreak{}5.09\%p다. toniot 신규 400개에서 XGB 67.36\%, PFN 69.92\%로 차이는 +\allowbreak{}2.56\%p다.
+
+cic2018의 신규 100 \ensuremath{\rightarrow} 400개 변화는 xgb -1.47\%p, pfn\_\allowbreak{}pretrained -1.82\%p다. toniot의 신규 100 \ensuremath{\rightarrow} 400개 변화는 xgb +\allowbreak{}4.25\%p, pfn\_\allowbreak{}pretrained +\allowbreak{}3.31\%p다.
+
+PFN의 CIC2018 Infiltration F1은 13.83 \ensuremath{\rightarrow} 3.81\%, Benign은 99.02 \ensuremath{\rightarrow} 95.11\%로 변했다. ToN DoS는 67.02 \ensuremath{\rightarrow} 96.14\%다. DoS의 학습 표본 수는 초기 125개로 고정되어 있으므로 ToN의 개선을 신규 공격 클래스 자체의 탐지 개선으로만 해석할 수 없다. 추가 사례가 다중 클래스 결정과 학습 비율을 함께 바꾸는 조건에서 관찰된 결과이며, 특정 변화의 인과적 기제는 별도 통제가 필요하다.
+
+CIC2018 Infiltration은 재현율 24.41 \ensuremath{\rightarrow} 52.40\%와 정밀도 9.65 \ensuremath{\rightarrow} 1.98\%가 반대 방향으로 변했다. Benign 오탐률도 1.63 \ensuremath{\rightarrow} 9.18\%다. 이는 단순히 새 공격을 덜 탐지하게 된 결과가 아니라, 탐지 확대와 오탐 증가가 함께 나타난 관찰이다. 후속 설계는 Benign·기존 공격·신규 공격의 context 배분을 통제하고, 예산 내 검증 또는 교차적합으로 오탐 제약을 정하는 방향이 적절하다. 이 개선안은 이번 실행에 적용하지 않았으며 test로 문턱을 조정하지 않았다.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.10855\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10855\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10855\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13487\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13487\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14803\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12829\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12829\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 신규/\allowbreak{}클래스 & 최종 라벨 수 & XGB F1 (\%) & PFN F1 (\%) & PFN−XGB (\%p) & XGB 갱신 (초) & PFN 갱신 (초) \\ \midrule
+\endfirsthead
+데이터 & 신규/\allowbreak{}클래스 & 최종 라벨 수 & XGB F1 (\%) & PFN F1 (\%) & PFN−XGB (\%p) & XGB 갱신 (초) & PFN 갱신 (초) \\ \midrule
+\endhead
+{}cic2018 & 10 & 1,040 & 71.05 & 71.54 & +\allowbreak{}0.49 & 1.87 & 1.24 \\
+{}cic2018 & 20 & 1,080 & 72.55 & 71.90 & -0.65 & 2.04 & 1.24 \\
+{}cic2018 & 50 & 1,200 & 71.28 & 73.95 & +\allowbreak{}2.68 & 2.37 & 1.27 \\
+{}cic2018 & 100 & 1,400 & 72.16 & 73.11 & +\allowbreak{}0.95 & 2.61 & 1.26 \\
+{}cic2018 & 200 & 1,800 & 71.40 & 72.36 & +\allowbreak{}0.96 & 2.78 & 1.28 \\
+{}cic2018 & 400 & 2,600 & 70.69 & 71.29 & +\allowbreak{}0.60 & 3.07 & 1.49 \\
+{}toniot & 10 & 1,070 & 57.25 & 57.64 & +\allowbreak{}0.39 & 4.24 & 1.59 \\
+{}toniot & 20 & 1,140 & 58.71 & 58.96 & +\allowbreak{}0.25 & 4.54 & 1.59 \\
+{}toniot & 50 & 1,350 & 61.40 & 61.94 & +\allowbreak{}0.54 & 5.05 & 1.61 \\
+{}toniot & 100 & 1,700 & 63.12 & 66.61 & +\allowbreak{}3.49 & 5.62 & 1.54 \\
+{}toniot & 200 & 2,400 & 64.75 & 69.84 & +\allowbreak{}5.09 & 6.19 & 1.80 \\
+{}toniot & 400 & 3,800 & 67.36 & 69.92 & +\allowbreak{}2.56 & 6.82 & 2.08 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+갱신 시간은 초기 단계를 제외한 표본 선택·모델 구성·fit의 합계이며 전체 추론 시간은 포함하지 않는다. 전체 test는 CIC2018 3,042,473개, ToN 2,271,723개다. 10·20·50·100개는 기존 EXP78, 200·400개는 EXP80의 결과다. EXP81에서 혼합 query 순서의 영향을 점검했다. 100개 PFN은 전체 재추론, 다른 예산은 혼합 query 8,192개의 예측 일치 감사로 확인했다. XGB는 행별 예측기다.
+
+이 비교는 표본 수 확대에 따른 이 두 데이터셋의 관측 결과다. 신규 클래스 수를 늘리면 학습 class prior도 바뀌고, 초기 두 공격의 표본 수는 125개로 고정된다. 따라서 모든 클래스의 라벨 수를 같은 비율로 늘린 학습 곡선이나 일반적인 PFN 우위를 뜻하지 않는다. 단일 seed 결과이므로 표본 선택의 변동성을 추정하지 않는다. 후속 선택은 Macro-F1 차이와 클래스별 혼동을 함께 보고 정해야 한다. 클래스별 지표는 CSV에 평가 support 내림차순으로 정리했다.
+
+신규 100 \ensuremath{\rightarrow} 400개에서 클래스별 F1 변화(\%p), 데이터셋별 평가 support 내림차순:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24286\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20714\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 클래스 & 평가 수 & XGB 변화 & PFN 변화 \\ \midrule
+\endfirsthead
+데이터 & 클래스 & 평가 수 & XGB 변화 & PFN 변화 \\ \midrule
+\endhead
+{}cic2018 & benign & 2,652,203 & -5.73 & -3.91 \\
+{}cic2018 & ddos & 262,680 & -0.01 & +\allowbreak{}0.28 \\
+{}cic2018 & bot & 41,542 & +\allowbreak{}2.52 & +\allowbreak{}0.38 \\
+{}cic2018 & dos & 39,483 & -0.03 & +\allowbreak{}0.03 \\
+{}cic2018 & brute\_\allowbreak{}force & 37,696 & -0.03 & +\allowbreak{}0.00 \\
+{}cic2018 & infiltration & 8,742 & -2.47 & -10.02 \\
+{}cic2018 & web\_\allowbreak{}attacks & 127 & -4.54 & +\allowbreak{}0.49 \\
+{}toniot & benign & 1,474,302 & -1.88 & -1.15 \\
+{}toniot & xss & 343,854 & +\allowbreak{}2.53 & +\allowbreak{}2.42 \\
+{}toniot & password & 210,951 & -0.02 & +\allowbreak{}0.18 \\
+{}toniot & ddos & 103,338 & +\allowbreak{}1.35 & -1.73 \\
+{}toniot & injection & 68,891 & +\allowbreak{}2.44 & +\allowbreak{}5.24 \\
+{}toniot & backdoor & 40,030 & +\allowbreak{}0.22 & -0.32 \\
+{}toniot & dos & 22,458 & +\allowbreak{}25.71 & +\allowbreak{}29.12 \\
+{}toniot & scanning & 6,029 & +\allowbreak{}18.27 & -1.07 \\
+{}toniot & mitm & 1,161 & -0.13 & +\allowbreak{}0.24 \\
+{}toniot & ransomware & 709 & -6.01 & +\allowbreak{}0.19 \\
+\bottomrule
+\end{longtable}
+\endgroup
+근거: results.json, verification.json, budget\_\allowbreak{}order\_\allowbreak{}audits.json. 실험 설계. 
+
+
+
+\section{2026-10-16 · 혼합 query 배치로 통일한 최종 평가}
+\label{report:20261016_exp81_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+Test 행 ID만 seed 43으로 섞고, 동일한 전체 test를 8,192개 query 배치로 평가했다. 모델·context·S/\allowbreak{}V 기준·학습 prior는 변경하지 않았다. PFN 확률과 DistPFN 보정은 전체를 다시 계산했다. 행별 예측기 XGB·제안 모델·BoostPFN은 혼합 query 감사에서 정확히 일치한 경우 저장된 전체 예측을 재사용하고 불일치 시 전체 재추론했다. 재사용 여부는 아래 감사 표와 실행 메타데이터에서 구분한다.
+
+소규모 최종 Macro-F1 (\%):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.45455\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.27273\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.27273\linewidth-2\tabcolsep\relax}}
+\toprule
+모델 & CIC2018 & ToN \\ \midrule
+\endfirsthead
+모델 & CIC2018 & ToN \\ \midrule
+\endhead
+{}xgb & 72.16 & 63.12 \\
+{}pfn\_\allowbreak{}pretrained & 73.11 & 66.61 \\
+{}ours & 71.70 & 52.89 \\
+{}boostpfn & 70.33 & 61.16 \\
+{}distpfn\_\allowbreak{}pretrained & 74.82 & 67.60 \\
+\bottomrule
+\end{longtable}
+\endgroup
+대규모 최종 Macro-F1 (\%):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14143\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 공격 배분 & XGB & TabPFN & 제안 모델 & BoostPFN & DistPFN \\ \midrule
+\endfirsthead
+데이터 & 공격 배분 & XGB & TabPFN & 제안 모델 & BoostPFN & DistPFN \\ \midrule
+\endhead
+{}cic2018 & natural & 75.66 & 77.04 & 75.99 & 71.47 & 77.40 \\
+{}cic2018 & uniform & 78.12 & 78.58 & 79.00 & 74.22 & 78.01 \\
+{}toniot & natural & 77.43 & 70.01 & 69.82 & 65.69 & 67.08 \\
+{}toniot & uniform & 71.22 & 69.53 & 70.78 & 65.77 & 69.66 \\
+\bottomrule
+\end{longtable}
+\endgroup
+같은 PFN 확률에 query 그룹 구성만 바꾼 DistPFN 대응 비교:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12698\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12698\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13492\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17460\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17460\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13492\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12698\linewidth-2\tabcolsep\relax}}
+\toprule
+규모 & 데이터 & 배분 & 원본 그룹 F1 (\%) & 혼합 그룹 F1 (\%) & 차이 (\%p) & 예측 변경 수 \\ \midrule
+\endfirsthead
+규모 & 데이터 & 배분 & 원본 그룹 F1 (\%) & 혼합 그룹 F1 (\%) & 차이 (\%p) & 예측 변경 수 \\ \midrule
+\endhead
+{}large & cic2018 & natural & 82.34 & 77.40 & -4.94 & 6,233 \\
+{}large & cic2018 & uniform & 83.26 & 78.01 & -5.26 & 7,120 \\
+{}large & toniot & natural & 74.87 & 67.08 & -7.79 & 45,180 \\
+{}large & toniot & uniform & 76.79 & 69.66 & -7.13 & 86,265 \\
+{}small & cic2018 & new\_\allowbreak{}100 & 77.56 & 74.82 & -2.74 & 8,058 \\
+{}small & toniot & new\_\allowbreak{}100 & 75.64 & 67.60 & -8.04 & 73,594 \\
+\bottomrule
+\end{longtable}
+\endgroup
+대응 비교는 저장 확률·학습 prior·평가 행을 고정하므로 관측된 보정 결과 차이는 그룹 구성에서 발생한다. 이 효과를 기존 순차 재생과 최종 평가 사이의 모든 차이로 확대 해석하지 않는다. 과거 재생은 query 배치 크기와 단계별 모델 사용도 다르다. 원본 순서의 높은 DistPFN 점수를 모델의 일관된 우위로 주장하지 않고, 최종 슬라이드는 혼합 배치 기준을 명시한다.
+
+제안 모델 개선은 같은 Global context의 단일 PFN 대조군으로 라벨 분할 효과를 분리하는 데서 시작한다. 소량 예산에서는 공통 anchor와 전문 사례 배분 및 검증에 남기는 라벨 수를 조정할 수 있다. 이는 후속 설계안이며 이번 test 성능을 보고 threshold를 낮추거나 expert 호출을 강제하지 않았다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21726\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19048\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}}
+\toprule
+규모 & 데이터 & 배분 & 모델 & 감사/\allowbreak{}원본 예측 불일치 & 전체 재추론 \\ \midrule
+\endfirsthead
+규모 & 데이터 & 배분 & 모델 & 감사/\allowbreak{}원본 예측 불일치 & 전체 재추론 \\ \midrule
+\endhead
+{}large & cic2018 & natural & boostpfn & 0 & False \\
+{}large & cic2018 & natural & ours & 0 & False \\
+{}large & cic2018 & natural & tabpfn & 0 & True \\
+{}large & cic2018 & natural & xgb & 0 & False \\
+{}large & cic2018 & uniform & boostpfn & 0 & False \\
+{}large & cic2018 & uniform & ours & 0 & False \\
+{}large & cic2018 & uniform & tabpfn & 0 & True \\
+{}large & cic2018 & uniform & xgb & 0 & False \\
+{}large & toniot & natural & boostpfn & 0 & False \\
+{}large & toniot & natural & ours & 0 & False \\
+{}large & toniot & natural & tabpfn & 1 & True \\
+{}large & toniot & natural & xgb & 0 & False \\
+{}large & toniot & uniform & boostpfn & 0 & False \\
+{}large & toniot & uniform & ours & 0 & False \\
+{}large & toniot & uniform & tabpfn & 1 & True \\
+{}large & toniot & uniform & xgb & 0 & False \\
+{}small & cic2018 & new\_\allowbreak{}100 & boostpfn & 0 & False \\
+{}small & cic2018 & new\_\allowbreak{}100 & ours & 0 & False \\
+{}small & cic2018 & new\_\allowbreak{}100 & pfn\_\allowbreak{}pretrained & 2 & True \\
+{}small & cic2018 & new\_\allowbreak{}100 & xgb & 0 & False \\
+{}small & toniot & new\_\allowbreak{}100 & boostpfn & 0 & False \\
+{}small & toniot & new\_\allowbreak{}100 & ours & 0 & False \\
+{}small & toniot & new\_\allowbreak{}100 & pfn\_\allowbreak{}pretrained & 3 & True \\
+{}small & toniot & new\_\allowbreak{}100 & xgb & 0 & False \\
+\bottomrule
+\end{longtable}
+\endgroup
+단일 seed이며 혼합 순서는 특정 실제 운영 유입을 재현하지 않는다. 배치 크기는 고정했으며 여러 크기에 대한 강건성은 확인하지 않았다. 감사 표본의 예측 일치도 전체 부동소수점 출력의 수학적 동일성 증명을 뜻하지 않는다. 시드 반복은 사용자 요청대로 수행하지 않았다.
+
+근거: results.json, verification.json. 실험 설계.
+
+
+
+\section{2026-10-16 · ToN 소량 라벨 제안 모델 재현 및 context 분할 진단}
+\label{report:20261016_exp82_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+사용자는 7페이지 ToN 제안 모델 52.89\%의 이상 여부와 재실행을 요청했다. EXP82는 v7 안에서 동일 seed 43, 동일 도입 순서·1,700개 라벨·역할별 행 ID·원본 v3 checkpoint를 유지했다. 저장 모델 전체 재추론, 6개 단계 전체 재구축, 동일 Global context 단일 PFN, 전체 context 단일 PFN을 사전에 정한 네 조건으로 실행했다. IDS 가중치 FT·추가 seed·threshold 조정은 수행하지 않았다. 모든 최종 모델은 동일한 2,271,723개 test를 seed 43의 행 인덱스 순열로 섞어 8,192개씩 평가했다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.28243\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18108\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18784\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16081\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18784\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 최종 context 수 & Macro-F1 (\%) & expert 호출 & 기존 참조 예측과 불일치 \\ \midrule
+\endfirsthead
+조건 & 최종 context 수 & Macro-F1 (\%) & expert 호출 & 기존 참조 예측과 불일치 \\ \midrule
+\endhead
+{}저장된 제안 모델 전체 재추론 & 695 & 52.89024 & 0 & 7 \\
+{}1\textasciitilde{}6단계를 다시 만든 제안 모델 & 695 & 52.89024 & 0 & 7 \\
+{}동일 Global context의 새 단일 PFN & 695 & 52.89024 & 0 & 7 \\
+{}전체 context의 새 단일 PFN & 1,700 & 66.60751 & 0 & 0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+참조 예측은 앞의 세 조건에서 EXP77 제안 모델 원본 순서 결과이며, 전체 context 조건은 EXP81 혼합 순서 PFN이다. 전체 Macro-F1은 마지막 단계의 단일 모델이 전체 test를 예측한 값이며 단계 평균이 아니다.
+
+같은 혼합 순서에서 저장 모델 대 재구축 모델은 0행, 재구축 제안 모델 대 동일 Global 단일 PFN은 0행이 다르다. 후자의 최대 확률 차이는 0다. 원본 순서와 혼합 순서에서 예측이 달라지는 행은 원본 대조 수로 별도 표시했다. 반올림한 발표 점수는 동일하고, 이 변동은 전체 context 대조군과의 13\%p 이상 차이를 설명하지 않는다. 원본 대조에서 달라진 7행을 원본 query 배치에 넣어 다시 예측한 결과, 원본 예측 전체 재현 여부는 True다. 해당 행의 최대 클래스 확률 변화는 0.047496이므로 단순한 기계 정밀도 수준의 오차라고 단정하지 않는다. 배치 구성에 따른 내부 변화 원인은 이번 진단에서 분리하지 않았다. 이 확인에는 test 정답 라벨을 사용하지 않았다. 같은 혼합 순서에서 재구축·복원·단일 Global 대조는 확률까지 정확히 일치했다.
+
+최종 Global은 695개, expert pool은 331개, route는 353개, tune은 123개, cal은 198개다. 모든 클래스가 모든 역할에 존재하고, 역할 간 feature group과 학습/\allowbreak{}test 행 ID가 분리되어 있다. 클래스 ID 매핑은 전체 10개 클래스 순서와 일치한다. 원본 데이터 8개 파일 hash와 사용 코드도 확인했다. finetune\_\allowbreak{}final.py의 기존 변경은 DistPFN 출력 조건/\allowbreak{}명명뿐이며 이 진단의 데이터 구성 함수는 원본과 AST가 동일하다.
+
+최종 cal 198개에서 후보 65개 모두의 정답 여부 변경(helpful+\allowbreak{}harmful)은 최대 4건이다. 기존 정책이 요구하는 최소 30건에 미달해 65개 후보가 support 조건을 통과하지 못했고 Global fallback이 선택됐다. 실제 test expert 호출도 0건이다. 이는 expert가 적용된 앙상블의 이득을 검증한 결과가 아니라 695개 Global context로 동작한 현재 설정의 결과다.
+
+expert 4개의 공통 anchor는 각각 Global 전체 695개이고, 전문 잔차 블록은 각각 5·34·4·288개다. 앞의 세 expert는 Global에 몇 개의 사례만 덧붙인 구성이므로 전문 사례가 차지하는 비중이 매우 작다. 아래는 원래 보류한 cal 198개에서의 직접 비교이며 test로 모델을 선택한 결과가 아니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.17447\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19574\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17447\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22766\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22766\linewidth-2\tabcolsep\relax}}
+\toprule
+expert & 공통 anchor & 전문 블록 & Global 오답 교정 & Global 정답 훼손 \\ \midrule
+\endfirsthead
+expert & 공통 anchor & 전문 블록 & Global 오답 교정 & Global 정답 훼손 \\ \midrule
+\endhead
+{}1 & 695 & 5 & 1 & 0 \\
+{}2 & 695 & 34 & 2 & 0 \\
+{}3 & 695 & 4 & 1 & 0 \\
+{}4 & 695 & 288 & 3 & 3 \\
+\bottomrule
+\end{longtable}
+\endgroup
+어느 expert라도 Global의 오답을 맞힌 cal 사례는 6개뿐이다. 이는 정답을 이용한 진단용 상한이며 실제 routing 성능이 아니다. scorer가 선택한 후보는 교정 3개, 훼손 1개다. 따라서 30건 기준만 낮추면 문제가 해결된다는 근거도 없다. 작은 전체 예산에 맞는 Global·공통 anchor·전문 블록 배분을 함께 설계할 필요가 있다.
+
+클래스별 F1 및 context 수. 범위는 최종 전체 test, 정렬은 test 표본 수 내림차순이다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13810\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13810\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13810\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16476\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12476\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & test 수 & Global context & 전체 context & 제안 F1 (\%) & 전체 PFN F1 (\%) & 차이 (\%p) \\ \midrule
+\endfirsthead
+클래스 & test 수 & Global context & 전체 context & 제안 F1 (\%) & 전체 PFN F1 (\%) & 차이 (\%p) \\ \midrule
+\endhead
+{}benign & 1,474,302 & 316 & 750 & 90.06 & 90.08 & +\allowbreak{}0.02 \\
+{}xss & 343,854 & 40 & 100 & 76.07 & 82.39 & +\allowbreak{}6.32 \\
+{}password & 210,951 & 40 & 100 & 87.66 & 88.31 & +\allowbreak{}0.65 \\
+{}ddos & 103,338 & 39 & 100 & 48.79 & 95.01 & +\allowbreak{}46.21 \\
+{}injection & 68,891 & 40 & 100 & 50.88 & 80.71 & +\allowbreak{}29.83 \\
+{}backdoor & 40,030 & 40 & 100 & 97.34 & 99.80 & +\allowbreak{}2.46 \\
+{}dos & 22,458 & 50 & 125 & 60.61 & 67.02 & +\allowbreak{}6.41 \\
+{}scanning & 6,029 & 50 & 125 & 11.61 & 57.37 & +\allowbreak{}45.76 \\
+{}mitm & 1,161 & 40 & 100 & 3.21 & 2.72 & -0.49 \\
+{}ransomware & 709 & 40 & 100 & 2.68 & 2.68 & +\allowbreak{}0.00 \\
+\bottomrule
+\end{longtable}
+\endgroup
+대조군이 같은 결과를 재현하는 범위에서는, Global context의 배분과 expert 미작동이 현재 결과를 직접 설명한다. 전체 1,700개로 바꾸는 비교는 context 개수뿐 아니라 사례 구성과 클래스 비율도 함께 바꾸므로 이를 단순한 표본 수 효과 하나로 단정하지 않는다. 추가 라벨 없이 같은 1,700개를 활용한 단일 PFN 결과는 개선 설계의 기준선이며, 제안 모델이 그 점수로 개선됐다고 간주하지 않는다.
+
+개선 방향은 소량 라벨을 5개 고정 역할로 분할하면서 Global의 정보를 크게 잃는 구성을 바꾸는 것이다. 우선 feature group 기준 교차 적합으로 각 검증 행을 context에서 제외한 out-of-fold 예측을 만들고, 그 예측으로 routing·채택 기준을 학습/\allowbreak{}선택한 뒤 최종 Global이 누적 사례를 활용하도록 구성할 수 있다. S/\allowbreak{}V 학습과 threshold 선택 사이의 분리도 유지해야 하며, 최종 context 확대에 따른 확률 분포 변화를 별도로 검증해야 한다. 고정 30건 기준의 소량 데이터 적합성도 학습/\allowbreak{}검증 자료에서 사전 결정할 대상이다. 이번 test를 보고 기준을 낮추거나 호출을 강제한 실험은 하지 않았다. 이 변경은 아직 실행·검증하지 않은 후속 설계안이다.
+
+7페이지 점수는 재현 여부에 따라 유지할 수 있으나, 이를 제안 앙상블의 잠재 성능 전체나 최종 완성 모델로 해석하지 않는다. 현재 설정의 결과임을 밝히고 Global 695개와 expert 호출 0건을 함께 설명한다. 기존 슬라이드·HTML·원고는 이번 진단에서 수정하지 않았다.
+
+근거: 실행 결과, 실행 검증, 원본 데이터·코드 검증, 실험 설계, 클래스별 CSV.
+
+
+
+\section{2026-10-16 · 신규 공격 표본 수별 context 누적·버퍼 유지 비교}
+\label{report:20261016_exp83_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+초기 1,000개와 동일한 신규 사례를 사용해 FT 없는 TabPFN v3의 누적·FIFO·무작위·유사도 삭제를 비교했다. 신규 공격 종류별 10·20·50·100·200·400개, 두 데이터셋, seed 43 한 번이다. 버퍼는 항상 1,000개를 유지하며 기존 클래스마다 최소 1개를 보호했다. 성능은 마지막 단계 모델의 전체 test 결과이며 중간 단계 예측을 합산하지 않았다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13177\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13177\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14039\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16626\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14901\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14039\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14039\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 신규/\allowbreak{}클래스 & XGB (\%) & PFN 누적 (\%) & FIFO (\%) & 무작위 (\%) & 유사도 (\%) \\ \midrule
+\endfirsthead
+데이터 & 신규/\allowbreak{}클래스 & XGB (\%) & PFN 누적 (\%) & FIFO (\%) & 무작위 (\%) & 유사도 (\%) \\ \midrule
+\endhead
+{}CIC2018 & 10 & 71.05 & 71.54 & 71.60 & 71.60 & 73.97 \\
+{}CIC2018 & 20 & 72.55 & 71.90 & 71.86 & 71.88 & 72.29 \\
+{}CIC2018 & 50 & 71.28 & 73.96 & 72.26 & 74.00 & 71.76 \\
+{}CIC2018 & 100 & 72.16 & 73.11 & 71.71 & 72.03 & 70.25 \\
+{}CIC2018 & 200 & 71.40 & 72.36 & 66.77 & 70.52 & 66.07 \\
+{}CIC2018 & 400 & 70.69 & 71.29 & 37.25 & 64.76 & 62.93 \\
+{}ToN & 10 & 57.25 & 57.64 & 57.44 & 58.00 & 58.62 \\
+{}ToN & 20 & 58.71 & 58.96 & 65.06 & 58.63 & 61.57 \\
+{}ToN & 50 & 61.40 & 61.94 & 61.99 & 62.31 & 66.27 \\
+{}ToN & 100 & 63.12 & 66.61 & 71.19 & 66.26 & 52.50 \\
+{}ToN & 200 & 64.75 & 69.84 & 39.49 & 67.96 & 48.42 \\
+{}ToN & 400 & 67.36 & 69.92 & 31.83 & 57.88 & 27.73 \\
+\bottomrule
+\end{longtable}
+\endgroup
+관찰과 후속 설계 판단:
+
+CIC2018의 신규 공격당 400개 조건에서 누적/\allowbreak{}FIFO/\allowbreak{}무작위/\allowbreak{}유사도 Macro-F1은 71.29/\allowbreak{}37.25/\allowbreak{}64.76/\allowbreak{}62.93\%다. FIFO는 정상 사례를 1개만 보유하며, 정상 오탐률은 누적 9.18\%에서 FIFO 99.81\%로 달라졌다. 보존량 감소와 품질 저하가 함께 관찰됐지만, 표본 수·선택된 사례·클래스 비율이 함께 변하므로 하나의 요인만을 분리한 인과 효과로 해석하지 않는다.
+
+ToN의 신규 공격당 400개 조건에서 누적/\allowbreak{}FIFO/\allowbreak{}무작위/\allowbreak{}유사도 Macro-F1은 69.92/\allowbreak{}31.83/\allowbreak{}57.88/\allowbreak{}27.73\%다. FIFO는 정상 사례를 1개만 보유하며, 정상 오탐률은 누적 19.83\%에서 FIFO 99.91\%로 달라졌다. 보존량 감소와 품질 저하가 함께 관찰됐지만, 표본 수·선택된 사례·클래스 비율이 함께 변하므로 하나의 요인만을 분리한 인과 효과로 해석하지 않는다.
+
+작은 추가량에서는 일부 버퍼 정책이 누적과 비슷하거나 더 높은 F1을 보였으나, 특정 정책의 우위가 모든 표본 수와 두 데이터셋에서 유지되지는 않았다. 세 버퍼의 크기는 모두 1,000개이므로 이들 사이의 차이는 버퍼 크기 차이만으로 설명할 수 없다. 선택된 사례와 클래스별 배분을 함께 봐야 한다.
+
+후속 개선안은 정상·기존 공격의 보존 할당량과 신규 공격의 context 할당량을 함께 제한하는 것이다. 확보한 신규 사례 전부를 반드시 넣는 규칙을 완화하고, 확보한 풀에서 대표 사례를 선택하면 새 공격이 많이 들어오는 단계에도 기존 사례를 위한 공간을 남길 수 있다. 클래스별 하한이나 배분량은 validation 또는 교차적합으로 정하고 정상 오탐 제약과 함께 검증해야 한다. 이번 실험에는 이 개선안을 적용하지 않았으며, 성능 개선이 입증된 것으로 주장하지 않는다.
+
+버퍼 정책의 누적 대비 변화(\%p):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20000\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 신규/\allowbreak{}클래스 & FIFO−누적 & 무작위−누적 & 유사도−누적 \\ \midrule
+\endfirsthead
+데이터 & 신규/\allowbreak{}클래스 & FIFO−누적 & 무작위−누적 & 유사도−누적 \\ \midrule
+\endhead
+{}CIC2018 & 10 & +\allowbreak{}0.07 & +\allowbreak{}0.06 & +\allowbreak{}2.44 \\
+{}CIC2018 & 20 & -0.04 & -0.03 & +\allowbreak{}0.39 \\
+{}CIC2018 & 50 & -1.70 & +\allowbreak{}0.04 & -2.19 \\
+{}CIC2018 & 100 & -1.40 & -1.08 & -2.87 \\
+{}CIC2018 & 200 & -5.60 & -1.84 & -6.29 \\
+{}CIC2018 & 400 & -34.05 & -6.53 & -8.37 \\
+{}ToN & 10 & -0.20 & +\allowbreak{}0.36 & +\allowbreak{}0.98 \\
+{}ToN & 20 & +\allowbreak{}6.10 & -0.33 & +\allowbreak{}2.61 \\
+{}ToN & 50 & +\allowbreak{}0.05 & +\allowbreak{}0.37 & +\allowbreak{}4.33 \\
+{}ToN & 100 & +\allowbreak{}4.58 & -0.35 & -14.11 \\
+{}ToN & 200 & -30.35 & -1.88 & -21.42 \\
+{}ToN & 400 & -38.09 & -12.04 & -42.19 \\
+\bottomrule
+\end{longtable}
+\endgroup
+갱신 비용(초)은 초기 단계 이후의 선택·모델 구성·fit 합계다. 초기 준비와 전체 추론은 제외했다. 누적 PFN·XGB의 비용은 기존 실행에서 가져왔고 버퍼 정책의 비용은 이번 실행에서 측정했다. 작은 시간 차이는 실행 시점과 측정 변동의 영향이 있을 수 있어 정책의 확정적인 비용 우위로 해석하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13747\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13747\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13747\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16577\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14690\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13747\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13747\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 신규/\allowbreak{}클래스 & XGB (초) & PFN 누적 (초) & FIFO (초) & 무작위 (초) & 유사도 (초) \\ \midrule
+\endfirsthead
+데이터 & 신규/\allowbreak{}클래스 & XGB (초) & PFN 누적 (초) & FIFO (초) & 무작위 (초) & 유사도 (초) \\ \midrule
+\endhead
+{}CIC2018 & 10 & 1.873 & 1.243 & 1.292 & 1.303 & 1.302 \\
+{}CIC2018 & 20 & 2.042 & 1.243 & 1.299 & 1.296 & 1.307 \\
+{}CIC2018 & 50 & 2.366 & 1.267 & 1.317 & 1.296 & 1.312 \\
+{}CIC2018 & 100 & 2.607 & 1.264 & 1.274 & 1.284 & 1.300 \\
+{}CIC2018 & 200 & 2.776 & 1.285 & 1.314 & 1.315 & 1.586 \\
+{}CIC2018 & 400 & 3.067 & 1.491 & 1.320 & 1.297 & 1.522 \\
+{}ToN & 10 & 4.238 & 1.585 & 1.643 & 1.634 & 1.626 \\
+{}ToN & 20 & 4.538 & 1.592 & 1.629 & 1.640 & 1.648 \\
+{}ToN & 50 & 5.050 & 1.607 & 1.634 & 1.637 & 1.687 \\
+{}ToN & 100 & 5.625 & 1.538 & 1.618 & 1.645 & 1.775 \\
+{}ToN & 200 & 6.194 & 1.802 & 1.634 & 1.631 & 1.946 \\
+{}ToN & 400 & 6.817 & 2.078 & 1.663 & 1.655 & 1.955 \\
+\bottomrule
+\end{longtable}
+\endgroup
+표본 공급량을 늘리면 누적 정책은 context가 커지고, 버퍼 정책은 기존 사례를 더 많이 제거한다. 두 경우 모두 context의 클래스 비율이 달라지므로 표본 수의 효과와 클래스 구성의 효과를 분리해서 주장할 수 없다. FIFO는 확보 순서의 대리 기준이며 데이터가 실제로 낡았는지는 측정하지 않았다. 유사도 삭제는 신규 학습 사례와 가까운 기존 사례를 제거하는 정의이며, 중복 제거의 품질 개선을 보장하지 않는다. 개선 방향은 기존 정상·공격의 충분한 보존량과 신규 사례 배분을 함께 제어하는 정책이다. 검증용 데이터 또는 교차적합으로 배분을 정하는 후속 평가가 필요하며, 이번 test 결과로 정책을 튜닝하지 않았다.
+
+모든 예측의 혼동행렬과 Macro-F1, 초기 사례 일치, 중첩 표본, 클래스 보존, 삭제 이력, 가중치 불변, 비용 합계를 독립 검증했다. 단일 seed의 탐색 결과이며 표본 선택의 변동성이나 다른 네트워크 환경의 일반화는 검증하지 않았다.
+
+누적 PFN의 10·20·50·200·400개 조건도 저장 모델로 전체 혼합 query 평가를 수행했다. 이전 원본 순서 평가와 예측이 달라진 행 수는 CSV의 \texttt{original\allowbreak{}\_\allowbreak{}\allowbreak{}order\_\allowbreak{}\allowbreak{}p\allowbreak{}redictio\allowbreak{}n\_\allowbreak{}\allowbreak{}mismat\allowbreak{}ches}에 기록했다. 이전 결과는 보존하며 이번 비교는 동일한 혼합 평가 순서의 값을 사용한다.
+
+성능 추이 · 수치 그래프 · 갱신 비용 · CIC2018 context 구성 · ToN context 구성
+
+전체 수치 CSV · 클래스별 CSV · 단계별 CSV · 설계
+
+실행: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp83/\allowbreak{}\allowbreak{}20261016\allowbreak{}\_\allowbreak{}\allowbreak{}120553\_\allowbreak{}\allowbreak{}context\_\allowbreak{}\allowbreak{}buffer\_\allowbreak{}\allowbreak{}1\allowbreak{}0\_\allowbreak{}\allowbreak{}400\_\allowbreak{}\allowbreak{}no\allowbreak{}ft\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}7\allowbreak{}c25cb5d}. 원본 결과와 검증 기록은 해당 실행의 \texttt{results.\allowbreak{}json}, \texttt{verifica\allowbreak{}tion.\allowbreak{}jso\allowbreak{}n}에 있다. 슬라이드·
+
+
+
+\section{EXP83 클래스별 최종 성능과 context 수}
+같은 고정 전체 test의 평가 표본 수 내림차순이다. F1은 백분율이며 모든 정책에 같은 자릿수를 사용한다. Context 수는 학습에 사용한 라벨 수이고 test support와 구별한다. precision/recall, TP/FP/FN의 원 수치는 동봉 CSV에서 확인한다.
+\section{CIC2018 · 신규 공격당 10개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 99.50 & 99.65 & 99.66 & 99.66 & 99.61 \\
+{}ddos & 262,680 & 96.69 & 99.70 & 99.70 & 99.69 & 99.70 \\
+{}bot & 41,542 & 82.56 & 99.07 & 99.07 & 99.14 & 99.15 \\
+{}dos & 39,483 & 98.79 & 99.26 & 99.73 & 99.70 & 99.58 \\
+{}brute\_\allowbreak{}force & 37,696 & 99.98 & 99.95 & 99.95 & 99.95 & 99.95 \\
+{}infiltration & 8,742 & 14.66 & 1.92 & 1.91 & 1.90 & 18.75 \\
+{}web\_\allowbreak{}attacks & 127 & 5.17 & 1.20 & 1.21 & 1.18 & 1.07 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 750 & 750 & 723 & 719 & 712 \\
+{}ddos & 262,680 & 10 & 10 & 10 & 10 & 8 \\
+{}bot & 41,542 & 10 & 10 & 10 & 10 & 10 \\
+{}dos & 39,483 & 125 & 125 & 122 & 123 & 125 \\
+{}brute\_\allowbreak{}force & 37,696 & 125 & 125 & 115 & 118 & 125 \\
+{}infiltration & 8,742 & 10 & 10 & 10 & 10 & 10 \\
+{}web\_\allowbreak{}attacks & 127 & 10 & 10 & 10 & 10 & 10 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{CIC2018 · 신규 공격당 20개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 99.48 & 99.64 & 99.64 & 99.64 & 98.80 \\
+{}ddos & 262,680 & 98.87 & 99.70 & 99.71 & 99.71 & 99.69 \\
+{}bot & 41,542 & 92.83 & 99.07 & 99.10 & 99.06 & 99.16 \\
+{}dos & 39,483 & 99.26 & 99.76 & 99.46 & 99.63 & 99.65 \\
+{}brute\_\allowbreak{}force & 37,696 & 99.99 & 99.95 & 99.99 & 99.94 & 99.94 \\
+{}infiltration & 8,742 & 13.82 & 3.48 & 3.49 & 3.46 & 6.97 \\
+{}web\_\allowbreak{}attacks & 127 & 3.63 & 1.71 & 1.66 & 1.69 & 1.81 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 750 & 750 & 691 & 691 & 673 \\
+{}ddos & 262,680 & 20 & 20 & 20 & 20 & 17 \\
+{}bot & 41,542 & 20 & 20 & 20 & 20 & 20 \\
+{}dos & 39,483 & 125 & 125 & 118 & 113 & 125 \\
+{}brute\_\allowbreak{}force & 37,696 & 125 & 125 & 111 & 116 & 125 \\
+{}infiltration & 8,742 & 20 & 20 & 20 & 20 & 20 \\
+{}web\_\allowbreak{}attacks & 127 & 20 & 20 & 20 & 20 & 20 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{CIC2018 · 신규 공격당 50개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 98.68 & 99.47 & 99.46 & 99.49 & 97.84 \\
+{}ddos & 262,680 & 99.72 & 99.71 & 99.71 & 99.71 & 98.77 \\
+{}bot & 41,542 & 92.80 & 98.86 & 98.63 & 98.69 & 99.15 \\
+{}dos & 39,483 & 99.37 & 99.63 & 99.02 & 99.65 & 99.58 \\
+{}brute\_\allowbreak{}force & 37,696 & 94.26 & 99.95 & 99.95 & 99.93 & 99.93 \\
+{}infiltration & 8,742 & 7.59 & 18.49 & 7.45 & 19.05 & 6.77 \\
+{}web\_\allowbreak{}attacks & 127 & 6.54 & 1.59 & 1.57 & 1.49 & 0.31 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 750 & 750 & 593 & 609 & 570 \\
+{}ddos & 262,680 & 50 & 50 & 50 & 44 & 40 \\
+{}bot & 41,542 & 50 & 50 & 50 & 50 & 50 \\
+{}dos & 39,483 & 125 & 125 & 110 & 97 & 121 \\
+{}brute\_\allowbreak{}force & 37,696 & 125 & 125 & 97 & 103 & 125 \\
+{}infiltration & 8,742 & 50 & 50 & 50 & 49 & 48 \\
+{}web\_\allowbreak{}attacks & 127 & 50 & 50 & 50 & 48 & 46 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{CIC2018 · 신규 공격당 100개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 97.79 & 99.02 & 98.38 & 98.86 & 96.04 \\
+{}ddos & 262,680 & 99.71 & 99.71 & 99.71 & 99.70 & 93.18 \\
+{}bot & 41,542 & 96.96 & 99.14 & 99.10 & 99.04 & 98.82 \\
+{}dos & 39,483 & 99.29 & 99.16 & 99.15 & 98.75 & 99.35 \\
+{}brute\_\allowbreak{}force & 37,696 & 99.98 & 99.97 & 99.97 & 99.97 & 99.97 \\
+{}infiltration & 8,742 & 5.39 & 13.83 & 5.14 & 7.25 & 3.92 \\
+{}web\_\allowbreak{}attacks & 127 & 6.02 & 0.97 & 0.52 & 0.64 & 0.45 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 750 & 750 & 454 & 493 & 527 \\
+{}ddos & 262,680 & 100 & 100 & 100 & 75 & 36 \\
+{}bot & 41,542 & 100 & 100 & 100 & 100 & 100 \\
+{}dos & 39,483 & 125 & 125 & 77 & 68 & 119 \\
+{}brute\_\allowbreak{}force & 37,696 & 125 & 125 & 69 & 81 & 31 \\
+{}infiltration & 8,742 & 100 & 100 & 100 & 95 & 98 \\
+{}web\_\allowbreak{}attacks & 127 & 100 & 100 & 100 & 88 & 89 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{CIC2018 · 신규 공격당 200개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 95.50 & 98.56 & 82.08 & 92.80 & 74.56 \\
+{}ddos & 262,680 & 99.63 & 99.71 & 99.70 & 99.71 & 93.14 \\
+{}bot & 41,542 & 99.57 & 99.73 & 99.73 & 99.76 & 96.83 \\
+{}dos & 39,483 & 99.13 & 99.19 & 83.39 & 97.41 & 96.26 \\
+{}brute\_\allowbreak{}force & 37,696 & 99.96 & 99.97 & 100.00 & 99.97 & 99.99 \\
+{}infiltration & 8,742 & 3.78 & 7.48 & 1.84 & 2.98 & 1.51 \\
+{}web\_\allowbreak{}attacks & 127 & 2.23 & 1.89 & 0.61 & 1.02 & 0.18 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 750 & 750 & 149 & 306 & 323 \\
+{}ddos & 262,680 & 200 & 200 & 200 & 93 & 46 \\
+{}bot & 41,542 & 200 & 200 & 200 & 200 & 200 \\
+{}dos & 39,483 & 125 & 125 & 30 & 51 & 91 \\
+{}brute\_\allowbreak{}force & 37,696 & 125 & 125 & 21 & 48 & 1 \\
+{}infiltration & 8,742 & 200 & 200 & 200 & 162 & 190 \\
+{}web\_\allowbreak{}attacks & 127 & 200 & 200 & 200 & 140 & 149 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{CIC2018 · 신규 공격당 400개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 92.06 & 95.11 & 0.38 & 71.37 & 60.63 \\
+{}ddos & 262,680 & 99.70 & 99.99 & 84.13 & 99.99 & 99.96 \\
+{}bot & 41,542 & 99.48 & 99.51 & 55.66 & 83.65 & 91.73 \\
+{}dos & 39,483 & 99.26 & 99.19 & 19.68 & 95.54 & 87.10 \\
+{}brute\_\allowbreak{}force & 37,696 & 99.95 & 99.97 & 99.94 & 99.99 & 99.81 \\
+{}infiltration & 8,742 & 2.92 & 3.81 & 0.65 & 1.37 & 1.14 \\
+{}web\_\allowbreak{}attacks & 127 & 1.47 & 1.46 & 0.29 & 1.44 & 0.12 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2,652,203 & 750 & 750 & 1 & 99 & 131 \\
+{}ddos & 262,680 & 400 & 400 & 1 & 84 & 23 \\
+{}bot & 41,542 & 400 & 400 & 400 & 400 & 400 \\
+{}dos & 39,483 & 125 & 125 & 1 & 14 & 57 \\
+{}brute\_\allowbreak{}force & 37,696 & 125 & 125 & 1 & 17 & 1 \\
+{}infiltration & 8,742 & 400 & 400 & 400 & 242 & 258 \\
+{}web\_\allowbreak{}attacks & 127 & 400 & 400 & 196 & 144 & 130 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{ToN · 신규 공격당 10개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 90.65 & 90.63 & 90.65 & 90.60 & 90.17 \\
+{}xss & 343,854 & 71.99 & 75.87 & 76.12 & 76.73 & 75.55 \\
+{}password & 210,951 & 80.60 & 83.69 & 82.83 & 83.51 & 76.44 \\
+{}ddos & 103,338 & 87.94 & 85.57 & 83.33 & 86.45 & 86.35 \\
+{}injection & 68,891 & 56.99 & 62.96 & 63.37 & 66.45 & 54.09 \\
+{}backdoor & 40,030 & 93.36 & 99.77 & 99.77 & 99.74 & 99.76 \\
+{}dos & 22,458 & 60.28 & 53.63 & 53.36 & 53.82 & 79.37 \\
+{}scanning & 6,029 & 8.21 & 19.26 & 20.10 & 18.15 & 19.66 \\
+{}mitm & 1,161 & 14.80 & 2.71 & 2.64 & 2.32 & 2.31 \\
+{}ransomware & 709 & 7.66 & 2.30 & 2.25 & 2.23 & 2.54 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 750 & 750 & 698 & 695 & 708 \\
+{}xss & 343,854 & 10 & 10 & 10 & 10 & 10 \\
+{}password & 210,951 & 10 & 10 & 10 & 10 & 10 \\
+{}ddos & 103,338 & 10 & 10 & 10 & 10 & 10 \\
+{}injection & 68,891 & 10 & 10 & 10 & 10 & 9 \\
+{}backdoor & 40,030 & 10 & 10 & 10 & 10 & 10 \\
+{}dos & 22,458 & 125 & 125 & 119 & 117 & 113 \\
+{}scanning & 6,029 & 125 & 125 & 113 & 118 & 110 \\
+{}mitm & 1,161 & 10 & 10 & 10 & 10 & 10 \\
+{}ransomware & 709 & 10 & 10 & 10 & 10 & 10 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{ToN · 신규 공격당 20개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 91.91 & 90.40 & 91.50 & 90.38 & 89.56 \\
+{}xss & 343,854 & 77.48 & 77.64 & 77.58 & 77.43 & 78.34 \\
+{}password & 210,951 & 83.18 & 87.23 & 87.86 & 87.38 & 81.52 \\
+{}ddos & 103,338 & 86.47 & 89.83 & 91.99 & 84.46 & 87.30 \\
+{}injection & 68,891 & 61.92 & 70.01 & 69.15 & 67.94 & 67.77 \\
+{}backdoor & 40,030 & 94.23 & 99.77 & 99.80 & 99.72 & 99.80 \\
+{}dos & 22,458 & 59.21 & 53.67 & 50.04 & 55.15 & 84.98 \\
+{}scanning & 6,029 & 11.75 & 15.27 & 75.49 & 17.98 & 20.73 \\
+{}mitm & 1,161 & 14.01 & 3.31 & 4.72 & 3.34 & 3.35 \\
+{}ransomware & 709 & 6.96 & 2.50 & 2.48 & 2.52 & 2.35 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 750 & 750 & 642 & 646 & 669 \\
+{}xss & 343,854 & 20 & 20 & 20 & 20 & 20 \\
+{}password & 210,951 & 20 & 20 & 20 & 18 & 20 \\
+{}ddos & 103,338 & 20 & 20 & 20 & 19 & 19 \\
+{}injection & 68,891 & 20 & 20 & 20 & 19 & 14 \\
+{}backdoor & 40,030 & 20 & 20 & 20 & 20 & 20 \\
+{}dos & 22,458 & 125 & 125 & 112 & 109 & 113 \\
+{}scanning & 6,029 & 125 & 125 & 106 & 109 & 85 \\
+{}mitm & 1,161 & 20 & 20 & 20 & 20 & 20 \\
+{}ransomware & 709 & 20 & 20 & 20 & 20 & 20 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{ToN · 신규 공격당 50개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 91.52 & 90.70 & 90.29 & 89.94 & 88.85 \\
+{}xss & 343,854 & 80.02 & 80.53 & 80.65 & 80.47 & 79.46 \\
+{}password & 210,951 & 90.21 & 89.91 & 90.13 & 89.92 & 86.64 \\
+{}ddos & 103,338 & 93.12 & 91.27 & 92.40 & 93.33 & 88.06 \\
+{}injection & 68,891 & 74.59 & 77.68 & 69.84 & 74.97 & 71.39 \\
+{}backdoor & 40,030 & 98.97 & 99.79 & 99.79 & 99.76 & 99.48 \\
+{}dos & 22,458 & 53.46 & 55.69 & 56.93 & 65.96 & 89.49 \\
+{}scanning & 6,029 & 12.83 & 27.81 & 33.91 & 23.38 & 54.72 \\
+{}mitm & 1,161 & 10.12 & 3.29 & 3.21 & 2.77 & 2.21 \\
+{}ransomware & 709 & 9.14 & 2.70 & 2.72 & 2.62 & 2.36 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 750 & 750 & 493 & 517 & 530 \\
+{}xss & 343,854 & 50 & 50 & 50 & 47 & 50 \\
+{}password & 210,951 & 50 & 50 & 50 & 45 & 43 \\
+{}ddos & 103,338 & 50 & 50 & 50 & 39 & 42 \\
+{}injection & 68,891 & 50 & 50 & 50 & 38 & 26 \\
+{}backdoor & 40,030 & 50 & 50 & 50 & 49 & 50 \\
+{}dos & 22,458 & 125 & 125 & 82 & 81 & 112 \\
+{}scanning & 6,029 & 125 & 125 & 75 & 86 & 47 \\
+{}mitm & 1,161 & 50 & 50 & 50 & 50 & 50 \\
+{}ransomware & 709 & 50 & 50 & 50 & 48 & 50 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{ToN · 신규 공격당 100개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 91.37 & 90.08 & 87.71 & 89.61 & 66.22 \\
+{}xss & 343,854 & 82.10 & 82.39 & 84.99 & 83.93 & 73.59 \\
+{}password & 210,951 & 88.60 & 88.31 & 89.03 & 88.18 & 73.88 \\
+{}ddos & 103,338 & 94.14 & 95.01 & 94.47 & 94.21 & 37.97 \\
+{}injection & 68,891 & 80.53 & 80.71 & 78.45 & 80.98 & 52.11 \\
+{}backdoor & 40,030 & 98.87 & 99.80 & 98.79 & 99.77 & 97.40 \\
+{}dos & 22,458 & 60.20 & 67.02 & 94.65 & 78.94 & 89.97 \\
+{}scanning & 6,029 & 20.57 & 57.37 & 79.68 & 41.78 & 32.51 \\
+{}mitm & 1,161 & 2.86 & 2.72 & 1.87 & 2.59 & 0.45 \\
+{}ransomware & 709 & 11.92 & 2.68 & 2.26 & 2.57 & 0.89 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 750 & 750 & 224 & 351 & 373 \\
+{}xss & 343,854 & 100 & 100 & 100 & 75 & 70 \\
+{}password & 210,951 & 100 & 100 & 100 & 72 & 36 \\
+{}ddos & 103,338 & 100 & 100 & 100 & 57 & 49 \\
+{}injection & 68,891 & 100 & 100 & 100 & 50 & 39 \\
+{}backdoor & 40,030 & 100 & 100 & 100 & 90 & 95 \\
+{}dos & 22,458 & 125 & 125 & 45 & 56 & 112 \\
+{}scanning & 6,029 & 125 & 125 & 31 & 56 & 36 \\
+{}mitm & 1,161 & 100 & 100 & 100 & 100 & 100 \\
+{}ransomware & 709 & 100 & 100 & 100 & 93 & 90 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{ToN · 신규 공격당 200개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 91.19 & 89.64 & 0.13 & 86.03 & 84.17 \\
+{}xss & 343,854 & 84.59 & 85.02 & 53.89 & 83.99 & 50.98 \\
+{}password & 210,951 & 88.61 & 88.55 & 79.81 & 88.67 & 41.63 \\
+{}ddos & 103,338 & 94.80 & 95.08 & 22.50 & 93.62 & 88.25 \\
+{}injection & 68,891 & 79.28 & 81.55 & 15.50 & 80.67 & 21.89 \\
+{}backdoor & 40,030 & 99.29 & 99.46 & 79.73 & 99.65 & 97.42 \\
+{}dos & 22,458 & 70.87 & 92.74 & 82.97 & 83.69 & 90.58 \\
+{}scanning & 6,029 & 25.69 & 60.76 & 59.40 & 59.29 & 6.09 \\
+{}mitm & 1,161 & 5.08 & 3.03 & 0.31 & 1.50 & 0.66 \\
+{}ransomware & 709 & 8.15 & 2.59 & 0.64 & 2.49 & 2.53 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 750 & 750 & 1 & 152 & 242 \\
+{}xss & 343,854 & 200 & 200 & 200 & 100 & 10 \\
+{}password & 210,951 & 200 & 200 & 195 & 77 & 21 \\
+{}ddos & 103,338 & 200 & 200 & 1 & 58 & 81 \\
+{}injection & 68,891 & 200 & 200 & 1 & 55 & 28 \\
+{}backdoor & 40,030 & 200 & 200 & 200 & 159 & 190 \\
+{}dos & 22,458 & 125 & 125 & 1 & 13 & 111 \\
+{}scanning & 6,029 & 125 & 125 & 1 & 27 & 13 \\
+{}mitm & 1,161 & 200 & 200 & 200 & 200 & 200 \\
+{}ransomware & 709 & 200 & 200 & 200 & 159 & 104 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{ToN · 신규 공격당 400개}
+\textbf{최종 클래스별 F1 (\%)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 89.49 & 88.93 & 0.18 & 67.78 & 29.70 \\
+{}xss & 343,854 & 84.62 & 84.81 & 24.35 & 78.15 & 3.14 \\
+{}password & 210,951 & 88.59 & 88.48 & 60.40 & 83.74 & 22.38 \\
+{}ddos & 103,338 & 95.48 & 93.27 & 38.01 & 86.85 & 27.34 \\
+{}injection & 68,891 & 82.97 & 85.95 & 0.94 & 50.46 & 0.72 \\
+{}backdoor & 40,030 & 99.09 & 99.47 & 98.34 & 90.75 & 97.41 \\
+{}dos & 22,458 & 85.91 & 96.14 & 51.60 & 70.81 & 95.91 \\
+{}scanning & 6,029 & 38.84 & 56.30 & 43.94 & 48.71 & 0.00 \\
+{}mitm & 1,161 & 2.72 & 2.96 & 0.17 & 0.95 & 0.15 \\
+{}ransomware & 709 & 5.91 & 2.87 & 0.34 & 0.60 & 0.52 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{최종 클래스별 context 수 (개)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1,474,302 & 750 & 750 & 1 & 9 & 27 \\
+{}xss & 343,854 & 400 & 400 & 1 & 50 & 3 \\
+{}password & 210,951 & 400 & 400 & 1 & 29 & 24 \\
+{}ddos & 103,338 & 400 & 400 & 1 & 16 & 33 \\
+{}injection & 68,891 & 400 & 400 & 1 & 23 & 1 \\
+{}backdoor & 40,030 & 400 & 400 & 293 & 226 & 279 \\
+{}dos & 22,458 & 125 & 125 & 1 & 3 & 81 \\
+{}scanning & 6,029 & 125 & 125 & 1 & 1 & 1 \\
+{}mitm & 1,161 & 400 & 400 & 400 & 400 & 400 \\
+{}ransomware & 709 & 400 & 400 & 300 & 243 & 151 \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

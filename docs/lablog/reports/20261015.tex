@@ -1,0 +1,1117 @@
+% !TeX root = 20261015.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-10-15}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+단계 예측 합산과 마지막 모델의 전체 평가를 구별하고, 실제 가중치 FT와 context 구성 최적화를 별도 실험으로 비교했다. EXP77–79의 query 구성 영향을 정정한 비교는 10월 16일 EXP81·83을 따른다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{EXP74 · 분포 목표별 분류 head 결합}
+사용자는 2026-10-15 구조 대안 2를 먼저 적용하고 대안 3을 이어서 시도하도록 요청했다. 후속 답변에서 context 비율만 바꾸는 방식이 아니라 앞서 제안한 분류 head 방식을 선택했다. 승인된 연구 버전 v7에서 탐색 실험 EXP74로 등록하며 새 연구 버전을 임의 생성하지 않는다.
+
+\subsection{가설과 근거}
+입력의 tail 여부를 먼저 맞혀야 하는 선택 절차를 제거하고, 서로 다른 목표 클래스 prior를 갖는 분류기를 결합했을 때 희소 공격의 구분을 개선할 수 있는지 평가한다. BalPoE(CVPR 2023, https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2206.05260)의 generalized logit-adjusted loss와 log-space aggregation을 참고한다. 이 구현은 고정 TabPFN-v3의 표현 위에 head를 학습하는 적용안이며 원 논문의 vision 모델 재현이 아니다. 원 논문의 보정·label-shift 가정과 balanced-error 일관성이 IDS Macro-F1 개선을 보장하지 않는다.
+
+\subsection{고정한 비교 조건}
+EXP72/\allowbreak{}73과 동일한 CIC2018·ToN, seed 43, 공격 내 자연·균등 배분, 최종 train 100,000행, 별도 정제 validation을 쓴다. 공격 출현 순서와 각 단계에서 공개되는 train/\allowbreak{}validation ID, 전체 test 순서·배치 1,024행을 그대로 재사용한다. Test는 정책별 한 번 평가하며 지연 없음과 100/\allowbreak{}1,000행·초 운영 재생을 함께 기록한다. 모델에 raw 시간을 입력하거나 실제 drift를 재현한다고 주장하지 않는다.
+
+원 단일 TabPFN의 full-context 상태와 준비 비용을 그대로 재사용한다. 이전 제안 모델의 Global 50\% 분할은 적용하지 않는다. 모든 과거 source와 결과는 수정하지 않는다. XGB·TabPFN 결과의 재사용은 비용 0으로 계산하지 않으며 train ID 순서 일치를 확인한다.
+
+\subsection{학습과 역할 분리}
+TabPFN은 현재 단계의 누적 train 전체를 context로 사용한다. 네 estimator의 query embedding을 순서대로 연결해 표현으로 쓴다. Global context와 겹치지 않는 기존 validation의 tune 역할(약 40\%)을 head 학습 사례로 사용한다. 기존 cal 역할은 feature 그룹 단위로 절반씩 나눠 head epoch 선택과 temperature 보정에 사용한다. 현재 단계에 공개된 클래스만 사용한다. Test의 feature·라벨은 fit/\allowbreak{}선택에 들어가지 않는다.
+
+Validation 라벨의 일부가 이제 head 학습에 쓰인다. 모든 비교 방법에 허용된 unique 라벨 접근 예산은 같지만, 기존 XGB/\allowbreak{}TabPFN은 추가 validation을 학습에 소비하지 않았다. 결과를 동일 학습 라벨 사용량의 구조 단독 효과로 주장하지 않는다. 단일 head 진단은 같은 추가 라벨과 같은 embedding을 공유하므로 결합의 추가 효과를 비교할 수 있다.
+
+현재 train prior를 pi, 실제 head 학습 사례 prior를 q라 할 때 target exponent lambda는 1(자연), 0(균형), -1(역빈도)이다. 각 head는 CE(f +\allowbreak{} log q - lambda log pi, y)를 학습한다. q와 pi가 다르므로 단순히 tau log pi만 더하지 않는다. 추론 시 head는 모든 클래스를 출력한다. 클래스 하나씩을 담당하는 expert가 아니다.
+
+표현의 평균·표준편차는 head 학습 사례에서만 구한다. Head는 hidden 128, ReLU, dropout 0.1의 MLP, AdamW lr 0.001, weight decay 0.0001, batch 512, 최대 100 epochs, patience 12다. Embedding mixup alpha 0.2를 적용하며 합성 네트워크 flow를 만들었다고 해석하지 않는다. Class-balanced validation NLL로 epoch를 선택한다. 별도의 temperature split에서 head의 likelihood score와 해당 split prior를 이용해 scalar temperature를 보정한다. 결합은 세 보정 log score의 평균이다. 임의 호출 임계값이나 S/\allowbreak{}V를 두지 않는다.
+
+\subsection{관찰과 비용}
+결합 모델의 클래스별 precision/\allowbreak{}recall/\allowbreak{}F1, 전체 Macro-F1, Benign FPR, attack-to-Benign 혼동, 갱신 준비 시간과 serving 시간, 지연에 따른 사용 버전을 저장한다. 지연 없음 조건에서는 세 head 단독 예측도 같은 test 전체에 대해 저장한다. 이 진단의 비용을 단독 head 운영 비용으로 주장하지 않는다.
+
+갱신비용은 재사용한 기반 TabPFN 준비 비용에 validation embedding 추출, head 학습·선택·보정을 더한다. 저장 상태의 디스크 복구와 실험 산출물 저장은 준비 시간에서 제외한다. Serving은 embedding 추출과 세 head 및 결합을 실제 수행하여 측정한다. 단일 GPU에서 cost 측정 worker를 겹쳐 실행하지 않는다.
+
+\subsection{검증과 다음 단계}
+목표 prior 보정식의 population optimum, ensemble prior 상쇄, multi-estimator embedding 축, 역할 분리 및 미래 라벨 미사용을 검사한다. GPU smoke는 실제 train/\allowbreak{}validation 일부로 저장·복구와 반복 예측을 확인한다. 완료 시 원 test ID 전체 사용, 혼동행렬/\allowbreak{}F1, causal 버전 배정·타임라인을 독립 검증한다. EXP74 완료·검증 후 EXP75 context 최적화를 같은 비교 시나리오에 실행한다. HTML이나 논문을 자동 수정하지 않는다.
+
+
+
+\section{EXP75 · 고정 TabPFN의 context 최적화}
+2026-10-15 사용자가 구조 대안 2 이후 3을 시도하도록 요청했다. EXP74가 완료·검증된 다음 별도 managed run으로 실행한다. 승인된 v7을 유지한다. 기존 EXP67의 differentiable-input 사용 경험을 참고하지만 당시 데이터·test subsampling·선택 방식은 재사용하지 않는다.
+
+\subsection{목적과 근거}
+In-Context Data Distillation with TabPFN(https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2402.06971)의 context-feature 최적화를 사용한다. 제한된 context에 어떤 사례를 놓을지 선택하는 대신 현재 확보한 학습 사례를 구분하는 손실로 작은 context 자체를 최적화한다. Backbone 파라미터는 고정하며 context feature만 학습한다. 이로 인한 최적화 비용은 갱신비용이다. 학습된 token을 실제 생성 가능한 공격 flow라고 주장하지 않는다.
+
+\subsection{비교 조건}
+EXP74와 동일한 두 데이터·자연/\allowbreak{}균등 train 배분·seed 43·공격 도입 순서·누적 train 10만 행·별도 validation·전체 test를 사용한다. 최적화된 context와 같은 초기 context의 untuned 대조군을 모두 평가한다. 두 방법 모두 estimator 1개와 동일한 표준화를 사용한다. 기존 단일 TabPFN은 10만 context, 4 estimators와 일반 전처리를 사용하므로 그 비교만으로 context 최적화의 단독 효과를 주장하지 않는다.
+
+\subsection{학습}
+각 단계에서 현재 누적 train만으로 feature 평균·표준편차를 구한다. Context는 총 2,048행 이하로 class-balanced 초기화하며, 각 클래스의 적어도 절반을 학습 query에 남긴다. 소수 클래스의 모든 사례를 context에 넣고 같은 사례만 맞히게 하는 평가를 피한다. 가용량 부족분은 다른 클래스에 균형 있게 분배한다. Context label은 고정하고 feature만 Adam lr 0.005로 최대 300회 갱신한다. Query batch는 256이며 클래스를 균등 추출한 뒤 해당 클래스의 잔여 train에서 복원 추출한다. 원래 획득한 unique 라벨 사례 수는 증가하지 않는다.
+
+기존 validation의 cal 역할에서 50 step마다 class-balanced NLL을 계산하고, 초기 context(step 0)를 포함해 최저 손실의 context를 선택한다. Benign FPR도 함께 기록하되 test를 보고 선택하지 않는다. 단일 균형 손실이 오탐 억제를 보장하지 않으므로 결과에서는 FPR과 공격별 FP를 반드시 함께 검토한다. 미래 expert 오류나 test 라벨은 context 학습에 사용하지 않는다.
+
+\subsection{구현 및 검증}
+설치된 TabPFN-v3의 fit\_\allowbreak{}with\_\allowbreak{}differentiable\_\allowbreak{}input과 forward를 사용한다. 모든 backbone parameter를 requires\_\allowbreak{}grad=\allowbreak{}False로 두고, 학습 중 context의 gradient가 존재하며 finite인지, backbone gradient가 생기지 않는지 검사한다. Non-finite gradient를 0으로 바꿔 실행을 계속하지 않고 실패로 기록한다. Context가 원래 데이터 분포와 다른 내부 token으로 움직일 수 있음을 명시한다.
+
+기존 EXP67에서 non-finite gradient를 매 step 0으로 대체했던 기록을 확인했다. 현재 설치본의 nanstd는 NaN을 제곱한 후 마스킹하며 sqrt(0)의 미분 경로도 남는다. EXP75 worker에서는 masked vector norm으로 같은 표준편차를 계산하여 0 분산에서 유한한 subgradient를 사용한다. 외부 differentiable z-normalizer의 0 표준편차도 1로 처리한다. 이 보완은 초기·학습 context 양쪽에 동일하게 적용한다. 설치된 패키지 파일이나 EXP74 worker는 변경하지 않으며 수치 parity·상수/\allowbreak{}결측 입력 gradient와 실제 CIC2018 입력으로 검증한다.
+
+현재 단계마다 context를 새로 최적화한다. 준비에는 초기화·모델 준비·학습·validation 선택 시간을 포함하며 serialization은 제외한다. Untuned 대조군에는 초기 context 준비 시간만 부여한다. Serving 시간과 갱신 지연 시나리오를 실제 예측으로 각각 계산한다. 모든 결과는 EXP74와 같은 독립 검증을 통과한 뒤 완료로 표시한다. 연구 기록은 Markdown/\allowbreak{}JSON으로 남기고 HTML이나 논문을 자동 갱신하지 않는다.
+
+
+
+\section{EXP76 · 소규모 context의 누적·교체·고정 비교}
+사용자의 2026-10-15 요청과 후속 정정을 반영한다. 1,000개·20개는 설명용 예시이며 지정된 실험 수치가 아니다. 1014의 EXP72/\allowbreak{}73을 참고하되, 동일한 공격 도입 순서와 고정 test 전체를 유지하면서 적은 라벨로 context 정책을 비교한다. 승인된 v7 안의 새 실험이며 연구 버전 전환은 없다. 원고는 반영안만 작성하고 HTML을 수정하지 않는다.
+
+\subsection{비교 조건}
+주 실행은 초기 context 1,000개(Benign 750, 최초 두 공격 각 125), 이후 \textbf{신규 공격 클래스당 100개}를 공급한다. 초기 공격은 CIC2018 brute\_\allowbreak{}force/\allowbreak{}dos, ToN scanning/\allowbreak{}dos이며 도입 순서는 기존 STAGES 그대로다. 두 클래스가 함께 도입되는 ToN 구간에는 200개가 공급된다. 100은 이번 비교의 명시적 실험 설정이다. 추가 규모 비교는 초기 250개·신규 클래스당 20개로 수행할 수 있으며 두 요인이 함께 바뀌므로 context 크기의 단독 효과로 해석하지 않는다.
+
+초기·신규 사례는 기존 정제 train bank에서 seed 43으로 선택하고 모든 방법에 동일한 순서로 공개한다. 최종 공급량은 CIC2018 1,400개, ToN 1,700개다. Test는 기존 3,042,473개와 2,271,723개 전체를 재사용하며 각 행은 방법별 주 평가에서 한 번만 등장한다. 미래 공격의 라벨과 test 특징은 context 선택에 사용하지 않는다. 초기 공격 배분과 전체 라벨 예산이 1014의 10만 사례 조건과 다르므로 수치를 직접적인 개선량으로 비교하지 않는다.
+
+\subsection{정책}
+\par\noindent \textbullet\enspace \texttt{pfn\_\allowbreak{}\allowbreak{}accu\allowbreak{}mulate}: 현재까지 공급된 모든 사례로 context 재구성
+
+
+\par\noindent \textbullet\enspace \texttt{pfn\_\allowbreak{}\allowbreak{}fifo\allowbreak{}}: 신규 공급량만큼 가장 먼저 확보한 기존 사례 제거 후 교체
+
+
+\par\noindent \textbullet\enspace \texttt{pfn\_\allowbreak{}\allowbreak{}simi\allowbreak{}lar}: 기존 context로만 표준화한 특징 공간에서 신규 학습 사례와의 최소 유클리드 거리가 작은 기존 사례 제거
+
+
+\par\noindent \textbullet\enspace \texttt{pfn\_\allowbreak{}\allowbreak{}rand\allowbreak{}om}: seed로 고정한 무작위 제거
+
+
+\par\noindent \textbullet\enspace \texttt{pfn\_\allowbreak{}\allowbreak{}fixe\allowbreak{}d}: 초기 context 고정, 이후 갱신 비용 0
+
+
+\par\noindent \textbullet\enspace \texttt{xgb}: 동일 누적 공개 사례 전체로 CUDA hist 300 trees 재학습
+
+
+\par\noindent \textbullet\enspace \texttt{boostpfn\allowbreak{}}: 동일 누적 공개 사례 전체로 기존 50 learners 재구성
+
+
+\par\noindent \textbullet\enspace \texttt{distpfn}: 누적 TabPFN의 비용·확률을 공유하고 현재 도착 배치의 posterior만으로 보정
+
+
+교체 정책은 기존 클래스마다 최소 1개를 남기는 동일 보호 규칙을 사용한다. FIFO는 확보 순서의 대리 기준이며 실제 노후화 판정이 아니다. 같은 구간의 도착 순서는 고정 seed로 결정한다. 유사도 정책도 정상·기존 공격의 구분 경계를 해칠 수 있으므로 효과는 측정 결과로 판단한다. 버린 사례는 버퍼로 다시 가져오지 않는다. 비교의 중심은 단일 TabPFN의 context 정책이며 기존 expert/\allowbreak{}S/\allowbreak{}V를 갱신하는 새 방법을 이 실험으로 주장하지 않는다. LoCalPFN은 요청에 따라 제외한다.
+
+\subsection{모델·평가·비용}
+TabPFN 8.2.0과 기존 \texttt{tabpfn-\allowbreak{}v\allowbreak{}3-\allowbreak{}classi\allowbreak{}fier-\allowbreak{}v3\_\allowbreak{}\allowbreak{}20260417\allowbreak{}\_\allowbreak{}\allowbreak{}multicl\allowbreak{}ass.\allowbreak{}ckpt\allowbreak{}}, 4 estimators, \texttt{fit\_\allowbreak{}\allowbreak{}with\allowbreak{}\_\allowbreak{}\allowbreak{}cache}, CPU cache를 유지한다. 가중치 fine-tuning은 이번 context 정책 비교에 포함하지 않는다. \texttt{TabPFNCl\allowbreak{}assifier\allowbreak{}.\allowbreak{}fit} 전후 파라미터 동일성은 별도 확인 기록에 있다. Fine-tuning 설명은 v3 원문과 설치된 공식 \texttt{Finetune\allowbreak{}dTabPFNC\allowbreak{}lassifie\allowbreak{}r} 구현에 근거한다.
+
+평가 배치는 8,192개로 지정한다. 기존 1014의 1,024개와 다르므로 latency를 직접 비교하지 않는다. DistPFN도 이 현재 배치만 사용한다. 각 정책은 초기 구축, 후속 선택/\allowbreak{}전처리·캐시/\allowbreak{}학습 시간, 첫 배치 추론, 전체 serving, GPU/\allowbreak{}RAM peak를 기록한다. GPU는 단일 worker로 실행하고 시간 측정 전후 동기화한다. 체크포인트 저장 및 결과 집계는 준비 비용에 포함하지 않는다.
+
+이번 주 비교는 \textbf{갱신이 완료된 상태의 순차 도입 평가}이며 갱신시간은 별도 실측한다. 1014의 100/\allowbreak{}1,000행·초 지연 재생 결과를 이 실험이 재현했다고 주장하지 않는다. 신규 클래스 precision/\allowbreak{}recall/\allowbreak{}F1, 정상 오탐, 전체 Macro-F1 및 동일 구간의 기존 클래스 결과를 보고한다. 고정 context는 미등록 신규 공격의 유형을 출력할 수 없으므로 공격 여부 recall과 공격 유형 식별을 구분한다. 표본 구성이 변하는 단계 간 평균을 그대로 유지 성능의 증감으로 해석하지 않는다.
+
+전체 공개 train과 동일 특징인 test를 제외한 공통 집합의 보조 결과도 계산한다. 이는 평가 집합 재분할이나 완전한 독립 환경 검증을 대신하지 않는다. 저장한 예측과 test ID로 혼동행렬·평가지표를 독립 검산한다. 실행 완료와 논문 근거 채택은 구분한다.
+
+
+
+\section{EXP77 · 초기 IDS fine-tuning과 최종 상태 평가}
+사용자가 요청한 두 가지 수정, 즉 실제 초기 IDS 파라미터 미세조정과 최종 모델의 전체 test 평가를 반영한다. 승인된 연구 버전 v7 안의 새 실험이다. EXP76의 공개 라벨 ID, 클래스 도입 순서, 기존 test를 그대로 사용한다. 초기 1,000개는 정상 750개와 최초 두 공격 각 125개이며, 이후 신규 클래스마다 100개를 추가한다. 최종 라벨 예산은 CIC2018 1,400개, ToN 1,700개다. 모든 검증·보정용 라벨은 이 예산 안에서 배정한다.
+
+\subsection{파라미터 학습과 context}
+공식 TabPFN 8.2.0의 \texttt{Finetune\allowbreak{}dTabPFNC\allowbreak{}lassifie\allowbreak{}r}로 v3 본체를 AdamW, learning rate 1e-5, weight decay 0.01, 고정 10 epoch로 학습한다. 각 학습 과제는 최대 1,024개 사례의 context/\allowbreak{}query 분할이며 query 비율은 20\%다. 학습 ensemble은 1개, 최종 추론은 4개다. 초기 공개 라벨을 특징 중복 그룹 단위로 약 90:10 학습·검증에 배정한다. 검증 log-loss는 모니터링용이며 epoch나 모델 선택에 test를 사용하지 않는다. 예비 2 epoch 실행의 early stopping은 ToN에서 원래 가중치를 다시 선택했으므로, 본 실행은 사전에 정한 고정 학습량으로 파라미터 갱신 효과를 직접 평가한다. 이는 성능 개선을 보장하는 설정이 아니다.
+
+초기 fine-tuning 완료 checkpoint 하나를 각 context 정책이 공유한다. 이후 누적·FIFO·신규 학습 사례와 유사한 기존 사례 삭제·무작위 삭제·고정 context를 비교한다. 고정 버퍼는 1,000개를 유지하고 기존 클래스당 최소 한 사례를 보존한다. FIFO는 확보 순서의 대리 기준이며 실제 노후화 판정이 아니다. 신규 context는 검증용을 포함한 현재 공개 라벨 전부에서 구성할 수 있다. 가중치 학습과 별도로 추론 context가 현재 라벨 공간을 제공하기 때문이다. 기존 클래스 context 없이 신규 클래스 사례만 넣는 조건을 전체 클래스 분류 방법으로 취급하지 않는다.
+
+대조군은 미세조정 없는 사전학습 PFN의 누적 context와, 매 단계 이전 checkpoint에서 누적 공개 학습 사례로 다시 10 epoch 미세조정하는 PFN이다. 반복 미세조정의 검증 역할은 단계 사이에 유지하며 과거 검증 행을 나중에 gradient 학습에 편입하지 않는다. 매 단계 가중치 digest를 기록하여 초기 미세조정에서는 실제 변화가 있고 context 갱신에서는 변화가 없는지 확인한다.
+
+\subsection{제안 모델과 비교 모델}
+XGBoost는 동일 공개 라벨로 매 단계 누적 재학습한다. BoostPFN은 기존 프로젝트의 50 learner, learner당 500개 설정으로 누적 재구성한다. DistPFN은 초기 미세조정 후 누적 PFN의 확률에 현재 query 배치 posterior 보정을 적용한 변형으로, 같은 준비 비용과 backbone을 공유한다. LoCalPFN은 사용자 요청에 따라 제외한다. 서로 다른 원 논문의 leaderboard 수치를 옮기는 것이 아니라 기존 프로젝트 구현의 동일 소규모 예산 비교다.
+
+제안 모델은 기존 K=\allowbreak{}4 anchor/\allowbreak{}residual expert와 S1V0 선택·검증 구조를 유지한다. 공개 라벨 내에서 Global/\allowbreak{}expert/\allowbreak{}route/\allowbreak{}tune/\allowbreak{}cal에 40/\allowbreak{}20/\allowbreak{}20/\allowbreak{}8/\allowbreak{}12\%를 특징 그룹 단위로 배정하고 그룹 역할을 단계 사이에 유지한다. 모든 역할에 현재 클래스가 존재하는지와 역할 간 특징 중복이 없는지 확인한다. 별도 10,000개 validation 등의 외부 라벨은 사용하지 않는다. 기존 pretrained backbone을 유지한다. 전체 초기 라벨로 학습한 PFN checkpoint를 이 모델에 그대로 공유하면 route/\allowbreak{}cal 라벨까지 가중치 학습에 들어가므로 보정 독립성이 훼손된다. 이 때문에 이번 비교는 ‘동일 초기 FT backbone을 쓰는 구조 ablation’이 아니라 ‘동일 공개 라벨 예산의 방법 비교’다. 같은 FT backbone의 구조 효과는 별도 역할 분할을 사전 지정한 후속 과제다.
+
+\subsection{평가와 비용}
+각 단계에서는 갱신만 수행하고, 모든 클래스가 도입된 마지막 가중치·context·S/\allowbreak{}V 상태로 기존 test 전체를 원본 파일 순서대로 한 번 예측한다. CIC2018 3,042,473개, ToN 2,271,723개이며 batch 8,192, seed 43, 단일 RTX 4090이다. 과거 단계 예측을 합치거나 단계 F1을 평균하지 않는다. 전체 test Macro-F1, 클래스별 F1, 정상 오탐률, 공격 탐지 recall을 저장하며 공통 특징 중복 제외 집합의 보조 지표도 제공한다.
+
+GPU 동기화한 wall-clock으로 초기 IDS 미세조정, 초기 준비, 후속 갱신 합계, 최종 전체 추론을 분리한다. 초기 FT checkpoint 재사용 정책마다 같은 실측 초기 FT 비용을 회계상 배정한다. Context 선택·삭제 시간은 갱신에 포함하고 디스크 저장·검증 digest·로그는 모델 준비 시간에서 제외한다. 제안 모델은 Global/\allowbreak{}expert/\allowbreak{}S/\allowbreak{}V의 모든 재구성을 갱신에 포함한다. 작은 학습 데이터가 전체 test 추론을 빠르게 만든다고 가정하지 않는다.
+
+1014의 10만 라벨 결과와 EXP76의 단계별 예측 합산 결과는 보존하되, 새 슬라이드의 주 결과를 대신하지 않는다. 최종 상태 평가만으로 중간 단계 망각이나 실제 네트워크 drift 강건성을 입증하지 않는다. 단일 seed 탐색 실험의 관찰과 성능·비용에 대한 일반적 주장을 구분한다. 원고 반영은 제안 단계로 남긴다.
+
+
+
+\section{2026-10-15 · 순차 공격 도입에서 제안 모델과 SOTA의 성능과 비용}
+\label{report:20261015_exp73_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+이번 비교는 새 공격의 라벨 사례가 확보되는 상황에서 현재 context expert 구조의 교정이 실제 선택 정책과 갱신 지연을 거쳐도 유지되는지 확인하기 위한 것이다. EXP72에서 확인한 순차 재생 프로토콜에 제안 모델, BoostPFN, LoCalPFN, DistPFN을 추가했다. 전체 실행은 2026-10-15 14:19 KST에 끝났고, 추가 48개 정책과 기존 기준선 24개 정책은 각각 독립 검증을 통과했다. 10/\allowbreak{}15 사용자의 HTML 반영 요청에 따라 기존 1014 탭을 갱신했다. 승인된 연구 버전 v7을 유지했다.
+
+\subsection{설정과 비교의 범위}
+각 데이터의 최종 학습 풀은 Benign 75,000행과 공격 25,000행으로 구성된다. 공격 내 자연비율과 가용량 상한을 적용한 균등 배분을 비교하며, seed는 43이다. 원본 클래스의 최초 출현 순서를 유지하고 모든 기존 사례를 누적한다. 실제 timestamp나 환경 drift를 재현하는 실험은 아니다. 각 test 행을 공개 이후 구간에 한 번만 배치하며, 정책은 갱신 지연 없음과 100/\allowbreak{}1,000행·초이다. 지연 없음도 단계별 버전을 사용하는 전체 재생 성능으로, 마지막 모델 하나의 전체 test 성능과 다르다.
+
+사용자 선택에 따라 10만 train 행을 그대로 두고 별도 정제 validation을 제공했다. XGB와 단일 TabPFN의 train ID·순서·모델 설정·test 순서는 EXP72와 같아 예측과 측정 비용을 재사용했다. 제안 모델과 LoCalPFN은 현재까지 등장한 클래스의 validation을 사용하고, 나머지 방법은 고정 설정으로 사용하지 않는다. 제공 가능한 정보와 실제로 사용한 정보를 구별한다. 상세 조건은 EXP73 프로토콜에 있다.
+
+제안 모델은 동일 10만 행을 Global/\allowbreak{}expert/\allowbreak{}route 약 50/\allowbreak{}25/\allowbreak{}25\%로 나눈다. 따라서 최종 Global context는 조건별 49,621\textasciitilde{}50,125행이다. K=\allowbreak{}4, 공통 anchor와 residual cluster block, S1V0의 기존 특징·학습 목표·선택 제약을 사용했다. 각 단계에서 전체 bank와 정책을 다시 구성하며, test에서는 선택된 expert만 실제 호출한다. 내부 Global 비교는 제안 모델과 같은 버전 배정 시점을 사용한다. 이것은 expert/\allowbreak{}S/\allowbreak{}V의 출력 채택 효과를 분리하지만, Global만 운영해 더 빨리 갱신할 경우까지 평가한 ablation은 아니다.
+
+\subsection{관찰 결과}
+1,000행/\allowbreak{}초의 전체 재생 Macro-F1은 다음과 같다. 모든 수치는 \%이며, 데이터와 공격 배분별 결과를 별도 행으로 표시한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14550\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14550\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터·배분 & XGB & TabPFN & 제안 모델 & BoostPFN & LoCalPFN & DistPFN \\ \midrule
+\endfirsthead
+데이터·배분 & XGB & TabPFN & 제안 모델 & BoostPFN & LoCalPFN & DistPFN \\ \midrule
+\endhead
+{}CIC2018·자연 & 76.79 & 77.47 & 75.39 & 72.18 & 62.27 & 76.31 \\
+{}CIC2018·균등 & 77.01 & 81.17 & 80.35 & 75.20 & 61.13 & 78.80 \\
+{}ToN·자연 & 79.28 & 73.39 & 72.99 & 66.93 & 48.05 & 69.12 \\
+{}ToN·균등 & 74.46 & 72.72 & 72.19 & 65.76 & 47.65 & 73.16 \\
+\bottomrule
+\end{longtable}
+\endgroup
+CIC2018은 단일 TabPFN, ToN은 XGB가 두 배분에서 가장 높았다. 제안 모델은 이 유입률의 네 조건 모두 단일 TabPFN보다 낮다. 다만 지연 없는 ToN에서는 제안 모델이 자연 73.81\%, 균등 73.08\%로 단일 TabPFN의 73.66\%, 73.00\%보다 소폭 높다. 따라서 제안 모델과 단일 TabPFN의 관계를 모든 시계 조건에서 동일하다고 일반화하지 않는다.
+
+자연 배분에서는 두 데이터 모두 모든 학습 버전이 Global만 유지하는 정책을 선택했다. CIC2018 균등은 마지막 Bot 도입 버전에서 활성화됐다. 1,000행/\allowbreak{}초에 expert 호출 873건, 교정 450건, 훼손 58건이다. 교정은 Infiltration, 훼손은 Benign에 해당한다. Infiltration F1은 내부 Global의 32.10\%에서 37.72\%로, 전체 Macro-F1은 79.55\%에서 80.35\%로 개선됐다. 일부 특화가 실제 선택 정책에서도 유효한 증거다.
+
+ToN 균등은 Ransomware·Backdoor 도입 버전에서 활성화되고 MitM 도입 후 버전은 Global만 유지한다. 활성 버전은 서비스하는 모든 행에 expert를 호출하지만, 전체 재생에서는 호출률 21.21\%, 수락률 14.67\%이다. 6,898건 교정 중 6,834건이 XSS에 집중됐고 훼손은 245건이다. XSS F1은 89.52\%에서 90.55\%로 올랐지만 DoS는 93.93\%에서 92.83\%로 내려갔다. DoS 정답 행의 교정도 있었지만 다른 클래스에서 유입된 FP 증가가 정밀도를 낮춘다. 전체 Macro-F1 변화는 +\allowbreak{}0.0181\%p에 그쳤으며 Scanning·MitM·Ransomware의 F1 개선으로 이어지지 않았다. 많은 순교정 건수 자체를 tail 개선의 근거로 사용할 수는 없다.
+
+초기 구축을 제외한 제안 모델의 후속 갱신 합계는 조건별 114.49\textasciitilde{}139.86초다. 단일 TabPFN은 41.00\textasciitilde{}50.45초, XGB는 4.17\textasciitilde{}12.31초다. Expert 호출이 없는 정책에서도 bank·S/\allowbreak{}V·검증 선택의 준비 비용은 발생한다. 내부 Global의 context가 작아 일부 조건에서 서비스 추론은 단일 TabPFN보다 빠르지만, 이것만으로 전체 설계의 효율성을 판단할 수 없다.
+
+LoCalPFN 자연 배분은 지연 없는 Macro-F1이 CIC2018 77.26\%, ToN 77.31\%인 반면, 1,000행/\allowbreak{}초에서는 62.27\%, 48.05\%다. 각각 1,921,024행과 2,021,258행을 해당 평가 단계보다 이전 버전으로 분류한다. 업데이트 완료 시점을 반영했을 때 큰 성능 변화가 생긴다는 관찰이다. 별도로 약 3.1\textasciitilde{}3.2초/\allowbreak{}1,024행인 서비스 속도 때문에 추론 큐가 누적된다. 해당 조건의 응답 p95는 약 6,076초와 4,523초다. 모델 버전은 배치 수집 완료 시점에 고정하고 모든 행을 끝까지 처리하므로, 추론 응답이 늦다는 이유 자체로 오답 처리한 결과는 아니다. 100행/\allowbreak{}초의 자연 배분 F1은 각각 76.17\%, 75.19\%로 별도 제공한다.
+
+\subsection{해석과 후속 판단}
+현재 구조는 특정 클래스의 교정을 실제 정책으로 채택할 수 있으나, 희소 공격 전반을 개선하면서 추가 갱신 비용을 정당화하는 수준의 이득은 아직 확인되지 않았다. 개선은 Global에 남길 context와 expert에 공급할 사례의 역할을 함께 설계하는 데서 시작할 수 있다. 다만 현재 실험만으로 50/\allowbreak{}25/\allowbreak{}25 분할이 단일 TabPFN과의 점수 차이를 유발했다고 단정할 수는 없다. 입력 예산, 선택된 사례, 모델 준비 시점이 함께 바뀌기 때문이다.
+
+Expert 구성에서는 CIC2018 Infiltration의 교정을 유지하면서 유사 클래스와 Benign의 오탐을 억제하는 방향을 검토한다. ToN에서는 XSS의 다수 교정보다 Scanning·MitM·Ransomware에 충분한 구분 근거가 주어지는지, DoS로 유입되는 FP를 정책이 억제하는지 확인할 필요가 있다. 자연 배분의 호출 0건도 후보 expert의 교정 부족과 검증 선택 제약을 구분해야 하며, verifier만을 원인으로 지목하지 않는다. 호출을 강제하는 것을 개선 목표로 삼지 않는다.
+
+비용은 실제 측정된 단계별 준비 과정을 기반으로 하지만, 재생 시 갱신 worker와 서비스 worker가 독립된 자원을 사용한다고 가정한다. 단일 GPU의 동시 적재·경합이나 실제 사람의 라벨링 지연은 재현하지 않았다. XGB·TabPFN 비용은 기존 3회 중 첫 측정값을 사용했고 새 제안 모델·BoostPFN·LoCalPFN은 단계별 1회 측정이다. BoostPFN·LoCalPFN은 v1, 다른 PFN 구성은 v3 기반이며, 본 결과는 동일 backbone의 구성요소만 분리한 비교가 아니다. 구조 개편 후에는 동일 정보 접근 예산과 시계에서 재평가하고, 반복 seed와 독립 평가로 기여의 재현성을 확인해야 한다.
+
+\subsection{출처}
+\par\noindent \textbullet\enspace 전체 결과, 추가 48개 정책 검증
+
+
+\par\noindent \textbullet\enspace 재사용 XGB·TabPFN 결과, 기존 24개 정책 검증
+
+
+\par\noindent \textbullet\enspace 보고서 입력 수치와 원본 SHA-256, 브라우저·표 검증
+
+
+\par\noindent \textbullet\enspace 개별 HTML, 통합 HTML
+
+
+논문 원고에는 이번 결과를 자동으로 반영하지 않았다. 실행 완료와 최종 논문 근거 채택을 구분한다.
+
+
+
+\section{2026-10-15 · EXP74 · 분류 구조 개선 실험}
+\label{report:20261015_exp74_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+기존 순차 공격 도입 시나리오, 최종 train 10만 행, 별도 validation, seed 43을 유지했다. 모든 test 행을 정책별로 한 번 평가했으며 실제 수집 시간이나 환경 drift를 재현한 실험은 아니다.
+
+EXP74는 단일 TabPFN과 동일한 전체 context를 유지하고, 별도 validation 일부에서 분포 목표가 다른 세 head를 학습했다. 나머지 validation은 head 선택과 확률 보정에 분리해서 사용했다. 기존 기준선은 같은 validation 라벨 접근 권한이 있으나 사용하지 않았으므로, 추가 라벨 활용과 결합 구조의 기여를 동일시하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12550\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19779\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21586\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20984\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 배분 & 방법 & 지연 없음 Macro-F1 (\%) & 1,000행/\allowbreak{}초 Macro-F1 (\%) & 지연 없음 Benign FPR (\%) \\ \midrule
+\endfirsthead
+데이터 & 배분 & 방법 & 지연 없음 Macro-F1 (\%) & 1,000행/\allowbreak{}초 Macro-F1 (\%) & 지연 없음 Benign FPR (\%) \\ \midrule
+\endhead
+{}cic2018 & natural & xgb & 76.80 & 76.79 & 0.148 \\
+{}cic2018 & natural & tabpfn & 77.72 & 77.47 & 0.006 \\
+{}cic2018 & natural & heads & 72.07 & 71.83 & 8.533 \\
+{}cic2018 & uniform & xgb & 77.03 & 77.01 & 0.900 \\
+{}cic2018 & uniform & tabpfn & 81.35 & 81.17 & 0.127 \\
+{}cic2018 & uniform & heads & 72.72 & 72.48 & 8.134 \\
+{}toniot & natural & xgb & 79.37 & 79.28 & 7.238 \\
+{}toniot & natural & tabpfn & 73.66 & 73.39 & 7.741 \\
+{}toniot & natural & heads & 65.39 & 65.01 & 20.187 \\
+{}toniot & uniform & xgb & 74.51 & 74.46 & 8.790 \\
+{}toniot & uniform & tabpfn & 73.00 & 72.72 & 8.305 \\
+{}toniot & uniform & heads & 66.28 & 65.95 & 15.957 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{단독 head와 결합을 분리한 관찰}
+세 head를 결합한 주 결과는 네 조건 모두 단일 TabPFN보다 낮다. 그러나 동일한 표현과 추가 학습 라벨을 공유하는 자연분포 head 단독은 자연 배분에서 CIC2018 79.27\%, ToN 78.11\%로 단일 TabPFN의 77.72\%, 73.66\%보다 높았다. 이 진단은 지연 없는 전체 재생에 한정되며, 독립 운영 비용이나 갱신 지연을 적용한 단독 head 결과는 측정하지 않았다. 자연 head의 목표 prior는 현재 누적 train 분포다. 공격 배분이 균등한 경우에도 Benign까지 균등한 목표를 뜻하지 않는다.
+
+자연 배분 CIC2018에서 자연 head는 Infiltration F1을 단일 PFN의 23.36\%에서 37.02\%로 높이지만 Web attacks는 22.22\%에서 19.77\%로 낮춘다. ToN에서는 Scanning이 0.00\%에서 48.33\%, MitM이 17.98\%에서 25.47\%로 높아지는 반면 Ransomware는 60.92\%에서 49.02\%로 낮아진다. 이 결과는 고정 표현 위의 작은 분류기가 일부 희소 공격의 구분 정보를 활용할 수 있다는 근거다. 모든 tail 클래스의 개선, 추가 라벨 사용과 분리된 구조의 기여, 독립 확인 자료에서 검증된 최종 방법의 우위를 보여준 것은 아니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17576\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21364\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21364\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22121\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17576\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터·배분 & 자연 head F1 (\%) & 균형 head F1 (\%) & 역빈도 head F1 (\%) & 결합 F1 (\%) \\ \midrule
+\endfirsthead
+데이터·배분 & 자연 head F1 (\%) & 균형 head F1 (\%) & 역빈도 head F1 (\%) & 결합 F1 (\%) \\ \midrule
+\endhead
+{}CIC2018 자연 & 79.27 & 71.96 & 56.30 & 72.07 \\
+{}CIC2018 균등 & 78.81 & 73.03 & 69.98 & 72.72 \\
+{}ToN 자연 & 78.11 & 65.69 & 58.71 & 65.39 \\
+{}ToN 균등 & 71.69 & 66.31 & 57.52 & 66.28 \\
+\bottomrule
+\end{longtable}
+\endgroup
+결합의 감소는 클래스별 Precision과 Recall을 같이 보면 더 구체적으로 설명할 수 있다. 자연 배분 CIC2018의 Infiltration은 PFN 대비 Recall이 13.45\%에서 79.97\%로 높아지지만 Precision이 88.75\%에서 3.06\%로 떨어진다. 이 결합은 실제 Benign 221,579행을 Infiltration으로 분류했다. 같은 조건 ToN Ransomware는 Recall이 70.24\%에서 98.45\%로 높아져도 Precision이 53.78\%에서 1.75\%로 떨어지며 F1이 60.92\%에서 3.44\%로 낮아진다. Benign 38,597행이 Ransomware로 유입되었다. 이는 공격을 더 많이 맞힌다는 사실만으로 분류 능력 개선을 평가할 수 없는 사례다.
+
+자연 배분에서 자연 head와 결합의 Benign FPR은 CIC2018 0.017\% 대 8.533\%, ToN 8.018\% 대 20.187\%다. FPR의 분모는 실제 Benign 전체이며, 해당 공격 Precision의 분모와 구분한다. 세 head의 목표 prior 지수 1, 0, −1을 동일 가중치로 결합하면 prior 항을 상쇄하는 설계이므로 균형 목표를 지향한다. 관측된 정밀도 감소와 오탐 증가는 이 목표와 실제 평가 분포·지표의 관계를 재검토할 이유다. 단일 실험으로 목표 prior, 확률 보정, 표현 일반화 중 어느 하나의 기여를 인과적으로 분리한 것은 아니다.
+
+\subsection{비용과 후속 판단}
+결합 모델의 후속 갱신 합계는 조건별 51–64초이며 단일 PFN은 41–50초다. 초기 구축은 이 합계에서 제외했다. 기존 PFN 준비 비용을 재사용하고 실제 validation embedding 추출, head 학습·보정 비용을 더했다. 지연 없는 serving은 약 260–273μs/\allowbreak{}행으로 대부분의 비용이 공통 PFN 표현 추출에 남아 있다. 단독 자연 head를 운영할 때의 준비·추론 비용으로 이 수치를 전용하지 않는다.
+
+후속 비교에서는 자연 head를 기준 후보로 남기고, 같은 추가 라벨 예산에서 고정 균형 결합과 validation으로 목표 prior·결합 가중치를 결정하는 방법을 비교하는 것이 적절하다. 희소 공격 Precision·Recall과 Benign FPR을 함께 선택 기준에 반영하고, 별도 확인 자료에서 검증해야 한다. 이 후속안은 실행되지 않았다. 현재 test 결과를 보고 자연 head를 최종 모델로 채택하거나 연구 버전을 전환하지 않는다.
+
+BalPoE는 보정된 expert와 목표 분포의 관계를 통해 balanced error의 일관성을 다룬다. \textbf{Discussion:} 원 논문의 이미지 인식 결과와 보정 가정은 IDS의 Macro-F1·정상 오탐 우위를 보장하지 않는다. 이번 적용의 자연 head 대 결합 진단은 해당 목표를 검토할 근거이며, 원 논문의 방법을 그대로 재현하거나 이론을 반박한 결과가 아니다.
+
+실행: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp74/\allowbreak{}\allowbreak{}20261015\allowbreak{}\_\allowbreak{}\allowbreak{}171517\_\allowbreak{}\allowbreak{}heads\_\allowbreak{}\allowbreak{}re\allowbreak{}play\_\allowbreak{}\allowbreak{}100\allowbreak{}k\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}d7\allowbreak{}4bc5fb} 상세 결과: exp74 results.json 독립 검증: exp74 verification.json
+
+사용자의 2026-10-15 보고서 작성 요청에 따라 10/\allowbreak{}15 HTML에 EXP75와 함께 수록했다. 클래스별 상세·FP 출처·단계별 결과는 해당 보고서에서 확인한다. 보고서 데이터와 출처 해시에는 24개 비교 job의 실제 결과를 보존했다. 논문 본문은 수정하지 않았다.
+
+
+
+\section{2026-10-15 · EXP75 · 분류 구조 개선 실험}
+\label{report:20261015_exp75_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+기존 순차 공격 도입 시나리오, 최종 train 10만 행, 별도 validation, seed 43을 유지했다. 모든 test 행을 정책별로 한 번 평가했으며 실제 수집 시간이나 환경 drift를 재현한 실험은 아니다.
+
+EXP75는 2,048행 이하 context를 초기화한 뒤 고정 TabPFN을 통해 context feature만 최적화했다. 클래스 균형 query 손실로 학습하고 validation 손실로 초기 상태를 포함한 checkpoint를 선택했다. untuned 대조군은 같은 context·단일 estimator·전처리를 사용한다. 10만 context·4 estimators인 원 TabPFN과의 차이는 최적화 효과 하나로 해석하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12451\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12451\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13627\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19510\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21275\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20686\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 배분 & 방법 & 지연 없음 Macro-F1 (\%) & 1,000행/\allowbreak{}초 Macro-F1 (\%) & 지연 없음 Benign FPR (\%) \\ \midrule
+\endfirsthead
+데이터 & 배분 & 방법 & 지연 없음 Macro-F1 (\%) & 1,000행/\allowbreak{}초 Macro-F1 (\%) & 지연 없음 Benign FPR (\%) \\ \midrule
+\endhead
+{}cic2018 & natural & xgb & 76.80 & 76.79 & 0.148 \\
+{}cic2018 & natural & tabpfn & 77.72 & 77.47 & 0.006 \\
+{}cic2018 & natural & icd & 72.72 & 71.84 & 9.287 \\
+{}cic2018 & natural & icd\_\allowbreak{}init & 72.73 & 72.73 & 9.289 \\
+{}cic2018 & uniform & xgb & 77.03 & 77.01 & 0.900 \\
+{}cic2018 & uniform & tabpfn & 81.35 & 81.17 & 0.127 \\
+{}cic2018 & uniform & icd & 72.20 & 71.20 & 8.983 \\
+{}cic2018 & uniform & icd\_\allowbreak{}init & 71.47 & 71.47 & 9.669 \\
+{}toniot & natural & xgb & 79.37 & 79.28 & 7.238 \\
+{}toniot & natural & tabpfn & 73.66 & 73.39 & 7.741 \\
+{}toniot & natural & icd & 65.74 & 63.28 & 14.017 \\
+{}toniot & natural & icd\_\allowbreak{}init & 69.86 & 69.86 & 12.283 \\
+{}toniot & uniform & xgb & 74.51 & 74.46 & 8.790 \\
+{}toniot & uniform & tabpfn & 73.00 & 72.72 & 8.305 \\
+{}toniot & uniform & icd & 68.68 & 66.07 & 13.510 \\
+{}toniot & uniform & icd\_\allowbreak{}init & 64.53 & 64.53 & 15.847 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{초기 context 대조군에서 확인한 효과}
+최적화 효과는 같은 초기 context·단일 estimator·전처리를 유지한 대조군과 비교한다. 지연 없는 전체 재생 Macro-F1의 변화는 CIC2018 자연 −0.01\%p, 균등 +\allowbreak{}0.73\%p, ToN 자연 −4.12\%p, 균등 +\allowbreak{}4.15\%p다. 주 결과는 네 조건 모두 최대 10만 context·네 estimator를 쓰는 단일 TabPFN보다 낮다. 단일 TabPFN과의 차이는 context 최적화뿐 아니라 압축, estimator 수, 전처리 차이가 포함된다.
+
+ToN 균등에서 MitM F1은 초기 11.18\%에서 최적화 23.55\%, Ransomware는 7.16\%에서 25.81\%로 개선됐다. Scanning은 14.80\%에서 14.14\%로 낮아져 전체 tail이 함께 개선되지는 않았다. ToN 자연에서는 Ransomware Recall이 70.66\%에서 85.61\%로 높아져도 Precision이 32.62\%에서 4.29\%로 낮아져 F1이 44.63\%에서 8.17\%로 떨어졌다. 이 조건의 전체 Benign FPR도 12.283\%에서 14.017\%로 늘었다. 균형 query 학습이 공격 Recall을 높이는 것과 실제 불균형 평가에서 FP를 억제하는 것은 별도로 확인해야 한다.
+
+CIC2018 자연의 Web attacks·Infiltration·Bot 도입 버전은 validation의 class-balanced NLL이 초기 context에서 가장 낮아 모두 step 0을 선택했다. 따라서 이 세 단계의 지연 없는 성능은 초기 대조군과 같으며, 전체 차이는 앞선 단계에서 발생했다. 22개 버전 중 step 0 선택은 총 4회다. Context gradient가 유한하고 backbone이 고정되었음을 검사한 실행으로, 초기 상태가 선택됐다는 사실을 학습 코드가 작동하지 않았다는 뜻으로 해석하지 않는다.
+
+ToN 자연의 Ransomware/\allowbreak{}Backdoor 도입 단계에서는 validation NLL이 0.329에서 0.278로 낮아졌지만, 해당 재생 구간 test F1은 77.50\%에서 72.29\%로 낮아졌다. MitM 도입 단계도 선택 NLL은 개선되지만 test F1은 감소했다. Validation 손실 개선이 test Macro-F1 개선으로 이어지지 않은 관찰이며, 손실 목적의 차이와 validation-test 일반화 차이를 이 결과만으로 분리할 수는 없다. Benign FPR은 기록했으나 checkpoint 선택의 제약에는 사용하지 않았다.
+
+\subsection{고유 사례 수와 비용}
+최종 context는 2,048행이며 각 클래스의 최소 절반을 query로 남긴다. 자연 배분 CIC2018 Web attacks는 train 9행 중 context 4행, ToN Ransomware는 train 20행 중 context 10행, MitM은 train 31행 중 context 15행이다. 균형 query 복원추출은 이 고유 사례 수를 늘리지 않는다. 작은 표본은 제약이지만, 확보한 표본 수만으로 전체 실패 원인을 단정하거나 확대 시 개선을 보장할 수는 없다. 실제 최종 배분과 query 수는 HTML 및 각 단계 context\_\allowbreak{}training.json에 연결했다.
+
+초기·최적화 context의 지연 없는 serving은 약 77–78μs/\allowbreak{}행으로 단일 PFN의 256–268μs/\allowbreak{}행보다 빠르다. 이 차이는 context 길이와 estimator·전처리 차이도 포함한다. 반면 최적화의 후속 갱신 합계는 CIC2018 약 277초, ToN 약 349–350초이며 초기 구축은 제외했다. 매 단계 300회까지 탐색한 뒤 초기 상태를 선택한 경우에도 그 비용은 발생한다. Backbone이 고정되어 있어도 context 최적화에는 task별 갱신 비용이 든다.
+
+1,000행/\allowbreak{}초에서는 ToN 균등의 최적화 F1이 68.68\%에서 66.07\%로 낮아지고, 초기 대조군 64.53\% 대비 이득이 줄어든다. CIC2018 균등은 지연 없는 72.20\%에서 71.20\%로 낮아져 초기 대조군 71.47\%보다도 낮아진다. 새 context가 준비되기 전 구버전을 사용하는 영향이며, 응답 지연 자체를 오답으로 처리한 결과가 아니다.
+
+\subsection{해석과 후속 판단}
+같은 초기 조건의 대조군에서 균등 배분의 일부 개선은 확인했으므로 context 최적화의 가능성을 폐기할 근거는 부족하다. 우선 같은 context·query 예산에서 posterior prior 보정과 checkpoint 선택 목표를 각각 분리하여 검토하고, 희소 공격 Precision·Recall과 정상 오탐이 함께 유지되는지 확인하는 편이 타당하다. 품질이 유지되는 조건이 확보되면 단계 간 context 재사용으로 최적화 비용을 줄일 수 있는지 평가한다. 현재는 매 단계 새로 최적화했으며 warm start나 오탐 제약 실험은 실행하지 않았다.
+
+In-Context Data Distillation with TabPFN은 제한된 context를 최적화해 큰 tabular 데이터의 정보를 활용하는 방법이다. \textbf{Discussion:} 원 논문은 IDS의 희소 공격 정밀도나 순차 갱신 비용의 우위를 보장하지 않는다. 이번 적용은 초기 context 대조군, 클래스별 FP, 갱신 지연을 함께 측정하여 일반적인 데이터 압축 효과와 이 연구의 탐지 목표 사이에 남은 과제를 구체화했다. 최종 방법이나 우위의 확정은 별도 확인 자료와 다중 seed 검증 이후에 판단한다.
+
+실행: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp75/\allowbreak{}\allowbreak{}20261015\allowbreak{}\_\allowbreak{}\allowbreak{}181113\_\allowbreak{}\allowbreak{}icd\_\allowbreak{}\allowbreak{}repl\allowbreak{}ay\_\allowbreak{}\allowbreak{}100k\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}6558\allowbreak{}120d} 상세 결과: exp75 results.json 독립 검증: exp75 verification.json
+
+사용자의 2026-10-15 보고서 작성 요청에 따라 10/\allowbreak{}15 HTML에 EXP74와 함께 수록했다. 보고서 데이터와 출처 해시를 통해 원 수치와 출처를 확인할 수 있다. 논문 본문은 수정하지 않았다.
+
+
+
+\section{2026-10-15 · EXP76 · 소규모 context 갱신 정책의 품질과 비용}
+\label{report:20261015_exp76_results}
+\recordnote{아래 주 결과는 단계별 예측을 합산한 값이다. 마지막 모델의 전체 test 결과는 EXP77 이후와 구별한다.}
+사용자가 요청한 누적·고정 버퍼·갱신 없음의 차이를 확인하기 위해, 1014와 같은 공격 클래스 도입 순서와 기존 test 전체를 사용했다. 초기 1,000개(Benign 750, 최초 두 공격 각 125)에서 시작해 신규 클래스마다 라벨된 100개를 추가했다. 이 수치는 이번 실행의 설정이며 사용자의 1,000·20 예시를 고정 요구로 해석한 것이 아니다. 최종 공개 사례는 CIC2018 1,400개, ToN 1,700개다. TabPFN-v3의 가중치는 고정하고 context와 캐시를 갱신했다. LoCalPFN은 요청에 따라 제외했다.
+
+고정 버퍼는 1,000개를 유지하며 FIFO·신규 사례와의 유사도·무작위로 기존 사례를 제거했다. 모든 삭제 정책은 기존 클래스마다 최소 1개를 보존했다. FIFO는 실제 노후화 판정이 아니라 확보 순서의 대리 기준이다. XGB와 BoostPFN은 동일하게 공개된 누적 사례로 다시 학습·구성했고, DistPFN은 누적 PFN의 준비 비용과 확률을 공유하며 현재 배치 posterior로 보정했다.
+
+\subsection{전체 결과}
+평가는 지연 없이 갱신된 버전을 사용하는 순차 도입 재생이다. 갱신 준비 시간은 별도 실측했으며, 이 시간을 예측 버전 배정에 적용한 1014의 지연 재생과 구별한다. 모든 원 test 행을 방법별 주 평가에 한 번 사용했다. 배치는 8,192개, seed 43, RTX 4090 단독 worker다. 후속 갱신 합계는 초기 구축을 제외하고, 추론 시간은 전체 test의 실제 serving 합계다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16518\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15268\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16518\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12768\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14643\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12768\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 방법 & Macro-F1 (\%) & Benign FPR (\%) & 초기 구축 (s) & 후속 갱신 합계 (s) & 전체 추론 (s) \\ \midrule
+\endfirsthead
+데이터 & 방법 & Macro-F1 (\%) & Benign FPR (\%) & 초기 구축 (s) & 후속 갱신 합계 (s) & 전체 추론 (s) \\ \midrule
+\endhead
+{}cic2018 & xgb & 73.62 & 1.619 & 0.95 & 2.62 & 1.26 \\
+{}cic2018 & pfn\_\allowbreak{}accumulate & 74.64 & 0.673 & 0.76 & 1.28 & 98.33 \\
+{}cic2018 & distpfn & 76.71 & 0.215 & 0.76 & 1.28 & 98.44 \\
+{}cic2018 & pfn\_\allowbreak{}fifo & 73.16 & 1.119 & 0.33 & 1.28 & 97.49 \\
+{}cic2018 & pfn\_\allowbreak{}similar & 72.13 & 2.972 & 0.30 & 1.27 & 97.23 \\
+{}cic2018 & pfn\_\allowbreak{}random & 73.47 & 0.924 & 0.30 & 1.24 & 97.88 \\
+{}cic2018 & pfn\_\allowbreak{}fixed & 41.94 & 0.001 & 0.32 & 0.00 & 97.47 \\
+{}cic2018 & boostpfn & 71.82 & 2.084 & 0.72 & 2.54 & 435.08 \\
+{}toniot & xgb & 65.22 & 11.252 & 0.49 & 5.66 & 1.40 \\
+{}toniot & pfn\_\allowbreak{}accumulate & 64.88 & 11.617 & 0.31 & 1.61 & 75.80 \\
+{}toniot & distpfn & 68.01 & 11.068 & 0.31 & 1.61 & 75.91 \\
+{}toniot & pfn\_\allowbreak{}fifo & 65.94 & 12.052 & 0.30 & 1.62 & 73.85 \\
+{}toniot & pfn\_\allowbreak{}similar & 59.91 & 17.703 & 0.33 & 1.76 & 73.89 \\
+{}toniot & pfn\_\allowbreak{}random & 65.62 & 11.965 & 0.30 & 1.59 & 73.84 \\
+{}toniot & pfn\_\allowbreak{}fixed & 14.02 & 3.564 & 0.30 & 0.00 & 72.84 \\
+{}toniot & boostpfn & 60.70 & 14.419 & 0.56 & 3.91 & 326.30 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{관찰에서 이어지는 개선 방향}
+CIC2018의 누적 TabPFN Macro-F1은 74.64\%이고 XGB는 73.62\%다. 후속 갱신 합계는 각각 1.28초와 2.62초로, 이 소규모 조건에서는 PFN의 준비 비용이 더 낮았다. 반면 전체 추론은 98.33초와 1.26초였다. 갱신 준비의 절감이 이 전체 workload의 총 연산시간 절감으로 이어졌다고 해석할 수는 없다. 동일 context에서 estimator 수와 cache 위치를 분리해 비교하고, query 처리 비용과 공격별 품질을 함께 측정하는 것이 다음 개선 방향이다.
+
+CIC2018의 유사도 삭제는 정상 오탐률 2.972\%로 누적 PFN의 0.673\%보다 높았다. 신규 사례와 가까운 기존 사례가 단순히 불필요한 중복이라고 가정하지 않고, 정상·기존 공격의 구분 근거를 남기는 삭제 제약을 검토해야 한다. DistPFN의 F1은 76.71\%였으나, 이는 현재 배치 posterior 보정의 결과이며 다른 배치 크기·유입 비율에서의 안정성은 별도 확인 대상이다.
+
+ToN의 누적 TabPFN Macro-F1은 64.88\%이고 XGB는 65.22\%다. 후속 갱신 합계는 각각 1.61초와 5.66초로, 이 소규모 조건에서는 PFN의 준비 비용이 더 낮았다. 반면 전체 추론은 75.80초와 1.40초였다. 갱신 준비의 절감이 이 전체 workload의 총 연산시간 절감으로 이어졌다고 해석할 수는 없다. 동일 context에서 estimator 수와 cache 위치를 분리해 비교하고, query 처리 비용과 공격별 품질을 함께 측정하는 것이 다음 개선 방향이다.
+
+ToN의 유사도 삭제는 정상 오탐률 17.703\%로 누적 PFN의 11.617\%보다 높았다. 신규 사례와 가까운 기존 사례가 단순히 불필요한 중복이라고 가정하지 않고, 정상·기존 공격의 구분 근거를 남기는 삭제 제약을 검토해야 한다. DistPFN의 F1은 68.01\%였으나, 이는 현재 배치 posterior 보정의 결과이며 다른 배치 크기·유입 비율에서의 안정성은 별도 확인 대상이다.
+
+고정 context는 갱신 비용이 없지만 context에 없는 신규 클래스 이름을 출력할 수 없다. 이에 따른 신규 유형 분류 오류와 기존 공격으로의 이진 공격 탐지는 서로 다른 평가다. 이 기준선의 낮은 신규 유형 F1을 파라미터 최적화의 실패로 해석하지 않는다.
+
+현재 결과는 같은 기존 test를 사용한 단일 seed의 탐색 근거다. 1014의 10만 라벨과 이번 소규모 예산은 정보량·초기 배분·배치 크기가 달라 직접적인 개선량으로 비교하지 않는다. 두 데이터의 자연 분포에서 충분한 품질을 확보했다는 운영 기준이나 통계적 동등성은 사전 정의하지 않았다. 원고의 최종 모델 선택·성능 우위에 자동 편입하지 않으며, 같은 공개 라벨에서 context 크기만 바꾸는 비교와 반복 seed를 후속으로 검토한다.
+
+\subsection{CIC2018 클래스별 F1}
+전체 test의 실제 평가 표본 수 내림차순이다. 값은 F1 (\%)이며 학습·context 사례 수와 구별한다.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12692\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10769\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09487\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09487\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09487\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09487\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09487\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09487\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09487\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10128\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 평가 표본 수 & XGB & 누적 PFN & FIFO & 유사도 & 무작위 & 고정 & DistPFN & BoostPFN \\ \midrule
+\endfirsthead
+클래스 & 평가 표본 수 & XGB & 누적 PFN & FIFO & 유사도 & 무작위 & 고정 & DistPFN & BoostPFN \\ \midrule
+\endhead
+{}benign & 2,652,203 & 99.00 & 99.50 & 99.27 & 98.36 & 99.36 & 94.42 & 99.71 & 98.76 \\
+{}ddos & 262,680 & 99.70 & 99.71 & 99.71 & 97.96 & 99.71 & 0.00 & 99.71 & 99.42 \\
+{}bot & 41,542 & 97.01 & 99.15 & 99.11 & 99.10 & 99.04 & 0.00 & 99.11 & 98.03 \\
+{}dos & 39,483 & 99.03 & 99.15 & 99.14 & 99.34 & 99.07 & 99.19 & 99.13 & 95.58 \\
+{}brute\_\allowbreak{}force & 37,696 & 99.98 & 99.97 & 99.97 & 99.98 & 99.97 & 99.97 & 99.97 & 99.96 \\
+{}infiltration & 8,742 & 11.59 & 22.80 & 13.24 & 9.10 & 15.41 & 0.00 & 24.24 & 8.17 \\
+{}web\_\allowbreak{}attacks & 127 & 9.00 & 2.22 & 1.70 & 1.07 & 1.71 & 0.00 & 15.08 & 2.83 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\subsection{ToN 클래스별 F1}
+전체 test의 실제 평가 표본 수 내림차순이다. 값은 F1 (\%)이며 학습·context 사례 수와 구별한다.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11579\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10921\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09605\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09605\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09605\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09605\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09605\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09605\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09605\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10263\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 평가 표본 수 & XGB & 누적 PFN & FIFO & 유사도 & 무작위 & 고정 & DistPFN & BoostPFN \\ \midrule
+\endfirsthead
+클래스 & 평가 표본 수 & XGB & 누적 PFN & FIFO & 유사도 & 무작위 & 고정 & DistPFN & BoostPFN \\ \midrule
+\endhead
+{}benign & 1,474,302 & 93.21 & 93.51 & 93.20 & 90.07 & 93.31 & 85.44 & 93.78 & 91.47 \\
+{}xss & 343,854 & 87.74 & 88.00 & 88.88 & 83.07 & 89.93 & 0.00 & 89.49 & 84.69 \\
+{}password & 210,951 & 89.90 & 90.02 & 90.27 & 79.81 & 89.94 & 0.00 & 89.63 & 84.66 \\
+{}ddos & 103,338 & 92.67 & 93.44 & 93.70 & 84.35 & 93.17 & 0.00 & 94.85 & 88.34 \\
+{}injection & 68,891 & 71.88 & 71.26 & 69.32 & 58.08 & 70.90 & 0.00 & 72.88 & 62.68 \\
+{}backdoor & 40,030 & 99.02 & 99.90 & 99.43 & 98.70 & 99.89 & 0.00 & 99.89 & 98.94 \\
+{}dos & 22,458 & 63.57 & 62.43 & 68.19 & 77.89 & 72.31 & 51.89 & 95.09 & 37.87 \\
+{}scanning & 6,029 & 12.32 & 31.22 & 40.26 & 21.07 & 26.97 & 2.82 & 19.60 & 22.74 \\
+{}mitm & 1,161 & 13.10 & 13.03 & 9.66 & 2.46 & 12.72 & 0.00 & 17.42 & 15.94 \\
+{}ransomware & 709 & 28.78 & 6.01 & 6.47 & 3.66 & 7.01 & 0.00 & 7.47 & 19.64 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\subsection{출처와 검증}
+\par\noindent \textbullet\enspace 실행: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp76/\allowbreak{}\allowbreak{}20261015\allowbreak{}\_\allowbreak{}\allowbreak{}212937\_\allowbreak{}\allowbreak{}context1\allowbreak{}000\_\allowbreak{}\allowbreak{}new1\allowbreak{}00\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}1\allowbreak{}c62d14c}
+
+
+\par\noindent \textbullet\enspace 원 결과
+
+
+\par\noindent \textbullet\enspace 독립 검증
+
+
+\par\noindent \textbullet\enspace 프로토콜
+
+
+\par\noindent \textbullet\enspace 가중치 미변경 확인
+
+
+\par\noindent \textbullet\enspace 원고 반영안 · 원고·Overleaf 직접 수정 없음
+
+
+예측으로부터 혼동행렬·Macro-F1·Benign FPR을 독립적으로 재계산했고 16개 결과를 검증했다. 전체 test ID의 중복·누락, 공개 전 라벨 사용, 버퍼 크기·클래스 보존, 버린 사례의 재유입, 후속 비용 합계를 확인했다. 전체 공개 학습 특징과 겹치는 test를 제외한 공통 집합의 보조 결과도 원 JSON에 보존했다. 이 보조 집합은 외부 환경 검증을 대체하지 않는다.
+
+
+
+\section{2026-10-15 · EXP77 · 초기 미세조정과 최종 상태 전체 test 평가}
+\label{report:20261015_exp77_results}
+\recordnote{아래 FT 조건은 실제 초기 IDS 미세조정 결과다. FT 없는 PFN·SOTA의 현재 혼합 query 비교는 EXP81, 표본 수별 비교는 EXP83을 사용한다.}
+EXP76의 공개 라벨 ID를 유지한 채 초기 IDS 가중치 미세조정을 실제 수행하고, 모든 클래스 도입 후 최종 상태로 전체 test를 평가했다. 단계별 예측을 합산한 점수나 단계 F1의 평균이 아니다. 초기 1,000개 이후 신규 클래스당 100개를 공개했으며 최종 라벨 예산은 CIC2018 1,400개, ToN 1,700개다. 검증·보정 라벨도 이 안에 포함된다. LoCalPFN은 제외했다.
+
+공식 v3 fine-tuning API, AdamW, learning rate 1e-5, 고정 10 epoch를 사용했다. Context 정책 간에는 동일 초기 FT checkpoint를 공유하고 이후 본체 가중치를 고정했다. 매 단계 FT만 이전 checkpoint에서 누적 공개 학습 행으로 다시 10 epoch 갱신한다. 미세조정의 학습·검증 역할과 제안 모델의 다섯 역할은 특징 그룹 단위로 분리하여 단계 사이에도 유지했다.
+
+제안 모델은 기존 K=\allowbreak{}4 anchor/\allowbreak{}residual expert와 S1V0 구조이며 원래 pretrained backbone을 유지한다. 공개 라벨을 Global/\allowbreak{}expert/\allowbreak{}route/\allowbreak{}tune/\allowbreak{}cal에 약 40/\allowbreak{}20/\allowbreak{}20/\allowbreak{}8/\allowbreak{}12\% 배정했다. 따라서 같은 라벨 예산의 방법 비교이고 같은 초기 FT backbone의 구조 ablation은 아니다. DistPFN은 초기 FT 누적 PFN의 확률을 현재 query 배치 posterior로 보정한 변형이다. 원 논문의 benchmark 수치와 구분한다.
+
+\subsection{cic2018 전체 결과}
+초기 FT: 912개 학습, 88개 검증, 508개 파라미터 텐서 변화, 2.76초. 마지막 모델의 test 3,042,473개를 모두 평가했다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16234\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15584\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14286\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12987\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12987\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12987\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14935\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & Macro-F1 (\%) & 정상 FPR (\%) & 초기 준비 (s) & 후속 갱신 (s) & 전체 추론 (s) & 준비·추론 합계 (s) \\ \midrule
+\endfirsthead
+방법 & Macro-F1 (\%) & 정상 FPR (\%) & 초기 준비 (s) & 후속 갱신 (s) & 전체 추론 (s) & 준비·추론 합계 (s) \\ \midrule
+\endhead
+{}XGB & 72.16 & 3.974 & 0.29 & 2.61 & 1.38 & 4.28 \\
+{}PFN FT 없음 & 73.12 & 1.630 & 0.37 & 1.26 & 99.32 & 100.95 \\
+{}PFN 초기 FT 누적 & 72.76 & 2.137 & 3.09 & 1.22 & 105.55 & 109.86 \\
+{}PFN 초기 FT FIFO & 71.65 & 4.216 & 3.06 & 1.22 & 105.01 & 109.29 \\
+{}PFN 초기 FT 유사도 & 67.75 & 13.255 & 3.06 & 1.25 & 103.69 & 108.00 \\
+{}PFN 초기 FT 무작위 & 71.97 & 1.910 & 3.06 & 1.22 & 105.08 & 109.36 \\
+{}PFN 초기 FT 고정 & 41.94 & 0.000 & 3.06 & 0.00 & 104.34 & 107.40 \\
+{}PFN 매 단계 FT & 72.62 & 2.378 & 3.09 & 9.78 & 106.28 & 119.15 \\
+{}제안 모델 & 71.70 & 1.250 & 2.71 & 10.97 & 96.05 & 109.73 \\
+{}BoostPFN & 70.33 & 4.585 & 0.60 & 2.52 & 436.07 & 439.20 \\
+{}DistPFN 초기 FT & 76.52 & 0.851 & 3.09 & 1.22 & 105.68 & 109.99 \\
+\bottomrule
+\end{longtable}
+\endgroup
+초기 FT 누적 PFN의 Macro-F1은 72.76\%이며, FT 없는 누적 PFN 73.12\%, XGB 72.16\%와 비교된다. 초기 FT 효과는 -0.35\%p다. 매 단계 FT는 72.62\%이고 후속 갱신 합계 9.78초로, 초기 FT만 하는 누적 정책의 1.22초와 구분된다. 초기·반복 미세조정의 이득은 이 결과로 판단하며 자동으로 개선된다고 전제하지 않는다.
+
+제안 모델의 Macro-F1은 71.70\%이고 최종 test의 expert 호출은 0건, 변경 채택은 0건이다. 작은 예산을 다섯 역할로 나누면서 Global context와 보정 표본 수가 함께 줄어드는 조건이다. 이 관찰만으로 구조 자체의 우열을 결정하지 않고, 같은 Global 표본을 쓰는 ablation과 보정 데이터의 최소 요구량을 다음 검증으로 둔다.
+
+\subsection{cic2018 클래스별 F1}
+최종 전체 test의 평가 표본 수 내림차순. 수치는 F1 (\%)다. 학습 사례 수와 평가 support를 구분한다.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.08132\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07060\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.06346\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07060\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08132\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08846\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08489\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08489\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08132\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07775\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.06346\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.06703\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08489\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 평가 표본 수 & XGB & PFN FT 없음 & PFN 초기 FT 누적 & PFN 초기 FT FIFO & PFN 초기 FT 유사도 & PFN 초기 FT 무작위 & PFN 초기 FT 고정 & PFN 매 단계 FT & 제안 모델 & BoostPFN & DistPFN 초기 FT \\ \midrule
+\endfirsthead
+클래스 & 평가 표본 수 & XGB & PFN FT 없음 & PFN 초기 FT 누적 & PFN 초기 FT FIFO & PFN 초기 FT 유사도 & PFN 초기 FT 무작위 & PFN 초기 FT 고정 & PFN 매 단계 FT & 제안 모델 & BoostPFN & DistPFN 초기 FT \\ \midrule
+\endhead
+{}benign & 2,652,203 & 97.79 & 99.02 & 98.74 & 97.72 & 92.78 & 98.87 & 94.42 & 98.64 & 99.16 & 97.46 & 99.48 \\
+{}ddos & 262,680 & 99.71 & 99.71 & 99.50 & 99.36 & 80.34 & 99.62 & 0.00 & 99.63 & 99.71 & 99.62 & 99.72 \\
+{}bot & 41,542 & 96.96 & 99.14 & 99.05 & 99.00 & 99.17 & 98.83 & 0.00 & 99.14 & 97.92 & 98.03 & 99.20 \\
+{}dos & 39,483 & 99.29 & 99.16 & 99.09 & 98.66 & 99.08 & 99.37 & 99.19 & 99.20 & 99.30 & 93.31 & 99.96 \\
+{}brute\_\allowbreak{}force & 37,696 & 99.98 & 99.97 & 99.97 & 99.97 & 99.97 & 99.97 & 99.97 & 99.97 & 99.97 & 99.95 & 99.97 \\
+{}infiltration & 8,742 & 5.39 & 13.84 & 12.22 & 6.24 & 2.74 & 6.27 & 0.00 & 10.99 & 4.55 & 2.67 & 35.55 \\
+{}web\_\allowbreak{}attacks & 127 & 6.02 & 0.97 & 0.75 & 0.61 & 0.19 & 0.88 & 0.00 & 0.75 & 1.31 & 1.30 & 1.76 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\subsubsection{기존·신규 공격의 최종 유지 성능}
+각 그룹 내 클래스별 F1의 단순 평균이며, 시간 단계 평균이 아니다. 정상 클래스는 별도로 평가된다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22089\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24829\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25514\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.27568\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 초기 두 공격 F1 평균 (\%) & 이후 도입 공격 F1 평균 (\%) & 특징 중복 제외 Macro-F1 (\%) \\ \midrule
+\endfirsthead
+방법 & 초기 두 공격 F1 평균 (\%) & 이후 도입 공격 F1 평균 (\%) & 특징 중복 제외 Macro-F1 (\%) \\ \midrule
+\endhead
+{}XGB & 99.63 & 52.02 & 71.19 \\
+{}PFN FT 없음 & 99.56 & 53.41 & 72.83 \\
+{}PFN 초기 FT 누적 & 99.53 & 52.88 & 72.45 \\
+{}PFN 초기 FT FIFO & 99.32 & 51.30 & 71.29 \\
+{}PFN 초기 FT 유사도 & 99.53 & 45.61 & 67.31 \\
+{}PFN 초기 FT 무작위 & 99.67 & 51.40 & 71.60 \\
+{}PFN 초기 FT 고정 & 99.58 & 0.00 & 41.89 \\
+{}PFN 매 단계 FT & 99.59 & 52.63 & 72.33 \\
+{}제안 모델 & 99.63 & 50.87 & 71.07 \\
+{}BoostPFN & 96.63 & 50.40 & 69.55 \\
+{}DistPFN 초기 FT & 99.97 & 59.06 & 76.28 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{toniot 전체 결과}
+초기 FT: 901개 학습, 99개 검증, 508개 파라미터 텐서 변화, 2.01초. 마지막 모델의 test 2,271,723개를 모두 평가했다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16234\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15584\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14286\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12987\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12987\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12987\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14935\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & Macro-F1 (\%) & 정상 FPR (\%) & 초기 준비 (s) & 후속 갱신 (s) & 전체 추론 (s) & 준비·추론 합계 (s) \\ \midrule
+\endfirsthead
+방법 & Macro-F1 (\%) & 정상 FPR (\%) & 초기 준비 (s) & 후속 갱신 (s) & 전체 추론 (s) & 준비·추론 합계 (s) \\ \midrule
+\endhead
+{}XGB & 63.12 & 14.912 & 0.48 & 5.62 & 1.41 & 7.52 \\
+{}PFN FT 없음 & 66.61 & 17.535 & 0.31 & 1.54 & 76.65 & 78.49 \\
+{}PFN 초기 FT 누적 & 65.87 & 19.581 & 2.34 & 1.55 & 81.63 & 85.53 \\
+{}PFN 초기 FT FIFO & 69.38 & 22.136 & 2.31 & 1.54 & 79.20 & 83.05 \\
+{}PFN 초기 FT 유사도 & 57.25 & 52.649 & 2.31 & 1.77 & 79.46 & 83.55 \\
+{}PFN 초기 FT 무작위 & 66.20 & 16.836 & 2.31 & 1.55 & 79.21 & 83.06 \\
+{}PFN 초기 FT 고정 & 12.93 & 7.556 & 2.33 & 0.00 & 78.35 & 80.68 \\
+{}PFN 매 단계 FT & 66.20 & 16.978 & 2.31 & 12.72 & 82.41 & 97.44 \\
+{}제안 모델 & 52.89 & 16.771 & 2.73 & 14.48 & 71.72 & 88.93 \\
+{}BoostPFN & 61.16 & 20.347 & 0.56 & 3.76 & 328.30 & 332.62 \\
+{}DistPFN 초기 FT & 73.86 & 19.297 & 2.34 & 1.55 & 81.75 & 85.65 \\
+\bottomrule
+\end{longtable}
+\endgroup
+초기 FT 누적 PFN의 Macro-F1은 65.87\%이며, FT 없는 누적 PFN 66.61\%, XGB 63.12\%와 비교된다. 초기 FT 효과는 -0.74\%p다. 매 단계 FT는 66.20\%이고 후속 갱신 합계 12.72초로, 초기 FT만 하는 누적 정책의 1.55초와 구분된다. 초기·반복 미세조정의 이득은 이 결과로 판단하며 자동으로 개선된다고 전제하지 않는다.
+
+제안 모델의 Macro-F1은 52.89\%이고 최종 test의 expert 호출은 0건, 변경 채택은 0건이다. 작은 예산을 다섯 역할로 나누면서 Global context와 보정 표본 수가 함께 줄어드는 조건이다. 이 관찰만으로 구조 자체의 우열을 결정하지 않고, 같은 Global 표본을 쓰는 ablation과 보정 데이터의 최소 요구량을 다음 검증으로 둔다.
+
+\subsection{toniot 클래스별 F1}
+최종 전체 test의 평가 표본 수 내림차순. 수치는 F1 (\%)다. 학습 사례 수와 평가 support를 구분한다.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.07469\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07107\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.06382\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07107\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08194\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08919\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08556\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08556\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08194\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07832\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.06382\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.06745\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08556\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 평가 표본 수 & XGB & PFN FT 없음 & PFN 초기 FT 누적 & PFN 초기 FT FIFO & PFN 초기 FT 유사도 & PFN 초기 FT 무작위 & PFN 초기 FT 고정 & PFN 매 단계 FT & 제안 모델 & BoostPFN & DistPFN 초기 FT \\ \midrule
+\endfirsthead
+클래스 & 평가 표본 수 & XGB & PFN FT 없음 & PFN 초기 FT 누적 & PFN 초기 FT FIFO & PFN 초기 FT 유사도 & PFN 초기 FT 무작위 & PFN 초기 FT 고정 & PFN 매 단계 FT & 제안 모델 & BoostPFN & DistPFN 초기 FT \\ \midrule
+\endhead
+{}benign & 1,474,302 & 91.37 & 90.08 & 88.88 & 87.15 & 64.03 & 90.54 & 82.76 & 90.58 & 90.06 & 88.32 & 89.31 \\
+{}xss & 343,854 & 82.10 & 82.39 & 83.30 & 83.90 & 73.21 & 84.51 & 0.00 & 84.29 & 76.07 & 79.42 & 85.44 \\
+{}password & 210,951 & 88.60 & 88.31 & 88.24 & 88.77 & 73.25 & 88.30 & 0.00 & 88.75 & 87.66 & 72.29 & 88.94 \\
+{}ddos & 103,338 & 94.14 & 95.01 & 94.53 & 93.52 & 83.53 & 93.37 & 0.00 & 94.54 & 48.79 & 86.62 & 97.87 \\
+{}injection & 68,891 & 80.53 & 80.71 & 73.77 & 71.66 & 70.14 & 66.61 & 0.00 & 80.67 & 50.88 & 66.36 & 82.86 \\
+{}backdoor & 40,030 & 98.87 & 99.80 & 98.94 & 98.89 & 97.39 & 98.94 & 0.00 & 99.82 & 97.34 & 98.82 & 99.91 \\
+{}dos & 22,458 & 60.20 & 67.02 & 78.02 & 95.24 & 92.04 & 84.93 & 44.38 & 82.80 & 60.61 & 58.02 & 95.37 \\
+{}scanning & 6,029 & 20.57 & 57.37 & 47.14 & 70.52 & 17.05 & 45.49 & 2.13 & 35.00 & 11.61 & 51.54 & 92.40 \\
+{}mitm & 1,161 & 2.86 & 2.72 & 3.22 & 1.67 & 1.60 & 3.27 & 0.00 & 2.93 & 3.21 & 3.18 & 3.62 \\
+{}ransomware & 709 & 11.92 & 2.68 & 2.65 & 2.51 & 0.26 & 6.02 & 0.00 & 2.60 & 2.68 & 7.01 & 2.85 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\subsubsection{기존·신규 공격의 최종 유지 성능}
+각 그룹 내 클래스별 F1의 단순 평균이며, 시간 단계 평균이 아니다. 정상 클래스는 별도로 평가된다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22089\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24829\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25514\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.27568\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 초기 두 공격 F1 평균 (\%) & 이후 도입 공격 F1 평균 (\%) & 특징 중복 제외 Macro-F1 (\%) \\ \midrule
+\endfirsthead
+방법 & 초기 두 공격 F1 평균 (\%) & 이후 도입 공격 F1 평균 (\%) & 특징 중복 제외 Macro-F1 (\%) \\ \midrule
+\endhead
+{}XGB & 40.39 & 65.57 & 61.55 \\
+{}PFN FT 없음 & 62.19 & 64.52 & 65.06 \\
+{}PFN 초기 FT 누적 & 62.58 & 63.52 & 64.14 \\
+{}PFN 초기 FT FIFO & 82.88 & 62.99 & 67.43 \\
+{}PFN 초기 FT 유사도 & 54.55 & 57.05 & 55.95 \\
+{}PFN 초기 FT 무작위 & 65.21 & 63.00 & 64.50 \\
+{}PFN 초기 FT 고정 & 23.26 & 0.00 & 12.07 \\
+{}PFN 매 단계 FT & 58.90 & 64.80 & 64.67 \\
+{}제안 모델 & 36.11 & 52.38 & 55.77 \\
+{}BoostPFN & 54.78 & 59.10 & 58.47 \\
+{}DistPFN 초기 FT & 93.89 & 65.93 & 72.65 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{해석과 후속 판단}
+보정 후보를 점검한 결과, 정오답이 바뀐 사례(helpful +\allowbreak{} harmful)는 CIC2018에서 최대 0건, ToN에서 최대 4건으로 기존 최소 30건 조건에 못 미쳤다. 후보 expert가 Global과 다른 유용한 결정을 충분히 제공하지 못한 것이 관찰된 사실이며, 작은 보정 집합만이 그 원인이라고 단정하지 않는다. 작은 예산에서는 기존 anchor 상한에 걸리지 않아 Global 표본 전체가 각 expert에 들어간다. 공통 anchor 비중을 줄이고 전문 표본 비중을 높이는 대조군, 같은 Global 표본의 구조 ablation, 보정 표본 배분 변화가 다음 개선 방향이다. 이번 test 결과에 맞추어 선택 기준을 낮추거나 재선택하지 않았다. 실행 폴더의 calibration\_\allowbreak{}diagnostics.json과 각 stage의 contexts.json·threshold\_\allowbreak{}grid.csv가 근거다.
+
+평가 범위 변경도 별도로 확인했다. XGB는 EXP76 마지막 단계와 공통인 CIC2018 657,500개·ToN 473,794개 표본에서 예측이 완전히 일치했다. 따라서 이전 점수와 이번 XGB 점수의 차이는 같은 최종 모델을 전체 test에 적용한 데 따른 차이이며, 추가 학습 라벨을 사용한 결과가 아니다. 근거는 실행 폴더의 evaluation\_\allowbreak{}change\_\allowbreak{}check.json이다.
+
+후속 갱신 비용, 초기 미세조정 비용, 전체 추론 비용은 서로 다른 비용 항목이다. 전체 workload 합계는 초기 준비와 모든 후속 갱신, 최종 전체 test 추론의 합계이며 디스크 checkpoint 저장·검증 코드는 제외했다. 한 GPU에서 각 방법을 순차 실행했다. 갱신만 빠른 결과를 총비용 절감으로 확대하지 않는다.
+
+고정 context는 신규 클래스 라벨을 포함하지 않으므로 해당 이름을 출력할 수 없다. 사전학습과 초기 fine-tuning이 필요 없다는 뜻이 아니라, v3의 출력 확률이 추론 context 라벨을 참조한다는 구조상의 제약이다. 누적·버퍼 정책은 기존 클래스 사례를 보존한다. 유사도 삭제는 신규 학습 사례와 가까운 기존 사례를 제거하며, 경계 사례가 없어질 수 있어 단순 중복 제거와 동일시하지 않는다. 개선 후보는 클래스별 최소 표본 수와 정상·공격 경계 보존 제약이다.
+
+최종 점수는 최종 모델의 품질을 답한다. 도입 중간에 발생한 오류나 망각 회복 과정은 별도의 고정 평가 집합 단계별 곡선이 필요하다. 실제 네트워크 drift, 라벨 확보 이전 OOD 탐지, 통계적 성능 동등성은 이번 실험으로 입증하지 않았다. 단일 seed의 탐색 근거이며 추가 seed·라벨 예산 변화 검증을 거쳐 원고의 최종 성능 주장으로 채택한다.
+
+1014의 누적 10만 라벨 결과는 다른 예산·평가 집계 조건이므로 이번 슬라이드 본문에서 제외하고 원본 및 이전 자료를 보존한다. 원고는 반영안만 갱신하며 HTML·Overleaf에는 반영하지 않는다.
+
+\subsection{실행 근거}
+\par\noindent \textbullet\enspace 실행: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp77/\allowbreak{}\allowbreak{}20261015\allowbreak{}\_\allowbreak{}\allowbreak{}230535\_\allowbreak{}\allowbreak{}initialf\allowbreak{}t10\_\allowbreak{}\allowbreak{}fina\allowbreak{}lfull\_\allowbreak{}\allowbreak{}s4\allowbreak{}3\_\allowbreak{}\allowbreak{}2eb223\allowbreak{}7d}
+
+
+\par\noindent \textbullet\enspace 전체 결과
+
+
+\par\noindent \textbullet\enspace 독립 검증
+
+
+\par\noindent \textbullet\enspace 사전 지정 프로토콜
+
+
+
+
+\section{ASIACCS 2025·2026 채택 논문 중 우리 분야 참고 20편}
+작성: 2026-10-15. 목적: ASIACCS에 투고할 때 참고할 수 있도록, 최근 두 해 채택 논문 중 ML 기반 탐지·NIDS·보안 ML 평가에 가까운 논문을 추려 제목·한 줄 요약·링크를 정리한다. 논문 스타일(제목 짓기, 문제 설정, 평가 방식) 파악용이다.
+
+출처(채택 논문 목록, 2026-10-15 확인):
+
+\par\noindent \textbullet\enspace ASIACCS 2026 Cycle 1 (73편): https:/\allowbreak{}/\allowbreak{}asiaccs2026.cse.iitkgp.ac.in/\allowbreak{}cycle-1-papers/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace ASIACCS 2026 Cycle 2 (47편): https:/\allowbreak{}/\allowbreak{}asiaccs2026.cse.iitkgp.ac.in/\allowbreak{}cycle-2-papers/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace ASIACCS 2025 Cycle 1 (61편): https:/\allowbreak{}/\allowbreak{}asiaccs2025.hust.edu.vn/\allowbreak{}cycle-1-papers/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace ASIACCS 2025 Cycle 2 (53편): https:/\allowbreak{}/\allowbreak{}asiaccs2025.hust.edu.vn/\allowbreak{}cycle-2-papers/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace 2025 proceedings 전문에 따르면 558편 투고 중 114편 채택(20.4\%). 2026은 120편 채택.
+
+
+\par\noindent \textbullet\enspace ACM DL proceedings DOI 접두: 2025 =\allowbreak{} 10.1145/\allowbreak{}3708821, 2026 =\allowbreak{} 10.1145/\allowbreak{}3779208.
+
+
+선정 기준: 전체 234편 중 (A) NIDS를 직접 다루는 논문, (B) ML 탐지기의 데이터·드리프트·강건성 평가, (C) 탐지 시스템을 운영 환경에서 평가한 논문, (D) 공격의 시간 변화를 측정한 논문 순으로 20편. 암호·하드웨어·블록체인·프라이버시 논문(전체의 절반 이상)은 제외. 요약은 초록·저자 페이지·arXiv 기준이며, 수치를 인용하려면 원문을 다시 확인할 것.
+
+실험 불렛(2026-10-15): 맨 앞 [유형]은 평가 방식의 성격이다. [분류성능] 공개·자체 데이터셋에서 탐지·분류 성능 비교 · [시나리오] 운영 상황을 모사한 프로토콜·분할을 직접 설계해 평가 · [테스트베드] 환경을 직접 구축해 공격이나 시스템을 재현 · [실환경] 실제 운영 데이터나 배포 · [시뮬레이션] 시뮬레이터 기반 공격·방어 · [적대적] 회피 공격으로 강건성 평가 · [측정] 대규모 데이터·지식베이스 측정 · [문헌] 문헌 체계화. 두 성격이 섞이면 '+\allowbreak{}'로 묶었다. 이어서 무슨 실험을 했는지 쉼표로 나열하고 ablation은 'ablation:' 뒤에 적었다. 원문을 읽지 못한 10·17번은 초록 기준이며 그렇게 표시했다. 2번(LotBoNC)은 docs/\allowbreak{}lablog/\allowbreak{}evidence/\allowbreak{}20261015/\allowbreak{}lotbonc.pdf 본문, 나머지는 arXiv·저자 PDF 본문의 평가 절 기준이다.
+
+\subsection{A. NIDS를 직접 다룬 논문 (6편)}
+\par\noindent \textbullet\enspace SoK: Reshaping Research on Network Intrusion Detection Systems (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: NIDS 연구 결과가 실제 운영에 거의 반영되지 않는 원인을 NIDS 고유 특성에 대한 오해(네트워크 없이 하는 평가, 운영자는 개별 샘플이 아니라 보고서를 본다 등)로 진단하고, 3개 주장과 권고, 재현 가능한 사례연구를 제시한 단독 저자 SoK.
+
+
+\par\noindent \textbullet\enspace 실험: [문헌+\allowbreak{}분류성능] 선행 연구·실무 설문을 근거로 NIDS 특성 3개 주장 정리, CICIDS17을 앞 4일/\allowbreak{}5일째로 시간 분할해 DT·RF·HGB·LR 비교, 플로우 단위 vs 호스트 단위 지표로 순위 역전 관찰, 원 데이터셋 vs 수정판 인용 수 비교
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2604.17556
+
+
+
+\par\noindent \textbullet\enspace LotBoNC: Novel Botnet Traffic Classification under Long-tailed Distributions (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 운영망의 봇넷 트래픽은 소수 known 클래스가 지배하고 희귀한 미지 변종이 라벨 없이 유입된다는 전제에서, 자기지도 사전학습  \ensuremath{\rightarrow}  추정 class prior에 맞춘 entropy-regularized optimal transport pseudo-label  \ensuremath{\rightarrow}  prototype·prior를 갱신하는 EM 루프로 long-tail·open-world 암호화 트래픽 분류를 하나의 프레임워크로 다룬다(세션 "Botnets and Intrusion Detection Systems"). 우리 문제 설정(장꼬리 +\allowbreak{} 미지 클래스)과 가장 가깝다.
+
+
+\par\noindent \textbullet\enspace 실험: [시나리오+\allowbreak{}분류성능] 공개 데이터 3개에 라벨(known만, 균형)/\allowbreak{}비라벨(known 잔여+\allowbreak{}unknown, long-tail) 분할을 직접 구성, 불균형 강도 γ별 정확도를 라벨·비라벨(aware/\allowbreak{}agnostic)로 나눠 7개 베이스라인과 비교, 라벨-비라벨 클래스 비율 ρ별 정확도와 pseudo-label 히트맵, 클래스 prior 복원 곡선·t-SNE, ablation: 분포 모양(지수/\allowbreak{}계단), 사전학습 유무, 손실 비율 λ, 손실 성분 제거, dropout
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3779208.3785276 (저자 페이지 https:/\allowbreak{}/\allowbreak{}huanchenghu.github.io/\allowbreak{})
+
+
+
+\par\noindent \textbullet\enspace "What is the Problem Space?" Defining Host-space Adversarial Perturbations against Network Intrusion Detection Systems (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 316편 문헌 검토로 기존 NIDS 적대적 공격 연구 대부분이 공격자가 손댈 수 없는 수집 후 데이터(라우터 캡처 패킷, NIDS 측 flow)를 교란했음을 지적하고, 공격자 호스트에서만 가능한 host-space 교란을 정의한 뒤 SSH 브루트포스 문자열 한 글자 변경이 feature space에 미치는 영향을 추적한다.
+
+
+\par\noindent \textbullet\enspace 실험: [문헌+\allowbreak{}테스트베드] 316편 리뷰로 교란 위치 분류(실데이터 수집 12편), CICIDS17·18에 시뮬레이터 생성 SSH 브루트포스로 분류기 5종 TPR 측정, 35대 스마트홈에서 실제 공격·benign 트레이스로 재검증, 변형: 공격 도구·대역폭 24조합·OS·특징 근사
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2605.25822
+
+
+
+\par\noindent \textbullet\enspace StealthCup: Realistic, Multi-Stage, Evasion-Focused CTF for Benchmarking IDS (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 합성 데이터셋이나 스크립트 재생 대신 전문 침투테스터가 IT/\allowbreak{}OT 테스트베드에서 다단계 공격을 수행하고 IDS 탐지가 감점인 CTF로 IDS를 벤치마크한다. 32개 공격 기법 중 11개는 어떤 IDS 구성도 못 잡았고, 오픈소스 IDS는 오탐률 90\% 초과, 상용 IDS는 오탐이 적은 대신 미탐이 많았다.
+
+
+\par\noindent \textbullet\enspace 실험: [테스트베드] AWS IT+\allowbreak{}OT 테스트베드(158 VM)에서 12팀 CTF, IDS 7개 구성(상용 EDR·NIDS, Wazuh, Suricata)의 탐지 커버리지·오탐률 측정, 32개 기법 중 미탐 11개, Volt Typhoon 권고와 기법 대응으로 현실성 확인
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2511.17761
+
+
+
+\par\noindent \textbullet\enspace Ruling the Unruly: Designing Effective, Low-Noise Network Intrusion Detection Rules for Security Operations Centers (ASIACCS 2025)
+
+\par\noindent \textbullet\enspace 요약: 상용 관리형 SOC의 Suricata 규칙을 분석해 규칙 특이도와 커버리지가 분석가 업무량에 미치는 영향을 측정하고, 인터뷰로 다듬은 6개 규칙 설계 원칙을 실측으로 검증한다. 탐지 성능을 분석가 업무량이라는 운영 지표로 환산한 예.
+
+
+\par\noindent \textbullet\enspace 실험: [실환경] 상용 SOC 알림 3,000만 건·규칙 29만 개 분석, 규칙 수정본별 '불필요 알림/\allowbreak{}일'을 특이도로 정의, 전문가 인터뷰로 원칙 6개 도출, 규칙 그룹별 회귀로 원칙 효과 추정, XGBoost 위반 탐지기, 분석가 규칙 수정 전후 알림·탐지 비교
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2501.09808
+
+
+
+\par\noindent \textbullet\enspace OMAD5G: Online Malware Detection in 5G Networks using Compound Paths (ASIACCS 2025)
+
+\par\noindent \textbullet\enspace 요약: 5G UPF의 P4 스위치에서 도는 경량 on-path 분류기와 별도 서버의 transformer off-path 탐지기를 Neyman-Pearson 기준 3중 임계값으로 전환하는 온라인 악성코드 탐지. 5G 서비스 기반 구조에 맞춘 call flow 3개와 실제 모바일 트래픽 2종으로 프로토타입을 평가한다.
+
+
+\par\noindent \textbullet\enspace 실험: [테스트베드+\allowbreak{}분류성능] 5G 테스트베드(VET5G)와 P4 스위치에 프로토타입 구현, CICAndMal2017과 자체 ZooBazaar2024(학생 40명 실행)로 PCAP 혼합 트래픽 생성, FPR 1\% 기준 precision·recall로 선행 탐지기 6종과 비교, in-network 분류기 NetBeacon과 on-path 비교
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.cs.binghamton.edu/\allowbreak{}\textasciitilde{}ghyan/\allowbreak{}papers/\allowbreak{}asiaccs25.pdf
+
+
+
+\subsection{B. ML 탐지기의 데이터·드리프트·강건성 평가 (7편)}
+\par\noindent \textbullet\enspace Taming Data Challenges in ML-based Security Tasks Using Generative AI (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 보안 분류기의 학습 데이터 부족과 concept drift를 생성형 AI 합성 데이터로 보완할 수 있는지 7개 보안 과제·6개 GenAI 기법으로 검증한다. 약 180개 샘플 설정에서 최대 32.6\% 개선을 보고하면서, 노이즈 라벨·클래스 중첩·희소 특징에서는 효과가 줄어드는 실패 조건도 함께 적는다.
+
+
+\par\noindent \textbullet\enspace 실험: [분류성능+\allowbreak{}시나리오] 보안 과제 7개에 GenAI 6종+\allowbreak{}Nimai·SMOTE로 증강 후 F-score 상대 이득(10 seed, 통계 검정), 소표본(180개) 설정, 드리프트 시나리오: BODMAS 월 0 학습 \ensuremath{\rightarrow} 월 1–12, 불확실 샘플 9–64개 라벨링 후 증강 재학습, ablation: 라벨 노이즈, 클래스 중첩·희소 특징, 표준화, GenAI 실패 원인
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2507.06092
+
+
+
+\par\noindent \textbullet\enspace ALPHA: Active Learning with PAC-Bayesian Theory for Android Malware Detection (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: PAC-Bayes 경계를 세 가지 drift 항(out-of-support 질량, 경계 불안정, 밀도 불일치)으로 분해해 라벨링할 샘플을 고르는 drift-aware 능동학습. 시간적·공간적 drift 벤치마크에서 불확실성 샘플링 대비 F1 15.4–22.8\% 향상, drift가 클수록 이득이 큼을 통계적으로 확인한다.
+
+
+\par\noindent \textbullet\enspace 실험: [시나리오+\allowbreak{}분류성능] APIGraph·AndroZoo 월 단위 시간 분할, 윈도우마다 예산 50–400개 라벨링·재학습하는 순차 능동학습 프로토콜, 불확실성·pseudo-loss 샘플링과 FNR·FPR·F1 비교, 벤치마크 드리프트 크기(support/\allowbreak{}density) 정량화와 이득의 상관, 계산 오버헤드, ablation: 단계별 기여·하이퍼파라미터, 사례 연구
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.plai.ifi.lmu.de/\allowbreak{}publications/\allowbreak{}asiaccs26-alpha.pdf
+
+
+
+\par\noindent \textbullet\enspace The Role of Domain-Specific Features in Malware Detection: A macOS Case Study (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 인증서·entitlement·persistence 방법·핵심 API 등 macOS 고유 정적 특징으로 탐지기를 학습해 41,129개 데이터셋과 신규 실행파일 9,000개에서 평가하고, 도메인 특징을 빼면 탐지율이 15.92\% 떨어짐을 보여 특징 공학의 가치를 입증한다. 데이터셋 공개.
+
+
+\par\noindent \textbullet\enspace 실험: [분류성능] 자체 구축 Mach-O 41k로 DT·RF·XGB·MalConv와 선행 특징 집합 2종 비교(FPR 1\%에서 TPR), 2024년 신규 9,000개로 시간상 실환경 테스트, ablation: 일반/\allowbreak{}macOS 특징 제거, 특징 중요도, 패킹·서명·미검증 인증서 하위집합
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2606.03218
+
+
+
+\par\noindent \textbullet\enspace DroidHunter: A Robust Vision-Based Detection Against Hidden Android Malware (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 앱을 Smali 명령어로 분해해 명령어 하나를 픽셀 하나로 인코딩한 이미지를 Vision Transformer와 CNN+\allowbreak{}SVM으로 분류한다. 난독화 포함 약 50만 APK에서 기존 탐지기 9개 대비 우위와 concept drift 내성을 주장하며 구현을 Zenodo에 공개한다.
+
+
+\par\noindent \textbullet\enspace 실험: [분류성능] 최대 477k APK에서 CNN+\allowbreak{}SVM·ViT로 9개 탐지기(Drebin·MaMaDroid·DexRay 등)와 비교, 난독화 악성코드 하위집합 탐지율, 최근 샘플 AUT로 드리프트 내성 (초록 기준)
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3779208.3785386 (프리프린트 https:/\allowbreak{}/\allowbreak{}inria.hal.science/\allowbreak{}hal-05419946v1)
+
+
+
+\par\noindent \textbullet\enspace Evaluating Robustness of Reference-based Phishing Detectors (ASIACCS 2025)
+
+\par\noindent \textbullet\enspace 요약: 참조 기반 피싱 탐지기 PhishIntention·Dynaphish에 적응형 회피 공격(새 공격 목표, 실수 교란의 정수 픽셀 변환)을 적용해 원 논문보다 훨씬 덜 강건함을 보이고, 강건성 평가에서 반복되는 실수와 취약 원인을 정리한다.
+
+
+\par\noindent \textbullet\enspace 실험: [적대적] 참조 기반 탐지기 2종(PhishIntention·DynaPhish)에 구성요소별 공격과 E2E 공격 3종(no-object 오버레이, triple-jump, 로고 마스킹) 적용해 recall 변화 관찰, 정수 픽셀·리사이즈 제약 반영, 선행 강건성 평가의 실수 정리
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3708821.3710840 (저자 PDF https:/\allowbreak{}/\allowbreak{}wsp-lab.github.io/\allowbreak{}papers/\allowbreak{}jeon-asiaccs25.pdf)
+
+
+
+\par\noindent \textbullet\enspace Toward Malicious Clients Detection in Federated Learning (ASIACCS 2025)
+
+\par\noindent \textbullet\enspace 요약: 서버가 모아 둔 전역 모델 열로 합성 데이터셋을 만들어 악성 업데이트를 행동 기반으로 분리하는 SafeFL. 기존 탐지법이 정직한 클라이언트를 과도하게 차단하거나 비현실적 서버 능력을 가정한다는 비판에서 출발한다.
+
+
+\par\noindent \textbullet\enspace 실험: [시뮬레이션] 데이터셋 5개·클라이언트 100–400 FL에서 중독 공격 11종 대 방어 10종 비교(DACC·FPR·FNR·TACC·ASR), ablation: 악성 비율, 클라이언트 수, non-IID 정도, 궤적 길이, 합성 데이터 크기, 집계 규칙
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2505.09110 (DOI https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3708821.3736194)
+
+
+
+\par\noindent \textbullet\enspace Trace Gadgets: Minimizing Code Context for Machine Learning-Based Vulnerability Prediction (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 취약점까지의 실행 경로 위 문장만 남긴 코드 표현으로 ML 취약점 예측 입력을 최소화한다. 수작업 라벨 실제 데이터셋을 구축하고, 완전히 미지의 데이터셋에서 CodeQL 대비 4\% 이상 우위와 실제 소프트웨어의 미공개 취약점 발견을 보고한다.
+
+
+\par\noindent \textbullet\enspace 실험: [분류성능+\allowbreak{}실환경] DockerHub 추출 자체 데이터셋(수작업 라벨)과 Juliet·OWASP로 코드 LM 3종 F1, 표현 3종(함수/\allowbreak{}Code Gadget/\allowbreak{}TG) 비교, CodeQL·Semgrep·GPT-4o 등과 TPR/\allowbreak{}FPR, 긴 문맥 LLM 실험, 실제 컨테이너에서 신규 취약점 2건 발견
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2504.13676
+
+
+
+\subsection{C. 탐지 시스템을 운영 환경에서 평가 (5편)}
+\par\noindent \textbullet\enspace CryptoGuard: Lightweight Hybrid Detection and Response to Host-based Cryptojackers in Linux Cloud Environments (ASIACCS 2025)
+
+\par\noindent \textbullet\enspace 요약: 스케치·슬라이딩 윈도우 syscall 모니터링과 2단계 딥러닝 분류, eBPF 기반 대응으로 Linux 클라우드 호스트의 크립토재커를 탐지·차단한다. 실제 샘플 123개에서 단계별 F1 96.12\%/\allowbreak{}92.26\%, 호스트당 CPU 오버헤드 약 0.06\%를 보고한다.
+
+
+\par\noindent \textbullet\enspace 실험: [테스트베드] KVM VM 50대·Kubernetes에서 실제 크립토재커 123개와 정상 워크로드 실행, 2단계 분류 F1(CNN·LSTM·RF), 선행 탐지기 3종 재구현 비교, CPU 스로틀링 회피 테스트, 오버헤드·지연 측정, 민감도: 스케치 크기·윈도우 길이
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2510.18324
+
+
+
+\par\noindent \textbullet\enspace Minerva: A File-Based Ransomware Detector (ASIACCS 2025)
+
+\par\noindent \textbullet\enspace 요약: 프로세스가 아니라 파일이 받는 연산을 시간 창 안에서 모은 파일 단위 행동 프로파일로 랜섬웨어를 탐지한다. 회피 공격 내성, 미지 샘플 일반화, 낮은 탐지 지연을 설계 목표로 두고 평가한다.
+
+
+\par\noindent \textbullet\enspace 실험: [분류성능+\allowbreak{}적대적] 랜섬웨어 476개·정상 앱 2,000개의 파일 단위 행동으로 TPR·TNR·탐지 시간(윈도우·K 스윕), 적응형 회피 변종 21종 미학습 테스트, VM에서 I/\allowbreak{}O·CPU 오버헤드, 사용자 5명 사용성, SHAP 특징 기여
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2301.11050
+
+
+
+\par\noindent \textbullet\enspace SigN: SIMBox Activity Detection Through Latency Anomalies at the Cellular Edge (ASIACCS 2025)
+
+\par\noindent \textbullet\enspace 요약: SIMBox 기기의 원격 SIM 연결이 LTE 인증 단계 지연을 최대 23배 키운다는 점을 이용해, 기지국이 QoS 목적으로 이미 기록하는 인증 지연 로그만으로 셀룰러 엣지에서 사기 활동을 탐지한다. 실내외 실험 데이터셋을 공개한다.
+
+
+\par\noindent \textbullet\enspace 실험: [테스트베드+\allowbreak{}실환경] Faraday 실 LTE 망에서 휴대폰 12종·SIMBox 7대 접속 지연 측정(신호 감쇠·인증 알고리즘·TCP/\allowbreak{}UDP 변화), 파리 근교 주행으로 실제 사업자망 접속 2,287회 수집, 인증 지연 배수를 t-검정으로 비교, 일별 분포 모니터링 탐지 제안
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2502.01193
+
+
+
+\par\noindent \textbullet\enspace Practical Real-time Detection of IPv4 Record Classical Domain Hijacking at Scale (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 수백 TB passive DNS·지오로케이션·WHOIS·웹 크롤 데이터를 결합해 IPv4 레코드 도메인 하이재킹을 약 10분 안에 준실시간 탐지하는 프레임워크. 대형 DNS 보안업체 망에서 1년 이상 운용하며 신규 공격을 발견한 산업계 논문.
+
+
+\par\noindent \textbullet\enspace 실험: [실환경] passive DNS·WHOIS·웹 크롤 결합 프레임워크를 보안업체 망에서 1년 이상 운용, 약 10분 내 탐지, 신규 공격 사례 보고 (초록 기준)
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3779208.3807492
+
+
+
+\par\noindent \textbullet\enspace SoK: Systematization, Detection, and Hunting of Windows Malware Persistence Techniques (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: persistence 기법 72개를 분류하고 미문서 기법까지 찾는 탐지 프레임워크를 만들어 48,873개 샘플을 분석한다. persistence 비율이 55.2\%에 그친다는 결과, 업계 표준 도구의 오탐·미탐, 신규 기법 1개와 회피 전략 2개를 보고한다.
+
+
+\par\noindent \textbullet\enspace 실험: [문헌+\allowbreak{}측정] persistence 기법 72개 체계화, CAPE 샌드박스 VM 30대로 샘플 48,873개 실행해 기법 유병률 측정, PoC 72개로 미탐 검증·334개 수작업 검토로 오탐 측정, Registry·WMI 작업 집계로 신규 기법·우회 발견, 업계 탐지 도구와 오탐·미탐 비교
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3779208.3805971 (저자 PDF https:/\allowbreak{}/\allowbreak{}www.eurecom.eu/\allowbreak{}publication/\allowbreak{}8692/\allowbreak{}download/\allowbreak{}sec-publi-8692.pdf)
+
+
+
+\subsection{D. 공격의 시간 변화 측정 (2편)}
+\par\noindent \textbullet\enspace The End of Anarchy? Understanding the Life of HTTP Exploits Used in IoT Malware Infections (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: 허니팟 관측·악성코드 샘플·공개 취약점 정보를 결합해 IoT HTTP 익스플로잇의 공격량이 취약점 수명 동안 어떻게 오르내리는지, PoC 공개나 악성코드 편입 같은 사건이 추세에 어떤 영향을 주는지 추적한다. 시간순 평가 설계의 참고.
+
+
+\par\noindent \textbullet\enspace 실험: [측정] 허니팟 22개 5년 관측(공격 세션 376만·악성코드 35,826개)을 CVE 태깅, Exploit-DB·GitHub·Packet Storm PoC 공개일과 악성코드 무기화 시점 결합, 취약점 수명 동안 공격량 추이와 사건(PoC·무기화·패치·자동 업데이트) 효과 분석
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}repository.tudelft.nl/\allowbreak{}record/\allowbreak{}uuid:89f2f7e6-4194-421f-a96e-7c39118ec370
+
+
+
+\par\noindent \textbullet\enspace Kitten or Panda? Measuring the Specificity of Threat Group Behaviors in Public CTI Knowledge Bases (ASIACCS 2026)
+
+\par\noindent \textbullet\enspace 요약: MITRE ATT\&CK·Malpedia로 위협 그룹 행동 프로파일을 만들어 고유성을 측정한다. 그룹 고유 기법을 가진 그룹이 약 1/\allowbreak{}3에 그치고 정보를 더해도 64\%는 고유 행동이 없어, 행동 프로파일이 IOC를 대체하기 어렵다고 경고한다.
+
+
+\par\noindent \textbullet\enspace 실험: [측정] ATT\&CK·Malpedia를 정규화해 그룹 807개 프로파일 구축, 그룹 고유 기법·소프트웨어 비율을 KB별·합집합별 측정, 위협 보고서에서 CVE·기법 추출해 보강 후 재측정, KB 간 중복도(Jaccard)
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2506.10645 (DOI https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3779208.3786258)
+
+
+
+\subsection{스타일 관찰 (20편 기준, 작성자 의견)}
+\par\noindent \textbullet\enspace 제목: "시스템 이름: 설명" 형식이 절반(LotBoNC, StealthCup, OMAD5G, CryptoGuard, Minerva, SigN, ALPHA, DroidHunter, Trace Gadgets). 나머지는 질문형("What is the Problem Space?", "Kitten or Panda?", "The End of Anarchy?")이나 SoK.
+
+
+\par\noindent \textbullet\enspace 문제 설정: 기존 평가 관행을 비판하고 재평가하는 논문이 많다(1, 3, 11, 18, 20). 우리처럼 "기존 벤치마크는 운영 현실과 다르다"는 논지가 ASIACCS에서 통한다.
+
+
+\par\noindent \textbullet\enspace 장꼬리·open-world·drift·데이터 부족을 명시적 문제로 두는 논문이 2026에 늘었다(2, 7, 8, 10). F1 경쟁보다 "어떤 조건에서 왜 무너지는가"를 다룬다.
+
+
+\par\noindent \textbullet\enspace 평가: 실데이터·대규모·운영 환경이 기본이다(약 50만 APK, 수백 TB DNS, SOC 실제 규칙, 1년 운용). 탐지 성능 옆에 비용(CPU 0.06\%, 탐지 지연 10분, 분석가 업무량)을 같이 보고한다.
+
+
+\par\noindent \textbullet\enspace 실패 조건을 숨기지 않는다(7의 GenAI 실패 조건, 4의 미탐 11개, 18의 업계 도구 오탐·미탐).
+
+
+\par\noindent \textbullet\enspace 아티팩트 공개가 일반적(데이터셋 DOI, Zenodo 코드, HAL/\allowbreak{}arXiv 프리프린트).
+
+
+\par\noindent \textbullet\enspace NIDS 논문은 2026 전체 120편 중 세션 하나 분량(Session 7b "Botnets and Intrusion Detection Systems")으로 적다. 2025는 NIDS 규칙 논문(5)과 5G 탐지(6) 정도.
+
+
+\subsection{추가 후보 (요약 생략, 제목만)}
+\par\noindent \textbullet\enspace Bits and Pieces: Piecing Together Factors of IoT Vulnerability Exploitation (ASIACCS 2025)
+
+
+\par\noindent \textbullet\enspace Learning to Identify Conflicts in RPKI (ASIACCS 2025)
+
+
+\par\noindent \textbullet\enspace GAE4HT: Detecting Hardware Trojans with Graph Autoencoder-Trained on Golden Model Data Flow Graphs (ASIACCS 2025)
+
+
+\par\noindent \textbullet\enspace ImmuCheck: Selective Immutability for Container Escape Detection in Containerized Microservices (ASIACCS 2026)
+
+
+\par\noindent \textbullet\enspace Noise, Why Can't You Bend? Detecting Adversarial Perturbations in Wireless Sensing via Structural Fragility (ASIACCS 2026)
+
+
+
+
+\section{10월 15일 랩미팅 개편과 소규모 context 갱신 비교}
+\subsection{최신 결과 · 확대 예산과 최종 모델 평가}
+2026-10-16 후속 요청에 따라 신규 공격당 200·400개를 추가 비교했다. 초기 1,000개와 seed43 단일 실행을 유지하고, XGB 누적 재학습과 FT 없는 PFN 누적 context만 비교했다. EXP80 결과에 10·20·50·100·200·400개의 최종 전체 test 성능과 갱신 비용을 함께 정리했다. 8장 그래프에도 여섯 조건을 반영했다.
+
+부록의 날짜형 내부 별칭과 가상 유입률 표기를 없앴다. 9·10장은 데이터셋별 단계·클래스별 추가 표본·누적 수·별도 검증 용도이며, 소규모와 대규모의 Benign 공급 일정도 구분했다. 11장은 저장된 10만 개 학습 최종 모델을 전체 test로 평가한 결과다. 학습이나 threshold 선택은 다시 하지 않았다. EXP79 원본 순서 결과와 EXP81 혼합 배치 결과를 별도 보존한다.
+
+원본 test 파일의 query 배치 대부분이 단일 클래스라는 조건을 확인했다. 배치 posterior를 사용하는 DistPFN의 비교를 위해, test 행 ID만 seed43으로 섞어 전체 평가 기준을 맞췄다. 같은 확률에 배치 구성만 바꾼 대응 비교를 별도 기록했다. 발표 6·7·11장은 혼합 query 기준의 최종 성능이며, 6장의 갱신 비용은 원래 준비 단계 실측값이다. 현재 제안 모델의 개선은 Global context를 맞춘 대조군과 제한된 라벨의 역할별 배분 점검으로 이어가는 설계안으로 남겼고 test 기반 재조정은 하지 않았다.
+
+수정 전 10장 발표자료는 \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}arch\allowbreak{}ive/\allowbreak{}\allowbreak{}2026\allowbreak{}1016\_\allowbreak{}\allowbreak{}bef\allowbreak{}ore\_\allowbreak{}\allowbreak{}larg\allowbreak{}e\_\allowbreak{}\allowbreak{}final\_\allowbreak{}\allowbreak{}and\_\allowbreak{}\allowbreak{}expa\allowbreak{}nded\_\allowbreak{}\allowbreak{}bud\allowbreak{}get/\allowbreak{}\allowbreak{}}에 보존했다. 연구 버전 v7, 초기 FT 결과 제외, 7장 비용 제외, LoCalPFN 제외, HTML·원고 자동 수정 금지 범위는 유지했다. 최신 구성은 본문8장+\allowbreak{}부록3장이다.
+
+\subsection{이전 발표 범위 조정 · 과거 재생 결과 부록}
+2026-10-16 사용자가 신규 공격당 100·50·20·10개 결과의 누락을 지적하고 1014 결과의 부록 추가를 요청했다. 기존 6·7장의 번호와 비교군은 유지하고, 8장에 FT 없는 누적 TabPFN과 XGB의 표본 수별 최종 Macro-F1 그래프를 추가했다. 9장은 1014 자연비율·균등 배분 및 현재 100개 조건의 클래스별 최종 학습 수, 별도 검증 수를 나란히 표시한다. 클래스는 1014 자연비율 학습 수 내림차순이며 합계와 별도 검증은 하단에 분리했다. 10장은 1014의 여섯 방법 × 두 데이터셋 × 두 배분 성능을 수치가 표시된 막대그래프로 제시한다. 본문은 최종 상태 전체 test 평가, 부록 1014는 1,000행/\allowbreak{}초에서 단계별 서비스 버전의 예측을 합산한 평가임을 명시했다. 기존 완료 결과만 재사용하며 모델 재실행이나 시드 반복은 하지 않는다. 수정 전 7장 자료는 \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}arch\allowbreak{}ive/\allowbreak{}\allowbreak{}2026\allowbreak{}1016\_\allowbreak{}\allowbreak{}bef\allowbreak{}ore\_\allowbreak{}\allowbreak{}budg\allowbreak{}et\_\allowbreak{}\allowbreak{}and\_\allowbreak{}\allowbreak{}1\allowbreak{}014\_\allowbreak{}\allowbreak{}appe\allowbreak{}ndix/\allowbreak{}\allowbreak{}}에 보존했다.
+
+1014와 현재의 갱신 비용은 초기 구축과 추론을 제외한 후속 갱신 합계다. 같은 TabPFN 생성 함수를 사용하며 4개 estimator, \texttt{fit\_\allowbreak{}\allowbreak{}with\allowbreak{}\_\allowbreak{}\allowbreak{}cache}, context subsampling 없음으로 설정되어 있다. 1014는 CIC2018의 첫 context부터 19,921/\allowbreak{}24,820개(자연/\allowbreak{}균등), ToN 13,312/\allowbreak{}18,212개이며 최종 100,000개까지 전체 context를 다시 fit한다. 현재는 처음 1,000개에서 최종 1,400/\allowbreak{}1,700개다. 1014 PFN 후속 갱신은 CIC2018 44.30/\allowbreak{}41.00초, ToN 50.45/\allowbreak{}48.56초이고 현재는 1.26/\allowbreak{}1.54초다. \texttt{.\allowbreak{}fit()}은 가중치 fine-tuning이 아니라 누적 context의 전처리·표현·캐시 준비다. 큰 context를 반복 처리하는 작업량 차이가 확인되지만, 다른 실험 사이의 시간 비율만으로 특정 연산의 복잡도나 순수 표본 수 효과를 확정하지 않는다. 1014는 비용 반복 측정 3회 중 첫 측정과 표본 선택 시간을 보고하며, 세 번의 측정 시간을 합산한 수치가 아니다.
+
+제안 모델의 성능 경향 차이에는 학습량뿐 아니라 라벨 배분과 평가 방식이 함께 달라진 조건이 섞여 있다. 1014는 학습 100,000개에 별도 검증 8,047–8,668개를 제공했고 Global에는 49,621–50,125개가 들어갔다. 현재는 전체 1,400/\allowbreak{}1,700개를 Global·expert·route·tune·cal에 분할해 Global 583/\allowbreak{}695개, calibration 157/\allowbreak{}198개만 사용한다. 현재 최종 선택은 두 데이터 모두 Global fallback이고 expert 호출이 0건이다. 1014의 자연비율 역시 호출 0건이지만 균등 배분의 일부 버전에서는 실제 교정이 있었다. 따라서 현재 단일 PFN과의 차이를 expert의 피해나 모델 구조 자체의 한계로 단정할 수 없다. 다음 비교는 단일 PFN과 제안 모델의 Global context를 맞춘 대조군으로 자료 분할의 영향을 먼저 분리하고, 작은 예산에서 공통 anchor와 전문 사례 비중 및 검증 배분을 조정하는 순서가 적절하다. 동일 전체 라벨 예산과 test 미사용 원칙을 유지해야 하며, 이 수정안은 아직 실행한 결과가 아니다. DistPFN의 순위 차이도 학습 prior·query 배치(1014: 1,024, 현재: 8,192)·단계별 버전 사용이 함께 달라져 특정 한 요인으로 설명하지 않는다.
+
+\subsection{이전 발표 범위 조정 · 초기 FT와 SOTA 비용 제거}
+2026-10-16 후속 요청으로 6·7장의 초기 FT 비교군을 제거했다. 6장은 FT 없는 단일 TabPFN의 누적 context 갱신과 XGB의 누적 재학습을 성능·갱신 시간으로 비교한다. 7장은 제안 모델·BoostPFN·DistPFN을 포함한 최종 Macro-F1만 남기고 비용 패널을 제거했다. 초기 FT와 모든 비용 측정의 원본 결과는 보존한다. 앞부분의 갱신 흐름과 시나리오 설명도 초기 FT를 필수 단계로 읽지 않도록 정리했다.
+
+1014 결과의 본문 추가와 제안모델 제거는 사용자가 검토 중인 선택지이므로 이번 수정에서 확정하지 않았다. 현재 7장에는 제안모델 결과를 유지하고 두 데이터셋 모두 expert 호출 0건으로 Global만 사용한 상태를 명시했다. 1014는 누적 10만 사례·단계별 버전 예측 합산이며 별도 validation이 제공된 조건이라 현재 소량 라벨·최종 모델 평가와 직접 비교하지 않는다. 기존 수치를 재사용하는 부록 한 장을 권고하되 본문 7장은 그대로 유지했다. 별도 표본 수 감소 그래프도 추가 실험을 설명하는 근거로 사용할 수 있다. 제안모델의 후속 점검은 같은 Global context의 단일 PFN 대조군, 공통 anchor 비중과 전문 사례 배분, 보정 표본 배분을 우선하며 test 결과로 임계값을 낮춰 expert 호출을 강제하지 않는다.
+
+\subsection{이전 후속 요청 · EXP78}
+2026-10-16 요청에 따라 6·7장 비용은 초기 단계 이후의 갱신 시간 합계로 통일했다. XGB는 매 단계 누적 라벨로 새 모델을 재학습하고, 단일 PFN은 가중치를 고정한 채 누적 context·캐시를 재구성한다. 초기 준비와 전체 추론 비용은 본문 그래프에서 제외하되 실험 원시 기록에는 유지한다. 두 장의 비용 축은 동일한 선형 범위를 쓴다.
+
+6장은 XGB·FT 없는 누적 PFN·초기 FT 누적 PFN 세 모델로 정리한다. 7장의 DistPFN은 FT 없는 누적 PFN에 현재 query 배치 posterior 보정을 적용한 EXP78 결과로 교체했다. Macro-F1은 CIC2018 77.56\%, ToN 75.64\%이며, 보정 전 전체 test 예측이 EXP77의 FT 없는 PFN과 모두 일치한다. 같은 context 준비를 공유하므로 기존 FT 없는 PFN의 갱신 실측값을 재사용한다. 기존 FT 있는 DistPFN 결과는 EXP77에 보존한다.
+
+추가 라벨 예산 비교는 초기 1,000개와 초기 FT checkpoint를 고정하고 신규 공격당 100·50·20·10개만 바꾼다. 랩미팅용으로 seed 43 한 번만 사용한다. 기존 100개 조건은 재사용하고 작은 예산은 동일 사례의 중첩 부분집합으로 구성한다. EXP78 프로토콜과 등록된 실행 폴더를 근거로 하며, 클래스별 그래프와 라벨 예산 그래프는 본문 7장을 늘리지 않는 별도 자료로 둔다. 이전 슬라이드는 \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}arch\allowbreak{}ive/\allowbreak{}\allowbreak{}2026\allowbreak{}1016\_\allowbreak{}\allowbreak{}bef\allowbreak{}ore\_\allowbreak{}\allowbreak{}noft\allowbreak{}\_\allowbreak{}\allowbreak{}dist\_\allowbreak{}\allowbreak{}up\allowbreak{}date\_\allowbreak{}\allowbreak{}cos\allowbreak{}t/\allowbreak{}\allowbreak{}}에 보존했다.
+
+두 데이터셋 × 네 예산 × 세 모델의 24개 결과와 FT 없는 DistPFN 두 결과를 저장 예측으로 독립 검증했다. 신규 공격당 10개에서 XGB와 FT 없는 PFN의 Macro-F1 차이는 CIC2018 0.49\%p, ToN 0.39\%p였다. 완료 결과와 그래프에 표본 수별 품질·갱신 시간 및 클래스별 수치를 정리했다.
+
+\subsection{이전 후속 요청 · EXP77}
+사용자가 실제 초기 IDS fine-tuning과 최종 모델 전체 test 평가를 반영한 재실행을 요청했다. EXP77 프로토콜에 따라 공개 라벨 ID와 1,400개·1,700개 예산을 유지하고, 공식 v3 본체를 초기 10 epoch 학습한 뒤 context 정책을 비교한다. FT 없음과 매 단계 FT도 대조군으로 둔다. 기존 제안 모델·BoostPFN·DistPFN까지 같은 소규모 라벨 예산에서 비교하며 LoCalPFN은 제외한다. 검증·보정 라벨을 외부에서 추가하지 않는다.
+
+발표의 마지막 두 장은 EXP77 최종 상태 결과로 교체한다. 6장은 파라미터 학습·context 정책과 후속 갱신 비용, 7장은 제안 모델·SOTA의 동일 라벨 예산 품질과 초기 준비·후속 갱신·전체 추론 합계다. 1014 결과는 본문에서 제외하고 이전 PPTX/\allowbreak{}PDF를 \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}arch\allowbreak{}ive/\allowbreak{}\allowbreak{}2026\allowbreak{}1015\_\allowbreak{}\allowbreak{}bef\allowbreak{}ore\_\allowbreak{}\allowbreak{}init\allowbreak{}ial\_\allowbreak{}\allowbreak{}ft\_\allowbreak{}\allowbreak{}f\allowbreak{}inal\_\allowbreak{}\allowbreak{}eva\allowbreak{}l/\allowbreak{}\allowbreak{}}에 보존한다. v3 설명에는 기존 클래스도 분류하려면 해당 라벨의 context가 필요하다는 문장을 추가한다. 아래 이전 상태 설명은 실험·자료 변화의 기록이며 최신 결과는 EXP77 결과를 기준으로 한다.
+
+\subsection{사용자 요청과 후속 정정}
+최신 요청에서 발표 분량을 7장으로 줄이고 갱신의 전제를 다시 명시했다. \textbf{사전학습 checkpoint를 초기 IDS 데이터로 한 번 가중치 fine-tuning한 뒤, 그 가중치를 고정하고 신규 context 입력·누적·버퍼 교체를 비교}하는 것이 사용자의 의도다. 이미 완료한 EXP76은 초기 IDS fine-tuning이 없는 사전 비교이며 이 최종 조건의 실험 결과로 표시하지 않는다. 기존 결과의 의미를 소급 변경하거나 미실행 fine-tuning의 성능·비용을 추가하지 않는다.
+
+이번 개편의 출발점은 고정된 closed-set F1 순위보다, 새 공격 사례를 적은 데이터와 낮은 갱신 비용으로 반영하는 IDS의 유용성을 평가하는 것이다. 사용자가 말한 다른 네트워크 환경은 이 연구의 운영상 동기이며, 곧바로 데이터셋 간 전이 실험을 추가하라는 지시는 아니다. 기존 순차 공격 도입 시나리오를 평가 수단으로 유지하며 실제 환경 변화에 대한 강건성을 검증했다고 표현하지 않는다.
+
+사용자가 처음 언급한 EXP74는 후속 답변에서 \textbf{HTML 1014 탭}으로 정정했다. 해당 탭의 EXP72는 frozen TabPFN-v3의 누적 context 전처리·캐시 재구성과 XGBoost 누적 재학습의 비교다. EXP73은 같은 재생 시나리오에 기존 제안 모델과 BoostPFN·LoCalPFN·DistPFN을 추가했다. 단일 TabPFN의 갱신을 가중치 미세조정이라고 부르지 않는다. 제안 모델의 Global/\allowbreak{}expert/\allowbreak{}context/\allowbreak{}S/\allowbreak{}V 재구성과 LoCalPFN의 가중치 미세조정도 구분한다.
+
+연구 버전은 승인된 v7을 유지한다. 1002 PPTX/\allowbreak{}PDF와 과거 결과는 보존한다. HTML 변경은 이번 요청에 포함하지 않는다. 후속 답변에 따라 원고는 반영안만 작성하고 tex·PDF·ZIP·온라인 Overleaf를 수정하지 않는다. Overleaf 관련 플러그인 검색 결과는 없었고 Git remote는 GitHub만 연결되어 있다.
+
+\subsection{문헌과 연구 동기의 연결}
+Ma et al., In-Context Data Distillation with TabPFN의 Introduction은 tabular 데이터에서 트리 모델의 강세, 합성 과제 사전학습으로 작은 데이터에서 경쟁력 있는 TabPFN, 그리고 제한된 context를 최적화하는 ICD를 연결한다. §4는 48개 데이터셋의 집계에서 tuned XGBoost가 더 높고 ICD가 기본 TabPFN 및 기본 설정 XGBoost보다 우수했다고 보고한다. 발표처는 ICLR 2024 ME-FoMo 워크숍이다. 이 결과는 모든 조건에서 XGBoost를 이길 수 없다는 명제나 실제 IDS 환경 변화에 대한 실증을 뜻하지 않는다.
+
+\textbf{Discussion:} ICD는 고정된 모델의 context를 최적화해 더 큰 학습 집합의 정보를 활용한다. 본 연구에서는 큰 집합의 정적 압축을 넘어, 신규 라벨 도착 때 어느 정도의 context 재구성으로 탐지 품질을 유지할 수 있는지를 평가한다. 누적·교체·갱신 없음의 비교와 갱신/\allowbreak{}추론 비용의 분리가 이 차이를 확인할 근거이며, 작은 context의 품질·비용 이득은 추가 실험의 측정 대상이다.
+
+Hollmann et al., Nature 2025는 합성 데이터셋들에서 사전학습한 TabPFN이 라벨 context와 query를 입력받는 작동 원리를 설명한다. 본 연구는 기존 실행과 같은 로컬 TabPFN-v3 checkpoint를 사용하므로 논문의 버전·벤치마크 수치와 현재 IDS 수치를 혼용하지 않는다.
+
+\textbf{Discussion:} 사전학습 가중치를 유지한 context 갱신은 task별 가중치 최적화를 생략할 수 있지만, 전처리·context 처리·캐시 생성과 query 추론은 남는다. 1014의 전체 context 비용을 출발점으로, 표본 수와 교체 범위에 따른 품질 및 비용 변화를 직접 측정해야 채택 이유를 뒷받침할 수 있다.
+
+\subsection{추가 비교의 기본 설계}
+\par\noindent \textbullet\enspace 기존 context 크기 N과 신규 라벨 수 Δ를 실험 설정으로 지정하며, 사용자의 1,000·20은 설명용 예시
+
+
+\par\noindent \textbullet\enspace a: 기존 사례에 신규 사례를 누적하여 N+\allowbreak{}Δ개 유지
+
+
+\par\noindent \textbullet\enspace b: 신규 사례 수만큼 기존 사례를 제거하고 교체하여 N개 유지
+
+
+\par\noindent \textbullet\enspace b 삭제 기준: 확보 순서가 오래된 사례(FIFO), 신규 사례와 특징이 가까운 기존 사례, 무작위
+
+
+\par\noindent \textbullet\enspace c: 기존 context만으로 신규 사례를 추론하는 갱신 전 기준선
+
+
+\par\noindent \textbullet\enspace XGBoost 및 선택된 다른 비교 모델은 현재까지 공급된 사례로 누적 재학습·재구성
+
+
+\par\noindent \textbullet\enspace LoCalPFN은 사용자 요청에 따라 이번 실행에서 제외
+
+
+\par\noindent \textbullet\enspace 작은 context에서도 실험, 사용 라벨 수·저장 context 수·모델이 실제 소비한 수 구별
+
+
+\texttt{outdated\allowbreak{}}는 실제 노후화 판정 정보가 없으므로 FIFO 대리 기준으로 명시한다. 유사도 계산에는 현재까지 확보한 학습 특징만 사용하며, test의 특징·라벨로 삭제 대상을 선택하지 않는다. 초기 사례와 동일 시점 도착 사례의 동률 처리도 seed로 고정한다. 신규 클래스의 학습 사례와 평가 사례를 분리한다. 갱신 전 분류기의 출력 공간에 신규 클래스가 없으면 신규 공격 유형 인지는 불가능하므로, 공격 여부 탐지와 정확한 공격 유형 분류를 나누어 보고한다.
+
+\subsection{비용 측정과 결과 해석}
+초기 checkpoint 적재·초기 구축, 후속 표본 선택/\allowbreak{}유사도/\allowbreak{}전처리/\allowbreak{}캐시 또는 학습, 첫 추론, 이후 추론, GPU/\allowbreak{}RAM peak, context 수와 고유 라벨 수를 구분한다. 후속 준비 시간은 예측 가능한 상태까지의 비용이며 파일 저장·실험 로그는 별도 기록한다. GPU 동기화를 적용하고 단일 worker로 측정한다. 작은 context라고 추가가 즉시 증분 cache 갱신된다고 가정하지 않는다.
+
+신규 클래스 precision/\allowbreak{}recall/\allowbreak{}F1, 고정된 기존 클래스 평가 집합의 유지 성능, Benign FPR, Macro-F1을 함께 본다. 성능 표 클래스는 실제 평가 support 내림차순이다. 전후 평가는 같은 행으로 비교하며 단계별 클래스 집합이 다른 평균을 직접 개선량으로 해석하지 않는다. 1014 결과와 추가 실험의 라벨·context 예산이 다르면 별도 표로 제시한다. 결과를 보고 임의 허용 오차를 정해 동등 성능을 선언하지 않는다.
+
+\subsection{발표 구성}
+사용자가 지정한 7장 구성으로 교체했다. 1장은 타이틀 없이 사용자 의도를 발표용 문구로 다듬어 제시하며 지시 문장을 그대로 옮기지 않는다. 2장은 TabPFN의 사전학습·ICL·fine-tuning과 초기 미세조정 이후의 연구 방향, 3–4장은 원문 구조도 왼쪽·쉬운 단계 설명 오른쪽이며 캡션을 넣지 않는다. 5장에는 단계별 공개 클래스·클래스별 신규 라벨 수·누적 수와 별도 test 규모를 명시한다. 6장은 초기 IDS fine-tuning이 없는 소규모 사전 비교, 7장은 1014의 최종 10만 학습 사례와 여섯 비교 모델의 자연·균등 배분 결과다. 두 결과 장은 수치가 표시된 그래프로 바꾼다. 1014의 큰 비용은 후속 갱신 합계이며 추론비용과 구분한다.
+
+v3의 기준 문헌은 사용자가 제공한 기술보고서다. §2.5의 사전학습 규모는 \textbf{8조 개 이상 토큰}이며 합성 데이터셋의 개수와 혼동하지 않는다. 세부 fine-tuning 절차는 설치된 공식 구현으로 확인한다. 이전 25장 자료는 \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}arch\allowbreak{}ive/\allowbreak{}\allowbreak{}2026\allowbreak{}1015\_\allowbreak{}\allowbreak{}bef\allowbreak{}ore\_\allowbreak{}\allowbreak{}7sli\allowbreak{}de\_\allowbreak{}\allowbreak{}revis\allowbreak{}ion/\allowbreak{}\allowbreak{}}에 보존했다.
+
+신규 context만 제공하는 조건은 실제 후속 실행 전에 출력 클래스의 정의를 구체화해야 한다. 현재 v3 decoder는 context에 있는 라벨의 one-hot 벡터를 가중합하므로, 초기 가중치 fine-tuning만으로 context에 없는 기존 클래스 이름을 출력하지는 못한다. 기존 클래스도 평가하려면 그 클래스의 context 사례를 유지하는 조건을 별도로 두거나, 신규 클래스만 평가하는 조건임을 명시해야 한다. 이 구분은 실행 완료로 처리하지 않고 설계 검토 사항으로 남긴다.
+
+
+
+\section{원고 반영안 · TabPFN v3 작동과 context 갱신의 연구 목적}
+사용자 후속 요청에 따라 \textbf{반영안만 작성}했다. \texttt{docs/\allowbreak{}\allowbreak{}lat\allowbreak{}ex/\allowbreak{}\allowbreak{}main.\allowbreak{}tex}, 날짜별 원고, \texttt{ref.\allowbreak{}bib}, PDF, Overleaf ZIP 및 온라인 Overleaf는 이번 작업에서 수정하지 않는다. 제목 \textbf{TAILGUARD: An Uncertainty-Driven Ensemble Against Long-Tailed Cyber Threats}를 유지한다.
+
+최신 정정: 연구 방향은 \textbf{초기 IDS 데이터로 한 번 가중치 fine-tuning한 다음 가중치를 고정하고 추론 context를 변경}하는 비교다. 이를 실제 구현하고 22개 결과의 독립 검증을 마친 EXP77을 새 평가 근거로 정리했다. 아래 EXP76은 초기 IDS fine-tuning이 없고 단계별 모델의 예측을 합산한 사전 비교이므로 EXP77의 최종 상태 평가와 혼용하지 않는다. 초기 fine-tuning 비용과 이후 context 준비·추론 비용을 각각 정의하고 기대와 관측을 구분한다. EXP77의 실행·검증 상태와 수치는 실행 결과 기록을 기준으로 한다.
+
+\subsection{Introduction 앞부분}
+현재의 새 공격 라벨 반영 동기는 유지하되, closed-set 성적과 운영 유용성의 관계를 다음 문단으로 구체화할 수 있다. 네트워크 간 전이를 수행했다는 결과 주장이 아니라 연구 동기다.
+
+고정된 closed-set 벤치마크는 지정된 클래스와 데이터 조건에서의 구분 능력을 측정한다. 이것만으로 네트워크 조건과 확보한 공격 사례가 달라질 때 IDS가 유용한지 판단할 수는 없다. 따라서 새로 라벨이 확보된 공격을 제한된 context에 반영하면서 탐지 품질·기존 클래스 유지·정상 오탐과 갱신 완료 비용을 함께 평가한다. XGBoost는 강한 지도학습 비교 기준이며, 정적 F1 순위 하나로 갱신 방식을 선택하지 않는다.
+
+
+
+현재 실험은 통제된 클래스 도입이며 실제 네트워크 환경 변화의 재현이 아니라는 기존 한정은 유지한다. EXP76은 아직 별도 실험 근거의 검토 대상이며, 정적 expert/\allowbreak{}S/\allowbreak{}V 결과를 이 단일 모델 비교의 기여로 바꾸지 않는다.
+
+\subsection{Related Work의 Tabular Foundation Models}
+v1/\allowbreak{}v2 설명 뒤에 v3 원문 TabPFN-3: Technical Report을 추가한다. 현재 구현의 기반을 v2의 반복적인 행·열 attention 구조로만 설명하지 않는다. v3의 분포 embedding, 행별 feature aggregation, 행 기반 ICL, many-class decoder를 짧게 소개하고 자세한 작동은 Preliminaries로 연결한다.
+
+\textbf{Discussion 문단 제안:}
+
+TabPFN-3의 출력은 라벨 context에 의존하며, context 관련 연산의 캐시를 지원한다. 이 특성은 사례 선택·교체를 통한 적응을 검토할 근거지만 IDS에서 클래스별 품질이나 총비용 이점을 입증하지는 않는다. 체크포인트와 추론 설정을 유지한 채 보존 사례를 바꾸고, context 준비 비용과 query 추론 비용을 분리해서 측정한다. 새 기반 모델 구조나 실제 환경 변화에 대한 강건성을 검증한 것으로 주장하지 않는다.
+
+
+
+사용자가 지정한 In-Context Data Distillation with TabPFN은 ICLR 2024 ME-FoMo 워크숍 논문으로 인용한다. Introduction의 사전학습·transfer 동기와 §4의 tuned XGBoost 비교를 구분한다. 해당 논문을 “TabPFN은 XGBoost를 이길 수 없음”의 일반적 근거로 쓰지 않는다.
+
+\textbf{ICD Discussion 문단 제안:}
+
+ICD는 예측기 가중치를 고정한 채 작은 입력 context를 최적화하여 큰 학습 집합을 표현한다. 원 논문의 벤치마크 비교가 점진적 IDS 갱신 정책을 입증하는 것은 아니다. 이번 누적·교체·고정 context 대조는 어떤 라벨 사례를 보존하는지와 갱신·추론 비용을 평가한다. 이후 context 최적화를 추가한다면 최적화와 선택 비용을 일반적인 context 구성 비용과 별도로 합산해야 한다.
+
+
+
+BoostPFN·LoCalPFN·DistPFN의 기존 §2.3 통합 Discussion은 유지한다. ICD를 독립 설명 단위로 추가할 경우 위와 같은 자체 Discussion을 둔다.
+
+\subsection{Preliminaries · Context adaptation과 parameter fine-tuning}
+다음 정의를 추가할 수 있다. 현재 실행의 \texttt{TabPFNCl\allowbreak{}assifier\allowbreak{}.\allowbreak{}fit}을 가중치 fine-tuning으로 서술하지 않는다.
+
+갱신 단계 $t$의 라벨 context를 $C_t$, 사전학습 가중치를 $\theta$라 하면 일반적인 in-context 예측은 $p_\theta(y\mid x,C_t)$다. Context 교체는 가중치를 유지하면서 현재 예측 과제를 바꾼다. 평가한 캐시 구현의 fit은 전처리와 context 표현을 준비하므로 교체 시 이를 다시 계산한다. 파라미터 FT는 공개된 학습 사례에서 만든 context/query 과제의 지도 손실로 가중치를 갱신하는 별도 작업이다. 고정 epoch FT는 같은 라벨 예산 안에서 validation 그룹을 분리하고 test로 epoch를 선택하지 않는다. FT 이후에도 v3 decoder가 context 라벨을 이용하므로 기존 클래스를 분류하려면 그 클래스의 사례를 context에 남겨야 한다.
+
+
+
+Fine-tuning의 상세 API·optimizer·query 분할은 공식 구현과 로컬 8.2.0 소스로 뒷받침한다. v3 기술보고서에 task별 fine-tuning 튜토리얼이 있는 것처럼 인용하지 않는다. 실제 fit 파라미터 확인은 1014와 같은 생성 함수·checkpoint의 두 context fit에서 가중치가 동일했음을 보여준다.
+
+\subsection{Evaluation과 Discussion의 반영 후보}
+EXP77은 최종 모델의 품질을 주 평가로 삼는다. 각 단계에서 누적 라벨로 갱신한 뒤, 마지막 가중치·context·선택기 상태로 전체 test를 한 번 예측한다. 초기 두 공격 유지 성능과 이후 도입 공격의 클래스별 F1도 같은 최종 예측에서 계산한다. 이 수치는 단계 평균이나 시간 적응 과정의 성능과 다르다. 초기 FT 없음·초기 1회 FT·매 단계 FT를 구분하고, 초기 FT 공유 상태에서 누적·고정 버퍼·갱신 없음 비교를 수행한다. 프로토콜의 학습량과 비용 정의를 본문에 반영한다.
+
+제안 모델·SOTA는 같은 1,400개·1,700개 라벨 예산에서 비교하며 검증·보정용 라벨도 예산 안에 포함한다. 제안 모델은 기존 pretrained backbone, K=\allowbreak{}4 expert, S1V0를 유지한다. 초기 FT된 단일 PFN과는 라벨 예산을 통제한 방법 비교이지 동일 backbone의 구조 제거 실험이 아니다. 초기 FT가 기존 제안 모델의 독립 보정 풀까지 사용하지 않도록 했다는 구분을 명시한다. DistPFN의 주 비교는 EXP78의 FT 없는 누적 PFN에 현재 query 배치 posterior 보정을 적용한 결과로 교체한다. EXP77의 초기 FT가 있는 조건은 별도 보정 ablation으로 보존하며 원 논문의 필수 절차로 기술하지 않는다. LoCalPFN은 이번 실행에서 제외한다.
+
+2026-10-16 랩미팅 요청에 따라 발표의 비용 비교는 후속 context 갱신과 누적 재학습 시간에 집중한다. 원고에서도 해당 비용을 명시적으로 정의하고 초기 준비·추론을 포함한 총비용으로 확대하지 않는다. 신규 공격 라벨 수 비교는 초기 1,000개를 유지하고 신규 클래스당 100·50·20·10개를 사용하는 단일 seed 탐색이다. 이 실험의 범위는 새 공격의 라벨 확보량에 대한 민감도이며 초기 적응 데이터까지 줄인 전체 데이터 효율 평가와 구분한다. tex·Overleaf에는 적용하지 않고 반영안으로만 유지한다.
+
+\textbf{Discussion 반영안:} 초기 미세조정의 이득, 버퍼 유지의 품질, 반복 미세조정 대비 갱신 비용은 각각 독립적으로 검토한다. 준비 비용이 작아도 대규모 query의 추론 시간이 더 길면 총비용 우위로 주장하지 않는다. 작은 라벨 예산에서 제안 모델의 여러 역할을 분리하면 Global context와 보정 표본이 줄어들 수 있으므로, 같은 Global 표본의 ablation과 보정용 라벨 최소 요구량 검증을 후속 판단으로 연결한다. 미세조정 여부·강도 선택은 별도 validation에 기반하도록 후속 실험을 설계하며 이번 test 점수로 최적 설정을 소급 선택하지 않는다.
+
+아래 EXP76 수치는 기존 경과 설명용으로 보존한다. 새 주 평가 표에는 EXP77의 최종 상태 결과를 사용하고, 1014의 10만 라벨 결과는 별도 예산 실험으로 분리한다.
+
+EXP76은 두 데이터셋의 16개 비교를 완료하고 저장된 예측으로 독립 검증했다. 결과 기록을 근거로 소규모 context의 누적·교체·고정 비교를 별도의 평가 소절로 검토할 수 있다. 신규 라벨 수와 초기 표본 배분, 전체 test의 재생, 삭제 기준, 클래스 최소 보존 규칙, 배치 크기 및 초기/\allowbreak{}후속 비용 분리를 명시한다. 1014의 10만 라벨 실험과 동일한 정보량이라고 쓰지 않는다. 갱신 지연을 예측에 적용하지 않은 EXP76 주 결과를 1014의 지연 재생 결과와 혼합하지 않는다.
+
+이번 단일 seed에서 누적 PFN의 후속 갱신 합계는 CIC2018 1.28초·ToN 1.61초로 XGB의 2.62초·5.66초보다 짧았다. 그러나 전체 추론 시간은 더 길었으므로 총비용 우위로 확대하지 않는다. Discussion에서는 estimator 수·캐시 위치의 경량화와, 유사도 삭제 시 정상·기존 공격의 구분 근거를 보존하는 제약을 후속 검증으로 연결한다.
+
+성능이 비슷하다는 결론은 사전에 정한 허용차·반복 seed 등의 근거가 필요하다. 단일 seed의 test 결과만으로 특정 버퍼 정책을 최종 모델로 채택하지 않는다. 현재 expert/\allowbreak{}S/\allowbreak{}V architecture의 contribution을 단일 모델의 context 정책 비교로 자동 대체하지 않으며, 방향이 확정되면 contribution·방법론·결과의 정합을 함께 개편한다.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

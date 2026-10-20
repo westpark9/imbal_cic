@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Publish finished datasets as they arrive, then finish the combined report."""
 
+# HTML reporting was retired by the 2026-10-20 documentation reorganization.
+if __name__ == '__main__':
+    raise SystemExit('이 HTML 발행 명령은 폐기되었습니다. 결과를 검토한 뒤 scripts/common/lablog.py의 write_record로 한국어 LaTeX·PDF와 log.md를 갱신하세요. 기존 결과 계산 함수는 이력 참조용입니다.')
+
+
 # Repository layout bootstrap: works in the workspace and portable source snapshots.
 from pathlib import Path as _LayoutPath
 import sys as _layout_sys
@@ -32,7 +37,7 @@ def publish(root):
     subprocess.run([sys.executable,'scripts/sync_html_reports.py','--check'],cwd=ROOT,check=True)
     write(state,dict(state='browser_checks',pid=os.getpid()))
     subprocess.run([sys.executable,'scripts/v4/exp59/check_exp59_report.py','--out',str(root/'report_qa')],cwd=ROOT,check=True)
-    p=ROOT/'docs/research/20260928/exp59_report_manifest.json'
+    p=ROOT/'docs/lablog/evidence/20260928/exp59_report_manifest.json'
     report=read_record(p);report['validation'].update(
         integrated_sync_check=True,browser_checks=read_record(root/'report_qa/COMPLETE.json'))
     report['integrated_sha256']=sha(ROOT/'lablog/html_report/post_tabpfn.html')
@@ -55,7 +60,7 @@ def finish(root):
             report=publish(root);last=signature
             write(state,dict(state='complete' if complete else 'partial_published_waiting_for_experiments',
                 pid=os.getpid(),updated_epoch=time.time(),total_seconds=time.time()-started,
-                scope=report['scope'],local_report='lablog/html_report/scorer_verifier_target_0928.html',
+                scope=report['scope'],local_report='docs/lablog/reports/20260930.tex',
                 integrated_report='lablog/html_report/post_tabpfn.html',git_push='not performed',
                 online_artifact='not updated: no connected Claude artifact editor'))
         elif not signature:

@@ -376,16 +376,33 @@ EXP64–68: context composition feasibility, prompt-tuned contexts, temporal-arr
 | exp68 | 2026-10-02 | results_present | not_adopted | `tabpfn/results/v5/exp68/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43` |
 
 ## v6 · sparse_label_context_detection
-연구 의도 재정의: 희소 라벨 공격 탐지. 순차 공격 도입은 설계안; raw 시간 재현/전후 적응 비교는 필수 아님. 신규 실험 미실행. docs/research/20261002/research_direction.md
+연구 의도 재정의: 희소 라벨 공격 탐지. 순차 공격 도입은 설계안; raw 시간 재현/전후 적응 비교는 필수 아님. 신규 실험 미실행. docs/lablog/reports/20261002.tex
 
 | Experiment | Date | Status | Evidence | Run |
 |---|---|---|---|---|
 
 ## v7 · class_incremental_arrival
-EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨에서 XGB 재학습 vs TabPFN context 확장, seed 43. docs/research/20261002/exp69_protocol.md
+EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨에서 XGB 재학습 vs TabPFN context 확장, seed 43. docs/lablog/reports/20261002.tex
 
 | Experiment | Date | Status | Evidence | Run |
 |---|---|---|---|---|
 | exp69 | 2026-10-02 | complete | exploratory | `tabpfn/results/v7/exp69/20261002_exp69_class_arrival_s43` |
 | exp70 | 2026-10-02 | complete | exploratory | `tabpfn/results/v7/exp70/20261002_exp70_class_arrival_100k_s43` |
+| exp71 | 2026-10-13 | complete | exploratory | `tabpfn/results/v7/exp71/20261013_140543_bounded_uniform_natural_s43_731a4a80` |
+| exp71 | 2026-10-13 | interrupted | not_adopted | `tabpfn/results/v7/exp71/20261013_155851_cumulative_uniform_natural_s43_ecdd8728` |
+| exp71 | 2026-10-13 | complete | exploratory | `tabpfn/results/v7/exp71/20261013_174035_cumulative_recovery_s43_4229fd93` |
+| exp71 | 2026-10-14 | complete | exploratory | `tabpfn/results/v7/exp71/20261014_103108_cumulative_100k_uniform_natural_s43_43a766d9` |
+| exp72 | 2026-10-14 | complete | exploratory | `tabpfn/results/v7/exp72/20261014_134735_replay_100k_xgb_tabpfn_s43_de8b4a78` |
+| exp73 | 2026-10-14 | finished | unreviewed | `tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc` |
+| exp74 | 2026-10-15 | finished | unreviewed | `tabpfn/results/v7/exp74/20261015_171517_heads_replay_100k_s43_d74bc5fb` |
+| exp75 | 2026-10-15 | finished | unreviewed | `tabpfn/results/v7/exp75/20261015_181113_icd_replay_100k_s43_6558120d` |
+| exp76 | 2026-10-15 | finished | unreviewed | `tabpfn/results/v7/exp76/20261015_212937_context1000_new100_s43_1c62d14c` |
+| exp77 | 2026-10-15 | finished | not_adopted | `tabpfn/results/v7/exp77/20261015_230304_ft_profile_5e67a9b2` |
+| exp77 | 2026-10-15 | complete | exploratory | `tabpfn/results/v7/exp77/20261015_230535_initialft10_finalfull_s43_2eb2237d` |
+| exp78 | 2026-10-16 | complete | exploratory | `tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487` |
+| exp79 | 2026-10-16 | finished | exploratory | `tabpfn/results/v7/exp79/20261016_022105_saved100k_finalfull_s43_7f90866d` |
+| exp80 | 2026-10-16 | finished | exploratory | `tabpfn/results/v7/exp80/20261016_022614_new200_400_noft_s43_c6f6ea24` |
+| exp81 | 2026-10-16 | finished | exploratory | `tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34` |
+| exp82 | 2026-10-16 | finished | exploratory | `tabpfn/results/v7/exp82/20261016_063510_ton_proposed_rebuild_audit_s43_0ce11484` |
+| exp83 | 2026-10-16 | complete | exploratory | `tabpfn/results/v7/exp83/20261016_120553_context_buffer_10_400_noft_s43_7c25cb5d` |
 

@@ -1,0 +1,1079 @@
+% !TeX root = 20260904.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-09-04}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-09-04 · 0904 — SOTA PFN-scaling 코드 3종 IDS 스모크 (BoostPFN · LoCalPFN · DistPFN)}
+\label{report:20260904_0904}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+목적: 외부 SOTA 저장소 3개를 클론해 \textbf{우리 NF-v3 cic2018 chrono split, 훈련 18만 행}에서 "돌아가는지"까지만 확인한다 (사용자 지시 15:47: BoostPFN 비교실험은 보류, 18만 스모크까지만 — 나머지 SOTA 스모크가 먼저). 비교·해석용 숫자가 아니라 파이프라인 검증 기록이다. 모든 run은 XGBoost를 \textbf{같은 18만 행}으로 같은-run 재학습해 옆에 둔다.
+
+공통 설정 (세 어댑터 동일, \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}common} 재사용)
+
+\par\noindent \textbullet\enspace cic2018 uncapped, per-scenario chrono 60/\allowbreak{}20/\allowbreak{}20, train pool 12,069,313  \ensuremath{\rightarrow}  \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les 1800\allowbreak{}00} 층화 비율보존(seed+\allowbreak{}850): benign 156,726 /\allowbreak{} bot 1,858 /\allowbreak{} brute 5,147 /\allowbreak{} ddos 11,851 /\allowbreak{} dos 2,711 /\allowbreak{} inf 1,684 /\allowbreak{} \textbf{web 23}
+
+
+\par\noindent \textbullet\enspace eval =\allowbreak{} test split \texttt{-\allowbreak{}-\allowbreak{}test-\allowbreak{}c\allowbreak{}ap-\allowbreak{}per-\allowbreak{}c\allowbreak{}lass 100\allowbreak{}000}  \ensuremath{\rightarrow}  440,276행 (web 509) — tabpfn 트랙 표준 평가셋
+
+
+\par\noindent \textbullet\enspace 클론 위치 \texttt{.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}SOTA/\allowbreak{}\allowbreak{}\{\allowbreak{}BoostPF\allowbreak{}N,\allowbreak{}LoCalP\allowbreak{}FN,\allowbreak{}DistP\allowbreak{}FN\}\allowbreak{}} (FECO/\allowbreak{}FT/\allowbreak{}NEGSC/\allowbreak{}TS-IDS와 같은 자리)
+
+
+\par\noindent \textbullet\enspace [주의] 오늘 커밋 \texttt{da5ee2e}가 v3 스크립트를 \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}}로 옮겼는데 \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}common.\allowbreak{}R\allowbreak{}EPO\_\allowbreak{}\allowbreak{}ROOT\allowbreak{}}가 한 단계 짧아져 \texttt{exp\_\allowbreak{}\allowbreak{}util\allowbreak{}s}·\texttt{data/\allowbreak{}\allowbreak{}}·\texttt{results/\allowbreak{}\allowbreak{}} 기본 경로가 어긋남. 새 스크립트 3개는 자체 보정(\texttt{IMBALCIC\allowbreak{}\_\allowbreak{}\allowbreak{}ROOT} 계산 +\allowbreak{} \texttt{set\_\allowbreak{}\allowbreak{}defa\allowbreak{}ults})으로 우회했고 공유 모듈은 건드리지 않음. \textbf{기존 exp30\textasciitilde{}34 스크립트는 지금 그대로 실행하면 \texttt{ModuleNo\allowbreak{}tFoundEr\allowbreak{}ror: exp\allowbreak{}\_\allowbreak{}\allowbreak{}utils}} — 별도 수정 필요.
+
+
+\subsection{1. BoostPFN (Wang et al., AISTATS 2025) — \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp35\_\allowbreak{}\allowbreak{}boo\allowbreak{}stpfn.\allowbreak{}py\allowbreak{}}}
+방법: TabPFN-v1을 weak learner로 gradient boosting. 라운드마다 부스팅 가중치로 500행 표본  \ensuremath{\rightarrow}  v1 in-context fit  \ensuremath{\rightarrow}  train+\allowbreak{}test logit  \ensuremath{\rightarrow}  multinomial deviance line search γ\_\allowbreak{}t  \ensuremath{\rightarrow}  w \ensuremath{\leftarrow} w·exp(1−p\_\allowbreak{}true). 예측 =\allowbreak{} softmax(Σ γ\_\allowbreak{}t h\_\allowbreak{}t).
+
+\subsubsection{포팅 (\texttt{.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}SOTA/\allowbreak{}\allowbreak{}BoostPFN\allowbreak{}/\allowbreak{}\allowbreak{}IMBALCI\allowbreak{}C\_\allowbreak{}\allowbreak{}PORT\_\allowbreak{}\allowbreak{}N\allowbreak{}OTES.\allowbreak{}md})}
+\par\noindent \textbullet\enspace 상류는 TabPFN v1(pip 0.1.9)+\allowbreak{}sklearn 0.24+\allowbreak{}torch 1.9. 우리 env(py3.13/\allowbreak{}torch 2.11/\allowbreak{}sklearn 1.8/\allowbreak{}numpy 2.4)에서 \texttt{tabpfn} 이름은 v3 fork라 v1을 \texttt{tabpfn\_\allowbreak{}\allowbreak{}v\allowbreak{}1/\allowbreak{}\allowbreak{}}로 \textbf{벤더링}(wheel 소스, import 재작성). 체크포인트는 v1.0.0 태그에서 받아(sha256 3c9aadae…, 103,350,223 B) \texttt{models\_\allowbreak{}\allowbreak{}d\allowbreak{}iff/\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}\_\allowbreak{}\allowbreak{}epoch\_\allowbreak{}\allowbreak{}10\allowbreak{}0.\allowbreak{}cpkt}로 배치 — 원본 로더가 epoch 100부터 탐색하며 \textbf{없으면 죽은 URL에서 내려받아 그 이름으로 저장}하는 구조라 404 HTML이 ckpt로 저장되는 사고가 스모크에서 실제로 발생  \ensuremath{\rightarrow}  다운로드 분기를 FileNotFoundError로 교체.
+
+
+\par\noindent \textbullet\enspace 패치 5종(산술 무변경): \texttt{force\_\allowbreak{}\allowbreak{}al\allowbreak{}l\_\allowbreak{}\allowbreak{}finite\allowbreak{}  \ensuremath{\rightarrow}  ensur\allowbreak{}e\_\allowbreak{}\allowbreak{}all\_\allowbreak{}\allowbreak{}fi\allowbreak{}nite}, \texttt{\_\allowbreak{}\allowbreak{}gb\_\allowbreak{}\allowbreak{}loss\allowbreak{}es} 제거  \ensuremath{\rightarrow}  \texttt{gb\_\allowbreak{}\allowbreak{}losse\allowbreak{}s\_\allowbreak{}\allowbreak{}compat\allowbreak{}.\allowbreak{}py}(0.24.2 전사), \texttt{torch.\allowbreak{}lo\allowbreak{}ad(weigh\allowbreak{}ts\_\allowbreak{}\allowbreak{}only=\allowbreak{}\allowbreak{}False)}, \texttt{checkpoi\allowbreak{}nt()} 우회(inference) +\allowbreak{} \texttt{torch.\allowbreak{}au\allowbreak{}tocast}, \texttt{layer.\allowbreak{}py\allowbreak{}} typing import.
+
+
+\par\noindent \textbullet\enspace 합성 스모크: 3라운드 0.3 s, GPU 332 MiB. capped 데이터 스모크 4.9 s.
+
+
+\subsubsection{18만 스모크 결과 (run \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}154310} =\allowbreak{} 논문 커맨드 T=\allowbreak{}10, \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}154333} =\allowbreak{} 단일 500행 컨텍스트)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22669\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21822\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.23517\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.31992\linewidth-2\tabcolsep\relax}}
+\toprule
+F1 & XGB(같은 18만) & BoostPFN T=\allowbreak{}10 & v1 단일 500행(class-prop.) \\ \midrule
+\endfirsthead
+F1 & XGB(같은 18만) & BoostPFN T=\allowbreak{}10 & v1 단일 500행(class-prop.) \\ \midrule
+\endhead
+{}benign & 0.879 & 0.847 & 0.767 \\
+{}bot & 0.997 & 0.985 & 0.992 \\
+{}brute\_\allowbreak{}force & 0.904 & 0.493 & 0.904 \\
+{}ddos & 0.998 & 0.990 & 0.989 \\
+{}dos & 0.782 & 0.620 & 0.258 \\
+{}infiltration & 0.477 & 0.361 & 0.344 \\
+{}web\_\allowbreak{}attacks & 0.571 & \textbf{0.000} & 0.567 \\
+{}\textbf{macro} & \textbf{0.801} & \textbf{0.614} & 0.689 \\
+{}tail & 0.682 & 0.448 & 0.634 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 비용: 라운드당 1.5 s(620k행 예측 포함), 10라운드 23.5 s, GPU 피크 1.39 GiB. 병목은 14.7 GB pickle 로딩.
+
+
+\par\noindent \textbullet\enspace 관찰(스모크 수준, 해석 보류): 1a 궤적은 4라운드에 0.685 \ensuremath{\rightarrow} 7라운드 0.691 정점 후 0.614로 하락(γ\_\allowbreak{}10 =\allowbreak{} −0.14). 1b를 보면 exphadamard 가중치가 \textbf{infiltration에 붕괴}(라운드 10 표본 500 중 inf 406, benign 12, ESS 180k \ensuremath{\rightarrow} 1.8k). web 23행은 라운드당 0\textasciitilde{}7행 표본화되나 F1 0. 즉 원 코드의 "표본에 없는 클래스 =\allowbreak{} logit 0" 규칙 +\allowbreak{} 잔차 가중이 IR>1000에서 어떻게 작동하는지는 \textbf{비교실험 재개 시 첫 질문}.
+
+
+\par\noindent \textbullet\enspace T=\allowbreak{}100 run(B)은 사용자 지시로 43라운드에서 중단(기록 없음). 정직한 상태: \textbf{"돌아간다" 확인 완료, 성능 판단은 미실시.}
+
+
+\subsubsection{1b. 포팅 검증 (리뷰 워크플로: 렌즈 3 +\allowbreak{} 반박자 2/\allowbreak{}결함, 에이전트 9, 2026-09-04 16:20)}
+\par\noindent \textbullet\enspace \textbf{포팅 무결}: 벤더링 diff =\allowbreak{} 문서화된 패치뿐(18 파일, 추가/\allowbreak{}누락 0); \texttt{Multinom\allowbreak{}ialDevia\allowbreak{}nce}는 0.24.2 sdist(sha256 확인)와 동일 입력에서 일치; \texttt{predict(\allowbreak{})} 우회 출력 =\allowbreak{} 원본 \texttt{checkpoi\allowbreak{}nt(predi\allowbreak{}ct)} 출력 동일(실 ckpt, seed 42); 누수 없음(X\_\allowbreak{}test는 예측 경로만); 시드(+\allowbreak{}850/\allowbreak{}+\allowbreak{}900) core와 동일; run A를 \textbf{같은 seed로 비트 동일 재현}(macro 0.6135806559864706) — 이 GPU에서 결정적.
+
+
+\par\noindent \textbullet\enspace 반영한 지적: \texttt{-\allowbreak{}-\allowbreak{}loss M\allowbreak{}SE}는 상류 sklearn 0.24.2에서도 실행 불가(shim이 없는 의미론을 발명)  \ensuremath{\rightarrow}  선택지 제거·shim은 NotImplementedError; 1a/\allowbreak{}predict\_\allowbreak{}proba argmax assert가 아티팩트 저장 전이라 실패 시 run 전체 유실  \ensuremath{\rightarrow}  경고+\allowbreak{}기록으로 변경; V4 후보 학습기 타이밍 정렬; \texttt{tabpfn} 분기가 \texttt{-\allowbreak{}-\allowbreak{}replac\allowbreak{}ement} 무시  \ensuremath{\rightarrow}  수정. 재스모크 통과. 원본 \texttt{import i\allowbreak{}pdb} 함정(미설치)은 \texttt{loghadam\allowbreak{}ard}에서만 도달 — 미수정.
+
+
+\par\noindent \textbullet\enspace \textbf{알고리즘 분석(해석 보류, 비교실험 재개 시 출발점)} — run A의 라운드별 logit·가중치를 전량 기록해 계산: ① 500행 균등 표본에 web(23/\allowbreak{}180k) 포함 확률 0.062(hypergeometric), 7클래스 전부 포함 0.061; E[web]=\allowbreak{}1은 7,826행 필요(v1 한계 1,024). ② 부재 클래스 logit 0은 argmax엔 중립(present 최대 logit p5 \ensuremath{\geq} 2.1)이나, \textbf{web 1행 컨텍스트(라운드 2–4)는 web 행에서도 web logit 중앙값 −1.8}  \ensuremath{\rightarrow}  누적 F\_\allowbreak{}web이 −1.4까지 내려간 뒤 라운드 6–9 학습기가 web recall 0.44–0.49를 내도 γ 0.05–0.38로 12-logit 격차 회복 불가  \ensuremath{\rightarrow}  web 예측 0행. ③ exphadamard는 \textbf{매 라운드 놓친 infiltration 1,375행}(0821 §5의 라벨-충돌 쌍둥이와 같은 집단으로 추정)에 가중치 85\%를 몰아 ESS 180k \ensuremath{\rightarrow} 1.8k(r10) \ensuremath{\rightarrow} 1.2k(r43), 라운드 9부터 표본이 사실상 고정(연속 라운드 겹침 25\%). ④ line search가 행-평균 deviance라 라운드 8에 dos 오류 1,021 \ensuremath{\rightarrow} 68을 사려고 brute\_\allowbreak{}force 3,475/\allowbreak{}5,147행을 포기(brute F1 0.904 \ensuremath{\rightarrow} 0.493, 회복 없음). ⑤ γ\_\allowbreak{}10 =\allowbreak{} −0.14 =\allowbreak{} 반(反)학습기 사용, 부호/\allowbreak{}하한 가드 없음. ⑥ eps 클립(1.2e−7)이 우연히 2\% 질량 바닥  \ensuremath{\rightarrow}  late 라운드 benign \textasciitilde{}13행은 학습이 아니라 클립. ⑦ capped 스모크(web 0.42\%)는 정상 궤적(0.700 \ensuremath{\rightarrow} 0.797)  \ensuremath{\rightarrow}  \textbf{실패는 포팅이 아니라 IR>1000 레짐}. T=\allowbreak{}1000은 \textasciitilde{}35분/\allowbreak{}RAM 28 GB로 가능하나 라운드 11부터 구성 정체라 무의미.
+
+
+\subsection{2. LoCalPFN /\allowbreak{} TabPFN-kNN (Thomas et al., NeurIPS 2024) — \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp36\_\allowbreak{}\allowbreak{}loc\allowbreak{}alpfn.\allowbreak{}py\allowbreak{}}}
+방법: test 행마다 faiss exact-L2로 훈련 풀에서 1000 NN을 컨텍스트로 검색(knn, frozen v1); LoCalPFN(ft)은 같은 검색으로 v1을 AdamW 1e-5로 미세조정(21 epoch × 30 step × 2 query, 각 query에 1000+\allowbreak{}1000 NN), val AUC로 early stop 후 knn 평가.
+
+\par\noindent \textbullet\enspace 포팅: 자체 v1 재구현(\texttt{pfn.\allowbreak{}py})이라 소스 무수정. 유일한 결손 의존성 \texttt{faiss-\allowbreak{}cp\allowbreak{}u 1.\allowbreak{}15.\allowbreak{}0\allowbreak{}} 설치. 전처리는 저장소의 \texttt{load\_\allowbreak{}\allowbreak{}tab\allowbreak{}zilla\_\allowbreak{}\allowbreak{}da\allowbreak{}ta}대로 StandardScaler(train fit)+\allowbreak{}clip ±10 재현. val =\allowbreak{} chrono 20\% 슬라이스를 클래스당 5,000 캡(전량 4M은 epoch마다 못 돎).
+
+
+\par\noindent \textbullet\enspace 비용 실측: 컨텍스트 1000, 배치 256  \ensuremath{\rightarrow}  0.76 s/\allowbreak{}forward, 5.15 GiB(배치 512는 10.2 GiB). 44만 test 전량 \ensuremath{\approx} 22분/\allowbreak{}평가.
+
+
+\par\noindent \textbullet\enspace capped 스모크: knn 12 s /\allowbreak{} ft 27 s 통과.
+
+
+\par\noindent \textbullet\enspace \textbf{18만 1차 knn run은 97\%(3,336/\allowbreak{}3,440 배치)에서 CUDA OOM}: 저장소 \texttt{eval\_\allowbreak{}\allowbreak{}pfk\allowbreak{}nn}/\allowbreak{}\texttt{eval\_\allowbreak{}\allowbreak{}ft\_\allowbreak{}\allowbreak{}knn}이 배치마다 \texttt{logits =\allowbreak{}\allowbreak{} model(.\allowbreak{}.\allowbreak{}.\allowbreak{})[.\allowbreak{}.\allowbreak{}.\allowbreak{},\allowbreak{} :K]} — 디코더 출력 전체(1001×B×10)의 \textbf{뷰} — 를 \texttt{y\_\allowbreak{}\allowbreak{}pred}에 보관해 GPU에 배치당 5.1 MiB 누적(실측 5.4 MiB; 44만 행  \ensuremath{\rightarrow}  17.6 GB). TabZilla(\ensuremath{\leq}20만 행)에선 안 드러나는 스케일 문제. 조치: 러너에서 \texttt{model.\allowbreak{}fo\allowbreak{}rward} 출력을 \texttt{.\allowbreak{}clone()\allowbreak{}}하는 래퍼(저장소 무수정, 수치 동일)
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}ft-\allowbreak{}wor\allowbreak{}kdir}(학습 workdir의 model\_\allowbreak{}best.pth로 평가만 재실행). ft run은 학습만 끝내고 죽인 뒤 평가만 재실행(전체 재학습 회피).
+
+
+
+\par\noindent \textbullet\enspace \textbf{knn 18만 run 완료 (run \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}172920})}: 44만 행 평가 2,732 s(배치 128, ft와 병행), 피크 2.67 GiB(누수 해결 확인). macro \textbf{0.692} /\allowbreak{} tail 0.483 vs XGB 같은 행 0.801 /\allowbreak{} 0.682. 클래스별: benign 0.877, bot 0.989, brute 0.842, ddos 0.902, dos 0.776, inf 0.459, \textbf{web 0.000}. 스모크 수준 관찰: 1000-NN 컨텍스트에 web(풀 23행)이 들어올 일이 거의 없어 web은 구조적으로 0(BoostPFN과 같은 원인); head는 XGB 근접, ddos −0.095. 해석 보류.
+
+
+\par\noindent \textbullet\enspace ft 학습(workdir \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esume/\allowbreak{}\allowbreak{}ex\allowbreak{}p36\_\allowbreak{}\allowbreak{}loca\allowbreak{}lpfn\_\allowbreak{}\allowbreak{}ft\_\allowbreak{}\allowbreak{}20260904\allowbreak{}\_\allowbreak{}\allowbreak{}155442\_\allowbreak{}\allowbreak{}2315084}, 21 epoch × 30 step × 2 query, lr 1e-5, \textasciitilde{}3.5분/\allowbreak{}epoch — 대부분 val 35k행 평가 비용): val(chrono 20\%, 클래스당 5k 캡) AUC(ovo) 0.9166(epoch 0 =\allowbreak{} frozen TabPFN-kNN)  \ensuremath{\rightarrow}  \textbf{최고 0.9289 @ epoch 5} (=\allowbreak{} model\_\allowbreak{}best) /\allowbreak{} weighted-F1 0.803  \ensuremath{\rightarrow}  0.810(epoch 5–6)  \ensuremath{\rightarrow}  epoch 7부터 0.71–0.72로 흔들리다 18–19에 0.81 회복  \ensuremath{\rightarrow}  20에 0.72. 즉 미세조정 이득은 val AUC +\allowbreak{}0.012·F1 +\allowbreak{}0.008 수준이고 궤적이 불안정(2-query 배치, 30 step/\allowbreak{}epoch). 해석은 보류.
+
+
+\par\noindent \textbullet\enspace \textbf{ft 18만 평가 완료 (run \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}174104}, \texttt{-\allowbreak{}-\allowbreak{}ft-\allowbreak{}wor\allowbreak{}kdir} 재실행, 2,106 s 단독, 피크 2.67 GiB)}: macro \textbf{0.716} /\allowbreak{} weighted 0.870 /\allowbreak{} tail 0.487 vs XGB 0.801 /\allowbreak{} 0.875 /\allowbreak{} 0.682. 클래스별: benign 0.877, bot 0.996, brute 0.901, ddos 0.993, dos 0.779, inf 0.464, \textbf{web 0.000}. knn 대비 +\allowbreak{}0.024 macro(brute +\allowbreak{}0.06, ddos +\allowbreak{}0.09, bot +\allowbreak{}0.008)로 head는 XGB에 0.003–0.005 근접했으나 web은 여전히 0 — 검색 컨텍스트에 web이 없는 구조적 원인은 미세조정으로 안 바뀜. 해석 보류.
+
+
+\subsection{3. DistPFN /\allowbreak{} DistPFN-T (Lee et al., ICML 2026) — \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp37\_\allowbreak{}\allowbreak{}dis\allowbreak{}tpfn.\allowbreak{}py}}
+방법: 학습 없는 사후 보정 \texttt{p \ensuremath{\propto} y\_\allowbreak{}\allowbreak{}pr\allowbreak{}ob · P\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}avg \allowbreak{}/\allowbreak{}\allowbreak{} prior\_\allowbreak{}\allowbreak{}train} (P\_\allowbreak{}test\_\allowbreak{}avg =\allowbreak{} 예측 posterior 평균; -T는 P\_\allowbreak{}test\_\allowbreak{}avg를 τ=\allowbreak{}CE(P\_\allowbreak{}test\_\allowbreak{}avg, prior)로 softmax 온도조절). 모델 무관 12줄이라 저장소의 TabPFN(pip v2 API) 대신 \textbf{우리 TabPFN-v3 fork}에 적용.
+
+\par\noindent \textbullet\enspace 주의: 저장소의 \texttt{cross\_\allowbreak{}\allowbreak{}en\allowbreak{}tropy(P\_\allowbreak{}\allowbreak{}test\_\allowbreak{}\allowbreak{}avg\allowbreak{},\allowbreak{} prior)\allowbreak{}}는 2-D 입력용이라 1-D에서 AxisError  \ensuremath{\rightarrow}  바깥 try/\allowbreak{}except가 데이터셋을 조용히 건너뜀. README 의도대로 스칼라 τ로 구현했고, softmax를 \textbf{확률 벡터에} 적용하는 것도 원문 그대로.
+
+
+\par\noindent \textbullet\enspace 우리 평가셋은 클래스당 10만 캡이라 \textbf{컨텍스트 prior(benign 87\%) vs 평가 prior(benign 23\%)의 라벨 시프트가 구조적으로 존재} — 1a\_\allowbreak{}prior\_\allowbreak{}shift.csv에 명시. XGB predict\_\allowbreak{}proba에도 같은 보정을 걸어 6행 표로 냄(플러그인 거동 확인용).
+
+
+\par\noindent \textbullet\enspace capped 스모크 5.5 s 통과.
+
+
+\par\noindent \textbullet\enspace \textbf{18만 run 완료 (run \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}160005})}: TabPFN-v3 180k ctx, n\_\allowbreak{}est 4, fit\_\allowbreak{}preprocessors, 44만 행 단일 배치 — predict 379 s, 피크 8.67 GiB (메모리 모델 예측 8.37). 파이프라인 정상. 숫자(스모크 수준):
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.34722\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20278\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21389\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.23611\linewidth-2\tabcolsep\relax}}
+\toprule
+macro-F1 & raw & +\allowbreak{}DistPFN & +\allowbreak{}DistPFN-T \\ \midrule
+\endfirsthead
+macro-F1 & raw & +\allowbreak{}DistPFN & +\allowbreak{}DistPFN-T \\ \midrule
+\endhead
+{}TabPFN-v3 (180k ctx) & 0.796 & 0.800 & 0.745 \\
+{}XGB (같은 18만) & 0.801 & 0.809 & 0.769 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 보정 인자(1a): benign ×0.34, bot ×9.1, brute ×8.1, dos ×8.7, ddos ×3.4, inf ×3.0–3.2, web ×3.2–5.0 — 캡 평가셋의 라벨 시프트를 P\_\allowbreak{}test\_\allowbreak{}avg가 대체로 잡아냄(benign 예측 prior 0.29 vs 참 0.23). DistPFN-T는 온도조절 후 prior가 거의 균등(0.135–0.15)이 되어 web 인자 ×1057  \ensuremath{\rightarrow}  web precision 붕괴(F1 0.567 \ensuremath{\rightarrow} 0.156), benign도 하락. 해석은 보류하되 \textbf{-T 변형은 이 시프트 규모에서 그대로 쓰기 어려움}은 기록.
+
+
+\subsection{4. 18만 스모크 결과 요약 (17:41 완료)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15863\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15562\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19779\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19478\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14659\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14659\linewidth-2\tabcolsep\relax}}
+\toprule
+저장소 & 스크립트 & run & macro-F1 (XGB 같은 18만 행 0.801) & web F1 (XGB 0.571) & 비용 \\ \midrule
+\endfirsthead
+저장소 & 스크립트 & run & macro-F1 (XGB 같은 18만 행 0.801) & web F1 (XGB 0.571) & 비용 \\ \midrule
+\endhead
+{}BoostPFN T=\allowbreak{}10 (논문 커맨드) & exp35 & \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}154310} & 0.614 & 0.000 & 23.5 s, 1.4 GiB \\
+{}BoostPFN 단일 500행 컨텍스트 & exp35 --modelname tabpfn & \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}154333} & 0.689 & 0.567 & 2 s \\
+{}LoCalPFN TabPFN-kNN & exp36 --method knn & \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}172920} & 0.692 & 0.000 & 46 min, 2.7 GiB \\
+{}LoCalPFN ft & exp36 --method ft & \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}174104} (학습 workdir \texttt{…\_\allowbreak{}\allowbreak{}155442\allowbreak{}\_\allowbreak{}\allowbreak{}2315084\allowbreak{}}) & 0.716 & 0.000 & 학습 70 min +\allowbreak{} 평가 35 min \\
+{}DistPFN on TabPFN-v3 180k & exp37 & \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}160005} & 0.796 raw /\allowbreak{} 0.800 +\allowbreak{}DistPFN /\allowbreak{} 0.745 +\allowbreak{}T & 0.567 /\allowbreak{} 0.553 /\allowbreak{} 0.156 & 6.5 min, 8.7 GiB \\
+\bottomrule
+\end{longtable}
+\endgroup
+세 저장소 모두 \textbf{우리 split·18만·44만 행 평가셋에서 끝까지 돈다}(파이프라인 검증 목적 달성). 성능 해석·비교실험은 사용자 지시로 보류. 스모크 수준에서 공통으로 보이는 한 가지: 500\textasciitilde{}1000행 컨텍스트를 쓰는 두 방법(BoostPFN, LoCalPFN)은 web(풀 23행)을 0으로 놓치고, 같은 18만 행의 XGB·TabPFN-v3(180k ctx)는 0.57을 낸다 — 비교실험을 재개한다면 첫 질문은 "컨텍스트 크기 대 꼬리 클래스 포함 확률"이다. 새 파일: \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp35\_\allowbreak{}\allowbreak{}boo\allowbreak{}stpfn.\allowbreak{}py\allowbreak{}}, \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp36\_\allowbreak{}\allowbreak{}lo\allowbreak{}calpfn.\allowbreak{}p\allowbreak{}y}, \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp37\_\allowbreak{}\allowbreak{}di\allowbreak{}stpfn.\allowbreak{}py\allowbreak{}}; \texttt{.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}SOTA/\allowbreak{}\allowbreak{}BoostPFN\allowbreak{}/\allowbreak{}\allowbreak{}IMBALCI\allowbreak{}C\_\allowbreak{}\allowbreak{}PORT\_\allowbreak{}\allowbreak{}N\allowbreak{}OTES.\allowbreak{}md}; env 변경: \texttt{faiss-\allowbreak{}cp\allowbreak{}u 1.\allowbreak{}15.\allowbreak{}0\allowbreak{}} 설치. 스모크 run은 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}}에 기록급과 같은 형식으로 남아 있으니 인용 시 Args 확인.
+
+\subsection{5. 비교 실험 — 같은 C0(100k, benign 0.75, 공격 균등, seed 42) 위에 SOTA 3종 (17:58 발사)}
+사용자 질문(17:47): "500–1000행은 한계인가, 통상인가?"  \ensuremath{\rightarrow}  \textbf{한계}. BoostPFN·LoCalPFN은 TabPFN \textbf{v1}(\texttt{fit}이 1,024행 초과를 거부, attention이 컨텍스트 길이에 2차 메모리; v1은 \ensuremath{\leq}1,024행으로 사전학습)을 쓴다. BoostPFN은 "weak learner =\allowbreak{} 500행"이 설계 자체이고, LoCalPFN은 kNN 컨텍스트 1,000(\texttt{-\allowbreak{}-\allowbreak{}dynami\allowbreak{}c}도 10√n을 1,000에 캡). 100k 컨텍스트는 v1로 불가(100k² attention). 대신 \textbf{같은 100k C0를 각 방법의 '풀'로} 주면 정보 예산이 같아진다: BoostPFN은 C0에서 500행 표본을 뽑고(web 761/\allowbreak{}100k  \ensuremath{\rightarrow}  표본당 \textasciitilde{}3.8행), LoCalPFN은 C0에서 1000-NN을 검색·미세조정, DistPFN은 C0 위의 TabPFN-v3(=\allowbreak{}ours)와 XGB-c0에 플러그인. 이것이 캠페인이 XGB-c0를 비교한 방식과 같다.
+
+\par\noindent \textbullet\enspace 조건 =\allowbreak{} 기록 run \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}010654}(exp31, chain 13 seed 42, global 0.7623)와 동일: scenario-stratified 파티션(ctx 0.5/\allowbreak{}exp 0.25)  \ensuremath{\rightarrow}  D\_\allowbreak{}global  \ensuremath{\rightarrow}  \texttt{represen\allowbreak{}tative\_\allowbreak{}\allowbreak{}s\allowbreak{}ubset\_\allowbreak{}\allowbreak{}sh\allowbreak{}are(100k\allowbreak{},\allowbreak{} seed+\allowbreak{}\allowbreak{}9\allowbreak{}90,\allowbreak{} 0.\allowbreak{}75\allowbreak{},\allowbreak{} balanc\allowbreak{}ed)}. 헬퍼 \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}c\allowbreak{}0\_\allowbreak{}\allowbreak{}contex\allowbreak{}t.\allowbreak{}py}(exp31 함수 그대로 복사)로 뽑은 C0가 기록 run의 \texttt{0g\_\allowbreak{}\allowbreak{}c0\_\allowbreak{}\allowbreak{}sc\allowbreak{}enario.\allowbreak{}c\allowbreak{}sv}와 15항목 전부 일치(benign 75,000 /\allowbreak{} bot·brute·ddos·dos 4,848 /\allowbreak{} inf 4,847 /\allowbreak{} web 761). 평가 =\allowbreak{} \textbf{test 전량 4,023,114행} (캡 없음), TabPFN-v3는 fit\_\allowbreak{}with\_\allowbreak{}cache·n\_\allowbreak{}est 4·batch 500k.
+
+
+\par\noindent \textbullet\enspace run 목록(단일 seed 42; LoCalPFN 비용 때문에 7-seed는 미실시): ① exp37 c0: TabPFN-v3(ours) +\allowbreak{} XGB-c0 +\allowbreak{} DistPFN/\allowbreak{}-T ② exp36 knn c0 ③ exp36 ft c0 ④ exp35 T=\allowbreak{}50 c0(1a 궤적에 T=\allowbreak{}10 포함) +\allowbreak{} 단일 500행 기준. 기대 비용: ① 15분 ② \textasciitilde{}4h ③ \textasciitilde{}5h ④ \textasciitilde{}20분. 결과는 §6.
+
+
+\par\noindent \textbullet\enspace 공유 모듈 수정: \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}common.\allowbreak{}p\allowbreak{}y}의 \texttt{REPO\_\allowbreak{}\allowbreak{}ROO\allowbreak{}T}/\allowbreak{}\texttt{TABPFN\_\allowbreak{}\allowbreak{}D\allowbreak{}IR} 경로만 재배치에 맞게 고침(exp\_\allowbreak{}utils import·data·results·ckpt 기본값 복원, 로직 무변경).
+
+
+\subsection{6. 비교 실험 결과 (C0 100k · S=\allowbreak{}0.75 · 균등 · seed 42 · test 4,023,114행)}
+\subsubsection{6a. Run ① exp37 c0 — ours 재현 +\allowbreak{} XGB-c0 +\allowbreak{} DistPFN (run \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}183615}, 18:36)}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12019\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09615\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10096\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11058\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20192\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10096\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11058\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15865\linewidth-2\tabcolsep\relax}}
+\toprule
+F1 & XGB-c0 & +\allowbreak{}DistPFN & +\allowbreak{}DistPFN-T & \textbf{ours} (TabPFN-v3 C0, n\_\allowbreak{}est 4) & +\allowbreak{}DistPFN & +\allowbreak{}DistPFN-T & 기록 run \texttt{010654} (ours) \\ \midrule
+\endfirsthead
+F1 & XGB-c0 & +\allowbreak{}DistPFN & +\allowbreak{}DistPFN-T & \textbf{ours} (TabPFN-v3 C0, n\_\allowbreak{}est 4) & +\allowbreak{}DistPFN & +\allowbreak{}DistPFN-T & 기록 run \texttt{010654} (ours) \\ \midrule
+\endhead
+{}benign & 0.9924 & 0.9935 & 0.9791 & 0.9950 & 0.9950 & 0.9889 & 0.9952 \\
+{}bot & 0.9973 & 0.9972 & 0.9972 & 0.9984 & 0.9978 & 0.9980 & 0.9984 \\
+{}brute\_\allowbreak{}force & 0.9159 & 0.9159 & 0.9159 & 0.9159 & 0.9159 & 0.4934 & 0.9159 \\
+{}ddos & 0.9994 & 0.9995 & 0.9992 & 0.9958 & 0.9958 & 0.9978 & 0.9997 \\
+{}dos & 0.7818 & 0.7819 & 0.7815 & 0.7814 & 0.7812 & 0.7802 & 0.7814 \\
+{}infiltration & 0.3370 & 0.3699 & 0.1765 & 0.4005 & 0.4005 & 0.1128 & 0.4007 \\
+{}web\_\allowbreak{}attacks & 0.2439 & 0.2215 & 0.0819 & 0.2450 & 0.2402 & 0.0078 & 0.2448 \\
+{}\textbf{macro} & 0.7525 & 0.7542 & 0.7045 & \textbf{0.7617} & 0.7609 & 0.6255 & \textbf{0.7623} \\
+{}tail & 0.5260 & 0.5296 & 0.4185 & 0.5480 & 0.5462 & 0.3728 & 0.5480 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\par\noindent \textbullet\enspace \textbf{재현 검증}: ours 0.7617 vs 기록 0.7623 — 차이 −0.0006, 클래스별 최대 차 ddos −0.004. §12n의 GPU 동시실행 재현성 밴드(macro ±0.0016, 클래스 ±0.008) 안. 같은 C0 행·같은 시드·같은 fit\_\allowbreak{}mode이므로 \textbf{비교 설정이 기록과 동일함이 확인}됨. (predict 2,291 s — GPU 3-job 병행 탓; 기록 625–723 s.)
+
+
+\par\noindent \textbullet\enspace \textbf{XGB-c0(100k)} =\allowbreak{} 0.7525 — 캠페인의 XGB-c0 1M 0.7541 /\allowbreak{} full 0.7548과 일관. 즉 100k C0 위에서 ours +\allowbreak{}0.009.
+
+
+\par\noindent \textbullet\enspace \textbf{DistPFN}: ours에 −0.0008(web −0.005, 나머지 동일)  \ensuremath{\rightarrow}  효과 없음. XGB-c0에 +\allowbreak{}0.0017(inf +\allowbreak{}0.033, web −0.022). 이유는 1a\_\allowbreak{}prior\_\allowbreak{}shift에 있음: C0 prior(benign 0.75) vs test 참 prior(0.871)의 시프트를 P\_\allowbreak{}test\_\allowbreak{}avg(0.845)가 잘 추정하지만, 보정 인자가 benign ×1.13 /\allowbreak{} web ×0.60(TabPFN) · ×0.17(XGB) /\allowbreak{} bot ×0.21 /\allowbreak{} dos ×0.35 — 꼬리 클래스를 \textbf{줄이는} 방향이라 IDS의 관심 클래스에 불리. 설계상 "훈련 prior가 test보다 꼬리에 후할 때" 꼬리를 깎는 방법이고, 우리 C0는 의도적으로 꼬리를 과대표집한 컨텍스트이므로 정확히 그 경우.
+
+
+\par\noindent \textbullet\enspace \textbf{DistPFN-T}: τ=\allowbreak{}0.72로 온도조절된 prior가 거의 균등(0.34/\allowbreak{}0.11×6)  \ensuremath{\rightarrow}  공격 인자 ×2.2–2.4, web ×14  \ensuremath{\rightarrow}  brute 0.49·inf 0.11·web 0.008로 붕괴(XGB도 0.70). 스모크(캡 평가셋)에서 web ×1057로 붕괴했던 것과 같은 메커니즘. \textbf{-T 변형은 이 데이터에서 사용 불가}로 기록.
+
+
+\subsubsection{6b. Run ④ exp35 c0 — BoostPFN T=\allowbreak{}50 (run \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}185152}) +\allowbreak{} 단일 500행 컨텍스트 (run \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}185331}), 18:52}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13203\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10678\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10678\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16234\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14214\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16739\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18254\linewidth-2\tabcolsep\relax}}
+\toprule
+F1 & XGB-c0 & \textbf{ours} & BoostPFN T=\allowbreak{}50 (최종) & BoostPFN 정점 r4 & BoostPFN r10 (논문 T) & v1 단일 500행 class-prop. \\ \midrule
+\endfirsthead
+F1 & XGB-c0 & \textbf{ours} & BoostPFN T=\allowbreak{}50 (최종) & BoostPFN 정점 r4 & BoostPFN r10 (논문 T) & v1 단일 500행 class-prop. \\ \midrule
+\endhead
+{}benign & 0.9924 & 0.9950 & 0.9934 & 0.9942 & 0.9938 & 0.9860 \\
+{}bot & 0.9973 & 0.9984 & 0.9946 & 0.9950 & 0.9947 & 0.9908 \\
+{}brute\_\allowbreak{}force & 0.9159 & 0.9159 & 0.9158 & 0.9158 & 0.9158 & 0.9158 \\
+{}ddos & 0.9994 & 0.9958 & 0.9920 & 0.9908 & 0.9919 & 0.9850 \\
+{}dos & 0.7818 & 0.7814 & 0.7417 & 0.7495 & 0.7418 & 0.6642 \\
+{}infiltration & 0.3370 & 0.4005 & 0.3241 & 0.3506 & 0.3373 & 0.1841 \\
+{}web\_\allowbreak{}attacks & 0.2439 & 0.2450 & 0.1965 & 0.1967 & 0.1966 & 0.1210 \\
+{}\textbf{macro} & 0.7525 & \textbf{0.7617} & 0.7369 & 0.7418 & 0.7389 & 0.6924 \\
+{}tail & 0.5260 & 0.5480 & 0.5051 & 0.5141 & 0.5096 & 0.4319 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 비용: 라운드당 47–67 s(4.12M행 예측 포함; GPU 경합), 50라운드 2,976 s, 피크 1.39 GiB. 같은 C0라 web 761행  \ensuremath{\rightarrow}  라운드 1 표본에 web 1행·inf 31행.
+
+
+\par\noindent \textbullet\enspace \textbf{궤적(1a)}: r1 0.724  \ensuremath{\rightarrow}  r4 \textbf{0.742 정점}  \ensuremath{\rightarrow}  r6 \textbf{0.655 급락}(brute 0.916 \ensuremath{\rightarrow} 0.493, dos 0.750 \ensuremath{\rightarrow} 0.584 =\allowbreak{} port-21 ftp \ensuremath{\leftrightarrow} slowhttptest 동일벡터 쌍이 뒤집힘; γ\_\allowbreak{}6=\allowbreak{}0.068짜리 학습기 하나가 이 쌍을 통째로 넘김)  \ensuremath{\rightarrow}  r10 γ=\allowbreak{}−0.030(반학습기)으로 0.739 복구  \ensuremath{\rightarrow}  r11–50 |γ|<0.03로 \textbf{정체}(0.737±0.001). web F1은 r4부터 0.1966으로 상수: 후반 학습기가 컨텍스트에 web 47–111행을 담아도(1b) line search가 100k 풀의 행-평균 deviance(benign 75\%)를 기준으로 γ\ensuremath{\approx}0을 주어 기여하지 못한다. 즉 §1b ③④의 메커니즘이 \textbf{꼬리를 과대표집한 풀에서도 반복}된다 — 원인은 풀 구성이 아니라 부스팅 규칙.
+
+
+\par\noindent \textbullet\enspace \textbf{샘플러 붕괴(1b)}: ESS 100k  \ensuremath{\rightarrow}  12.8k(r5)  \ensuremath{\rightarrow}  3.9k(r10)  \ensuremath{\rightarrow}  1.2k(r50); inf 가중치 질량 0.048  \ensuremath{\rightarrow}  0.84(r10)  \ensuremath{\rightarrow}  0.67(r50), web 0.008  \ensuremath{\rightarrow}  0.24(r50); r13부터 benign 5–10행·bot/\allowbreak{}brute 0행 — 표본이 inf 400+\allowbreak{}/\allowbreak{}web 50–110로 고정. exphadamard의 "놓친 행에 ×e" 규칙이 학습 불가능한 inf 행(라벨 충돌 쌍둥이, 0821 §5)에 질량을 몰아넣는 라벨-노이즈 병리 그대로.
+
+
+\par\noindent \textbullet\enspace \textbf{판정}: 같은 100k 위에서 BoostPFN 최선(정점 r4, 사후 선택이라 낙관치) 0.742 < XGB-c0 0.7525 < ours 0.7617; 논문 설정 T=\allowbreak{}10은 0.739. 단일 500행 컨텍스트 0.692보다는 +\allowbreak{}0.045 — 부스팅이 v1 단일 컨텍스트보다는 낫지만, C0를 통째로 보는 v3(ours)에 −0.025, XGB-c0에 −0.016. web 0.197 vs ours 0.245 /\allowbreak{} inf 0.324 vs 0.401 /\allowbreak{} dos 0.742 vs 0.781이 격차의 전부(head는 동률).
+
+
+\subsubsection{6c. Run ② exp36 knn c0 — TabPFN-kNN, C0를 검색 풀로 (run \texttt{20260905\allowbreak{}\_\allowbreak{}\allowbreak{}012446}, 01:24)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24038\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19231\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19231\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.37500\linewidth-2\tabcolsep\relax}}
+\toprule
+F1 & XGB-c0 & \textbf{ours} & TabPFN-kNN (C0 풀, 1000-NN) \\ \midrule
+\endfirsthead
+F1 & XGB-c0 & \textbf{ours} & TabPFN-kNN (C0 풀, 1000-NN) \\ \midrule
+\endhead
+{}benign & 0.9924 & 0.9950 & 0.9940 \\
+{}bot & 0.9973 & 0.9984 & 0.9955 \\
+{}brute\_\allowbreak{}force & 0.9159 & 0.9159 & \textbf{0.7360} \\
+{}ddos & 0.9994 & 0.9958 & \textbf{0.8663} \\
+{}dos & 0.7818 & 0.7814 & 0.7725 \\
+{}infiltration & 0.3370 & 0.4005 & 0.3955 \\
+{}web\_\allowbreak{}attacks & 0.2439 & 0.2450 & 0.2252 \\
+{}\textbf{macro} & 0.7525 & \textbf{0.7617} & 0.7121 \\
+{}tail & 0.5260 & 0.5480 & \textbf{0.5387} \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 비용: 4.02M행 평가 26,756 s(7.4 h; ft와 병행, 배치 128), 피크 2.80 GiB. 행당 1000-NN 검색(faiss exact, CPU) +\allowbreak{} v1 forward.
+
+
+\par\noindent \textbullet\enspace 판독: \textbf{꼬리는 ours급}(inf 0.396 vs 0.401, web 0.225 vs 0.245; tail 0.539로 XGB-c0 0.526 상회) — C0 풀에 web 761·inf 4,847행이 있어 국소 검색 컨텍스트에 꼬리가 들어오면 v1도 꼬리를 맞춘다(§4의 18만 풀 web 0과 대조: 풀 구성이 전부). 대신 \textbf{head 두 곳이 무너짐}: brute 0.736(port-21 ftp \ensuremath{\leftrightarrow} slowhttptest 동일벡터 — 1000-NN이 두 라벨을 섞어 담음), ddos 0.866(hoic — 국소 컨텍스트가 hoic 시나리오 경계에서 benign/\allowbreak{}loic과 섞임). 즉 kNN 검색은 "가까운 이웃이 라벨 충돌"인 지역에서 전역 컨텍스트(ours)보다 취약하고, 그 대가가 macro −0.050.
+
+
+\subsubsection{6d. Run ③ exp36 ft c0 — LoCalPFN 미세조정, C0를 검색·학습 풀로 (workdir \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esume/\allowbreak{}\allowbreak{}ex\allowbreak{}p36\_\allowbreak{}\allowbreak{}loca\allowbreak{}lpfn\_\allowbreak{}\allowbreak{}ft\_\allowbreak{}\allowbreak{}20260904\allowbreak{}\_\allowbreak{}\allowbreak{}175907\_\allowbreak{}\allowbreak{}2462264})}
+\par\noindent \textbullet\enspace 학습 21 epoch × 30 step × 2 query(1,000+\allowbreak{}1,000 NN), 1h30 (epoch당 \textasciitilde{}256 s, 대부분 val 35k행 평가). val(chrono 20\%, 클래스당 5k 캡): AUC(ovo) 0.9363(epoch 0 =\allowbreak{} frozen kNN)  \ensuremath{\rightarrow}  \textbf{최고 0.9409 @ epoch 4}(=\allowbreak{} model\_\allowbreak{}best) /\allowbreak{} weighted-F1 0.816  \ensuremath{\rightarrow}  0.828(epoch 4·7·17–19)  \ensuremath{\rightarrow}  20에 0.821. 18만 풀 때(§2)와 달리 궤적이 안정적(F1 0.816–0.828 범위) — 풀에 꼬리가 충분하면 2-query 미세조정이 흔들리지 않음. 이득은 AUC +\allowbreak{}0.005·F1 +\allowbreak{}0.012.
+
+
+\par\noindent \textbullet\enspace \textbf{최종 test 4.02M행 평가 완료 (run \texttt{20260905\allowbreak{}\_\allowbreak{}\allowbreak{}020159}, 02:02; 학습+\allowbreak{}평가 28,923 s, 피크 2.85 GiB)}:
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20526\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16140\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16140\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.23158\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24035\linewidth-2\tabcolsep\relax}}
+\toprule
+F1 & XGB-c0 & \textbf{ours} & TabPFN-kNN (C0) & \textbf{LoCalPFN ft (C0)} \\ \midrule
+\endfirsthead
+F1 & XGB-c0 & \textbf{ours} & TabPFN-kNN (C0) & \textbf{LoCalPFN ft (C0)} \\ \midrule
+\endhead
+{}benign & 0.9924 & 0.9950 & 0.9940 & 0.9896 \\
+{}bot & 0.9973 & 0.9984 & 0.9955 & 0.9971 \\
+{}brute\_\allowbreak{}force & 0.9159 & 0.9159 & 0.7360 & 0.9158 \\
+{}ddos & 0.9994 & 0.9958 & 0.8663 & 0.9980 \\
+{}dos & 0.7818 & 0.7814 & 0.7725 & 0.7786 \\
+{}infiltration & 0.3370 & 0.4005 & 0.3955 & \textbf{0.2751} \\
+{}web\_\allowbreak{}attacks & 0.2439 & 0.2450 & 0.2252 & 0.2237 \\
+{}\textbf{macro} & 0.7525 & \textbf{0.7617} & 0.7121 & 0.7397 \\
+{}tail & 0.5260 & 0.5480 & 0.5387 & 0.4986 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 판독: 미세조정(epoch 4, val AUC +\allowbreak{}0.005)이 kNN의 head 붕괴를 \textbf{완전히 복구}(brute +\allowbreak{}0.18, ddos +\allowbreak{}0.13  \ensuremath{\rightarrow}  XGB급)했고 그 값으로 macro +\allowbreak{}0.028. 대가는 inf −0.12(0.396 \ensuremath{\rightarrow} 0.275)와 benign −0.004: 1,000+\allowbreak{}1,000 NN 배치의 CE로 30 step×21 epoch 학습하면 라벨 충돌 지역(port-21, inf 쌍둥이)에서 "다수 라벨 쪽으로" 결정 경계가 이동 — head엔 이득, inf(소수 라벨이 정답인 쌍둥이가 많은 클래스)엔 손실. web은 불변(0.224). 결과적으로 macro는 LoCalPFN ft 0.740 < XGB-c0 0.7525 < ours 0.7617; tail은 ours 0.548 > kNN 0.539 > XGB-c0 0.526 > ft 0.499 — 미세조정이 head를 사고 tail을 판 셈이라 tail 기준으론 frozen kNN이 ft보다 낫다.
+
+
+\subsubsection{6e. 최종 비교표 — 같은 C0(100k · benign 0.75 · 공격 균등 · seed 42), test 4,023,114행, 모두 같은 split·같은 평가}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21964\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08571\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08125\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08125\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08125\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08125\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08125\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08125\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08125\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12589\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 (run) & macro-F1 & tail & benign & web & inf & dos & brute & ddos & 비용(GPU) \\ \midrule
+\endfirsthead
+방법 (run) & macro-F1 & tail & benign & web & inf & dos & brute & ddos & 비용(GPU) \\ \midrule
+\endhead
+{}\textbf{ours} TabPFN-v3, C0 컨텍스트, n\_\allowbreak{}est 4 (\texttt{183615}; 기록 \texttt{010654} 0.7623) & \textbf{0.7617} & \textbf{0.548} & 0.9950 & \textbf{0.245} & \textbf{0.401} & 0.781 & 0.916 & 0.996 & 38 min¹ /\allowbreak{} 3.0 GiB \\
+{}XGB-c0 (\texttt{183615}) & 0.7525 & 0.526 & 0.9924 & 0.244 & 0.337 & 0.782 & 0.916 & 0.999 & 7 s CPU \\
+{}ours +\allowbreak{} DistPFN (\texttt{183615}) & 0.7609 & 0.546 & 0.9950 & 0.240 & 0.401 & 0.781 & 0.916 & 0.996 & +\allowbreak{}0 \\
+{}ours +\allowbreak{} DistPFN-T (\texttt{183615}) & 0.6255 & 0.373 & 0.9889 & 0.008 & 0.113 & 0.780 & 0.493 & 0.998 & +\allowbreak{}0 \\
+{}LoCalPFN ft, C0 풀 (\texttt{20260905\allowbreak{}\_\allowbreak{}\allowbreak{}020159}) & 0.7397 & 0.499 & 0.9896 & 0.224 & 0.275 & 0.779 & 0.916 & 0.998 & 8.0 h \\
+{}BoostPFN T=\allowbreak{}50, C0 풀 (\texttt{185152}; r4 정점 0.7418, r10 0.7389) & 0.7369 & 0.505 & 0.9934 & 0.197 & 0.324 & 0.742 & 0.916 & 0.992 & 50 min \\
+{}TabPFN-kNN, C0 풀 (\texttt{20260905\allowbreak{}\_\allowbreak{}\allowbreak{}012446}) & 0.7121 & 0.539 & 0.9940 & 0.225 & 0.396 & 0.773 & 0.736 & 0.866 & 7.4 h² \\
+{}TabPFN-v1 단일 500행 class-prop. (\texttt{185331}) & 0.6924 & 0.432 & 0.9860 & 0.121 & 0.184 & 0.664 & 0.916 & 0.985 & 2 min \\
+{}(참고) full XGB 12.07M행 (기록 0.7548) & 0.7548 & 0.533 & 0.9943 & 0.172 & 0.429 & 0.782 & 0.916 & 0.992 & 8.6 min CPU \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+¹ GPU 3-job 병행 시간; 기록 run 단독 625–723 s. ² 병행; 배치 128.
+
+\textbf{결론(단일 seed 42; 캠페인 표는 7-seed였음을 유념)}
+
+\par\noindent \textbullet\enspace 같은 100k 정보 예산에서 \textbf{ours가 전 방법 위}: XGB-c0 +\allowbreak{}0.009, LoCalPFN ft +\allowbreak{}0.022, BoostPFN +\allowbreak{}0.025(정점 대비 +\allowbreak{}0.020), kNN +\allowbreak{}0.050, v1 단일 +\allowbreak{}0.069. full XGB(12.07M행) 대비도 +\allowbreak{}0.007(web +\allowbreak{}0.073, inf −0.028).
+
+
+\par\noindent \textbullet\enspace \textbf{DistPFN은 무효}(ours −0.0008): 우리 C0는 꼬리를 의도적으로 과대표집한 컨텍스트라 prior 재가중이 꼬리를 \textbf{깎는} 방향. -T는 사용 불가(web 인자 ×14).
+
+
+\par\noindent \textbullet\enspace \textbf{v1 기반 두 방법은 컨텍스트 한계(\ensuremath{\leq}1,024행)가 본질적 병목}: BoostPFN은 부스팅 규칙(행-평균 deviance line search +\allowbreak{} exphadamard)이 꼬리 학습기에 γ\ensuremath{\approx}0을 주고 샘플러가 inf에 붕괴해 r4 이후 개선 없음; LoCalPFN은 국소 검색이 라벨 충돌 지역(port-21, hoic 경계)에서 head를 잃고, 미세조정으로 head를 되찾으면 inf를 잃는다. 둘 다 "C0 전체를 한 번에 보는" v3 컨텍스트가 하는 일을 대체하지 못했다.
+
+
+\par\noindent \textbullet\enspace 우리 방법의 남은 열세는 여전히 inf(0.401 vs full XGB 0.429)와 ddos(0.996 vs XGB-c0 0.999)뿐 — 외부 SOTA 3종은 이 두 열을 좁히지 못했다.
+
+
+\par\noindent \textbullet\enspace 후속 후보(미실행): seed 43·44로 ours/\allowbreak{}XGB-c0/\allowbreak{}BoostPFN/\allowbreak{}DistPFN 반복(각 1 h 미만; LoCalPFN은 8 h/\allowbreak{}seed라 보류), LoCalPFN kNN의 head 붕괴를 "C0 전역 +\allowbreak{} 국소" 혼합 컨텍스트로 고치는 변형(우리 exp19 반환-조건부와 같은 발상).
+
+
+\subsection{8. BoostPFN 재현 코드 검토 (0908) — "import도 안 되는데 뭘 재현했나"에 대한 사실관계}
+\par\noindent \textbullet\enspace \textbf{무엇이 import 안 되는가}: upstream 드라이버 \texttt{largedat\allowbreak{}aset\_\allowbreak{}\allowbreak{}boo\allowbreak{}stpfn.\allowbreak{}py\allowbreak{}}는 첫 줄부터 \texttt{scripts.\allowbreak{}differen\allowbreak{}tiable\_\allowbreak{}\allowbreak{}p\allowbreak{}fn\_\allowbreak{}\allowbreak{}evalu\allowbreak{}ation}( \ensuremath{\rightarrow}  \texttt{tabular\_\allowbreak{}\allowbreak{}evaluati\allowbreak{}on}  \ensuremath{\rightarrow}  \texttt{tabular\_\allowbreak{}\allowbreak{}baseline\allowbreak{}s}  \ensuremath{\rightarrow}  \textbf{catboost·hyperopt}) 과 \texttt{datasets\allowbreak{}}( \ensuremath{\rightarrow}  \textbf{openml})를 import한다. 이들은 논문의 GBDT/\allowbreak{}AutoML \textbf{베이스라인과 OpenML 벤치마크용} 의존성이지 BoostPFN 방법과 무관하며, 우리 env에 없었다(catboost·openml·hyperopt·gpytorch·autogluon·ConfigSpace). 그래서 upstream 드라이버는 import에서 죽었고, 부스팅 클래스(\texttt{gradient\allowbreak{}\_\allowbreak{}\allowbreak{}boost\_\allowbreak{}\allowbreak{}t\allowbreak{}abpfn.\allowbreak{}Sa\allowbreak{}mplingGr\allowbreak{}adientbo\allowbreak{}ost}, \texttt{boost\_\allowbreak{}\allowbreak{}ta\allowbreak{}bpfn.\allowbreak{}Sam\allowbreak{}plingAda\allowbreak{}boost}, \texttt{utils.\allowbreak{}sp\allowbreak{}litting\_\allowbreak{}\allowbreak{}predict\_\allowbreak{}\allowbreak{}proba}, \texttt{scripts.\allowbreak{}transfor\allowbreak{}mer\_\allowbreak{}\allowbreak{}pred\allowbreak{}iction\_\allowbreak{}\allowbreak{}i\allowbreak{}nterface\allowbreak{}.\allowbreak{}TabPFNC\allowbreak{}lassifie\allowbreak{}r})는 처음부터 정상 import됐다.
+
+
+\par\noindent \textbullet\enspace \textbf{내가 실제로 실행한 것}: 위 클래스들을 upstream 드라이버와 같은 인자로 호출하는 우리 러너(exp35). 대응표 — upstream 250–258행 \texttt{Sampling\allowbreak{}Gradient\allowbreak{}boost(Ta\allowbreak{}bPFNClas\allowbreak{}sifier(d\allowbreak{}evice,\allowbreak{} N\allowbreak{}\_\allowbreak{}\allowbreak{}ensembl\allowbreak{}e\_\allowbreak{}\allowbreak{}config\allowbreak{}urations\allowbreak{}=\allowbreak{}\allowbreak{}1),\allowbreak{} ens\allowbreak{}emble\_\allowbreak{}\allowbreak{}nu\allowbreak{}m,\allowbreak{} sampl\allowbreak{}ing\_\allowbreak{}\allowbreak{}size\allowbreak{},\allowbreak{} args,\allowbreak{} \allowbreak{}split\_\allowbreak{}\allowbreak{}te\allowbreak{}st=\allowbreak{}\allowbreak{}True,\allowbreak{} max\_\allowbreak{}\allowbreak{}sam\allowbreak{}ples=\allowbreak{}\allowbreak{}max\allowbreak{}sample,\allowbreak{} \allowbreak{}batch\_\allowbreak{}\allowbreak{}te\allowbreak{}st=\allowbreak{}\allowbreak{}test\_\allowbreak{}\allowbreak{}batch,\allowbreak{} v\allowbreak{}ersion=\allowbreak{}\allowbreak{}2\allowbreak{})}  \ensuremath{\rightarrow}  \texttt{fit(trai\allowbreak{}n\_\allowbreak{}\allowbreak{}xs,\allowbreak{} tr\allowbreak{}ain\_\allowbreak{}\allowbreak{}ys,\allowbreak{} \allowbreak{}test\_\allowbreak{}\allowbreak{}xs)\allowbreak{}}  \ensuremath{\rightarrow}  \texttt{predict\_\allowbreak{}\allowbreak{}proba(te\allowbreak{}st\_\allowbreak{}\allowbreak{}xs)} =\allowbreak{} exp35 347/\allowbreak{}390/\allowbreak{}414/\allowbreak{}415행. README 커맨드 인자(\texttt{-\allowbreak{}-\allowbreak{}sampli\allowbreak{}ng\_\allowbreak{}\allowbreak{}size \allowbreak{}0.\allowbreak{}001 -\allowbreak{}-\allowbreak{}test\_\allowbreak{}\allowbreak{}bat\allowbreak{}ch 50000\allowbreak{} -\allowbreak{}-\allowbreak{}maxsa\allowbreak{}mple 500\allowbreak{} -\allowbreak{}-\allowbreak{}updat\allowbreak{}ing exph\allowbreak{}adamard \allowbreak{}-\allowbreak{}-\allowbreak{}ensemb\allowbreak{}le\_\allowbreak{}\allowbreak{}num 1\allowbreak{}0}, N\_\allowbreak{}en=\allowbreak{}1, loss CE, replacement False) 전부 동일. 다른 것: 데이터(OpenML 50/\allowbreak{}50 셔플 split  \ensuremath{\leftrightarrow}  우리 chrono split), numpy seed(5  \ensuremath{\leftrightarrow}  42), 그리고 \textbf{발견한 편차 1건 — \texttt{TabPFNCl\allowbreak{}assifier\allowbreak{}(seed=\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{})}}: upstream은 인자를 안 넘겨 v1 내부 seed=\allowbreak{}0(feature/\allowbreak{}class 순열 config), 우리 러너는 boost\_\allowbreak{}seed(42)를 넘겼다. \texttt{-\allowbreak{}-\allowbreak{}tabpfn\allowbreak{}-\allowbreak{}v1-\allowbreak{}seed\allowbreak{}} 옵션 추가 (기본 None =\allowbreak{} 이전 동작 유지, 0 =\allowbreak{} upstream) +\allowbreak{} C0 T=\allowbreak{}50을 seed 0으로 재실행해 영향 계량  \ensuremath{\rightarrow}  \textbf{run \texttt{20260908\allowbreak{}\_\allowbreak{}\allowbreak{}133300}: 최종 0.7361 /\allowbreak{} 정점 0.739(r11) /\allowbreak{} r10 0.7388} vs seed 42(run \texttt{185152}) 0.7369 /\allowbreak{} 0.7418(r4) /\allowbreak{} 0.7389. 차이 \ensuremath{\leq}0.003, 클래스별 inf 0.343 vs 0.324, web 0.194 vs 0.197 — 편차의 영향은 재현성 밴드 안, 결론 불변. (단독 실행이라 50라운드 710 s.)
+
+
+\par\noindent \textbullet\enspace \textbf{클론 vs origin/\allowbreak{}main diff}(\texttt{git diff\allowbreak{} origin/\allowbreak{}\allowbreak{}main}, HEAD=\allowbreak{}c957ac2=\allowbreak{}main): 부스팅 산술 파일 \texttt{gradient\allowbreak{}\_\allowbreak{}\allowbreak{}boost\_\allowbreak{}\allowbreak{}t\allowbreak{}abpfn.\allowbreak{}py\allowbreak{}}·\texttt{boost\_\allowbreak{}\allowbreak{}ta\allowbreak{}bpfn.\allowbreak{}py}는 \textbf{import 3줄(try/\allowbreak{}except gb\_\allowbreak{}losses\_\allowbreak{}compat)만} 변경, \texttt{utils.\allowbreak{}py\allowbreak{}}·noweight·minibatch 무변경. 나머지 15개 파일은 \texttt{tabpfn.\allowbreak{}} \ensuremath{\rightarrow} \texttt{tabpfn\_\allowbreak{}\allowbreak{}v\allowbreak{}1.\allowbreak{}} 경로 재작성과 \texttt{transfor\allowbreak{}mer\_\allowbreak{}\allowbreak{}pred\allowbreak{}iction\_\allowbreak{}\allowbreak{}i\allowbreak{}nterface\allowbreak{}.\allowbreak{}py}의 호환 패치(46줄). 추가 파일: \texttt{tabpfn\_\allowbreak{}\allowbreak{}v\allowbreak{}1/\allowbreak{}\allowbreak{}}(0.1.9 wheel), \texttt{gb\_\allowbreak{}\allowbreak{}losse\allowbreak{}s\_\allowbreak{}\allowbreak{}compat\allowbreak{}.\allowbreak{}py}, \texttt{models\_\allowbreak{}\allowbreak{}d\allowbreak{}iff/\allowbreak{}\allowbreak{}}, 노트.
+
+
+\par\noindent \textbullet\enspace \textbf{upstream 드라이버 end-to-end 검증(0908 13:22)}: 베이스라인 의존성 설치(openml 0.15.1·catboost 1.2.10·hyperopt 0.3.0) +\allowbreak{} numpy 2 호환 1줄 (\texttt{np.\allowbreak{}warni\allowbreak{}ngs} \ensuremath{\rightarrow} \texttt{warnings\allowbreak{}}, tabular\_\allowbreak{}baselines.py) 후 \textbf{\texttt{largedat\allowbreak{}aset\_\allowbreak{}\allowbreak{}boo\allowbreak{}stpfn.\allowbreak{}py\allowbreak{}}를 무수정으로 README 커맨드 그대로} 그들 데이터셋 BNG(glass,nominal,137781) (id 133, 137,781행 50/\allowbreak{}50)에서 실행: T=\allowbreak{}10 \textbf{AUC 0.8888}, 10.4 s. 논문 Table 11(T=\allowbreak{}10, 5k행) 0.8824 /\allowbreak{} Table 13(T=\allowbreak{}1000, 전량) 0.900 사이 — 우리 T=\allowbreak{}10은 전량 69k 풀에서 뽑으므로 그 사이가 맞다.
+
+
+\par\noindent \textbullet\enspace \textbf{Table 13 직접 비교 (T=\allowbreak{}1000, 전량, upstream 드라이버 무수정, seed 5 단일)}: BNG(glass,nominal,137781) \textbf{AUC 0.9011 vs 논문 0.900}(5-seed 평균) — 786 s. 포팅이 논문 수치를 재현한다. 이진 데이터셋(skin-segmentation·creditcard)은 \texttt{Multinom\allowbreak{}ialDevia\allowbreak{}nce(2)}에서 ValueError로 중단됐는데, 이는 우리 shim이 sklearn 0.24.2와 같은 검사(K<3 거부)를 하기 때문이고 upstream 코드(\texttt{gradient\allowbreak{}\_\allowbreak{}\allowbreak{}boost\_\allowbreak{}\allowbreak{}t\allowbreak{}abpfn.\allowbreak{}py\allowbreak{}:256}, CE면 무조건 Multinomial)도 pinned sklearn에선 이진에서 같은 예외  \ensuremath{\rightarrow}  드라이버의 bare except가 "prediction failure"로 0.0을 기록한다. 즉 \textbf{공개 코드+\allowbreak{}pinned 환경으론 Table 13의 이진 행을 만들 수 없다}(DistPFN과 같은 유형의 릴리스 불일치). 2-클래스 softmax deviance는 수학적으로 정의되므로 opt-in 환경변수 \texttt{BOOSTPFN\allowbreak{}\_\allowbreak{}\allowbreak{}ALLOW\_\allowbreak{}\allowbreak{}B\allowbreak{}INARY\_\allowbreak{}\allowbreak{}MU\allowbreak{}LTINOMIA\allowbreak{}L=\allowbreak{}\allowbreak{}1}로 허용하고 이진 2종 +\allowbreak{} 다중클래스 2종 T=\allowbreak{}1000 추가 실행  \ensuremath{\rightarrow}  다중클래스 결과(14:03): \textbf{BNG(page-blocks,nominal,295245) 0.8435 vs 논문 0.8471}(1,034 s), \textbf{fars 0.8842 vs 0.8894}(467 s). 세 다중클래스 데이터셋 모두 논문(5-seed 평균)과 \ensuremath{\leq}0.005 차이(단일 seed 5). 이진(opt-in): \textbf{skin-segmentation 0.99996 vs 논문 1.0}(687 s), \textbf{creditcard 0.9828 vs 0.9821}(799 s).
+
+\textbf{upstream 드라이버 무수정 × 논문 프로토콜(T=\allowbreak{}1000, 500행, exphadamard, 50/\allowbreak{}50) 검증 요약} — 결과 \texttt{tabpfn/\allowbreak{}\allowbreak{}t\allowbreak{}hird\_\allowbreak{}\allowbreak{}par\allowbreak{}ty/\allowbreak{}\allowbreak{}Boost\allowbreak{}PFN/\allowbreak{}\allowbreak{}larg\allowbreak{}eresults\allowbreak{}/\allowbreak{}\allowbreak{}*x1000*\allowbreak{}/\allowbreak{}\allowbreak{}5.\allowbreak{}txt}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.28023\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16395\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18140\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.23372\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14070\linewidth-2\tabcolsep\relax}}
+\toprule
+OpenML 데이터셋 & 행 /\allowbreak{} 클래스 & 우리 실행 (seed 5) & 논문 Table 13 (5-seed 평균) & 차 \\ \midrule
+\endfirsthead
+OpenML 데이터셋 & 행 /\allowbreak{} 클래스 & 우리 실행 (seed 5) & 논문 Table 13 (5-seed 평균) & 차 \\ \midrule
+\endhead
+{}BNG(glass,nominal,137781) & 137,781 /\allowbreak{} 7 & 0.9011 & 0.900 & +\allowbreak{}0.001 \\
+{}BNG(page-blocks,nominal,295245) & 295,245 /\allowbreak{} 5 & 0.8435 & 0.8471 & −0.004 \\
+{}fars & 100,968 /\allowbreak{} 8 & 0.8842 & 0.8894 & −0.005 \\
+{}skin-segmentation (이진, opt-in) & 245,057 /\allowbreak{} 2 & 1.0000 & 1.0 & 0 \\
+{}creditcard (이진, opt-in) & 284,807 /\allowbreak{} 2 & 0.9828 & 0.9821 & +\allowbreak{}0.001 \\
+\bottomrule
+\end{longtable}
+\endgroup
+5/\allowbreak{}5 데이터셋이 논문 값과 \ensuremath{\leq}0.005 — 포팅(tabpfn\_\allowbreak{}v1 벤더링 +\allowbreak{} 호환 패치 +\allowbreak{} loss shim)이 알고리즘을 바꾸지 않았음이 \textbf{논문 수치로} 확인됨. 이진 2종은 upstream 코드+\allowbreak{}pinned sklearn으론 실행 불가(K<3 거부)했던 경로라, 2-클래스 softmax deviance opt-in이 논문 값을 재현한다는 것은 저자들의 실제 실험 코드도 그 방식(또는 BinomialDeviance 분기)이었음을 시사.
+
+
+\par\noindent \textbullet\enspace 단일 500행 컨텍스트 참조도 seed 0으로 재실행(run \texttt{20260908\allowbreak{}\_\allowbreak{}\allowbreak{}141527}): macro 0.6961 vs seed 42(run \texttt{185331}) 0.6924 — inf 0.246 vs 0.184, web 0.114 vs 0.121. seed-0 쌍(T=\allowbreak{}50 0.7361 /\allowbreak{} 단일 0.6961)과 seed-42 쌍(0.7369 /\allowbreak{} 0.6924)의 격차 +\allowbreak{}0.040 vs +\allowbreak{}0.045 — 결론 동일.
+
+
+\par\noindent \textbullet\enspace \textbf{"exp35만 가지고 어떻게 돌리나"(사용자 지적, 0908 13:40)} — 맞는 지적. exp35에는 알고리즘이 없고 \texttt{import\_\allowbreak{}\allowbreak{}b\allowbreak{}oostpfn(\allowbreak{})}(199행)이 런타임에 \texttt{-\allowbreak{}-\allowbreak{}boostp\allowbreak{}fn-\allowbreak{}root}를 sys.path에 넣어 upstream 클래스를 import한다(IDE는 저장소 밖이라 미해결로 표시하지만 \texttt{inspect.\allowbreak{}getsourc\allowbreak{}efile(Sa\allowbreak{}mplingGr\allowbreak{}adientbo\allowbreak{}ost)} =\allowbreak{} \texttt{SOTA/\allowbreak{}\allowbreak{}Boo\allowbreak{}stPFN/\allowbreak{}\allowbreak{}gr\allowbreak{}adient\_\allowbreak{}\allowbreak{}b\allowbreak{}oost\_\allowbreak{}\allowbreak{}tab\allowbreak{}pfn.\allowbreak{}py}, 약한 학습기 =\allowbreak{} 그 파일 102행 \texttt{get\_\allowbreak{}\allowbreak{}weak\allowbreak{}\_\allowbreak{}\allowbreak{}learner\allowbreak{}}; exp35 408행은 타이밍 래퍼일 뿐). 문제는 그 클론이 \textbf{로컬 패치본이라 imbalcic 밖에서 재구성 불가}였던 것  \ensuremath{\rightarrow}  \texttt{tabpfn/\allowbreak{}\allowbreak{}t\allowbreak{}hird\_\allowbreak{}\allowbreak{}par\allowbreak{}ty/\allowbreak{}\allowbreak{}boost\allowbreak{}pfn\_\allowbreak{}\allowbreak{}port\allowbreak{}/\allowbreak{}\allowbreak{}}에 패치 2개(upstream c957ac2 대비 tracked diff, 0.1.9 wheel 대비 tabpfn\_\allowbreak{}v1 diff)+\allowbreak{}새 파일 2개+\allowbreak{}ckpt sha256+\allowbreak{}\texttt{setup\_\allowbreak{}\allowbreak{}bo\allowbreak{}ostpfn\_\allowbreak{}\allowbreak{}p\allowbreak{}ort.\allowbreak{}sh}(clone \ensuremath{\rightarrow} patch \ensuremath{\rightarrow} wheel 벤더링 \ensuremath{\rightarrow} ckpt 다운로드·검증)로 기록. 빈 디렉터리에서 스크립트만으로 재구성한 결과 \textbf{작업 클론과 파일 단위 IDENTICAL}(diff -rq), 21 s, 재구성본에서 GPU 스모크 정상. exp35 docstring에 명시.
+
+
+\par\noindent \textbullet\enspace \textbf{vendoring (0908 14:00, 사용자 요청)}: \texttt{\textasciitilde{}/\allowbreak{}\allowbreak{}Deskto\allowbreak{}p/\allowbreak{}\allowbreak{}SOTA/\allowbreak{}\allowbreak{}\{\allowbreak{}BoostPFN\allowbreak{},\allowbreak{}DistPFN\allowbreak{},\allowbreak{}LoCalPF\allowbreak{}N\}\allowbreak{}}  \ensuremath{\rightarrow}  \texttt{tabpfn/\allowbreak{}\allowbreak{}t\allowbreak{}hird\_\allowbreak{}\allowbreak{}par\allowbreak{}ty/\allowbreak{}\allowbreak{}}로 이동(BoostPFN은 upstream T=\allowbreak{}1000 run이 돌고 있어 복사 후 run 종료 시 원본 삭제 예정). 각 클론의 \texttt{.\allowbreak{}git}은 떼어 스크래치패드에 백업하고 \texttt{UPSTREAM\allowbreak{}.\allowbreak{}txt}(URL·커밋·수정 여부)로 대체 — 중첩 .git은 git이 내용을 추적하지 않기 때문. \texttt{.\allowbreak{}gitigno\allowbreak{}re}에 \texttt{*.\allowbreak{}cpkt*}·OpenML pickle·largeresults 추가(가중치 103 MB×2는 \texttt{fetch\_\allowbreak{}\allowbreak{}ch\allowbreak{}eckpoint\allowbreak{}s.\allowbreak{}sh}로). exp35/\allowbreak{}exp36 기본 root를 \texttt{tabpfn/\allowbreak{}\allowbreak{}t\allowbreak{}hird\_\allowbreak{}\allowbreak{}par\allowbreak{}ty/\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}}로 변경, 두 스크립트 스모크 재확인, CLAUDE.md에 한 단락 추가. SOTA의 나머지(FECO·FT·NEGSC·TS-IDS)는 그대로.
+
+
+\par\noindent \textbullet\enspace 정정할 표현: 앞선 보고의 "재현"은 \textbf{그들 벤치마크 스크립트를 재실행한 것이 아니라, 그들 알고리즘 클래스를 우리 데이터에 적용한 것}이다. 알고리즘 코드가 upstream과 산술적으로 동일함은 diff와 리뷰 워크플로(0904 §1b: run A 비트 동일 재현, 0.24.2 loss 전사 검증)로 확인했고, 이제 upstream 드라이버 자체도 그들 데이터에서 논문 범위의 값을 낸다.
+
+
+\subsection{9. LoCalPFN 재현성 — 저장소 \texttt{main.\allowbreak{}py} 무수정 × TabZilla 원본 벤치마크 (0908 15:39–16:39, 주간 항목 3)}
+\par\noindent \textbullet\enspace 절차: TabZilla 저장소(\texttt{naszilla\allowbreak{}/\allowbreak{}\allowbreak{}tabzill\allowbreak{}a}, 스크래치패드 클론)의 자체 전처리 \texttt{tabzilla\allowbreak{}\_\allowbreak{}\allowbreak{}data\_\allowbreak{}\allowbreak{}pr\allowbreak{}eprocess\allowbreak{}ing.\allowbreak{}py}로 중형 데이터셋 10개 생성  \ensuremath{\rightarrow}  vendored LoCalPFN 사본에서 \texttt{python m\allowbreak{}ain.\allowbreak{}py -\allowbreak{}-\allowbreak{}exp\_\allowbreak{}\allowbreak{}nam\allowbreak{}e … -\allowbreak{}-\allowbreak{}da\allowbreak{}tasets\_\allowbreak{}\allowbreak{}d\allowbreak{}irectory\allowbreak{} … -\allowbreak{}-\allowbreak{}onl\allowbreak{}y\_\allowbreak{}\allowbreak{}datase\allowbreak{}t <name>\allowbreak{} -\allowbreak{}-\allowbreak{}split\allowbreak{} 0 \{\allowbreak{}vani\allowbreak{}lla|knn|\allowbreak{}ft\}\allowbreak{}} (README 기본값: context 1000, ft lr 1e-5·21 epoch·30 step·2 query·val AUC early stop). 논문 프로토콜은 95개 데이터셋 × 10-fold이고 데이터셋별 표가 없어 \textbf{10개 × split 0의 평균과 논문 medium/\allowbreak{}large(48개) 평균의 순서·간격}을 대조한다.
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24495\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20455\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15404\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15909\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11869\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11869\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 (n) & AUC TabPFN(vanilla 1000) & AUC TabPFN-kNN & AUC LoCalPFN ft & acc ft & ft 시간 \\ \midrule
+\endfirsthead
+데이터셋 (n) & AUC TabPFN(vanilla 1000) & AUC TabPFN-kNN & AUC LoCalPFN ft & acc ft & ft 시간 \\ \midrule
+\endhead
+{}electricity (45k) & 0.8465 & 0.9568 & 0.9736 & 0.912 & 345 s \\
+{}MiniBooNE (130k) & 0.9436 & 0.9822 & 0.9856 & 0.947 & 954 s \\
+{}bank-marketing (45k) & 0.8767 & 0.9075 & 0.9326 & 0.910 & 348 s \\
+{}connect-4 (68k, 3cls) & 0.5845 & 0.8395 & 0.8887 & 0.837 & 508 s \\
+{}jannis (84k, 4cls) & 0.7334 & 0.8063 & 0.8513 & 0.715 & 627 s \\
+{}spambase (4.6k) & 0.9609 & 0.9785 & 0.9751 & 0.941 & 54 s \\
+{}optdigits (5.6k, 10cls) & 0.9976 & 0.9991 & 0.9999 & 0.989 & 62 s \\
+{}pendigits (11k, 10cls) & 0.9996 & 1.0000 & 1.0000 & 0.997 & 112 s \\
+{}MagicTelescope (19k) & 0.9147 & 0.9407 & 0.9459 & 0.896 & 171 s \\
+{}phoneme (5.4k) & 0.8955 & 0.9601 & 0.9696 & 0.904 & 59 s \\
+{}\textbf{평균 (10, split 0)} & \textbf{0.8753} & \textbf{0.9371} & \textbf{0.9522} & 0.905 &  \\
+{}논문 medium/\allowbreak{}large 평균 (48, 10-fold) & 0.884 & 0.916 & 0.934 & 0.890 &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 판정: 순서(TabPFN < kNN < LoCalPFN) 동일, kNN > vanilla 10/\allowbreak{}10, ft > kNN 8/\allowbreak{}10(spambase·pendigits 예외), 간격 +\allowbreak{}0.062/\allowbreak{}+\allowbreak{}0.015 vs 논문 +\allowbreak{}0.032/\allowbreak{}+\allowbreak{}0.018. accuracy 0.833/\allowbreak{}0.892/\allowbreak{}0.905 vs 논문 0.828/\allowbreak{}0.861/\allowbreak{}0.890, F1 0.813/\allowbreak{}0.886/\allowbreak{}0.903 vs 0.809/\allowbreak{}0.854/\allowbreak{}0.885 — 우리 표본이 평균적으로 크고 쉬워 절대값은 높지만 \textbf{논문의 주장(검색으로 +\allowbreak{}0.03, 미세조정으로 +\allowbreak{}0.02)이 그대로 재현}된다. 저장소 코드 무수정이므로 exp36이 쓰는 코드가 논문 코드임이 확인됨.
+
+
+\par\noindent \textbullet\enspace 결과 파일: 스크래치패드 \texttt{localpfn\allowbreak{}\_\allowbreak{}\allowbreak{}repro/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}t\allowbreak{}abzilla/\allowbreak{}\allowbreak{}repro\_\allowbreak{}\allowbreak{}\{\allowbreak{}v\allowbreak{}anilla,\allowbreak{}k\allowbreak{}nn,\allowbreak{}ft\}\allowbreak{}\_\allowbreak{}\allowbreak{}<\allowbreak{}name>/\allowbreak{}\allowbreak{}re\allowbreak{}sults.\allowbreak{}cs\allowbreak{}v}, 로그 \texttt{localpfn\allowbreak{}\_\allowbreak{}\allowbreak{}repro.\allowbreak{}l\allowbreak{}og}; 요약 CSV \texttt{lablog/\allowbreak{}\allowbreak{}r\allowbreak{}eport/\allowbreak{}\allowbreak{}re\allowbreak{}pro\_\allowbreak{}\allowbreak{}resu\allowbreak{}lts/\allowbreak{}\allowbreak{}0908\allowbreak{}\_\allowbreak{}\allowbreak{}\{\allowbreak{}localp\allowbreak{}fn\_\allowbreak{}\allowbreak{}tabzi\allowbreak{}lla,\allowbreak{}dist\allowbreak{}pfn\_\allowbreak{}\allowbreak{}open\allowbreak{}ml30,\allowbreak{}boo\allowbreak{}stpfn\_\allowbreak{}\allowbreak{}op\allowbreak{}enml\}\allowbreak{}\_\allowbreak{}\allowbreak{}re\allowbreak{}pro.\allowbreak{}csv}.
+
+
+\subsection{7. DistPFN 재현 코드 검토 (0907, 사용자 질문 5개  \ensuremath{\rightarrow}  저장소 감사 +\allowbreak{} 논문 원문 +\allowbreak{} 저장 확률 재계산)}
+\par\noindent \textbullet\enspace \textbf{저장소 구조(감사)}: 평가 엔트리 \texttt{src/\allowbreak{}\allowbreak{}eval\allowbreak{}s/\allowbreak{}\allowbreak{}eval\_\allowbreak{}\allowbreak{}T\allowbreak{}ABPFN\_\allowbreak{}\allowbreak{}sh\allowbreak{}ift\_\allowbreak{}\allowbreak{}\{\allowbreak{}O,\allowbreak{}X\allowbreak{}\}\allowbreak{}.\allowbreak{}py}는 pip \texttt{tabpfn}(v2 API \texttt{n\_\allowbreak{}\allowbreak{}estima\allowbreak{}tors=\allowbreak{}\allowbreak{}})과 \texttt{src/\allowbreak{}\allowbreak{}util\allowbreak{}s.\allowbreak{}py}의 데이터 하네스만 import. 예측을 바꾸는 코드는 README "How to use" 5줄(=\allowbreak{} 스크립트 88–100행)뿐  \ensuremath{\rightarrow}  \textbf{모델은 무수정 TabPFN, 방법 =\allowbreak{} 사후 재가중}. \texttt{src/\allowbreak{}\allowbreak{}tabp\allowbreak{}fn/\allowbreak{}\allowbreak{}}(train.py·train\_\allowbreak{}config.py·model\_\allowbreak{}configs.py·\texttt{kc} ckpt)는 v1 사전학습 스캐폴드로 어느 eval도 import하지 않음(train.py는 SyntaxError). \texttt{kc} ckpt(103,354,871 B)는 공식 v1 ckpt와 \textbf{구조·키는 같지만 가중치가 다른 별도 사전학습 체크포인트}: config에 bptt 2048(공식 1024), eval\_\allowbreak{}positions [1945], lr 1.38e-4, categorical\_\allowbreak{}feature\_\allowbreak{}p 0.4, \texttt{epoch\_\allowbreak{}\allowbreak{}in\allowbreak{}\_\allowbreak{}\allowbreak{}trainin\allowbreak{}g} 0.1175 — \texttt{train.\allowbreak{}py\allowbreak{}}(add\_\allowbreak{}name=\allowbreak{}'kc', train\_\allowbreak{}config.py의 bptt 2048)로 직접 돌리다 첫 epoch 12\%에서 저장한 것. 어디에도 로드되지 않음(plots/\allowbreak{}transformer\_\allowbreak{}model\_\allowbreak{}viz.py만 참조). \texttt{model\_\allowbreak{}\allowbreak{}co\allowbreak{}nfigs.\allowbreak{}py\allowbreak{}}의 \texttt{get\_\allowbreak{}\allowbreak{}diff\allowbreak{}\_\allowbreak{}\allowbreak{}*}는 v1 사전학습 prior 하이퍼파라미터 분포(GP/\allowbreak{}causal-MLP/\allowbreak{}prior-bag)로 train\_\allowbreak{}config.py \ensuremath{\rightarrow} train.py에서만 쓰이며, 공식 ckpt의 학습 config와 같은 값. \texttt{src/\allowbreak{}\allowbreak{}plot\allowbreak{}s/\allowbreak{}\allowbreak{}} 3종은 2-D toy 결정경계·모델 그래프·사전학습 prior 시각화로 DistPFN 결과와 무관.
+
+
+\par\noindent \textbullet\enspace \textbf{\texttt{inv\_\allowbreak{}\allowbreak{}freq\allowbreak{}\_\allowbreak{}\allowbreak{}samplin\allowbreak{}g}} =\allowbreak{} 벤치마크 구성(OpenML에 라벨 시프트를 \emph{만들기} 위해 train을 (1/\allowbreak{}f)\textasciicircum{}β로 복원추출, test 고정; β\ensuremath{\in}\{0,.1,.5,1,2,5\}, 5 seed). 방법이 아니라 하네스. 우리 데이터엔 부적합(랜덤 층화 split =\allowbreak{} 시간 누수) +\allowbreak{} 불필요: C0 자체가 같은 부호의 시프트(log(ctx/\allowbreak{}true) 회귀로 유효 β\ensuremath{\approx}0.53, web 0.46·inf 0.35·bot 0.34). C0에 β=\allowbreak{}0.5를 걸면 web 761행을 69k로 복제하는 컨텍스트가 되어 무의미.
+
+
+\par\noindent \textbullet\enspace \textbf{논문 정의(arXiv 2605.04363v2 §4.2–4.3, Appendix M)}: DistPFN =\allowbreak{} Norm(p̂·p̂(y)/\allowbreak{}p\_\allowbreak{}train(y)), 기본은 p̂(y) =\allowbreak{} test 평균 예측분포("Multiple"). DistPFN-T: τ =\allowbreak{} CE(p̂(y), p\_\allowbreak{}train(y)) \textbf{전역 스칼라}, p̂\_\allowbreak{}T =\allowbreak{} softmax(p̂(y)/\allowbreak{}τ) — \textbf{확률 벡터에 softmax}, α =\allowbreak{} p̂\_\allowbreak{}T/\allowbreak{}p\_\allowbreak{}train. 우리 \texttt{distpfn\_\allowbreak{}\allowbreak{}t}와 정확히 일치. "Single"(샘플별 τ\_\allowbreak{}i)은 부록의 강건성 변형(0.791 vs 0.792). 논문 지표는 \textbf{accuracy·rank·ECE·precision — F1·ROC·log-loss는 보고 안 함}; 공개 코드는 ROC·logloss·acc를 계산하고 n\_\allowbreak{}estimators\ensuremath{\in}\{4,8,16,32\} 중 \textbf{test ROC 최대}를 고름(논문 미기재).
+
+
+\par\noindent \textbullet\enspace \textbf{공개 코드의 -T 경로는 실행 불가}: \texttt{cross\_\allowbreak{}\allowbreak{}en\allowbreak{}tropy(P\_\allowbreak{}\allowbreak{}test\_\allowbreak{}\allowbreak{}avg\allowbreak{},\allowbreak{} prior)\allowbreak{}}가 1-D 입력에 \texttt{axis=\allowbreak{}\allowbreak{}1}  \ensuremath{\rightarrow}  AxisError(ValueError 하위)  \ensuremath{\rightarrow}  \texttt{except V\allowbreak{}alueErro\allowbreak{}r}로 데이터셋 skip; 스칼라 τ를 넣어도 \texttt{softmax\_\allowbreak{}\allowbreak{}temperat\allowbreak{}ure}의 \texttt{T[:,\allowbreak{} Non\allowbreak{}e]}이 TypeError. 기본 플래그가 \texttt{DistPFN\_\allowbreak{}\allowbreak{}T=\allowbreak{}\allowbreak{}True}라 README 커맨드 그대로면 전부 skip. 우리는 논문 식(5)(6)을 구현해 \textbf{-T를 실제로 계산}했음(0.6255). 데이터 차원과 무관한 저장소 버그.
+
+
+\par\noindent \textbullet\enspace \textbf{저장 확률 재계산(4.02M×7, \texttt{scripts/\allowbreak{}\allowbreak{}exp37\_\allowbreak{}\allowbreak{}di\allowbreak{}stpfn\_\allowbreak{}\allowbreak{}va\allowbreak{}riants.\allowbreak{}p\allowbreak{}y}  \ensuremath{\rightarrow}  run \texttt{183615}의 9a/\allowbreak{}9b/\allowbreak{}9c)}: per\_\allowbreak{}class\_\allowbreak{}metrics와 macro-F1 4자리 일치 확인.
+
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15905\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14526\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11078\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12112\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12112\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12112\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11078\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11078\linewidth-2\tabcolsep\relax}}
+\toprule
+TabPFN-v3 C0 & macro-F1 & bal.acc & accuracy & log-loss & AUC(ovr) & inf F1 & web F1 \\ \midrule
+\endfirsthead
+TabPFN-v3 C0 & macro-F1 & bal.acc & accuracy & log-loss & AUC(ovr) & inf F1 & web F1 \\ \midrule
+\endhead
+{}raw & 0.7617 & 0.824 & 0.9858 & 0.0853 & 0.9742 & 0.401 & 0.245 \\
+{}DistPFN & 0.7609 & 0.818 & 0.9859 & \textbf{0.0830} & 0.9731 & 0.401 & 0.240 \\
+{}DistPFN-T (논문 기본, 전역 τ=\allowbreak{}0.72) & 0.6255 & 0.721 & 0.9538 & 0.2299 & 0.9746 & 0.113 & 0.008 \\
+{}DistPFN-T Single (샘플별 τ\_\allowbreak{}i) & 0.7119 & 0.848 & 0.9717 & 0.1550 & 0.9746 & 0.257 & 0.048 \\
+{}Saerens EM(수렴, 참고) & 0.7100 & 0.789 & 0.9843 & 0.0802 & 0.9727 & 0.053 & 0.232 \\
+{}XGB-c0 raw /\allowbreak{} DistPFN /\allowbreak{} EM & 0.7525 /\allowbreak{} 0.7542 /\allowbreak{} \textbf{0.7645} & .840/\allowbreak{}.811/\allowbreak{}.797 & .9814/\allowbreak{}.9833/\allowbreak{}.9868 & .0804/\allowbreak{}.0701/\allowbreak{}\textbf{.0565} & .9768/\allowbreak{}.9770/\allowbreak{}.9770 & .337/\allowbreak{}.370/\allowbreak{}\textbf{.458} & .244/\allowbreak{}.222/\allowbreak{}.204 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+추가(0907 16:55): README/\allowbreak{}코드 helper가 타입 일치하는 유일한 한-토큰 수정(\texttt{cross\_\allowbreak{}\allowbreak{}en\allowbreak{}tropy(y\_\allowbreak{}\allowbreak{}prob,\allowbreak{} pr\allowbreak{}ior)}  \ensuremath{\rightarrow}  τ\_\allowbreak{}i (N,), \texttt{softmax\_\allowbreak{}\allowbreak{}temperat\allowbreak{}ure(P\_\allowbreak{}\allowbreak{}te\allowbreak{}st\_\allowbreak{}\allowbreak{}avg,\allowbreak{} \allowbreak{}T=\allowbreak{}\allowbreak{}τ)}가 전역 prior를 행별 온도로 broadcast) =\allowbreak{} \texttt{distpfn\_\allowbreak{}\allowbreak{}t\_\allowbreak{}\allowbreak{}readme\allowbreak{}\_\allowbreak{}\allowbreak{}literal\allowbreak{}}: TabPFN 0.6250 /\allowbreak{} XGB 0.7059 — 논문 기본(스칼라) 0.6255 /\allowbreak{} 0.7045와 사실상 동일. 논문 부록 pseudocode(HTML 333–342행)는 \texttt{p\_\allowbreak{}\allowbreak{}hat =\allowbreak{}\allowbreak{} \allowbreak{}softmax(\allowbreak{}logits,\allowbreak{} \allowbreak{}dim=\allowbreak{}\allowbreak{}0); \allowbreak{}tau =\allowbreak{}\allowbreak{} cr\allowbreak{}oss\_\allowbreak{}\allowbreak{}entr\allowbreak{}opy(p\_\allowbreak{}\allowbreak{}ha\allowbreak{}t,\allowbreak{} p\_\allowbreak{}\allowbreak{}tra\allowbreak{}in); p\_\allowbreak{}\allowbreak{}h\allowbreak{}at\_\allowbreak{}\allowbreak{}scale\allowbreak{}d =\allowbreak{}\allowbreak{} soft\allowbreak{}max(p\_\allowbreak{}\allowbreak{}ha\allowbreak{}t /\allowbreak{}\allowbreak{} tau,\allowbreak{} dim=\allowbreak{}\allowbreak{}0)}로 p\_\allowbreak{}hat을 \textbf{1-D 벡터}로 다룸  \ensuremath{\rightarrow}  스칼라 τ 해석이 논문과 일치. 공개 numpy helper의 \texttt{axis=\allowbreak{}\allowbreak{}1}은 샘플별(Single) 버전을 옮겨 적은 흔적이며, 같은 파일 108행이 \texttt{cross\_\allowbreak{}\allowbreak{}en\allowbreak{}tropy =\allowbreak{}\allowbreak{} \allowbreak{}log\_\allowbreak{}\allowbreak{}loss\allowbreak{}(.\allowbreak{}.\allowbreak{}.\allowbreak{})}로 함수 이름을 덮어쓰는 것도 끝까지 실행된 적 없는 파일의 징후. 데이터셋(클래스 수·피처 수)과 무관: \texttt{.\allowbreak{}mean(ax\allowbreak{}is=\allowbreak{}\allowbreak{}0)}는 항상 1-D. 판독: DistPFN은 \textbf{자기 목적(캘리브레이션: log-loss·accuracy)에선 작동}(TabPFN logloss −0.002, XGB −0.010)하지만 macro-F1엔 중립\textasciitilde{}음성 — 재가중이 꼬리를 자연 prior 쪽으로 깎기 때문(bal.acc 하락). -T는 τ\ensuremath{\approx}0.7로 exp(p̂/\allowbreak{}τ)\ensuremath{\in}[1,4]라 분모 numerator가 거의 균등  \ensuremath{\rightarrow}  web ×14, 어느 지표로도 악화. EM 수렴은 XGB엔 macro +\allowbreak{}0.012(inf 0.458)이지만 TabPFN엔 inf 붕괴(0.053) — 모델별 상반, 단일 seed. 그림: 9b(사전분포 비교, log), 9c(변형별 F1).
+
+\par\noindent \textbullet\enspace \textbf{그들 스크립트 × 그들 데이터로 직접 실행 (0908 14:38–14:42)} — "공식 코드가 못 돌 리 없다"는 반론에 대한 실증. \texttt{src/\allowbreak{}\allowbreak{}}를 스크래치패드에 복사해 README가 지시하는 \texttt{BASE\_\allowbreak{}\allowbreak{}DIR\allowbreak{}} 한 줄만 바꾸고, 목록을 첫 8개(pollen·Sick·jungle\_\allowbreak{}chess·led24·led7·kr-vs-kp·splice·space\_\allowbreak{}ga; 이진 5·다중 3)로 잘라 \texttt{python -\allowbreak{}m src.\allowbreak{}ev\allowbreak{}als.\allowbreak{}eval\allowbreak{}\_\allowbreak{}\allowbreak{}TABPFN\_\allowbreak{}\allowbreak{}shift\_\allowbreak{}\allowbreak{}O}를 세 번 실행. TabPFN은 pip v2 대신 프로젝트 v3 fork(같은 \texttt{tabpfn} 이름; \texttt{sitecust\allowbreak{}omize} shim으로 ckpt 경로만 지정, 스크립트 무수정). β=\allowbreak{}0.5, seed 2025, n\_\allowbreak{}estimators\ensuremath{\in}\{4,8,16,32\} 중 test ROC 최대(그들 규칙). ① \textbf{as released(DistPFN=\allowbreak{}False, DistPFN\_\allowbreak{}T=\allowbreak{}True)}: 8개 데이터셋 × 4 설정 전부 \texttt{axis 1 i\allowbreak{}s out of\allowbreak{} bounds \allowbreak{}for arra\allowbreak{}y of dim\allowbreak{}ension 1\allowbreak{}}  \ensuremath{\rightarrow}  \texttt{ve <id>}  \ensuremath{\rightarrow}  skip, 종료 시 \texttt{len(scor\allowbreak{}es)=\allowbreak{}\allowbreak{}0}으로 exit 1. 이진(pollen 등)·다중(led24 등) 가리지 않음 — 차원 문제이지 클래스 수 문제가 아님이 그들 데이터에서 확인. ② DistPFN=\allowbreak{}True /\allowbreak{} ③ raw: 정상 실행. 8개 평균 accuracy 0.8395 vs 0.8403, ROC 0.915 =\allowbreak{} 0.915, CE \textbf{0.409 vs 0.374}(Sick\_\allowbreak{}numeric CE 0.114 \ensuremath{\rightarrow} 0.394, acc 0.951 \ensuremath{\rightarrow} 0.939로 과보정). 즉 그들 벤치마크에서도(v3 가중치·8개·1 seed 한정) 기본 DistPFN은 중립\textasciitilde{}음성. 논문의 +\allowbreak{}acc 주장(v2, 253개, 5 seed)과 다르지만 표본이 작아 반증은 아님.
+
+
+\par\noindent \textbullet\enspace \textbf{30개 데이터셋으로 확장 (0908 15:10–15:45, 주간 항목 3)}: 같은 무수정 스크립트, 그들 목록 첫 30개, raw vs DistPFN(-T 제외), β=\allowbreak{}0.5와 β=\allowbreak{}2, seed 2025, v3 가중치. \textbf{β=\allowbreak{}0.5: accuracy 0.8201  \ensuremath{\rightarrow}  0.8324 (+\allowbreak{}0.012; 승 16 /\allowbreak{} 무 5 /\allowbreak{} 패 9), CE 0.400  \ensuremath{\rightarrow}  0.416(악화), ROC 0.882 =\allowbreak{} 0.882. β=\allowbreak{}2: accuracy 0.7769  \ensuremath{\rightarrow}  0.8033 (+\allowbreak{}0.026; 승 17 /\allowbreak{} 무 5 /\allowbreak{} 패 8), CE 0.514  \ensuremath{\rightarrow}  0.488(개선), ROC 0.861 =\allowbreak{} 0.862.}  \ensuremath{\rightarrow}  8개 표본(§7 위)에서 "중립"으로 보였던 것은 표본 크기 문제였고, 30개에선 \textbf{논문이 주장하는 방향(accuracy 개선, β가 클수록 큼)이 재현}된다. 논문 Table 10(TabPFN-v2, 253 데이터셋, 5 seed): β=\allowbreak{}0.5 0.796 \ensuremath{\rightarrow} 0.797(+\allowbreak{}0.001), β=\allowbreak{}2 0.782 \ensuremath{\rightarrow} 0.791(+\allowbreak{}0.009), β=\allowbreak{}5 0.727 \ensuremath{\rightarrow} 0.769(+\allowbreak{}0.042) — 우리(v3, 30개, 1 seed)는 같은 부호에 크기가 더 큼(+\allowbreak{}0.012 /\allowbreak{} +\allowbreak{}0.026); 표본·가중치 차이라 크기 비교는 참고만. 가장 큰 개선은 소수 클래스가 심하게 부풀려진 경우(ozone-level-8hr β=\allowbreak{}2 0.779 \ensuremath{\rightarrow} 0.937, connect-4 0.30 \ensuremath{\rightarrow} 0.45, Titanic 0.32 \ensuremath{\rightarrow} 0.46). 즉 기본 DistPFN은 (a) 그들 벤치마크·그들 지표에선 작동하고, (b) 우리 IDS macro-F1에선 중립 — 전이 실패의 원인은 방법 결함이 아니라 "훈련 prior가 test보다 꼬리에 후할 때 꼬리를 깎는" 설계와 우리 지표(꼬리 recall 가중)의 불일치라는 §6a 해석이 강화됨.
+
+
+\par\noindent \textbullet\enspace \textbf{n\_\allowbreak{}estimators 스윕(사용자 요청, 0907 16:50 발사)}: 공개 코드가 \{4,8,16,32\} 중 test ROC 최대를 고르므로 같은 격자로 ours+\allowbreak{}DistPFN 재실행 (C0·fit\_\allowbreak{}with\_\allowbreak{}cache·batch 500k·4.02M test, \texttt{-\allowbreak{}-\allowbreak{}skip-\allowbreak{}x\allowbreak{}gboost}; XGB는 run 183615 인용). 로그 \texttt{cmp\_\allowbreak{}\allowbreak{}exp3\allowbreak{}7\_\allowbreak{}\allowbreak{}c0\_\allowbreak{}\allowbreak{}n\{\allowbreak{}8\allowbreak{},\allowbreak{}16,\allowbreak{}32\}\allowbreak{}.\allowbreak{}log}. 예상: n=\allowbreak{}8 30분, n=\allowbreak{}16 1시간, n=\allowbreak{}32 2시간(병행).
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18681\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11538\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11538\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12637\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14286\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16484\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14835\linewidth-2\tabcolsep\relax}}
+\toprule
+n\_\allowbreak{}estimators (run) & ours raw & +\allowbreak{}DistPFN & +\allowbreak{}DistPFN-T & raw inf /\allowbreak{} web & DistPFN inf /\allowbreak{} web & predict 시간(병행) \\ \midrule
+\endfirsthead
+n\_\allowbreak{}estimators (run) & ours raw & +\allowbreak{}DistPFN & +\allowbreak{}DistPFN-T & raw inf /\allowbreak{} web & DistPFN inf /\allowbreak{} web & predict 시간(병행) \\ \midrule
+\endhead
+{}4 (\texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}183615}) & 0.7617 & 0.7609 & 0.6255 & 0.401 /\allowbreak{} 0.245 & 0.401 /\allowbreak{} 0.240 & 2,291 s \\
+{}8 (\texttt{20260907\allowbreak{}\_\allowbreak{}\allowbreak{}174746}) & 0.7635 & 0.7633 & 0.7175 & 0.403 /\allowbreak{} 0.253 & 0.400 /\allowbreak{} 0.254 & 2,777 s \\
+{}16 (\texttt{20260907\allowbreak{}\_\allowbreak{}\allowbreak{}192325}) & 0.7631 & \textbf{0.7691} & 0.6531 & 0.400 /\allowbreak{} 0.254 & \textbf{0.441} /\allowbreak{} 0.253 & 5,554 s \\
+{}32 (\texttt{20260907\allowbreak{}\_\allowbreak{}\allowbreak{}194340}) & \textbf{0.7693} & 0.7692 & 0.7096 & \textbf{0.441} /\allowbreak{} 0.254 & 0.441 /\allowbreak{} 0.254 & \textasciitilde{}10,000 s \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{raw}: n=\allowbreak{}4 \ensuremath{\rightarrow} 8 +\allowbreak{}0.002(web 0.245 \ensuremath{\rightarrow} 0.253), 8 \ensuremath{\rightarrow} 16 평평, 16 \ensuremath{\rightarrow} 32 +\allowbreak{}0.006(inf 0.400 \ensuremath{\rightarrow} 0.441) — 0.7693은 이 C0·seed의 최고. 비용은 n에 선형(32개 =\allowbreak{} 2.8 h 병행). \textbf{DistPFN}: n=\allowbreak{}4/\allowbreak{}8/\allowbreak{}32에서 ±0.0002(중립), n=\allowbreak{}16에서만 +\allowbreak{}0.006 — 1a의 inf 인자가 n=\allowbreak{}4/\allowbreak{}8/\allowbreak{}32는 0.81/\allowbreak{}0.92/\allowbreak{}1.07, n=\allowbreak{}16만 1.43(앙상블이 inf를 평균 0.069로 과잉 예측)이라 inf를 키운 것. 즉 효과의 부호는 앙상블의 inf 과잉예측 정도에 좌우되며 n=\allowbreak{}32 raw가 같은 inf 0.441을 자력으로 냄. 단일 seed. \textbf{-T}: 0.63/\allowbreak{}0.72/\allowbreak{}0.65/\allowbreak{}0.71로 요동(n=\allowbreak{}16은 benign 0.80 붕괴), web 인자 ×14\textasciitilde{}15는 모든 n에서 동일  \ensuremath{\rightarrow}  사용 불가 결론 불변. 공개 코드가 test ROC 최대 n을 고르는 절차를 따르더라도 우리 지표에 대한 결론(DistPFN \ensuremath{\approx} 중립, -T 불가)은 그대로.
+
+
+
+\section{추가 분석과 수치 검토}
+공개 PFN 확장 방법의 소개와 IDS 비교 결과. 논문 소개 다음에 모순 제거 CIC2018·ToN의 최신 SOTA 성능과 비용(2026-09-30, seed 43) 을 제시한다. 정제 전 seed 42 비교와 논문 벤치마크 재현은 하단 과거 기록에서 확인할 수 있다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15102\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16122\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21224\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18163\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29388\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 학회 & 코드 & 논문 & 한 줄 요약 (문헌조사 xlsx) \\ \midrule
+\endfirsthead
+방법 & 학회 & 코드 & 논문 & 한 줄 요약 (문헌조사 xlsx) \\ \midrule
+\endhead
+{}BoostPFN & AISTATS 2025 & yxzwang/\allowbreak{}BoostPFN & arXiv 2503.01256 & 학습 데이터 부분집합(500행)을 컨텍스트로 갖는 TabPFN 하나를 "약한 학습기"로 보고, 부스팅 잔차로 표본 가중치를 바꿔가며 새 컨텍스트를 순차 추가하는 앙상블. 사전학습 크기의 50배까지 확장. \\
+{}LoCalPFN & NeurIPS 2024 & layer6ai-labs/\allowbreak{}LoCalPFN & arXiv 2406.05207 & 쿼리마다 학습셋 kNN(k =\allowbreak{} min(10√N, 1000))을 로컬 컨텍스트로 넣고(TabPFN-kNN), 그 상태로 TabPFN을 end-to-end 파인튜닝. 학습 시엔 seed점 B개의 이웃을 셔플·분할한 근사 공유 컨텍스트 사용. \\
+{}DistPFN & ICML 2026 & seunghan96/\allowbreak{}DistPFN & arXiv 2605.04363 & 컨텍스트의 클래스 비율(라벨 prior)이 테스트와 다르면 TabPFN이 다수 클래스에 쏠리므로, 테스트 시점에 사후확률을 역빈도로 보정(적응 온도판 DistPFN-T). 모델 수정·학습 없음 \ensuremath{\leftarrow} C0 구성 실험과 직결. \\
+{}MixturePFN & ICLR 2025 & not released & arXiv 2405.16156 & 학습 데이터를 K-means로 쪼개 프롬프터 풀을 만들어 두고 테스트 샘플을 최근접 프롬프터로 라우팅한 뒤, 그 프롬프트 분포로 부트스트랩 파인튜닝. LoCalPFN의 "쿼리별 kNN"을 "클러스터별 공유 컨텍스트"로 바꾼 것. \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection*{모순 제거 데이터의 SOTA 비교 2026-09-30 갱신 · seed 43}
+같은 10만 학습 행 기준, CIC2018은 DistPFN 0.7839, ToN은 XGBoost 0.6983이 가장 높다. 단일 방법이 두 데이터의 모든 클래스를 개선하지는 않는다. 클래스별 오탐과 미탐을 함께 보고 expert와 S/\allowbreak{}V의 개선 대상을 정한다.
+
+제안 모델(seed 43 · K=\allowbreak{}6 · S+\allowbreak{}V)은 ToN 0.7677, CIC2018 0.7824다. ToN은 비교군 전체보다 높지만 CIC2018은 호출 0건으로 Global과 같다. 제안 모델은 expert·route 풀의 추가 학습 데이터를 쓰므로 공통 100k 비교군과 같은 예산이 아니다. 클래스별 표의 모든 행은 test 샘플 수 내림차순이다.
+
+모순 feature 그룹을 제거한 고정 split · CIC2018 test 3,042,473행 /\allowbreak{} ToN test 2,271,723행 · 전체 test 평가, 평가 표본 축소 없음. 정제 전 seed 42 결과는 아래 과거 기록에 별도 보존했다.
+
+\subsection*{전체 성능 · Macro-F1과 Accuracy}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18116\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12681\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13768\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12681\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13768\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.28986\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & CIC · F1 & CIC · Acc. & ToN · F1 & ToN · Acc. & 학습 풀 · CIC /\allowbreak{} ToN \\ \midrule
+\endfirsthead
+방법 & CIC · F1 & CIC · Acc. & ToN · F1 & ToN · Acc. & 학습 풀 · CIC /\allowbreak{} ToN \\ \midrule
+\endhead
+{}Global TabPFN v3 & 0.7824 & 99.37\% & 0.6796 & 90.13\% & 공통 100,000행 \\
+{}XGBoost · 100k & 0.7821 & 98.83\% & 0.6983 & 92.09\% & 공통 100,000행 \\
+{}BoostPFN & 0.7148 & 98.90\% & 0.5866 & 82.68\% & 공통 100,000행 \\
+{}LoCalPFN · FT & 0.7024 & 97.72\% & 0.6462 & 89.44\% & 공통 100,000행 \\
+{}DistPFN · v3 & 0.7839 & 99.43\% & 0.6682 & 88.56\% & 공통 100,000행 \\
+{}XGBoost · 전체 train & 0.7795 & 98.02\% & 0.7162 & 92.38\% & 8,666,430 /\allowbreak{} 4,669,119행 \\
+{}제안 모델 · K=\allowbreak{}6 · S+\allowbreak{}V & 0.7824 & 99.37\% & 0.7677 & 90.68\% & 100,000 +\allowbreak{} expert context 328,037 /\allowbreak{} 338,908행 S/\allowbreak{}V route 풀 296,677 /\allowbreak{} 503,397행 \\
+\bottomrule
+\end{longtable}
+\endgroup
+제안 모델의 K. EXP63 K=\allowbreak{}2·4·6·8 sweep(K=\allowbreak{}2 0.7636 /\allowbreak{} K=\allowbreak{}4 0.7617 /\allowbreak{} K=\allowbreak{}6 0.7677 /\allowbreak{} K=\allowbreak{}8 0.7463) 중 ToN test Macro-F1이 가장 높은 K=\allowbreak{}6를 사용자 요청으로 표기했다. CIC2018은 모든 K에서 호출 0건이라 Global과 같은 0.7824다. test 기준 선택이고 단일 seed·이미 관찰한 holdout이므로 최종 K 선택이나 SOTA 우위 주장으로 읽지 않는다. 호출·채택은 저장 예측에 정책을 적용한 논리적 건수(ToN 호출 2,271,723 · 채택 92,868 · 교정 15,289 /\allowbreak{} 훼손 2,771; CIC 호출 0). 상세는 Expert 역량·S/\allowbreak{}V 검증 탭 3장.
+
+앞의 5개 방법은 EXP59 Global C0와 정확히 같은 100,000개 학습 ID를 사용했다. 전체 train XGB는 추가 학습량을 허용한 참고 기준이다. Global은 기본 TabPFN이며 expert·S/\allowbreak{}V를 포함한 제안 모델 전체의 결과가 아니다. LoCalPFN은 validation을 이용한 미세조정·checkpoint 선택을 포함하고, backbone은 BoostPFN·LoCalPFN v1 /\allowbreak{} Global·DistPFN v3이므로 학습 절차까지 동일한 비교는 아니다.
+
+\subsection*{CIC2018 · 클래스별 F1 · test 3,042,473행}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12963\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11111\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11111\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10494\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10494\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12346\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11728\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09877\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09877\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Global v3 & XGB 100k & BoostPFN & LoCalPFN FT & DistPFN v3 & XGB 전체 & 제안 K=\allowbreak{}6 \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Global v3 & XGB 100k & BoostPFN & LoCalPFN FT & DistPFN v3 & XGB 전체 & 제안 K=\allowbreak{}6 \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9965 & 0.9933 & 0.9937 & 0.9921 & 0.9968 & 0.9887 & 0.9965 \\
+{}DDoS & 262,680 & 0.9922 & 0.9998 & 0.9906 & 0.9433 & 0.9931 & 0.9036 & 0.9922 \\
+{}Bot & 41,542 & 0.9985 & 0.9976 & 0.9942 & 0.9972 & 0.9982 & 0.9977 & 0.9985 \\
+{}DoS & 39,483 & 0.9920 & 0.9998 & 0.9598 & 0.7309 & 0.9919 & 0.9999 & 0.9920 \\
+{}Brute force & 37,696 & 0.9997 & 0.9995 & 0.9997 & 0.9999 & 0.9997 & 0.9996 & 0.9997 \\
+{}Infiltration & 8,742 & 0.2879 & 0.1528 & 0.0653 & 0.1350 & 0.3055 & 0.2927 & 0.2880 \\
+{}Web attack & 127 & 0.2102 & 0.3321 & 0.0000 & 0.1183 & 0.2024 & 0.2745 & 0.2102 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15205\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9961 & 0.9969 & 0.9965 & 2,643,863 & 10,270 & 8,340 \\
+{}DDoS & 262,680 & 1.0000 & 0.9845 & 0.9922 & 258,621 & 6 & 4,059 \\
+{}Bot & 41,542 & 0.9999 & 0.9970 & 0.9985 & 41,418 & 4 & 124 \\
+{}DoS & 39,483 & 0.9997 & 0.9844 & 0.9920 & 38,868 & 10 & 615 \\
+{}Brute force & 37,696 & 1.0000 & 0.9995 & 0.9997 & 37,676 & 0 & 20 \\
+{}Infiltration & 8,742 & 0.2611 & 0.3209 & 0.2879 & 2,805 & 7,936 & 5,937 \\
+{}Web attack & 127 & 0.1185 & 0.9291 & 0.2102 & 118 & 878 & 9 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15205\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9978 & 0.9888 & 0.9933 & 2,622,476 & 5,866 & 29,727 \\
+{}DDoS & 262,680 & 1.0000 & 0.9996 & 0.9998 & 262,569 & 0 & 111 \\
+{}Bot & 41,542 & 0.9999 & 0.9954 & 0.9976 & 41,350 & 6 & 192 \\
+{}DoS & 39,483 & 0.9999 & 0.9997 & 0.9998 & 39,473 & 2 & 10 \\
+{}Brute force & 37,696 & 0.9994 & 0.9995 & 0.9995 & 37,676 & 21 & 20 \\
+{}Infiltration & 8,742 & 0.0969 & 0.3616 & 0.1528 & 3,161 & 29,470 & 5,581 \\
+{}Web attack & 127 & 0.2184 & 0.6929 & 0.3321 & 88 & 315 & 39 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15205\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9940 & 0.9934 & 0.9937 & 2,634,769 & 15,925 & 17,434 \\
+{}DDoS & 262,680 & 0.9997 & 0.9816 & 0.9906 & 257,840 & 74 & 4,840 \\
+{}Bot & 41,542 & 0.9988 & 0.9896 & 0.9942 & 41,108 & 48 & 434 \\
+{}DoS & 39,483 & 0.9887 & 0.9326 & 0.9598 & 36,823 & 422 & 2,660 \\
+{}Brute force & 37,696 & 0.9999 & 0.9995 & 0.9997 & 37,676 & 4 & 20 \\
+{}Infiltration & 8,742 & 0.0488 & 0.0991 & 0.0653 & 866 & 16,898 & 7,876 \\
+{}Web attack & 127 & 0.0000 & 0.0000 & 0.0000 & 0 & 20 & 127 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15205\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9974 & 0.9869 & 0.9921 & 2,617,568 & 6,913 & 34,635 \\
+{}DDoS & 262,680 & 0.9989 & 0.8936 & 0.9433 & 234,742 & 263 & 27,938 \\
+{}Bot & 41,542 & 0.9999 & 0.9945 & 0.9972 & 41,312 & 6 & 230 \\
+{}DoS & 39,483 & 0.5830 & 0.9794 & 0.7309 & 38,669 & 27,658 & 814 \\
+{}Brute force & 37,696 & 1.0000 & 0.9998 & 0.9999 & 37,690 & 0 & 6 \\
+{}Infiltration & 8,742 & 0.0836 & 0.3514 & 0.1350 & 3,072 & 33,693 & 5,670 \\
+{}Web attack & 127 & 0.0676 & 0.4724 & 0.1183 & 60 & 827 & 67 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15205\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9963 & 0.9974 & 0.9968 & 2,645,353 & 9,878 & 6,850 \\
+{}DDoS & 262,680 & 1.0000 & 0.9863 & 0.9931 & 259,081 & 12 & 3,599 \\
+{}Bot & 41,542 & 1.0000 & 0.9964 & 0.9982 & 41,394 & 2 & 148 \\
+{}DoS & 39,483 & 0.9999 & 0.9839 & 0.9919 & 38,847 & 2 & 636 \\
+{}Brute force & 37,696 & 1.0000 & 0.9995 & 0.9997 & 37,676 & 0 & 20 \\
+{}Infiltration & 8,742 & 0.2984 & 0.3130 & 0.3055 & 2,736 & 6,433 & 6,006 \\
+{}Web attack & 127 & 0.1133 & 0.9449 & 0.2024 & 120 & 939 & 7 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15205\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9806 & 0.9971 & 0.9887 & 2,644,455 & 52,430 & 7,748 \\
+{}DDoS & 262,680 & 1.0000 & 0.8241 & 0.9036 & 216,467 & 0 & 46,213 \\
+{}Bot & 41,542 & 1.0000 & 0.9954 & 0.9977 & 41,352 & 0 & 190 \\
+{}DoS & 39,483 & 1.0000 & 0.9999 & 0.9999 & 39,478 & 0 & 5 \\
+{}Brute force & 37,696 & 0.9998 & 0.9995 & 0.9996 & 37,676 & 9 & 20 \\
+{}Infiltration & 8,742 & 0.2673 & 0.3235 & 0.2927 & 2,828 & 7,752 & 5,914 \\
+{}Web attack & 127 & 0.8077 & 0.1654 & 0.2745 & 21 & 5 & 106 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15205\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12966\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11474\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9961 & 0.9969 & 0.9965 & 2,643,864 & 10,270 & 8,339 \\
+{}DDoS & 262,680 & 1.0000 & 0.9845 & 0.9922 & 258,621 & 6 & 4,059 \\
+{}Bot & 41,542 & 0.9999 & 0.9970 & 0.9985 & 41,418 & 4 & 124 \\
+{}DoS & 39,483 & 0.9997 & 0.9844 & 0.9920 & 38,868 & 10 & 615 \\
+{}Brute force & 37,696 & 1.0000 & 0.9995 & 0.9997 & 37,676 & 0 & 20 \\
+{}Infiltration & 8,742 & 0.2612 & 0.3209 & 0.2880 & 2,805 & 7,935 & 5,937 \\
+{}Web attack & 127 & 0.1185 & 0.9291 & 0.2102 & 118 & 878 & 9 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+TP: 해당 클래스 정답 예측 · FP: 다른 클래스를 해당 클래스로 예측 · FN: 해당 클래스를 다른 클래스로 예측. 비율 계산의 분모가 0인 경우 0으로 표기한다.
+
+CIC2018 해석. DistPFN은 Global 대비 Macro-F1 +\allowbreak{}0.0015이며, Infiltration F1은 0.2879  \ensuremath{\rightarrow}  0.3055로 개선됐다. 하지만 Web attack은 0.2102  \ensuremath{\rightarrow}  0.2024로 하락했다. Web에서 Global은 127건 중 118건을 찾지만 FP 878건으로 Precision이 0.1185이고, XGB 100k는 TP 88건·FP 315건으로 F1 0.3321이다. 다음 개선은 Web 탐지 수를 보존하면서 오탐을 줄이는 expert 선택·채택 기준 검증 이다. BoostPFN의 Web TP는 0건이며, LoCalPFN은 Infiltration FP가 33,693건으로 많다.
+
+\subsection*{ToN-IoT · 클래스별 F1 · test 2,271,723행}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11885\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11252\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11252\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10619\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10619\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11885\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09986\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09986\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Global v3 & XGB 100k & BoostPFN & LoCalPFN FT & DistPFN v3 & XGB 전체 & 제안 K=\allowbreak{}6 \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Global v3 & XGB 100k & BoostPFN & LoCalPFN FT & DistPFN v3 & XGB 전체 & 제안 K=\allowbreak{}6 \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9217 & 0.9385 & 0.9042 & 0.9184 & 0.9064 & 0.9389 & 0.9258 \\
+{}XSS & 343,854 & 0.8305 & 0.8734 & 0.7929 & 0.8469 & 0.8247 & 0.8714 & 0.8408 \\
+{}Password & 210,951 & 0.8921 & 0.8920 & 0.6728 & 0.8911 & 0.8909 & 0.8918 & 0.8922 \\
+{}DDoS & 103,338 & 0.9804 & 0.9842 & 0.9248 & 0.9786 & 0.9850 & 0.9928 & 0.9865 \\
+{}Injection & 68,891 & 0.9027 & 0.9128 & 0.4793 & 0.8925 & 0.9164 & 0.9759 & 0.9041 \\
+{}Backdoor & 40,030 & 0.9990 & 0.9990 & 0.9609 & 0.9988 & 0.9990 & 0.9924 & 0.9990 \\
+{}DoS & 22,458 & 0.9771 & 0.9563 & 0.3954 & 0.5554 & 0.9823 & 0.9814 & 0.9769 \\
+{}Scanning & 6,029 & 0.0394 & 0.0458 & 0.3281 & 0.0973 & 0.0060 & 0.0396 & 0.8995 \\
+{}MitM & 1,161 & 0.1322 & 0.2363 & 0.0468 & 0.1655 & 0.0512 & 0.3236 & 0.1321 \\
+{}Ransomware & 709 & 0.1208 & 0.1449 & 0.3608 & 0.1170 & 0.1204 & 0.1539 & 0.1201 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13942\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9765 & 0.8728 & 0.9217 & 1,286,700 & 30,927 & 187,602 \\
+{}XSS & 343,854 & 0.7491 & 0.9318 & 0.8305 & 320,406 & 107,343 & 23,448 \\
+{}Password & 210,951 & 0.8072 & 0.9969 & 0.8921 & 210,294 & 50,232 & 657 \\
+{}DDoS & 103,338 & 0.9896 & 0.9713 & 0.9804 & 100,371 & 1,050 & 2,967 \\
+{}Injection & 68,891 & 0.8565 & 0.9543 & 0.9027 & 65,741 & 11,015 & 3,150 \\
+{}Backdoor & 40,030 & 0.9985 & 0.9996 & 0.9990 & 40,012 & 62 & 18 \\
+{}DoS & 22,458 & 0.9707 & 0.9835 & 0.9771 & 22,088 & 666 & 370 \\
+{}Scanning & 6,029 & 0.7722 & 0.0202 & 0.0394 & 122 & 36 & 5,907 \\
+{}MitM & 1,161 & 0.0713 & 0.8984 & 0.1322 & 1,043 & 13,580 & 118 \\
+{}Ransomware & 709 & 0.0647 & 0.9154 & 0.1208 & 649 & 9,386 & 60 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13942\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9882 & 0.8936 & 0.9385 & 1,317,421 & 15,691 & 156,881 \\
+{}XSS & 343,854 & 0.7893 & 0.9775 & 0.8734 & 336,128 & 89,742 & 7,726 \\
+{}Password & 210,951 & 0.8070 & 0.9969 & 0.8920 & 210,291 & 50,277 & 660 \\
+{}DDoS & 103,338 & 0.9885 & 0.9801 & 0.9842 & 101,277 & 1,183 & 2,061 \\
+{}Injection & 68,891 & 0.9130 & 0.9127 & 0.9128 & 62,874 & 5,990 & 6,017 \\
+{}Backdoor & 40,030 & 0.9985 & 0.9995 & 0.9990 & 40,010 & 59 & 20 \\
+{}DoS & 22,458 & 0.9271 & 0.9874 & 0.9563 & 22,176 & 1,744 & 282 \\
+{}Scanning & 6,029 & 0.6620 & 0.0237 & 0.0458 & 143 & 73 & 5,886 \\
+{}MitM & 1,161 & 0.1357 & 0.9121 & 0.2363 & 1,059 & 6,743 & 102 \\
+{}Ransomware & 709 & 0.0783 & 0.9760 & 0.1449 & 692 & 8,150 & 17 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13942\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9640 & 0.8514 & 0.9042 & 1,255,173 & 46,877 & 219,129 \\
+{}XSS & 343,854 & 0.7629 & 0.8254 & 0.7929 & 283,818 & 88,186 & 60,036 \\
+{}Password & 210,951 & 0.7155 & 0.6349 & 0.6728 & 133,939 & 53,254 & 77,012 \\
+{}DDoS & 103,338 & 0.9551 & 0.8963 & 0.9248 & 92,626 & 4,351 & 10,712 \\
+{}Injection & 68,891 & 0.3516 & 0.7526 & 0.4793 & 51,849 & 95,610 & 17,042 \\
+{}Backdoor & 40,030 & 0.9980 & 0.9265 & 0.9609 & 37,086 & 75 & 2,944 \\
+{}DoS & 22,458 & 0.2513 & 0.9270 & 0.3954 & 20,818 & 62,016 & 1,640 \\
+{}Scanning & 6,029 & 0.4958 & 0.2451 & 0.3281 & 1,478 & 1,503 & 4,551 \\
+{}MitM & 1,161 & 0.0241 & 0.8372 & 0.0468 & 972 & 39,431 & 189 \\
+{}Ransomware & 709 & 0.2285 & 0.8575 & 0.3608 & 608 & 2,053 & 101 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13942\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9871 & 0.8586 & 0.9184 & 1,265,843 & 16,515 & 208,459 \\
+{}XSS & 343,854 & 0.7621 & 0.9531 & 0.8469 & 327,721 & 102,314 & 16,133 \\
+{}Password & 210,951 & 0.8076 & 0.9940 & 0.8911 & 209,685 & 49,961 & 1,266 \\
+{}DDoS & 103,338 & 0.9810 & 0.9762 & 0.9786 & 100,880 & 1,951 & 2,458 \\
+{}Injection & 68,891 & 0.8674 & 0.9192 & 0.8925 & 63,324 & 9,681 & 5,567 \\
+{}Backdoor & 40,030 & 0.9982 & 0.9995 & 0.9988 & 40,008 & 71 & 22 \\
+{}DoS & 22,458 & 0.3864 & 0.9869 & 0.5554 & 22,163 & 35,191 & 295 \\
+{}Scanning & 6,029 & 0.1188 & 0.0824 & 0.0973 & 497 & 3,687 & 5,532 \\
+{}MitM & 1,161 & 0.0908 & 0.9320 & 0.1655 & 1,082 & 10,835 & 79 \\
+{}Ransomware & 709 & 0.0625 & 0.9097 & 0.1170 & 645 & 9,669 & 64 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13942\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9924 & 0.8342 & 0.9064 & 1,229,832 & 9,434 & 244,470 \\
+{}XSS & 343,854 & 0.7066 & 0.9901 & 0.8247 & 340,446 & 141,363 & 3,408 \\
+{}Password & 210,951 & 0.8047 & 0.9978 & 0.8909 & 210,487 & 51,099 & 464 \\
+{}DDoS & 103,338 & 0.9861 & 0.9838 & 0.9850 & 101,662 & 1,429 & 1,676 \\
+{}Injection & 68,891 & 0.8841 & 0.9512 & 0.9164 & 65,530 & 8,592 & 3,361 \\
+{}Backdoor & 40,030 & 0.9985 & 0.9996 & 0.9990 & 40,012 & 59 & 18 \\
+{}DoS & 22,458 & 0.9817 & 0.9828 & 0.9823 & 22,072 & 411 & 386 \\
+{}Scanning & 6,029 & 0.9000 & 0.0030 & 0.0060 & 18 & 2 & 6,011 \\
+{}MitM & 1,161 & 0.0263 & 0.8906 & 0.0512 & 1,034 & 38,223 & 127 \\
+{}Ransomware & 709 & 0.0645 & 0.9111 & 0.1204 & 646 & 9,372 & 63 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13942\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9947 & 0.8890 & 0.9389 & 1,310,596 & 7,010 & 163,706 \\
+{}XSS & 343,854 & 0.7735 & 0.9975 & 0.8714 & 342,996 & 100,411 & 858 \\
+{}Password & 210,951 & 0.8054 & 0.9990 & 0.8918 & 210,732 & 50,908 & 219 \\
+{}DDoS & 103,338 & 0.9937 & 0.9920 & 0.9928 & 102,514 & 655 & 824 \\
+{}Injection & 68,891 & 0.9639 & 0.9881 & 0.9759 & 68,071 & 2,547 & 820 \\
+{}Backdoor & 40,030 & 0.9852 & 0.9997 & 0.9924 & 40,016 & 600 & 14 \\
+{}DoS & 22,458 & 0.9751 & 0.9877 & 0.9814 & 22,181 & 566 & 277 \\
+{}Scanning & 6,029 & 0.9531 & 0.0202 & 0.0396 & 122 & 6 & 5,907 \\
+{}MitM & 1,161 & 0.2149 & 0.6546 & 0.3236 & 760 & 2,776 & 401 \\
+{}Ransomware & 709 & 0.0836 & 0.9732 & 0.1539 & 690 & 7,566 & 19 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13942\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11635\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endfirsthead
+클래스 & Test 행 & Precision & Recall & F1 & TP & FP & FN \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9880 & 0.8709 & 0.9258 & 1,284,013 & 15,617 & 190,289 \\
+{}XSS & 343,854 & 0.7507 & 0.9553 & 0.8408 & 328,487 & 109,068 & 15,367 \\
+{}Password & 210,951 & 0.8072 & 0.9972 & 0.8922 & 210,350 & 50,228 & 601 \\
+{}DDoS & 103,338 & 0.9904 & 0.9827 & 0.9865 & 101,546 & 984 & 1,792 \\
+{}Injection & 68,891 & 0.8503 & 0.9652 & 0.9041 & 66,494 & 11,706 & 2,397 \\
+{}Backdoor & 40,030 & 0.9984 & 0.9996 & 0.9990 & 40,014 & 64 & 16 \\
+{}DoS & 22,458 & 0.9703 & 0.9835 & 0.9769 & 22,088 & 676 & 370 \\
+{}Scanning & 6,029 & 0.9291 & 0.8718 & 0.8995 & 5,256 & 401 & 773 \\
+{}MitM & 1,161 & 0.0713 & 0.8984 & 0.1321 & 1,043 & 13,585 & 118 \\
+{}Ransomware & 709 & 0.0642 & 0.9154 & 0.1201 & 649 & 9,454 & 60 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+TP: 해당 클래스 정답 예측 · FP: 다른 클래스를 해당 클래스로 예측 · FN: 해당 클래스를 다른 클래스로 예측. 비율 계산의 분모가 0인 경우 0으로 표기한다.
+
+ToN 해석. XGB 100k는 Global 대비 Macro-F1 +\allowbreak{}0.0187이다. 전체 train XGB는 0.7162까지 올라가지만 학습량이 다르다. DistPFN은 Global의 MitM FP를 13,580  \ensuremath{\rightarrow}  38,223건으로 늘려 F1이 0.1322  \ensuremath{\rightarrow}  0.0512로 하락했다. 반면 BoostPFN은 Scanning F1 0.3281로 공통 100k 방법 중 가장 높지만 전체 Macro-F1은 0.5866이다. 다음 비교는 클래스별 이득을 유지하면서 다른 클래스의 훼손을 막는 S/\allowbreak{}V 검증 이다. 한 방법을 전역 적용하는 것만으로 모든 클래스의 문제를 해결하지는 못했다.
+
+\subsection*{측정 비용 · RTX 4090 24GB, 최대 2개 작업 병렬}
+아래 시간은 자원 경합을 포함한 실행 경과 시간이며 단독 실행 지연시간이나 모델 간 고유 속도 배수로 해석하지 않는다. LoCalPFN 학습 시간은 validation을 포함하며 이를 다시 더하지 않는다. DistPFN은 Global fit·추론을 공유하고, 보정 자체의 추가 시간은 데이터별 약 0.19초다.
+
+\subsection*{CIC2018 · 학습 및 전체 test 추론}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11905\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13690\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12500\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13690\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14286\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16071\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 학습 (초) & 학습 중 검증 (초) & 전체 추론 (초) & 1,000행당 (초) & GPU 최대 (GiB) & 모델 RAM 최대 (GiB) \\ \midrule
+\endfirsthead
+방법 & 학습 (초) & 학습 중 검증 (초) & 전체 추론 (초) & 1,000행당 (초) & GPU 최대 (GiB) & 모델 RAM 최대 (GiB) \\ \midrule
+\endhead
+{}Global TabPFN v3 & 36.42 & 0.00 & 1,099.26 & 0.3613 & 2.92 & 4.50 \\
+{}XGBoost · 100k & 2.32 & 0.00 & 0.98 & 0.0003 & 0.55 & 2.56 \\
+{}BoostPFN & 98.54 & 0.00 & 2,308.48 & 0.7588 & 0.89 & 3.02 \\
+{}LoCalPFN · FT & 3,196.26 & 3,129.97 & 17,300.77 & 5.6864 & 7.54 & 3.16 \\
+{}DistPFN · v3 & 36.42 & 0.00 & 1,099.45 & 0.3614 & 2.92 & 4.50 \\
+{}XGBoost · 전체 train & 107.75 & 0.00 & 1.05 & 0.0003 & 2.20 & 4.46 \\
+{}제안 모델 · K=\allowbreak{}6 · S+\allowbreak{}V* & 463.37 & — & 3,654.84 & 1.2013 & 4.77 & 25.78† \\
+\bottomrule
+\end{longtable}
+\endgroup
+* 제안 모델 K=\allowbreak{}6: 학습 =\allowbreak{} Global fit(EXP61 36.4초) +\allowbreak{} EXP63 준비 단계(residual 군집·block 선택·expert 6개 fit·route/\allowbreak{}validation 예측·S/\allowbreak{}V 학습·임계값 선택 427.0초). 전체 추론 =\allowbreak{} Global 추론(EXP61 1,099.3초) +\allowbreak{} 모든 expert의 전체 test 예측과 정책 적용(EXP63 2,555.6초). 준비 단계에서 모든 expert를 전체 test에 적용한 측정값이며, 희소 호출의 온라인 추론 비용이 아니다. 두 run의 시간을 합산한 참고치다. † RSS는 입력 로딩을 포함한 프로세스 최대값이라 다른 행의 모델 RAM과 기준이 다르다.
+
+\subsection*{ToN-IoT · 학습 및 전체 test 추론}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17857\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11905\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13690\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12500\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13690\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14286\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16071\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 학습 (초) & 학습 중 검증 (초) & 전체 추론 (초) & 1,000행당 (초) & GPU 최대 (GiB) & 모델 RAM 최대 (GiB) \\ \midrule
+\endfirsthead
+방법 & 학습 (초) & 학습 중 검증 (초) & 전체 추론 (초) & 1,000행당 (초) & GPU 최대 (GiB) & 모델 RAM 최대 (GiB) \\ \midrule
+\endhead
+{}Global TabPFN v3 & 36.69 & 0.00 & 821.70 & 0.3617 & 2.94 & 4.37 \\
+{}XGBoost · 100k & 55.35 & 0.00 & 1.04 & 0.0005 & 0.53 & 2.22 \\
+{}BoostPFN & 97.78 & 0.00 & 1,737.56 & 0.7649 & 0.89 & 3.04 \\
+{}LoCalPFN · FT & 5,783.08 & 5,694.41 & 11,144.83 & 4.9059 & 7.54 & 2.88 \\
+{}DistPFN · v3 & 36.69 & 0.00 & 821.89 & 0.3618 & 2.94 & 4.37 \\
+{}XGBoost · 전체 train & 143.17 & 0.00 & 1.12 & 0.0005 & 1.59 & 3.12 \\
+{}제안 모델 · K=\allowbreak{}6 · S+\allowbreak{}V* & 936.59 & — & 2,224.35 & 0.9791 & 4.87 & 25.60† \\
+\bottomrule
+\end{longtable}
+\endgroup
+* 제안 모델 K=\allowbreak{}6: 학습 =\allowbreak{} Global fit(EXP61 36.7초) +\allowbreak{} EXP63 준비 단계(residual 군집·block 선택·expert 6개 fit·route/\allowbreak{}validation 예측·S/\allowbreak{}V 학습·임계값 선택 899.9초). 전체 추론 =\allowbreak{} Global 추론(EXP61 821.7초) +\allowbreak{} 모든 expert의 전체 test 예측과 정책 적용(EXP63 1,402.6초). 준비 단계에서 모든 expert를 전체 test에 적용한 측정값이며, 희소 호출의 온라인 추론 비용이 아니다. 두 run의 시간을 합산한 참고치다. † RSS는 입력 로딩을 포함한 프로세스 최대값이라 다른 행의 모델 RAM과 기준이 다르다.
+
+GPU/\allowbreak{}RAM은 1초 간격으로 측정한 프로세스별 최대 사용량이다. 모델 RAM은 전처리·모델 로딩·학습·검증·추론 단계 기준이며 원본 PKL 로딩을 제외한다. 데이터 로딩까지 포함한 RSS 최대값은 각 작업 약 25.0–26.6GiB이다. LoCalPFN의 전체 test 추론에는 kNN 검색과 index 구성이 포함된다.
+
+tabpfn/\allowbreak{}results/\allowbreak{}20260929\_\allowbreak{}exp61\_\allowbreak{}sota\_\allowbreak{}local\_\allowbreak{}s43/\allowbreak{}summary.csv tabpfn/\allowbreak{}results/\allowbreak{}20260929\_\allowbreak{}exp61\_\allowbreak{}sota\_\allowbreak{}local\_\allowbreak{}s43/\allowbreak{}class\_\allowbreak{}metrics.csv
+
+\subsection*{1. C0(100k, benign 0.75, 공격 균등, seed 42)로 훈련  \ensuremath{\rightarrow}  테스트 4,023,114행}
+기록 run( 20260904\_\allowbreak{}010654 , chain 13 seed 42, global 0.7623)과 행 단위로 같은 C0 를 다시 뽑아(exp31의 추첨 함수 그대로, 시나리오별 구성 15항목 일치) ours를 재현하고(0.7617; GPU 동시실행 밴드 ±0.0016 안), 외부 방법은 그 100k를 훈련 풀 로 받는다. BoostPFN과 LoCalPFN은 TabPFN v1 위에 있어 컨텍스트가 1,024행을 넘지 못하므로(attention 메모리가 컨텍스트 길이의 제곱) 100k를 한 번에 컨텍스트로 넣을 수 없고, 대신 BoostPFN은 C0에서 500행 표본을 라운드마다 뽑고, LoCalPFN은 C0에서 테스트 행마다 1000-NN을 검색한다. DistPFN은 ours·XGB-c0의 예측 확률에 플러그인. TabPFN-v3는 fit\_\allowbreak{}with\_\allowbreak{}cache · n\_\allowbreak{}estimators 4 · batch 500k(기록과 동일).
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.10978\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10978\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09348\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08804\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09348\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10707\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09348\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08533\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09891\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12065\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 (테스트 행 수) & ours TabPFN-v3 C0, n=\allowbreak{}4 & XGB-c0 (같은 100k) & ours +\allowbreak{} DistPFN & XGB-c0 +\allowbreak{} DistPFN & LoCalPFN (kNN +\allowbreak{} 미세조정) & TabPFN-kNN (검색만) & BoostPFN T=\allowbreak{}50 & TabPFN-v1 단일 500행† & (참고) full XGB 12.07M행 · 기록 \\ \midrule
+\endfirsthead
+클래스 (테스트 행 수) & ours TabPFN-v3 C0, n=\allowbreak{}4 & XGB-c0 (같은 100k) & ours +\allowbreak{} DistPFN & XGB-c0 +\allowbreak{} DistPFN & LoCalPFN (kNN +\allowbreak{} 미세조정) & TabPFN-kNN (검색만) & BoostPFN T=\allowbreak{}50 & TabPFN-v1 단일 500행† & (참고) full XGB 12.07M행 · 기록 \\ \midrule
+\endhead
+{}benign (3,502,926) & 0.9950 & 0.9924 & 0.9950 & 0.9935 & 0.9896 & 0.9940 & 0.9934 & 0.9860 & 0.9943 \\
+{}ddos (264,872) & 0.9958 & 0.9994 & 0.9958 & 0.9995 & 0.9980 & 0.8663 & 0.9920 & 0.9850 & 0.9921 \\
+{}brute\_\allowbreak{}force (115,040) & 0.9159 & 0.9159 & 0.9159 & 0.9159 & 0.9158 & 0.7360 & 0.9158 & 0.9158 & 0.9159 \\
+{}dos (60,594) & 0.7814 & 0.7818 & 0.7812 & 0.7819 & 0.7786 & 0.7725 & 0.7417 & 0.6642 & 0.7822 \\
+{}bot (41,542) & 0.9984 & 0.9973 & 0.9978 & 0.9972 & 0.9971 & 0.9955 & 0.9946 & 0.9908 & 0.9978 \\
+{}infiltration (37,631) & 0.4005 & 0.3370 & 0.4005 & 0.3699 & 0.2751 & 0.3955 & 0.3241 & 0.1841 & 0.4291 \\
+{}web\_\allowbreak{}attacks (509) & 0.2450 & 0.2439 & 0.2402 & 0.2215 & 0.2237 & 0.2252 & 0.1965 & 0.1210 & 0.1724 \\
+{}macro-F1 & 0.7617 & 0.7525 & 0.7609 & 0.7542 & 0.7397 & 0.7121 & 0.7369 & 0.6924 & 0.7548 \\
+{}tail-F1 (bot·inf·web) & 0.548 & 0.526 & 0.546 & 0.530 & 0.499 & 0.539 & 0.505 & 0.432 & 0.533 \\
+{}비용 (GPU) & \textasciitilde{}11 min & 7 s & +\allowbreak{}0 & +\allowbreak{}0 & 8.0 h & 7.4 h & 50 min & 2 min & 8.6 min CPU \\
+{}run & 183615 & 183615 & 183615 & 183615 & 20260905\_\allowbreak{}020159 & 20260905\_\allowbreak{}012446 & 185152 & 185331 & 기록 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+단일 seed(42); 캠페인 헤드라인은 7-seed였음을 유념. LoCalPFN은 4.02M행 평가에 seed당 \textasciitilde{}8 h가 들어 seed 확장은 보류. † "TabPFN-v1 단일 500행"은 BoostPFN 저장소의 무부스팅 기준선 ( largedataset\_\allowbreak{}boostpfn.py 의 tabpfn 분기: 클래스 비율대로 뽑은 500행 한 컨텍스트, 부스팅 없이 한 번 예측)이며 LoCalPFN에서 나온 값이 아니다. LoCalPFN 저장소의 자체 기준선( vanilla , 1000행)은 IDS에선 돌리지 않았고 2절의 TabZilla 재현에만 나온다.
+
+\subsection*{ours의 n\_\allowbreak{}estimators 스윕 +\allowbreak{} DistPFN}
+DistPFN 공개 코드는 데이터셋마다 TabPFN의 n\_\allowbreak{}estimators \ensuremath{\in} \{4, 8, 16, 32\} 를 모두 돌려 test ROC가 최대인 것을 고른다. 같은 격자를 우리 C0 위에서 돌렸고(넷 다 표기), XGB-c0는 결정적이라 run 183615 값을 인용.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17582\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11538\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14835\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14286\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16484\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12088\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13187\linewidth-2\tabcolsep\relax}}
+\toprule
+n\_\allowbreak{}estimators (run) & ours raw & ours +\allowbreak{} DistPFN & raw inf /\allowbreak{} web & DistPFN inf /\allowbreak{} web & inf 보정 인자 & predict 시간 \\ \midrule
+\endfirsthead
+n\_\allowbreak{}estimators (run) & ours raw & ours +\allowbreak{} DistPFN & raw inf /\allowbreak{} web & DistPFN inf /\allowbreak{} web & inf 보정 인자 & predict 시간 \\ \midrule
+\endhead
+{}4 183615 & 0.7617 & 0.7609 & 0.401 /\allowbreak{} 0.245 & 0.401 /\allowbreak{} 0.240 & 0.81 & 38 min (병행) \\
+{}8 20260907\_\allowbreak{}174746 & 0.7635 & 0.7633 & 0.403 /\allowbreak{} 0.253 & 0.400 /\allowbreak{} 0.254 & 0.92 & 46 min \\
+{}16 20260907\_\allowbreak{}192325 & 0.7631 & 0.7691 & 0.400 /\allowbreak{} 0.254 & 0.441 /\allowbreak{} 0.253 & 1.43 & 93 min \\
+{}32 20260907\_\allowbreak{}194340 & 0.7693 & 0.7692 & 0.441 /\allowbreak{} 0.254 & 0.441 /\allowbreak{} 0.254 & 1.07 & \textasciitilde{}2.8 h \\
+\bottomrule
+\end{longtable}
+\endgroup
+raw는 n=\allowbreak{}4 \ensuremath{\rightarrow} 8에서 +\allowbreak{}0.002(web 0.245 \ensuremath{\rightarrow} 0.253), 16 \ensuremath{\rightarrow} 32에서 +\allowbreak{}0.006(inf 0.400 \ensuremath{\rightarrow} 0.441). DistPFN은 n=\allowbreak{}4/\allowbreak{}8/\allowbreak{}32에서 ±0.0002(중립)이고 n=\allowbreak{}16에서만 +\allowbreak{}0.006인데, 그 앙상블이 infiltration을 평균 0.069로 과잉 예측해 inf 인자가 1.43(>1)이 된 경우다 — 효과의 부호가 앙상블의 inf 과잉예측 정도에 좌우되는 단일-seed 수준의 차이이고, n=\allowbreak{}32 raw가 같은 inf 0.441을 보정 없이 낸다.
+
+DistPFN-T(온도조절판)는 표에 넣지 않았다. 공개 스크립트는 평균 확률(1-D)을 2-D용 helper에 넘겨 AxisError 가 나고 예외 처리로 데이터셋을 건너뛰어 어떤 데이터에서도 실행되지 않는다(그들 OpenML 30종에서도 전부 skip). 논문 식(τ =\allowbreak{} CE(추정 비율, 컨텍스트 비율) 스칼라, softmax(비율/\allowbreak{}τ))대로 구현하면 우리 데이터에서 web 인자 ×14가 되어 붕괴(macro 0.6255)하고, helper 시그니처에 맞춘 다른 두 해석(샘플별 τ 0.7119, README 한 토큰 수정 0.6250)도 마찬가지라 결론이 해석에 좌우되지 않는다. 기본 DistPFN만 플러그인 열로 유지( exp37 --no-distpfn-t ).
+
+\subsection*{2. 참고용) 각 SOTA를 원본 데이터에서 돌려 논문 수치와 대조}
+세 저장소 모두 공개 코드를 무수정으로 (환경 호환 패치·경로 설정만) 그들의 벤치마크에서 실행해 논문 표와 맞췄다. 결론: 세 이식 모두 논문 수치(또는 논문이 주장하는 방향)를 재현하므로, 1절의 IDS 결과는 이식 오류가 아니라 방법 자체의 거동이다. 데이터셋별 수치는 lablog/\allowbreak{}report/\allowbreak{}repro\_\allowbreak{}results/\allowbreak{}0908\_\allowbreak{}*\_\allowbreak{}repro.csv .
+
+\subsection*{BoostPFN — upstream 드라이버 무수정 × 논문 프로토콜 (T=\allowbreak{}1000, 500행, exphadamard, 50/\allowbreak{}50 split, seed 5)}
+베이스라인용 의존성(openml·catboost·hyperopt) 설치와 numpy 2 한 줄( np.warnings ) 외에는 손대지 않은 largedataset\_\allowbreak{}boostpfn.py 를 README 커맨드 그대로 실행.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.28023\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16395\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23372\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14070\linewidth-2\tabcolsep\relax}}
+\toprule
+OpenML 데이터셋 & 행 /\allowbreak{} 클래스 & 우리 실행 (seed 5) & 논문 Table 13 (5-seed 평균) & 차 \\ \midrule
+\endfirsthead
+OpenML 데이터셋 & 행 /\allowbreak{} 클래스 & 우리 실행 (seed 5) & 논문 Table 13 (5-seed 평균) & 차 \\ \midrule
+\endhead
+{}BNG(glass,nominal,137781) & 137,781 /\allowbreak{} 7 & 0.9011 & 0.900 & +\allowbreak{}0.001 \\
+{}BNG(page-blocks,nominal,295245) & 295,245 /\allowbreak{} 5 & 0.8435 & 0.8471 & −0.004 \\
+{}fars & 100,968 /\allowbreak{} 8 & 0.8842 & 0.8894 & −0.005 \\
+{}skin-segmentation (이진, opt-in†) & 245,057 /\allowbreak{} 2 & 1.0000 & 1.0 & 0 \\
+{}creditcard (이진, opt-in†) & 284,807 /\allowbreak{} 2 & 0.9828 & 0.9821 & +\allowbreak{}0.001 \\
+\bottomrule
+\end{longtable}
+\endgroup
+5/\allowbreak{}5 \ensuremath{\leq}0.005. † 이진은 upstream 코드가 MultinomialDeviance(2) 를 만들고 pinned sklearn 0.24.2가 K<3을 거부하므로 릴리스 상태로는 실행 불가(bare except가 0.0 기록)  \ensuremath{\rightarrow}  2-클래스 softmax deviance를 환경변수 opt-in으로 허용하니 논문 값이 재현됨.
+
+\subsection*{DistPFN — 공개 스크립트 무수정 × 그들 OpenML 목록 첫 30개 (raw vs DistPFN, β \ensuremath{\in} \{0.5, 2\}, seed 2025, TabPFN은 프로젝트 v3 fork)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14759\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09461\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19063\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10454\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16414\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11447\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18401\linewidth-2\tabcolsep\relax}}
+\toprule
+β (train을 (1/\allowbreak{}f)\textasciicircum{}β로 복원추출) & n & acc raw  \ensuremath{\rightarrow}  DistPFN & 승 /\allowbreak{} 무 /\allowbreak{} 패 & CE raw  \ensuremath{\rightarrow}  DistPFN & ROC & 논문 Table 10 (v2 · 253 · 5 seed) \\ \midrule
+\endfirsthead
+β (train을 (1/\allowbreak{}f)\textasciicircum{}β로 복원추출) & n & acc raw  \ensuremath{\rightarrow}  DistPFN & 승 /\allowbreak{} 무 /\allowbreak{} 패 & CE raw  \ensuremath{\rightarrow}  DistPFN & ROC & 논문 Table 10 (v2 · 253 · 5 seed) \\ \midrule
+\endhead
+{}0.5 & 30 & 0.8201  \ensuremath{\rightarrow}  0.8324 (+\allowbreak{}0.012) & 16 /\allowbreak{} 5 /\allowbreak{} 9 & 0.400  \ensuremath{\rightarrow}  0.416 & 0.882 =\allowbreak{} 0.882 & 0.796  \ensuremath{\rightarrow}  0.797 (+\allowbreak{}0.001) \\
+{}2.0 & 30 & 0.7769  \ensuremath{\rightarrow}  0.8033 (+\allowbreak{}0.026) & 17 /\allowbreak{} 5 /\allowbreak{} 8 & 0.514  \ensuremath{\rightarrow}  0.488 & 0.861 =\allowbreak{} 0.862 & 0.782  \ensuremath{\rightarrow}  0.791 (+\allowbreak{}0.009) \\
+\bottomrule
+\end{longtable}
+\endgroup
+논문이 주장하는 방향(accuracy 개선, β가 클수록 큼)이 재현된다. 가장 큰 개선은 소수 클래스가 심하게 부풀려진 경우(ozone-level-8hr β=\allowbreak{}2 0.779 \ensuremath{\rightarrow} 0.937, Titanic 0.32 \ensuremath{\rightarrow} 0.46). 즉 기본 DistPFN은 그들 벤치마크·지표에서 작동하고 우리 IDS macro-F1에서는 중립이다.
+
+\subsection*{LoCalPFN — 저장소 main.py 무수정 × TabZilla 중형 10종 (split 0, README 기본값: context 1000, ft lr 1e-5·21 epoch·30 step·2 query·val AUC early stop)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25175\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17807\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15702\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14649\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14649\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12018\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 (n) & AUC TabPFN (1000행) & AUC TabPFN-kNN & AUC LoCalPFN & acc LoCalPFN & ft 시간 \\ \midrule
+\endfirsthead
+데이터셋 (n) & AUC TabPFN (1000행) & AUC TabPFN-kNN & AUC LoCalPFN & acc LoCalPFN & ft 시간 \\ \midrule
+\endhead
+{}electricity (45k) & 0.8465 & 0.9568 & 0.9736 & 0.912 & 345 s \\
+{}MiniBooNE (130k) & 0.9436 & 0.9822 & 0.9856 & 0.947 & 954 s \\
+{}bank-marketing (45k) & 0.8767 & 0.9075 & 0.9326 & 0.910 & 348 s \\
+{}connect-4 (68k, 3cls) & 0.5845 & 0.8395 & 0.8887 & 0.837 & 508 s \\
+{}jannis (84k, 4cls) & 0.7334 & 0.8063 & 0.8513 & 0.715 & 627 s \\
+{}spambase (4.6k) & 0.9609 & 0.9785 & 0.9751 & 0.941 & 54 s \\
+{}optdigits (5.6k, 10cls) & 0.9976 & 0.9991 & 0.9999 & 0.989 & 62 s \\
+{}pendigits (11k, 10cls) & 0.9996 & 1.0000 & 1.0000 & 0.997 & 112 s \\
+{}MagicTelescope (19k) & 0.9147 & 0.9407 & 0.9459 & 0.896 & 171 s \\
+{}phoneme (5.4k) & 0.8955 & 0.9601 & 0.9696 & 0.904 & 59 s \\
+{}평균 (10, split 0) & 0.8753 & 0.9371 & 0.9522 & 0.905 &  \\
+{}논문 medium/\allowbreak{}large 평균 (48, 10-fold) & 0.884 & 0.916 & 0.934 & 0.890 &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+논문에는 데이터셋별 표가 없어 평균의 순서·간격으로 대조한다. 순서 동일(TabPFN < kNN < LoCalPFN), kNN > TabPFN 10/\allowbreak{}10, LoCalPFN > kNN 8/\allowbreak{}10, 간격 +\allowbreak{}0.062 /\allowbreak{} +\allowbreak{}0.015 vs 논문 +\allowbreak{}0.032 /\allowbreak{} +\allowbreak{}0.018; accuracy 0.833/\allowbreak{}0.892/\allowbreak{}0.905 vs 0.828/\allowbreak{}0.861/\allowbreak{}0.890. 우리 표본이 평균적으로 크고 쉬워 절대값은 높지만 논문의 주장(검색 +\allowbreak{}0.03, 미세조정 +\allowbreak{}0.02)이 그대로 나온다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21486\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18446\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22838\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18108\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19122\linewidth-2\tabcolsep\relax}}
+\toprule
+run & 스크립트 & 설정 & macro & 비고 \\ \midrule
+\endfirsthead
+run & 스크립트 & 설정 & macro & 비고 \\ \midrule
+\endhead
+{}20260904\_\allowbreak{}183615 & exp37 --context-recipe c0 & C0 100k, fit\_\allowbreak{}with\_\allowbreak{}cache, n=\allowbreak{}4, test 4.02M & 0.7617 & ours 재현 +\allowbreak{} XGB-c0 +\allowbreak{} DistPFN \\
+{}20260904\_\allowbreak{}185152 /\allowbreak{} 185331 & exp35 c0 & BoostPFN T=\allowbreak{}50 /\allowbreak{} TabPFN-v1 단일 500행 & 0.7369 /\allowbreak{} 0.6924 & 1a 궤적에 T=\allowbreak{}10(0.7389) 포함 \\
+{}20260905\_\allowbreak{}012446 /\allowbreak{} 020159 & exp36 knn /\allowbreak{} ft c0 & C0 풀, batch 128 & 0.7121 /\allowbreak{} 0.7397 & ft workdir resume/\allowbreak{}…\_\allowbreak{}175907 \\
+{}20260907\_\allowbreak{}174746 /\allowbreak{} 192325 /\allowbreak{} 194340 & exp37 c0 & n\_\allowbreak{}estimators 8 /\allowbreak{} 16 /\allowbreak{} 32 & 0.7635 /\allowbreak{} 0.7631 /\allowbreak{} 0.7693 & XGB는 183615 인용 \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

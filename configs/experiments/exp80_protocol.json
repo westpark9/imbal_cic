@@ -1,0 +1,19 @@
+{
+  "version": "v7",
+  "experiment": "exp80",
+  "authorization": "2026-10-16 user explicitly selected 200·400개 추가 비교 in the asynchronous scope question",
+  "purpose": "Extend EXP78 new-attack label budgets upward with fixed initial data",
+  "seed": 43,
+  "seed_repetitions": 1,
+  "initial_labels": 1000,
+  "initial_counts": [750,125,125],
+  "new_class_counts": [200,400],
+  "methods": ["xgb","pfn_pretrained"],
+  "sampling": "Keep the original 100 incoming IDs and append a seeded nested sample from the remaining training pool of each newly introduced class",
+  "limit": "CIC2018 Web attacks has 450 available training rows; 400 permits the same budget for every new class without replacement",
+  "evaluation": "Final model, complete original-order fixed test, batch 8192",
+  "finetuning": false,
+  "cost": "Initial preparation and inference excluded; sum later context updates or cumulative retraining",
+  "html_publication": false,
+  "overleaf_publication": false
+}

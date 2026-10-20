@@ -25,8 +25,8 @@ from report_order import support_order, permute, apply_rules
 
 ROOT=repo_root(__file__)
 RUN=ROOT/'tabpfn/results/v4/exp61/20260929_exp61_sota_local_s43'
-OUT=ROOT/'docs/research/20260930'
-REPORT=ROOT/'lablog/html_report/sota_pfn_comparison.html'
+OUT=ROOT/'docs/lablog/evidence/20260930'
+REPORT=ROOT/'docs/lablog/reports/20260904.tex'
 INDEX=REPORT.with_name('post_tabpfn.html')
 METHODS=['global_raw','xgb','boostpfn','localpfn','distpfn','xgb_full']
 NAMES=dict(global_raw='Global TabPFN v3',xgb='XGBoost · 100k',boostpfn='BoostPFN',localpfn='LoCalPFN · FT',distpfn='DistPFN · v3',xgb_full='XGBoost · 전체 train')
@@ -232,7 +232,7 @@ def main():
     INDEX.write_text(index)
     removed=REPORT.with_name('counterexample_context_0929.html')
     if removed.exists():
-        archive=ROOT/'docs/research/20260929/archive';archive.mkdir(exist_ok=True)
+        archive=ROOT/'docs/lablog/evidence/20260929/archive';archive.mkdir(exist_ok=True)
         removed.replace(archive/removed.name)
     print(f'Updated {REPORT}; removed withdrawn report from active HTML; {len(data["datasets"])} datasets validated')
 

@@ -15,8 +15,8 @@ from pathlib import Path
 from check_exp59_report import browser_check
 
 ROOT=repo_root(__file__)
-OUT=ROOT/'docs/research/20260930/exp61_html_qa'
-REPORT=ROOT/'lablog/html_report/sota_pfn_comparison.html'
+OUT=ROOT/'docs/lablog/evidence/20260930/exp61_html_qa'
+REPORT=ROOT/'docs/lablog/reports/20260904.tex'
 
 PAGE=r'''
 const checks=[];const check=(ok,name)=>{if(!ok)throw Error(name);checks.push(name);};

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Check the finished EXP59 page and its integrated tab in headless Chrome."""
 
+# HTML reporting was retired by the 2026-10-20 documentation reorganization.
+if __name__ == '__main__':
+    raise SystemExit('이 HTML 발행 명령은 폐기되었습니다. 결과를 검토한 뒤 scripts/common/lablog.py의 write_record로 한국어 LaTeX·PDF와 log.md를 갱신하세요. 기존 결과 계산 함수는 이력 참조용입니다.')
+
+
 # Repository layout bootstrap: works in the workspace and portable source snapshots.
 from pathlib import Path as _LayoutPath
 import sys as _layout_sys

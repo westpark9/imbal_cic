@@ -21,7 +21,7 @@ from build_exp56_report_section import table
 
 ROOT=repo_root(__file__)
 RUN=ROOT/'tabpfn/results/v4/exp63/20260930_exp63_k_sweep_s43'
-DOC=ROOT/'docs/research/20260930'
+DOC=ROOT/'docs/lablog/evidence/20260930'
 LABELS={'cic2018':'CIC2018','toniot':'ToN-IoT'}
 TARGETS={'cic2018':['infiltration','web_attacks'],'toniot':['scanning','mitm','ransomware']}
 

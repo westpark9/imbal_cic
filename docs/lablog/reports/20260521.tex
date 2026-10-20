@@ -1,0 +1,327 @@
+% !TeX root = 20260521.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-05-21}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-05-21 · 실험 진행 보고서 — 0521}
+\label{report:20260521_0521}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\textbf{작성일}: 2026-05-21 \textbf{기간}: 2026-05-11 \textasciitilde{} 2026-05-21 \textbf{프로젝트}: Imbalanced Multi-Class Classification with MoE (CIC-IDS)
+
+
+\medskip\hrule\medskip
+\subsection{1. 이전 보고서(0511) 요약}
+0511 보고서에서 확인한 핵심 상태:
+
+\par\noindent \textbullet\enspace \texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py}(FAR-MoE): val에서 거의 완벽하나 test에서 개선 없음. 원인은 val \ensuremath{\rightarrow} test 분포 이동으로 인한 CM leakage.
+
+
+\par\noindent \textbullet\enspace Vision benchmark 확장(\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}cifar.\allowbreak{}p\allowbreak{}y} 등) 스크립트 구현 완료, 미실행.
+
+
+\par\noindent \textbullet\enspace \textbf{MATI (WSDM 2026)} 식별 — MoE +\allowbreak{} test-time imbalance 보정. 방법론 적용 검토를 다음 단계로 제시.
+
+
+
+\medskip\hrule\medskip
+\subsection{2. 이번 기간(0511–0521) 수행 작업}
+\subsubsection{2.1 MATI 적용 시도 및 중단 (\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}i.\allowbreak{}py}, \texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}i\_\allowbreak{}\allowbreak{}repo.\allowbreak{}p\allowbreak{}y})}
+\paragraph{배경}
+MATI(WSDM 2026)는 test-time에 불균형 분포를 추정하고, 각 expert의 예측을 사후 보정하는 MoE 방식이다. 핵심 아이디어는 test-time class prior를 추정한 뒤 expert 출력에 곱해 imbalance를 보정하는 것으로, routing 오류 문제를 우회할 가능성이 있어 검토 대상으로 선정했다.
+
+\paragraph{시도 내용}
+\par\noindent \textbullet\enspace \texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}i.\allowbreak{}py}: MATI의 prior 추정 및 expert 보정 로직을 CIC-IDS2017 환경에 맞게 이식 시도.
+
+
+\par\noindent \textbullet\enspace \texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}i\_\allowbreak{}\allowbreak{}repo.\allowbreak{}p\allowbreak{}y}: MATI 공식 레포지토리 코드를 직접 재현하는 방식으로 접근.
+
+
+\paragraph{중단 이유}
+MATI 원 구현은 \textbf{회귀(regression) 기반}으로 설계되어 있다. 구체적으로, test-time class prior 추정 과정이 예측값의 연속 분포를 가정하는 절차를 포함한다. CIC-IDS는 이산 다중 클래스 분류(multi-class classification) 문제이므로, 이를 그대로 적용하기 위해서는 회귀를 분류로 변환하는 비자명한 설계 결정이 필요하다.
+
+이 변환이 MATI의 핵심 아이디어(prior 보정)를 유지한 채로 가능한지 불분명하고, 변환 과정에서 MATI의 이론적 근거가 훼손될 가능성이 있어 재현 시도를 중단했다.
+
+
+\medskip\hrule\medskip
+\subsubsection{2.2 TTA(Test-Time Augmentation) 도입 시도 (\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}.\allowbreak{}py})}
+\paragraph{배경 및 아이디어}
+MATI 재현이 중단된 후, 동일하게 test-time에 작동하면서 routing 문제를 우회할 수 있는 방향으로 \textbf{SADE(NeurIPS 2022)} 방식의 TTA를 검토했다.
+
+SADE의 핵심 수식:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+S = (1/B) Σ_b  ŷ¹_b · ŷ²_b
+
+\end{Verbatim}
+여기서 \texttt{ŷ¹}, \texttt{ŷ²}는 동일 샘플의 두 augmented view에 대한 앙상블 예측이다. S를 최대화하면 예측의 일관성(stability)이 높아지고, Theorem 1에 따라 \texttt{I(Ŷ;Y) −\allowbreak{} H(Ŷ)}에 비례하므로 올바른 예측을 향해 수렴한다.
+
+이를 Adam gradient ascent로 expert별 global scalar weight를 최적화한다.
+
+\paragraph{설계}
+\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}.\allowbreak{}py}는 이전 시도들과 달리 \textbf{배타적 분할(exclusive partition)을 사용하지 않는다.} 각 expert는 전체 데이터를 학습하되, 소속 클래스에 \texttt{focus\_\allowbreak{}\allowbreak{}we\allowbreak{}ight} 배의 sample weight를 부여하는 \textbf{inclusive expert} 설계를 채택했다. 모든 expert가 전체 15개 클래스에 대한 확률 벡터를 출력한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+expert 훈련:
+  모든 샘플로 학습 (balanced weight × focus_weight for focus classes)
+   →  출력: 전체 클래스 확률 벡터 [N, 15]
+
+TTA (SADE):
+  x¹, x² = VIME perturb(x)
+  S = (1/B) Σ_b ŷ¹_b · ŷ²_b  (ŷ = Σ_e w_e · p_e(x))
+  Adam gradient ascent on w   →   최종 global weights
+
+\end{Verbatim}
+결과는 베이스라인 대비 개선을 확인하지 못했으나, 구조적으로 가장 일관된 설계임을 확인했다.
+
+
+\medskip\hrule\medskip
+\subsubsection{2.3 배타적 분할 +\allowbreak{} TTA 시도 (\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}js.\allowbreak{}py}, \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}ent.\allowbreak{}py})}
+\paragraph{배경}
+\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}.\allowbreak{}py}의 inclusive expert는 XGBoost 내부 부스팅과 focus\_\allowbreak{}weight가 기능적으로 겹쳐 expert 간 차별화가 제한된다는 가설 하에, 각 expert가 담당 클래스만 학습하는 \textbf{배타적 분할(exclusive partition)} 을 시도했다.
+
+두 가지 TTA stability 지표를 비교했다:
+
+\par\noindent \textbullet\enspace \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}js.\allowbreak{}py}: JS divergence 기반 per-sample per-expert stability
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+stability_e(x) = 1 / (1 + (1/K) Σ_k JS(p_e(x), p_e(x'_k)))
+
+\end{Verbatim}
+
+\par\noindent \textbullet\enspace \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}ent.\allowbreak{}py}: entropy 기반 stability
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+stability_e(x) = 1 / (1 + (1/K) Σ_k H(p_e(x'_k)) / log(n_classes_e))
+
+\end{Verbatim}
+
+두 방식 모두 macro F1이 0.17–0.32로, 베이스라인(0.87)에 비해 처참하게 낮았다. tail이 아닌 majority 클래스(benign recall 57\%, dos-hulk recall 21\%)에서도 성능이 붕괴했다.
+
+\paragraph{원인 분석}
+배타적으로 분할된 expert는 자신의 파티션 \textbf{밖의 클래스를 훈련 데이터에서 본 적이 없다.} 따라서 파티션 외부 샘플이 입력되면, 자신이 아는 클래스 중 하나를 높은 confidence로 틀리게 예측한다. 이 예측은 원본 x와 perturbed x'에 대해 \textbf{일관되게} 틀리므로, stability 기준으로도 높은 점수를 받는다.
+
+예시 (dos-hulk 샘플에 대한 각 expert의 행동):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20833\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17500\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14167\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17500\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14167\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15833\linewidth-2\tabcolsep\relax}}
+\toprule
+Expert & pred(x) & conf & pred(x') & conf & stability \\ \midrule
+\endfirsthead
+Expert & pred(x) & conf & pred(x') & conf & stability \\ \midrule
+\endhead
+{}[확인] DoS & dos-hulk & 0.9997 & dos-hulk & 0.9540 & 0.9748 \\
+{}[제외] BruteForce & ssh-patator & 0.9972 & ssh-patator & 0.9972 & \textbf{0.9989} \\
+{}[제외] DDoS\_\allowbreak{}Scan & portscan & 0.9950 & portscan & 0.9900 & 0.9303 \\
+\bottomrule
+\end{longtable}
+\endgroup
+BruteForce expert가 올바른 DoS expert보다 \textbf{stability가 더 높다.} TTA는 BruteForce expert에 더 높은 weight를 부여하게 되어 오히려 틀린 expert를 선택한다.
+
+결론: JS와 entropy 중 어떤 consistency 함수를 쓰느냐는 부차적인 문제이며, \textbf{배타적 분할과 TTA는 구조적으로 양립하지 않는다.}
+
+
+\medskip\hrule\medskip
+\subsubsection{2.4 진단 실험 (\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}diag.\allowbreak{}py\allowbreak{}})}
+배타적 분할 +\allowbreak{} TTA의 실패가 구조적 원인임을 세 가지 실험으로 입증했다.
+
+\paragraph{(A) 성능 비교: Oracle routing vs JS-TTA routing}
+Oracle routing은 test 시 true label을 알고 있다고 가정해 owning expert를 직접 선택하는 이론적 상한선이다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.59615\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.40385\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & Macro F1 \\ \midrule
+\endfirsthead
+방법 & Macro F1 \\ \midrule
+\endhead
+{}Baseline (XGBoost) & 0.8737 \\
+{}\textbf{Oracle routing} & \textbf{0.9507} \\
+{}JS-TTA routing & 0.1662 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace Oracle이 베이스라인을 상회한다  \ensuremath{\rightarrow}  \textbf{expert 자체의 품질은 충분하다.}
+
+
+\par\noindent \textbullet\enspace Oracle과 JS-TTA의 gap =\allowbreak{} 0.78  \ensuremath{\rightarrow}  \textbf{routing, 즉 TTA가 bottleneck이다.}
+
+
+\paragraph{(B) Expert behavior on x and x'}
+각 representative 클래스에 대해 모든 expert의 pred(x), conf(x), pred(x'), conf(x'), stability, TTA weight를 직접 집계했다. Non-owning expert들이 OOD 입력에 대해 잘못된 클래스를 confidence \textasciitilde{}0.99로 예측하며, 이 예측이 x와 x'에 걸쳐 안정적(stability > 0.99)임을 확인했다. 그 결과 TTA weight가 owning expert와 non-owning expert 사이에서 거의 균등(\ensuremath{\approx} 1/\allowbreak{}E)하게 배분된다.
+
+\paragraph{(C) Stability gap 분포}
+각 샘플에 대해 \texttt{Δ =\allowbreak{}\allowbreak{} stab\allowbreak{}ility\_\allowbreak{}\allowbreak{}ow\allowbreak{}ner − ma\allowbreak{}x(stabil\allowbreak{}ity\_\allowbreak{}\allowbreak{}non\_\allowbreak{}\allowbreak{}owners)} 를 계산했다.
+
+\par\noindent \textbullet\enspace 전체 테스트 샘플의 \textbf{83.1\%} 에서 Δ < 0
+
+
+\par\noindent \textbullet\enspace 15개 클래스 중 \textbf{14개 클래스}에서 mean Δ < 0
+
+
+\par\noindent \textbullet\enspace Global mean Δ =\allowbreak{} −0.012
+
+
+즉 대부분의 샘플에서 TTA가 owning expert보다 non-owning expert를 더 안정적이라고 판단하며, 이로 인해 routing이 역전된다.
+
+\paragraph{결론}
+배타적 분할의 expert는 자신의 파티션 밖 샘플에 대해 OOD를 인지하지 못하고 높은 confidence로 일관되게 틀린 예측을 출력한다. TTA stability는 "일관되게 옳은 expert"와 "일관되게 틀린 expert"를 구분하지 못한다. 따라서 \textbf{배타적 분할을 유지하면서 TTA로 올바른 expert를 선택하는 것은 불가능하다.}
+
+배타적 분할 위에서 TTA가 작동하려면 각 expert에 OOD 게이팅이 선행되어야 하는데, 이는 "어느 파티션에 속하는지 알아야 게이팅이 가능하고, 게이팅이 되어야 파티션을 알 수 있다"는 순환 문제로 귀결된다 — \texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py}의 Mahalanobis 게이팅이 막혔던 지점과 동일한 구조다.
+
+
+\medskip\hrule\medskip
+\subsection{3. 현재 상태 요약}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.27586\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33908\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.38506\linewidth-2\tabcolsep\relax}}
+\toprule
+스크립트 & 아이디어 & 상태 \\ \midrule
+\endfirsthead
+스크립트 & 아이디어 & 상태 \\ \midrule
+\endhead
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}i.\allowbreak{}py} & MATI prior 보정 이식 & 중단 (regression \ensuremath{\rightarrow} classification 변환 문제) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}i\_\allowbreak{}\allowbreak{}repo.\allowbreak{}p\allowbreak{}y} & MATI 레포 재현 & 중단 (동일 이유) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}.\allowbreak{}py} & Inclusive expert +\allowbreak{} SADE TTA & 완료 (베이스라인 미초과) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}js.\allowbreak{}py} & Exclusive expert +\allowbreak{} JS-TTA & 완료 (처참한 실패, 구조적 원인 확인) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}ent.\allowbreak{}py} & Exclusive expert +\allowbreak{} Entropy-TTA & 완료 (동일 실패) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}diag.\allowbreak{}py\allowbreak{}} & 배타적 분할 +\allowbreak{} TTA 불가 진단 & \textbf{완료 (3종 증거 확보, perturbation 3종 검증)} \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\medskip\hrule\medskip
+\subsection{4. 미완료 및 다음 단계}
+\subsubsection{확정된 사실}
+\par\noindent \textbullet\enspace \textbf{배타적 분할 +\allowbreak{} TTA는 구조적으로 불가} — \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}diag.\allowbreak{}py\allowbreak{}}로 실험적 입증 완료.
+
+
+\par\noindent \textbullet\enspace \textbf{Inclusive expert +\allowbreak{} TTA는 구조적으로 일관} — expert 차별화 방법이 미해결 과제로 남음.
+
+
+\par\noindent \textbullet\enspace \textbf{배타적 분할 +\allowbreak{} OOD 게이팅} 조합은 닭-달걀 순환 문제로 현실적 구현이 어려움.
+
+
+\subsubsection{미해결 핵심 질문}
+Inclusive expert(전체 데이터로 학습, 전체 클래스 출력)를 어떻게 서로 다르게 특화시킬 것인가.
+
+\par\noindent \textbullet\enspace \texttt{focus\_\allowbreak{}\allowbreak{}we\allowbreak{}ight} 증가: XGBoost 내부 boosting과 기능 중복, 효과 제한적.
+
+
+\par\noindent \textbullet\enspace SADE global scalar weight: per-sample 다양성을 살리지 못함.
+
+
+
+\medskip\hrule\medskip
+\subsection{5. 파일 위치 요약}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.45312\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.54688\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 경로 \\ \midrule
+\endfirsthead
+항목 & 경로 \\ \midrule
+\endhead
+{}TTA 진단 실험 & \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}tta\_\allowbreak{}\allowbreak{}dia\allowbreak{}g.\allowbreak{}py} \\
+{}TTA inclusive expert & \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}tta.\allowbreak{}py} \\
+{}TTA exclusive (JS/\allowbreak{}Entropy) & \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}tta\_\allowbreak{}\allowbreak{}js.\allowbreak{}py}, \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}tta\_\allowbreak{}\allowbreak{}ent\allowbreak{}.\allowbreak{}py} \\
+{}MATI 시도 (중단) & \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}mati.\allowbreak{}py\allowbreak{}}, \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}mati\_\allowbreak{}\allowbreak{}re\allowbreak{}po.\allowbreak{}py} \\
+{}이전 보고서 & \texttt{manuscri\allowbreak{}pt/\allowbreak{}\allowbreak{}repor\allowbreak{}t/\allowbreak{}\allowbreak{}0511.\allowbreak{}m\allowbreak{}d} \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\medskip\hrule\medskip
+\subsection{6. 실험 결과 폴더}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.32099\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27778\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.40123\linewidth-2\tabcolsep\relax}}
+\toprule
+폴더 & 스크립트 & 주요 내용 \\ \midrule
+\endfirsthead
+폴더 & 스크립트 & 주요 내용 \\ \midrule
+\endhead
+{}\texttt{results/\allowbreak{}\allowbreak{}20260519\allowbreak{}\_\allowbreak{}\allowbreak{}163639/\allowbreak{}\allowbreak{}} & \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}.\allowbreak{}py} & Inclusive expert +\allowbreak{} SADE TTA (CIC-IDS2017). \texttt{expert\_\allowbreak{}\allowbreak{}p\allowbreak{}red\_\allowbreak{}\allowbreak{}dist\allowbreak{}.\allowbreak{}png}: expert별 예측 분포 \\
+{}\texttt{results/\allowbreak{}\allowbreak{}20260520\allowbreak{}\_\allowbreak{}\allowbreak{}154407/\allowbreak{}\allowbreak{}} & \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}js.\allowbreak{}py} & Exclusive +\allowbreak{} JS-TTA, p\_\allowbreak{}mask=\allowbreak{}0.1. macro F1=\allowbreak{}0.32 \\
+{}\texttt{results/\allowbreak{}\allowbreak{}20260520\allowbreak{}\_\allowbreak{}\allowbreak{}154604/\allowbreak{}\allowbreak{}} & \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}ent.\allowbreak{}py} & Exclusive +\allowbreak{} Entropy-TTA, p\_\allowbreak{}mask=\allowbreak{}0.1. macro F1=\allowbreak{}0.31 \\
+{}\texttt{results/\allowbreak{}\allowbreak{}20260520\allowbreak{}\_\allowbreak{}\allowbreak{}161131/\allowbreak{}\allowbreak{}} & \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}ent.\allowbreak{}py} & Exclusive +\allowbreak{} Entropy-TTA, p\_\allowbreak{}mask=\allowbreak{}0.3. macro F1=\allowbreak{}0.19. \texttt{weight\_\allowbreak{}\allowbreak{}h\allowbreak{}eatmap.\allowbreak{}p\allowbreak{}ng} \\
+{}\texttt{results/\allowbreak{}\allowbreak{}20260521\allowbreak{}\_\allowbreak{}\allowbreak{}154223/\allowbreak{}\allowbreak{}} & \texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}diag.\allowbreak{}py\allowbreak{}} & \textbf{진단 실험 최종본} (3종 증거). 아래 참고 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{\texttt{results/\allowbreak{}\allowbreak{}20260521\allowbreak{}\_\allowbreak{}\allowbreak{}154223/\allowbreak{}\allowbreak{}} 내 파일 설명}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.47059\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.52941\linewidth-2\tabcolsep\relax}}
+\toprule
+파일 & 내용 \\ \midrule
+\endfirsthead
+파일 & 내용 \\ \midrule
+\endhead
+{}\texttt{A\_\allowbreak{}\allowbreak{}f1\_\allowbreak{}\allowbreak{}com\allowbreak{}parison.\allowbreak{}png} /\allowbreak{} \texttt{.\allowbreak{}csv} & Baseline(0.87) vs Oracle routing(0.95) vs JS-TTA(0.17) 클래스별 F1 막대그래프 \\
+{}\texttt{B\_\allowbreak{}\allowbreak{}expert\allowbreak{}\_\allowbreak{}\allowbreak{}behavio\allowbreak{}r.\allowbreak{}png} /\allowbreak{} \texttt{.\allowbreak{}csv} & 각 representative 클래스에 대해 expert별 pred(x), conf(x), pred(x'), conf(x'), stability, TTA weight 테이블. Non-owning expert가 confidence \textasciitilde{}0.99로 틀린 클래스를 일관되게 예측함을 직접 보여줌 \\
+{}\texttt{C\_\allowbreak{}\allowbreak{}stabil\allowbreak{}ity\_\allowbreak{}\allowbreak{}gap.\allowbreak{}png} /\allowbreak{} \texttt{.\allowbreak{}csv} & 샘플별 \texttt{Δ =\allowbreak{}\allowbreak{} stab\allowbreak{}ility\_\allowbreak{}\allowbreak{}ow\allowbreak{}ner − ma\allowbreak{}x(stabil\allowbreak{}ity\_\allowbreak{}\allowbreak{}non\_\allowbreak{}\allowbreak{}owners)} 분포. 83.1\%의 샘플에서 Δ < 0 — TTA가 틀린 expert를 선호함 \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\medskip\hrule\medskip
+\subsubsection{2.5 Perturbation 방식 추가 검증 (\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}diag.\allowbreak{}py\allowbreak{}} 확장)}
+TTA stability의 실패가 VIME perturbation 방식에 특유한 현상인지 확인하기 위해, \texttt{-\allowbreak{}-\allowbreak{}pertur\allowbreak{}b} 옵션으로 세 가지 perturbation을 선택할 수 있도록 확장했다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23563\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.49425\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27011\linewidth-2\tabcolsep\relax}}
+\toprule
+모드 & 설명 & 제어 인자 \\ \midrule
+\endfirsthead
+모드 & 설명 & 제어 인자 \\ \midrule
+\endhead
+{}\texttt{vime} & 각 feature를 확률 p로 다른 행의 값으로 교체 (원래 방식) & \texttt{-\allowbreak{}-\allowbreak{}p\_\allowbreak{}\allowbreak{}mask\allowbreak{}} \\
+{}\texttt{gaussian\allowbreak{}} & 각 feature에 \texttt{noise\_\allowbreak{}\allowbreak{}st\allowbreak{}d × feat\allowbreak{}ure\_\allowbreak{}\allowbreak{}std} 크기의 가우시안 노이즈 추가 & \texttt{-\allowbreak{}-\allowbreak{}noise\_\allowbreak{}\allowbreak{}std} \\
+{}\texttt{mask} & 각 feature를 확률 p로 열 평균값으로 대체 (BERT-style masking) & \texttt{-\allowbreak{}-\allowbreak{}p\_\allowbreak{}\allowbreak{}mask\allowbreak{}} \\
+\bottomrule
+\end{longtable}
+\endgroup
+\paragraph{결과}
+세 가지 perturbation 모두에서 동일한 결론이 도출된다:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25833\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24167\linewidth-2\tabcolsep\relax}}
+\toprule
+perturbation & JS-TTA Macro F1 & Oracle Macro F1 & Oracle−TTA gap \\ \midrule
+\endfirsthead
+perturbation & JS-TTA Macro F1 & Oracle Macro F1 & Oracle−TTA gap \\ \midrule
+\endhead
+{}vime (p=\allowbreak{}0.3) & 0.1662 & 0.9507 & 0.7845 \\
+{}gaussian (σ=\allowbreak{}0.1) & 0.2935 & 0.9507 & 0.6573 \\
+{}mask (p=\allowbreak{}0.3) & 0.1751 & 0.9507 & 0.7756 \\
+\bottomrule
+\end{longtable}
+\endgroup
+Oracle F1은 세 경우 모두 0.9507로 동일하다 — expert 자체의 품질은 perturbation 방식과 무관하다. TTA는 어떤 perturbation을 사용해도 routing에 실패하며, macro F1이 0.17–0.29 수준에 머문다. 이는 실패의 원인이 특정 perturbation 방식이 아니라 \textbf{배타적 분할이라는 설계 자체}에 있음을 뒷받침한다.
+
+결과 폴더: \texttt{results/\allowbreak{}\allowbreak{}20260521\allowbreak{}\_\allowbreak{}\allowbreak{}163512/\allowbreak{}\allowbreak{}} (gaussian), \texttt{results/\allowbreak{}\allowbreak{}20260521\allowbreak{}\_\allowbreak{}\allowbreak{}163625/\allowbreak{}\allowbreak{}} (mask)
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

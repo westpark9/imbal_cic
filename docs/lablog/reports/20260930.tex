@@ -1,0 +1,881 @@
+% !TeX root = 20260930.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-09-30}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+정제 데이터에서 비교 모델, expert 역량, scorer/\allowbreak{}verifier와 expert 수의 영향을 분리했다. 대표 K=\allowbreak{}4를 유지하며 test 최고 K로 바꾸지 않는다. 당시 개발 holdout과 이후 최종 모델 평가를 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{EXP63 — 정제 데이터에서 K=\allowbreak{}2·4·6·8 비교}
+\par\noindent \textbullet\enspace 데이터: CIC2018, ToN-IoT, 기존 conflict-free split. Seed 43 단일 실행.
+
+
+\par\noindent \textbullet\enspace 변경 요인: residual cluster/\allowbreak{}expert 수 K. K=\allowbreak{}4는 EXP62의 저장된 fitted bank·예측·S/\allowbreak{}V 결과를 그대로 재사용한다.
+
+
+\par\noindent \textbullet\enspace 고정: Global fitted state와 100,000행 context, 공통 anchor ID, expert/\allowbreak{}route/\allowbreak{}validation/\allowbreak{}test ID, residual 표현의 scaling·temperature, expert block 선택 규칙, TabPFN 설정, S1V0 학습 및 validation 임계값 선택 규칙.
+
+
+\par\noindent \textbullet\enspace Context: 공통 anchor +\allowbreak{} residual 군집 내 diversity 선택 block. 오류 샘플만 추출하는 방식이 아니다. 별도의 상대사례를 추가하지 않는다.
+
+
+\par\noindent \textbullet\enspace Anchor 실제 크기: CIC2018 12,224행, ToN 18,717행. Expert별 특화 block 상한은 기존 186,000행이며 군집이 작으면 해당 군집 전체를 사용한다. 따라서 K 증가에 따라 총 context 행 수와 비용도 달라질 수 있다. 이는 고정 총예산 비교가 아니다.
+
+
+\subsection{실행 및 재사용}
+\texttt{python s\allowbreak{}cripts/\allowbreak{}\allowbreak{}r\allowbreak{}un\_\allowbreak{}\allowbreak{}exp63\allowbreak{}\_\allowbreak{}\allowbreak{}local.\allowbreak{}p\allowbreak{}y}
+
+결과 디렉터리: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260930\_\allowbreak{}\allowbreak{}exp63\_\allowbreak{}\allowbreak{}k\_\allowbreak{}\allowbreak{}sweep\_\allowbreak{}\allowbreak{}s4\allowbreak{}3}.
+
+두 worker가 각각 하나의 dataset/\allowbreak{}K 조합을 처리한다. K=\allowbreak{}4 캐시 집계 검증 후 K=\allowbreak{}2  \ensuremath{\rightarrow}  K=\allowbreak{}6  \ensuremath{\rightarrow}  K=\allowbreak{}8 순서로 실행한다. 같은 GPU에서 최대 두 작업을 병렬 처리하고 OOM은 다른 작업 종료 후 단독 재시도한다. 실패와 진행 상태는 \texttt{status.\allowbreak{}j\allowbreak{}son}, 각 작업의 \texttt{progress\allowbreak{}.\allowbreak{}json}, \texttt{attempt\_\allowbreak{}\allowbreak{}*.\allowbreak{}log}에 기록한다. 재실행 시 완료된 작업과 확정된 캐시를 재사용한다.
+
+Global 확률·embedding·PCA·split은 EXP62 캐시를 그대로 연결한다. 새 K의 train residual은 Global fitted state와 train ID 해시가 일치하는 저장 표현을 재사용한다. 해당 표현이 저장된 이전 실험의 context/\allowbreak{}개입/\allowbreak{}예측 결과는 사용하지 않는다. K=\allowbreak{}2·6·8 expert는 새로 fit한 상태를 저장하며 같은 fitted model로 route/\allowbreak{}cal/\allowbreak{}test를 모두 예측한다. 실행 당시 Python 코드는 결과의 \texttt{source/\allowbreak{}\allowbreak{}}에 고정한다.
+
+\subsection{출력과 해석}
+\par\noindent \textbullet\enspace \texttt{summary.\allowbreak{}csv}, \texttt{class\_\allowbreak{}\allowbreak{}me\allowbreak{}trics.\allowbreak{}cs\allowbreak{}v}: Global /\allowbreak{} observable 고정 배정 /\allowbreak{} S+\allowbreak{}V의 전체·클래스 성능, 호출·수락·교정·훼손.
+
+
+\par\noindent \textbullet\enspace \texttt{expert\_\allowbreak{}\allowbreak{}s\allowbreak{}ummary.\allowbreak{}c\allowbreak{}sv}, \texttt{expert\_\allowbreak{}\allowbreak{}c\allowbreak{}lass\_\allowbreak{}\allowbreak{}met\allowbreak{}rics.\allowbreak{}csv\allowbreak{}}: 각 expert가 동일한 전체 test와 동일한 validation select/\allowbreak{}confirm 표본에 내린 raw multiclass 예측. P/\allowbreak{}R/\allowbreak{}F1, TP/\allowbreak{}FP/\allowbreak{}FN, Global 대비 변화, 교정·훼손 및 예측 집중도. 다른 클래스에서 발생한 FP도 포함한다.
+
+
+\par\noindent \textbullet\enspace 각 작업 \texttt{contexts\allowbreak{}/\allowbreak{}\allowbreak{}composi\allowbreak{}tion.\allowbreak{}csv\allowbreak{}}: expert별 anchor/\allowbreak{}block/\allowbreak{}합계 클래스 분포와 block의 Global 정답 샘플 수. K=\allowbreak{}4의 원본 context 구성은 EXP59에 보존되어 있다.
+
+
+\par\noindent \textbullet\enspace \texttt{diagnost\allowbreak{}ics/\allowbreak{}\allowbreak{}resi\allowbreak{}dual\_\allowbreak{}\allowbreak{}ora\allowbreak{}cle\_\allowbreak{}\allowbreak{}*}: test 정답이 들어가는 residual로 expert를 배정한 조건부 진단. Expert 입력에는 정답을 주지 않는다. 배포 성능이나 expert 자체 역량의 독립적 증거로 해석하지 않는다.
+
+
+\par\noindent \textbullet\enspace \texttt{cost.\allowbreak{}jso\allowbreak{}n}, \texttt{resource\allowbreak{}\_\allowbreak{}\allowbreak{}samples\allowbreak{}.\allowbreak{}csv}: 준비·추론·정책 학습 시간, CPU RAM/\allowbreak{}GPU VRAM. K=\allowbreak{}4 원 실행 비용은 \texttt{source\_\allowbreak{}\allowbreak{}c\allowbreak{}ost.\allowbreak{}json\allowbreak{}}을 참조한다. 병렬 실행 간 경합을 포함하므로 독립적인 배포 지연 측정이 아니다.
+
+
+S/\allowbreak{}V threshold는 기존과 동일하게 validation에서 선택한다. Validation confirm은 선택에 쓰지 않고 별도 확인에 사용한다. Test는 이전에 관찰한 development holdout이다. Validation과 test의 클래스 분포가 다르므로 raw precision/\allowbreak{}F1의 절대값을 그대로 일반화 격차로 해석하지 않는다. Test 결과를 보고 K나 expert를 고르는 절차는 구현하지 않았다.
+
+\subsection{실행 전 검증}
+\par\noindent \textbullet\enspace 세 실행 파일 \texttt{py\_\allowbreak{}\allowbreak{}compi\allowbreak{}le} 통과.
+
+
+\par\noindent \textbullet\enspace 2·7·10개 클래스에서 무작위/\allowbreak{}단일 클래스 출력/\allowbreak{}정답 출력/\allowbreak{}Global 동일 출력의 12개 사례: P/\allowbreak{}R/\allowbreak{}F1/\allowbreak{}support/\allowbreak{}accuracy가 sklearn 집계와 일치.
+
+
+\par\noindent \textbullet\enspace 교정−훼손 =\allowbreak{} expert 정답 수−Global 정답 수 항등식 확인.
+
+
+\par\noindent \textbullet\enspace 두 데이터의 K=\allowbreak{}4 실제 캐시 집계 완료. 기존 standalone expert 지표와 일치.
+
+
+\par\noindent \textbullet\enspace 모든 K에서 validation select/\allowbreak{}confirm ID가 기존 EXP62와 동일한지 확인하도록 구현.
+
+
+초기 ETA: 2026-09-30 14:47 KST 시작 기준 약 2–4시간. K=\allowbreak{}2 신규 expert 추론 처리량을 바탕으로 재평가한다. HTML·슬라이드는 이번 실행 요청으로 수정하지 않았다.
+
+
+
+\section{2026-09-30 · 2026-09-30 — 09-29\textasciitilde{}30: EXP60 철회 · EXP61 정제 데이터 SOTA·비용 · EXP62 현재 bank S/\allowbreak{}V · 보고서 통합 · 10-02 랩미팅 슬라이드}
+\label{report:20260930_0930}
+\recordnote{이 날짜 파일에는 10월 1\textasciitilde{}2일에 추가된 분석과 정정도 포함된다. 본문에 적힌 실제 날짜를 유지했다.}
+기간 09-29(화)\textasciitilde{}09-30(수). 모든 run은 모순 행 제거 고정 분할(CIC2018 test 3,042,473행 /\allowbreak{} ToN-IoT test 2,271,723행) 위의 \textbf{seed 43 · K=\allowbreak{}4 단일 실행}이며, test는 이미 관찰한 development holdout이다. 이 로그의 수치 출처는 post HTML의 통합 탭 정제 데이터에서의 Expert 역량과 S/\allowbreak{}V 검증과 0908 SOTA 탭, 10-02 슬라이드 계획 1002\_\allowbreak{}labmeeting\_\allowbreak{}plan.md, 그리고 각 run 디렉터리다. 09-29 오전의 제안 정리(후보 A·B·C, 기각 2건)는 0918.md 끝 절에 있다.
+
+
+
+\subsection{0. 09-29 — EXP60 상대사례 context: 실행 후 철회}
+\texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp60\_\allowbreak{}\allowbreak{}cou\allowbreak{}nterexam\allowbreak{}ples.\allowbreak{}py}, 결과 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260929\_\allowbreak{}\allowbreak{}exp60\_\allowbreak{}\allowbreak{}co\allowbreak{}unterexa\allowbreak{}mples\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}}, 프로토콜 exp60\_\allowbreak{}protocol.md, 결과 표 exp60\_\allowbreak{}results.md. 0918.md의 후보 C(혼동 음성 context)에 해당한다.
+
+\par\noindent \textbullet\enspace 고정: EXP59의 Global fitted checkpoint·공통 anchor·D\_\allowbreak{}expert ID·PCA·residual centroid. S/\allowbreak{}V 미학습.
+
+
+\par\noindent \textbullet\enspace 변경: 특화 block의 80\%를 클래스 비례로 유지(core), 20\%를 \textbf{상대사례}(query와 라벨이 다른 D\_\allowbreak{}expert 행)로 교체. \texttt{counter\_\allowbreak{}\allowbreak{}near}(고정 z·Global 확률 공간 L2 최근접)와 \texttt{counter\_\allowbreak{}\allowbreak{}random}(같은 query–상대클래스 조합에서 무작위)은 anchor·core·총크기·클래스별 개수가 같다. 16개 expert 전부 완료(16:57).
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18000\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 평가 & 기존 & 무작위 상대사례 & 가까운 상대사례 \\ \midrule
+\endfirsthead
+데이터 & 평가 & 기존 & 무작위 상대사례 & 가까운 상대사례 \\ \midrule
+\endhead
+{}CIC2018 & 입력 기반 고정 배정 macro-F1 & 0.7613 & 0.7623 & 0.7579 \\
+{}CIC2018 & 정답 residual oracle & 0.8996 & 0.8969 & 0.8608 \\
+{}ToN-IoT & 입력 기반 고정 배정 macro-F1 & 0.7191 & 0.7300 & 0.7530 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace ToN e3의 입력 유사군에서 가까운 조건이 뚜렷이 좋았고 e2는 무작위와 우열이 없었다. CIC e3는 가까운 상대사례가 대부분 benign인데도 infiltration FP가 88건만 줄고 담당영역 교정은 1,557건 감소했다.
+
+
+\par\noindent \textbullet\enspace 가까운 상대사례의 Global 정답 비율은 CIC e3 77.3\% /\allowbreak{} ToN e3 40.0\%(무작위 99.5\% /\allowbreak{} 90.9\%) — 근접 검색은 어려운 사례를 가져오지만 그것이 경계를 개선하는지는 별개다.
+
+
+\par\noindent \textbullet\enspace \textbf{철회(09-29 저녁  \ensuremath{\rightarrow}  09-30 EXP61 빌드에서 반영):} "EXP60의 무작위/\allowbreak{}가까운 상대사례 결과는 모델 개선의 근거와 발표 본문에서 제외한다. 원시 결과는 재현 기록으로 보존한다"(exp61\_\allowbreak{}a100\_\allowbreak{}run.md). HTML 탭은 \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0929.\allowbreak{}tex\allowbreak{}}로 이동, 개요의 흐름·발견·다음 단계 항목도 제거. 생성기 \texttt{make\_\allowbreak{}\allowbreak{}100\allowbreak{}2\_\allowbreak{}\allowbreak{}draft.\allowbreak{}py}는 슬라이드 본문에 '상대사례'가 남으면 assert로 막는다.
+
+
+\subsection{1. EXP61 — 정제 데이터의 SOTA 성능·비용 (seed 43, 같은 100k 학습 ID)}
+\texttt{scripts/\allowbreak{}\allowbreak{}run\_\allowbreak{}\allowbreak{}exp6\allowbreak{}1\_\allowbreak{}\allowbreak{}sota.\allowbreak{}p\allowbreak{}y}  \ensuremath{\rightarrow}  \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp61\_\allowbreak{}\allowbreak{}sot\allowbreak{}a\_\allowbreak{}\allowbreak{}worker\allowbreak{}.\allowbreak{}py}, 결과 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260929\_\allowbreak{}\allowbreak{}exp61\_\allowbreak{}\allowbreak{}so\allowbreak{}ta\_\allowbreak{}\allowbreak{}local\allowbreak{}\_\allowbreak{}\allowbreak{}s43/\allowbreak{}\allowbreak{}}, 보고서 데이터 exp61\_\allowbreak{}report\_\allowbreak{}data.json. 실행 기록 exp61\_\allowbreak{}local\_\allowbreak{}run.md — A100 대신 로컬 RTX 4090, worker 2개 병렬, 총 23,953 s(\ensuremath{\approx}6.65 h), 실패 0. HTML은 새 탭이 아니라 \textbf{0908 SOTA 탭 상단 절}로 들어갔고(\texttt{scripts/\allowbreak{}\allowbreak{}build\_\allowbreak{}\allowbreak{}ex\allowbreak{}p61\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt.\allowbreak{}py}), 정제 전 seed 42 결과는 같은 탭의 접힌 과거 기록으로 남겼다.
+
+앞의 5개 방법은 EXP59 Global C0와 \textbf{정확히 같은 100,000개 학습 ID}를 쓴다. 전체 train XGB(CIC 8,666,430행 /\allowbreak{} ToN 4,669,119행)는 학습량을 허용한 참고 기준. Global/\allowbreak{}DistPFN은 v3, BoostPFN/\allowbreak{}LoCalPFN은 v1 backbone이고 LoCalPFN은 validation(CIC 30,194 /\allowbreak{} ToN 41,744행)으로 미세조정 checkpoint를 고르므로 "같은 train ID"이지 "같은 학습 절차"는 아니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24063\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20938\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17031\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20938\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17031\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & CIC · macro-F1 & CIC · acc & ToN · macro-F1 & ToN · acc \\ \midrule
+\endfirsthead
+방법 & CIC · macro-F1 & CIC · acc & ToN · macro-F1 & ToN · acc \\ \midrule
+\endhead
+{}Global TabPFN v3 & 0.7824 & 99.37\% & 0.6796 & 90.13\% \\
+{}XGBoost · 100k & 0.7821 & 98.83\% & \textbf{0.6983} & 92.09\% \\
+{}BoostPFN & 0.7148 & 98.90\% & 0.5866 & 82.68\% \\
+{}LoCalPFN · FT & 0.7024 & 97.72\% & 0.6462 & 89.44\% \\
+{}DistPFN · v3 & \textbf{0.7839} & 99.43\% & 0.6682 & 88.56\% \\
+{}XGBoost · 전체 train & 0.7795 & 98.02\% & 0.7162 & 92.38\% \\
+\bottomrule
+\end{longtable}
+\endgroup
+클래스별로 읽으면 단일 방법이 두 데이터를 다 개선하지 않는다.
+
+\par\noindent \textbullet\enspace CIC infiltration F1: Global 0.2879 · XGB-100k 0.1528(FP 7,936 \ensuremath{\rightarrow} 29,470) · BoostPFN 0.0653 · LoCalPFN 0.1350 · \textbf{DistPFN 0.3055} · XGB-full 0.2927. Web attack: 0.2102 · \textbf{0.3321} · 0.0000 · 0.1183 · 0.2024 · 0.2745.
+
+
+\par\noindent \textbullet\enspace ToN MitM 최고 F1 0.2363(XGB), Scanning 최고 0.3281(BoostPFN). DistPFN은 MitM FP를 13,580 \ensuremath{\rightarrow} 38,223으로 늘려 F1 0.0512. XGB-100k는 Global 대비 +\allowbreak{}0.0187.
+
+
+비용(RTX 4090 24 GB, 2작업 병렬 \textbf{경과 시간} — 단독 latency나 속도 배수로 인용하지 않는다):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17908\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14184\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16312\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14184\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16312\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21099\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & CIC fit (s) & CIC predict (s) & ToN fit (s) & ToN predict (s) & GPU peak GiB · CIC /\allowbreak{} ToN \\ \midrule
+\endfirsthead
+방법 & CIC fit (s) & CIC predict (s) & ToN fit (s) & ToN predict (s) & GPU peak GiB · CIC /\allowbreak{} ToN \\ \midrule
+\endhead
+{}Global TabPFN v3 & 36.4 & 1,099.3 & 36.7 & 821.7 & 2.92 /\allowbreak{} 2.94 \\
+{}XGBoost · 100k & 2.3 & 1.0 & 55.4 & 1.0 & 0.55 /\allowbreak{} 0.53 \\
+{}BoostPFN & 98.5 & 2,308.5 & 97.8 & 1,737.6 & 0.89 /\allowbreak{} 0.89 \\
+{}LoCalPFN · FT & 3,196.3 & 17,300.8 & 5,783.1 & 11,144.8 & 7.54 /\allowbreak{} 7.54 \\
+{}DistPFN · v3 & 36.4 & 1,099.4 & 36.7 & 821.9 & 2.92 /\allowbreak{} 2.94 \\
+{}XGBoost · 전체 train & 107.8 & 1.0 & 143.2 & 1.1 & 2.20 /\allowbreak{} 1.59 \\
+\bottomrule
+\end{longtable}
+\endgroup
+LoCalPFN fit에는 validation(CIC 3,129.97 s /\allowbreak{} ToN 5,694.41 s)이, 추론에는 kNN 검색이 포함된다. DistPFN은 Global fit·추론을 공유하고 prior 보정만 약 0.19 s 추가. GPU는 1 s 간격 프로세스별 최대값. 데이터 로딩 포함 RSS 최대는 작업당 25.0–26.6 GiB.
+
+\subsection{2. EXP62 — 현재 bank(seed 43 · K=\allowbreak{}4)의 S/\allowbreak{}V (S1V0)}
+\texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp62\_\allowbreak{}\allowbreak{}sv\_\allowbreak{}\allowbreak{}current\_\allowbreak{}\allowbreak{}bank.\allowbreak{}py}(런처 \texttt{scripts/\allowbreak{}\allowbreak{}run\_\allowbreak{}\allowbreak{}exp6\allowbreak{}2\_\allowbreak{}\allowbreak{}local.\allowbreak{}py}), 결과 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260930\_\allowbreak{}\allowbreak{}exp62\_\allowbreak{}\allowbreak{}sv\allowbreak{}\_\allowbreak{}\allowbreak{}current\allowbreak{}\_\allowbreak{}\allowbreak{}bank\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}}, 수치 검증 exp62\_\allowbreak{}numeric\_\allowbreak{}validation.json(6 arm 모두 metrics·교정/\allowbreak{}훼손 재집계 일치, threshold 적용 검증 통과), 발표용 멘트 exp62\_\allowbreak{}briefing\_\allowbreak{}ko.md. 0918.md의 후보 B(K=\allowbreak{}4 bank에 S/\allowbreak{}V 재학습)의 첫 실행이다.
+
+\textbf{설정.} EXP59의 context ID·Global fitted state·test 확률·PCA·학습 표현을 재사용하고, expert는 같은 context로 \textbf{재학습해 fitted state를 저장}한 뒤 그 동일 모델로 route/\allowbreak{}cal/\allowbreak{}test를 모두 계산했다. S =\allowbreak{} class-balanced direct decision-gain regression, V =\allowbreak{} NLL-gain quantile regression(α=\allowbreak{}0.25) — 09-17 EXP51의 s1v0 구성. 정책·임계값은 validation(select  \ensuremath{\rightarrow}  confirm 두 구간)에서만 선택(\texttt{selected\allowbreak{}\_\allowbreak{}\allowbreak{}on\_\allowbreak{}\allowbreak{}test\allowbreak{}: false}). max\_\allowbreak{}parallel 2, batch 65,536.
+
+\textbf{실행 기록.} attempt 1·2는 두 데이터 모두 \texttt{assert\_\allowbreak{}\allowbreak{}a\allowbreak{}llclose(\allowbreak{}got,\allowbreak{} exp\allowbreak{}ected,\allowbreak{} a\allowbreak{}tol=\allowbreak{}\allowbreak{}1e-\allowbreak{}4\allowbreak{})}에서 실패 — 재학습한 expert 예측이 EXP59 저장 예측과 일치하지 않았다. EXP59는 expert fitted state를 저장하지 않았고, 같은 context·seed·batch로 다시 fit해도 예측이 완전히 같지 않다(ToN e1 replay check: 160,229행, 최대 절대차 0.0832, argmax 불일치 251). attempt 3(\texttt{source\_\allowbreak{}\allowbreak{}r\allowbreak{}evision \allowbreak{}3})에서 저장 예측 재사용을 포기하고(\texttt{expert\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}pred\allowbreak{}ictions\_\allowbreak{}\allowbreak{}reused: \allowbreak{}false}) 전 단계를 새 fitted bank로 일관되게 재계산했다. 완료 ToN 10:44:02 /\allowbreak{} CIC 10:48:59, wall 1,886 s /\allowbreak{} 2,183 s, RSS 최대 25.2 GiB, GPU 최대 4.9 GiB. \textbf{따라서 §3의 EXP59 진단(09-28 저장 예측)과 이 절의 S/\allowbreak{}V 성능은 다른 fitted bank의 결과이며 섞어 읽지 않는다.}
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.07699\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09500\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08149\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.07699\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07699\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09050\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07699\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12203\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11302\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07699\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11302\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & arm & macro-F1 & Δ & tail F1 & benign FPR & acc & 호출 & V 채택 & 출력 변경 & 교정 /\allowbreak{} 훼손 \\ \midrule
+\endfirsthead
+데이터 & arm & macro-F1 & Δ & tail F1 & benign FPR & acc & 호출 & V 채택 & 출력 변경 & 교정 /\allowbreak{} 훼손 \\ \midrule
+\endhead
+{}CIC2018 & Global & 0.7824 & — & 0.4989 & 0.0031 & 99.37\% & – & – & – & – \\
+{}CIC2018 & 입력 기반 고정 배정 & 0.7613 & −0.0211 & 0.4506 & 0.0081 & 98.94\% & 전부 & 전부 & 16,442 & 1,265 /\allowbreak{} 14,559 \\
+{}CIC2018 & \textbf{S+\allowbreak{}V (s1v0)} & \textbf{0.7824} & +\allowbreak{}0.0000 & 0.4989 & 0.0031 & 99.37\% & \textbf{0} & 0 & 0 & 0 /\allowbreak{} 0 \\
+{}ToN-IoT & Global & 0.6796 & — & 0.1265 & 0.1272 & 90.13\% & – & – & – & – \\
+{}ToN-IoT & 입력 기반 고정 배정 & 0.7168 & +\allowbreak{}0.0372 & 0.0726 & 0.1652 & 88.29\% & 전부 & 전부 & 138,636 & 42,536 /\allowbreak{} 84,258 \\
+{}ToN-IoT & \textbf{S+\allowbreak{}V (s1v0)} & \textbf{0.7617} & \textbf{+\allowbreak{}0.0821} & 0.1259 & 0.1280 & 90.31\% & 2,271,723 (100\%) & 28,035 (1.23\%) & 6,504 & 5,381 /\allowbreak{} 1,101 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+tail F1 =\allowbreak{} 스크립트의 \texttt{tail\_\allowbreak{}\allowbreak{}cla\allowbreak{}sses} 평균(CIC bot·infiltration·web, ToN MitM·ransomware). 호출·채택은 저장 예측에 정책을 적용한 \textbf{논리적 건수}이며, 준비 단계에서 모든 expert 예측을 계산했으므로 이 실행시간을 희소 호출의 온라인 비용으로 쓰지 않는다.
+
+\par\noindent \textbullet\enspace \textbf{CIC2018: Global 유지.} validation에서 탐색한 78개 개입 정책 전부 macro-F1 감소 +\allowbreak{} benign FPR·tail F1 제약 위반  \ensuremath{\rightarrow}  τ 미선택, 호출 0. 이전 seed 42·K=\allowbreak{}8(EXP47/\allowbreak{}51, 0.8107)과 같은 양상이다. 후보 자체가 없는지, S/\allowbreak{}V 점수가 교정과 훼손을 못 가르는지를 validation의 후보별 교정·훼손으로 먼저 가른다.
+
+
+\par\noindent \textbullet\enspace \textbf{ToN: +\allowbreak{}0.0821, 거의 전부 Scanning.} 선택 정책은 τ\_\allowbreak{}pre =\allowbreak{} −\ensuremath{\infty}(모든 행 호출), τ\_\allowbreak{}post =\allowbreak{} 0.7096. validation select 구간 Δmacro +\allowbreak{}0.0894 /\allowbreak{} Δtail +\allowbreak{}0.0003 /\allowbreak{} Δbenign FPR 0. 클래스별 test 변화: Scanning F1 0.0394 \ensuremath{\rightarrow} \textbf{0.8587}(교정 4,736), Benign 0.9217 \ensuremath{\rightarrow} 0.9231(훼손 1,101 전부 benign), Injection +\allowbreak{}0.0020(교정 632), Ransomware −0.0012, MitM 0. 채택해도 Global과 같은 클래스를 내는 경우가 있어 채택 28,035 \ensuremath{\neq} 변경 6,504.
+
+
+\par\noindent \textbullet\enspace \textbf{주의 3가지.} ① 호출률 100\%라 "호출을 생략하는 기능"은 아직 없다. validation 성능이 같으면서 가중 호출률 38.08\%인 후보가 있었으나 현재 선택기는 동점이면 먼저 본 정책을 유지한다 — 다음엔 호출 비용을 동점 해소 기준으로 넣되, 38.08\%를 그 후보의 test 호출률로 제시하지 않는다. ② tail: select 구간에서는 유지됐지만 confirm 구간에서 −0.0501, test에서 −0.0006. 전체 macro 개선이 tail 개선을 뜻하지 않는다. ③ 이 결과는 \textbf{S/\allowbreak{}V 결합 효과}다. S와 V 각각의 기여는 같은 bank의 제거 비교(global /\allowbreak{} S·V 없음 /\allowbreak{} S만 /\allowbreak{} V만 /\allowbreak{} S+\allowbreak{}V)로 확인해야 하며 아직 실행하지 않았다(슬라이드 8장 TBD).
+
+
+\par\noindent \textbullet\enspace \textbf{SOTA 대비 위치.} ToN S+\allowbreak{}V 0.7617은 같은 100k 최고 XGB 0.6983과 전체 train XGB 0.7162보다 높지만, 제안 모델은 expert·route에 추가 학습 데이터를 쓰므로 동일 예산의 우위로 해석하지 않는다. CIC는 0.7824로 DistPFN 0.7839 아래.
+
+
+\par\noindent \textbullet\enspace 이전 seed 42·K=\allowbreak{}8/\allowbreak{}7 S/\allowbreak{}V(EXP56: CIC 0.8107 호출 0, ToN 0.7555)와 seed·bank가 다르므로 개선량으로 빼지 않는다.
+
+
+\subsection{3. Expert 역량 A/\allowbreak{}B 재정리 (EXP59 저장 예측, 09-29 화면 개편)}
+09-29 14:35 판 0928 탭에 §4 "Expert 분류 역량 — 교정 능력과 혼동 억제"(\texttt{scripts/\allowbreak{}\allowbreak{}analyze\_\allowbreak{}\allowbreak{}exp59\_\allowbreak{}\allowbreak{}ex\allowbreak{}pert\_\allowbreak{}\allowbreak{}cap\allowbreak{}ability.\allowbreak{}py}, 추가 추론 없이 저장 예측 재집계)를 추가했고, 09-30 통합 탭 §2–3이 그 요약이다.
+
+\par\noindent \textbullet\enspace 정정한 oracle(test 정답 residual  \ensuremath{\rightarrow}  가장 가까운 학습 cluster  \ensuremath{\rightarrow}  그 담당 expert의 예측을 그대로 채점; "여러 expert 중 맞힌 것 선택"은 폐기): CIC 0.7824 \ensuremath{\rightarrow} 0.8996(+\allowbreak{}0.1172), ToN 0.6796 \ensuremath{\rightarrow} 0.7437(+\allowbreak{}0.0641). 정답 소속을 아는 조건의 진단이지 상한이 아니다.
+
+
+\par\noindent \textbullet\enspace A =\allowbreak{} 정답 residual 배정 영역, B =\allowbreak{} 입력 표현·Global 확률로 최근접 배정한 표본군(A 안팎 모두 포함, "담당영역 밖"이 아님). 표본이 다르므로 F1을 빼지 않고 각 범위 안에서 Global 대비 교정/\allowbreak{}훼손을 읽는다.
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24298\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20927\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20927\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33848\linewidth-2\tabcolsep\relax}}
+\toprule
+대표 expert & A 교정 /\allowbreak{} 훼손 & B 교정 /\allowbreak{} 훼손 & 판정 \\ \midrule
+\endfirsthead
+대표 expert & A 교정 /\allowbreak{} 훼손 & B 교정 /\allowbreak{} 훼손 & 판정 \\ \midrule
+\endhead
+{}CIC e3 (infiltration) & 9,598 /\allowbreak{} 0 & 776 /\allowbreak{} 14,119 & R3 infiltration F1 0.440 \ensuremath{\rightarrow} 0.967. B에서는 benign 22,165 중 21,535를 infiltration으로 오인(precision 12.4\%) \\
+{}ToN e3 (injection) & 3,274 /\allowbreak{} 16 & 8,262 /\allowbreak{} 55,466 & R3 injection 0.159 \ensuremath{\rightarrow} 0.939. B에서 benign \ensuremath{\rightarrow} mitm 52,481, xss \ensuremath{\rightarrow} injection 12,659 \\
+{}ToN e2 (mega) & 41,984 /\allowbreak{} 75,492 & 28,636 /\allowbreak{} 31,356 & A에서도 훼손이 더 많다 — context 자체 점검 \\
+{}ToN e1 (scanning) & 5,468 /\allowbreak{} 4 & 5,225 /\allowbreak{} 1,528 & Scanning 0.0496 \ensuremath{\rightarrow} 0.8840이 B에서도 유지(FP 36 \ensuremath{\rightarrow} 1,115, 그중 benign 830) \\
+\bottomrule
+\end{longtable}
+\endgroup
+결론: 여러 expert에서 담당영역 교정 능력은 확인되지만 입력 기반 배정군 전체에 적용하면 훼손이 커지는 경우가 있고(ToN e2는 A에서도 손해), ToN e1처럼 유지되는 expert도 있다. EXP62의 S/\allowbreak{}V가 ToN에서 살린 것이 정확히 e1의 scanning이고 CIC에서 e3를 채택하지 못한 이유가 B의 benign 훼손이다 — §2와 §3이 같은 그림이다.
+
+\subsection{4. 보고서·온라인 아티팩트}
+\par\noindent \textbullet\enspace \textbf{탭 통합(09-30 11:09, \texttt{scripts/\allowbreak{}\allowbreak{}build\_\allowbreak{}\allowbreak{}me\allowbreak{}rged\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt.\allowbreak{}py}):} \texttt{clean\_\allowbreak{}\allowbreak{}re\allowbreak{}validati\allowbreak{}on\_\allowbreak{}\allowbreak{}0916} +\allowbreak{} \texttt{scorer\_\allowbreak{}\allowbreak{}v\allowbreak{}erifier\_\allowbreak{}\allowbreak{}target\_\allowbreak{}\allowbreak{}0\allowbreak{}918} +\allowbreak{} \texttt{scorer\_\allowbreak{}\allowbreak{}v\allowbreak{}erifier\_\allowbreak{}\allowbreak{}target\_\allowbreak{}\allowbreak{}0\allowbreak{}928}  \ensuremath{\rightarrow}  한 탭 "정제 데이터에서의 Expert 역량과 S/\allowbreak{}V 검증"(id는 0928 유지, date 09-30). 구성 ①현재 성능(EXP62) ②정정 oracle ③A/\allowbreak{}B ④S/\allowbreak{}V와 다음 개선, 09-17 요소별 진단과 seed 42 S/\allowbreak{}V·BoT 관찰은 접힌 과거 근거. 통합 전 원본 \texttt{docs/\allowbreak{}\allowbreak{}res\allowbreak{}earch/\allowbreak{}\allowbreak{}20\allowbreak{}260930/\allowbreak{}\allowbreak{}a\allowbreak{}rchive/\allowbreak{}\allowbreak{}p\allowbreak{}re\_\allowbreak{}\allowbreak{}merge\allowbreak{}\_\allowbreak{}\allowbreak{}reports\allowbreak{}/\allowbreak{}\allowbreak{}}, 옛 두 HTML은 통합 탭으로 가는 리다이렉트 stub(477 B). 보고서 편수 12(09-29)  \ensuremath{\rightarrow}  11(EXP60 철회)  \ensuremath{\rightarrow}  \textbf{9}.
+
+
+\par\noindent \textbullet\enspace \textbf{온라인 아티팩트} \texttt{https:/\allowbreak{}\allowbreak{}/\allowbreak{}\allowbreak{}claude.\allowbreak{}a\allowbreak{}i/\allowbreak{}\allowbreak{}artifa\allowbreak{}ct/\allowbreak{}\allowbreak{}DubHt\allowbreak{}4m1d2Rdk\allowbreak{}D1LzTkyG\allowbreak{}j}(private): V34 09-28 EXP57–59 추가  \ensuremath{\rightarrow}  V35 09-28 18:36  \ensuremath{\rightarrow}  V36 09-29 배지·기간 수정  \ensuremath{\rightarrow}  V37 09-29 14:35 EXP59 §4  \ensuremath{\rightarrow}  V38 09-29 17:38 EXP60 탭  \ensuremath{\rightarrow}  V39 09-30 08:43 EXP61 +\allowbreak{} EXP60 철회  \ensuremath{\rightarrow}  \textbf{V40 09-30 11:09 통합 +\allowbreak{} EXP62}. 매번 sync \texttt{-\allowbreak{}-\allowbreak{}check}  \ensuremath{\rightarrow}  발행  \ensuremath{\rightarrow}  read-back 바이트 비교(래퍼·끝 개행 제외 일치). 파이프라인의 publication JSON은 아티팩트 도구를 몰라 \texttt{online\_\allowbreak{}\allowbreak{}a\allowbreak{}rtifact\_\allowbreak{}\allowbreak{}updated:\allowbreak{} false}로 남으므로 발행 후 수동 갱신했다.
+
+
+\par\noindent \textbullet\enspace 빌드 스크립트 수정: \texttt{build\_\allowbreak{}\allowbreak{}ex\allowbreak{}p59\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt.\allowbreak{}py} verdictClass \texttt{ok}(CSS 없음) \ensuremath{\rightarrow} \texttt{warn}·asof 끝 날짜 치환 추가; \texttt{build\_\allowbreak{}\allowbreak{}ex\allowbreak{}p61\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt.\allowbreak{}py} 편수 재계산 추가(탭을 빼면서 "12편"이 남던 문제). 배지 클래스 어휘는 \texttt{good/\allowbreak{}\allowbreak{}bad\allowbreak{}/\allowbreak{}\allowbreak{}warn/\allowbreak{}\allowbreak{}ne\allowbreak{}utral} 4개뿐.
+
+
+\subsection{5. 10-02 랩미팅 슬라이드}
+계획 1002\_\allowbreak{}labmeeting\_\allowbreak{}plan.md: 발표 10-02(금) 오전, 결과 고정 10-01(목) 10:00, 한국어 PPTX·PDF 완료 10-01 16:00. 흐름은 시행 순서가 아니라 "데이터 검토  \ensuremath{\rightarrow}  구조  \ensuremath{\rightarrow}  병목  \ensuremath{\rightarrow}  SOTA 성능·비용  \ensuremath{\rightarrow}  expert 역량·S/\allowbreak{}V  \ensuremath{\rightarrow}  최종 비교".
+
+\par\noindent \textbullet\enspace \textbf{한국어} \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}kor/\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}lab\allowbreak{}meeting\_\allowbreak{}\allowbreak{}ko\_\allowbreak{}\allowbreak{}draft\allowbreak{}.\allowbreak{}pptx/\allowbreak{}\allowbreak{}.\allowbreak{}p\allowbreak{}df}(10장) — 생성 \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}make\allowbreak{}\_\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}dr\allowbreak{}aft.\allowbreak{}py}(\texttt{-\allowbreak{}-\allowbreak{}fill-\allowbreak{}i\allowbreak{}ntro}  \ensuremath{\rightarrow}  \texttt{intro\_\allowbreak{}\allowbreak{}10\allowbreak{}02.\allowbreak{}py} 1–4장, \texttt{-\allowbreak{}-\allowbreak{}fill-\allowbreak{}s\allowbreak{}ota}  \ensuremath{\rightarrow}  \texttt{sota\_\allowbreak{}\allowbreak{}100\allowbreak{}2.\allowbreak{}py} 5·6·9장; 0904 편집본 시각 구성·KENTECH 템플릿·Pretendard 계승, 문체·기하 자동검사).
+
+\par\noindent \textbullet\enspace 동일 feature를 공유하는 클래스 — 4개 데이터의 상충 라벨 행렬(상충 행 CIC 26.65\% · ToN 60.73\% · BoT 6.11\% · UNSW 1.33\%), Web attack 1,764 +\allowbreak{} 432 − 중복 429 =\allowbreak{} 1,767행 제거·771행 잔존
+
+
+\par\noindent \textbullet\enspace 정제 이후 클래스 분포 — CIC 20,115,529 \ensuremath{\rightarrow} 14,755,417(infiltration 188,152 \ensuremath{\rightarrow} 46,761, web 2,538 \ensuremath{\rightarrow} 771), ToN 27,520,260 \ensuremath{\rightarrow} 10,807,288(scanning 1,358,977 \ensuremath{\rightarrow} 39,069)
+
+
+\par\noindent \textbullet\enspace Global과 residual expert 구조 — 오프라인(Global 구성 \ensuremath{\rightarrow} residual \ensuremath{\rightarrow} 군집 \ensuremath{\rightarrow} expert \ensuremath{\rightarrow} S/\allowbreak{}V 학습)/\allowbreak{}온라인(Global \ensuremath{\rightarrow} Scorer \ensuremath{\rightarrow} Expert \ensuremath{\rightarrow} Verifier \ensuremath{\rightarrow} 최종) 흐름도
+
+
+\par\noindent \textbullet\enspace Global 클래스별 F1(EXP61 seed 43) +\allowbreak{} 기존 e3 사례(CIC 담당영역 0.440 \ensuremath{\rightarrow} 0.967·입력유사군 precision 12.4\%, FP 7,935 \ensuremath{\rightarrow} 21,535; ToN injection 0.159 \ensuremath{\rightarrow} 0.939·8.7\%, FP 581 \ensuremath{\rightarrow} 14,222)
+
+
+\par\noindent \textbullet\enspace 정제 데이터 SOTA 성능(§1 표) 6. SOTA 학습·추론 비용(§1 표) 7–10. 담당영역·입력유사군 분류 능력 /\allowbreak{} Scorer·verifier 기여(global · S·V 없음 · S만 · V만 · S+\allowbreak{}V) /\allowbreak{} 제안 모델 최종 성능·비용 /\allowbreak{} 확인된 효과와 다음 개선 — \textbf{TBD}. §2의 EXP62 결과는 아직 어느 장에도 넣지 않았다(브리핑 문서도 별도 작업으로 명시).
+
+
+
+\par\noindent \textbullet\enspace \textbf{영어판} \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}eng/\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}lab\allowbreak{}meeting\_\allowbreak{}\allowbreak{}en\_\allowbreak{}\allowbreak{}draft\allowbreak{}.\allowbreak{}pptx/\allowbreak{}\allowbreak{}.\allowbreak{}p\allowbreak{}df} — 09-30 사용자 요청. \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}tran\allowbreak{}slate\_\allowbreak{}\allowbreak{}10\allowbreak{}02\_\allowbreak{}\allowbreak{}en.\allowbreak{}py\allowbreak{}}가 한국어 pptx를 읽어 run 단위 사전 치환(본문·표·노트), 1장 행렬 PNG 4장은 저장 CSV에서 영어 주석으로 재작도(\texttt{eng/\allowbreak{}\allowbreak{}1002\allowbreak{}\_\allowbreak{}\allowbreak{}intro\_\allowbreak{}\allowbreak{}a\allowbreak{}ssets/\allowbreak{}\allowbreak{}}), 3장 노드 부제 10.6 pt·4장 범례 10 pt·7장 제목 축약. validate \texttt{-\allowbreak{}-\allowbreak{}origin\allowbreak{}al} 통과, LibreOffice 렌더 후 10장 육안 검수(넘침 0). 한국어 판이 바뀌면 재실행. 렌더링용 \texttt{soffice}는 PATH에 없고 \texttt{/\allowbreak{}\allowbreak{}tmp/\allowbreak{}\allowbreak{}imb\allowbreak{}alcic\_\allowbreak{}\allowbreak{}sl\allowbreak{}ide\_\allowbreak{}\allowbreak{}rend\allowbreak{}er/\allowbreak{}\allowbreak{}unpac\allowbreak{}ked/\allowbreak{}\allowbreak{}usr/\allowbreak{}\allowbreak{}lib/\allowbreak{}\allowbreak{}libr\allowbreak{}eoffice/\allowbreak{}\allowbreak{}program/\allowbreak{}\allowbreak{}soffice}를 쓴다.
+
+
+\subsection{6. 다음 단계}
+통합 탭 §4와 0918.md 09-29 후보를 합쳐 정리한다. 실험 launch는 합의 후(0915 규칙).
+
+\par\noindent \textbullet\enspace \textbf{CIC2018 — 유효한 개입 후보 확보.} validation의 후보별 교정·훼손과 S/\allowbreak{}V 점수를 먼저 본다. 교정 가능한 후보가 있는데 선택·채택이 놓치면 S/\allowbreak{}V 학습 목표·검증 기준을, 후보 자체가 유사 클래스에서 손해면 그 expert의 context(특히 e3의 benign 경계)와 사용 대상을 고친다. Test로 임계값을 조정하지 않는다.
+
+
+\par\noindent \textbullet\enspace \textbf{ToN — 호출 비용과 benign 오탐.} validation 이득이 같은 정책 중 호출이 적은 쪽을 우선(동점 해소 기준 추가)하고, confirm 구간과 test의 MitM·Ransomware·Benign을 함께 확인한다.
+
+
+\par\noindent \textbullet\enspace \textbf{최종 후보 확정 후 같은 bank에서 S/\allowbreak{}V 제거 비교}(global /\allowbreak{} S·V 없음 /\allowbreak{} S만 /\allowbreak{} V만 /\allowbreak{} S+\allowbreak{}V, 무작위 context bank 대조 포함)  \ensuremath{\rightarrow}  슬라이드 8장. 학습 데이터 예산과 실제 추론 비용을 맞춰 SOTA(§1)와 나란히  \ensuremath{\rightarrow}  9장.
+
+
+\par\noindent \textbullet\enspace 0918.md 후보 \textbf{A(matched global control: 같은 예산 global에 β·클래스별 threshold를 train 시간순 slice에서 고정, threshold-matched XGB 대조, 3 seed)} 는 아직 미실행. ToN S+\allowbreak{}V +\allowbreak{}0.082가 β/\allowbreak{}threshold만으로 얼마나 나오는지 없이는 expert 단계의 순기여를 말할 수 없다. 후보 C는 EXP60 철회로 보류.
+
+
+\par\noindent \textbullet\enspace 슬라이드: 결과 고정(10-01 10:00) 후 7–9장에 EXP62·제거 비교를 채우고 영어판 재실행. 단일 seed·관찰한 holdout의 예비 결과임을 10장에 명시.
+
+
+\subsection{7. 파일}
+\par\noindent \textbullet\enspace 결과: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260929\_\allowbreak{}\allowbreak{}exp60\_\allowbreak{}\allowbreak{}co\allowbreak{}unterexa\allowbreak{}mples\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}}(철회, 보존) · \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260929\_\allowbreak{}\allowbreak{}exp61\_\allowbreak{}\allowbreak{}so\allowbreak{}ta\_\allowbreak{}\allowbreak{}local\allowbreak{}\_\allowbreak{}\allowbreak{}s43/\allowbreak{}\allowbreak{}} · \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260930\_\allowbreak{}\allowbreak{}exp62\_\allowbreak{}\allowbreak{}sv\allowbreak{}\_\allowbreak{}\allowbreak{}current\allowbreak{}\_\allowbreak{}\allowbreak{}bank\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}} · \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260928\_\allowbreak{}\allowbreak{}exp59\_\allowbreak{}\allowbreak{}re\allowbreak{}sidual\_\allowbreak{}\allowbreak{}o\allowbreak{}racle\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}expert\allowbreak{}\_\allowbreak{}\allowbreak{}capabil\allowbreak{}ity/\allowbreak{}\allowbreak{}}
+
+
+\par\noindent \textbullet\enspace 문서: \texttt{docs/\allowbreak{}\allowbreak{}res\allowbreak{}earch/\allowbreak{}\allowbreak{}20\allowbreak{}260929/\allowbreak{}\allowbreak{}\{\allowbreak{}exp60\_\allowbreak{}\allowbreak{}pr\allowbreak{}otocol,\allowbreak{}e\allowbreak{}xp60\_\allowbreak{}\allowbreak{}res\allowbreak{}ults,\allowbreak{}exp\allowbreak{}61\_\allowbreak{}\allowbreak{}a100\_\allowbreak{}\allowbreak{}run,\allowbreak{}exp6\allowbreak{}1\_\allowbreak{}\allowbreak{}local\_\allowbreak{}\allowbreak{}run\}\allowbreak{}.\allowbreak{}md} · \texttt{docs/\allowbreak{}\allowbreak{}res\allowbreak{}earch/\allowbreak{}\allowbreak{}20\allowbreak{}260930/\allowbreak{}\allowbreak{}\{\allowbreak{}exp61\_\allowbreak{}\allowbreak{}re\allowbreak{}port\_\allowbreak{}\allowbreak{}dat\allowbreak{}a,\allowbreak{}exp61\_\allowbreak{}\allowbreak{}numeric\_\allowbreak{}\allowbreak{}validati\allowbreak{}on,\allowbreak{}exp61\allowbreak{}\_\allowbreak{}\allowbreak{}publica\allowbreak{}tion,\allowbreak{}exp\allowbreak{}62\_\allowbreak{}\allowbreak{}numer\allowbreak{}ic\_\allowbreak{}\allowbreak{}valid\allowbreak{}ation,\allowbreak{}me\allowbreak{}rged\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt\_\allowbreak{}\allowbreak{}data,\allowbreak{}merged\_\allowbreak{}\allowbreak{}e\allowbreak{}xpert\_\allowbreak{}\allowbreak{}pu\allowbreak{}blicatio\allowbreak{}n\}\allowbreak{}.\allowbreak{}json} · \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0930.\allowbreak{}tex\allowbreak{}}
+
+
+\par\noindent \textbullet\enspace 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}\{\allowbreak{}exp60\_\allowbreak{}\allowbreak{}co\allowbreak{}unterexa\allowbreak{}mples,\allowbreak{}ex\allowbreak{}p61\_\allowbreak{}\allowbreak{}sota\allowbreak{}\_\allowbreak{}\allowbreak{}worker,\allowbreak{}exp62\_\allowbreak{}\allowbreak{}sv\allowbreak{}\_\allowbreak{}\allowbreak{}current\allowbreak{}\_\allowbreak{}\allowbreak{}bank\}\allowbreak{}.\allowbreak{}p\allowbreak{}y} · \texttt{scripts/\allowbreak{}\allowbreak{}\{\allowbreak{}run\_\allowbreak{}\allowbreak{}exp\allowbreak{}61\_\allowbreak{}\allowbreak{}sota,\allowbreak{}run\_\allowbreak{}\allowbreak{}exp6\allowbreak{}2\_\allowbreak{}\allowbreak{}local,\allowbreak{}build\_\allowbreak{}\allowbreak{}ex\allowbreak{}p60\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt,\allowbreak{}build\allowbreak{}\_\allowbreak{}\allowbreak{}exp61\_\allowbreak{}\allowbreak{}r\allowbreak{}eport,\allowbreak{}bu\allowbreak{}ild\_\allowbreak{}\allowbreak{}merg\allowbreak{}ed\_\allowbreak{}\allowbreak{}exper\allowbreak{}t\_\allowbreak{}\allowbreak{}report\allowbreak{},\allowbreak{}check\_\allowbreak{}\allowbreak{}e\allowbreak{}xp61\_\allowbreak{}\allowbreak{}rep\allowbreak{}ort,\allowbreak{}chec\allowbreak{}k\_\allowbreak{}\allowbreak{}merged\allowbreak{}\_\allowbreak{}\allowbreak{}expert\_\allowbreak{}\allowbreak{}report,\allowbreak{}a\allowbreak{}nalyze\_\allowbreak{}\allowbreak{}e\allowbreak{}xp59\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}capa\allowbreak{}bility,\allowbreak{}r\allowbreak{}ender\_\allowbreak{}\allowbreak{}ex\allowbreak{}p59\_\allowbreak{}\allowbreak{}capa\allowbreak{}bility\}\allowbreak{}.\allowbreak{}py} · 테스트 \texttt{tabpfn/\allowbreak{}\allowbreak{}t\allowbreak{}ests/\allowbreak{}\allowbreak{}\{\allowbreak{}te\allowbreak{}st\_\allowbreak{}\allowbreak{}exp60\allowbreak{}\_\allowbreak{}\allowbreak{}counter\allowbreak{}examples\allowbreak{},\allowbreak{}test\_\allowbreak{}\allowbreak{}ex\allowbreak{}p61\_\allowbreak{}\allowbreak{}sota\allowbreak{}\}\allowbreak{}.\allowbreak{}py}
+
+
+\par\noindent \textbullet\enspace HTML: \texttt{lablog/\allowbreak{}\allowbreak{}h\allowbreak{}tml\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt/\allowbreak{}\allowbreak{}post\_\allowbreak{}\allowbreak{}tabpfn.\allowbreak{}h\allowbreak{}tml}(9편) · 통합 탭 \texttt{scorer\_\allowbreak{}\allowbreak{}v\allowbreak{}erifier\_\allowbreak{}\allowbreak{}target\_\allowbreak{}\allowbreak{}0\allowbreak{}928.\allowbreak{}html\allowbreak{}} · SOTA 탭 \texttt{sota\_\allowbreak{}\allowbreak{}pfn\allowbreak{}\_\allowbreak{}\allowbreak{}compari\allowbreak{}son.\allowbreak{}html\allowbreak{}} · 보관 \texttt{docs/\allowbreak{}\allowbreak{}res\allowbreak{}earch/\allowbreak{}\allowbreak{}20\allowbreak{}260930/\allowbreak{}\allowbreak{}a\allowbreak{}rchive/\allowbreak{}\allowbreak{}p\allowbreak{}re\_\allowbreak{}\allowbreak{}merge\allowbreak{}\_\allowbreak{}\allowbreak{}reports\allowbreak{}/\allowbreak{}\allowbreak{}}, \texttt{docs/\allowbreak{}\allowbreak{}res\allowbreak{}earch/\allowbreak{}\allowbreak{}20\allowbreak{}260929/\allowbreak{}\allowbreak{}a\allowbreak{}rchive/\allowbreak{}\allowbreak{}}
+
+
+\par\noindent \textbullet\enspace 슬라이드: \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}kor/\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}lab\allowbreak{}meeting\_\allowbreak{}\allowbreak{}ko\_\allowbreak{}\allowbreak{}draft\allowbreak{}.\allowbreak{}\{\allowbreak{}pptx,\allowbreak{}p\allowbreak{}df\}\allowbreak{}} · \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}eng/\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}lab\allowbreak{}meeting\_\allowbreak{}\allowbreak{}en\_\allowbreak{}\allowbreak{}draft\allowbreak{}.\allowbreak{}\{\allowbreak{}pptx,\allowbreak{}p\allowbreak{}df\}\allowbreak{}} · \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}\{\allowbreak{}mak\allowbreak{}e\_\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}d\allowbreak{}raft,\allowbreak{}int\allowbreak{}ro\_\allowbreak{}\allowbreak{}1002,\allowbreak{}sota\_\allowbreak{}\allowbreak{}100\allowbreak{}2,\allowbreak{}transl\allowbreak{}ate\_\allowbreak{}\allowbreak{}1002\allowbreak{}\_\allowbreak{}\allowbreak{}en\}\allowbreak{}.\allowbreak{}py}
+
+
+\subsection{2026-10-01 — 보고서 표 정렬 규칙과 0908 탭의 제안 모델 행 (사용자 요청)}
+\par\noindent \textbullet\enspace \textbf{규칙(사용자 지시, 이후 일관 적용):} 모든 탭의 클래스별 표는 \textbf{test 샘플 수 내림차순}. 공용 도우미 \texttt{scripts/\allowbreak{}\allowbreak{}report\_\allowbreak{}\allowbreak{}o\allowbreak{}rder.\allowbreak{}py}(빌더용 \texttt{support\_\allowbreak{}\allowbreak{}order}/\allowbreak{}\texttt{permute}, 정적 HTML 사후 정렬 CLI, \texttt{-\allowbreak{}-\allowbreak{}check}로 강제). 빌더 반영: \texttt{build\_\allowbreak{}\allowbreak{}ex\allowbreak{}p61\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt.\allowbreak{}py}, \texttt{build\_\allowbreak{}\allowbreak{}me\allowbreak{}rged\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt.\allowbreak{}py}, \texttt{render\_\allowbreak{}\allowbreak{}e\allowbreak{}xp63\_\allowbreak{}\allowbreak{}cap\allowbreak{}ability.\allowbreak{}py}(K-sweep JS 매트릭스·혼동행렬 포함). 정적 탭 재정렬: 0909 routing 표, 0821 ensemble 표(macro 행은 맨 아래 유지), 0908 과거 기록 표. 0911·0818 탭은 이미 그 순서였다. QA 스크립트 기대값 갱신(\texttt{check\_\allowbreak{}\allowbreak{}ex\allowbreak{}p61\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt.\allowbreak{}py}, \texttt{check\_\allowbreak{}\allowbreak{}me\allowbreak{}rged\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt.\allowbreak{}py}).
+
+
+\par\noindent \textbullet\enspace \textbf{0908 탭 EXP61 절에 제안 모델 추가.} 사용자 요청으로 EXP63 K=\allowbreak{}2·4·6·8 중 ToN test Macro-F1 최고인 \textbf{K=\allowbreak{}6}(0.7636 /\allowbreak{} 0.7617 /\allowbreak{} 0.7677 /\allowbreak{} 0.7463)을 "제안 모델 · K=\allowbreak{}6 · S+\allowbreak{}V"로 표기. 요약표 행, 클래스별 표 열(공통 100k 최고 표시에서는 제외), 상세 P/\allowbreak{}R/\allowbreak{}F1·TP/\allowbreak{}FP/\allowbreak{}FN 패널, 비용 행(Global fit·추론(EXP61) +\allowbreak{} EXP63 준비·전체 expert 예측 합산, 모든 expert를 test 전체에 적용한 참고치임을 각주로)을 넣었다. 수치는 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260930\_\allowbreak{}\allowbreak{}exp63\_\allowbreak{}\allowbreak{}k\_\allowbreak{}\allowbreak{}sweep\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}\{\allowbreak{}ds\}\allowbreak{}\_\allowbreak{}\allowbreak{}k\allowbreak{}6/\allowbreak{}\allowbreak{}policy\allowbreak{}/\allowbreak{}\allowbreak{}s1v0\_\allowbreak{}\allowbreak{}fi\allowbreak{}nal.\allowbreak{}npy}와 \texttt{cache/\allowbreak{}\allowbreak{}ev\allowbreak{}al\_\allowbreak{}\allowbreak{}y.\allowbreak{}npy\allowbreak{}}에서 재계산해 \texttt{class\_\allowbreak{}\allowbreak{}me\allowbreak{}trics.\allowbreak{}cs\allowbreak{}v}·\texttt{summary.\allowbreak{}csv}와 1e-9 이내 일치를 확인했고, EXP61 test ID 순서와 동일함을 검증했다.
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.26630\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21196\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19022\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33152\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & CIC2018 macro-F1 & ToN macro-F1 & 학습 풀 \\ \midrule
+\endfirsthead
+방법 & CIC2018 macro-F1 & ToN macro-F1 & 학습 풀 \\ \midrule
+\endhead
+{}공통 100k 최고 (DistPFN /\allowbreak{} XGB) & 0.7839 & 0.6983 & 100,000 \\
+{}XGBoost 전체 train & 0.7795 & 0.7162 & 8.67M /\allowbreak{} 4.67M \\
+{}\textbf{제안 모델 · K=\allowbreak{}6 · S+\allowbreak{}V} & 0.7824 (호출 0) & \textbf{0.7677} & 100,000 +\allowbreak{} expert context 328,037 /\allowbreak{} 338,908 · route 풀 296,677 /\allowbreak{} 503,397 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 각주에 적은 한계: K는 test 기준 선택이고 단일 seed·관찰한 holdout이므로 최종 K나 SOTA 우위 주장이 아니다. ToN 호출 2,271,723(100\%) · 채택 92,868 · 교정 15,289 /\allowbreak{} 훼손 2,771. 추가 학습 데이터를 쓰므로 동일 예산 비교가 아니다.
+
+
+\par\noindent \textbullet\enspace 온라인 아티팩트 Version 42(공유 "Anyone with the link", 핀 없음). 발행 전 체크: sync \texttt{-\allowbreak{}-\allowbreak{}check} +\allowbreak{} \texttt{report\_\allowbreak{}\allowbreak{}o\allowbreak{}rder.\allowbreak{}py \allowbreak{}-\allowbreak{}-\allowbreak{}check} +\allowbreak{} 두 QA 스크립트 통과.
+
+
+\subsubsection{10-01 추가 — 표 규칙 2·3 (사용자 지시, 이후 지속)}
+\par\noindent \textbullet\enspace \textbf{숫자 셀 우측 정렬(일의 자리 기준, 소수점은 소수점 기준)·모든 탭 적용.} \texttt{scripts/\allowbreak{}\allowbreak{}report\_\allowbreak{}\allowbreak{}o\allowbreak{}rder.\allowbreak{}py}가 숫자 열(한 열의 셀이 모두 숫자 또는 —/\allowbreak{}TBD)의 td/\allowbreak{}th에 \texttt{data-\allowbreak{}num\allowbreak{}}을 붙이고 \texttt{td[data-\allowbreak{}num],\allowbreak{}th[\allowbreak{}data-\allowbreak{}num\allowbreak{}]\{\allowbreak{}text-\allowbreak{}a\allowbreak{}lign:rig\allowbreak{}ht;font-\allowbreak{}variant-\allowbreak{}numeric:\allowbreak{}tabular-\allowbreak{}nums\}\allowbreak{}} 스타일을 주입한다. 9개 탭 +\allowbreak{} 개요 표에 적용(colspan/\allowbreak{}rowspan 표는 건너뜀). JS로 그리는 0930 탭 K-sweep 표는 CSS로 우측 정렬. 생성 표는 같은 열의 소수 자릿수를 맞춰 소수점이 정렬되게 유지한다.
+
+
+\par\noindent \textbullet\enspace \textbf{SOTA 비교표의 강조.} bold는 행(클래스별 표)·열(요약표)의 최고값에만, 표시 자릿수 기준 동점은 모두. 제안 모델은 bold 없이 음영(행·열 배경)으로만 표시. 지표 전환(F1/\allowbreak{}Precision/\allowbreak{}Recall) JS도 같은 규칙. 각주 문구를 "굵은 값: 행에서 가장 높은 값 · 음영: 제안 모델"로 바꿨다.
+
+
+\par\noindent \textbullet\enspace 온라인 아티팩트 Version 43. 발행 전 체크: sync \texttt{-\allowbreak{}-\allowbreak{}check} +\allowbreak{} \texttt{report\_\allowbreak{}\allowbreak{}o\allowbreak{}rder.\allowbreak{}py \allowbreak{}-\allowbreak{}-\allowbreak{}check} +\allowbreak{} QA 스크립트 2개 통과.
+
+
+\par\noindent \textbullet\enspace 미적용: 슬라이드(\texttt{make\_\allowbreak{}\allowbreak{}100\allowbreak{}2\_\allowbreak{}\allowbreak{}draft.\allowbreak{}py}의 표는 숫자 열 중앙 정렬) — 다음 덱 수정 때 우측 정렬로 맞출 것.
+
+
+\subsubsection{10-01 분석 — tail 클래스의 benign 혼동은 feature 유사성 문제인가? (저장 예측·feature 재집계, 추가 추론 없음)}
+사용자 질문 "mitm·ransomware·infiltration이 benign과 feature가 유사해서 생기는 문제인가"에 답하기 위해 두 가지를 계산했다. (1) EXP59 \texttt{designed\allowbreak{}\_\allowbreak{}\allowbreak{}residua\allowbreak{}l\_\allowbreak{}\allowbreak{}oracle\allowbreak{}\_\allowbreak{}\allowbreak{}pred.\allowbreak{}np\allowbreak{}y}로 클래스별 P/\allowbreak{}R/\allowbreak{}F1(Global  \ensuremath{\rightarrow}  정답 residual 배정 oracle  \ensuremath{\rightarrow}  S+\allowbreak{}V K=\allowbreak{}6). (2) EXP63 K=\allowbreak{}6 cache의 test feature(46차원, route 풀 평균·표준편차로 표준화, L2)로 Global의 FP·FN 행이 train(route 풀 proxy, CIC 296,677 /\allowbreak{} ToN 503,397행)의 해당 클래스·benign에 얼마나 가까운지(최근접 거리 중앙값, 집합당 \ensuremath{\leq}4,000행 표본).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14303\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13557\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13557\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13557\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22512\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22512\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 · 클래스 & Global P/\allowbreak{}R/\allowbreak{}F1 & oracle P/\allowbreak{}R/\allowbreak{}F1 & S+\allowbreak{}V K=\allowbreak{}6 & FP benign 행의 d \ensuremath{\rightarrow} train t /\allowbreak{} d \ensuremath{\rightarrow} train benign & 판정 \\ \midrule
+\endfirsthead
+데이터 · 클래스 & Global P/\allowbreak{}R/\allowbreak{}F1 & oracle P/\allowbreak{}R/\allowbreak{}F1 & S+\allowbreak{}V K=\allowbreak{}6 & FP benign 행의 d \ensuremath{\rightarrow} train t /\allowbreak{} d \ensuremath{\rightarrow} train benign & 판정 \\ \midrule
+\endhead
+{}CIC infiltration & 0.26/\allowbreak{}0.32/\allowbreak{}0.29 & 0.97/\allowbreak{}0.93/\allowbreak{}0.95 & =\allowbreak{} Global & 0.11 /\allowbreak{} 0.17 (FN 행은 0.11 /\allowbreak{} 0.03) & benign과 \textbf{겹치는 영역}. 참조 benign의 d \ensuremath{\rightarrow} benign은 0.01. FN infiltration의 절반 이상이 train benign에 더 가깝다  \ensuremath{\rightarrow}  feature 한계. oracle 0.95는 라벨 소속이 흘러든 값 \\
+{}CIC web attack & 0.12/\allowbreak{}0.93/\allowbreak{}0.21 & 0.23/\allowbreak{}0.76/\allowbreak{}0.35 & =\allowbreak{} Global & 2.23 /\allowbreak{} 1.79 & FP benign은 어느 쪽에도 가깝지 않은 희소 영역. dos \ensuremath{\rightarrow} web 오인 274건은 oracle에서도 남음 \\
+{}ToN mitm & 0.07/\allowbreak{}0.90/\allowbreak{}0.13 & 0.02/\allowbreak{}0.98/\allowbreak{}0.04 & =\allowbreak{} Global & \textbf{9.76 /\allowbreak{} 11.40} & 유사성 아님. FP benign 13,125행은 train 어느 클래스에서도 멀다(참조 benign 0.01)  \ensuremath{\rightarrow}  test에만 있는 benign 블록(drift). oracle이 Global보다 나쁨 \\
+{}ToN ransomware & 0.06/\allowbreak{}0.92/\allowbreak{}0.12 & 0.06/\allowbreak{}1.00/\allowbreak{}0.11 & =\allowbreak{} Global & \textbf{0.12 /\allowbreak{} 2.84} (p25 0.08) & FP benign 9,368행의 다수가 train \textbf{ransomware의 근사 복제}이고 benign과는 멀다  \ensuremath{\rightarrow}  라벨 수준 근사 모순. 어떤 context도 분리 불가 \\
+{}ToN scanning & 0.77/\allowbreak{}0.02/\allowbreak{}0.04 & 0.59/\allowbreak{}0.92/\allowbreak{}0.72 & \textbf{0.93/\allowbreak{}0.87/\allowbreak{}0.90} & FN 5,886행: 0.60 /\allowbreak{} 2.92 & 유사성 아님. scanning 행은 train scanning에 가깝고 benign에서 멀다  \ensuremath{\rightarrow}  Global context의 prior 문제, expert+\allowbreak{}V로 해결됨. S+\allowbreak{}V가 oracle보다 precision 높음 \\
+\bottomrule
+\end{longtable}
+\endgroup
+결론: "benign과 유사해서"는 infiltration(겹침)과 ransomware(benign 라벨 행이 ransomware와 근사 동일)에만 맞고, mitm은 train에 없는 novel benign 블록, scanning은 prior였다. context 구성으로 고칠 수 있는 것은 scanning형(prior)뿐이며, mitm은 novelty gate(override 거부), infiltration·ransomware는 twin-aware 상한으로 보고하는 것이 맞다. 세부 수치 출처: 이 절의 계산은 \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0930.\allowbreak{}tex\allowbreak{}} 작성 시 임시 스크립트로 수행했고 결과 파일로 저장하지 않았다(재현: EXP63 cache +\allowbreak{} EXP59 oracle pred, 표준화 L2 최근접).
+
+\subsubsection{10-01 분석 — ToN scanning이 Global에서 낮은 이유는 C0의 운영점(benign:scanning 비율)이다}
+\par\noindent \textbullet\enspace C0 레시피(benign 0.75, 공격 균등)상 scanning은 약 2,800행(D\_\allowbreak{}global 풀에 8,940행 보유)이고 benign은 75,000행이라 context 내 비율은 약 27:1이다. 절대 수가 "너무 적은" 것이 아니라 다른 공격 클래스와 같다.
+
+
+\par\noindent \textbullet\enspace EXP63 K=\allowbreak{}6 cache의 Global 확률(\texttt{eval\_\allowbreak{}\allowbreak{}p0})로 보면 true scanning 6,029행 중 Global이 benign으로 부른 비율 97.6\%, \textbf{scanning 확률이 2위인 행 97\%}, 중앙값 p(scanning)=\allowbreak{}0.142 vs p(benign)=\allowbreak{}0.846. 즉 scanning 신호는 있고 benign prior에 눌린 운영점 문제다.
+
+
+\par\noindent \textbullet\enspace 그러나 현재 C0 위에서 prior만 바꾸는 것으로는 expert만큼 못 간다. scanning 확률 ×5  \ensuremath{\rightarrow}  recall 0.46·benign FP 약 3,600, ×10  \ensuremath{\rightarrow}  recall 0.64·FP 약 28,800(benign 1/\allowbreak{}20 표본 추정). expert e1(scanning block 4,470 +\allowbreak{} anchor)과 V는 recall 0.87·FP 323이다. block은 posterior의 모양을 바꾸지 prior만 바꾸지 않는다.
+
+
+\par\noindent \textbullet\enspace 함의: C0에 scanning을 더 넣고(풀에 8,940행 있음) β를 train slice에서 고정한 Global이 기준점이 되어야 한다. EXP54에서 balanced context +\allowbreak{} β0.5 =\allowbreak{} 0.7713 > 당시 시스템 0.7540(ToN, 20k context, β는 test 판독)이 이미 그 방향을 보여줬고, 0918.md 09-29 후보 A(matched global control)가 그 실험이며 미실행이다. ToN S+\allowbreak{}V의 +\allowbreak{}0.082(0.6796 대비)는 그 기준점 위에서 다시 재야 한다.
+
+
+\subsubsection{10-01 아이디어 — context 예산(\ensuremath{\approx}100k–186k행 < 보유 데이터) 안에서 성능을 올리는 방향 (사용자 요청, launch 전 합의 대상)}
+전제: TabPFN은 보유 데이터보다 작은 context만 받고 그 구성에 따라 Global·expert 성능이 바뀐다. IDS 데이터(window 기반 라벨)는 유지한다. 세부 근거·주의는 이 날짜 대화 기록 참조.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.12518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23669\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16475\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23669\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23669\linewidth-2\tabcolsep\relax}}
+\toprule
+\# & 아이디어 & 단계 & 겨냥 & 가까운 묻힌 실패·주의 \\ \midrule
+\endfirsthead
+\# & 아이디어 & 단계 & 겨냥 & 가까운 묻힌 실패·주의 \\ \midrule
+\endhead
+{}1 & \textbf{context bagging}: n=\allowbreak{}4 앙상블의 각 member에 서로 다른 C0 표본(클래스 비율 동일)  \ensuremath{\rightarrow}  유효 context 400k, 전체 데이터 사용 & ① Global & 기준점 macro-F1·seed 분산 & 0904 config 앙상블의 확장. BoostPFN(0.7148)과 달리 균형 표본 bagging. 추론 비용 ×1(이미 n=\allowbreak{}4) \\
+{}2 & \textbf{운영점 맞춘 C0 +\allowbreak{} β(train slice 고정)} =\allowbreak{} 09-29 후보 A & ① Global & ToN 기준점(scanning), expert 순기여 재측정 & EXP54 balanced+\allowbreak{}β0.5=\allowbreak{}0.7713(test 판독) 재검 \\
+{}3 & \textbf{시간 지역 context /\allowbreak{} 라벨 refresh}: 최근 train 행 우선 C0, test를 시간 window로 나눠 앞 window의 소량 라벨을 다음 window context에 투입(prequential) & ① Global·expert 공통 & ToN mitm의 test 전용 benign 블록, drift & 0826 축-1 "본 승부". 새 프로토콜 필요, test 내 라벨 사용량 명시 \\
+{}4 & \textbf{window-noise 인식 양성 선택}: 공격 window 안에서 benign manifold에 붙은 양성(FN infiltration의 절반)을 context 양성에서 제외하고 구별력 있는 양성만 투입 & ① expert context & CIC infiltration precision, benign FP & 재현율 손실 감수. 라벨 신뢰도 가중의 IDS 특화판 \\
+{}5 & \textbf{cascade}: benign-heavy C0 Global로 benign vs attack-ish(고재현율 운영점)  \ensuremath{\rightarrow}  공격 전용 context(benign 0, 모든 tail 양성 전량)로 공격 유형 분류  \ensuremath{\rightarrow}  benign-vs-tail verifier & ②–⑤ 구조 단순화 & tail 전반, context 예산 효율 & 실패 모드 1(라우팅 오류)이나 이진 단계는 재현율 조절 가능. S/\allowbreak{}V 구조와 병존 가능 \\
+{}6 & \textbf{LITO식 합성(ICLR 2024)을 web attack(771행)에만}: 점진 imputation으로 web 후보 생성  \ensuremath{\rightarrow}  TabPFN self-authentication(실 context로 web 고신뢰 분류된 것만 채택)  \ensuremath{\rightarrow}  context 양성 보강 & ① expert context & CIC web F1 (dos \ensuremath{\rightarrow} web 혼동 274) & 0922 서베이: SMOTE/\allowbreak{}TabPFGen in-context 4건 해로움  \ensuremath{\rightarrow}  희소 클래스 한정·인증 필터·benign FP 병기로 탈출. NetFlow 물리 제약(byte/\allowbreak{}duration/\allowbreak{}flag) 검증 필요 \\
+{}7 & \textbf{합성 데이터를 context가 아니라 S/\allowbreak{}V 학습에}: tail 행의 feature jitter·조건부 생성으로 (query, expert) 교정 사례를 늘려 min-support 30 미달(CIC 77/\allowbreak{}78 후보 탈락) 해소 & ③④ S/\allowbreak{}V & CIC S/\allowbreak{}V 활성화 & TFM context 불변이라 서베이의 해로움 미적용. 실패 모드 2(val 적합) 아님(train측) \\
+{}8 & \textbf{밀도 인식 coreset context}: 클래스별 k-center/\allowbreak{}herding +\allowbreak{} 역밀도 가중으로 매니폴드 커버, 무작위 대신 & ① Global·anchor & tail 커버리지 & 서베이 IM-Context·Fair-TabICL 계열. 선택은 D\_\allowbreak{}route·chrono 앞 구간에서만 \\
+{}9 & \textbf{겹침 영역 abstain(triage)}: 두 모델이 상반되거나 context 최근접 거리가 큰 행은 "검토 필요"로 분리, coverage-F1 곡선으로 보고 & ⑤ 출력 & infiltration·ransomware 근사 모순, mitm novel 블록 & 지표 변경이라 보고 체계 합의 필요. IDS 운영(분석가 큐)과 정합 \\
+\bottomrule
+\end{longtable}
+\endgroup
+권장 순서: 1·2(싸고 기준점을 바로잡음)  \ensuremath{\rightarrow}  3(보안 서사·mitm)  \ensuremath{\rightarrow}  5 또는 4  \ensuremath{\rightarrow}  6·7(합성)  \ensuremath{\rightarrow}  8·9.
+
+\subsection{2026-10-01 — 접근법 4종 feasibility (사용자 지정: benign 다양화 · LITO식 합성 · 학습 임베딩 · context 최적화) — 코드 작성·스모크 실행}
+사용자가 좁힌 네 접근을 실제 환경(TabPFN-v3 로컬, RTX 4090 24 GB, seed 43 풀)에서 코드로 시험했다. \textbf{모두 단일 seed·feasibility 규모}이며 기록급 실험이 아니다. 데이터 준비: \texttt{scripts/\allowbreak{}\allowbreak{}material\allowbreak{}ize\_\allowbreak{}\allowbreak{}nfv3\allowbreak{}\_\allowbreak{}\allowbreak{}pools\_\allowbreak{}\allowbreak{}s\allowbreak{}43.\allowbreak{}py}가 EXP62와 같은 분할 규칙으로 D\_\allowbreak{}global 풀·C0·anchor를 \texttt{data/\allowbreak{}\allowbreak{}der\allowbreak{}ived/\allowbreak{}\allowbreak{}poo\allowbreak{}ls\_\allowbreak{}\allowbreak{}s43/\allowbreak{}\allowbreak{}<\allowbreak{}ds>/\allowbreak{}\allowbreak{}}에 npy로 저장(ToN 풀 1,336,556행, CIC 4,333,212행; C0 100k: ToN benign 75,000·scanning 3,182·mitm 1,642·ransomware 1,075, CIC benign 75,000·공격 4,955씩·web 224). 공용 도우미 \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp6x\_\allowbreak{}\allowbreak{}con\allowbreak{}text\_\allowbreak{}\allowbreak{}com\allowbreak{}mon.\allowbreak{}py}.
+
+\textbf{평가 주의.} 아래 "부분집합"은 클래스별 20,000행 cap(tail 전량)의 층화 test 부분집합(ToN 147,899 /\allowbreak{} CIC 108,869행)이다. benign이 실제의 1\textasciitilde{}2\%뿐이라 tail precision·macro-F1이 크게 부풀고(예: 같은 C0 Global이 ToN 전체 test 0.6796  \ensuremath{\rightarrow}  부분집합 0.830), \textbf{context의 benign 비율을 바꾸는 arm에 특히 유리}하다. 변형 간 상대 비교로만 쓰고, 유망 arm은 전체 test로 재평가한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.12201\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21950\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21950\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21950\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21950\linewidth-2\tabcolsep\relax}}
+\toprule
+\# & 접근 & 스크립트 & 부분집합 결과 (seed 43) & 판정 \\ \midrule
+\endfirsthead
+\# & 접근 & 스크립트 & 부분집합 결과 (seed 43) & 판정 \\ \midrule
+\endhead
+{}1 & benign 다양화 (C0 공격 행 고정, benign 75k만 교체) & \texttt{exp64\_\allowbreak{}\allowbreak{}be\allowbreak{}nign\_\allowbreak{}\allowbreak{}div\allowbreak{}ersity\_\allowbreak{}\allowbreak{}c\allowbreak{}0.\allowbreak{}py} & ToN macro-F1: random 0.830 · time 균등 0.834 · k-center 0.815 · inverse-density 0.813 · 공격 근접 hard 0.820. scanning F1 0.038 \ensuremath{\rightarrow} 0.069(time) 외 전부 \ensuremath{\leq}0.04 & \textbf{효과 없음.} scanning은 benign:scanning 비율(prior) 문제라 benign을 어떻게 골라도 안 열림. k-center·역밀도는 benign 매니폴드 꼬리를 과대표집해 오히려 손해 \\
+{}3 & SupCon +\allowbreak{} prototype 임베딩  \ensuremath{\rightarrow}  TabPFN 입력 추가 & \texttt{exp66\_\allowbreak{}\allowbreak{}su\allowbreak{}pcon\_\allowbreak{}\allowbreak{}pro\allowbreak{}totype\_\allowbreak{}\allowbreak{}e\allowbreak{}mbedding\allowbreak{}.\allowbreak{}py} (route 풀로 encoder 학습, 8 epoch 8 s) & ToN raw 0.836 · raw+\allowbreak{}emb 0.827 · emb만 0.836 & \textbf{효과 없음.} TabPFN이 원 feature에서 같은 분리를 이미 하고 있어 16차원 학습 임베딩이 정보를 더하지 못함 \\
+{}2 & LITO식 합성 (web attack 224행  \ensuremath{\rightarrow}  2,000행, v3 분류기로 분위 구간 예측 imputation 3회, self-authentication p\ensuremath{\geq}0.5 통과 1,407행 70\%) & \texttt{exp65\_\allowbreak{}\allowbreak{}li\allowbreak{}to\_\allowbreak{}\allowbreak{}lite\_\allowbreak{}\allowbreak{}synthesi\allowbreak{}s.\allowbreak{}py} & CIC web F1: C0 0.430  \ensuremath{\rightarrow}  \textbf{실제 행 복제 1,407 0.675}(FP 304 \ensuremath{\rightarrow} 77)  \ensuremath{\rightarrow}  인증 합성 0.475(FP 258)  \ensuremath{\rightarrow}  비인증 합성 0.469 & \textbf{합성 < 복제.} 이득은 새 정보가 아니라 context 비율(prior) 효과(0922 서베이와 동일). 인증 필터 효과 미미. 복제 arm의 전체 test 재평가 진행 \\
+{}4 & context 최적화 (ICD /\allowbreak{} prompt tuning: \texttt{differen\allowbreak{}tiable\_\allowbreak{}\allowbreak{}i\allowbreak{}nput=\allowbreak{}\allowbreak{}Tru\allowbreak{}e}, context X를 Adam으로 최적화, 라벨 고정, query는 D\_\allowbreak{}global 균형 표본) & \texttt{exp67\_\allowbreak{}\allowbreak{}pr\allowbreak{}ompt\_\allowbreak{}\allowbreak{}tun\allowbreak{}ed\_\allowbreak{}\allowbreak{}conte\allowbreak{}xt.\allowbreak{}py} & 미분 경로는 24 GB에서 \textbf{context \ensuremath{\leq}5,000행}(18 GiB), 9,000행 OOM. 1 step 0.4–1 s. 5,000행 균형 context: 부분집합 init 0.912(scanning 0.886!) — 이는 benign 비율 왜곡. 첫 run의 "tuned 0.915"는 \textbf{무효}: 일부 feature의 gradient가 NaN  \ensuremath{\rightarrow}  Adam이 항목을 NaN으로  \ensuremath{\rightarrow}  TabPFN이 결측으로 처리해 loss는 유한  \ensuremath{\rightarrow}  300 step 후 전 행에 결측 혼입. non-finite grad 마스킹 추가 후 전체 test로 재실행 중 & 기술적으로 가능, 규모 제한. 결과는 전체 test 재평가 후 판정 \\
+\bottomrule
+\end{longtable}
+\endgroup
+접근 1·3은 여기서 종료 권고. 접근 2는 "합성 행 자체"는 버리고 "tail 양성의 context 비율"만 knob으로 남긴다. 접근 4는 소형 context 전용이라 Global(100k) 대체가 아니라 \textbf{expert context(\ensuremath{\leq}5k) 다듬기}나 "작은 context로 Global 근사"에 쓸 수 있는지로 질문을 바꿔야 한다.
+
+\textbf{전체 test 재평가 (10-01 저녁, seed 43 단일):}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21728\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19877\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14938\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21728\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21728\linewidth-2\tabcolsep\relax}}
+\toprule
+접근 & arm & 전체 test macro-F1 & 주요 클래스 & 비고 \\ \midrule
+\endfirsthead
+접근 & arm & 전체 test macro-F1 & 주요 클래스 & 비고 \\ \midrule
+\endhead
+{}2 LITO식 합성 (CIC) & C0 (EXP61 Global) & 0.7824 & web F1 0.2102 (FP 878), infiltration 0.2880 & 참조 \\
+{} & C0 +\allowbreak{} 실제 web 복제 1,479행 & \textbf{0.7997} & web P 0.199 /\allowbreak{} R 0.819 /\allowbreak{} F1 \textbf{0.320} (FP 418), infiltration 0.2977, benign 0.9968 & prior 효과만으로 공통 100k 최고(DistPFN 0.7839)보다 높음. 복제 수는 인증 통과 수(1,479)로 정해진 값이지 튜닝값이 아님 \\
+{} & C0 +\allowbreak{} 인증 합성 1,479행 & 0.7680 & web F1 0.200 (FP 962), infiltration 0.1966 & 합성 행은 web FP를 늘리고 infiltration까지 깎음  \ensuremath{\rightarrow}  \textbf{합성 기각, 복제(비율) knob만 유효} \\
+{}4 context 최적화 (ToN, 3,000행 균형 init, estimator 1, 전처리 앙상블 없음) & init (튜닝 전) & 0.6449 & mitm 0.043, ransomware 0.016, scanning 0.174, benign 0.855 & 300 benign뿐이라 benign 경계 붕괴 \\
+{} & tuned · 균형 query NLL 300 step & 0.6720 & mitm 0.137, ransomware 0.079, scanning 0.151, benign 0.909 & C0 Global 0.6796에 근접 \\
+{} & tuned · \textbf{자연 비율 query} NLL 300 step & \textbf{0.7100} & mitm 0.323, ransomware 0.186, scanning 0.063, benign 0.936 & \textbf{C0 Global(100k) 0.6796·XGB-100k 0.6983 상회}, S+\allowbreak{}V K=\allowbreak{}4 0.7617 미만. 1/\allowbreak{}33 크기 context, step당 0.9 s, 튜닝 4분, 전체 test 추론 약 4분. 6개 feature는 grad 비유한으로 고정 \\
+\bottomrule
+\end{longtable}
+\endgroup
+판정 갱신: 접근 4가 유일하게 "새 정보"를 만든다 — 작은 context를 train 풀의 자연 비율 query로 다듬으면 100k 무작위 C0보다 나은 Global이 나온다. 최적화 목표의 클래스 비율이 결정적(균형 0.672 vs 자연 0.710). 접근 2는 합성 자체는 기각하되 "tail 양성 복제 비율"이 CIC web에서 +\allowbreak{}0.017을 주는 prior knob으로 남는다. seed 44 복제·CIC·5k context 변형은 이어서 실행.
+
+seed 44 복제(ToN, 3,000행, 자연 비율 query): init 0.6585  \ensuremath{\rightarrow}  tuned \textbf{0.7455}(mitm 0.648, ransomware 0.195, scanning 0.074, benign 0.933). 두 seed 모두 C0 Global(0.6796)과 XGB-100k(0.6983)를 넘고, seed 간 폭은 0.036(mitm 0.32 vs 0.65)으로 크다 — 초기 context 표본에 민감. 후속: CIC 자연 비율 2,100행, ToN 5,000행 자연 비율을 실행 중(\texttt{exp67\_\allowbreak{}\allowbreak{}*} 로그).
+
+\textbf{10-01 feasibility 결론 (사용자 4개 접근):} ① benign 다양화 — 기각(scanning은 prior, benign 선택은 무관). ② LITO식 합성 — 합성 행 기각, "tail 양성 복제 비율"만 knob(CIC web +\allowbreak{}0.017 macro, 전체 test). ③ SupCon 임베딩 — 기각(이득 없음). ④ context 최적화(ICD/\allowbreak{}prompt tuning) — \textbf{가장 유망}: 3k 행 context를 train 풀의 자연 비율 query로 300 step 다듬으면 ToN 전체 test 0.710 /\allowbreak{} 0.746(seed 43/\allowbreak{}44) > 100k C0 Global 0.680 > XGB-100k 0.698. 제한: 미분 경로는 \ensuremath{\leq}5k 행(24 GB), 6개 feature grad 비유한, 전처리 앙상블 미사용, 단일 estimator. 구조 안에서의 용처는 (a) Global의 소형 대체(추론 비용 1/\allowbreak{}33), (b) expert context(\ensuremath{\leq}5k) 다듬기, (c) S/\allowbreak{}V 전 단계의 기준점 상향. 기록급 실험으로 올리려면 0915 합의 후 seed 3개·validation 고정 step 수·threshold-matched XGB 대조로 재설계해야 한다.
+
+후속 2건(전체 test, seed 43, 자연 비율 query, 300 step): \textbf{CIC2018 2,100행 context} init 0.6677  \ensuremath{\rightarrow}  tuned \textbf{0.7829}(=\allowbreak{} C0 Global 0.7824, DistPFN 0.7839; web F1 \textbf{0.365}로 전 방법 최고, infiltration 0.126으로 Global 0.288보다 낮음, benign 0.998). \textbf{ToN 5,000행} init 0.6248  \ensuremath{\rightarrow}  tuned 0.7193(3k 0.7100과 비슷; mitm 0.400, scanning 0.037). context를 3k \ensuremath{\rightarrow} 5k로 늘려도 큰 차이 없음  \ensuremath{\rightarrow}  이득은 크기보다 최적화에서 온다. CIC에서는 infiltration을 깎고 web을 올리는 쪽으로 수렴했으므로 클래스별 가중(macro 목표)이나 tail 보호 항을 목적함수에 넣는 것이 다음 knob.
+
+\subsection{2026-10-02 — 주장 우선 재구성 (사용자 방향 4건) · EXP68 시간순 출현 시나리오 첫 결과}
+사용자 방향: ① 슬라이드를 수치 경쟁이 아니라 모델의 의도(재학습 없이 context로 적응, tail 회수 목표)가 보이게 수정, ② 실험도 전체 test 일괄 평가 대신 공격이 시간순으로 나타나는 시나리오로(추후 OOD 확장), ③ html/\allowbreak{}md 기록을 LaTeX로 정리, ④ 연구 방향 전환·실험 증가 시 결과 폴더 버전 관리 자동화.
+
+\textbf{① 슬라이드.} \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}revi\allowbreak{}se\_\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}ko\_\allowbreak{}\allowbreak{}v2.\allowbreak{}py\allowbreak{}}가 10-01 10장 덱(보관본 \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}arch\allowbreak{}ive/\allowbreak{}\allowbreak{}2026\allowbreak{}1002\_\allowbreak{}\allowbreak{}bef\allowbreak{}ore\_\allowbreak{}\allowbreak{}clai\allowbreak{}m\_\allowbreak{}\allowbreak{}first/\allowbreak{}\allowbreak{}})을 12장으로 재구성: 앞에 [1 왜 TabPFN인가 · 재학습 없이 context로 적응하는 탐지기] [2 목표는 tail 회수 · benign 혼동의 원인은 클래스마다 다르다(10-01 feature 공간 진단 표)]를 추가하고, 9·10장을 [11 후속 네 접근의 feasibility 결과] [12 시간순 출현 시나리오 +\allowbreak{} EXP68 첫 결과]로 교체. 3\textasciitilde{}10장은 10-01 덱 그대로. 1장은 XGB 재학습 비용(108/\allowbreak{}143 s)과 TabPFN 추론이 1,000배 느린 사실을 숨기지 않고, 주장을 "적응 비용과 tail 회수"로 둔다. 영어판은 미갱신(10-01 지시대로 보존; \texttt{translat\allowbreak{}e\_\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}e\allowbreak{}n.\allowbreak{}py} 사전에 새 문구 추가 필요).
+
+\textbf{② EXP68 — 시간순 출현 프로토콜(\texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp68\_\allowbreak{}\allowbreak{}tem\allowbreak{}poral\_\allowbreak{}\allowbreak{}ar\allowbreak{}rival.\allowbreak{}py\allowbreak{}}, ToN seed 43, 전체 test).} test를 시간순 균등 5구간으로 나누고, 구간마다 각 클래스의 첫 10\% 행 중 최대 50행을 라벨(분석가가 새 family의 첫 flow를 라벨링), 나머지 평가, 라벨 누적. ToN test의 family 출현 순서: 1 ddos·dos·injection·scanning  \ensuremath{\rightarrow}  2 ddos  \ensuremath{\rightarrow}  3 password  \ensuremath{\rightarrow}  4 xss  \ensuremath{\rightarrow}  5 backdoor·mitm·ransomware(benign은 전 구간).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30130\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15844\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24935\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14545\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14545\linewidth-2\tabcolsep\relax}}
+\toprule
+구간(출현 클래스) & TabPFN 고정 & TabPFN +\allowbreak{} context(라벨 추가) & XGB 고정 & XGB 재학습 \\ \midrule
+\endfirsthead
+구간(출현 클래스) & TabPFN 고정 & TabPFN +\allowbreak{} context(라벨 추가) & XGB 고정 & XGB 재학습 \\ \midrule
+\endhead
+{}1 (ddos·dos·injection·scanning) & 0.7929 & 0.7964 & 0.7900 & 0.7986 \\
+{}2 (ddos) & 0.9724 & 0.9758 & 0.9763 & 0.9764 \\
+{}3 (password) & 0.8677 & 0.8676 & 0.8744 & 0.8740 \\
+{}4 (xss) & 0.9060 & 0.9415 & 0.9607 & 0.9613 \\
+{}5 (backdoor·mitm·ransomware) & 0.5628 & 0.5540 & 0.6050 & 0.6096 \\
+{}scanning F1 (구간 1) & 0.038 & 0.043 & 0.047 & 0.053 \\
+{}mitm F1 (구간 5) & 0.145 & 0.123 & 0.270 & 0.290 \\
+{}ransomware F1 (구간 5) & 0.156 & 0.156 & 0.166 & 0.164 \\
+\bottomrule
+\end{longtable}
+\endgroup
+비용(5구간 합): TabPFN+\allowbreak{}context 적재 86 s·추론 340 s, XGB 재학습 fit 18 s·추론 1 s, 라벨 750행.
+
+판정: \textbf{라벨 50행을 100k context에 더하는 것만으로는 적응이 일어나지 않는다}(scanning 0.038 \ensuremath{\rightarrow} 0.043; 100k 안의 benign 75k 대비 prior가 바뀌지 않음). XGB 재학습도 같은 라벨로는 거의 안 움직인다(0.053). 효과를 낸 것은 context의 \textbf{구성}(scanning block expert +\allowbreak{} V 0.86–0.90, 최적화 context 0.71–0.75)이다. 따라서 "TabPFN은 라벨 몇 개로 싸게 적응한다"는 가설은 이 naive 형태로는 기각이고, 주장은 "적응의 단위는 가중치 재학습이 아니라 context 구성"으로 바꿔야 한다. 비용 면에서도 이 규모에서는 XGB 재학습(18 s)이 TabPFN 추론(340 s)보다 싸다. 다음 설계: 구간마다 (a) 라벨을 prior가 바뀌도록 넣는 prior-matched 교체, (b) 라벨로 expert block을 만드는 context 구성, (c) 최적화 context를 라벨로 갱신하는 조건을 XGB 재학습과 비교; family holdout(unseen 출현)으로 확장.
+
+\textbf{③ LaTeX.} \texttt{scripts/\allowbreak{}\allowbreak{}build\_\allowbreak{}\allowbreak{}la\allowbreak{}tex\_\allowbreak{}\allowbreak{}resu\allowbreak{}lts.\allowbreak{}py}  \ensuremath{\rightarrow}  \texttt{docs/\allowbreak{}\allowbreak{}lat\allowbreak{}ex/\allowbreak{}\allowbreak{}resul\allowbreak{}ts/\allowbreak{}\allowbreak{}tab\_\allowbreak{}\allowbreak{}*\allowbreak{}.\allowbreak{}tex}(SOTA 전체·비용·클래스별 CIC/\allowbreak{}ToN·S/\allowbreak{}V by K·residual oracle 클래스별·feasibility·temporal arrival) +\allowbreak{} 컴파일되는 \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0930.\allowbreak{}tex\allowbreak{}}(주장·데이터·표·10-01 진단·결정 로그). 논문 \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}main\allowbreak{}.\allowbreak{}tex}가 같은 표를 \texttt{\textbackslash{}input}하면 된다.
+
+\textbf{④ 버전 관리.} \texttt{scripts/\allowbreak{}\allowbreak{}results\_\allowbreak{}\allowbreak{}versions\allowbreak{}.\allowbreak{}py}: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}V\allowbreak{}ERSIONS.\allowbreak{}json}(v1 TabPFN 도입·TAILGUARD \ensuremath{\leq}08-25, v2 RACE-PFN 구조·C0·SOTA 스모크 08-26\textasciitilde{}, v3 데이터 감사 09-11\textasciitilde{}, v4 정제 데이터 expert·S/\allowbreak{}V 09-16\textasciitilde{}, v5 context 최적화·시간순 10-01\textasciitilde{}), \texttt{index}가 261개 run을 날짜 규칙(핀 override 가능)으로 배정해 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}I\allowbreak{}NDEX.\allowbreak{}md}와 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}ersions/\allowbreak{}\allowbreak{}vN\_\allowbreak{}\allowbreak{}label\allowbreak{}/\allowbreak{}\allowbreak{}} 심링크 뷰를 재생성. run 디렉터리는 옮기지 않는다(스크립트 경로 보존). 방향 전환 시 \texttt{new -\allowbreak{}-\allowbreak{}la\allowbreak{}bel}.
+
+
+
+\section{2026-09-30 · 9월 30일 보고용 멘트 — S/\allowbreak{}V 완료 결과 반영}
+\label{report:20260930_exp62_briefing_ko}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+갱신: 2026-09-30. ToN 10:44:02, CIC2018 10:48:59 정상 완료. 한국어 슬라이드는 1\textasciitilde{}6장까지 작성돼 있으며, 이번 S/\allowbreak{}V 결과를 뒤쪽에 반영하는 작업은 별도다.
+
+\subsection{그대로 읽을 수 있는 멘트}
+이번 랩미팅 자료는 데이터 품질 검토, 모델 구조, 정제 데이터의 SOTA 성능과 비용, expert 역량 및 S/\allowbreak{}V 기여 순서로 준비하고 있습니다. 현재 1\textasciitilde{}4장은 데이터 검토와 모델·병목 설명, 5\textasciitilde{}6장은 완료된 SOTA 성능·비용 결과로 작성했습니다. 이후 장에는 현재 구성의 S/\allowbreak{}V 결과와 최종 모델 비교를 채울 예정입니다.
+
+동일 feature에 서로 다른 라벨이 붙은 행을 제거한 데이터에서, 단일 seed로 XGBoost, BoostPFN, LoCalPFN, DistPFN 비교를 완료했습니다. 같은 10만 개 학습 행을 사용한 비교군 중 최고 Macro-F1은 CIC2018에서 DistPFN 0.7839, ToN에서 XGBoost 0.6983입니다. 전체 train을 사용한 XGBoost는 각각 0.7795, 0.7162입니다. 제안 모델은 expert와 route 학습에 추가 데이터를 사용하므로 이 비교군과의 성능 차이를 학습 예산 및 비용과 함께 평가하고 있습니다.
+
+현재 seed 43·K=\allowbreak{}4 구성의 S/\allowbreak{}V 실험도 완료했습니다. CIC2018은 Global과 S/\allowbreak{}V 모두 Macro-F1 0.7824이고, expert 호출은 0건입니다. Validation에서 탐색한 78개 개입 정책 모두 성능이 감소하고 Benign 오탐·tail F1 조건을 위반해 Global을 유지했습니다. ToN은 Global 0.6796에서 S/\allowbreak{}V 0.7617로 개선됐고, Scanning F1이 0.0394에서 0.8587로 상승했습니다. 교정은 5,381건, 훼손은 1,101건입니다. 다만 모든 표본에서 expert를 하나씩 호출하므로 scorer는 expert 선택에는 사용되지만 호출을 생략하는 역할은 아직 하지 못하고 있습니다. ToN의 개선은 Scanning 중심이며 MitM·Ransomware는 추가 개선 대상입니다.
+
+Context 변화에 민감한 양상이 있어 expert의 분류 능력을 두 관점에서 확인했습니다. 첫째는 정답 정보를 포함한 residual로 배정한 담당영역, 둘째는 정답 없이 입력 표현과 Global 예측만으로 배정한 표본군입니다. 여러 expert가 첫 번째 범위에서는 Global의 오류를 교정하지만, 두 번째 범위에서는 다른 클래스까지 특화 클래스로 예측하여 훼손이 커지는 사례가 있습니다. 예를 들어 CIC2018 e3은 담당 residual 영역에서 9,598건을 교정하고 훼손은 0건이지만, 입력 기반 배정 표본군에서는 교정 776건에 훼손 14,119건입니다. 다만 ToN e2는 담당 residual 영역에서도 훼손이 교정보다 많아, 모든 expert의 담당영역 역량이 확보됐다고 결론 내리지는 않았습니다. Residual은 Global의 오류 양상을 알려주지만, 현재 context 구성만으로 유사한 입력을 가진 클래스 간 구분이 충분해졌다고 보기는 어렵습니다. Context가 가장 큰 원인이라는 인과적 결론까지 확인한 것은 아닙니다.
+
+Oracle 평가도 정정했습니다. 기존에는 여러 expert 중 정답을 맞힌 출력을 선택하고, 없으면 Global을 유지하여 expert의 담당영역 능력보다 낙관적인 수치가 나왔습니다. 현재는 정답 정보를 포함한 residual에서 가장 가까운 클러스터를 정하고, 해당 expert의 예측을 그대로 사용합니다. 이 기준의 Macro-F1은 CIC2018 0.8996, ToN 0.7437입니다. 정답을 사용한 조건부 진단값이며, 실제 추론 성능이나 모든 정책의 절대 상한을 의미하지는 않습니다.
+
+이번 결과를 바탕으로 CIC2018에서는 validation에서 교정 이득을 낼 수 있는 expert 후보와 선택·채택 기준을 개선하고, ToN에서는 Scanning 개선을 유지하면서 호출 비용과 Benign 오탐을 줄이겠습니다. 최종 후보가 정해지면 같은 bank에서 S/\allowbreak{}V 제거 비교로 각 요소의 기여를 확인하고, 학습 예산과 실제 추론 비용을 포함해 SOTA와 비교하겠습니다.
+
+\subsection{완료 결과 요약}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13075\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13075\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16465\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13075\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13075\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13075\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18160\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & Global & 입력 기반 고정 배정 & S+\allowbreak{}V & 정책상 호출률 & V 채택 & 교정 /\allowbreak{} 훼손 \\ \midrule
+\endfirsthead
+데이터 & Global & 입력 기반 고정 배정 & S+\allowbreak{}V & 정책상 호출률 & V 채택 & 교정 /\allowbreak{} 훼손 \\ \midrule
+\endhead
+{}CIC2018 & 0.7824 & 0.7613 & 0.7824 & 0\% & 0 & 0 /\allowbreak{} 0 \\
+{}ToN & 0.6796 & 0.7168 & 0.7617 & 100\% & 28,035 & 5,381 /\allowbreak{} 1,101 \\
+\bottomrule
+\end{longtable}
+\endgroup
+성능은 Macro-F1이다. ToN의 채택률은 전체 test의 1.23\%이며, 실제 출력 변경은 6,504건이다. 호출·채택은 저장 예측에 정책을 적용한 논리적 건수로, 준비 단계의 전체 expert 계산시간을 온라인 희소 추론 비용으로 해석하지 않는다.
+
+\subsection{용어와 해석}
+\par\noindent \textbullet\enspace 관점 A: \textbf{정답 residual 배정 영역}. 정답 정보가 포함된 진단용 배정이므로 온라인 배정과 구분한다.
+
+
+\par\noindent \textbullet\enspace 관점 B: \textbf{입력 기반 배정 표본군}. 입력 표현과 Global 확률로 최근접 배정하며, A에 속하는 행과 속하지 않는 행을 모두 포함한다. ‘담당영역 밖’이라고 부르지 않는다.
+
+
+\par\noindent \textbullet\enspace A/\allowbreak{}B의 표본이 다르므로 두 F1을 직접 빼서 일반화 손실로 해석하지 않는다. 각 범위 안에서 같은 표본의 Global과 expert를 비교한다.
+
+
+\par\noindent \textbullet\enspace 이번 ToN 고정 배정의 Macro-F1은 증가하지만 Accuracy는 0.9013  \ensuremath{\rightarrow}  0.8829로 감소한다. S+\allowbreak{}V의 Accuracy는 0.9031이다. Macro-F1 개선과 전체 오분류 감소를 같은 뜻으로 쓰지 않는다.
+
+
+\par\noindent \textbullet\enspace Expert 수가 많다는 사실만으로 여러 클래스에 대한 유용한 특화가 확보됐다고 말하지 않는다. Context 구성비와 검증 표본에서의 교정·훼손이 근거다.
+
+
+\par\noindent \textbullet\enspace 이전 seed 42·K=\allowbreak{}8/\allowbreak{}7에서도 정제 후 S/\allowbreak{}V 실험은 있었다. CIC2018 0.8107(호출 0), ToN 0.7555였으며, 이번 구성과 seed·bank가 달라 직접적인 개선량으로 계산하지 않는다.
+
+
+\par\noindent \textbullet\enspace ToN의 MitM·Ransomware 평균 F1은 validation 확인 구간에서 −0.0501, test에서 −0.0006 변했다. 전체 Macro-F1 개선이 tail 전체의 개선을 뜻하지 않는다.
+
+
+\par\noindent \textbullet\enspace 이번 결과는 S/\allowbreak{}V 결합 효과다. S와 V 각각의 인과적 기여는 같은 bank의 제거 비교로 확인해야 한다.
+
+
+\par\noindent \textbullet\enspace ToN은 현재 정책과 validation Macro-F1이 같으면서 가중 호출률 38.08\%인 후보도 있었다. 현재 선택기는 동점이면 먼저 나온 정책을 유지한다. 다음에는 호출 비용으로 동점을 해소하되, 38.08\%를 해당 후보의 test 호출률로 제시하지 않는다.
+
+
+\subsection{HTML 세 탭 통합 완료}
+\texttt{clean\_\allowbreak{}\allowbreak{}re\allowbreak{}validati\allowbreak{}on\_\allowbreak{}\allowbreak{}0916}(09/\allowbreak{}16\textasciitilde{}17), \texttt{scorer\_\allowbreak{}\allowbreak{}v\allowbreak{}erifier\_\allowbreak{}\allowbreak{}target\_\allowbreak{}\allowbreak{}0\allowbreak{}918}, \texttt{scorer\_\allowbreak{}\allowbreak{}v\allowbreak{}erifier\_\allowbreak{}\allowbreak{}target\_\allowbreak{}\allowbreak{}0\allowbreak{}928}을 \textbf{정제 데이터에서의 Expert 역량과 S/\allowbreak{}V 검증} 한 탭으로 통합했다. 통합 탭 ID는 \texttt{scorer\_\allowbreak{}\allowbreak{}v\allowbreak{}erifier\_\allowbreak{}\allowbreak{}target\_\allowbreak{}\allowbreak{}0\allowbreak{}928}이며 최신 날짜는 09/\allowbreak{}30이다.
+
+\par\noindent \textbullet\enspace \textbf{현재 성능과 개선 대상}: seed 43·K=\allowbreak{}4의 Global /\allowbreak{} 입력 기반 고정 배정 /\allowbreak{} S+\allowbreak{}V와 Global 클래스별 F1. SOTA 전체 결과는 0908 탭으로 연결한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Expert의 잠재 교정 능력}: 바뀐 oracle 정의를 문장으로 설명하고 두 데이터 수치만 제시한다. 과거 다섯\textasciitilde{}여섯 조건 표는 본문에서 제외한다.
+
+
+\par\noindent \textbullet\enspace \textbf{실제 배정에서 발생하는 훼손}: A/\allowbreak{}B를 나란히 보여주고 CIC2018 e3, ToN e3 및 예외인 ToN e2를 설명한다. 전체 expert별 표와 context 구성은 펼침 상세로 둔다.
+
+
+\par\noindent \textbullet\enspace \textbf{S/\allowbreak{}V가 이득을 보존하는가}: 최종 성능, 호출·채택·교정·훼손, 다음 개선을 한 흐름으로 제시한다. 이전 seed 42와 BoT 진단은 별도 접힌 과거 근거에 남긴다.
+
+
+기존 HTML 원본은 \texttt{docs/\allowbreak{}\allowbreak{}res\allowbreak{}earch/\allowbreak{}\allowbreak{}20\allowbreak{}260930/\allowbreak{}\allowbreak{}a\allowbreak{}rchive/\allowbreak{}\allowbreak{}p\allowbreak{}re\_\allowbreak{}\allowbreak{}merge\allowbreak{}\_\allowbreak{}\allowbreak{}reports\allowbreak{}/\allowbreak{}\allowbreak{}}에 보존했다. 이전 탭 ID와 개별 HTML 주소는 통합 탭으로 연결된다. 0911 데이터 감사와 0908 SOTA 탭은 유지했다. 로컬 동기화 및 검증을 완료했으며, Claude 온라인 아티팩트는 연결된 편집 도구가 없어 갱신하지 못했다.
+
+\subsection{오늘의 실행 순서}
+실행 중 확인: 이전 expert는 fitted state가 저장돼 있지 않아 같은 context·seed와 원래 batch 조건의 재학습에서도 예측이 완전히 일치하지 않았다. EXP62에서는 Global fitted state와 context IDs를 유지하되 expert fitted state를 새로 저장하고, 그 동일 모델로 route/\allowbreak{}cal/\allowbreak{}test를 모두 계산했다. 현재 성능 표는 이 EXP62의 결과이고 oracle·A/\allowbreak{}B는 EXP59 진단이다. 앞서 안내한 ToN 고정 배정 0.7191은 EXP59 값이며, 이번 S/\allowbreak{}V와 같은 fitted bank의 고정 배정은 0.7168이다.
+
+\par\noindent \textbullet\enspace \textbf{완료:} 현재 context +\allowbreak{} S/\allowbreak{}V를 평가했다. EXP62는 이전에 사용한 direct decision-gain scorer +\allowbreak{} NLL quantile verifier(S1V0) 구성이다.
+
+
+\par\noindent \textbullet\enspace \textbf{다음:} CIC2018은 validation의 후보별 교정·훼손과 S/\allowbreak{}V 점수를 점검한다. ToN은 같은 검증 이득을 내는 임계값 중 호출이 적은 정책을 우선하고, 별도 확인 구간의 tail·Benign 성능을 점검한다. Test 결과로 임계값을 조정하지 않는다.
+
+
+\par\noindent \textbullet\enspace 선택·채택의 문제라면 해당 단계의 학습 목표나 검증 기준을 고친다. Expert 후보 자체가 유사 클래스에서 손해라면 해당 expert의 context를 수정하거나 사용 대상을 제한한다.
+
+
+\par\noindent \textbullet\enspace 최종 후보를 정한 후 같은 bank와 예측을 재사용하여 S/\allowbreak{}V 제거 비교를 수행하고 SOTA 및 비용과 함께 정리한다.
+
+
+\subsection{근거}
+\par\noindent \textbullet\enspace SOTA: \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}evid\allowbreak{}ence/\allowbreak{}\allowbreak{}202\allowbreak{}60930/\allowbreak{}\allowbreak{}ex\allowbreak{}p61\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt\_\allowbreak{}\allowbreak{}data.\allowbreak{}json}
+
+
+\par\noindent \textbullet\enspace 현재 bank·S/\allowbreak{}V: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260930\_\allowbreak{}\allowbreak{}exp62\_\allowbreak{}\allowbreak{}sv\allowbreak{}\_\allowbreak{}\allowbreak{}current\allowbreak{}\_\allowbreak{}\allowbreak{}bank\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}\{\allowbreak{}cic20\allowbreak{}18,\allowbreak{}tonio\allowbreak{}t\}\allowbreak{}/\allowbreak{}\allowbreak{}summa\allowbreak{}ry.\allowbreak{}csv}
+
+
+\par\noindent \textbullet\enspace 정정 oracle: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260928\_\allowbreak{}\allowbreak{}exp59\_\allowbreak{}\allowbreak{}re\allowbreak{}sidual\_\allowbreak{}\allowbreak{}o\allowbreak{}racle\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}\{\allowbreak{}cic20\allowbreak{}18,\allowbreak{}tonio\allowbreak{}t\}\allowbreak{}\_\allowbreak{}\allowbreak{}s43/\allowbreak{}\allowbreak{}s\allowbreak{}ummary.\allowbreak{}c\allowbreak{}sv}
+
+
+\par\noindent \textbullet\enspace A/\allowbreak{}B: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260928\_\allowbreak{}\allowbreak{}exp59\_\allowbreak{}\allowbreak{}re\allowbreak{}sidual\_\allowbreak{}\allowbreak{}o\allowbreak{}racle\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}expert\allowbreak{}\_\allowbreak{}\allowbreak{}capabil\allowbreak{}ity/\allowbreak{}\allowbreak{}expe\allowbreak{}rt\_\allowbreak{}\allowbreak{}summa\allowbreak{}ry.\allowbreak{}csv}
+
+
+\par\noindent \textbullet\enspace 이전 S/\allowbreak{}V: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}lab\allowbreak{}el\_\allowbreak{}\allowbreak{}free\_\allowbreak{}\allowbreak{}20260922\allowbreak{}/\allowbreak{}\allowbreak{}\{\allowbreak{}cic201\allowbreak{}8,\allowbreak{}toniot\allowbreak{}\}\allowbreak{}/\allowbreak{}\allowbreak{}1a\_\allowbreak{}\allowbreak{}sum\allowbreak{}mary.\allowbreak{}csv\allowbreak{}}
+
+
+\par\noindent \textbullet\enspace 완료 상태: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260930\_\allowbreak{}\allowbreak{}exp62\_\allowbreak{}\allowbreak{}sv\allowbreak{}\_\allowbreak{}\allowbreak{}current\allowbreak{}\_\allowbreak{}\allowbreak{}bank\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}status\allowbreak{}.\allowbreak{}json}
+
+
+
+
+\section{2026-09-30 · 정제 데이터의 expert 역량·K 변화 보충}
+\label{report:expert_supplement}
+\recordnote{정제 데이터의 expert와 S/V를 같은 평가 표본에서 비교한다. 당시 개발 holdout과 후속 순차 도입의 최종 test를 구별한다.}
+09/\allowbreak{}17 · 09/\allowbreak{}18 · 09/\allowbreak{}28 통합 보고서 · 2026-09-30 갱신
+
+\subsection*{정제 데이터에서의 Expert 역량과 S/\allowbreak{}V 검증}
+Expert의 교정 능력을 실제 분류 이득으로 연결할 수 있는가? CIC2018은 Global을 유지했고, ToN은 Scanning을 개선했다. 다음은 CIC2018의 유효한 채택 후보 확보와 ToN의 호출 비용·Benign 오탐 개선이다.
+
+\subsection*{1. K=\allowbreak{}4 기준 성능과 개선 대상}
+09/\allowbreak{}30 EXP62 · K=\allowbreak{}4 기준 결과 · K=\allowbreak{}2·4·6·8 후속 비교와 expert 직접 평가는 3장에 제시
+
+\subsection*{CIC2018}
+Global 유지 · 호출 0건
+
+현재 후보·임계값 조합에서는 유효한 개입을 선택하지 못했다. Infiltration·Web attack을 개선할 후보와 채택 기준이 우선이다.
+
+10:48:59 완료 · test 3,042,473행
+
+\subsection*{ToN-IoT}
+Global 대비 +\allowbreak{}0.0821 · 호출률 100\%
+
+Scanning F1 0.0394  \ensuremath{\rightarrow}  0.8587. 표본당 expert 1개를 호출하며, MitM·Ransomware와 Benign 오탐은 추가 개선 대상이다.
+
+10:44:02 완료 · test 2,271,723행
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13283\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16792\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15038\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13283\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13283\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 방법 & Macro-F1 & Accuracy & ΔMacro-F1 & 교정 & 훼손 \\ \midrule
+\endfirsthead
+데이터 & 방법 & Macro-F1 & Accuracy & ΔMacro-F1 & 교정 & 훼손 \\ \midrule
+\endhead
+{}CIC2018 & Global & 0.7824 & 99.37\% & +\allowbreak{}0.0000 & 0 & 0 \\
+{}CIC2018 & 입력 기반 고정 배정 & 0.7613 & 98.94\% & -0.0211 & 1,265 & 14,559 \\
+{}CIC2018 & S +\allowbreak{} V & 0.7824 & 99.37\% & +\allowbreak{}0.0000 & 0 & 0 \\
+{}ToN-IoT & Global & 0.6796 & 90.13\% & +\allowbreak{}0.0000 & 0 & 0 \\
+{}ToN-IoT & 입력 기반 고정 배정 & 0.7168 & 88.29\% & +\allowbreak{}0.0372 & 42,536 & 84,258 \\
+{}ToN-IoT & S +\allowbreak{} V & 0.7617 & 90.31\% & +\allowbreak{}0.0821 & 5,381 & 1,101 \\
+\bottomrule
+\end{longtable}
+\endgroup
+고정 배정은 입력 표현·Global 확률로 가장 가까운 cluster의 expert를 선택한다. S+\allowbreak{}V는 S가 고른 후보를 V가 채택할 때만 Global 출력을 바꾼다. 교정은 Global 오답  \ensuremath{\rightarrow}  정답, 훼손은 Global 정답  \ensuremath{\rightarrow}  오답이다.
+
+SOTA와의 현재 위치. 같은 C0 100k 비교군 최고는 CIC2018 DistPFN 0.7839 , ToN XGBoost 0.6983 다. 전체 train XGBoost는 각각 0.7795 /\allowbreak{} 0.7162 다. 제안 모델은 expert·route에 추가 학습 데이터를 사용하므로 동일 학습 예산의 우위로 해석하지 않는다. 0908 SOTA 클래스별 성능·비용 보기
+
+\subsection*{CIC2018}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17708\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15365\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13802\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16927\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13802\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22396\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & Global & 입력 기반 고정 배정 & S +\allowbreak{} V & ΔF1 · S+\allowbreak{}V − Global \\ \midrule
+\endfirsthead
+클래스 & Test 수 & Global & 입력 기반 고정 배정 & S +\allowbreak{} V & ΔF1 · S+\allowbreak{}V − Global \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9965 & 0.9939 & 0.9965 & +\allowbreak{}0.0000 \\
+{}DDoS & 262,680 & 0.9922 & 0.9919 & 0.9922 & +\allowbreak{}0.0000 \\
+{}Bot & 41,542 & 0.9985 & 0.9985 & 0.9985 & +\allowbreak{}0.0000 \\
+{}DoS & 39,483 & 0.9920 & 0.9920 & 0.9920 & +\allowbreak{}0.0000 \\
+{}Brute force & 37,696 & 0.9997 & 0.9997 & 0.9997 & +\allowbreak{}0.0000 \\
+{}Infiltration & 8,742 & 0.2880 & 0.1826 & 0.2880 & +\allowbreak{}0.0000 \\
+{}Web attack & 127 & 0.2102 & 0.1707 & 0.2102 & +\allowbreak{}0.0000 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection*{ToN-IoT}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16398\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15591\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13978\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17204\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13978\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22849\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & Global & 입력 기반 고정 배정 & S +\allowbreak{} V & ΔF1 · S+\allowbreak{}V − Global \\ \midrule
+\endfirsthead
+클래스 & Test 수 & Global & 입력 기반 고정 배정 & S +\allowbreak{} V & ΔF1 · S+\allowbreak{}V − Global \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9217 & 0.9094 & 0.9231 & +\allowbreak{}0.0014 \\
+{}XSS & 343,854 & 0.8305 & 0.8301 & 0.8305 & -0.0000 \\
+{}Password & 210,951 & 0.8921 & 0.8920 & 0.8921 & +\allowbreak{}0.0000 \\
+{}DDoS & 103,338 & 0.9804 & 0.9821 & 0.9804 & +\allowbreak{}0.0000 \\
+{}Injection & 68,891 & 0.9027 & 0.9255 & 0.9047 & +\allowbreak{}0.0020 \\
+{}Backdoor & 40,030 & 0.9990 & 0.9983 & 0.9990 & -0.0000 \\
+{}DoS & 22,458 & 0.9771 & 0.7414 & 0.9771 & +\allowbreak{}0.0000 \\
+{}Scanning & 6,029 & 0.0394 & 0.7438 & 0.8587 & +\allowbreak{}0.8192 \\
+{}MitM & 1,161 & 0.1322 & 0.0381 & 0.1322 & +\allowbreak{}0.0000 \\
+{}Ransomware & 709 & 0.1208 & 0.1071 & 0.1196 & -0.0012 \\
+\bottomrule
+\end{longtable}
+\endgroup
+마지막 열은 선택한 표시 지표와 무관하게 F1 변화다. Global의 CIC2018 Infiltration·Web attack, ToN의 Scanning·MitM·Ransomware가 주요 개선 대상이다.
+
+\subsection*{2. 정정한 oracle: 담당 expert의 예측을 그대로 평가}
+2장은 09/\allowbreak{}28에 저장한 K=\allowbreak{}4 expert의 진단(EXP59)이다. 3장은 09/\allowbreak{}30 EXP62·EXP63의 fitted bank를 평가한다. 아래 oracle 수치를 최신 정책·직접 평가와 같은 fitted bank의 결과로 혼합하지 않는다.
+
+기존의 “여러 expert 중 맞힌 예측 선택, 없으면 Global 유지”를 바꿨다. 이 값은 정답을 사용한 residual 배정의 조건부 진단 이다. 실제 추론 성능이나 가능한 모든 정책의 절대 상한은 아니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.35577\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21474\linewidth-2\tabcolsep\relax}}
+\toprule
+진단 데이터 & Global & Residual 배정 oracle & 변화 \\ \midrule
+\endfirsthead
+진단 데이터 & Global & Residual 배정 oracle & 변화 \\ \midrule
+\endhead
+{}CIC2018 & 0.7824 & 0.8996 & +\allowbreak{}0.1172 \\
+{}ToN-IoT & 0.6796 & 0.7437 & +\allowbreak{}0.0641 \\
+\bottomrule
+\end{longtable}
+\endgroup
+클래스 하나에 expert 하나를 대응시키지 않는다. 한 클래스도 여러 residual cluster에 분포할 수 있다. Expert 자체의 분류 역량은 다음 장에서 배정 표본을 바꾸지 않는 직접 평가로 확인한다.
+
+\subsection*{3. Expert 자체의 분류 역량: 같은 표본에서 Global과 비교}
+09/\allowbreak{}30 EXP63 완료 · CIC2018·ToN · seed 43 · K=\allowbreak{}2·4·6·8 · K=\allowbreak{}4는 EXP62 fitted bank 재사용
+
+ToN의 Scanning을 잘 구분하는 expert는 있다. 그러나 expert 수를 늘리는 것만으로 CIC2018 Infiltration·Web attack, ToN MitM·Ransomware의 개선이 확보되지는 않았다.
+
+\subsection*{CIC2018 · 취약 클래스의 개선은 제한적}
+Infiltration: 네 K 구성 모두, 전체 test에서 Global F1 0.2880을 넘는 expert가 없다. Recall을 높여도 낮은 precision 때문에 F1이 낮아지는 expert가 많다.
+
+Web attack: K=\allowbreak{}4 e1은 test F1 0.2102  \ensuremath{\rightarrow}  0.3526 , precision 0.1185  \ensuremath{\rightarrow}  0.2172로 개선한다. 그러나 같은 expert의 validation 확인 구간은 0.7442  \ensuremath{\rightarrow}  0.7356이다. 해당 구간의 양성은 33개다.
+
+호출 0건만으로 모든 expert가 무능하다고 할 수는 없다. 다만 취약 클래스에서 양쪽 평가 구간에 걸친 이득은 아직 확인되지 않았다.
+
+\subsection*{ToN · Scanning의 역량과 전체 교체 위험을 구분}
+Scanning: 모든 K 구성의 모든 expert에서 Global보다 F1이 높고, 같은 expert의 validation 확인 구간에서도 개선 방향이 유지된다.
+
+K=\allowbreak{}4 e3의 test는 precision 0.7722  \ensuremath{\rightarrow}  0.8299 , recall 0.0202  \ensuremath{\rightarrow}  0.7024 , F1 0.0394  \ensuremath{\rightarrow}  0.7609 다. 하지만 전체 Macro-F1은 0.6796  \ensuremath{\rightarrow}  0.6651이며 훼손이 209,586건이다.
+
+Scanning에 유용한 출력을 만든다는 근거다. 다른 클래스까지 이 expert로 교체해도 안전하다는 뜻은 아니다. MitM·Ransomware는 양쪽 구간에서 함께 개선하는 expert가 없다.
+
+A는 test 정답이 들어가는 residual로 expert를 배정한 oracle 진단 , B는 정답 없이 입력 표현·Global 확률로 최근접 expert에 배정한 고정 배정 정책 진단 이었다. B는 학습된 S/\allowbreak{}V의 선택 정책과도 다르다.
+
+두 경우 모두 expert는 고정 context와 test feature로 분류했다. Test 정답이나 Global 확률을 expert의 분류 입력으로 준 것은 아니다. 달랐던 것은 각 expert를 채점하는 표본군 이었다.
+
+따라서 A/\allowbreak{}B 차이에는 배정과 표본 구성의 효과가 섞인다. 이를 근거로 “담당영역에서는 잘하고 유사 클래스 구분은 못 한다”고 결론 내린 이전 해석은 철회한다. 이번 표는 기존의 전체 test 직접 평가를 다시 사용하되, 전체 Macro-F1만으로 판단하지 않고 클래스별 이득·FP와 validation 확인 결과 를 함께 제시한다.
+
+\subsection*{K를 늘렸을 때: 취약 클래스의 이득이 함께 확인되는가?}
+“양쪽 개선”은 같은 expert·같은 클래스 가 test와 validation 확인 구간 각각에서 Global보다 높은 F1을 보인 경우다. 두 구간의 절대 F1을 서로 비교하거나, 통계적 유의성·반복 seed 재현성을 뜻하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.10714\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10714\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26531\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13265\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14796\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13265\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10714\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & K & 양쪽 개선 expert 수 · 클래스별 & 단일 클래스 block & 전체 context 행 합계 & S+\allowbreak{}V Macro-F1 & 호출률 \\ \midrule
+\endfirsthead
+데이터 & K & 양쪽 개선 expert 수 · 클래스별 & 단일 클래스 block & 전체 context 행 합계 & S+\allowbreak{}V Macro-F1 & 호출률 \\ \midrule
+\endhead
+{}CIC2018 & 2 & Infiltration 0/\allowbreak{}2 /\allowbreak{} Web attack 0/\allowbreak{}2 & 0/\allowbreak{}2 & 250,481 & 0.7824 & 0\% \\
+{}CIC2018 & 4 & Infiltration 0/\allowbreak{}4 /\allowbreak{} Web attack 0/\allowbreak{}4 & 0/\allowbreak{}4 & 277,505 & 0.7824 & 0\% \\
+{}CIC2018 & 6 & Infiltration 0/\allowbreak{}6 /\allowbreak{} Web attack 0/\allowbreak{}6 & 2/\allowbreak{}6 & 328,037 & 0.7824 & 0\% \\
+{}CIC2018 & 8 & Infiltration 0/\allowbreak{}8 /\allowbreak{} Web attack 0/\allowbreak{}8 & 3/\allowbreak{}8 & 376,411 & 0.7824 & 0\% \\
+{}ToN-IoT & 2 & Scanning 2/\allowbreak{}2 /\allowbreak{} MitM 0/\allowbreak{}2 /\allowbreak{} Ransomware 0/\allowbreak{}2 & 0/\allowbreak{}2 & 231,534 & 0.7636 & 100\% \\
+{}ToN-IoT & 4 & Scanning 4/\allowbreak{}4 /\allowbreak{} MitM 0/\allowbreak{}4 /\allowbreak{} Ransomware 0/\allowbreak{}4 & 1/\allowbreak{}4 & 270,546 & 0.7617 & 100\% \\
+{}ToN-IoT & 6 & Scanning 6/\allowbreak{}6 /\allowbreak{} MitM 0/\allowbreak{}6 /\allowbreak{} Ransomware 0/\allowbreak{}6 & 1/\allowbreak{}6 & 338,908 & 0.7677 & 100\% \\
+{}ToN-IoT & 8 & Scanning 8/\allowbreak{}8 /\allowbreak{} MitM 0/\allowbreak{}8 /\allowbreak{} Ransomware 0/\allowbreak{}8 & 3/\allowbreak{}8 & 421,513 & 0.7463 & 100\% \\
+\bottomrule
+\end{longtable}
+\endgroup
+Global·공통 anchor·데이터 분할·선택 규칙·S/\allowbreak{}V 설정을 고정했다. Context는 공통 anchor +\allowbreak{} residual 군집의 특화 block이며 Global 정답 사례도 포함한다. Expert당 block 상한은 186,000행이다. 총 context는 anchor 중복을 포함한 행 합계로, K 간 총예산은 같지 않다. K마다 다시 군집화하므로 e1 등의 번호는 K 사이에서 같은 역할을 뜻하지 않는다.
+
+CIC2018은 모든 K에서 S/\allowbreak{}V 호출 0건이다. ToN S+\allowbreak{}V는 K=\allowbreak{}2·4·6·8에서 각각 0.7636·0.7617·0.7677·0.7463이며 모두 호출률 100\%다. K 증가에 따른 일관된 개선은 없다. 이 표의 test 최고값으로 K를 선택하지 않는다. 1·4장은 기존 K=\allowbreak{}4 결과를 설명한다.
+
+\subsection*{Expert × 클래스: 성능과 context를 연결해서 보기}
+윗줄은 해당 지표, 아랫줄은 같은 표본의 Global 대비 변화다. 녹색은 증가, 주황색은 감소다. Precision과 recall은 함께 읽는다. Expert 이름을 누르면 아래 상세표가 바뀐다.
+
+P/\allowbreak{}R·FP는 전체 test 기준이다. “양쪽 ↑”는 같은 expert의 양쪽 F1 개선을 뜻한다. Context 클래스 비율은 학습 구성이고, 성능 개선 자체를 증명하지 않는다. 모든 클래스가 anchor에 들어가도 특정 클래스의 오탐 억제가 보장되지는 않는다.
+
+교정·훼손은 해당 정답 클래스 안의 변화다. 특정 클래스로 잘못 예측한 FP는 다른 정답 클래스에서 발생하므로 별도로 확인한다.
+
+\subsection*{이 결과로 다음에 바꿀 것}
+선택한 context와 단일 seed에서 관찰한 성능이다. Validation과 test는 클래스 비율이 다르므로 각 구간 내 Global 대비 변화로 읽는다. 기존에 관찰한 test 결과는 원인 탐색에 사용하고, 최종 후보는 test를 보고 선택하지 않는다.
+
+\subsection*{4. K=\allowbreak{}4 S/\allowbreak{}V는 교정 이득을 보존하는가?}
+09/\allowbreak{}30 완료 · EXP62 · K=\allowbreak{}4 기준 결과 · Direct decision-gain scorer +\allowbreak{} NLL quantile verifier · 정책과 임계값은 validation에서 선택
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12182\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13877\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13030\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12182\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12182\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12182\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12182\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12182\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 정책상 호출 & 호출률 & V 채택 & 채택 /\allowbreak{} 전체 & 출력 변경 & 교정 & 훼손 \\ \midrule
+\endfirsthead
+데이터 & 정책상 호출 & 호출률 & V 채택 & 채택 /\allowbreak{} 전체 & 출력 변경 & 교정 & 훼손 \\ \midrule
+\endhead
+{}CIC2018 & 0 & 0.00\% & 0 & 0.00\% & 0 & 0 & 0 \\
+{}ToN-IoT & 2,271,723 & 100.00\% & 28,035 & 1.23\% & 6,504 & 5,381 & 1,101 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+호출·채택은 저장된 예측에 정책을 적용해 집계한 논리적 건수다. 준비 단계에서는 모든 expert의 예측을 계산했으므로 이 실행시간을 희소 호출의 온라인 추론 비용으로 사용하지 않는다. 채택해도 Global과 같은 클래스를 예측할 수 있어 채택 수와 출력 변경 수는 다르다.
+
+\subsection*{CIC2018 · 유효한 개입 후보 확보}
+Validation에서 탐색한 78개 개입 정책 모두 Macro-F1이 감소하고 Benign 오탐·tail F1 조건을 위반했다. 최종 정책은 Global 유지다.
+
+현재 후보·S/\allowbreak{}V 점수가 교정과 훼손을 구분하는지 validation에서 먼저 점검하고, Infiltration·Web attack의 혼동을 줄이는 expert와 채택 기준을 개선한다.
+
+\subsection*{ToN · 성능 개선, 호출과 오탐 개선 필요}
+S가 expert를 고르고 V가 일부를 채택한다. 호출률은 100\% 이므로 호출을 생략하는 기능은 아직 없다. 개선은 Scanning 중심이며 Benign 정답 1,101건을 훼손했다.
+
+Validation 성능이 같은 후보 중 호출이 적은 정책도 있지만, 현재 선택기는 동점에서 먼저 본 정책을 유지한다. 다음에는 호출 비용을 동점 선택 기준으로 반영하고 Benign·tail 성능을 확인한다.
+
+\subsection*{CIC2018}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20098\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17157\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17157\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15196\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15196\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15196\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & Global F1 & S+\allowbreak{}V F1 & 교정 & 훼손 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & Global F1 & S+\allowbreak{}V F1 & 교정 & 훼손 \\ \midrule
+\endhead
+{}Benign & 2,652,203 & 0.9965 & 0.9965 & 0 & 0 \\
+{}DDoS & 262,680 & 0.9922 & 0.9922 & 0 & 0 \\
+{}Bot & 41,542 & 0.9985 & 0.9985 & 0 & 0 \\
+{}DoS & 39,483 & 0.9920 & 0.9920 & 0 & 0 \\
+{}Brute force & 37,696 & 0.9997 & 0.9997 & 0 & 0 \\
+{}Infiltration & 8,742 & 0.2880 & 0.2880 & 0 & 0 \\
+{}Web attack & 127 & 0.2102 & 0.2102 & 0 & 0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection*{ToN-IoT}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18537\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17517\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17517\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15476\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 수 & Global F1 & S+\allowbreak{}V F1 & 교정 & 훼손 \\ \midrule
+\endfirsthead
+클래스 & Test 수 & Global F1 & S+\allowbreak{}V F1 & 교정 & 훼손 \\ \midrule
+\endhead
+{}Benign & 1,474,302 & 0.9217 & 0.9231 & 0 & 1,101 \\
+{}XSS & 343,854 & 0.8305 & 0.8305 & 1 & 0 \\
+{}Password & 210,951 & 0.8921 & 0.8921 & 0 & 0 \\
+{}DDoS & 103,338 & 0.9804 & 0.9804 & 2 & 0 \\
+{}Injection & 68,891 & 0.9027 & 0.9047 & 632 & 0 \\
+{}Backdoor & 40,030 & 0.9990 & 0.9990 & 0 & 0 \\
+{}DoS & 22,458 & 0.9771 & 0.9771 & 0 & 0 \\
+{}Scanning & 6,029 & 0.0394 & 0.8587 & 4,736 & 0 \\
+{}MitM & 1,161 & 0.1322 & 0.1322 & 0 & 0 \\
+{}Ransomware & 709 & 0.1208 & 0.1196 & 10 & 0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+ToN은 현재 정책과 같은 validation Macro-F1을 내면서 가중 호출률이 38.08\% 인 후보도 있었다. 이는 validation의 후보 비교이며, 해당 정책의 test 호출률·성능을 뜻하지 않는다.
+
+ToN은 임계값 선택 구간에서 tail 평균 F1을 유지했지만, 별도 validation 확인 구간에서는 변화가 −0.0501이었다. Test의 MitM·Ransomware 평균 F1 변화도 −0.0006이다. 전체 Macro-F1 개선과 별개로 tail 성능의 구간별 유지가 다음 선택 기준에 필요하다.
+
+\subsection*{다음 개선과 실험 순서}
+요소별 실험은 Global·expert·선택·채택 중 어디에 병목이 있는지 구분한 근거로 남긴다. 정제 이후에도 이전 seed 42 구성에서는 S/\allowbreak{}V를 실행했으며, 아래 수치를 현재 seed 43·K=\allowbreak{}4 결과와 구분한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15625\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21875\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15625\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15625\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15625\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15625\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 이전 구성 & Global & S+\allowbreak{}V & 호출 & 채택 \\ \midrule
+\endfirsthead
+데이터 & 이전 구성 & Global & S+\allowbreak{}V & 호출 & 채택 \\ \midrule
+\endhead
+{}CIC2018 & seed 42 · K=\allowbreak{}8 & 0.8107 & 0.8107 & 0 & 0 \\
+{}ToN-IoT & seed 42 · K=\allowbreak{}7 & 0.6837 & 0.7555 & 31,227 & 27,667 \\
+\bottomrule
+\end{longtable}
+\endgroup
+BoT-IoT의 이전 관찰: 정제 후 Global Macro-F1은 0.3460이었고, 자연 비율 context 재실행에서는 약 0.204였다. 당시 context 변경만으로 DDoS·DoS 구분을 회복하지 못했다는 진단을 보존한다. 두 조건만으로 feature의 구분 정보가 없다고 확정하지 않는다.
+
+09/\allowbreak{}17·09/\allowbreak{}18의 조건별 표와 09/\allowbreak{}28의 A/\allowbreak{}B 진단은 원본 보관본에 남겼다. 현재 3장은 같은 표본의 expert 직접 평가와 K 비교를 사용한다.
+
+데이터 품질과 정제 기준: 0911 데이터 품질 감사 · 비교 모델 성능·비용: 0908 SOTA
+
+K=\allowbreak{}4 S/\allowbreak{}V: tabpfn/\allowbreak{}results/\allowbreak{}20260930\_\allowbreak{}exp62\_\allowbreak{}sv\_\allowbreak{}current\_\allowbreak{}bank\_\allowbreak{}s43/\allowbreak{} 3장 K 비교·expert 직접 평가: tabpfn/\allowbreak{}results/\allowbreak{}20260930\_\allowbreak{}exp63\_\allowbreak{}k\_\allowbreak{}sweep\_\allowbreak{}s43/\allowbreak{} Oracle·과거 A/\allowbreak{}B: tabpfn/\allowbreak{}results/\allowbreak{}20260928\_\allowbreak{}exp59\_\allowbreak{}residual\_\allowbreak{}oracle\_\allowbreak{}s43/\allowbreak{} 이전 S/\allowbreak{}V: tabpfn/\allowbreak{}results/\allowbreak{}exp56\_\allowbreak{}label\_\allowbreak{}free\_\allowbreak{}20260922/\allowbreak{} 통합 전 HTML: docs/\allowbreak{}research/\allowbreak{}20260930/\allowbreak{}archive/\allowbreak{}pre\_\allowbreak{}merge\_\allowbreak{}reports/\allowbreak{} 3장 변경 전 HTML: docs/\allowbreak{}research/\allowbreak{}20260930/\allowbreak{}archive/\allowbreak{}pre\_\allowbreak{}exp63\_\allowbreak{}capability/\allowbreak{}
+
+단일 seed 및 기존에 관찰한 test에 대한 예비 결과다. 논문 최종 주장에는 반복 seed와 독립 검증을 추가한다.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

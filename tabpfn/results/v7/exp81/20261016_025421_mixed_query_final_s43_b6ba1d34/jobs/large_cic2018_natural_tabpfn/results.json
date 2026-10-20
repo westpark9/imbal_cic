@@ -1,0 +1,296 @@
+{
+  "dataset": "cic2018",
+  "case": "natural",
+  "method": "tabpfn",
+  "seed": 43,
+  "evaluation": "final_full_test",
+  "test_order": "seed43_mixed",
+  "batch": 8192,
+  "test_rows": 3042473,
+  "training_rows": 100000,
+  "final_stage": 4,
+  "source_model_dir": "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4",
+  "source_fit_metrics": {
+    "method": "tabpfn",
+    "dataset": "cic2018",
+    "update_seconds": 17.008015337996767,
+    "cost_repetitions": [
+      {
+        "construct_seconds": 0.0001069550053216517,
+        "fit_seconds": 17.005956191991572,
+        "first_batch_seconds": 0.379348835995188,
+        "first_batch_rows": 1024,
+        "update_seconds": 17.006063146996894
+      },
+      {
+        "construct_seconds": 0.0005369290011003613,
+        "fit_seconds": 16.95880541499355,
+        "first_batch_seconds": 0.37840664500254206,
+        "first_batch_rows": 1024,
+        "update_seconds": 16.95934234399465
+      },
+      {
+        "construct_seconds": 0.0005999419954605401,
+        "fit_seconds": 16.936116876997403,
+        "first_batch_seconds": 0.380053206012235,
+        "first_batch_rows": 1024,
+        "update_seconds": 16.936716818992863
+      }
+    ],
+    "update_median_seconds": 16.95934234399465,
+    "train_rows": 100000,
+    "validation_rows": 0,
+    "class_names": [
+      "benign",
+      "brute_force",
+      "dos",
+      "ddos",
+      "web_attacks",
+      "infiltration",
+      "bot"
+    ],
+    "train_class_counts": [
+      75000,
+      2403,
+      2518,
+      16780,
+      9,
+      641,
+      2649
+    ],
+    "phases": [
+      {
+        "phase": "construct",
+        "seconds": 0.0001069550053216517,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 17.005956191991572,
+        "complete": true
+      },
+      {
+        "phase": "construct",
+        "seconds": 0.0005369290011003613,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 16.95880541499355,
+        "complete": true
+      },
+      {
+        "phase": "construct",
+        "seconds": 0.0005999419954605401,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 16.936116876997403,
+        "complete": true
+      }
+    ],
+    "peak_gpu_gib": 7.14453125,
+    "stage": 4,
+    "case": "natural",
+    "select_seconds": 0.0019521909998729825,
+    "train_ids_sha256": "2a4e59bcb02143a6f355cbced861f214f4f5b336941e93877be0c58cf2487620",
+    "global_class_indices": [
+      0,
+      2,
+      4,
+      3,
+      6,
+      5,
+      1
+    ]
+  },
+  "source_hashes": {
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4/fit_metrics.json": "2853cb94d594cea270abdb82c6b276d0c09c54a0cfea8fd178d8d20dcaf98604",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4/train_ids.npy": "a1d15afb1bf0b0b4214980f11e9b858a6f6d4797592749e776d59581510a862e",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4/model.tabpfn_fit": "871e440477fbfba827334f56827def83f5300e5303cb64a97874e0a9ba97b118"
+  },
+  "metrics": {
+    "rows": 3042473,
+    "confusion": [
+      [
+        2651898,
+        4,
+        0,
+        7,
+        7,
+        275,
+        12
+      ],
+      [
+        124,
+        41418,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        20,
+        0,
+        37676,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1702,
+        0,
+        0,
+        260978,
+        0,
+        0,
+        0
+      ],
+      [
+        620,
+        0,
+        0,
+        0,
+        38863,
+        0,
+        0
+      ],
+      [
+        7569,
+        0,
+        0,
+        0,
+        0,
+        1169,
+        4
+      ],
+      [
+        113,
+        0,
+        0,
+        0,
+        0,
+        0,
+        14
+      ]
+    ],
+    "macro_f1": 0.7704048185868079,
+    "benign_false_positive_rate": 0.00011499873878432382,
+    "attack_to_benign": 10148,
+    "wrong_attack_family": 4,
+    "attack_detection_recall": 0.9739974889179286,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 2652203,
+        "precision": 0.9961878945743237,
+        "recall": 0.9998850012612157,
+        "f1": 0.9980330240453543,
+        "TP": 2651898,
+        "FP": 10148,
+        "FN": 305
+      },
+      {
+        "name": "bot",
+        "support": 41542,
+        "precision": 0.9999034329583313,
+        "recall": 0.9970150690867075,
+        "f1": 0.998457162142616,
+        "TP": 41418,
+        "FP": 4,
+        "FN": 124
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 1.0,
+        "recall": 0.9994694397283531,
+        "f1": 0.9997346494719525,
+        "TP": 37676,
+        "FP": 0,
+        "FN": 20
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 0.9999731785351649,
+        "recall": 0.9935206334703822,
+        "f1": 0.9967364631968911,
+        "TP": 260978,
+        "FP": 7,
+        "FN": 1702
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 0.9998199125289426,
+        "recall": 0.9842970392320746,
+        "f1": 0.9919977537554401,
+        "TP": 38863,
+        "FP": 7,
+        "FN": 620
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.8095567867036011,
+        "recall": 0.13372226035232213,
+        "f1": 0.22953072845081485,
+        "TP": 1169,
+        "FP": 275,
+        "FN": 7573
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 0.4666666666666667,
+        "recall": 0.11023622047244094,
+        "f1": 0.17834394904458598,
+        "TP": 14,
+        "FP": 16,
+        "FN": 113
+      }
+    ]
+  },
+  "predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/jobs/large_cic2018_natural_tabpfn/predictions.npy",
+  "training_rerun": false,
+  "restoration_mismatches": 0,
+  "scope": "large",
+  "prediction_storage_order": "original",
+  "full_reinference": true,
+  "original_order_prediction_mismatches": 0,
+  "source_model": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4/model.tabpfn_fit",
+  "source_model_sha256": "871e440477fbfba827334f56827def83f5300e5303cb64a97874e0a9ba97b118",
+  "query_order_sha256": "aab673b1ac432dba7208f26777a58a94fc8abda3731659a1f85bd4d0fe1879a4",
+  "probability_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/jobs/large_cic2018_natural_tabpfn/probabilities.npy",
+  "class_mapping": [
+    0,
+    2,
+    4,
+    3,
+    6,
+    5,
+    1
+  ],
+  "training_prior": [
+    0.75,
+    0.02403,
+    0.02518,
+    0.1678,
+    9e-05,
+    0.00641,
+    0.02649
+  ],
+  "source_result_scope": "EXP79",
+  "initial_finetuning": false,
+  "base_inference_seconds": 575.2284552987549,
+  "serving_seconds": 575.2284552987549,
+  "serving_seconds_scope": "GPU-synchronized PFN forward on mixed query batches; disk I/O excluded",
+  "inherited_metadata_from_source_result": {
+    "serving_seconds": 573.5024426953751
+  },
+  "note": "Saved model, unchanged training/context; seed43 mixed query evaluation or explicitly audited prediction reuse; update costs retain their original preparation measurements"
+}

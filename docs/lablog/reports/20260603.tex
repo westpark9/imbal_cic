@@ -1,0 +1,359 @@
+% !TeX root = 20260603.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-06-03}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-06-03 · 배타적 expert 분할에서 TTA 라우팅이 작동하지 않은 원인}
+\label{report:20260603_0603}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\textbf{Date:} 2026-06-03 \textbf{Script:} \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}tta\_\allowbreak{}\allowbreak{}dia\allowbreak{}g.\allowbreak{}py} \textbf{Dataset:} CIC-IDS2017 (\texttt{data/\allowbreak{}\allowbreak{}cic\allowbreak{}2017\_\allowbreak{}\allowbreak{}pro\allowbreak{}c.\allowbreak{}pkl}) \textbf{Results:} \texttt{results/\allowbreak{}\allowbreak{}20260529\allowbreak{}\_\allowbreak{}\allowbreak{}075206/\allowbreak{}\allowbreak{}}
+
+
+\medskip\hrule\medskip
+\subsection{1. 배경 및 목적}
+기존 MoE(Mixture-of-Experts) 접근에서 핵심 미해결 문제는 \textbf{라우팅 실패}다. 전문가(expert) 모델 자체의 품질이 충분하더라도, 테스트 시점에 올바른 전문가를 선택하는 라우터가 작동하지 않으면 앙상블 성능이 단일 XGBoost 베이스라인보다 오히려 낮아진다.
+
+\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}diag.\allowbreak{}py\allowbreak{}}는 이 실패의 메커니즘을 세 가지 증거(A/\allowbreak{}B/\allowbreak{}C)와 노이즈 민감도 스윕(D)으로 정량화한 진단 실험이다. 핵심 가설: \textbf{JS 기반 TTA(Test-Time Augmentation) 안정성 점수는 owning expert와 non-owning expert를 구별하지 못한다.}
+
+
+\medskip\hrule\medskip
+\subsection{2. 실험 설정}
+\subsubsection{2.1 데이터 및 분할}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.41071\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.58929\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 값 \\ \midrule
+\endfirsthead
+항목 & 값 \\ \midrule
+\endhead
+{}전체 샘플 수 & 2,829,385 \\
+{}특성 수 & 70 \\
+{}클래스 수 & 15 \\
+{}Train /\allowbreak{} Val /\allowbreak{} Test & 1,697,631 /\allowbreak{} 565,877 /\allowbreak{} 565,877 (60/\allowbreak{}20/\allowbreak{}20, stratified) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{2.2 전문가 파티션 (6 experts)}
+클래스를 공격 유형별로 배타적으로 분할한다. 희귀 클래스(IR \ensuremath{\geq} 5,000)는 자동으로 Tail 전문가에 할당된다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.35417\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.64583\linewidth-2\tabcolsep\relax}}
+\toprule
+Expert & 담당 클래스 \\ \midrule
+\endfirsthead
+Expert & 담당 클래스 \\ \midrule
+\endhead
+{}Benign & benign \\
+{}DoS & dos-goldeneye, dos-hulk, dos-slowhttptest, dos-slowloris \\
+{}DDoS\_\allowbreak{}Scan & ddos, portscan \\
+{}BruteForce & ftp-patator, ssh-patator \\
+{}WebBot & bot, web-attack-brute-force, web-attack-xss \\
+{}Tail & heartbleed, infiltration, web-attack-sql-injection \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{2.3 TTA 방식: JS-Stability Weighting}
+각 전문가의 예측 안정성을 Jensen-Shannon divergence로 측정한다.
+
+
+\[
+\text{stability}_{e,i} = \frac{1}{1 + \frac{1}{V}\sum_{v=1}^{V} \text{JSD}(p_e(x_i) \| p_e(x_i^{(v)}))}
+\]
+여기서 \(x_i^{(v)}\)는 Gaussian 노이즈(\(\sigma = 0.1 \times \text{col\_std}\))를 추가한 augmented view, \(V=5\)다. 안정성 점수를 정규화하여 전문가 선택 가중치로 사용한다.
+
+\textbf{Oracle routing (상한):} 진짜 클래스 레이블로 owning expert를 직접 선택 — 라우팅이 완벽한 경우의 성능 상한.
+
+
+\medskip\hrule\medskip
+\subsection{3. 결과}
+\subsubsection{3.1 (A) 성능 비교}
+\textbf{Macro F1 (테스트셋 전체)}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.61207\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.38793\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & Macro F1 \\ \midrule
+\endfirsthead
+방법 & Macro F1 \\ \midrule
+\endhead
+{}Baseline (단일 XGBoost) & \textbf{0.8737} \\
+{}Oracle routing (상한) & 0.9507 \\
+{}JS-TTA routing & 0.2935 \\
+\bottomrule
+\end{longtable}
+\endgroup
+Oracle−TTA 갭 =\allowbreak{} \textbf{0.6573}. Oracle은 베이스라인을 크게 상회하므로 전문가 품질 자체는 양호하다. TTA 라우팅이 사실상 작동하지 않는다는 것이 핵심 결론이다.
+
+\textbf{클래스별 F1 (지지도 내림차순)}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15667\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13667\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16333\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 지지도 & F1 (Baseline) & F1 (Oracle) & F1 (TTA) & Oracle−TTA 갭 \\ \midrule
+\endfirsthead
+클래스 & 지지도 & F1 (Baseline) & F1 (Oracle) & F1 (TTA) & Oracle−TTA 갭 \\ \midrule
+\endhead
+{}benign & 454,537 & 0.9993 & 1.0000 & 0.9696 & 0.0304 \\
+{}dos-hulk & 46,025 & 0.9986 & 0.9997 & 0.4314 & 0.5684 \\
+{}portscan & 31,786 & 0.9966 & 1.0000 & 0.2343 & 0.7657 \\
+{}ddos & 25,606 & 0.9996 & 1.0000 & 0.3794 & 0.6206 \\
+{}dos-goldeneye & 2,059 & 0.9894 & 0.9930 & 0.6585 & 0.3345 \\
+{}ftp-patator & 1,588 & 0.9994 & 0.9997 & 0.3401 & 0.6596 \\
+{}ssh-patator & 1,179 & 0.9996 & 0.9996 & 0.0095 & 0.9901 \\
+{}dos-slowloris & 1,159 & 0.9889 & 0.9944 & 0.3710 & 0.6234 \\
+{}dos-slowhttptest & 1,100 & 0.9873 & 0.9932 & 0.2972 & 0.6960 \\
+{}bot & 393 & 0.7907 & 1.0000 & 0.0032 & 0.9968 \\
+{}web-attack-brute-force & 302 & 0.7298 & 0.7330 & 0.0313 & 0.7017 \\
+{}web-attack-xss & 130 & 0.4430 & 0.5483 & 0.0000 & 0.5483 \\
+{}infiltration & 7 & 0.9333 & 1.0000 & 0.0097 & 0.9903 \\
+{}web-attack-sql-injection & 4 & 0.2500 & 1.0000 & 0.0002 & 0.9998 \\
+{}heartbleed & 2 & 1.0000 & 1.0000 & 0.6667 & 0.3333 \\
+\bottomrule
+\end{longtable}
+\endgroup
+benign을 제외한 전 클래스에서 TTA가 Oracle보다 대폭 낮다. 특히 ssh-patator(0.0095), bot(0.0032), infiltration(0.0097), web-attack-sql-injection(0.0002)는 거의 0에 수렴한다.
+
+
+\medskip\hrule\medskip
+\subsubsection{3.2 (B) 전문가 행동 분석}
+대표 클래스(파티션별 최다 지지 클래스)에 대해 각 전문가의 예측 및 안정성을 측정했다.
+
+\textbf{핵심 관찰:} non-owning expert는 틀린 클래스를 예측하면서도 owning expert와 거의 동일한 confidence와 stability를 보인다.
+
+\textbf{예시 — True class: \texttt{benign} (n=\allowbreak{}454,537)}
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11932\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10227\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19886\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10227\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13636\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10795\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11364\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11932\linewidth-2\tabcolsep\relax}}
+\toprule
+Expert & 소유 여부 & pred(x) & conf(x) & pred(x') & conf(x') & stability & TTA weight \\ \midrule
+\endfirsthead
+Expert & 소유 여부 & pred(x) & conf(x) & pred(x') & conf(x') & stability & TTA weight \\ \midrule
+\endhead
+{}Benign & [확인] & benign & 0.9989 & benign & 0.9901 & \textbf{0.9957} & 0.1970 \\
+{}DoS & [제외] & dos-slowloris & 0.8160 & dos-goldeneye & 0.7220 & 0.7658 & 0.1513 \\
+{}DDoS\_\allowbreak{}Scan & [제외] & portscan & 0.9929 & portscan & 0.9802 & 0.7688 & 0.1516 \\
+{}BruteForce & [제외] & ssh-patator & 0.9972 & ssh-patator & 0.9981 & 0.8191 & 0.1613 \\
+{}WebBot & [제외] & bot & 0.8172 & bot & 0.8076 & 0.8421 & 0.1660 \\
+{}Tail & [제외] & web-attack-sql-injection & 0.7313 & infiltration & 0.6972 & 0.8749 & 0.1728 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+owning expert(Benign)의 TTA weight는 0.1970이고 non-owning expert(예: Tail)는 0.1728로 차이가 미미하다. 심지어 일부 non-owning expert의 stability가 owning expert보다 높다.
+
+\textbf{예시 — True class: \texttt{portscan\allowbreak{}} (n=\allowbreak{}31,786)}
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11301\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09785\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18371\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09785\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18371\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10290\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10795\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11301\linewidth-2\tabcolsep\relax}}
+\toprule
+Expert & 소유 여부 & pred(x) & conf(x) & pred(x') & conf(x') & stability & TTA weight \\ \midrule
+\endfirsthead
+Expert & 소유 여부 & pred(x) & conf(x) & pred(x') & conf(x') & stability & TTA weight \\ \midrule
+\endhead
+{}Benign & [제외] & benign & 0.9981 & benign & 0.9762 & 0.6080 & 0.1240 \\
+{}DoS & [제외] & dos-slowloris & 0.9481 & dos-goldeneye & 0.7387 & 0.7546 & 0.1537 \\
+{}DDoS\_\allowbreak{}Scan & [확인] & portscan & 1.0000 & portscan & 0.9449 & 0.8305 & 0.1690 \\
+{}BruteForce & [제외] & ssh-patator & 0.9984 & ssh-patator & 0.9984 & \textbf{0.9341} & \textbf{0.1898} \\
+{}WebBot & [제외] & bot & 0.9081 & bot & 0.8575 & 0.9015 & 0.1833 \\
+{}Tail & [제외] & web-attack-sql-injection & 0.6971 & web-attack-sql-injection & 0.6803 & 0.8845 & 0.1801 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+portscan에서 BruteForce expert(stability=\allowbreak{}0.9341)가 owning expert인 DDoS\_\allowbreak{}Scan(0.8305)보다 더 안정적이다. TTA가 오히려 틀린 전문가에 더 높은 가중치를 부여한다.
+
+
+\medskip\hrule\medskip
+\subsubsection{3.3 (C) 안정성 갭 분포}
+Per-sample Δ =\allowbreak{} stability(owner) − max(stability(non-owners))를 계산했다.
+
+\textbf{글로벌 통계}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.56579\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.43421\linewidth-2\tabcolsep\relax}}
+\toprule
+지표 & 값 \\ \midrule
+\endfirsthead
+지표 & 값 \\ \midrule
+\endhead
+{}글로벌 평균 Δ & \textbf{+\allowbreak{}0.0367} \\
+{}Δ < 0인 샘플 비율 & \textbf{28.9\%} \\
+\bottomrule
+\end{longtable}
+\endgroup
+평균 Δ가 0에 매우 근접하며, 전체 샘플의 29\%에서는 non-owning expert가 owning expert보다 더 안정적이다.
+
+\textbf{클래스별 평균 Δ}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30690\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16034\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16034\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18621\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18621\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 지지도 & 평균 Δ & Δ<0 비율(\%) & Owner \\ \midrule
+\endfirsthead
+클래스 & 지지도 & 평균 Δ & Δ<0 비율(\%) & Owner \\ \midrule
+\endhead
+{}benign & 454,537 & +\allowbreak{}0.0772 & 13.7 & Benign \\
+{}dos-hulk & 46,025 & −0.1106 & 89.3 & DoS \\
+{}portscan & 31,786 & −0.1314 & 91.2 & DDoS\_\allowbreak{}Scan \\
+{}ddos & 25,606 & −0.1707 & 97.6 & DDoS\_\allowbreak{}Scan \\
+{}dos-goldeneye & 2,059 & −0.0279 & 59.1 & DoS \\
+{}ftp-patator & 1,588 & −0.1162 & 89.0 & BruteForce \\
+{}ssh-patator & 1,179 & −0.1075 & 80.3 & BruteForce \\
+{}dos-slowloris & 1,159 & −0.0935 & 77.3 & DoS \\
+{}dos-slowhttptest & 1,100 & −0.1200 & 90.5 & DoS \\
+{}bot & 393 & −0.0499 & 98.7 & WebBot \\
+{}web-attack-brute-force & 302 & −0.0915 & 94.7 & WebBot \\
+{}web-attack-xss & 130 & −0.1149 & 94.6 & WebBot \\
+{}infiltration & 7 & −0.0526 & 85.7 & Tail \\
+{}web-attack-sql-injection & 4 & −0.0836 & 100.0 & Tail \\
+{}heartbleed & 2 & −0.0331 & 100.0 & Tail \\
+\bottomrule
+\end{longtable}
+\endgroup
+benign(+\allowbreak{}0.0772)을 제외한 \textbf{14개 클래스 모두 평균 Δ < 0}, 즉 TTA가 평균적으로 틀린 전문가를 선호한다. ddos는 97.6\%, bot은 98.7\%, web-attack-sql-injection은 100\%의 샘플에서 non-owning expert가 더 안정적이다.
+
+
+\medskip\hrule\medskip
+\subsubsection{3.4 (D) 노이즈 민감도 스윕}
+Gaussian 노이즈(σ 스케일 0.01\textasciitilde{}2.00)와 마스킹(p\_\allowbreak{}mask 0.05\textasciitilde{}0.70) 두 가지 perturbation을 10회씩 반복하여 각 레벨에서의 평균 flip rate를 측정했다.
+
+\textbf{Gaussian 노이즈 – 평균 flip rate}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.46739\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.53261\linewidth-2\tabcolsep\relax}}
+\toprule
+noise\_\allowbreak{}std & avg flip rate \\ \midrule
+\endfirsthead
+noise\_\allowbreak{}std & avg flip rate \\ \midrule
+\endhead
+{}0.01 & 0.3341 \\
+{}0.05 & 0.3949 \\
+{}0.10 & 0.4118 \\
+{}0.20 & 0.4249 \\
+{}0.50 & 0.4403 \\
+{}1.00 & 0.4537 \\
+{}2.00 & 0.4647 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{마스킹 – 평균 flip rate}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.42500\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.57500\linewidth-2\tabcolsep\relax}}
+\toprule
+p\_\allowbreak{}mask & avg flip rate \\ \midrule
+\endfirsthead
+p\_\allowbreak{}mask & avg flip rate \\ \midrule
+\endhead
+{}0.05 & 0.0419 \\
+{}0.10 & 0.0787 \\
+{}0.20 & 0.1439 \\
+{}0.30 & 0.2026 \\
+{}0.50 & 0.3057 \\
+{}0.70 & 0.3841 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{관찰:} Gaussian 노이즈는 매우 작은 σ=\allowbreak{}0.01에서도 flip rate가 0.33을 초과한다. 이는 모든 전문가가 perturbation에 함께 불안정해지며, 안정성 차이(Δ)가 노이즈 수준에 관계없이 일정하게 낮다는 것을 의미한다. 마스킹은 낮은 p\_\allowbreak{}mask에서 flip rate가 작지만, 이 경우 모든 전문가가 동시에 안정적이라 Δ가 여전히 0에 수렴한다.
+
+
+\medskip\hrule\medskip
+\subsection{4. 실패 메커니즘 해석}
+\subsubsection{4.1 구조적 원인: Partition-Agnostic Feature Space}
+CIC-IDS2017의 70개 특성은 공격 유형을 구분하도록 설계된 것이 아니다. Benign 트래픽과 공격 트래픽을 구분하는 특성들이 대부분이며, 공격 유형 간 특성 분포가 크게 겹친다. 따라서:
+
+\par\noindent \textbullet\enspace 배타적 파티션 전문가들은 자신의 파티션 데이터로만 학습했음에도, \textbf{다른 파티션 데이터에도 높은 confidence로 예측}한다 (틀리지만 자신감 있게).
+
+
+\par\noindent \textbullet\enspace 전문가가 OOD(Out-of-Distribution) 입력을 받을 때 confidence를 낮추지 않는다.
+
+
+\subsubsection{4.2 TTA의 전제 조건 미충족}
+JS-stability 기반 TTA는 다음 전제를 가정한다:
+
+"owning expert는 자신의 클래스에 안정적이고, non-owning expert는 불안정하다."
+
+
+
+그러나 실제로:
+
+\par\noindent \textbullet\enspace Non-owning expert는 OOD 입력에서 \textbf{틀린 클래스를 일관되게} 예측한다 (높은 stability).
+
+
+\par\noindent \textbullet\enspace Owning expert는 augmented view에서 예측이 흔들리는 경우가 있다 (낮은 stability).
+
+
+\par\noindent \textbullet\enspace 결과적으로 stability \ensuremath{\approx} 1/\allowbreak{}E (균등 가중치)로 수렴하여 라우팅이 사실상 랜덤이 된다.
+
+
+\subsubsection{4.3 XGBoost의 특성}
+XGBoost는 트리 기반 모델로, 특성 공간을 hard region으로 분할한다. 한 파티션으로 학습한 모델이 다른 파티션 샘플에 대해 낮은 confidence를 보이려면, 해당 파티션 샘플이 학습 시 본 leaf node에 매핑되지 않아야 한다. 그러나 CIC-IDS2017의 특성 분포가 겹치기 때문에 이 조건이 충족되지 않는다.
+
+
+\medskip\hrule\medskip
+\subsection{5. 결론}
+\texttt{code\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}diag.\allowbreak{}py\allowbreak{}}의 세 가지 증거는 같은 결론을 가리킨다:
+
+\textbf{TTA 기반 stability 점수는 exclusive-partition MoE에서 owning expert를 신뢰성 있게 식별하지 못한다. 이는 전문가 품질의 문제가 아니라, non-owning expert가 OOD 입력에서 높은 confidence를 유지하는 XGBoost의 특성에서 기인한다.}
+
+
+
+\par\noindent \textbullet\enspace Oracle routing의 Macro F1(0.9507)이 베이스라인(0.8737)을 크게 상회하므로, \textbf{전문가 모델 자체는 충분히 유효}하다.
+
+
+\par\noindent \textbullet\enspace 라우팅만 해결되면 MoE가 베이스라인을 이길 수 있다.
+
+
+\par\noindent \textbullet\enspace 따라서 다음 연구 방향은 stability 기반 라우팅 대신, \textbf{학습 기반 라우터} (예: 클래스 소속 확률을 직접 예측하는 메타-분류기)나 \textbf{Gating Network}를 사용하는 방향이 합리적이다.
+
+
+
+\medskip\hrule\medskip
+\subsection{6. 산출물}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.50000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.50000\linewidth-2\tabcolsep\relax}}
+\toprule
+파일 & 내용 \\ \midrule
+\endfirsthead
+파일 & 내용 \\ \midrule
+\endhead
+{}\texttt{A\_\allowbreak{}\allowbreak{}f1\_\allowbreak{}\allowbreak{}com\allowbreak{}parison.\allowbreak{}png} /\allowbreak{} \texttt{.\allowbreak{}csv} & Baseline /\allowbreak{} Oracle /\allowbreak{} TTA F1 클래스별 비교 \\
+{}\texttt{B\_\allowbreak{}\allowbreak{}expert\allowbreak{}\_\allowbreak{}\allowbreak{}behavio\allowbreak{}r.\allowbreak{}png} /\allowbreak{} \texttt{.\allowbreak{}csv} & 대표 클래스별 전문가 행동 테이블 (x, x' 예측·confidence·안정성) \\
+{}\texttt{C\_\allowbreak{}\allowbreak{}stabil\allowbreak{}ity\_\allowbreak{}\allowbreak{}gap.\allowbreak{}png} /\allowbreak{} \texttt{.\allowbreak{}csv} & Δ 분포 히스토그램 및 클래스별 평균 Δ \\
+{}\texttt{D\_\allowbreak{}\allowbreak{}sweep\_\allowbreak{}\allowbreak{}gaussian\allowbreak{}.\allowbreak{}png} /\allowbreak{} \texttt{D\_\allowbreak{}\allowbreak{}sweep\_\allowbreak{}\allowbreak{}mask.\allowbreak{}png\allowbreak{}} & 노이즈 수준별 전문가 행동 스윕 테이블 \\
+{}\texttt{D\_\allowbreak{}\allowbreak{}noise\_\allowbreak{}\allowbreak{}sweep.\allowbreak{}cs\allowbreak{}v} & 스윕 전체 수치 \\
+{}\texttt{B\_\allowbreak{}\allowbreak{}sweep\_\allowbreak{}\allowbreak{}gaussian\allowbreak{}\_\allowbreak{}\allowbreak{}*.\allowbreak{}png} /\allowbreak{} \texttt{B\_\allowbreak{}\allowbreak{}sweep\_\allowbreak{}\allowbreak{}mask\_\allowbreak{}\allowbreak{}*.\allowbreak{}p\allowbreak{}ng} & 각 노이즈 레벨별 상세 행동 테이블 \\
+\bottomrule
+\end{longtable}
+\endgroup
+결과 경로: \texttt{results/\allowbreak{}\allowbreak{}20260529\allowbreak{}\_\allowbreak{}\allowbreak{}075206/\allowbreak{}\allowbreak{}}
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

@@ -1,0 +1,776 @@
+% !TeX root = 20260826.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-26}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-26 · 2026-08-26}
+\label{report:20260826_0826}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\subsection{§1. EXP22C 사전 등록 — 원노브(패키지): specialist-context 구성층 교체 (guide Phase 1) (결과 전 고정)}
+사용자 지시: "guide.md(RACE-PFN\_\allowbreak{}RESEARCH\_\allowbreak{}IMPLEMENTATION\_\allowbreak{}GUIDE.md) 읽고 exp22b에 대해 코드 수정." 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp22c\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}co\allowbreak{}ntext.\allowbreak{}py\allowbreak{}} (exp22b 사본; 기존 파일 무수정 — exp22b는 기록 run \texttt{20260825\allowbreak{}\_\allowbreak{}\allowbreak{}174233} 보유).
+
+\textbf{공격 대상}: 0825.md §6의 hard-attack 클론 — TopB \texttt{s=\allowbreak{}\allowbreak{}r·exp(\allowbreak{}−d²/\allowbreak{}\allowbreak{}τ)}에서 r 6자릿수 vs 근접성 1.7자릿수  \ensuremath{\rightarrow}  4개 block이 동일 고-r 행으로 수렴(brute 57,189 전량 공유), router 타깃 94\% e2 쏠림, web F1 .1649 \ensuremath{\rightarrow} .0634 (wrong \ensuremath{\rightarrow} wrong FP 7,640). guide §11.2/\allowbreak{}§18/\allowbreak{}§19 Phase-1/\allowbreak{}§26이 정확히 이 관찰을 다음 설계로 지정: \textbf{router 이전에 expert complementarity}.
+
+\textbf{원노브 =\allowbreak{} 선언된 패키지 5부} (guide가 Phase 1로 묶은 단위; CLAUDE.md "두 knob이 필요하면 로그에 명시" 조항에 따라 패키지로 선언):
+
+\par\noindent \textbullet\enspace \textbf{residual clip} (guide §8): \texttt{r̄=\allowbreak{}\allowbreak{}min(r\allowbreak{},\allowbreak{} quanti\allowbreak{}le(r,\allowbreak{} -\allowbreak{}-\allowbreak{}residual\allowbreak{}-\allowbreak{}clip-\allowbreak{}q=\allowbreak{}\allowbreak{}0.\allowbreak{}995))} — 클러스터링·선택 가중치와 signature의 severity 블록에만 적용. Δ(advantage) 타깃은 비클립 유지(verifier층은 이번 knob 밖).
+
+
+\par\noindent \textbullet\enspace \textbf{full residual signature} (guide §9): \texttt{e=\allowbreak{}\allowbreak{}[std(z\allowbreak{}) | α\_\allowbreak{}\allowbreak{}p·\allowbreak{}std(p0) \allowbreak{}| α\_\allowbreak{}\allowbreak{}e·st\allowbreak{}d(onehot\allowbreak{}(y)−p0) \allowbreak{}| α\_\allowbreak{}\allowbreak{}r·st\allowbreak{}d(log1p(\allowbreak{}r̄))]}, 블록별 개별 표준화 후 α/\allowbreak{}√dim 스케일(α=\allowbreak{}1이면 블록 기여 균등). 표준화 통계는 D\_\allowbreak{}mine에서 fit.
+
+
+\par\noindent \textbullet\enspace \textbf{r̄-가중 k-means를 e-공간에서} (기존: z만, 비클립 r).
+
+
+\par\noindent \textbullet\enspace \textbf{hard regime assignment} (guide §11.2 =\allowbreak{} 0825 §6 후보 c-1): S\_\allowbreak{}k는 R\_\allowbreak{}k=\allowbreak{}\{argmin d=\allowbreak{}k\}에서만 — 클론을 구성적으로 차단(블록 간 Jaccard=\allowbreak{}0 보장).
+
+
+\par\noindent \textbullet\enspace \textbf{regime 내 diversity-aware 선택} (guide §11.2 weighted k-center 근사): r̄-가중 MiniBatchKMeans(\texttt{-\allowbreak{}-\allowbreak{}divers\allowbreak{}ity-\allowbreak{}subc\allowbreak{}lusters=\allowbreak{}\allowbreak{}2048}) cell이 coverage 정의, 예산은 r̄-질량 비례 largest-remainder(비어있지 않은 cell \ensuremath{\geq}1, 크기 상한), cell 내 top-r̄. TopB·\texttt{-\allowbreak{}-\allowbreak{}tau-\allowbreak{}c} 완전 제거.
+
+
+\par\noindent \textbullet\enspace guide §11 필수 다양성 진단 상시 기록: 2b 블록 Jaccard · 3c expert 예측 일치도 · 3d gain 상관 · 3e positive-gain coverage (+\allowbreak{} quality에 block\_\allowbreak{}jaccard\_\allowbreak{}max/\allowbreak{}gain\_\allowbreak{}corr\_\allowbreak{}max).
+
+
+\textbf{구조적 파급 명시}: ① 라벨 의존 블록(confusion·severity)은 D\_\allowbreak{}mine에만 존재  \ensuremath{\rightarrow}  router/\allowbreak{}eval의 d\_\allowbreak{}k는 관측가능 접두 \texttt{[std(z)|\allowbreak{}α\_\allowbreak{}\allowbreak{}p·std(\allowbreak{}p0)]} vs \texttt{mu[:,\allowbreak{} :o\allowbreak{}bs\_\allowbreak{}\allowbreak{}dim]} (guide §15 pre-call 특징은 호출 전 계산 가능해야 함; h\_\allowbreak{}pre/\allowbreak{}h\_\allowbreak{}post 형상 불변). ② centroid는 full signature 공간(관례상 mu 저장은 full, obs\_\allowbreak{}dim을 dump에 기록). ③ 패키지 내 ablation 경로: \texttt{-\allowbreak{}-\allowbreak{}divers\allowbreak{}ity-\allowbreak{}subc\allowbreak{}lusters \allowbreak{}1} =\allowbreak{} c-1 단독(hard+\allowbreak{}top-r̄), \texttt{-\allowbreak{}-\allowbreak{}sig-\allowbreak{}al\allowbreak{}pha-\allowbreak{}* 0} =\allowbreak{} z-only signature, \texttt{-\allowbreak{}-\allowbreak{}residu\allowbreak{}al-\allowbreak{}clip-\allowbreak{}q 1.\allowbreak{}0} =\allowbreak{} 클립 해제.
+
+\textbf{변경 없음(exp22b와 동일)}: pool 분할·w\_\allowbreak{}bal(γ=\allowbreak{}1)·K=\allowbreak{}4·anchor·φ(embed\_\allowbreak{}pca, 기록 세팅 동결)·advantage 정의·router·verifier·결정 규칙·embed\_\allowbreak{}pca memorized-row confound 선언. \textbf{잔존 예상 균열(사전 등록)}: verifier Δ-회귀 붕괴(γ=\allowbreak{}1 스케일), positive-advantage \textasciitilde{}93\% anchor 구조, prior correction(Phase 2), shared utility scorer(Phase 3), quantile verifier+\allowbreak{}보정(Phase 4), 6-way split(Phase 0) — 전부 후속 knob으로 이연.
+
+\textbf{판정 기준(고정)}: 같은-run 튜플 vs exp22b \texttt{20260825\allowbreak{}\_\allowbreak{}\allowbreak{}174233} (system 0.7084 /\allowbreak{} global 0.6700 /\allowbreak{} XGB 0.7548 /\allowbreak{} oracle 0.8255). 관심: ① 블록 클론 소멸(2a 조성 차별화 +\allowbreak{} 2b Jaccard=\allowbreak{}0 +\allowbreak{} 3c/\allowbreak{}3d 비중복 증거), ② router 타깃 쏠림 완화(3b), ③ web wrong \ensuremath{\rightarrow} wrong FP 감소 여부(6b +\allowbreak{} per-class web), ④ \textbf{oracle macro 유지/\allowbreak{}상승 =\allowbreak{} guide Gate-1 complementarity 판정} — oracle이 안 오르면 다음도 context 구성층이지 router가 아님.
+
+검증: py\_\allowbreak{}compile +\allowbreak{} 신규 헬퍼(signature/\allowbreak{}할당/\allowbreak{}선택) 합성 단위테스트 통과, 3-렌즈 다중에이전트 리뷰(guide 충실성/\allowbreak{}정합성·누수/\allowbreak{}원노브 순수성) 수행 — 결과는 §1 보강에 기록. 실행 예정: capped 스모크  \ensuremath{\rightarrow}  uncapped cic2018 기록 run (\texttt{-\allowbreak{}-\allowbreak{}dense-\allowbreak{}eval}).
+
+\subsubsection{§1 보강 — 3-렌즈 리뷰 결과 및 수정 (기록 run 전 적용)}
+\textbf{정합성·누수 렌즈 PASS} (라벨 블록의 test-time 경로 유입 없음, observable prefix =\allowbreak{} full 접두 일치 단위테스트로 확인, 시간순서 위반 없음). 확정 minor 2건  \ensuremath{\rightarrow}  즉시 수정:
+
+\par\noindent \textbullet\enspace \texttt{SEED\_\allowbreak{}\allowbreak{}BAN\allowbreak{}D\_\allowbreak{}\allowbreak{}DIVERS\allowbreak{}ITY=\allowbreak{}\allowbreak{}2000\allowbreak{}}이 \texttt{cap\_\allowbreak{}\allowbreak{}per\_\allowbreak{}\allowbreak{}class}의 내부 \texttt{+\allowbreak{}\allowbreak{}500+\allowbreak{}\allowbreak{}i} 탓에 ROUTER\_\allowbreak{}CAP(1500) 실효 범위 2000+\allowbreak{}i와 충돌  \ensuremath{\rightarrow}  \textbf{2100으로 이동}, 밴드 주석에 위험 각주 복원.
+
+
+\par\noindent \textbullet\enspace \texttt{diversit\allowbreak{}y\_\allowbreak{}\allowbreak{}select\allowbreak{}}의 MiniBatchKMeans \texttt{n\_\allowbreak{}\allowbreak{}init=\allowbreak{}\allowbreak{}3\allowbreak{}}/\allowbreak{}\texttt{batch\_\allowbreak{}\allowbreak{}si\allowbreak{}ze=\allowbreak{}\allowbreak{}10000\allowbreak{}} 하드코딩 — "모든 하이퍼는 argparse  \ensuremath{\rightarrow}  Args 덤프" 관례 위반  \ensuremath{\rightarrow}  \texttt{-\allowbreak{}-\allowbreak{}divers\allowbreak{}ity-\allowbreak{}n-\allowbreak{}in\allowbreak{}it}/\allowbreak{} \texttt{-\allowbreak{}-\allowbreak{}divers\allowbreak{}ity-\allowbreak{}batc\allowbreak{}h-\allowbreak{}size} 신설(기본값 동일, 동작 불변).
+
+
+기각 2건(수치 검증 후): ① cell 내 top-r̄ 선택이 §11.2의 named 근사가 아니라는 주장 — 사전 등록된 설계이며 r̄-가중 MiniBatchKMeans+\allowbreak{}cell-floor가 §11.2 목적식의 유효 근사(정확 k-medoids는 n\textasciitilde{}500k·B\_\allowbreak{}S=\allowbreak{}186k에서 계산 불가); coverage는 2048-cell 해상도로 보장, \texttt{-\allowbreak{}-\allowbreak{}divers\allowbreak{}ity-\allowbreak{}subc\allowbreak{}lusters} 상향이 medoid-형 선택으로 수렴하는 후속 knob 경로. ② regime < budget 시 등예산 위반 — |R\_\allowbreak{}k|<B\_\allowbreak{}S면 §11.2 제약집합 자체가 공집합(guide 내부 모순 코너), truncation이 hard-assignment를 보존하는 유일해이고 2a에 regime\_\allowbreak{}rows/\allowbreak{}block\_\allowbreak{}rows로 전량 기록됨.
+
+\subsubsection{§1 보강-2 — guide §20+\allowbreak{} per-run 기록 확장 (사용자 지적 "20번부터도 지켰나"  \ensuremath{\rightarrow}  측정-전용 패치, 기록 run 전 적용)}
+감사 결과 §20 이후는 부분 충족이었음  \ensuremath{\rightarrow}  \textbf{시스템 예측/\allowbreak{}기존 산출물 수치에 영향 없는 측정-전용 확장}을 적용 (원노브는 여전히 context 구성층뿐):
+
+\par\noindent \textbullet\enspace \textbf{§22}: 6c 클래스별 4-way correctness transition (wrong \ensuremath{\rightarrow} wrong +\allowbreak{} changed 가시화 — exp22b web FP 회계가 수작업이던 항목), 6d predicted-class FP/\allowbreak{}TP 회계(net correction이 못 보는 경로), 5b 클래스별 activation, 6a에 rejected/\allowbreak{}wasted call 수·율, mean realized gain(calls/\allowbreak{}overrides), override\_\allowbreak{}among\_\allowbreak{}calls, benign\_\allowbreak{}harmful\_\allowbreak{}override, positive-adv proposal precision(+\allowbreak{}기존 recall), loss-기반 oracle\_\allowbreak{}utility\_\allowbreak{}recovery. 4b에 verifier false\_\allowbreak{}accept/\allowbreak{}false\_\allowbreak{}reject. 전 지표 절대 행 수 동반.
+
+
+\par\noindent \textbullet\enspace \textbf{§20.2 guardrails}: 6e — balanced accuracy·benign FPR·macro-AUPRC· ECE(15-bin)를 system/\allowbreak{}global/\allowbreak{}XGB 3자 비교 (system posterior는 수락 행에 expert proba를 대입해 조립, \texttt{probs\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}sy\allowbreak{}stem.\allowbreak{}npz\allowbreak{}}로 저장; XGB는 predict\_\allowbreak{}proba 경로로 전환 — argmax 동일).
+
+
+\par\noindent \textbullet\enspace \textbf{§20.1/\allowbreak{}§24 Gate-1 대조군}: \texttt{-\allowbreak{}-\allowbreak{}feasib\allowbreak{}ility-\allowbreak{}ba\allowbreak{}nks rand\allowbreak{}om,\allowbreak{}proxi\allowbreak{}mity}(기본 on, dense-eval 시) — 등메모리 random bank·feature-only proximity bank K개씩 fit 후 dense-oracle 열로만 보고(oracle\_\allowbreak{}random\_\allowbreak{}bank/\allowbreak{}oracle\_\allowbreak{}proximity\_\allowbreak{}bank). Gate-1 판정 "residual expert oracle이 random/\allowbreak{}proximity보다 명확히 좋음"을 같은 run 안에서 판정 가능. 비용: bank당 K fit +\allowbreak{} K dense pass.
+
+
+\par\noindent \textbullet\enspace \textbf{§23 필수 저장}: context\_\allowbreak{}rows.npz(C0·anchor·phi\_\allowbreak{}fit·mine·router·eval· expert/\allowbreak{}bank block 전 row ID), mining\_\allowbreak{}dump.npz(cluster membership·r·r̄), router\_\allowbreak{}gain.npz(offline Δ 행렬, \textbf{저장되는 float32 바이트의 sha256}을 timings에), env 레코드(패키지 버전·git commit·실행 cmd·GPU·CUDA·데이터 파일 path/\allowbreak{}size/\allowbreak{}mtime), §20.6 peak GPU memory. §25.2 split 간 row-content dup-hash overlap을 timings에 기록(index 비중복\ensuremath{\neq}content 비중복).
+
+
+\par\noindent \textbullet\enspace \textbf{2c} context class priors (C0/\allowbreak{}anchor/\allowbreak{}expert별) — §23 "context class priors".
+
+
+2차 리뷰(정합성 +\allowbreak{} §20–25 재감사): 확정 minor 3건 수정 — ① gain hash를 float64 메모리가 아닌 저장 float32 바이트로, ② benign 탐지에 'normal' alias (cic2017\_\allowbreak{}full) +\allowbreak{} 부재 시 로그, ③ §25.2 dup-hash overlap 블록 추가. 기각 1건 (wasted call은 §14 정의상 rejected call과 동일 범주). 유닛테스트 2종 통과.
+
+\textbf{의도적 범위 밖(이연, docstring에 명시)}: multi-seed CI(§23), IF sweep (§20.3), prior shift(§20.4), temporal refresh(§17/\allowbreak{}§20.5), batch-latency percentile(§20.6), baseline zoo(§21), verifier calibration curve(Phase 4).
+
+사용자 지시로 실행 개시: capped 스모크  \ensuremath{\rightarrow}  uncapped cic2018 기록 run (\texttt{-\allowbreak{}-\allowbreak{}dense-\allowbreak{}eval}, feasibility banks 포함). 결과는 §2에 기록 예정.
+
+\subsection{§2. EXP22C 스모크 결과 (run \texttt{20260826\allowbreak{}\_\allowbreak{}\allowbreak{}113339}, capped) — 인용 금지, 배선 확인용}
+exit 0, 신규 산출물 전 항목 생성(2b Jaccard 전부 0 — hard assignment 구조 보장 확인, 2c/\allowbreak{}3c/\allowbreak{}3d/\allowbreak{}3e/\allowbreak{}5b/\allowbreak{}6c/\allowbreak{}6d/\allowbreak{}6e/\allowbreak{}npz/\allowbreak{}dup-hash/\allowbreak{}env 전부 정상). 배선 판독: 클러스터가 클래스 구조 분리(c2\ensuremath{\approx}brute, c3=\allowbreak{}dos 순수, c0=\allowbreak{}dos+\allowbreak{}web, c1=\allowbreak{}혼합 대형), system macro 0.8681 vs global 0.7710 (+\allowbreak{}0.097, net +\allowbreak{}1,199, precision 0.9615, ρ 0.393). \textbf{Gate-1 대조 구도 작동}: dense\_\allowbreak{}oracle 0.9681 > random bank 0.8918 > proximity bank 0.8882 — residual 구성이 등메모리 대조군 상회(capped 참고). verifier는 사전 등록대로 여전히 붕괴(sign\_\allowbreak{}acc \textasciitilde{}0.17, FA 지배) — 수락률 보수성 (48\%)이 정밀도를 지탱. 신규 6c/\allowbreak{}6d 판독 예시: benign wrong \ensuremath{\rightarrow} wrong 757행, web FP Δ =\allowbreak{} −82 (이 스케일에선 web 손상 없음). 기록 run \texttt{-\allowbreak{}-\allowbreak{}dense-\allowbreak{}eval} (uncapped, banks 포함) 진행 중 — 결과는 §3.
+
+\subsection{§3. EXP22C 기록 run 결과 (run \texttt{20260826\allowbreak{}\_\allowbreak{}\allowbreak{}130310}, uncapped cic2018, test 4.02M) — \textbf{global +\allowbreak{}0.063 (exp22b 대비 상승폭 1.6배), XGB에 −0.012 근접, Gate-1 조건부 통과}}
+\textbf{판정 (같은-run 튜플)}: racepfn\_\allowbreak{}system macro \textbf{0.7428} — global 0.6800 \textbf{+\allowbreak{}0.0628} (exp22b +\allowbreak{}0.0384), XGB 0.7548 \textbf{−0.0120} (exp22b −0.046), oracle 0.8480 · gap recovery 0.374 (exp22b 0.247). net correction \textbf{+\allowbreak{}49,041} (helpful 57,565 /\allowbreak{} harmful 8,524, precision 0.871). ρ=\allowbreak{}0.6035·수락 0.5293  \ensuremath{\rightarrow}  TFM 호출 1.60회 — exp22b(1.23)보다 sparse 후퇴, 원인 후술. 비용 총 89.1분(banks 23.5분 포함; 시스템 자체 \textasciitilde{}66분 \ensuremath{\approx} exp22b 71분), peak GPU 19.47GB.
+
+\textbf{Gate-1 (§24, 이번 run의 본 질문)}: dense\_\allowbreak{}oracle \textbf{0.8480} > proximity\_\allowbreak{}bank 0.8328 (+\allowbreak{}0.015) > random\_\allowbreak{}bank \textbf{0.7726 (+\allowbreak{}0.075)}. 등메모리 random 대비 명확히 상회  \ensuremath{\rightarrow}  \textbf{residual 신호 실재 확정}. 단 feature-only proximity가 강력한 대조군 — inf에서만 결정적 격차(oracle 0.9627 vs prox 0.8522), web은 prox가 근소 우위(0.3035 vs 0.2795). 판정: Gate-1 조건부 통과, "residual만이 주는 정보"는 infiltration에 집중.
+
+\textbf{클론 소멸 확인 (knob 목적 달성)}: 2b Jaccard 전부 0(구조 보장), 1b 클러스터가 클래스-구조 분리: c0=\allowbreak{}dos+\allowbreak{}benign 9.5k · c1=\allowbreak{}inf 15.6k · c3=\allowbreak{}brute 17.6k · \textbf{c2=\allowbreak{}mega 1.96M(97.9\% 행, benign 1.74M 포함)}. weighted mass는 0.11/\allowbreak{}0.25/\allowbreak{}0.25/\allowbreak{}0.39로 균형 — r̄-가중이 의도대로 고잔차 포켓에 centroid 3개를 배정. 결과: regime 3개는 budget 미달 truncation(전량 사용), expert 3만 mega-regime 다양성 표본 186k =\allowbreak{} \textbf{준-global expert}.
+
+\textbf{web 회복 (exp22b 붕괴의 반전)}: .1652 \ensuremath{\rightarrow} \textbf{.1947} (exp22b는 .1649 \ensuremath{\rightarrow} .0634). 6d: web FP +\allowbreak{}1,325(2,079 \ensuremath{\rightarrow} 3,404), TP +\allowbreak{}189 — FP 증가가 exp22b(+\allowbreak{}7,640)의 1/\allowbreak{}6로 줄며 F1 순증. 6c의 web wrong \ensuremath{\rightarrow} wrong changed 7행뿐.
+
+\textbf{per-class (system vs global)}: brute .7246 \ensuremath{\rightarrow} \textbf{.8877} · dos .5323 \ensuremath{\rightarrow} \textbf{.7421} · inf .4120 \ensuremath{\rightarrow} .4433 · benign .9831 \ensuremath{\rightarrow} .9900 (\textbf{benign FPR .00321 \ensuremath{\rightarrow} .00205 개선}, benign harmful 1,603뿐) · ddos .9443 동결 — helpful 6,594 vs harmful 6,581 상쇄(e3 흔적). 6e guardrails: balanced acc .6718 \ensuremath{\rightarrow} \textbf{.7952 (XGB .7749 상회)}, macro-AUPRC .6480 \ensuremath{\rightarrow} .7205(XGB .7426 미달), ECE .0382 \ensuremath{\rightarrow} .0164(XGB .0055).
+
+\textbf{expert별 손익 (6b) — 다음 knob을 지목}: e4(brute) \textbf{+\allowbreak{}31,259}(prec .9958) · e1(dos) +\allowbreak{}13,683(.9929) · e2(inf) +\allowbreak{}6,075(.8887) · \textbf{e3(mega) −1,976 (prec .4232, 수락 1.86M)}. 유일한 음의 expert가 준-global e3이고, ρ 0.60의 대부분과 ddos 상쇄·harmful의 87\%가 e3 소행. router 타깃 쏠림은 완화(e1 172k/\allowbreak{}e4 89k/\allowbreak{}e3 66k/\allowbreak{}e2 16k vs exp22b 94\% e2).
+
+\textbf{사전 등록 균열 잔존 (예상대로)}: positive-advantage 87.6\%(anchor 구조), verifier 약함(sign\_\allowbreak{}acc .45–.76, pearson 음수, FR 15k–30k) — 단 e3 제외 override 정밀도 .89–.996으로 결정층은 작동. §25.2 dup-hash: eval 4.02M 중 2.00M이 xgb train과 content-중복(NetFlow 중복 특성 최초 정량 기록; index 분리는 유지되므로 프로토콜 위반 아님, 해석 시 참고).
+
+\textbf{다음 원노브 후보 (우선순위)}:
+
+\par\noindent \textbullet\enspace (a) \textbf{e3/\allowbreak{}mega-regime 처리} — K=\allowbreak{}8로 c2 분해, 또는 λ\_\allowbreak{}cost>0로 저Δ e3 호출 억제, 또는 §12 pruning(net 음수 expert 제거). 가장 직접적.
+
+
+\par\noindent \textbullet\enspace (b) γ<1 tempering 또는 클립 강화 — mega-regime의 benign 잔차 질량 축소.
+
+
+\par\noindent \textbullet\enspace (c) verifier ranking/\allowbreak{}quantile loss (Phase 4 선행) — FR 대량 회수.
+
+
+파일: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp22c\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}co\allowbreak{}ntext.\allowbreak{}py\allowbreak{}}, run: \texttt{results/\allowbreak{}\allowbreak{}20260826\allowbreak{}\_\allowbreak{}\allowbreak{}130310\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}exp\allowbreak{}22c\_\allowbreak{}\allowbreak{}race\allowbreak{}ctx} (신규 §20+\allowbreak{} 산출물 전 항목 포함), 스모크: \texttt{results/\allowbreak{}\allowbreak{}20260826\allowbreak{}\_\allowbreak{}\allowbreak{}113339\_\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}\_\allowbreak{}\allowbreak{}race\allowbreak{}ctx}.
+
+\subsection{§4. EXP23 사전 등록 — guide 정합화 패키지 (전체 md 재감사  \ensuremath{\rightarrow}  미반영 시스템 요소 일괄 구현) (결과 전 고정)}
+사용자 지시: "§18 같은 미반영 사항을 전체 md에서 감사해 exp23으로." 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp23\_\allowbreak{}\allowbreak{}rac\allowbreak{}epfn\_\allowbreak{}\allowbreak{}gui\allowbreak{}de.\allowbreak{}py} (exp22c 사본 기반; exp22c는 기록 run 보유로 무수정). \textbf{선언된 다중-knob 패키지} — 각 층은 grid/\allowbreak{}flag로 분해 가능:
+
+\par\noindent \textbullet\enspace \textbf{P0 §5 6-way split}: train \ensuremath{\rightarrow} D\_\allowbreak{}global/\allowbreak{}D\_\allowbreak{}expert/\allowbreak{}D\_\allowbreak{}route(50/\allowbreak{}25/\allowbreak{}25, exp22c 연속성) +\allowbreak{} \textbf{미사용이던 val}을 클래스별 시간순 40/\allowbreak{}60으로 D\_\allowbreak{}tune/\allowbreak{}D\_\allowbreak{}cal (pre-test 비율 \textasciitilde{}37/\allowbreak{}19/\allowbreak{}19/\allowbreak{}10/\allowbreak{}15 \ensuremath{\approx} guide 40/\allowbreak{}20/\allowbreak{}15/\allowbreak{}10/\allowbreak{}15; 시간순 train<val(tune<cal)<test 전 구간 보존). test=\allowbreak{}development holdout 명명. 0c manifest(행수·시간범위), §18 개명 D\_\allowbreak{}mine \ensuremath{\rightarrow} D\_\allowbreak{}expert(코드·CLI).
+
+
+\par\noindent \textbullet\enspace \textbf{P0+\allowbreak{} §5 중복 집행}: β/\allowbreak{}T·K·pruning은 C0/\allowbreak{}anchor/\allowbreak{}D\_\allowbreak{}expert와 content-중복인 tune 행 제외, 보정/\allowbreak{}threshold는 D\_\allowbreak{}route와 중복인 cal 행 제외(마스크 수 로그·클래스 공동화 시 fallback 기록). pairwise dup-hash 행렬 0d. source\_\allowbreak{}file/\allowbreak{}session 부재는 데이터 한계로 기록.
+
+
+\par\noindent \textbullet\enspace \textbf{P2 §7 prior correction}: 컨텍스트별 π̂(α=\allowbreak{}1 평활), π\_\allowbreak{}ref=\allowbreak{}D\_\allowbreak{}global 분포, z̃=\allowbreak{}log p+\allowbreak{}β(log π\_\allowbreak{}ref−log π̂), softmax(z̃/\allowbreak{}T); (β,T)는 D\_\allowbreak{}tune 균형 NLL grid \{0,.5,1\}×\{.8,1,1.25\} (β=\allowbreak{}0 행이 필수 ablation, 1c). global·expert 전체 적용.
+
+
+\par\noindent \textbullet\enspace \textbf{P2 §10 K 선택}: \texttt{-\allowbreak{}-\allowbreak{}k-\allowbreak{}cand\allowbreak{}idates 2\allowbreak{},\allowbreak{}4,\allowbreak{}8} bank별 tune oracle macro로 선택 (2d) — K=\allowbreak{}4 휴리스틱 제거.
+
+
+\par\noindent \textbullet\enspace \textbf{P2 §12 pruning}: tune positive-gain coverage<0.005 또는 marginal oracle macro\ensuremath{\leq}0.001인 expert 제거(2e), 최소 1개 보존, 제거분 캐시 즉시 해제.
+
+
+\par\noindent \textbullet\enspace \textbf{P3 §15 shared utility scorer}: (query,expert) pair 회귀, h\_\allowbreak{}pre에 descriptor q\_\allowbreak{}k=\allowbreak{}[log1p(block),mass,mean r̄,prior entropy,log1p(d²),cost] (K+\allowbreak{}1 hard router·onehot 폐지). 타깃 =\allowbreak{} \textbf{OOF realized policy utility} U=\allowbreak{}b\_\allowbreak{}OOF·G−λc (b\_\allowbreak{}OOF: D\_\allowbreak{}route 시간순 2-fold quantile verifier, wasted call 학습). τ\_\allowbreak{}pre는 D\_\allowbreak{}cal에서.
+
+
+\par\noindent \textbullet\enspace \textbf{P4 §14 verifier}: quantile 회귀(reg:quantileerror, α=\allowbreak{}0.25) — 타깃 \textbf{순수 G(비용 없음, §18 분리)}. D\_\allowbreak{}cal one-sided 보정 Q\_\allowbreak{}\{1−δ\}(q̂−G), δ=\allowbreak{}0.1. (τ\_\allowbreak{}pre,τ\_\allowbreak{}post)는 D\_\allowbreak{}cal grid에서 net gain 최대화 s.t. \textbf{§14 4-제약}: benign-FPR 진짜 증가분(교정 credit 포함)\ensuremath{\leq}5e-4 · harmful frac\ensuremath{\leq}0.10 · proposal\ensuremath{\leq}0.35 · 최소 지지(accepted\ensuremath{\geq}200, decided\ensuremath{\geq}30). 4c grid·4d coverage (in-sample 1−δ tautology 명시, 실측은 eval 측).
+
+
+\par\noindent \textbullet\enspace \textbf{§16 추론}: p̃0 \ensuremath{\rightarrow} scorer top-1(Û>τ\_\allowbreak{}pre) \ensuremath{\rightarrow} expert p̃k \ensuremath{\rightarrow} G\_\allowbreak{}lower>τ\_\allowbreak{}post \ensuremath{\rightarrow} 교체.
+
+
+\par\noindent \textbullet\enspace \textbf{§21 routing baselines}(dense 무비용, 6f): nearest-centroid-always, top1-no-verifier. +\allowbreak{} exp22c의 §20+\allowbreak{}/\allowbreak{}§22/\allowbreak{}§23/\allowbreak{}§25 기록 전부 유지, global\_\allowbreak{}raw 열 추가(prior correction 효과 ablation).
+
+
+이연(문서 선언): §17/\allowbreak{}§20.5 temporal, §23 multi-seed CI, §20.3/\allowbreak{}20.4 sweep, §20.6 latency percentile, §21 static zoo, verifier calibration curve 시각화.
+
+검증: 유닛테스트 6군(PriorCorrector 항등/\allowbreak{}방향/\allowbreak{}평활, β·T grid argmin, chrono 2-way 순서, descriptor/\allowbreak{}pair 형상, threshold grid의 실행가능성· 최소지지·benign-FPR credit) 통과 +\allowbreak{} 3-렌즈 리뷰(17 agents): 확정 6건 수정 — benign-FPR delta 공식(major, 교정 credit 미반영 과대계상), §14 최소지지 제약 누락, 4d target\_\allowbreak{}coverage 공식(1−α−δ \ensuremath{\rightarrow} 1−δ), §5 중복 측정 \ensuremath{\rightarrow} 집행, pruning 후 캐시 미해제, 6f 미작성. 기각 5건(§6 medoid C0=\allowbreak{}구조적 이연, §10 k-medoids=\allowbreak{}권장 변형, w\_\allowbreak{}bal 분모=\allowbreak{}스칼라 불변, OOF floor=\allowbreak{}로그 기록됨, threshold 목적함수=\allowbreak{}선언 일치).
+
+\textbf{판정 기준(고정)}: 같은-run 튜플(system/\allowbreak{}global(corrected)/\allowbreak{}global\_\allowbreak{}raw/\allowbreak{}XGB/\allowbreak{} oracle/\allowbreak{}random·proximity bank/\allowbreak{}routing baselines) vs exp22c \texttt{20260826\allowbreak{}\_\allowbreak{}\allowbreak{}130310} (0.7428/\allowbreak{}0.6800/\allowbreak{}—/\allowbreak{}0.7548/\allowbreak{}0.8480/\allowbreak{}0.7726·0.8328). 관심 지표: §5 보강-2의 "나눠갖기 판독 가이드" 참조. 실행 전 상태 — run 명령은 docstring, capped 스모크  \ensuremath{\rightarrow}  uncapped 기록 run 체인 권장.
+
+\subsubsection{§4 보강 — exp23 스모크 2회 결과 및 기록 run 전 수정 (house 관례: 스모크 \ensuremath{\rightarrow} 수정 \ensuremath{\rightarrow} 재검증 \ensuremath{\rightarrow} 기록)}
+\textbf{스모크 1} (\texttt{20260826\allowbreak{}\_\allowbreak{}\allowbreak{}171819}, capped, exit 0): 전 단계·산출물(0c/\allowbreak{}0d/\allowbreak{}1c/\allowbreak{}2d/\allowbreak{}2e/\allowbreak{} 4a–4d/\allowbreak{}6f 포함) 정상. 판독 3건:
+
+\par\noindent \textbullet\enspace \textbf{calibration 전 cell 실행불가  \ensuremath{\rightarrow}  GLOBAL ONLY 보수 수렴} (ρ=\allowbreak{}0). 4c 분해: 우량 cell(helpful 178/\allowbreak{}harmful 4, harm\_\allowbreak{}frac .017)은 전부 proposal>0.35 쪽, cap 아래로 오면 accepted 4행 붕괴 — τ\_\allowbreak{}pre grid가 q0.8 \ensuremath{\rightarrow} 0.95에서 proposal 0.40 \ensuremath{\rightarrow} 0.30 \ensuremath{\rightarrow} \textbf{0.0011} 절벽(scorer Û point mass)이라 경계 근처 해상도 부재.
+
+
+\par\noindent \textbullet\enspace benign-FPR cap 5e-4 =\allowbreak{} masked benign \textasciitilde{}1.4k 기준 \textbf{0.7행 미만} granularity (소표본 상호작용; 기록 규모 benign cal \textasciitilde{}35k에선 \textasciitilde{}17행으로 해소).
+
+
+\par\noindent \textbullet\enspace \textbf{β 선택이 무식별} — global C0는 자연비율이라 shift\ensuremath{\approx}0, global NLL로 β 구분 불가(1c에서 0.5525\textasciitilde{}0.5539). §7의 표적인 anchor-균형 expert prior를 selector가 안 보고 있었음.
+
+
+\textbf{수정 3건} (기록 run 전 적용, 유닛테스트 재통과):
+
+\par\noindent \textbullet\enspace §7을 2-stage로: stage 1 T는 global tune NLL(β 무식별 명시), stage 2 \textbf{β는 후보 bank별 expert tune NLL로 선택}(1d\_\allowbreak{}prior\_\allowbreak{}expert\_\allowbreak{}grid.csv 신설), p̃0은 전 구간 (β=\allowbreak{}0, T)로 일관(C0 prior≡π\_\allowbreak{}ref 근거 docstring 기록).
+
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}tau-\allowbreak{}pr\allowbreak{}e-\allowbreak{}quanti\allowbreak{}les} 기본 조밀화(0.65/\allowbreak{}0.75/\allowbreak{}0.85 추가 — 절벽 구간).
+
+
+\par\noindent \textbullet\enspace (스모크 1의 수치는 재현: 스모크 2 \texttt{20260826\allowbreak{}\_\allowbreak{}\allowbreak{}172238}에서 K=\allowbreak{}2 선택·β=\allowbreak{}0· Jaccard 0·oracle 0.9644 > prox 0.8873 > random 0.8840 동일, calibration은 여전히 global-only — granularity 원인이므로 기록 규모에서 판정.)
+
+
+\textbf{사전 등록 유지}: cap/\allowbreak{}제약값 변경 없음(5e-4·0.10·0.35·200/\allowbreak{}30). 기록 run에서 도 실행가능 cell이 없으면 system=\allowbreak{}global이 정직한 결과이며 4c grid가 원인을 기록함. 기록 run 개시 (uncapped cic2018, --dense-eval, K후보 2,4,8).
+
+\subsection{§5. EXP23 기록 run 결과 (run \texttt{20260826\allowbreak{}\_\allowbreak{}\allowbreak{}183417}, uncapped cic2018, test 4.02M, 71.2분) — \textbf{§12 pruning이 8 \ensuremath{\rightarrow} 1 expert로 압축: 초보수·초저비용 시스템 (+\allowbreak{}0.032, 호출 1.046회, precision 0.993)}}
+\textbf{판정 (같은-run 튜플)}: system macro \textbf{0.7001} — global(corrected) 0.6677 \textbf{+\allowbreak{}0.0324}, XGB 0.7548 −0.055, oracle(1-expert) 0.8237 · gap recovery 0.208. net \textbf{+\allowbreak{}12,851} (helpful 12,947 /\allowbreak{} harmful \textbf{96}, precision \textbf{0.9926}), benign harmful \textbf{93행} (benign FPR +\allowbreak{}0.000026 — cal 제약 5e-4의 1/\allowbreak{}20). ρ=\allowbreak{}0.0463  \ensuremath{\rightarrow}  \textbf{TFM 호출 1.046회} — 시리즈 최저 비용. global\_\allowbreak{}raw =\allowbreak{} corrected (β=\allowbreak{}0·T-tempering은 argmax 불변, 예상대로).
+
+\textbf{구조 서사 — 이 run의 본 발견}:
+
+\par\noindent \textbullet\enspace \textbf{§10 K-선택이 mega-regime을 실제로 쪼갬}: K=\allowbreak{}8 tune oracle 0.9728 > K=\allowbreak{}4 0.9503 > K=\allowbreak{}2 0.9463. 어제 c2(97.9\%) 문제에 대한 데이터의 답.
+
+
+\par\noindent \textbullet\enspace \textbf{§12 single-pass pruning이 7/\allowbreak{}8을 제거}: leave-one-out marginal이 e2–e8 전부 \ensuremath{\leq}0.001 (e1 dos-regime만 0.0232). \textbf{원인은 중복성 — expert가 8개면 개별 marginal은 0에 수렴}(집단으로는 유용해도 하나씩은 대체 가능). 사전 등록된 규칙이라 그대로 적용·기록.  \ensuremath{\rightarrow}  다음 knob 1순위: \textbf{greedy backward pruning}(하나 제거할 때마다 marginal 재계산).
+
+
+\par\noindent \textbullet\enspace 생존 e1 =\allowbreak{} dos 순수 regime(21k행): dos .4881 \ensuremath{\rightarrow} \textbf{.6978}이 이득의 사실상 전부(helpful 12,908/\allowbreak{}12,947), web +\allowbreak{}39. 나머지 클래스는 무접촉.
+
+
+\textbf{Gate-1 (1-expert 은행 기준)}: oracle 0.8237 > random bank \textbf{0.7618} (+\allowbreak{}0.062) > proximity 0.7262 — residual 구성 우위 유지. 단 bank도 K=\allowbreak{}1로 축소된 비교임을 명시.
+
+\textbf{§21 routing baseline이 verifier의 가치를 정량화}: nearest-centroid /\allowbreak{} top1-no-verifier =\allowbreak{} \textbf{0.4932} (global −0.17, brute F1 0.0 붕괴) — 같은 expert를 gate 없이 쓰면 재앙, calibrated gate를 붙이면 +\allowbreak{}0.032. 이중 구조 (§14)의 존재 이유가 같은 run 안에서 실증됨.
+
+\textbf{§14 calibration 첫 작동}: τ\_\allowbreak{}pre=\allowbreak{}17.15·τ\_\allowbreak{}post=\allowbreak{}0 (스모크 global-only는 소표본 granularity였음을 확정). 단 \textbf{초보수}: pos-adv proposal recall \textbf{0.086}·precision 0.264, rejected-call rate 0.93 (제안 186k 중 채택 13k — Gate-2 "wasted가 지배하지 않음" 위반, 절대량은 작음). guardrails: balanced acc .6547 \ensuremath{\rightarrow} \textbf{.6961}, AUPRC .6362 \ensuremath{\rightarrow} .6635, ECE .0418 \ensuremath{\rightarrow} .0398 (XGB 미달 유지).
+
+\textbf{기타 기록}: β=\allowbreak{}0이 expert tune NLL에서도 승리(1d — §7 필수 ablation: 이 세팅에선 prior correction 무효과), T=\allowbreak{}1.25. §5 mask: tune ctx-dup 61\%  \ensuremath{\rightarrow}  brute 공동화로 \textbf{fallback(기록됨)}, cal route-dup 33\% 적용. run 간 global 이동(exp22c 0.6800 \ensuremath{\rightarrow} 0.6677, ddos .9443 \ensuremath{\rightarrow} .8951) — CUDA 비결정성, 같은-run 원칙 재확인. 비용 71.2분(XGB 8.6분 포함 — 차기부터 인용 정책).
+
+\textbf{exp22c 대비 位相}: exp22c(+\allowbreak{}0.063, 1.60회, precision 0.871, harmful 8.5k) vs exp23(+\allowbreak{}0.032, \textbf{1.046회}, precision \textbf{0.993}, harmful 96) — 회수량↓ 안전·비용↑↑의 다른 작동점. 병목은 (a) single-pass pruning, (b) τ\_\allowbreak{}pre 보수성.
+
+\textbf{다음 원노브 후보 (우선순위)}:
+
+\par\noindent \textbullet\enspace (a) \textbf{§12를 greedy backward로} — 제거 시마다 marginal 재계산, 중복 은행 보존. 가장 직접적.
+
+
+\par\noindent \textbullet\enspace (b) τ\_\allowbreak{}pre 완화 — cal-max-proposal↑ 또는 threshold 목적에 recall 항.
+
+
+\par\noindent \textbullet\enspace (c) 3d/\allowbreak{}3e 분업 지표는 K=\allowbreak{}1이라 미측정 — (a) 후에야 판정 가능.
+
+
+run: \texttt{results/\allowbreak{}\allowbreak{}20260826\allowbreak{}\_\allowbreak{}\allowbreak{}183417\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}exp\allowbreak{}23\_\allowbreak{}\allowbreak{}raceg\allowbreak{}uide}. figure HTML 실험 기록 섹션 채움(아티팩트 재배포).
+
+\subsubsection{§5 보강 — K=\allowbreak{}8 은행 사후 복원 (7a): "1개 생존"의 진짜 원인은 블록 유사성이 아니라 공유 anchor}
+사용자 질문("expert context가 어땠길래 e1만 남았나, coverage 높은 expert가 왜 marginal 0인가")에 답하기 위해 \texttt{mining\_\allowbreak{}\allowbreak{}d\allowbreak{}ump.\allowbreak{}npz}의 K=\allowbreak{}8 배정 × suite 라벨로 regime 조성을 사후 복원 (\texttt{7a\_\allowbreak{}\allowbreak{}regim\allowbreak{}e\_\allowbreak{}\allowbreak{}compos\allowbreak{}ition\_\allowbreak{}\allowbreak{}k8\allowbreak{}.\allowbreak{}csv}, 신규):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.16731\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18654\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16731\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31154\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16731\linewidth-2\tabcolsep\relax}}
+\toprule
+regime & 행 & 질량 & 조성 & 생존 \\ \midrule
+\endfirsthead
+regime & 행 & 질량 & 조성 & 생존 \\ \midrule
+\endhead
+{}1 & 21,068 & .169 & dos 순수 & [확인] \\
+{}2 & 17,610 & \textbf{.336 최대} & \textbf{brute 순수} & [제외] \\
+{}3 & 15,645 & .280 & \textbf{inf 순수} & [제외] \\
+{}4 & 8,951 & .107 & dos 혼합 & [제외] \\
+{}5 & 41,497 & .088 & brute 혼합 & [제외] \\
+{}6 & 1,894,565 & .015 & mega(benign 92\%) & [제외] \\
+{}7 & 524 & .002 & benign/\allowbreak{}web 경계 & [제외] \\
+{}8 & 140 & .003 & \textbf{web 순수} (mean r̄ 2,354) & [제외] \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{진단 수정}: §5 본문에서 "expert들의 기능이 넓게 겹쳤다"고 쓴 부분을 정밀화 — \textbf{블록/\allowbreak{}regime은 명확히 상이했다}(Phase-1 정상 작동). 겹친 것은 \textbf{공유 anchor(클래스당 2k, 계 12,761행)가 전원에게 부여한 일반의 능력}: tune oracle에서 brute 행은 e2가 아니어도 어느 expert든 anchor의 brute 2k로 global을 이기므로 e2의 leave-one-out marginal이 0으로 붕괴(실패 질량 최대 전문가가 잘림). e1(dos)만 생존한 이유 =\allowbreak{} dos는 anchor로 부족하고 21k 블록이 필요한 유일 클래스(e1 단독 oracle: dos .9949 vs brute .8041 — anchor 효과의 상한; random bank brute .9159가 전문가 부재 시 손실의 대용 증거). 잘린 e2/\allowbreak{}e3/\allowbreak{}e8은 XGB에 지는 클래스(brute/\allowbreak{}inf/\allowbreak{}web)와 1:1 대응.
+
+\textbf{함의}: greedy backward pruning(ⓑ)은 e2·e3·e8을 "마지막 전문가" 시점에 살릴 것이나, marginal을 누르는 근본 원인은 anchor 공유 구조(ⓐ) — §7 prior 무효과(β=\allowbreak{}0)·positive-adv \textasciitilde{}90\%·이번 marginal 붕괴가 모두 같은 뿌리. 보고서 (figure HTML) ② 진단을 이 내용으로 교체, "처음 읽는 분용" 문구 제거.
+
+\subsection{§6. EXP23B 사전 등록 — 원노브: §12 pruning single-pass  \ensuremath{\rightarrow}  greedy backward (결과 전 고정)}
+사용자 지시(야간 자율 체인 1/\allowbreak{}2). 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp23b\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}gr\allowbreak{}eedy.\allowbreak{}py} (exp23 사본; exp23은 기록 run 보유로 무수정). \textbf{원노브}: \texttt{greedy\_\allowbreak{}\allowbreak{}b\allowbreak{}ackward\_\allowbreak{}\allowbreak{}prune()} — coverage 생존성은 1회 선적용, 이후 \textbf{marginal 최소 expert를 한 번에 하나만 제거하고 저장된 tune 손실행렬에서 전원 marginal 재계산}, 전원이 \texttt{-\allowbreak{}-\allowbreak{}prune-\allowbreak{}min-\allowbreak{}marg\allowbreak{}inal}(0.001, 선언 상수 유지)을 넘으면 정지. 라운드별 marginal 전량을 2e에 기록. 동률은 (marginal, coverage) 오름차순. 합성 회귀테스트: 쌍둥이 2+\allowbreak{}고유 1 은행에서 single-pass는 고유 1만 남기지만 greedy는 쌍둥이 1+\allowbreak{}고유 1 생존 확인. \textbf{예상}: exp23에서 잘린 e2(brute, 질량 .336)·e3(inf)·e8(web)이 "마지막 전문가" 시점에 생존  \ensuremath{\rightarrow}  oracle 상한 0.8237 \ensuremath{\rightarrow} 0.85± 복원, brute/\allowbreak{}inf/\allowbreak{}web 공략 은행 확보. XGB는 정책대로 skip(0.7548 인용). 판정: 같은-run 튜플 vs exp23 \texttt{20260826\allowbreak{}\_\allowbreak{}\allowbreak{}183417}.
+
+\subsection{§7. EXP23C 사전 등록 — 원노브: 공유 anchor 2,000  \ensuremath{\rightarrow}  200/\allowbreak{}클래스 (결과 전 고정)}
+야간 체인 2/\allowbreak{}2. 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp23c\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}an\allowbreak{}chor.\allowbreak{}py} (exp23b 사본, greedy 유지). \textbf{원노브}: \texttt{-\allowbreak{}-\allowbreak{}anchor\allowbreak{}-\allowbreak{}per-\allowbreak{}cla\allowbreak{}ss} 2,000 \ensuremath{\rightarrow} \textbf{200} (10× 축소; §11.1 전-클래스 포함 의무는 유지 — web ctx pool 761행>200). 근거: §5 보강의 근본 원인 — 공유 anchor가 전원을 일반의로 만들어 ① marginal 붕괴, ② positive-adv \textasciitilde{}90\%, ③ §7 prior 무효과(β=\allowbreak{}0)를 모두 유발. \textbf{예상}: expert 이득이 블록(전문 분야) 중심으로 재분화  \ensuremath{\rightarrow}  marginal·gain 상관·unique coverage 재차별화, 단 anchor 축소로 비전문 클래스 posterior가 약해져 verifier 보수성이 더 중요해짐(harmful 감시). 판정: 같은-run 튜플 vs (같은 밤) exp23b 기록 run. 실행: capped 스모크(anchor 30)  \ensuremath{\rightarrow}  uncapped 기록 run, 두 실험 순차 자동 체인, 각각 --skip-xgboost.
+
+\subsection{§8. EXP23D 사전 등록 — 원노브: anchor 클래스 구성(--anchor-mode), 예산 고정 (결과 전 고정)}
+사용자 지시: "200 축소 외에 natural/\allowbreak{}반대분포 등 구성을 다양하게" (야간 체인 확장). 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp23d\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}an\allowbreak{}chmode.\allowbreak{}p\allowbreak{}y} (exp23c 사본, greedy 유지). \textbf{원노브 =\allowbreak{} anchor 구성} (총예산 per\_\allowbreak{}class×C =\allowbreak{} 1,400행으로 모드 간 동일):
+
+\par\noindent \textbullet\enspace \texttt{equal} =\allowbreak{} exp23c 재현(클래스당 200)
+
+
+\par\noindent \textbullet\enspace \texttt{natural} =\allowbreak{} D\_\allowbreak{}global 자연비율(클래스당 \ensuremath{\geq}1)  \ensuremath{\rightarrow}  예상 조성 benign \textasciitilde{}1,218 · web 1. expert 컨텍스트 prior \ensuremath{\approx} global prior  \ensuremath{\rightarrow}  \textbf{균형-컨텍스트 우위 소멸}, 이득은 전문 블록에서만 나와야 함 — "anchor 일반의" 가설의 반대편 직접 검증.
+
+
+\par\noindent \textbullet\enspace \texttt{inverse} =\allowbreak{} 1/\allowbreak{}n\_\allowbreak{}c 비례(희소 우선, 상한 포함)  \ensuremath{\rightarrow}  예상 web 761(전량)+\allowbreak{}클래스당 \textasciitilde{}106 — tail 지지 최대화 극단. 합성 테스트: 3모드 전-클래스 포함·예산 일치·결정성 확인. 실행 계획(체인 2, 체인 1 완료 후 자동): 23d 스모크(natural)  \ensuremath{\rightarrow}  기록 natural-200  \ensuremath{\rightarrow}  inverse-200  \ensuremath{\rightarrow}  (시간 허용 시) natural-2000. 각 --skip-xgboost.
+
+
+\textbf{가설 매트릭스}: marginal 붕괴가 anchor의 ①크기(23c), ②균형성(23d-natural), 둘 다인지 분리. natural에서 pruning 생존 수↑·positive-adv↓가 나오면 "균형성"이 원인; 변화 없으면 크기/\allowbreak{}구조 외 원인 탐색.
+
+\textbf{보고서 형식 지시(사용자)}: exp23\textasciitilde{}23d 전부 "expert context를 살리려는 시도" 계열이므로, 최종 보고서는 \textbf{실험별 섹션}으로 작성하고 각 섹션에 그 실험의 expert 은행 특징/\allowbreak{}조성(7a식 regime 표 — mining\_\allowbreak{}dump 사후 복원)을 명시할 것.
+
+\subsection{§6-결과. EXP23B 기록 run (\texttt{20260827\allowbreak{}\_\allowbreak{}\allowbreak{}011706}) — greedy는 2명을 살렸지만, anchor-2000 일반의 효과가 고잔차 전문가를 여전히 죽임 (+\allowbreak{}0.0245)}
+\textbf{튜플}: system 0.6937 /\allowbreak{} global 0.6692 (+\allowbreak{}0.0245) /\allowbreak{} oracle 0.8122 /\allowbreak{} random 0.7661 /\allowbreak{} prox 0.7583 · 호출 1.047 · precision 0.9941 (harmful 62). \textbf{은행 (7a 복원)}: K=\allowbreak{}8  \ensuremath{\rightarrow}  greedy 생존 2 =\allowbreak{} regime 1(dos 순수 21.3k) +\allowbreak{} regime 8(\textbf{easy-brute 혼합} 41.7k, mean r̄ 4.1). 고잔차 brute-순수(질량 0.351 최대, r̄ 45)와 inf-순수는 \textbf{greedy에서도 제거} — 라운드 로그 판독: easy-brute e8이 남아있는 한 hard-brute e2의 marginal이 끝까지 \ensuremath{\leq}0.001 (쌍둥이 문제의 잔존형: greedy는 쌍둥이 중 1명은 살리지만 \textbf{어느 쪽을 살릴지는 tune-oracle 근시안} — 쉬운 쪽이 살아남으면 eval의 hard-brute를 못 침; oracle brute 0.8041 =\allowbreak{} anchor 상한 그대로, 생존 쌍의 gain 상관 0.9954). 판정: \textbf{규칙 결함은 부분 완화, anchor-2000 일반의 효과가 지배 원인임을 역으로 확증}.
+
+\subsection{§7-결과. EXP23C 기록 run (\texttt{20260827\allowbreak{}\_\allowbreak{}\allowbreak{}023651}) — anchor 200: oracle은 뛰었으나(0.8651) 회수 층이 무너짐 (+\allowbreak{}0.0034, web 재붕괴)}
+\textbf{튜플}: system 0.6745 /\allowbreak{} global 0.6711 (\textbf{+\allowbreak{}0.0034}) /\allowbreak{} oracle \textbf{0.8651} /\allowbreak{} prox 0.8297 /\allowbreak{} random 0.7607 · 호출 1.061 · precision 0.9798 (harmful 680, benign 591) · gap recovery \textbf{0.0175}. ddos .9101 \ensuremath{\rightarrow} \textbf{.9729} · dos +\allowbreak{}0.055 · \textbf{web .1613 \ensuremath{\rightarrow} .0687 재붕괴} · inf −0.007. \textbf{은행 (7a)}: 생존 3 =\allowbreak{} dos-순수 21.1k +\allowbreak{} \textbf{mega 1.94M(준-global)} +\allowbreak{} \textbf{bot 9행 regime}(!) — 9행 전문가 생존은 min-support 부재의 marginal 노이즈. 고잔차 brute/\allowbreak{}inf-순수는 여전히 제거. \textbf{판독}: anchor 축소는 의도대로 은행 상보성을 올렸지만(oracle +\allowbreak{}0.04, prox bank도 강해짐), §7 사전 등록의 위험이 그대로 실현 — \textbf{비전문 클래스 posterior가 약해져} verifier가 τ\_\allowbreak{}post=\allowbreak{}4까지 조여도 harmful 680·web FP 경로 재발, 회수가 사실상 0. 결론: \textbf{anchor는 "회수 층의 안전판"과 "은행 상보성"을 맞바꾸는 손잡이} — 크기 축소 단독으로는 손해. 구성 축(23d natural/\allowbreak{}inverse)이 이 트레이드오프를 깰 수 있는지가 다음 질문.
+
+(비고: 두 run 모두 K=\allowbreak{}8 선택·β=\allowbreak{}0·global 이동(0.6692/\allowbreak{}0.6711) — CUDA 비결정성으로 run별 클러스터링·global이 조금씩 다름, 같은-run 원칙 유지. XGB 미학습, 0.7548 인용.)
+
+\subsection{§8-결과. EXP23D 3종 (\texttt{0827\_\allowbreak{}\allowbreak{}035\allowbreak{}659} nat200 /\allowbreak{} \texttt{0827\_\allowbreak{}\allowbreak{}051\allowbreak{}400} inv200 /\allowbreak{} \texttt{0827\_\allowbreak{}\allowbreak{}063\allowbreak{}039} nat2000) — \textbf{anchor 가설은 구성 단계에서 입증, 그러나 세 변형 모두 시스템은 global 미달: 병목이 회수층으로 확정 이동}}
+\textbf{튜플 (system /\allowbreak{} global /\allowbreak{} oracle /\allowbreak{} random /\allowbreak{} prox)}:
+
+\par\noindent \textbullet\enspace nat200: 0.6688 /\allowbreak{} 0.6734 (\textbf{−0.005}) /\allowbreak{} 0.8323 /\allowbreak{} \textbf{0.8229} /\allowbreak{} 0.8280 — harmful 772(전부 benign), inf .420 \ensuremath{\rightarrow} \textbf{.319} 붕괴, recall 0.047
+
+
+\par\noindent \textbullet\enspace inv200: 0.6578 /\allowbreak{} 0.6602 (−0.002) /\allowbreak{} 0.8308 /\allowbreak{} 0.7806 /\allowbreak{} 0.8022 — \textbf{benign FPR .0148 (\ensuremath{\approx}6×, guardrail 위반)} · ECE .0624, web .177 \ensuremath{\rightarrow} .087, K=\allowbreak{}4 선택
+
+
+\par\noindent \textbullet\enspace nat2000: 0.6514 /\allowbreak{} 0.6679 (\textbf{−0.017}) /\allowbreak{} 0.8231 /\allowbreak{} 0.8214 /\allowbreak{} 0.7984 — helpful 2,278뿐, web .161 \ensuremath{\rightarrow} \textbf{.031}
+
+
+\textbf{은행 정체 (7a 복원) — 가설의 성공 부분}: anchor 균형성을 제거하자 marginal이 재분화되어 \textbf{처음으로 원하던 순수 전문가들이 greedy를 통과} — nat200: inf-순수 15.6k +\allowbreak{} web-순수 135 +\allowbreak{} mega · nat2000: \textbf{dos-순수 +\allowbreak{} inf-순수 +\allowbreak{} web-순수 140} (시리즈 중 가장 이상적인 구성) · inv200: inf-혼합 +\allowbreak{} dos-혼합 +\allowbreak{} mega (web-편향 anchor가 전 expert 오염).
+
+\textbf{그러나 회수층이 무너짐 — 가설의 실패 부분}: natural-anchor expert는 비전문 클래스 posterior가 자연비율에 눌려, balanced-loss 기반 scorer/\allowbreak{}verifier가 ① 이득 추정을 못 하고(recall 0.05\textasciitilde{}0.09), ② 유해 override를 통과시킴(nat200 harmful 772 전부 benign·inf 붕괴; nat2000 web 붕괴). inv200은 web-과대 posterior로 benign FPR 6×.
+
+\textbf{중대 부수 발견}: nat200에서 random bank 0.8229 \ensuremath{\approx} residual oracle 0.8323 — \textbf{균형 anchor가 없으면 residual 구성의 대조군 우위도 거의 소멸}. 즉 지금까지의 "residual 신호"(Gate-1)의 상당분은 [균형 anchor × 블록]의 결합 효과였음. anchor는 단순 균열이 아니라 \textbf{회수층의 안전판이자 oracle 우위의 공동 원천}인 양면 부품.
+
+\textbf{야간 캠페인 종합 (7 runs)}: 챔피언은 여전히 \textbf{exp22c (+\allowbreak{}0.063, 0.7428)}. exp23 계열은 안전·비용(1.05회, precision .99)을 얻고 회수를 잃음. 다음 공략 지점(우선순위 재정렬): ① \textbf{회수층이 non-balanced posterior를 다루게} — verifier/\allowbreak{}scorer 특징에 expert prior 명시(§7 correction을 expert-측에 강제 적용, β>0 고정 ablation) 또는 balanced anchor 유지 +\allowbreak{} pruning 기준을 "고잔차-가중 marginal"로(쌍둥이 중 hard 쪽 생존), ② min-support pruning(9행 regime 방지), ③ recall 0.05\textasciitilde{}0.16 병목의 τ\_\allowbreak{}pre 완화. 보고서(figure HTML)를 실험별 섹션 형식으로 전면 재구성(사용자 지시) — 각 실험의 은행 정체 표 포함.
+
+
+
+\section{추가 분석과 수치 검토}
+imbalcic · main figure · docs/\allowbreak{}연구방향.pdf
+
+frozen Tabular Foundation Model F θ 위에서, global이 실패하는 residual regime을 실패 서명으로 자동 발견해 서로소 context expert로 만들고, shared utility scorer가 순이득을 예상할 때만 top-1 expert를 호출하며, 보정된 하한 G lower >τ post 일 때만 교체하는 전체 구조 (exp23 · guide 정합).
+
+\subsection*{실험 기록 — exp23 계열 (guide 정합 구현과 ablation)}
+uncapped cse-cic-ids2018 · test 4,023,114 rows · 모든 판정은 같은 run·같은 split · 랩 로그 manuscript/\allowbreak{}report (§5–§8) · run ID는 각 표에 명시
+
+실험 플로우: 이 계열은 expert context 층을 집중 공략했다 — 실패-서명 기반 구조 변경(직전 구현), K\ensuremath{\in}\{2,4,8\} 자동 선택 (§10), expert pruning (single-pass  \ensuremath{\rightarrow}  greedy backward), anchor 크기·구성 조정 (2,000 \ensuremath{\rightarrow} 200 · equal/\allowbreak{}natural/\allowbreak{}inverse). 그 결과 context 목표는 달성됐다: regime들은 서로소·상이하고, anchor 균형성을 제거하면 dos·inf·web 순수 전문가가 pruning을 통과하며, oracle 상한은 0.81\textasciitilde{}0.87로 유지·상승했다. 그러나 시스템 성능은 global 대비 +\allowbreak{}0.032 \textasciitilde{} −0.017에 그쳐 XGB(0.7548)를 전 구성에서 넘지 못했고 , 회수 깔때기 분석(0-2)이 그 이유를 특정한다 — expert가 이길 수 있는 행의 84\textasciitilde{}95\%가 제안 관문(scorer·τ pre ) 에서 걸러진다. 아래: 0 성능 요약(vs XGB)  \ensuremath{\rightarrow}  0-1 클래스별 F1  \ensuremath{\rightarrow}  0-2 막힌 지점  \ensuremath{\rightarrow}  ① expert context 측면 결과  \ensuremath{\rightarrow}  ②–⑩ 실험별 보고.
+
+\subsection*{0 실험별 성능 요약 — 같은-run 판정 튜플 · vs XGB(0.7548 인용)}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18791\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08129\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08864\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08129\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08129\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10703\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12908\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08129\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16217\linewidth-2\tabcolsep\relax}}
+\toprule
+run · knob & system & vs global & vs XGB & oracle & vs random bank & 정밀도 /\allowbreak{} 유해 & 호출 & 생존 expert \\ \midrule
+\endfirsthead
+run · knob & system & vs global & vs XGB & oracle & vs random bank & 정밀도 /\allowbreak{} 유해 & 호출 & 생존 expert \\ \midrule
+\endhead
+{}exp23 · guide 정합 패키지 & 0.7001 & +\allowbreak{}0.032 & −0.055 & 0.8237 & +\allowbreak{}0.062 & 0.993 /\allowbreak{} 96 & 1.046 & 1 (dos) — single-pass 붕괴 \\
+{}exp23b · greedy pruning & 0.6937 & +\allowbreak{}0.025 & −0.061 & 0.8122 & +\allowbreak{}0.046 & 0.994 /\allowbreak{} 62 & 1.047 & 2 (dos +\allowbreak{} easy-brute, 상관 .995) \\
+{}exp23c · anchor 2000 \ensuremath{\rightarrow} 200 & 0.6745 & +\allowbreak{}0.003 & −0.080 & 0.8651 & +\allowbreak{}0.104 & 0.980 /\allowbreak{} 680 & 1.061 & 3 (dos +\allowbreak{} mega +\allowbreak{} bot-9행!) \\
+{}exp23d · natural-200 & 0.6688 & −0.005 & −0.086 & 0.8323 & +\allowbreak{}0.009 & 0.930 /\allowbreak{} 772 & 1.041 & 3 (inf +\allowbreak{} web +\allowbreak{} mega) \\
+{}exp23d · inverse-200 & 0.6578 & −0.002 & −0.097 & 0.8308 & +\allowbreak{}0.050 & 0.960 /\allowbreak{} 294 · FPR 6× & 1.103 & 3 (inf혼합 +\allowbreak{} dos혼합 +\allowbreak{} mega) \\
+{}exp23d · natural-2000 & 0.6514 & −0.017 & −0.103 & 0.8231 & +\allowbreak{}0.002 & 0.990 /\allowbreak{} 23 & 1.050 & 3 (dos +\allowbreak{} inf +\allowbreak{} web — 최상 구성) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+global은 run마다 0.6602\textasciitilde{}0.6734로 이동(CUDA 비트-비결정성) — 그래서 모든 비교는 같은-run이며, run 간 비교는 방향 참고. XGB 0.7548은 full-pool 학습분을 인용(동일 데이터·시드에서 결정적). "vs random bank" =\allowbreak{} residual bank oracle − 등메모리 random bank oracle (Gate-1 격차): natural anchor에서 +\allowbreak{}0.009로 소멸 하는 것이 이 계열의 가장 중요한 단일 발견.
+
+\subsection*{0-1 클래스별 F1 — 실험 횡단 (Ours system 열, XGB 대비 상회는 강조)}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12149\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14347\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09402\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09402\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09402\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11600\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11600\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12149\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09951\linewidth-2\tabcolsep\relax}}
+\toprule
+class & global (run별 범위) & exp23 & 23b & 23c & 23d nat-200 & 23d inv-200 & 23d nat-2000 & XGB (인용) \\ \midrule
+\endfirsthead
+class & global (run별 범위) & exp23 & 23b & 23c & 23d nat-200 & 23d inv-200 & 23d nat-2000 & XGB (인용) \\ \midrule
+\endhead
+{}benign & .978–.981 & 0.9817 & 0.9816 & 0.9862 & 0.9844 & 0.9792 & 0.9827 & 0.9943 \\
+{}bot & .9984 & 0.9984 & 0.9984 & 0.9984 & 0.9984 & 0.9984 & 0.9984 & 0.9978 \\
+{}brute\_\allowbreak{}force & .7246 & 0.7246 & 0.7246 & 0.7246 & 0.7246 & 0.7246 & 0.7246 & 0.9159 \\
+{}ddos & .895–.947 & 0.8951 & 0.8973 & 0.9729 & 0.9209 & 0.9527 & 0.9223 & 0.9921 \\
+{}dos & .488–.539 & 0.6978 & 0.6661 & 0.5541 & 0.5604 & 0.6077 & 0.5131 & 0.7822 \\
+{}infiltration & .259–.424 & 0.4203 & 0.4238 & 0.4163 & 0.3189 & 0.2550 & 0.3876 & 0.4291 \\
+{}web\_\allowbreak{}attacks & .161–.177 & 0.1825 & 0.1644 & 0.0687 & 0.1742 & 0.0873 & 0.0312 & 0.1724 \\
+{}macro & .660–.673 & 0.7001 & 0.6937 & 0.6745 & 0.6688 & 0.6578 & 0.6514 & 0.7548 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+색 =\allowbreak{} XGB 상회. 한눈 판독: 이 계열의 이득은 사실상 dos 한 클래스 (생존 expert의 전문 분야)에서 나오고, XGB와의 격차는 brute(−0.19)·dos(−0.08\textasciitilde{}−0.27)·ddos(−0.02\textasciitilde{}−0.10) 에 집중된다 — 정확히 pruning에서 잘린 전문가들(brute)과 제안 관문에 막힌 잠재력(dos·ddos: oracle은 0.99\textasciitilde{}1.00)의 자리다. anchor 변형에서 web·inf가 깎이는 것은 회수층 오작동의 흔적(⑧–⑩). global 열은 run별 이동 범위이므로 system 간 가로 비교는 방향 참고.
+
+\subsection*{0-2 막힌 지점 — oracle 잠재력이 어디서 죽는가 (회수 깔때기, 7 runs)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18177\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17143\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15074\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12315\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13350\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13005\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10936\linewidth-2\tabcolsep\relax}}
+\toprule
+run & ① 이득-실재 행 (expert가 이길 수 있는 행) & ② 제안됨 (scorer·τ pre 통과) & 제안 recall ②∩①/\allowbreak{}① & ③ 채택 (verifier 통과) & helpful /\allowbreak{} harmful & utility 실현율 \\ \midrule
+\endfirsthead
+run & ① 이득-실재 행 (expert가 이길 수 있는 행) & ② 제안됨 (scorer·τ pre 통과) & 제안 recall ②∩①/\allowbreak{}① & ③ 채택 (verifier 통과) & helpful /\allowbreak{} harmful & utility 실현율 \\ \midrule
+\endhead
+{}(참고) guide-이전 구현 — 관문·pruning 없음 & 2,470,103 & 2,427,949 & 0.951 & 2,129,434 & 57,565 /\allowbreak{} 8,524 & 0.462 \\
+{}exp23 & 570,329 & 186,270 & 0.086 & 13,276 & 12,947 /\allowbreak{} 96 & 0.222 \\
+{}exp23b & 836,958 & 191,098 & 0.156 & 10,862 & 10,377 /\allowbreak{} 62 & 0.149 \\
+{}exp23c & 2,429,075 & 246,215 & 0.091 & 43,047 & 33,012 /\allowbreak{} 680 & 0.154 \\
+{}exp23d nat-200 & 3,131,163 & 164,948 & 0.047 & 30,576 & 10,325 /\allowbreak{} 772 & 0.192 \\
+{}exp23d inv-200 & 2,818,785 & 415,588 & 0.093 & 14,483 & 7,091 /\allowbreak{} 294 & 0.106 \\
+{}exp23d nat-2000 & 3,252,933 & 200,351 & 0.056 & 23,334 & 2,278 /\allowbreak{} 23 & 0.102 \\
+\bottomrule
+\end{longtable}
+\endgroup
+이 표가 "왜 결과가 안 좋은가"의 답이다. 깔때기의 첫 단 — 제안 관문 — 에서 이득-실재 행의 84\textasciitilde{}95\%가 죽는다 (recall 0.05\textasciitilde{}0.16). guide-이전 구현(참고 행)은 같은 관문을 95\% 열어두고(hard router, τ 없음) utility의 46\%를 실현했지만 그 대가로 harmful 8,524를 냈고, exp23 계열은 D\_\allowbreak{}cal 제약(proposal \ensuremath{\leq} 0.35 · benign-FPR cap · 최소지지)을 만족하려고 τ pre 를 12\textasciitilde{}28까지 올려 관문을 닫았다 — verifier(③)가 아니라 scorer의 판별력 부족이 근본 이다: scorer의 Û는 실제 이득과 상관 0.03, top-1 일치 0.49\textasciitilde{}0.65에 불과해, 제약을 지키면서 관문을 열 방법이 현재 scorer로는 없다. 여기에 23d의 교훈이 겹친다: 회수층(scorer·verifier 특징과 balanced-loss 타깃)은 균형 anchor posterior를 전제로 설계 되어 있어 context 쪽을 흔들면(23c/\allowbreak{}d) 관문 뒤 정밀도까지 무너진다. 따라서 처방 순서는 "context는 균형 anchor로 되돌리고(고정), 제안 관문을 열 수 있는 scorer (pairwise ranking 타깃, expert-측 prior 보정 특징, τ pre 목적에 recall 항)를 만드는 것"이다. ①열의 절대값 비교는 주의 — 행 수는 미세 이득까지 세므로 가치 가중치는 "utility 실현율" 열이 정확하다.
+
+\subsection*{① 목표했던 expert context 측면 — §24 Gate 판정}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22115\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30769\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16346\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30769\linewidth-2\tabcolsep\relax}}
+\toprule
+Gate (§24) & 묻는 것 & 판정 & 근거 (산출물 · 수치) \\ \midrule
+\endfirsthead
+Gate (§24) & 묻는 것 & 판정 & 근거 (산출물 · 수치) \\ \midrule
+\endhead
+{}1 · complementarity & expert bank이 대조군보다 실제로 나은가, 서로 다른 일을 하는가 & △ 부분 & 신호 실재 [확인](balanced anchor 하): oracle−random 격차 +\allowbreak{}0.046\textasciitilde{}+\allowbreak{}0.104 (0 표). 단 23d-natural에서 격차가 +\allowbreak{}0.009로 소멸 — residual 우위의 상당분이 [균형 anchor × 블록] 결합 효과. bank 수준 대체가능성 [제외]: anchor 일반의 효과로 marginal 붕괴(② 진단) — greedy(23b)로 절반, anchor 제거(23d)로 나머지 절반이 입증됨 \\
+{}2 · routing 회수 & oracle 잠재력을 router+\allowbreak{}verifier가 얼마나 회수하나 & △ 부분 & helpful≫harmful [확인] (전 run 정밀도 0.93\textasciitilde{}0.99) · sparse [확인] (호출 1.04\textasciitilde{}1.10). 회수율 [제외] — 계열의 확정 병목 : recovery 0.02\textasciitilde{}0.22, recall 0.05\textasciitilde{}0.16; 특히 23c/\allowbreak{}d에서 oracle이 올라도 회수가 무너짐(비전문 posterior를 balanced-loss 회수층이 다루지 못함) \\
+{}3 · long-tail 강건성 & 가장 강한 baseline(XGB) 대비 tail 개선 +\allowbreak{} guardrail 유지 & [제외] 미충족 & XGB −0.055 · tail(brute·inf·web) 사실상 무접촉 (6c: helpful의 99.7\%가 dos). guardrail은 유지·개선 (6e, ④ 표) \\
+{}4 · temporal refresh & 적은 라벨로 다음 window 회복 & — 미착수 & Phase 5 이연 (§17) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection*{② exp23 진단 — K=\allowbreak{}8의 oracle이 높은데 왜 expert가 1개만 남았나}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.19148\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08954\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09439\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08954\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08954\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09439\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14293\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11866\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08954\linewidth-2\tabcolsep\relax}}
+\toprule
+K=\allowbreak{}8 bank (7a 사후 복원 +\allowbreak{} 2e) & e1 & e2 & e3 & e4 & e5 & e6 & e7 & e8 \\ \midrule
+\endfirsthead
+K=\allowbreak{}8 bank (7a 사후 복원 +\allowbreak{} 2e) & e1 & e2 & e3 & e4 & e5 & e6 & e7 & e8 \\ \midrule
+\endhead
+{}regime 조성 (전문 분야) & dos 순수 & brute 순수 & inf 순수 & dos 혼합 & brute 혼합 & mega (benign 92\%) & benign/\allowbreak{}web 경계 & web 순수 \\
+{}regime 행 수 & 21,068 & 17,610 & 15,645 & 8,951 & 41,497 & 1,894,565 & 524 & 140 \\
+{}잔차 질량 (실패의 몫) & 0.169 & 0.336 최대 & 0.280 & 0.107 & 0.088 & 0.015 & 0.002 & 0.003 \\
+{}coverage — global을 이기는 행 비율 & 0.52 & 0.75 & 0.54 & 0.71 & 0.73 & 0.31 & 0.45 & 0.68 \\
+{}marginal — 하나만 빼면 oracle 하락폭 & 0.0232 & 0.0003 & −0.0039 & 0.0002 & 0.0000 & 0.0002 & 0.0000 & 0.0008 \\
+{}생존 (§12: marginal>0.001) & [확인] & [제외] & [제외] & [제외] & [제외] & [제외] & [제외] & [제외] \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+1 · expert들은 "비슷"하지 않았다. 사후 복원(7a: mining\_\allowbreak{}dump의 K=\allowbreak{}8 배정 × 라벨)으로 확인 — 8개 regime은 brute 순수·inf 순수·web 순수·dos 순수·혼합 2종·mega·경계로 명확히 상이했고, 블록 행도 전혀 안 겹친다(2b Jaccard 0). Phase-1 컨텍스트 구성은 제 역할을 했다. 2 · 그런데도 서로 대체 가능했던 이유 =\allowbreak{} 공유 anchor. 모든 expert 컨텍스트는 anchor(클래스당 2,000행, 계 12,761) ∪ 전문 블록이다. tune oracle 관점에서 brute 행 하나는 brute-전문 e2가 아니어도 어느 expert든 자기 anchor의 brute 2,000행 덕에 자연비율 global보다 잘 맞힌다 — 그래서 e2를 빼도 잃는 것이 없고(marginal 0.0003), 실패 질량이 최대(0.336)인 brute 전문가가 잘려나간다. coverage 0.31–0.75는 블록이 아니라 anchor가 만든 공통 일반의 능력 의 흔적이며, exp22부터 추적해 온 "positive-advantage \textasciitilde{}90\%" 균열과 같은 뿌리다. 결정적 산수 — 유일 생존자 e1을 빼도 나머지 7명이 tune oracle 0.9496 을 유지한다(0.9728−0.0232): 골키퍼 여덟을 한 명씩 빼보며 "골대는 지켜지니 불필요"라 결론 내리고 일곱을 벤치로 보낸 구조다. 3 · e1(dos)만 살아남은 이유. dos는 anchor 2,000행으로는 부족하고 21k 전문 블록이 있어야만 풀리는 유일한 클래스다(global dos .488 — 시리즈 최난). 증거: e1 단독 oracle이 dos에서 .9949인 반면 brute에서는 .8041에 그친다 — anchor 일반의 효과의 상한. brute 전문가가 살아 있었다면 \textasciitilde{}.92 수준(random bank의 brute .9159가 그 대용 증거). 4 · 잘린 전문가 =\allowbreak{} XGB에 지는 클래스, 1:1 대응. e2(brute) 제거  \ensuremath{\rightarrow}  brute .7246 vs XGB .9159, e3(inf) 제거  \ensuremath{\rightarrow}  inf .4203 vs .4291, e8(web 140행, 평균 잔차 2,354) 제거  \ensuremath{\rightarrow}  web 미회수. 이것이 "global은 이기고 XGB엔 지는" 현재 위치의 직접 원인이다.  \ensuremath{\rightarrow}  처방(다음 원노브): ⓑ greedy backward pruning — 하나 뺄 때마다 marginal 재계산; e2·e3·e8은 "마지막 남은 전문가"가 되는 시점에 marginal이 커져 생존한다(1순위). ⓐ anchor 구조 — 전원 공유 준-균형 anchor가 marginal을 눌러버리는 근본 원인(§7 prior·§12·§15 균열의 공통 뿌리). 이 둘을 잡기 전에는 라우팅 지표(⑤)의 회수율 개선을 논할 수 없다.
+
+\subsection*{③ exp23 상세 — §21 클래스별 F1, 같은 run·같은 split (test 4.02M)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15168\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12698\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11464\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15168\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}}
+\toprule
+class & Global TabPFN & Ours (제안) & XGBoost & dense oracle* & random bank* & proximity bank* \\ \midrule
+\endfirsthead
+class & Global TabPFN & Ours (제안) & XGBoost & dense oracle* & random bank* & proximity bank* \\ \midrule
+\endhead
+{}benign & 0.9799 & 0.9817 & 0.9943 & 0.9920 & 0.9906 & 0.9894 \\
+{}bot & 0.9984 & 0.9984 & 0.9978 & 0.9985 & 0.9984 & 0.9985 \\
+{}brute\_\allowbreak{}force & 0.7246 & 0.7246 & 0.9159 & 0.8041 & 0.9159 & 0.8041 \\
+{}ddos & 0.8951 & 0.8951 & 0.9921 & 0.9897 & 0.9251 & 0.9921 \\
+{}dos & 0.4881 & 0.6978 & 0.7822 & 0.9949 & 0.7813 & 0.5611 \\
+{}infiltration & 0.4204 & 0.4203 & 0.4291 & 0.7549 & 0.5020 & 0.5761 \\
+{}web\_\allowbreak{}attacks & 0.1677 & 0.1825 & 0.1724 & 0.2319 & 0.2194 & 0.1619 \\
+{}macro 평균 & 0.6677 & 0.7001 & 0.7548 & 0.8237 & 0.7618 & 0.7262 \\
+{}weighted 평균 & 0.9545 & 0.9592 & 0.9834 & 0.9842 & 0.9765 & 0.9740 \\
+\bottomrule
+\end{longtable}
+\endgroup
+색 =\allowbreak{} 배치 가능한 세 방법(global(corrected) /\allowbreak{} Ours /\allowbreak{} XGBoost) 중 행 최고. *oracle·bank 열은 "행마다 정답을 아는 심판이 최적 모델을 골라준다면"의 상한 참조(모두 pruning 후 1-expert bank 기준) — random·proximity는 §20.1 Gate-1 대조군(등메모리 무작위 /\allowbreak{} 특징-근접 컨텍스트). global\_\allowbreak{}raw =\allowbreak{} global(corrected): β=\allowbreak{}0·T-tempering은 argmax 불변. routing baseline(§21) : 같은 expert를 verifier 없이 항상 채택하면(nearest-centroid =\allowbreak{} top1-no-verifier, K=\allowbreak{}1이라 동일) 0.4932 — global보다 −0.17 나쁘다. 이 대조군이 verifier gate의 가치(0.4932  \ensuremath{\rightarrow}  0.7001)를 정량화한다. XGBoost는 이 run에서 마지막으로 in-run 학습(차기부터 이전 수치 인용 정책). §20.3–20.6(IF sweep·prior shift·temporal·latency 백분위)과 §21 static zoo는 이연 — docstring·0826.md §4에 선언.
+
+\subsection*{④ exp23 상세 — §20.2 IID guardrail}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24286\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19524\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18730\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19524\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17937\linewidth-2\tabcolsep\relax}}
+\toprule
+method & balanced acc & macro-AUPRC & ECE (15-bin) & benign FPR \\ \midrule
+\endfirsthead
+method & balanced acc & macro-AUPRC & ECE (15-bin) & benign FPR \\ \midrule
+\endhead
+{}global (corrected) & 0.6547 & 0.6362 & 0.0418 & 0.002677 \\
+{}Ours & 0.6961 & 0.6635 & 0.0398 & 0.002703 \\
+{}XGBoost & 0.7749 & 0.7426 & 0.0055 & 0.002662 \\
+\bottomrule
+\end{longtable}
+\endgroup
+색 =\allowbreak{} global 대비 개선. 판정: guardrail 유지 — benign FPR 증가 +\allowbreak{}0.000026은 D\_\allowbreak{}cal 제약(\ensuremath{\leq}0.0005)의 1/\allowbreak{}20이고, balanced acc·AUPRC·ECE 모두 global보다 개선. 전 지표 XGB 미달은 Gate-3 미충족의 근거로 함께 기록.
+
+\subsection*{⑤ exp23 상세 — §22 routing 지표 (분모·절대 수 병기)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23828\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21484\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27344\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27344\linewidth-2\tabcolsep\relax}}
+\toprule
+지표 & 절대 수 & 비율 & 읽는 법 \\ \midrule
+\endfirsthead
+지표 & 절대 수 & 비율 & 읽는 법 \\ \midrule
+\endhead
+{}평가 행 & 4,023,114 & — & development holdout 전체 \\
+{}제안 (scorer, Û>τ pre ) & 186,404 & 4.6\% & expert가 실제 호출된 행  \ensuremath{\rightarrow}  평균 모델 호출 1.046회 \\
+{}채택 (verifier, G low >τ post ) & 13,107 & 제안의 7.0\% & global 예측이 실제로 교체된 행 \\
+{}기각 =\allowbreak{} wasted call & 173,297 & 제안의 93.0\% & 호출 비용만 쓰고 교체 없음 — Gate-2 결격 사유 (τ pre ·scorer 개선 대상) \\
+{}helpful /\allowbreak{} harmful 교정 & 12,947 /\allowbreak{} 96 & 정밀도 0.9926 & 틀림 \ensuremath{\rightarrow} 맞음 vs 맞음 \ensuremath{\rightarrow} 틀림 (6b·6c) \\
+{}benign 피해 & 93 & +\allowbreak{}0.0000266 & benign 3,502,926행 중 맞던 것을 망친 수 (6c) \\
+{}이득-실재 행 회수 (recall) & \ensuremath{\approx}49,200 /\allowbreak{} 570,329 & 0.086 & expert가 이길 수 있던 행 중 제안된 비율 — 초보수 τ pre =\allowbreak{}17.1의 대가 \\
+{}제안의 적중률 (precision) & — & 0.264 & 제안된 행 중 실제 이득-실재 비율 \\
+{}oracle utility 회수 & 0.64M /\allowbreak{} 2.87M & 0.222 & 가능한 loss-이득 총량 중 실현분 (6a) \\
+{}클래스 전이 요약 & helpful의 99.7\% =\allowbreak{} dos & dos 12,908 · web 39 — 나머지 클래스 무접촉; wrong \ensuremath{\rightarrow} wrong 교체 이동 74행뿐 (6c) &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+§22 요구대로 모든 비율에 분모를 병기. 종합 판독: 안전 지표(정밀도·benign)는 흠 없이 통과했으나, 회수 지표(recall 0.086 · utility 0.222)가 이 시스템의 현재 병목 이다 — ②의 진단(중복 bank  \ensuremath{\rightarrow}  1-expert)과 합치면, 다음 한 수는 라우팅이 아니라 pruning 규칙(greedy backward)과 anchor 구조 다.
+
+\subsection*{⑥ exp23b — pruning 규칙의 오류 수정: 동시(leave-one-out) 심사  \ensuremath{\rightarrow}  greedy backward (run 20260827\_\allowbreak{}011706)}
+튜플: system 0.6937 · global 0.6692 (+\allowbreak{}0.0245) · oracle 0.8122 · 정밀도 0.9941(harmful 62) · 호출 1.047 · τ=\allowbreak{}(12.47, 0).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30682\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}}
+\toprule
+class & global & RACE & oracle* \\ \midrule
+\endfirsthead
+class & global & RACE & oracle* \\ \midrule
+\endhead
+{}benign & 0.9801 & 0.9816 & 0.9979 \\
+{}bot & 0.9984 & 0.9984 & 0.9984 \\
+{}brute\_\allowbreak{}force & 0.7246 & 0.7246 & 0.8041 \\
+{}ddos & 0.8973 & 0.8973 & 0.9964 \\
+{}dos & 0.4942 & 0.6661 & 0.9983 \\
+{}infiltration & 0.4238 & 0.4238 & 0.8660 \\
+{}web\_\allowbreak{}attacks & 0.1659 & 0.1644 & 0.0244 \\
+{}macro & 0.6692 & 0.6937 & 0.8122 \\
+\bottomrule
+\end{longtable}
+\endgroup
+라우팅 지표: 제안 191,098 · 채택 10,862 · 제안 recall 0.156 · utility 실현 0.149 (†oracle =\allowbreak{} 행별 최적-모델 상한 참조).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14368\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26437\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16092\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14368\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14368\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14368\linewidth-2\tabcolsep\relax}}
+\toprule
+regime & 조성 & 행 & 잔차 질량 & mean r̄ & 생존 \\ \midrule
+\endfirsthead
+regime & 조성 & 행 & 잔차 질량 & mean r̄ & 생존 \\ \midrule
+\endhead
+{}1 & dos 순수 & 21,299 & 0.155 & 16.5 & [확인] \\
+{}2 & brute 순수 (질량 최대) & 17,610 & 0.351 & 45.1 & [제외] \\
+{}3 & inf 순수 & 15,628 & 0.285 & 43.3 & [제외] \\
+{}4 & dos 혼합 & 8,595 & 0.113 & 32.4 & [제외] \\
+{}5 & mega (benign 92\%) & 1,894,517 & 0.015 & 0.02 & [제외] \\
+{}6 & benign/\allowbreak{}web 경계 & 523 & 0.002 & 13.3 & [제외] \\
+{}7 & web 순수 & 140 & 0.003 & 2,343 & [제외] \\
+{}8 & easy-brute 혼합 (r̄ 낮음) & 41,688 & 0.076 & 4.1 & [확인] \\
+\bottomrule
+\end{longtable}
+\endgroup
+판독: greedy는 예고대로 생존자를 1 \ensuremath{\rightarrow} 2로 늘렸지만, 살아남은 둘(dos +\allowbreak{} easy-brute)의 gain 상관이 0.9954 — 그리고 hard-brute(질량 최대 regime 2)는 여전히 잘렸다. 이유: easy-brute e8이 bank에 남아 있는 한 hard-brute e2의 tune-marginal이 끝까지 문턱 이하 — greedy는 쌍둥이 중 한 명은 살리지만 어느 쪽을 살릴지는 tune-oracle 근시안 이라 "쉬운 쪽"이 살아남았고, eval의 hard-brute(오답 37,696행)는 그대로다(oracle brute 0.8041 =\allowbreak{} anchor 상한). 규칙 결함 부분 해결, anchor 일반의 효과가 지배 원인임을 역으로 확증.
+
+\subsection*{⑦ exp23c — pruning은 고쳤으니, "anchor 2천 때문에 context가 안 다양한가": 크기 축소 2,000 \ensuremath{\rightarrow} 200 (run 20260827\_\allowbreak{}023651)}
+튜플: system 0.6745 · global 0.6711 ( +\allowbreak{}0.0034 ) · oracle 0.8651 (계열 최고) · 정밀도 0.9798(harmful 680 · benign 591) · 호출 1.061 · τ=\allowbreak{}(9.81, 4.0) · ddos .910 \ensuremath{\rightarrow}  .973 · web .161 \ensuremath{\rightarrow}  .069 재붕괴 .
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30682\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}}
+\toprule
+class & global & RACE & oracle* \\ \midrule
+\endfirsthead
+class & global & RACE & oracle* \\ \midrule
+\endhead
+{}benign & 0.9810 & 0.9862 & 0.9939 \\
+{}bot & 0.9984 & 0.9984 & 0.9986 \\
+{}brute\_\allowbreak{}force & 0.7246 & 0.7246 & 0.8041 \\
+{}ddos & 0.9101 & 0.9729 & 1.0000 \\
+{}dos & 0.4987 & 0.5541 & 0.9961 \\
+{}infiltration & 0.4237 & 0.4163 & 0.9574 \\
+{}web\_\allowbreak{}attacks & 0.1613 & 0.0687 & 0.3056 \\
+{}macro & 0.6711 & 0.6745 & 0.8651 \\
+\bottomrule
+\end{longtable}
+\endgroup
+라우팅 지표: 제안 246,215 · 채택 43,047 · 제안 recall 0.091 · utility 실현 0.154 (†oracle =\allowbreak{} 행별 최적-모델 상한 참조).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16731\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31154\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18654\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16731\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16731\linewidth-2\tabcolsep\relax}}
+\toprule
+regime & 조성 & 행 & 잔차 질량 & 생존 \\ \midrule
+\endfirsthead
+regime & 조성 & 행 & 잔차 질량 & 생존 \\ \midrule
+\endhead
+{}2 & brute 순수 (질량 최대 0.359) & 17,610 & 0.359 & [제외] \\
+{}3 & inf 순수 & 15,519 & 0.280 & [제외] \\
+{}4 & dos 순수 & 21,146 & 0.154 & [확인] \\
+{}5 & web 순수 & 140 & 0.003 & [제외] \\
+{}6 & mega (준-global) & 1,936,355 & 0.089 & [확인] \\
+{}7 & bot 9행(!) & 9 & 0.000 & [확인] \\
+{}1·8 & dos 혼합 · benign/\allowbreak{}web 경계 & 9,221 & 0.115 & [제외] \\
+\bottomrule
+\end{longtable}
+\endgroup
+판독: anchor 축소는 의도대로 bank 상보성을 올렸고(oracle +\allowbreak{}0.04, random 대비 +\allowbreak{}0.104) prox bank도 강해졌다. 그러나 비전문 클래스 posterior가 약해져 verifier가 τ post =\allowbreak{}4까지 조여도 harmful 680(benign 591)·web FP 경로가 재발, 회수는 +\allowbreak{}0.003에 그침. 9행짜리 bot regime이 생존 한 것은 min-support 부재의 marginal 노이즈 노출.  \ensuremath{\rightarrow}  anchor는 "bank 상보성  \ensuremath{\leftrightarrow}  회수층 안전판"을 맞바꾸는 양면 부품.
+
+\subsection*{⑧ exp23d — anchor 구성 조정 1/\allowbreak{}3: 균형 자체를 제거(natural-200) (run 20260827\_\allowbreak{}035659)}
+튜플: system 0.6688 · global 0.6734 ( −0.005, 계열 첫 global 미달 ) · oracle 0.8323 · random bank 0.8229 (격차 +\allowbreak{}0.009 소멸) · harmful 772(전부 benign) · inf .420 \ensuremath{\rightarrow}  .319 붕괴 · recall 0.047.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30682\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}}
+\toprule
+class & global & RACE & oracle* \\ \midrule
+\endfirsthead
+class & global & RACE & oracle* \\ \midrule
+\endhead
+{}benign & 0.9806 & 0.9844 & 0.9987 \\
+{}bot & 0.9984 & 0.9984 & 0.9986 \\
+{}brute\_\allowbreak{}force & 0.7246 & 0.7246 & 0.8041 \\
+{}ddos & 0.9024 & 0.9209 & 0.9996 \\
+{}dos & 0.5257 & 0.5604 & 0.9055 \\
+{}infiltration & 0.4204 & 0.3189 & 0.6593 \\
+{}web\_\allowbreak{}attacks & 0.1620 & 0.1742 & 0.4605 \\
+{}macro & 0.6734 & 0.6688 & 0.8323 \\
+\bottomrule
+\end{longtable}
+\endgroup
+라우팅 지표: 제안 164,948 · 채택 30,576 · 제안 recall 0.047 · utility 실현 0.192 (†oracle =\allowbreak{} 행별 최적-모델 상한 참조).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33684\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17895\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16140\linewidth-2\tabcolsep\relax}}
+\toprule
+regime & 조성 & 행 & 잔차 질량 & 생존 \\ \midrule
+\endfirsthead
+regime & 조성 & 행 & 잔차 질량 & 생존 \\ \midrule
+\endhead
+{}2 & brute 순수 (질량 최대 0.356) & 17,610 & 0.356 & [제외] \\
+{}3 & dos 순수 & 21,243 & 0.154 & [제외] \\
+{}4 & inf 순수 — 시리즈 첫 생존 & 15,579 & 0.284 & [확인] \\
+{}6 & web 순수 — 시리즈 첫 생존 & 135 & 0.003 & [확인] \\
+{}8 & mega (준-global) & 1,894,609 & 0.014 & [확인] \\
+{}1·5·7 & easy-brute 혼합 · dos 혼합 · 경계 & 50,824 & 0.191 & [제외] \\
+\bottomrule
+\end{longtable}
+\endgroup
+판독: anchor 균형성을 제거하자 marginal이 재분화되어 inf·web 순수 전문가가 처음으로 pruning을 통과 — anchor 가설의 구성-단계 예측 적중. 그러나 그 inf 전문가의 override가 오히려 benign 772행을 망치며 inf F1이 붕괴 — natural-anchor expert의 posterior는 balanced-loss 기반 scorer/\allowbreak{}verifier가 신뢰할 수 없는 형태다. 그리고 random bank가 oracle에 육박(0.8229 vs 0.8323): Gate-1 "residual 우위"의 상당분이 균형 anchor의 기여였음이 확정 .
+
+\subsection*{⑨ exp23d — anchor 구성 조정 2/\allowbreak{}3: 반대분포(inverse-200) (run 20260827\_\allowbreak{}051400)}
+튜플: system 0.6578 · global 0.6602 (−0.002) · oracle 0.8308 · benign FPR 0.0148 (\ensuremath{\approx}6×, §14 cal 제약은 지켰으나 §20.2 guardrail 실질 위반) · ECE 0.0624 · web .177 \ensuremath{\rightarrow} .087 · K=\allowbreak{}4 선택(시리즈 유일).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30682\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}}
+\toprule
+class & global & RACE & oracle* \\ \midrule
+\endfirsthead
+class & global & RACE & oracle* \\ \midrule
+\endhead
+{}benign & 0.9776 & 0.9792 & 0.9997 \\
+{}bot & 0.9984 & 0.9984 & 0.9985 \\
+{}brute\_\allowbreak{}force & 0.7246 & 0.7246 & 0.8041 \\
+{}ddos & 0.9468 & 0.9527 & 0.9998 \\
+{}dos & 0.5386 & 0.6077 & 0.9953 \\
+{}infiltration & 0.2588 & 0.2550 & 0.9929 \\
+{}web\_\allowbreak{}attacks & 0.1766 & 0.0873 & 0.0251 \\
+{}macro & 0.6602 & 0.6578 & 0.8308 \\
+\bottomrule
+\end{longtable}
+\endgroup
+라우팅 지표: 제안 415,588 · 채택 14,483 · 제안 recall 0.093 · utility 실현 0.106 (†oracle =\allowbreak{} 행별 최적-모델 상한 참조).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15932\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34576\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17627\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15932\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15932\linewidth-2\tabcolsep\relax}}
+\toprule
+regime & 조성 & 행 & 잔차 질량 & 생존 \\ \midrule
+\endfirsthead
+regime & 조성 & 행 & 잔차 질량 & 생존 \\ \midrule
+\endhead
+{}1 & inf 혼합 (inf 15,451 +\allowbreak{} web 134) & 15,594 & 0.248 & [확인] \\
+{}2 & brute 순수 (질량 최대 0.415) & 17,610 & 0.415 & [제외] \\
+{}3 & dos 혼합 (benign 2,691 포함) & 11,036 & 0.117 & [확인] \\
+{}4 & mega (준-global) & 1,955,760 & 0.220 & [확인] \\
+\bottomrule
+\end{longtable}
+\endgroup
+판독: web 761행 전량이 모든 expert의 anchor에 들어가자 전 bank이 web-편향으로 오염 — benign FPR 6× 폭증과 보정 악화(ECE 0.062)가 그 흔적. 희소-집중 anchor는 tail 지지가 아니라 tail-방향 오탐을 시스템 전체에 주입한다. 반대분포 극단은 기각.
+
+\subsection*{⑩ exp23d — anchor 구성 조정 3/\allowbreak{}3: natural을 크기만 복원(natural-2000) (run 20260827\_\allowbreak{}063039)}
+튜플: system 0.6514 · global 0.6679 ( −0.017, 계열 최저 ) · oracle 0.8231 · random 0.8214 (격차 +\allowbreak{}0.002) · helpful 2,278뿐 · web .161 \ensuremath{\rightarrow}  .031 .
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30682\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}}
+\toprule
+class & global & RACE & oracle* \\ \midrule
+\endfirsthead
+class & global & RACE & oracle* \\ \midrule
+\endhead
+{}benign & 0.9807 & 0.9827 & 0.9992 \\
+{}bot & 0.9984 & 0.9984 & 0.9985 \\
+{}brute\_\allowbreak{}force & 0.7246 & 0.7246 & 0.8041 \\
+{}ddos & 0.9183 & 0.9223 & 0.9990 \\
+{}dos & 0.5053 & 0.5131 & 0.9932 \\
+{}infiltration & 0.3877 & 0.3876 & 0.9443 \\
+{}web\_\allowbreak{}attacks & 0.1606 & 0.0312 & 0.0233 \\
+{}macro & 0.6679 & 0.6514 & 0.8231 \\
+\bottomrule
+\end{longtable}
+\endgroup
+라우팅 지표: 제안 200,351 · 채택 23,334 · 제안 recall 0.056 · utility 실현 0.102 (†oracle =\allowbreak{} 행별 최적-모델 상한 참조).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15385\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36923\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16923\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15385\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15385\linewidth-2\tabcolsep\relax}}
+\toprule
+regime & 조성 & 행 & 잔차 질량 & 생존 \\ \midrule
+\endfirsthead
+regime & 조성 & 행 & 잔차 질량 & 생존 \\ \midrule
+\endhead
+{}1 & dos 순수 & 20,941 & 0.145 & [확인] \\
+{}2 & brute 순수 (질량 최대 0.375) & 17,610 & 0.375 & [제외] \\
+{}3 & inf 순수 & 15,715 & 0.252 & [확인] \\
+{}7 & web 순수 & 140 & 0.003 & [확인] \\
+{}4·5·6·8 & dos/\allowbreak{}경계 혼합 · mega · bot-9행 · dos 소규모 & 1,945,594 & 0.225 & [제외] \\
+\bottomrule
+\end{longtable}
+\endgroup
+판독: 시리즈에서 가장 이상적인 bank(dos+\allowbreak{}inf+\allowbreak{}web 순수 3종)이 만들어졌는데 시스템 성적은 계열 최저 — bank의 질과 시스템 성능이 완전히 분리된 결정적 사례. natural anchor 14k(대부분 benign)는 크기를 키워도 같은 병(비전문 posterior 붕괴  \ensuremath{\rightarrow}  회수 실패·web FP)을 앓는다. 크기가 아니라 균형성이 회수층의 전제 조건 . 계열 결론 · 다음 원노브 (우선순위): ① 회수층이 non-balanced posterior를 다루게 — §7 prior correction을 expert 측에 강제(β>0 고정 ablation)하거나, balanced anchor를 유지한 채 pruning 기준을 고잔차-가중 marginal 로 바꿔 쌍둥이 중 hard 쪽을 살리기, ② min-support pruning(9행 regime 방지), ③ recall 0.05\textasciitilde{}0.16의 τ pre 완화. guide-이전 구현이 보였던 +\allowbreak{}0.063 수준의 회수를 (안전을 유지한 채) 회복하려면 이 셋 중 ①이 선행 조건이다.
+
+\subsection*{실험 기록 — exp24 계열 (회수층 복구: pruning 측정·scorer 학습 문제)}
+uncapped cse-cic-ids2018 · test 4,023,114 rows · 같은 run·같은 split · 랩 로그 manuscript/\allowbreak{}report (0827 §1–§3) · XGB 0.7548 인용
+
+실험 플로우: exp23 계열의 두 병목을 각각 원노브로 공격했다 — ⓐ exp24a : §12 marginal을 regime-조건부 로 측정(expert의 자기 regime 행에서만 재면 공유 anchor의 기여가 양변에서 상쇄) +\allowbreak{} min-support, anchor는 균형 2,000 고정. ⓑ exp24b : scorer의 학습 문제를 절대-이득 회귀  \ensuremath{\rightarrow}  sign 분류 P(U>0) 로 교체(6자릿수 스케일 제거, Û가 행 간 비교 가능한 확률이 됨). ⓒ 24b-off : pruning을 끈 대조군으로 "bank vs 관문" 원인 분리. 결과: 두 knob 모두 기계적으로 작동(생존 4\textasciitilde{}5 expert · 제안 recall 0.086 \ensuremath{\rightarrow} 0.18\textasciitilde{}0.26)했고 최고는 24b-off(+\allowbreak{}0.028, harmful 4)이나 XGB는 여전히 미달 — 그리고 새 병목이 특정 됐다: hard-brute regime(잔차 질량 최대)이 세 run 모두 D\_\allowbreak{}tune에 행이 없어 측정 불능으로 탈락.
+
+\subsection*{㉔-0 성능 요약 — 같은-run 판정 튜플 · vs XGB}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20399\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08290\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09071\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08290\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08290\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09071\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10243\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08290\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18056\linewidth-2\tabcolsep\relax}}
+\toprule
+run · knob & system & vs global & vs XGB & oracle & 제안 recall & 정밀도 /\allowbreak{} 유해 & 호출 & 생존 expert \\ \midrule
+\endfirsthead
+run · knob & system & vs global & vs XGB & oracle & 제안 recall & 정밀도 /\allowbreak{} 유해 & 호출 & 생존 expert \\ \midrule
+\endhead
+{}exp24a · regime-조건부 pruning (20260827\_\allowbreak{}144730) & 0.6721 & +\allowbreak{}0.026 & −0.083 & 0.7815 & 0.204 & 0.9959 /\allowbreak{} 52 & 1.048 & 5 (dos·inf·dos혼합·easy-brute·web) \\
+{}exp24b · +\allowbreak{} sign-scorer (20260827\_\allowbreak{}161322) & 0.6824 & +\allowbreak{}0.013 & −0.072 & 0.8206 & 0.184 & 0.9848 /\allowbreak{} 241 & 1.039 & 4 (easy-brute·inf·dos·web) \\
+{}exp24b · pruning off 대조군 (20260827\_\allowbreak{}174858) & 0.6978 & +\allowbreak{}0.028 & −0.057 & 0.8294 & 0.261 & 0.9997 /\allowbreak{} 4 & 1.158 & 5+\allowbreak{}mega (viable 전원) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+exp23 계열 대비 판독: 24b-off는 exp23(+\allowbreak{}0.032)과 유사한 macro를 훨씬 건강한 깔때기 로 달성 — 제안 recall 0.086 \ensuremath{\rightarrow} 0.261(3×), harmful 96 \ensuremath{\rightarrow}  4 , benign 피해 4행. 24a run은 global 자체가 0.6461로 붕괴(inf .205 — run 간 drift 최대 폭)해 절대치 해석 주의. τ pre 는 sign-scorer에서 확률 단위(0.94\textasciitilde{}0.99)로 안정화 — 회귀 scorer의 12\textasciitilde{}28 같은 임의 스케일 임계가 사라짐.
+
+\subsection*{㉔-1 클래스별 F1 — global  \ensuremath{\rightarrow}  system (oracle 참조)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17229\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22651\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22651\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22651\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14819\linewidth-2\tabcolsep\relax}}
+\toprule
+class & 24a & 24b & 24b-off & XGB (인용) \\ \midrule
+\endfirsthead
+class & 24a & 24b & 24b-off & XGB (인용) \\ \midrule
+\endhead
+{}benign & .972 \ensuremath{\rightarrow} .974 & .981 \ensuremath{\rightarrow} .988 & .980 \ensuremath{\rightarrow} .982 & 0.9943 \\
+{}bot & .998 \ensuremath{\rightarrow} .998 & .998 \ensuremath{\rightarrow} .998 & .998 \ensuremath{\rightarrow} .998 & 0.9978 \\
+{}brute\_\allowbreak{}force & .725 \ensuremath{\rightarrow} .725 & .725 \ensuremath{\rightarrow} .725 & .725 \ensuremath{\rightarrow} .725 & 0.9159 \\
+{}ddos & .934 \ensuremath{\rightarrow} .936 & .908 \ensuremath{\rightarrow} .910 & .905 \ensuremath{\rightarrow} .905 & 0.9921 \\
+{}dos & .527 \ensuremath{\rightarrow} .705 & .486 \ensuremath{\rightarrow} .720 & .524 \ensuremath{\rightarrow} .718 & 0.7822 \\
+{}infiltration & .205 \ensuremath{\rightarrow} .205 & .423 \ensuremath{\rightarrow} .425 & .393 \ensuremath{\rightarrow} .393 & 0.4291 \\
+{}web\_\allowbreak{}attacks & .162 \ensuremath{\rightarrow} .162 & .163 \ensuremath{\rightarrow} .012 & .164 \ensuremath{\rightarrow} .164 & 0.1724 \\
+{}macro & .646 \ensuremath{\rightarrow} .672 & .669 \ensuremath{\rightarrow} .682 & .670 \ensuremath{\rightarrow} .698 & 0.7548 \\
+\bottomrule
+\end{longtable}
+\endgroup
+이득은 여전히 dos에 집중(+\allowbreak{}0.18\textasciitilde{}0.23). brute .725 동결 이 XGB 격차(−0.19)의 최대 항목인데, 그 원인이 이번에 특정됐다(㉔-2). 24b의 web .012 붕괴: web-140행 expert가 생존한 상태에서 관문이 관대해지자 w bal (web\ensuremath{\approx}1,500)이 편향시킨 loss-이득을 따라 web FP가 대량 통과 — oracle조차 web 0.024로 참조 불능(γ tempering 후보 재부상). 24b-off는 verifier가 더 보수적으로 작동해 web 무손상.
+
+\subsection*{㉔-2 실험별 보고 +\allowbreak{} 신규 병목 — "D\_\allowbreak{}tune에 없는 regime은 잴 수 없다"}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20884\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39558\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39558\linewidth-2\tabcolsep\relax}}
+\toprule
+run & bank 구성 (7a 복원) & pruning 판정 (2e) \\ \midrule
+\endfirsthead
+run & bank 구성 (7a 복원) & pruning 판정 (2e) \\ \midrule
+\endhead
+{}24a & 8 regime: hard-brute 17.6k(질량 0.404 최대) · dos 20.8k · inf 15.4k · dos혼합 9.8k · mega 1.90M · bot-9행 · easy-brute 40.2k · web-129행 & 생존 5, marginal 1.0\textasciitilde{}10.2로 재분화 [확인] · mega 제거(0.005) [확인] · bot-9행 min-support [확인] · hard-brute: tune 행 0개  \ensuremath{\rightarrow}  측정 불능으로 탈락 [제외] \\
+{}24b & 동형 8 regime (run별 클러스터링 이동) & 생존 4 (easy-brute·inf·dos·web) — hard-brute 동일 사유 탈락 \\
+{}24b-off & 동형 8 regime & viable 전원 유지(5+\allowbreak{}mega) — 단 hard-brute는 off 모드에서도 min-support 탈락 \\
+\bottomrule
+\end{longtable}
+\endgroup
+1 · 두 knob은 설계대로 작동했다. regime-조건부 측정은 anchor를 유지한 채 marginal을 1.0\textasciitilde{}10.2로 분리해 exp23b의 "쌍둥이 동시 붕괴"를 해결했고(24a 2e), sign-scorer는 제안 recall을 0.086 \ensuremath{\rightarrow} 0.18\textasciitilde{}0.26으로 3배 열면서 τ를 확률 단위로 안정화했다. ablation 귀속: 24b-off > 24b  \ensuremath{\rightarrow}  pruning은 여전히 소폭 손해(단 run 간 클러스터링 이동으로 정밀 귀속은 제한). 2 · 새 병목: hard-brute regime이 D\_\allowbreak{}tune에 존재하지 않는다. 세 run 모두, 잔차 질량이 가장 큰 hard-brute regime(D\_\allowbreak{}expert에서 채굴)에 hard-배정되는 masked tune 행이 0개 — marginal을 잴 표본 자체가 없어 min-support에서 탈락한다. D\_\allowbreak{}expert(시간상 앞)와 D\_\allowbreak{}tune(val 앞 40\%, 시간상 뒤) 사이에 brute 실패의 성격이 변했다는 temporal drift의 직접 증거 이며, 전 계열에서 brute F1이 0.725에 동결된 원인이다. 후속 knob: tune-부재 regime의 marginal을 D\_\allowbreak{}route에서 측정(fallback) 또는 검증 표본을 D\_\allowbreak{}expert 후반부에서 분할. 3 · 위치. 회수층 복구는 진행 중이다 — 관문은 3배 열렸고 안전은 사상 최고(harmful 4)지만 utility 실현은 \textasciitilde{}0.20에 머물며, 그 잔여분의 최대 항목이 바로 2의 hard-brute다. XGB(0.7548)와의 격차 −0.057의 절반 이상이 brute 한 클래스에 있다.
+
+\subsection*{㉔-3 축-3 검증 — test-prior shift (§20.4): 가설 기각, 정직 기록}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30833\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15833\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16667\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}}
+\toprule
+macro-F1 & natural & head-heavy & balanced & tail-heavy \\ \midrule
+\endfirsthead
+macro-F1 & natural & head-heavy & balanced & tail-heavy \\ \midrule
+\endhead
+{}global & 0.6698 & 0.6090 & 0.6756 & 0.5851 \\
+{}Ours & 0.6978 & 0.6368 & 0.7073 & 0.6128 \\
+{}XGBoost & 0.7548 & 0.6938 & 0.7686 & 0.6661 \\
+{}XGBoost +\allowbreak{} known-prior 보정 & 0.7548 & 0.7200 & 0.8691 & 0.7681 \\
+{}RACE +\allowbreak{} 보정 (raw posterior) & 0.6978 & 0.6439 & 0.7537 & 0.4815 \\
+\bottomrule
+\end{longtable}
+\endgroup
+저장된 per-row 예측 위의 정확 재가중(가중 confusion matrix, 재샘플 노이즈 없음) · 소스 run 24b-off · 전체 표(6방법×4mix×5지표)는 8a\_\allowbreak{}prior\_\allowbreak{}shift.csv . 판독: ① 사전 등록 가설("훈련 prior가 구워진 XGB가 무보정에서 크게 밀린다")은 기각 — XGB는 무보정에서도 전 mix 최고이고, 타깃 prior를 아는 사후보정을 주면 posterior 분리가 날카로워 압승(balanced 0.869 · tail-heavy tail-F1 0.992). ② RACE의 방어점: global 대비 이득 +\allowbreak{}0.03이 4개 mix 전부에서 유지 (prior-강건)되고 ECE는 global 상회. ③ 방법론 발견: 보정은 tempered 저장 posterior가 아닌 raw posterior에 적용해야 하며(tail-heavy 0.297 \ensuremath{\rightarrow} 0.482), 그래도 미달인 원인은 TabPFN posterior의 클래스 간 sharpness 부족 — §7 보정 무효과(β=\allowbreak{}0)와 같은 뿌리로 추정. ④ 전략 함의: 축 3은 차별화 축에서 강등(강건성 체크로 유지), 차별화 서사는 축 1(temporal)로 집중 — hard-brute의 정체가 SSH-bruteforce(18:01 개시)로 명명 확인되었고, frozen 모델이 SSH 전량(37,696행)을 놓치는 것을 소량 라벨 refresh로 회복하는 것이 본 승부다.
+
+\subsection*{부록 — Ours 알고리즘 전체 도식 (Figure 1)}
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

@@ -1,0 +1,20 @@
+{
+  "version": "v7",
+  "experiment": "exp78",
+  "seed": 43,
+  "seed_repetitions": 1,
+  "purpose": "Lab meeting: no-FT DistPFN and new-attack label-budget sensitivity",
+  "authorization": "2026-10-16 user: replace SOTA with no-FT PFN + DistPFN, unify slides 6/7 on context updates versus cumulative retraining; omit repeated seeds for lab meeting",
+  "initial_labels": 1000,
+  "initial_counts": [750, 125, 125],
+  "new_class_counts": [100, 50, 20, 10],
+  "sampling": "nested subsets of EXP77 IDs, same IDs for all models",
+  "methods": ["xgb", "pfn_pretrained", "pfn_ft_accumulate"],
+  "distpfn": "Original pretrained v3, cumulative context, same current-query-batch posterior correction as EXP77, no FT",
+  "evaluation": "Final model on complete fixed test in original file order",
+  "displayed_cost": "GPU-synchronized wall time summed after the initial stage: context selection/model construction/fit; exclude initial preparation and all inference",
+  "reuse": "EXP77 budget-100 results, fixed initial FT checkpoint, no-FT fit state and context preparation costs",
+  "research_status": "single-seed exploratory lab-meeting evidence; no statistical equivalence claim",
+  "html_publication": false,
+  "overleaf_publication": false
+}

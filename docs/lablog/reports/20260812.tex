@@ -1,0 +1,150 @@
+% !TeX root = 20260812.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-12}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-12 · TabPFN-v3와 XGBoost의 다중 클래스 사전 비교}
+\label{report:20260812_0812}
+\recordnote{클래스별 test cap이 있는 초기 사전 비교다. 전체 test 평가나 현재 정제 데이터 비교와 구별한다.}
+\subsection{목적}
+\par\noindent \textbullet\enspace \texttt{tabpfn/\allowbreak{}\allowbreak{}} 서브체크아웃(Prior-Labs TabPFN-v3)에 대해, 이 프로젝트가 쓰는 실제 CIC 데이터 (CIC-IDS2017 전체 클래스 raw /\allowbreak{} NF-CSE-CIC-IDS2018-v3)에서 TabPFN-v3가 XGBoost baseline 대비 얼마나 하는지 standalone sanity check.
+
+
+\par\noindent \textbullet\enspace \textbf{주의}: 이 로그는 \texttt{src/\allowbreak{}\allowbreak{}s2x\_\allowbreak{}\allowbreak{}code\_\allowbreak{}\allowbreak{}ood\allowbreak{}\_\allowbreak{}\allowbreak{}*.\allowbreak{}py} 계열의 frozen 실험 기록이 아님. 스크립트 자체 docstring에도 명시: "a quick standalone check of the TabPFN library itself, not part of that paper's experiment record". CLAUDE.md의 results/\allowbreak{}Args 로그 관례는 지키되, OOD-MoE 논문 프론티어(\texttt{s30\_\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}ood\_\allowbreak{}\allowbreak{}v2\_\allowbreak{}\allowbreak{}resnet\_\allowbreak{}\allowbreak{}c\allowbreak{}ifar.\allowbreak{}py})와는 별개 트랙.
+
+
+\subsection{설정}
+\par\noindent \textbullet\enspace Script: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass\_\allowbreak{}\allowbreak{}t\allowbreak{}est.\allowbreak{}py} (단일 스크립트, \texttt{-\allowbreak{}-\allowbreak{}target\allowbreak{}-\allowbreak{}dataset\allowbreak{}} /\allowbreak{} \texttt{-\allowbreak{}-\allowbreak{}protoc\allowbreak{}ol} 두 축으로 4가지 조합 실행)
+
+
+\par\noindent \textbullet\enspace 데이터셋 두 종류:
+
+\par\noindent \textbullet\enspace \texttt{cic2018}  \ensuremath{\rightarrow}  \texttt{data/\allowbreak{}\allowbreak{}nfv\allowbreak{}3\_\allowbreak{}\allowbreak{}energy\allowbreak{}\_\allowbreak{}\allowbreak{}suite\_\allowbreak{}\allowbreak{}u\allowbreak{}ncapped\_\allowbreak{}\allowbreak{}scenario\allowbreak{}s.\allowbreak{}pkl}에서 \texttt{dataset\_\allowbreak{}\allowbreak{}names =\allowbreak{}\allowbreak{}=\allowbreak{}\allowbreak{} "cse\_\allowbreak{}\allowbreak{}ci\allowbreak{}c\_\allowbreak{}\allowbreak{}ids201\allowbreak{}8"} 서브셋만 사용 (NetFlow-v3, 53-col 스키마)
+
+
+\par\noindent \textbullet\enspace \texttt{cic2017\_\allowbreak{}\allowbreak{}full}  \ensuremath{\rightarrow}  \texttt{data/\allowbreak{}\allowbreak{}cic\allowbreak{}2017\_\allowbreak{}\allowbreak{}ful\allowbreak{}l\_\allowbreak{}\allowbreak{}raw.\allowbreak{}pk\allowbreak{}l}, CICFlowMeter 원본 15개 클래스 전부 (Mon-Thu/\allowbreak{}Friday 제외 없음 — \texttt{chrono\_\allowbreak{}\allowbreak{}v\allowbreak{}2}와는 다른 split)
+
+
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}protoc\allowbreak{}ol}이 split 정책 +\allowbreak{} train cap 정책을 한 번에 결정:
+
+\par\noindent \textbullet\enspace \texttt{reproduc\allowbreak{}e} =\allowbreak{} random 60/\allowbreak{}20/\allowbreak{}20 stratified split +\allowbreak{} \textbf{class당 3,000개 고정 cap} (참조 논문 TabPFN-IDS의 재현 설계, Sec III.E.4)
+
+
+\par\noindent \textbullet\enspace \texttt{sota} =\allowbreak{} chronological split(cic2018은 real timestamp, cic2017\_\allowbreak{}full은 synthetic \texttt{time\_\allowbreak{}\allowbreak{}pro\allowbreak{}xy} — 실제 타임스탬프 없음) +\allowbreak{} \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les}로 \textbf{자연 클래스 비율을 유지한 stratified train budget} (CLAUDE.md M4 기준 이 프로젝트의 기본 입장)
+
+
+
+\par\noindent \textbullet\enspace 체크포인트: \texttt{tabpfn-\allowbreak{}v\allowbreak{}3-\allowbreak{}classi\allowbreak{}fier-\allowbreak{}v3\_\allowbreak{}\allowbreak{}20260417\allowbreak{}\_\allowbreak{}\allowbreak{}multicl\allowbreak{}ass.\allowbreak{}ckpt\allowbreak{}}, \texttt{n\_\allowbreak{}\allowbreak{}estima\allowbreak{}tors=\allowbreak{}\allowbreak{}4} (참조 논문 값), feature scaling 없음(TabPFN 내부 전처리에 위임).
+
+
+\par\noindent \textbullet\enspace XGBoost baseline은 \texttt{s43}/\allowbreak{}\texttt{s44} expert와 동일 하이퍼파라미터, TabPFN과 완전히 같은 train/\allowbreak{}test row에 대해 같은 스크립트 안에서 학습·평가.
+
+
+\subsection{실행}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17361\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10051\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08882\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14145\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17361\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09174\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13268\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09759\linewidth-2\tabcolsep\relax}}
+\toprule
+dir & dataset & protocol & split & train cap 정책 & train rows & tabpfn fit+\allowbreak{}pred & xgb fit+\allowbreak{}pred \\ \midrule
+\endfirsthead
+dir & dataset & protocol & split & train cap 정책 & train rows & tabpfn fit+\allowbreak{}pred & xgb fit+\allowbreak{}pred \\ \midrule
+\endhead
+{}\texttt{results/\allowbreak{}\allowbreak{}20260806\allowbreak{}\_\allowbreak{}\allowbreak{}160307\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}tab\allowbreak{}pfn\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass/\allowbreak{}\allowbreak{}} & cic2018 & reproduce & random & 3,000/\allowbreak{}class 고정 & 19,523 & 55.1s & 1.9s \\
+{}\texttt{results/\allowbreak{}\allowbreak{}20260810\allowbreak{}\_\allowbreak{}\allowbreak{}091207\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}tab\allowbreak{}pfn\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass/\allowbreak{}\allowbreak{}} & cic2018 & sota & chronological & stratified, max 100,000 & 100,000 & 452.1s & 5.3s \\
+{}\texttt{results/\allowbreak{}\allowbreak{}20260806\allowbreak{}\_\allowbreak{}\allowbreak{}201324\_\allowbreak{}\allowbreak{}cic2017\_\allowbreak{}\allowbreak{}full\_\allowbreak{}\allowbreak{}tab\allowbreak{}pfn\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass/\allowbreak{}\allowbreak{}} & cic2017\_\allowbreak{}full & sota & chronological (time\_\allowbreak{}proxy) & stratified, max 1,000,000 (스크립트 기본값, 이 run은 dial down 안 함) & 1,000,000 & \textbf{14,635.8s (\ensuremath{\approx}4.1시간)} & 291.7s \\
+{}\texttt{results/\allowbreak{}\allowbreak{}20260810\allowbreak{}\_\allowbreak{}\allowbreak{}101626\_\allowbreak{}\allowbreak{}cic2017\_\allowbreak{}\allowbreak{}full\_\allowbreak{}\allowbreak{}tab\allowbreak{}pfn\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass/\allowbreak{}\allowbreak{}} & cic2017\_\allowbreak{}full & reproduce & random & 3,000/\allowbreak{}class 고정 & 29,512 & 45.4s & 7.3s \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\subsection{Results (macro F1 /\allowbreak{} tail F1 /\allowbreak{} weighted F1, \texttt{test\_\allowbreak{}\allowbreak{}cap\allowbreak{}\_\allowbreak{}\allowbreak{}per\_\allowbreak{}\allowbreak{}cla\allowbreak{}ss=\allowbreak{}\allowbreak{}100,\allowbreak{}0\allowbreak{}00})}
+\subsubsection{cic2018 (NF-CSE-CIC-IDS2018-v3)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.36348\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32624\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31028\linewidth-2\tabcolsep\relax}}
+\toprule
+protocol & tabpfn\_\allowbreak{}v3 macro/\allowbreak{}tail/\allowbreak{}weighted & xgboost macro/\allowbreak{}tail/\allowbreak{}weighted \\ \midrule
+\endfirsthead
+protocol & tabpfn\_\allowbreak{}v3 macro/\allowbreak{}tail/\allowbreak{}weighted & xgboost macro/\allowbreak{}tail/\allowbreak{}weighted \\ \midrule
+\endhead
+{}reproduce (3,000/\allowbreak{}class, random split) & 0.795 /\allowbreak{} 0.721 /\allowbreak{} 0.848 & 0.810 /\allowbreak{} 0.737 /\allowbreak{} 0.861 \\
+{}sota (chronological, 100k stratified) & 0.795 /\allowbreak{} 0.668 /\allowbreak{} 0.871 & 0.718 /\allowbreak{} 0.488 /\allowbreak{} 0.874 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace \texttt{reproduc\allowbreak{}e}에서는 XGBoost가 세 지표 모두 근소 우위.
+
+
+\par\noindent \textbullet\enspace \texttt{sota}(chronological split)에서는 \textbf{TabPFN이 macro/\allowbreak{}tail에서 XGBoost를 앞섬} — chronological split으로 넘어가면서 XGBoost tail F1이 0.737 \ensuremath{\rightarrow} 0.488로 크게 떨어지는 반면 TabPFN은 0.721 \ensuremath{\rightarrow} 0.668로 덜 떨어짐. weighted F1은 거의 동률.
+
+
+\subsubsection{cic2017\_\allowbreak{}full (raw 15-class)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.36667\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32456\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30877\linewidth-2\tabcolsep\relax}}
+\toprule
+protocol & tabpfn\_\allowbreak{}v3 macro/\allowbreak{}tail/\allowbreak{}weighted & xgboost macro/\allowbreak{}tail/\allowbreak{}weighted \\ \midrule
+\endfirsthead
+protocol & tabpfn\_\allowbreak{}v3 macro/\allowbreak{}tail/\allowbreak{}weighted & xgboost macro/\allowbreak{}tail/\allowbreak{}weighted \\ \midrule
+\endhead
+{}sota (chronological time\_\allowbreak{}proxy, 1M stratified) & 0.670 /\allowbreak{} 0.328 /\allowbreak{} 0.968 & 0.717 /\allowbreak{} 0.446 /\allowbreak{} 0.973 \\
+{}reproduce (3,000/\allowbreak{}class, random split) & 0.761 /\allowbreak{} 0.403 /\allowbreak{} 0.993 & 0.856 /\allowbreak{} 0.628 /\allowbreak{} 0.995 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 두 protocol 모두 \textbf{XGBoost가 전 지표 우위}, 특히 tail F1 격차가 큼(reproduce: 0.403 vs 0.628).
+
+
+\par\noindent \textbullet\enspace \texttt{sota} run은 학습 row를 1,000,000까지 그대로 사용해서 TabPFN fit+\allowbreak{}predict가 약 4.1시간 걸림(XGBoost는 292초, 약 50배 차이) — 스크립트 docstring이 권하는 "dial it down yourself for faster sota runs"를 따르지 않은 채로 돌린 run이라 다음에 재현할 때는 \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les}를 낮춰서 도는 게 맞음.
+
+
+\subsection{관찰과 판단}
+\par\noindent \textbullet\enspace \textbf{\texttt{reproduc\allowbreak{}e} protocol(논문 그대로 class당 3,000 cap)에서는 두 데이터셋 모두 XGBoost가 TabPFN-v3보다 우위.} cic2017\_\allowbreak{}full에서는 그 격차가 특히 크다(tail F1 0.403 vs 0.628).
+
+
+\par\noindent \textbullet\enspace \textbf{\texttt{sota} protocol(chronological split +\allowbreak{} 자연 분포비율 유지 budget)에서는 결과가 갈림:} cic2018에서는 TabPFN이 macro/\allowbreak{}tail에서 XGBoost를 앞서지만, cic2017\_\allowbreak{}full에서는 여전히 XGBoost가 전 지표 우위.
+
+
+\par\noindent \textbullet\enspace 종합하면, 이 프로젝트 데이터(강한 tail-class 불균형 +\allowbreak{} chronological/\allowbreak{}전체-클래스 split)에서 \textbf{TabPFN-v3가 XGBoost baseline을 확실히 능가하는 케이스는 없었다} — cic2018 sota에서 부분적 우위 정도가 전부.
+
+
+\par\noindent \textbullet\enspace 학습 row 수가 늘어날수록(100k, 1M) TabPFN의 fit+\allowbreak{}predict 시간이 XGBoost 대비 수십\textasciitilde{}수백 배로 벌어짐 (cic2017\_\allowbreak{}full sota: 14,636s vs 292s). 성능 우위가 없는 상황에서 이 비용 격차는 실용성 면에서 TabPFN을 더 불리하게 만듦.
+
+
+\par\noindent \textbullet\enspace \textbf{Open question}: cic2018 sota가 유일하게 TabPFN 우위를 보인 케이스인데, 원인이 (a) real timestamp 기반 chronological split(cic2017\_\allowbreak{}full은 synthetic \texttt{time\_\allowbreak{}\allowbreak{}pro\allowbreak{}xy}라 진짜 chronological이 아님) 때문인지, (b) NetFlow-v3 스키마(53 feature) 자체의 특성 때문인지 구분이 안 됨 — 분리 확인 필요.
+
+
+\subsection{재개 시 확인할 파일}
+\par\noindent \textbullet\enspace 요약 지표: 각 run dir의 \texttt{per\_\allowbreak{}\allowbreak{}clas\allowbreak{}s\_\allowbreak{}\allowbreak{}metric\allowbreak{}s.\allowbreak{}csv} (method별 pivot: macro\_\allowbreak{}avg/\allowbreak{}weighted\_\allowbreak{}avg/\allowbreak{} tail\_\allowbreak{}avg 행)
+
+
+\par\noindent \textbullet\enspace train/\allowbreak{}test row 구성 및 cap 적용 여부: \texttt{timings.\allowbreak{}json}
+
+
+\par\noindent \textbullet\enspace split별 클래스 구성 감사: \texttt{split\_\allowbreak{}\allowbreak{}au\allowbreak{}dit.\allowbreak{}csv} (natural pool +\allowbreak{} \texttt{train\_\allowbreak{}\allowbreak{}us\allowbreak{}ed} 행 포함)
+
+
+\par\noindent \textbullet\enspace 실행 커맨드: \texttt{args.\allowbreak{}jso\allowbreak{}n}
+
+
+\par\noindent \textbullet\enspace 스크립트 자체 docstring(\texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass\_\allowbreak{}\allowbreak{}t\allowbreak{}est.\allowbreak{}py} 상단)에 protocol/\allowbreak{}데이터셋 로더 차이가 상세히 적혀 있음 — 재실행 전에 반드시 확인.
+
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

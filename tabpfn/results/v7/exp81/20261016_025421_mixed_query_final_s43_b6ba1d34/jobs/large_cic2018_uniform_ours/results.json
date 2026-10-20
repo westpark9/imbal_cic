@@ -1,0 +1,516 @@
+{
+  "dataset": "cic2018",
+  "case": "uniform",
+  "method": "ours",
+  "seed": 43,
+  "evaluation": "final_full_test",
+  "test_order": "seed43_mixed",
+  "batch": 8192,
+  "test_rows": 3042473,
+  "training_rows": 100000,
+  "final_stage": 4,
+  "source_model_dir": "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4",
+  "source_fit_metrics": {
+    "update_seconds": 44.52469587796077,
+    "phases": [
+      {
+        "phase": "global_construct",
+        "seconds": 5.617899296339601e-05
+      },
+      {
+        "phase": "global_fit",
+        "seconds": 5.585590178990969
+      },
+      {
+        "phase": "global_embedding",
+        "seconds": 6.462799529006588
+      },
+      {
+        "phase": "embedding_pca",
+        "seconds": 0.056553606991656125
+      },
+      {
+        "phase": "temperature_predictions",
+        "seconds": 0.4837171010003658
+      },
+      {
+        "phase": "residual_predictions",
+        "seconds": 3.2401477079984033
+      },
+      {
+        "phase": "residual_embedding",
+        "seconds": 3.2887088429997675
+      },
+      {
+        "phase": "residual_clustering",
+        "seconds": 0.028900911987875588
+      },
+      {
+        "phase": "global_route",
+        "seconds": 3.2453306629904546
+      },
+      {
+        "phase": "embedding_route",
+        "seconds": 3.2861363949923543
+      },
+      {
+        "phase": "global_cal",
+        "seconds": 0.7132040030119242
+      },
+      {
+        "phase": "embedding_cal",
+        "seconds": 0.718543677998241
+      },
+      {
+        "phase": "expert1_construct",
+        "seconds": 6.839899288024753e-05
+      },
+      {
+        "phase": "expert1_fit",
+        "seconds": 1.03335370599234
+      },
+      {
+        "phase": "expert1_route",
+        "seconds": 1.5163386879867176
+      },
+      {
+        "phase": "expert1_cal",
+        "seconds": 0.32874298200476915
+      },
+      {
+        "phase": "expert2_construct",
+        "seconds": 6.253999890759587e-05
+      },
+      {
+        "phase": "expert2_fit",
+        "seconds": 3.384695227010525
+      },
+      {
+        "phase": "expert2_route",
+        "seconds": 2.597641977001331
+      },
+      {
+        "phase": "expert2_cal",
+        "seconds": 0.5686363690037979
+      },
+      {
+        "phase": "expert3_construct",
+        "seconds": 5.697899905499071e-05
+      },
+      {
+        "phase": "expert3_fit",
+        "seconds": 0.9163861889974214
+      },
+      {
+        "phase": "expert3_route",
+        "seconds": 1.4727887580083916
+      },
+      {
+        "phase": "expert3_cal",
+        "seconds": 0.3202252920018509
+      },
+      {
+        "phase": "expert4_construct",
+        "seconds": 5.5886004702188075e-05
+      },
+      {
+        "phase": "expert4_fit",
+        "seconds": 0.9219751500058919
+      },
+      {
+        "phase": "expert4_route",
+        "seconds": 1.4683560179983033
+      },
+      {
+        "phase": "expert4_cal",
+        "seconds": 0.31788718700408936
+      },
+      {
+        "phase": "affinity_indices",
+        "seconds": 0.0005044509889557958
+      },
+      {
+        "phase": "S1V0_fit",
+        "seconds": 2.4152091839932837
+      },
+      {
+        "phase": "threshold_selection",
+        "seconds": 0.04332128100213595
+      }
+    ],
+    "train_rows": 100000,
+    "validation_rows": 8047,
+    "global_rows": 50125,
+    "experts": 4,
+    "context_recipe": "common anchor + residual cluster block (all cluster rows below original 186000 cap)",
+    "policy": "EXP62 S1V0; original features, targets and threshold constraints",
+    "class_names": [
+      "benign",
+      "brute_force",
+      "dos",
+      "ddos",
+      "web_attacks",
+      "infiltration",
+      "bot"
+    ],
+    "protocol_adaptations": [
+      "100k training budget plus separate validation; causal feature-group-disjoint role allocation",
+      "all disjoint D_cal selects thresholds; no chronological cal-confirm split",
+      "tail constraint neutral until original tail classes appear"
+    ],
+    "selection": {
+      "tau_pre": 0.9287471151351928,
+      "tau_post": 0.0,
+      "delta_macro_f1": 0.025483716773880394,
+      "delta_tail_f1": 0.058397942668096225,
+      "delta_benign_fpr": 0.0,
+      "accepted": 89,
+      "changed": 89,
+      "helpful": 89,
+      "harmful": 0,
+      "proposal_rate": 0.005557409568261375,
+      "harmful_fraction": 0.0,
+      "feasible": true,
+      "reason": ""
+    },
+    "stage": 4,
+    "dataset": "cic2018",
+    "case": "uniform",
+    "method": "ours",
+    "input_prepare_seconds": 0.10870081800385378,
+    "train_ids_sha256": "196dfb3929c1cd58e44bfcfe0e602962b56bfd5838d3aad3092efe8a8bae1685",
+    "validation_ids_sha256": "eb1aebe9ca72faf4ec2362ad7fc721f3d992f5dcb38ef61eb25acf2811b9cc2a",
+    "validation_available_rows": 8047,
+    "validation_used_rows": 8047,
+    "global_class_indices": [
+      0,
+      2,
+      4,
+      3,
+      6,
+      5,
+      1
+    ]
+  },
+  "source_hashes": {
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/fit_metrics.json": "9a04daf7e39c1e6447d7e92de84ef0def8d3469711bd34e4338b07b8bbdd0d2f",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/train_ids.npy": "ffbb7ae79a4fbfa884f2dae3fbde8e9886f664933f695652630dc209a430c1f4",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/state.joblib": "7ef2d4ceff65cbe6904b99f422655dd1c36f5ede64d0e35d9fb412ecd2484b7d",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/contexts.json": "b83d1bde8ae1aa7432e19735b5a31453808e2bd52f41169d7ee6b59d47f9f04b",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/model_0.tabpfn_fit": "77421cd4b23659ed0baed4e6b1481cab1e9abed5c03eea08d60a10623c39f98b",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/model_1.tabpfn_fit": "993cb855449d233b3b79be40d915372e6a66cce804ceb80385e220f4097f9cfa",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/model_2.tabpfn_fit": "e125d6e7d287b824529a95c99f8be830159ab1577a48c04f9df8ffa679c5be3c",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/model_3.tabpfn_fit": "0509b7a33a07aea9bbf1d311b9e4bd323e5637e2d2a0d4afe881459121975fa2",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_uniform_ours/stage_4/model_4.tabpfn_fit": "69cde1950a5b1a92b7c43a7f3c02d06ed07f284a21ae0f85297e3d483e7acb33"
+  },
+  "metrics": {
+    "rows": 3042473,
+    "confusion": [
+      [
+        2650338,
+        17,
+        0,
+        7,
+        9,
+        1389,
+        443
+      ],
+      [
+        83,
+        41418,
+        0,
+        0,
+        0,
+        41,
+        0
+      ],
+      [
+        20,
+        0,
+        37676,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        304,
+        0,
+        0,
+        262376,
+        0,
+        0,
+        0
+      ],
+      [
+        509,
+        0,
+        0,
+        0,
+        38860,
+        0,
+        114
+      ],
+      [
+        6484,
+        0,
+        0,
+        0,
+        0,
+        2173,
+        85
+      ],
+      [
+        46,
+        0,
+        0,
+        0,
+        0,
+        0,
+        81
+      ]
+    ],
+    "macro_f1": 0.790036717154549,
+    "benign_false_positive_rate": 0.0007031890092877506,
+    "attack_to_benign": 7446,
+    "wrong_attack_family": 240,
+    "attack_detection_recall": 0.9809209009147514,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 2652203,
+        "precision": 0.9971984179301252,
+        "recall": 0.9992968109907122,
+        "f1": 0.9982465117146238,
+        "TP": 2650338,
+        "FP": 7446,
+        "FN": 1865
+      },
+      {
+        "name": "bot",
+        "support": 41542,
+        "precision": 0.9995897188367322,
+        "recall": 0.9970150690867075,
+        "f1": 0.9983007339383203,
+        "TP": 41418,
+        "FP": 17,
+        "FN": 124
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 1.0,
+        "recall": 0.9994694397283531,
+        "f1": 0.9997346494719525,
+        "TP": 37676,
+        "FP": 0,
+        "FN": 20
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 0.9999733214423191,
+        "recall": 0.9988426983401858,
+        "f1": 0.999407690124804,
+        "TP": 262376,
+        "FP": 7,
+        "FN": 304
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 0.9997684530088246,
+        "recall": 0.9842210571638427,
+        "f1": 0.9919338370430876,
+        "TP": 38860,
+        "FP": 9,
+        "FN": 623
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.6031085206772134,
+        "recall": 0.2485701212537177,
+        "f1": 0.35204536249493723,
+        "TP": 2173,
+        "FP": 1430,
+        "FN": 6569
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 0.11203319502074689,
+        "recall": 0.6377952755905512,
+        "f1": 0.19058823529411764,
+        "TP": 81,
+        "FP": 642,
+        "FN": 46
+      }
+    ]
+  },
+  "predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp79/20261016_022105_saved100k_finalfull_s43_7f90866d/jobs/cic2018_uniform_ours/predictions.npy",
+  "serving_seconds": 781.1889351226855,
+  "training_rerun": false,
+  "restoration_mismatches": 0,
+  "global_metrics": {
+    "rows": 3042473,
+    "confusion": [
+      [
+        2650659,
+        17,
+        0,
+        7,
+        9,
+        1070,
+        441
+      ],
+      [
+        83,
+        41418,
+        0,
+        0,
+        0,
+        41,
+        0
+      ],
+      [
+        20,
+        0,
+        37676,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        304,
+        0,
+        0,
+        262376,
+        0,
+        0,
+        0
+      ],
+      [
+        509,
+        0,
+        0,
+        0,
+        38860,
+        0,
+        114
+      ],
+      [
+        7434,
+        0,
+        0,
+        0,
+        0,
+        1223,
+        85
+      ],
+      [
+        48,
+        0,
+        0,
+        0,
+        0,
+        0,
+        79
+      ]
+    ],
+    "macro_f1": 0.7707291593256975,
+    "benign_false_positive_rate": 0.0005821575497803147,
+    "attack_to_benign": 8398,
+    "wrong_attack_family": 240,
+    "attack_detection_recall": 0.9784815640454044,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 2652203,
+        "precision": 0.9968417375031825,
+        "recall": 0.9994178424502197,
+        "f1": 0.9981281277888863,
+        "TP": 2650659,
+        "FP": 8398,
+        "FN": 1544
+      },
+      {
+        "name": "bot",
+        "support": 41542,
+        "precision": 0.9995897188367322,
+        "recall": 0.9970150690867075,
+        "f1": 0.9983007339383203,
+        "TP": 41418,
+        "FP": 17,
+        "FN": 124
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 1.0,
+        "recall": 0.9994694397283531,
+        "f1": 0.9997346494719525,
+        "TP": 37676,
+        "FP": 0,
+        "FN": 20
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 0.9999733214423191,
+        "recall": 0.9988426983401858,
+        "f1": 0.999407690124804,
+        "TP": 262376,
+        "FP": 7,
+        "FN": 304
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 0.9997684530088246,
+        "recall": 0.9842210571638427,
+        "f1": 0.9919338370430876,
+        "TP": 38860,
+        "FP": 9,
+        "FN": 623
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.523993144815767,
+        "recall": 0.13989933653626171,
+        "f1": 0.220837847598411,
+        "TP": 1223,
+        "FP": 1111,
+        "FN": 7519
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 0.10987482614742698,
+        "recall": 0.6220472440944882,
+        "f1": 0.1867612293144208,
+        "TP": 79,
+        "FP": 640,
+        "FN": 48
+      }
+    ]
+  },
+  "policy": {
+    "called": 3090,
+    "accepted": 1276,
+    "helpful": 952,
+    "harmful": 321
+  },
+  "scope": "large",
+  "prediction_storage_order": "original",
+  "full_reinference": false,
+  "mixed_audit_rows": 8192,
+  "mixed_audit_mismatches": 0,
+  "query_order_sha256": "aab673b1ac432dba7208f26777a58a94fc8abda3731659a1f85bd4d0fe1879a4",
+  "reuse_reason": "Row-wise predictor without batch posterior correction; mixed-query audit matched original predictions",
+  "serving_seconds_scope": "Original full-test inference measurement; full predictions reused after mixed-query audit",
+  "inherited_metadata_from_source_result": {},
+  "note": "Saved model, unchanged training/context; seed43 mixed query evaluation or explicitly audited prediction reuse; update costs retain their original preparation measurements"
+}

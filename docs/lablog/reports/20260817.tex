@@ -1,0 +1,176 @@
+% !TeX root = 20260817.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-17}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-17 · 0817 Correction: cic2017\_\allowbreak{}full bot =\allowbreak{} 0.0 의 진짜 원인 — 0813 결론 뒤집음}
+\label{report:20260817_0817}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+0813.md의 정정. 그 로그는 \texttt{bot}/\allowbreak{}\texttt{infiltra\allowbreak{}tion}이 P/\allowbreak{}R/\allowbreak{}F1 =\allowbreak{} 0.0을 기록한 원인을 "클래스별 chronological split이 짧은 단일세션·다단계 공격을 구조적으로 OOD로 만든다 — 방법론적 특성이지 회귀가 아니다"로 결론지었다. \textbf{틀렸다.} 원인은 고칠 수 있는 결함이고, 고치면 \texttt{bot} F1 0.0  \ensuremath{\rightarrow}  0.80, macro F1 0.717  \ensuremath{\rightarrow}  0.804다.
+
+재조사 계기: Colab에서 cic2017\_\allowbreak{}full을 다시 돌린 결과에서 \texttt{bot}이 또 0.0을 기록했고(TabPFN·XGBoost 둘 다), 이번에는 \texttt{infiltra\allowbreak{}tion}이 xgboost f1 =\allowbreak{} \textbf{1.0}을 찍었다. 0813이 두 클래스를 같은 원인으로 묶었는데 한쪽만 회복된 것 자체가 그 설명이 틀렸다는 신호였다.
+
+\subsection{1차 확인: split 코드는 결백 (이번엔 실데이터 대조)}
+0813은 코드를 읽고 "버그 아님"이라 했는데, 이번엔 실제 825 MB 피클에 대해 독립 재계산했다.
+
+\par\noindent \textbullet\enspace \texttt{scenario\allowbreak{}\_\allowbreak{}\allowbreak{}chronol\allowbreak{}ogical\_\allowbreak{}\allowbreak{}s\allowbreak{}plit}(\texttt{exp\_\allowbreak{}\allowbreak{}util\allowbreak{}s.\allowbreak{}py:408\allowbreak{}-\allowbreak{}433})은 클래스별로 정확히 분할한다 (\texttt{:411} \texttt{for scen\allowbreak{}ario in \allowbreak{}sorted(n\allowbreak{}p.\allowbreak{}unique\allowbreak{}(scenari\allowbreak{}os[indic\allowbreak{}es]))}, \texttt{:412} 마스킹).
+
+
+\par\noindent \textbullet\enspace \textbf{\texttt{time\_\allowbreak{}\allowbreak{}pro\allowbreak{}xy}는 전역 유일하고 단조 증가} — 2,827,876행에 고유값 2,827,876개. \texttt{preproce\allowbreak{}ss\_\allowbreak{}\allowbreak{}cic20\allowbreak{}17\_\allowbreak{}\allowbreak{}full\_\allowbreak{}\allowbreak{}raw.\allowbreak{}py:8\allowbreak{}1}이 per-file dropna \textbf{이후에} \texttt{file\_\allowbreak{}\allowbreak{}ord\allowbreak{}er*10\_\allowbreak{}\allowbreak{}00\allowbreak{}0\_\allowbreak{}\allowbreak{}000 +\allowbreak{}\allowbreak{} \allowbreak{}arange(l\allowbreak{}en(df))}로 만들고, 최대 파일이 691,406행이라 \texttt{FILE\_\allowbreak{}\allowbreak{}ORD\allowbreak{}ER\_\allowbreak{}\allowbreak{}SPAN}을 넘지 않는다. 따라서 \texttt{:413}의 stable sort는 항등 순열이고 \textbf{타이로 인한 재정렬이 원천적으로 불가능}하다.
+
+
+\par\noindent \textbullet\enspace 60/\allowbreak{}20/\allowbreak{}20 산술 정확, train/\allowbreak{}val/\allowbreak{}test는 서로소이며 전체를 덮는다 (1,696,720 +\allowbreak{} 565,570 +\allowbreak{} 565,586 =\allowbreak{} 2,827,876).
+
+
+\par\noindent \textbullet\enspace 저장된 \texttt{split\_\allowbreak{}\allowbreak{}au\allowbreak{}dit.\allowbreak{}csv}와 재계산 결과가 15행 × 8 numeric 컬럼 전부 일치.
+
+
+ \ensuremath{\rightarrow}  인덱싱 버그는 없다. 여기까지는 0813이 맞았다.
+
+\subsection{2차 확인: \texttt{bot} 캡처 안의 하드 위상 변화}
+Friday-morning bot 캡처(파일 5, \texttt{time\_\allowbreak{}\allowbreak{}pro\allowbreak{}xy /\allowbreak{}\allowbreak{}/\allowbreak{}\allowbreak{} 10\allowbreak{}\textasciicircum{}7 =\allowbreak{}\allowbreak{}=\allowbreak{}\allowbreak{} 5})의 bot 1,956행에는 \textbf{행 1,464에서 행동 위상이 바뀐다.}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.36979\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31510\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31510\linewidth-2\tabcolsep\relax}}
+\toprule
+ & Phase 1 (0–1463) & Phase 2 (1464–1955) \\ \midrule
+\endfirsthead
+ & Phase 1 (0–1463) & Phase 2 (1464–1955) \\ \midrule
+\endhead
+{}성격 & ARES C2 command 플로우 & \textbf{0.5초 주기 heartbeat} \\
+{}포트 8080 비중 & 52.5\% & 100\% \\
+{}fwd/\allowbreak{}bwd packets & median 4 fwd & 3 fwd /\allowbreak{} 3 bwd 고정 \\
+{}duration & \textasciitilde{}59 ms & \textasciitilde{}1.01 s \\
+{}\texttt{Fwd IAT \allowbreak{}Min} & \textasciitilde{}3 µs & \textasciitilde{}500,000 µs \\
+{}\texttt{Init\_\allowbreak{}\allowbreak{}Win\allowbreak{}\_\allowbreak{}\allowbreak{}bytes\_\allowbreak{}\allowbreak{}b\allowbreak{}ackward} & 110–16390 & \textbf{전부 0} \\
+{}\texttt{min\_\allowbreak{}\allowbreak{}seg\_\allowbreak{}\allowbreak{}size\_\allowbreak{}\allowbreak{}for\allowbreak{}ward} & 20 & 28 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\texttt{Fwd IAT \allowbreak{}Min}, \texttt{Bwd IAT \allowbreak{}Min}, \texttt{Init\_\allowbreak{}\allowbreak{}Win\allowbreak{}\_\allowbreak{}\allowbreak{}bytes\_\allowbreak{}\allowbreak{}b\allowbreak{}ackward} 세 feature는 train/\allowbreak{}test 범위가 \textbf{완전히 분리}된다. bot-train vs bot-test 이진 프로브(XGBoost, 70/\allowbreak{}30):
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+AUC = 1.0000
+
+\end{Verbatim}
+0.5가 동일 개체군, 1.0이 완전 분리다. 두 개의 다른 개체군이 맞다.
+
+\subsection{3차 확인 — 여기가 0813이 놓친 지점}
+\textbf{60\% 컷이 위상 변화보다 291행 앞에 떨어진다.}
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+bot 위상 변화 : 행 1,464 / 1,956  (75%)
+60% train 컷  : 행 1,173          (60%)   ← 291행 앞
+
+\end{Verbatim}
+Phase 2 노출의 split별 분포:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.37037\linewidth-2\tabcolsep\relax}}
+\toprule
+split & 범위 & Phase 2 행 수 \\ \midrule
+\endfirsthead
+split & 범위 & Phase 2 행 수 \\ \midrule
+\endhead
+{}train & 0–1172 & \textbf{0} \\
+{}val & 1173–1563 & \textbf{98} \\
+{}test & 1564–1955 & 392 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{Phase 2 학습 노출 전부가 val 슬라이스에 있다.} 그리고 스크립트는 val을 계산해놓고 버린다 — \texttt{nfv3\_\allowbreak{}\allowbreak{}mul\allowbreak{}ticlass\_\allowbreak{}\allowbreak{}test\_\allowbreak{}\allowbreak{}v2.\allowbreak{}py}에서 \texttt{val\_\allowbreak{}\allowbreak{}idx}의 용례는 \texttt{:448}(언패킹), \texttt{:457}(출력), \texttt{:601}(\texttt{"validat\allowbreak{}ion\_\allowbreak{}\allowbreak{}rows\allowbreak{}\_\allowbreak{}\allowbreak{}unused"\allowbreak{}: len(va\allowbreak{}l\_\allowbreak{}\allowbreak{}idx)}) 세 곳뿐이고, \texttt{clf.\allowbreak{}fit}(\texttt{:552})에도 \texttt{booster.\allowbreak{}fit}(\texttt{:586})에도 \texttt{eval\_\allowbreak{}\allowbreak{}set\allowbreak{}}이 없다. v1(\texttt{nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}mul\allowbreak{}ticlass\_\allowbreak{}\allowbreak{}test.\allowbreak{}py:\allowbreak{}405/\allowbreak{}\allowbreak{}414/\allowbreak{}\allowbreak{}545})도 동일하며, 문제의 run들을 만든 게 그 v1이다.
+
+즉 두 모델은 \textbf{한 번도 본 적 없는 행동}을 알아보라는 요구를 받았다. 알고리즘 문제가 아니라 "학습 가능한 신호를 담은 20\%를 버렸다"는 문제다.
+
+\subsection{검증: 버린 슬라이스를 쓰면 회복된다}
+동일 스크립트 경로, XGBoost 동일 하이퍼파라미터, \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les 1000\allowbreak{}000}, test는 \texttt{cap\_\allowbreak{}\allowbreak{}per\_\allowbreak{}\allowbreak{}class=\allowbreak{}\allowbreak{}10\allowbreak{}0000} 적용:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.28716\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26689\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26689\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17905\linewidth-2\tabcolsep\relax}}
+\toprule
+학습 데이터 & bot P/\allowbreak{}R/\allowbreak{}F1 & infiltration P/\allowbreak{}R/\allowbreak{}F1 & \textbf{macro F1} \\ \midrule
+\endfirsthead
+학습 데이터 & bot P/\allowbreak{}R/\allowbreak{}F1 & infiltration P/\allowbreak{}R/\allowbreak{}F1 & \textbf{macro F1} \\ \midrule
+\endhead
+{}A. train만 (60\%) — \textbf{현재 동작} & 0.000 /\allowbreak{} 0.000 /\allowbreak{} \textbf{0.000} & 0.000 /\allowbreak{} 0.000 /\allowbreak{} \textbf{0.000} & 0.7167 \\
+{}B. train+\allowbreak{}val (80\%) & 0.667 /\allowbreak{} 1.000 /\allowbreak{} \textbf{0.800} & 1.000 /\allowbreak{} 0.750 /\allowbreak{} \textbf{0.857} & \textbf{0.8040} \\
+\bottomrule
+\end{longtable}
+\endgroup
+A에서 392개 test bot 전부가 \texttt{normal}로 예측됐고, bot으로 예측된 18행은 전부 진짜 normal이었다 (그래서 precision도 0). 1-NN(표준화 공간)으로도 동일: 60\% 학습 시 bot-test의 최근접 이웃 392/\allowbreak{}392가 \texttt{normal}, 80\% 학습 시 392/\allowbreak{}392가 \texttt{bot}.
+
+주의할 점: B에서 \textbf{bot 학습 행 수는 691개로 A와 같다.} \texttt{stratifi\allowbreak{}ed\_\allowbreak{}\allowbreak{}subse\allowbreak{}t}이 비율을 보존하므로 풀이 1.70M  \ensuremath{\rightarrow}  2.26M으로 커져도 bot 배정은 그대로다. 회복된 이유는 행이 늘어서가 아니라 \textbf{추출 풀에 Phase 2가 포함되었기 때문}이다.
+
+\subsection{\texttt{infiltra\allowbreak{}tion}은 drift가 아니라 starvation이었다}
+0813은 \texttt{infiltra\allowbreak{}tion}도 bot과 같은 바구니(median |z| =\allowbreak{} 0.59)에 넣었는데 틀렸다. \texttt{train\_\allowbreak{}\allowbreak{}us\allowbreak{}ed =\allowbreak{}\allowbreak{} 12}행(전체 21행 중)인 단순 starvation이다. 전체 21행을 쓰면 XGBoost F1 =\allowbreak{} 0.857이고, test 8행 중 3행은 chrono train pool 안에 infiltration 최근접 이웃을 갖는다. 실제로 늦은 train 행과 test 행이 거의 중복이다(train pos 126,086: duration 100,460,144 /\allowbreak{} \texttt{Fwd IAT \allowbreak{}Min} 463 /\allowbreak{} 26 fwd /\allowbreak{} 26 bwd vs test pos 175,898: duration 101,039,256 /\allowbreak{} \texttt{Fwd IAT \allowbreak{}Min} 411 /\allowbreak{} 26 fwd /\allowbreak{} 26 bwd).
+
+\textbf{이것이 Colab run에서 infiltration만 1.0으로 회복된 이유다} — train budget이 커지면서 21행을 다 받았고, bot은 budget과 무관한 문제라 그대로 0이었다.
+
+\subsection{파생 문제: \texttt{diagnose\allowbreak{}\_\allowbreak{}\allowbreak{}train\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}drif\allowbreak{}t}를 신뢰하지 말 것}
+0813이 "drift"라고 판정한 근거인 \texttt{median\_\allowbreak{}\allowbreak{}a\allowbreak{}bs\_\allowbreak{}\allowbreak{}z}가 \textbf{작은 클래스에서 신뢰할 수 없다.} 표준편차를 21행에서 추정하니 z가 임의로 커진다. 이 함수는 \texttt{nfv3\_\allowbreak{}\allowbreak{}mul\allowbreak{}ticlass\_\allowbreak{}\allowbreak{}test\_\allowbreak{}\allowbreak{}v2.\allowbreak{}py:346-\allowbreak{}3\allowbreak{}68}에 매 run 자동 실행되도록 박아넣은 것이라 특히 위험하다 — 0813에서 그 출력을 근거로 잘못된 결론을 냈고, 앞으로도 같은 실수를 유도할 수 있다.
+
+최소한 \texttt{train\_\allowbreak{}\allowbreak{}n}이 작을 때(수백 미만) 경고를 붙이거나, drift 판정을 \texttt{median\_\allowbreak{}\allowbreak{}a\allowbreak{}bs\_\allowbreak{}\allowbreak{}z} 대신 \textbf{train-vs-test 이진 프로브 AUC}로 바꾸는 게 맞다. 후자는 표본 수에 훨씬 robust하고, bot에서 1.0000이라는 명확한 신호를 줬다. (§2 참조)
+
+\subsection{관찰과 판단}
+\par\noindent \textbullet\enspace \textbf{0813의 "구조적 OOD라 budget을 올려도 해결 안 됨"은 틀렸다.} \texttt{bot}은 버려지는 20\% val을 학습에 포함시키면 F1 0.0  \ensuremath{\rightarrow}  0.80으로 회복된다.
+
+
+\par\noindent \textbullet\enspace \textbf{split 코드에는 버그가 없다.} 실데이터 대조로 확인했다.
+
+
+\par\noindent \textbullet\enspace \textbf{val 20\%를 버리는 것은 bot만의 문제가 아니다.} macro F1이 0.717  \ensuremath{\rightarrow}  0.804로, 전 클래스에 걸친 손실이다. 이 스크립트는 val을 어디에도 쓰지 않으므로 (early stopping도, threshold 보정도 없다) 순손실이다.
+
+
+\par\noindent \textbullet\enspace \textbf{\texttt{infiltra\allowbreak{}tion}은 starvation}이지 drift가 아니다.
+
+
+\par\noindent \textbullet\enspace \textbf{\texttt{diagnose\allowbreak{}\_\allowbreak{}\allowbreak{}train\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}drif\allowbreak{}t}의 \texttt{median\_\allowbreak{}\allowbreak{}a\allowbreak{}bs\_\allowbreak{}\allowbreak{}z}는 작은 클래스에서 오판을 낳는다.}
+
+
+\subsection{다음에 할 것}
+\par\noindent \textbullet\enspace [ ] train+\allowbreak{}val을 컨텍스트로 쓰는 경로를 스크립트에 추가 (플래그로, 결과가 바뀌므로 별도 run — CLAUDE.md M6). val을 쓰지 않는 현행 설계에서는 60/\allowbreak{}20/\allowbreak{}20을 유지할 이유가 없다.
+
+
+\par\noindent \textbullet\enspace [ ] 위 표는 XGBoost만 확인했다. \textbf{TabPFN에서도 같은 회복이 일어나는지 확인 필요} — in-context learner라 phase-2 예시가 컨텍스트에 들어가면 더 즉각적으로 반응할 가능성이 있다.
+
+
+\par\noindent \textbullet\enspace [ ] \texttt{bot}의 위상 변화가 이 데이터셋 고유인지, 다른 클래스(\texttt{portscan\allowbreak{}}, \texttt{ddos})에도 같은 구조가 있는데 데이터가 많아서 가려진 것인지 확인.
+
+
+\par\noindent \textbullet\enspace [ ] drift 진단을 이진 프로브 AUC로 교체 검토.
+
+
+\subsection{재개 시 확인할 파일}
+\par\noindent \textbullet\enspace 재현 스크립트: 이 세션의 \texttt{bot\_\allowbreak{}\allowbreak{}diag\allowbreak{}.\allowbreak{}py} /\allowbreak{} \texttt{bot\_\allowbreak{}\allowbreak{}fix.\allowbreak{}py} (scratchpad)
+
+
+\par\noindent \textbullet\enspace 대조군: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260810\_\allowbreak{}\allowbreak{}101626\_\allowbreak{}\allowbreak{}c\allowbreak{}ic2017\_\allowbreak{}\allowbreak{}f\allowbreak{}ull\_\allowbreak{}\allowbreak{}tabp\allowbreak{}fn\_\allowbreak{}\allowbreak{}multi\allowbreak{}class/\allowbreak{}\allowbreak{}} (random split, protocol=\allowbreak{}reproduce) — 같은 데이터에서 bot xgb f1 =\allowbreak{} 0.816. \textbf{chronological split만 0을 만든다는 증거}
+
+
+\par\noindent \textbullet\enspace 실패 run: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260806\_\allowbreak{}\allowbreak{}201324\_\allowbreak{}\allowbreak{}c\allowbreak{}ic2017\_\allowbreak{}\allowbreak{}f\allowbreak{}ull\_\allowbreak{}\allowbreak{}tabp\allowbreak{}fn\_\allowbreak{}\allowbreak{}multi\allowbreak{}class/\allowbreak{}\allowbreak{}}
+
+
+\par\noindent \textbullet\enspace 메모리/\allowbreak{}실행 가이드: \texttt{docs/\allowbreak{}\allowbreak{}tab\allowbreak{}pfn\_\allowbreak{}\allowbreak{}v2\_\allowbreak{}\allowbreak{}m\allowbreak{}emory\_\allowbreak{}\allowbreak{}ro\allowbreak{}otcause.\allowbreak{}html}
+
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

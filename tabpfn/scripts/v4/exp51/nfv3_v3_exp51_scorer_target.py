@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """EXP51: scorer-target ablation on an EXP39-format frozen cache (S1V0, S1V1),
 forked from EXP50 (nfv3_v3_exp50_hdn_verifier.py, unmodified) to add the S1
-scorer arm from docs/research/20260916/expert_acceptance_next_plan.md §1.
+scorer arm from docs/lablog/reports/20260916.tex §1.
 
 Arms (kind, scorer_kind, target_kind):
 - legacy (S0V0): existing OOF sign-classification scorer (indirect target --

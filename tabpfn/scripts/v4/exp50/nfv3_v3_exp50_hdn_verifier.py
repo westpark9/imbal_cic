@@ -10,7 +10,7 @@ verifier learning target while holding the scorer and post-features fixed (S0):
   P(helpful) - hdn_lambda * P(harmful). Isolates whether classifying the actual
   correction/harm/neutral outcome (instead of regressing NLL gain) finds more
   usable positive-score region under EXP47/48's near-empty raw-verifier-positive
-  calibration counts. See docs/research/20260916/expert_acceptance_next_plan.md §1.
+  calibration counts. See docs/lablog/reports/20260916.tex §1.
 
 S1 (scorer target changed to correction-probability minus harm-risk) is a
 follow-up not implemented here; only V0/V1 on the existing S0 scorer.

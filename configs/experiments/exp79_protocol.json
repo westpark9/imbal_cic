@@ -1,0 +1,20 @@
+{
+  "version": "v7",
+  "experiment": "exp79",
+  "authorization": "2026-10-16 user requested aligning the large-data appendix with final-model full-test evaluation and asked whether training must restart",
+  "purpose": "Restore final EXP72/73 models and evaluate the complete test with the EXP77/78 final-state protocol",
+  "seed": 43,
+  "seed_repetitions": 1,
+  "datasets": ["cic2018", "toniot"],
+  "cases": ["natural", "uniform"],
+  "methods": ["xgb", "tabpfn", "ours", "boostpfn", "distpfn"],
+  "training": "None; immutable saved final model states, context and S/V policies reused",
+  "training_rows": 100000,
+  "validation": "Original separate validation retained; no additional selection or tuning",
+  "evaluation": "Final model on all original-order held-out test rows, batch size 8192 as EXP77/78, no simulated arrival rate or update delay",
+  "distpfn": "Reuse TabPFN probabilities, training prior and current completed query batch only; no test labels",
+  "localpfn": "Excluded per prior user instruction; do not mix old replay score into final-state comparison",
+  "source_integrity": "Record source hashes; compare restored final-model predictions on one original replay batch",
+  "html_publication": false,
+  "overleaf_publication": false
+}

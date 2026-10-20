@@ -1,0 +1,58 @@
+% !TeX root = 20260828.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-28}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-28 · §1-결과. 축-3 prior shift — 가설 기각: known-prior 보정 시 XGB 압승, RACE의 방어점은 "이득의 prior-강건성"뿐}
+\label{report:20260828_0828}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\subsection{§1-결과. 축-3 prior shift — 가설 기각: known-prior 보정 시 XGB 압승, RACE의 방어점은 "이득의 prior-강건성"뿐}
+\textbf{macro-F1 (mix × method, \texttt{8a\_\allowbreak{}\allowbreak{}prior\allowbreak{}\_\allowbreak{}\allowbreak{}shift.\allowbreak{}c\allowbreak{}sv})}:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23924\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14430\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16329\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15063\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.30253\linewidth-2\tabcolsep\relax}}
+\toprule
+method & natural & head-heavy & balanced & tail-heavy \\ \midrule
+\endfirsthead
+method & natural & head-heavy & balanced & tail-heavy \\ \midrule
+\endhead
+{}global & .6698 & .6090 & .6756 & .5851 \\
+{}RACE & .6978 & .6368 & .7073 & .6128 \\
+{}XGB & .7548 & .6938 & .7686 & .6661 \\
+{}\textbf{XGB+\allowbreak{}corr} & .7548 & \textbf{.7200} & \textbf{.8691} & \textbf{.7681} (tail-F1 .9916, ECE .0011) \\
+{}RACE+\allowbreak{}corr(tempered) & .6978 & .6410 & .7160 & \textbf{.2974 붕괴} \\
+{}RACE+\allowbreak{}corr(de-tempered) & .6978 & .6439 & .7537 & .4815 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{판독}:
+
+\par\noindent \textbullet\enspace \textbf{가설 기각} — "훈련 prior가 구워진 XGB가 무보정에서 크게 밀린다"는 성립 안 함: XGB 무보정도 전 mix 최고 유지. known-prior 사후보정을 주면 XGB posterior의 클래스 분리가 날카로워 재가중이 완벽 작동(압승).
+
+
+\par\noindent \textbullet\enspace \textbf{RACE의 방어점 하나}: global 대비 이득 +\allowbreak{}0.028\textasciitilde{}+\allowbreak{}0.032가 \textbf{4개 mix 전부에서 유지} — 시스템 개선분 자체는 prior-강건. ECE도 global 상회.
+
+
+\par\noindent \textbullet\enspace \textbf{신규 발견(방법론)}: 저장 posterior(T=\allowbreak{}1.25 tempered)에 보정을 곱하면 tail-heavy에서 붕괴(0.297); T 역변환한 raw posterior(p̃\textasciicircum{}1.25)로는 0.482까지 회복되나 여전히 XGB에 미달 — \textbf{TabPFN posterior의 클래스 간 sharpness 부족}이 원인이며, §7 보정 무효과(β=\allowbreak{}0 승리)와 같은 뿌리로 추정. 보정은 반드시 raw posterior에 적용할 것(파이프라인 함의). (de-temper 검증의 π\_\allowbreak{}train은 π\_\allowbreak{}test 근사 사용 — 본표는 정확 π\_\allowbreak{}train.)
+
+
+\par\noindent \textbullet\enspace \textbf{전략 함의}: 축 3은 차별화 축에서 강등(강건성 체크로만 유지). 차별화 서사는 \textbf{축 1(temporal)} 단일 축으로 집중 — FTP \ensuremath{\rightarrow} SSH 명명 증거 보유(0828 검증), frozen 시스템이 라벨 소량으로 회복 가능한지가 본 승부.
+
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

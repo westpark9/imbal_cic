@@ -1,0 +1,913 @@
+% !TeX root = 20261014.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-10-14}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{EXP71: 누적 입력 10만 행 확대}
+2026-10-14 사용자 요청: 제한 보존 비교를 제외하고 10만 개로 확대한다. 연구 버전은 승인된 v7을 유지한다. Expert/\allowbreak{}S/\allowbreak{}V 없이 단일 TabPFN과 XGBoost를 비교한다.
+
+각 데이터의 최종 누적 입력은 정확히 100,000행이다. Benign 75,000행을 CIC2018의 5개 단계에 15,000행씩, ToN의 6개 단계에 12,500행씩 공급한다. 공격 25,000행은 (1) 공격별 균등 배정, 가용량 부족분은 나머지 공격에 재분배, (2) 정제 train의 공격 내 자연비율 배정으로 나눈다. 자연비율 조건에 추가적인 tail 최소량을 부과하지 않는다. 전체 트래픽의 자연 분포를 재현하는 조건은 아니다.
+
+CIC2018: 초기 Benign·Brute force·DoS  \ensuremath{\rightarrow}  DDoS  \ensuremath{\rightarrow}  Web attack  \ensuremath{\rightarrow}  Infiltration  \ensuremath{\rightarrow}  Bot. ToN: 초기 Benign·Scanning·DoS  \ensuremath{\rightarrow}  Injection·DDoS  \ensuremath{\rightarrow}  Password  \ensuremath{\rightarrow}  XSS  \ensuremath{\rightarrow}  Ransomware·Backdoor  \ensuremath{\rightarrow}  MitM. 이전 실험에서 합의한 최초 출현 순서와 묶음을 유지한다. 실제 timestamp 재생은 아니다. 각 새 공격의 라벨 사례가 확보된 후 평가한다.
+
+이전 EXP71 stream을 확장한다. 각 클래스 bank의 기존 IDs를 유지하고 정제 train에서 중복 없이 추가한다. Benign은 기존 단계별 공급 IDs를 같은 단계에 남기면서 확대한다. 따라서 각 조건·단계의 이전 신규 IDs가 새 신규 IDs에 포함된다. 과거 사례는 모두 누적하고 두 모델에 같은 학습·test IDs를 전달한다. Test는 기존 전체 정제 test와 byte 단위로 동일하다.
+
+Seed 43. XGBoost CUDA histogram, 300 trees, depth 8. TabPFN-v3 frozen weights, ensemble 4, sample subsampling 없음, fit\_\allowbreak{}with\_\allowbreak{}cache, CPU KV cache. 매 단계 누적 전체 입력으로 fit/\allowbreak{}cache를 다시 생성한다. 갱신은 입력 구성+\allowbreak{}모델 생성+\allowbreak{}fit/\allowbreak{}cache 시간이며 초기 구축과 후속 갱신 합계를 분리한다. 전체 seen-class test 추론은 batch 32,768로 별도 측정한다. GPU worker는 비용 간섭을 피하기 위해 순차 실행한다.
+
+확인할 것은 동일 평가 데이터에서 입력 확대가 최종 및 신규 공격 성능과 갱신·추론 비용을 어떻게 바꾸는지다. 클래스별 성능은 보존하되 HTML에서는 토글 안에 둔다. 이전 누적 실행은 CIC2018 22,280 /\allowbreak{} ToN 36,864행이다. 단일 seed·단계별 1회 timing이며, 일부 이전 worker와 GPU driver/\allowbreak{}kernel이 달라 규모 효과의 정밀한 비용 추정에는 한계가 있다. 새 실행 내 XGB/\allowbreak{}TabPFN은 같은 환경에서 비교한다.
+
+성공 판정은 44개 단계 완료, 원본 예측에서 지표 재계산, 모든 누적/\allowbreak{}공급 IDs 및 test 일치 검증이다. 결과가 나오기 전 성능 향상이나 비용 우위를 주장하지 않는다.
+
+
+
+\section{EXP72 · 갱신 지연을 포함한 클래스 순차 재생}
+사용자 요청(2026-10-14): 제안한 재생 시나리오를 실행하고 ETA를 보고한다. HTML에는 인용을 포함한 설명만 추가하고 이번 결과는 싣지 않는다. 후속 요청에 따라 BoostPFN·LoCalPFN·DistPFN은 이번 실행에서 제외한다. 연구 버전은 승인된 v7을 유지한다.
+
+후속 게시 승인(2026-10-14): 사용자가 완료 후 “지금 실험 끝난 듯. html 업데이트하고 간략하게 보고 plz”라고 요청하여, 검증된 이번 결과를 1014 탭에 추가한다. 실행 시점의 config와 출처는 보존하며 결과 자동 게시 정책을 일반적으로 변경하지 않는다. 1014는 \textbf{본 실험에 사용할 평가 프로토콜의 XGB–TabPFN 사전 검증}이며, 제안 모델의 기여를 검증한 본 실험과 구분한다. 결과 해석은 exp72\_\allowbreak{}results.md에 기록한다.
+
+\subsection{질문과 적용 범위}
+새 공격의 확인된 라벨 사례를 누적할 때, 모델은 희소 공격을 얼마나 잘 구분하며 그 분류 능력을 언제부터 제공할 수 있는가를 확인한다. XGBoost와 frozen TabPFN-v3의 갱신 완료 후 분류 능력과 갱신 지연이 반영된 탐지 결과를 같은 입력으로 비교한다. 제안 모델의 expert/\allowbreak{}S/\allowbreak{}V 기여는 이번 실행에 포함하지 않는다. raw timestamp, 환경 drift, 라벨 발견·능동학습, 실서버 동시 실행을 재현하는 실험은 아니다.
+
+\subsection{고정 데이터와 공개 순서}
+EXP71 100k 입력의 train IDs와 정제 test를 그대로 사용한다. 원본은 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp71/\allowbreak{}\allowbreak{}20261014\allowbreak{}\_\allowbreak{}\allowbreak{}103108\_\allowbreak{}\allowbreak{}cumulati\allowbreak{}ve\_\allowbreak{}\allowbreak{}100k\_\allowbreak{}\allowbreak{}uniform\_\allowbreak{}\allowbreak{}natural\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}43a7\allowbreak{}66d9/\allowbreak{}\allowbreak{}dat\allowbreak{}a/\allowbreak{}\allowbreak{}}다. 최종 학습 사례는 데이터별 100,000행(Benign 75,000 +\allowbreak{} 공격 25,000)이며 과거 사례를 전부 누적한다. 자연 조건은 공격 내 정제 train 비율이고 균등 조건은 가용량 상한을 적용한 공격별 균등 배정이다. Seed 43, 두 조건의 test 재생 순서는 동일하다.
+
+CIC2018: Benign·Brute force·DoS  \ensuremath{\rightarrow}  DDoS  \ensuremath{\rightarrow}  Web attack  \ensuremath{\rightarrow}  Infiltration  \ensuremath{\rightarrow}  Bot. Benign은 단계당 15,000개씩 공개한다. ToN: Benign·Scanning·DoS  \ensuremath{\rightarrow}  Injection·DDoS  \ensuremath{\rightarrow}  Password  \ensuremath{\rightarrow}  XSS  \ensuremath{\rightarrow}  Ransomware·Backdoor  \ensuremath{\rightarrow}  MitM. Benign은 단계당 12,500개씩 공개한다. 새 클래스는 해당 단계 전까지 context/\allowbreak{}훈련에 포함되지 않는다. Tail은 고정 test의 표본 수와 연결하여 클래스별 지표를 보고하며, 신규 클래스 여부와 혼동하지 않는다.
+
+각 클래스의 test 행을 그 클래스의 도입 단계부터 마지막 단계까지 균등 분할하고, 단계 내에서 seed 43으로 섞는다. 재생 정책별로 모든 test 행은 정확히 한 번 평가한다. 동일 행을 여러 버전으로 추론하는 것은 지연 없는 비교군 및 두 유입률의 반사실 평가에 필요한 경우뿐이며, 운영 트래픽 수를 중복 집계하지 않는다. 원 test의 클래스별 총량을 유지하고 1,024행 단위로 처리한다. 단계 말의 잔여 배치도 유지한다.
+
+\subsection{시계·자원·대기열}
+유입률 100/\allowbreak{}1,000행·초는 민감도 분석을 위한 설계값이다. 원 데이터의 실제 트래픽률이라고 주장하지 않는다. 각 단계의 첫 행 도착 직전에 그 단계의 라벨 사례가 공개된다. 초기 버전은 트래픽 재생 전에 완성된다. 이후 갱신은 독립된 논리적 worker 한 개에서 FIFO로 실행한다. 이미 갱신 중일 때 다음 단계가 시작되면 새 갱신은 큐에 들어가며, 해당 공개 시점의 누적 라벨 snapshot으로 구축한다.
+
+1,024행 배치가 모인 시점에 준비가 완료된 최신 버전을 배정한다. 이후 추론 FIFO에서 기다리더라도 배정 버전을 바꾸지 않는다. 추론 서비스시간은 해당 버전·해당 배치의 실측시간이다. 행의 도착부터 배치 수집·대기열·추론을 거쳐 응답 완료까지의 지연을 계산한다. 갱신 큐와 추론 큐 사이의 하드웨어 경합은 모델링하지 않는다. GPU 측정은 한 worker씩 순차 실행하며, 이것은 독립 갱신/\allowbreak{}서비스 자원을 가정한 실측 기반 시뮬레이션이지 단일 GPU 동시 운용 실측이 아니다.
+
+모든 배치를 최종적으로 처리하되, 마지막 입력 시점에 처리된 행 수와 이후 큐 배출 시간도 별도로 보고한다. 시뮬레이션 시간에 맞춰 실제로 sleep하지 않는다.
+
+\subsection{모델과 측정}
+XGB는 기존 CUDA hist 300 trees, depth 8 설정으로 누적 전체를 재학습한다. TabPFN-v3는 ensemble 4, frozen weights, 전체 context, \texttt{fit\_\allowbreak{}\allowbreak{}with\allowbreak{}\_\allowbreak{}\allowbreak{}cache}, CPU KV cache로 누적 전체 상태를 재생성한다. 두 모델이 사용하는 train IDs는 동일하다. Hyperparameter는 고정하며 이번 두 모델은 추가 validation 라벨을 사용하지 않는다. SOTA를 추후 추가할 때의 공통 validation 공급은 그때 명시하며 이번 결과에 없는 validation budget을 있다고 쓰지 않는다.
+
+각 단계의 구축/\allowbreak{}fit과 train-only 1,024행 첫 응답 probe를 3회 측정한다. 재생 시계는 첫 번째 측정한 갱신시간(입력 materialization +\allowbreak{} 모델 생성 +\allowbreak{} fit/\allowbreak{}cache)을 사용한다. 나머지 반복은 비용 변동 확인용이며 시계에 합산하지 않는다. 초기 모델 비용은 후속 갱신 합계에서 분리한다. checkpoint 저장·복구, 결과 파일 I/\allowbreak{}O, 프로세스 시작, 데이터 사전 준비는 실험용 overhead로 분리하여 갱신·추론 서비스시간에 넣지 않는다. 최초 실제 배치 추론의 비용도 batch timing에 그대로 보존한다.
+
+예측은 저장한 fitted state에서 수행한다. 상태 복구 전후 동일 입력의 예측 일치를 smoke test로 확인했다. 필요한 버전/\allowbreak{}배치 쌍만 추론하며 세 재생 정책에 필요한 동일 쌍의 예측과 시간은 재사용한다. GPU batch 완료 시 예측을 먼저 flush하고 시간 완료 표식을 기록한다. 배치 중단 시 마지막 미완료 배치를 다시 실행한다.
+
+결과는 (1) 각 단계 버전이 즉시 준비됐다고 가정한 비교, (2) 100행/\allowbreak{}초, (3) 1,000행/\allowbreak{}초의 세 정책으로 저장한다. 각 정책의 전체 및 단계별 클래스 P/\allowbreak{}R/\allowbreak{}F1, Benign 오탐률, 공격 \ensuremath{\rightarrow} Benign 누락, 공격 유형 간 혼동, 실측 추론 서비스시간을 보고한다. 지연 정책에는 구버전 처리 행 수, 행별 응답시간 평균/\allowbreak{}p50/\allowbreak{}p95, 추론 큐 대기, 입력 종료 후 큐 배출 시간을 추가한다. 신규 클래스를 출력할 수 없는 구버전의 공격종류 오분류와 Benign 누락을 구분한다. HTML 결과 자동 발행은 비활성화한다.
+
+\subsection{근거와 차이}
+\par\noindent \textbullet\enspace INSOMNIA, AISec 2021, §4.2: 갱신 지연을 무시한 평가와 이전 버전을 유지하는 평가를 구분한다. 본 실험은 그 시간 처리 원리를 사용하며 논문의 pseudo-labeling과 binary DNN은 채택하지 않는다.
+
+
+\par\noindent \textbullet\enspace Continuous Learning for Android Malware Detection, USENIX Security 2023, §4.1–4.3: 라벨 확보·훈련 데이터 누적·갱신·후속 데이터 평가의 반복을 참고한다. 본 실험은 외부 확인 사례의 공급을 가정하며 active learning이나 사람의 라벨링 지연을 평가하지 않는다.
+
+
+\par\noindent \textbullet\enspace TESSERACT, USENIX Security 2019, §4.1–4.2: 미래 정보 접근 제한과 구간별 평가를 참고한다. 기존 random clean split의 클래스 공개 순서를 제어하는 것으로, 원 논문의 실제 시간 제약 C1–C3를 모두 충족했다고 주장하지 않는다.
+
+
+\par\noindent \textbullet\enspace SoK: Pragmatic Assessment of Machine Learning for Network Intrusion Detection, EuroS\&P 2023, Appendix E.3: 탐지와 공격종류 식별을 구분하고 학습·추론 비용을 같이 보고한다.
+
+
+\par\noindent \textbullet\enspace 추후 비교군: BoostPFN의 boosting 재구성, LoCalPFN의 검색·미세조정, DistPFN의 현재 배치 posterior 보정을 같은 라벨 공개 순서에 적용할 수 있다. 세 모델은 이번 사용자 요청으로 대기하며 실행되지 않는다.
+
+
+\subsection{기록}
+코드: \texttt{scripts/\allowbreak{}\allowbreak{}v7/\allowbreak{}\allowbreak{}exp72\allowbreak{}/\allowbreak{}\allowbreak{}}. 실행은 \texttt{scripts/\allowbreak{}\allowbreak{}results\_\allowbreak{}\allowbreak{}versions\allowbreak{}.\allowbreak{}py run \allowbreak{}-\allowbreak{}-\allowbreak{}versio\allowbreak{}n v7 -\allowbreak{}-\allowbreak{}e\allowbreak{}xperimen\allowbreak{}t exp72 \allowbreak{}-\allowbreak{}-\allowbreak{}scope \allowbreak{}tabpfn}으로 등록한다. 진행 상태는 run의 \texttt{status.\allowbreak{}j\allowbreak{}son}, worker 로그는 \texttt{jobs/\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}*\allowbreak{}attempt*\allowbreak{}.\allowbreak{}log}, 배치 상태는 \texttt{jobs/\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}p\allowbreak{}rogress.\allowbreak{}json}, 결과는 \texttt{results.\allowbreak{}json}에 기록한다. \texttt{STOP\_\allowbreak{}\allowbreak{}AFT\allowbreak{}ER\_\allowbreak{}\allowbreak{}UNIT} 파일을 만들면 다음 배치/\allowbreak{}단계 경계에서 멈춘다. 같은 run 경로로 \texttt{run\_\allowbreak{}\allowbreak{}repl\allowbreak{}ay.\allowbreak{}py ru\allowbreak{}n -\allowbreak{}-\allowbreak{}out \allowbreak{}RUN}을 실행하면 완료 표식을 보존하고 재개한다. 아직 과학적 채택이나 논문 성과로 등록하지 않는다.
+
+
+
+\section{기존 제안 모델과 SOTA의 순차 공격 도입 평가}
+2026-10-14 사용자는 현재 제안 모델과 SOTA를 1014 순차 재생 시나리오에서 실행하도록 요청했다. 추가 확인에서 기존 10만 학습 사례를 유지하고 별도 정제 validation을 추가하는 안을 선택했다. 승인된 연구 버전 v7을 유지하며 실행을 EXP73으로 등록한다. 이번 실행 요청으로 HTML이나 논문을 자동 수정하지 않는다.
+
+\subsection{비교 범위}
+CIC2018·ToN, seed 43, 공격 내 자연비율·균등 배분, 최종 100,000 train 행, 1,024행 배치, 갱신 지연 없음 및 100/\allowbreak{}1,000행·초 재생을 유지한다. 초기 클래스와 이후 공개 순서, 전체 test 행의 단계별 배분은 EXP72와 같다. 모든 test 행은 정책별로 한 번 평가한다. 실제 수집 timestamp나 환경 drift를 재현한다고 주장하지 않는다. 갱신과 서비스는 독립 자원 가정이며 GPU 실측은 단독 worker로 수행한다.
+
+비교는 XGB, TabPFN-v3, 현재 제안 모델(K=\allowbreak{}4, anchor+\allowbreak{}residual bank, S1V0), BoostPFN, LoCalPFN, DistPFN이다. XGB와 TabPFN은 train IDs와 입력 순서, 모델 설정, test 순서가 정확히 같아 EXP72 결과·비용을 재사용한다. 추가 validation은 같은 시점에 모든 방법에 제공 가능한 자료로 기록하지만 고정 설정의 두 단일 모델과 BoostPFN·DistPFN은 사용하지 않는다. 재사용 자체를 갱신비용 0으로 기록하지 않는다.
+
+\subsection{학습과 validation}
+기존 10만 train 행과 입력 순서를 그대로 유지한다. 제안 모델 내부에서는 Global/\allowbreak{}expert/\allowbreak{}route를 약 50/\allowbreak{}25/\allowbreak{}25\%로 나눈다. 같은 feature의 행은 한 역할에만 배정하며 이미 공개된 행의 역할은 후속 단계에도 유지한다. 역할 배정은 현재 공개된 사례만으로 결정한다. Global은 Global 역할의 행을 context로 사용하며 expert와 S/\allowbreak{}V는 분리된 역할에서 각각 구성·학습한다. 모든 방법이 동일한 train 라벨 접근 예산을 받는 비교이며, 제안 모델의 Global context와 단일 TabPFN의 context가 같다고 주장하지 않는다. 제안 모델 자체의 Global 예측도 별도로 기록해 expert/\allowbreak{}S/\allowbreak{}V의 추가 교정·훼손을 구분한다.
+
+추가 validation은 기존 정제 validation split의 EXP62 \texttt{cache/\allowbreak{}\allowbreak{}ca\allowbreak{}l\_\allowbreak{}\allowbreak{}X,\allowbreak{}y,\allowbreak{}id\allowbreak{}s,\allowbreak{}hash}에서 특징과 정답만 가져온다. 예전 예측·embedding·정책·임계값은 재사용하지 않는다. 현재 학습에 나타난 feature와 겹치는 행을 제외하고, 클래스 도입 시점에 해당 클래스의 사례를 정해진 seed로 선택한다. 클래스당 상한은 \texttt{ceil(100\allowbreak{}00 /\allowbreak{}\allowbreak{} 전체 \allowbreak{}클래스 수)}이며 가용량 부족은 보충 복제하지 않는다. 후속 학습과 feature가 겹치게 되는 validation 행은 제외하고 재보충하지 않는다. 미래 클래스의 validation은 조기 공개하지 않는다. 최종 실제 validation은 CIC2018 자연 8,211행·균등 8,047행, ToN 자연 8,668행·균등 8,605행이다. 개별 단계 ID와 클래스별 수는 실행의 plans/\allowbreak{}role IDs에서 추적한다.
+
+LoCalPFN은 제공된 validation으로 원 구현의 모델 선택을 수행한다. 제안 모델은 같은 validation을 feature 그룹 단위로 tune/\allowbreak{}cal 약 40/\allowbreak{}60\%로 분리한다. tune은 Global residual의 temperature 선택, cal은 S/\allowbreak{}V 임계값 선택에 사용한다. 기존 raw 시간에 따른 cal select/\allowbreak{}confirm 재분할은 이번 클래스 순서 시나리오에서는 적용하지 않으며, train/\allowbreak{}tune과 feature가 분리된 cal 전체로 임계값을 선택하고 고정 test로 평가한다. 이 변경은 모델 구조 변경과 구별되는 평가 적응 사항이다.
+
+\subsection{현재 제안 모델}
+EXP62/\allowbreak{}63의 K=\allowbreak{}4 구조를 기준으로 한다. 공통 anchor는 Global pool에서 클래스당 최대 2,000개를 선택한다. Expert pool에서 Global의 확률·embedding PCA 16차원·정답을 사용한 잔차와 균형 NLL을 구성하고 residual 가중 KMeans로 네 군집을 만든다. 특화 block 상한은 기존 186,000행이며 이번 expert pool 규모에서는 각 군집 전체가 상한 이하여서 원 diversity 선택의 전체 선택 분기에 해당한다. 정답이 들어간 residual은 학습 시 expert 구성에만 사용한다.
+
+S1은 route에서 클래스 균형 decision gain(+\allowbreak{}1 교정/\allowbreak{}−1 훼손/\allowbreak{}0 중립) 회귀, V0는 비가중 NLL gain의 0.25 분위수 회귀다. EXP51의 pre/\allowbreak{}post 특징 구성·S1V0 학습 함수·임계값 탐색·정상 오탐 증가 0.0005와 보호 클래스 제약·최소 교정/\allowbreak{}훼손 증거 30건을 재사용한다. 기존 지정 tail이 아직 등장하지 않은 초기 단계에서는 tail 평균의 빈 집합을 피하도록 macro와 같은 전체 클래스 제약을 적용하고 그 사실을 기록한다. Test를 보고 threshold를 바꾸거나 S/\allowbreak{}V를 강제 활성화하지 않는다.
+
+각 단계마다 Global, residual bank, experts, S/\allowbreak{}V, validation 선택을 새 누적 사례로 갱신하고 이 준비 과정을 갱신비용에 포함한다. 서비스에서는 S가 선택하고 호출 임계값을 넘은 행에 대해서만 해당 expert를 실제 추론하고 V를 계산한다. 전역 fallback 정책이면 expert를 추론하지 않는다. 전체 expert를 미리 추론한 비용을 sparse 운영비용이라고 기록하지 않는다. 호출·수락률, Global 대비 교정·훼손, 클래스별 및 단계별 성능, 임계값 선택 사유를 저장한다.
+
+\subsection{SOTA 적용과 비용}
+BoostPFN은 기존 v1 기반 포트의 50 learners, learner당 500 context, 원 boosting 결합을 유지하고 단계별 재구성한다. LoCalPFN은 기존 v1 포트의 context 1,000, 21 epochs × 30 steps, validation 모델 선택과 exact L2 serving retrieval을 유지한다. 원 모델과 비교군의 backbone 차이를 기록한다. LoCalPFN serving index 구축비도 갱신비용에 포함한다.
+
+DistPFN은 동일 train으로 이미 fit된 EXP72 TabPFN-v3 상태와 갱신비용을 재사용하되 예측 확률을 새로 계산한다. 보정에 필요한 posterior 평균은 현재 수집 완료된 배치만으로 계산하고 전체 미래 test 분포를 사용하지 않는다. 기반 모델 비용과 prior 준비 및 posterior 보정비용을 포함한다.
+
+초기 구축과 후속 갱신을 분리한다. 모델 저장·복구, 실험 로그 기록은 실험 overhead로 분리한다. 배치 서비스시간에는 입력 gather, 특징 변환, 모델 추론과 실제 S/\allowbreak{}V 호출 경로를 포함한다. 모든 입력을 끝까지 처리하므로 응답 지연은 별도 지표이며 늦은 응답 자체를 오답으로 계산하지 않는다. 단일 GPU에서 여러 worker를 동시에 실행해 비용 측정에 경합을 만들지 않는다.
+
+\subsection{검증과 실행 기록}
+소규모 합성 데이터에서 제안 모델의 저장·복구, sparse expert 호출과 같은 선택 expert의 직접 예측 일치, BoostPFN·LoCalPFN 실행과 정규화된 확률·반복 예측 일치를 확인했다. 데이터 검증은 기존 22개 단계의 train ID와 순서 일치, validation ID 분리, 역할 간 feature 그룹 분리, 미래 클래스 미사용을 확인한다. 완료 후 각 정책의 혼동행렬과 F1을 독립적으로 재계산하고 모델 준비 시점·배정 버전·S/\allowbreak{}V 교정/\allowbreak{}훼손 항등식을 검사한다.
+
+원본 입력: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp71/\allowbreak{}\allowbreak{}20261014\allowbreak{}\_\allowbreak{}\allowbreak{}103108\_\allowbreak{}\allowbreak{}cumulati\allowbreak{}ve\_\allowbreak{}\allowbreak{}100k\_\allowbreak{}\allowbreak{}uniform\_\allowbreak{}\allowbreak{}natural\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}43a7\allowbreak{}66d9}. 재사용 기준선: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp72/\allowbreak{}\allowbreak{}20261014\allowbreak{}\_\allowbreak{}\allowbreak{}134735\_\allowbreak{}\allowbreak{}replay\_\allowbreak{}\allowbreak{}1\allowbreak{}00k\_\allowbreak{}\allowbreak{}xgb\_\allowbreak{}\allowbreak{}tabpfn\_\allowbreak{}\allowbreak{}s\allowbreak{}43\_\allowbreak{}\allowbreak{}de8b4\allowbreak{}a78}. 코드: \texttt{scripts/\allowbreak{}\allowbreak{}v7/\allowbreak{}\allowbreak{}exp73\allowbreak{}/\allowbreak{}\allowbreak{}}. 결과와 로그는 관리 실행 폴더에 저장한다. EXP72의 원 결과는 수정하지 않는다. 시나리오의 문헌 근거와 실제 시간 재현과의 차이는 EXP72 프로토콜을 따른다.
+
+
+
+\section{2026-10-14 · EXP71 · 누적 전체의 갱신 비용과 탐지 품질}
+\label{report:20261014_exp71_cumulative_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+2026-10-14 사용자 요청으로 보고서의 비교 범위를 누적 전체로 정리했다. 제한 보존 실행과 이전 기록은 원본에 보존하며 이번 화면의 근거로 사용하지 않는다.
+
+목적은 새 공격의 라벨 사례가 확보될 때 TabPFN이 가중치 재학습 없이 유용한 탐지 품질을 유지하면서 갱신 비용을 줄일 수 있는지 확인하는 것이다. 클래스 최초 출현 순서를 유지한 단계별 공급이며 raw timestamp 재생은 아니다. 각 단계의 라벨 공급 후 seen-class 전체 test로 평가한다.
+
+현재 완료 결과의 최종 입력은 cic2018 100,000행, toniot 100,000행다. Benign 75\%를 매 단계 나눠 공급하고 공격 25\%는 균등 또는 정제 train의 공격 내 자연비율로 배분한다. 과거 사례를 전부 누적하고 각 조건의 두 모델에 동일 학습·test IDs를 제공했다.
+
+누적 전체의 4개 구성 중 0개에서 TabPFN의 후속 갱신 합계가 더 짧았다. 가중치 재학습이 없더라도 전체 context 캐시 재구성 비용이 발생한다. 갱신과 최종 test 대량 추론을 분리해서 비교해야 한다.
+
+현재 TabPFN 호출은 매 단계 전체 context로 fit\_\allowbreak{}with\_\allowbreak{}cache를 다시 실행한다. 4개 ensemble의 전처리와 context 캐시를 재구성하므로 가중치 최적화를 하지 않는다는 사실이 갱신 계산량이 없거나 XGB보다 작다는 뜻은 아니다. 입력 선택·모델 생성·fit/\allowbreak{}cache를 합해 갱신으로 측정하고 초기 구축과 후속 합계를 분리한다. 추론은 전체 test 예측 및 결과 기록 시간으로 별도 측정한다. 전처리와 캐시 생성의 내부 세부 시간은 분리 측정하지 않았으므로 특정 연산의 원인 비중을 주장하지 않는다.
+
+최종 Macro-F1은 4개 구성 중 2개에서 TabPFN이 XGB보다 높았다. 동일한 test에서 데이터·공급 배정별 결과를 비교하며, 전체 평균 외에 정상 오탐률과 공격별 P/\allowbreak{}R/\allowbreak{}F1도 확인한다.
+
+CIC2018 — 공격 균등: TabPFN F1 78.43\% /\allowbreak{} XGB 78.12\%, 후속 갱신 41.18초 /\allowbreak{} 5.24초; 공격 내 자연비율: TabPFN F1 77.06\% /\allowbreak{} XGB 75.66\%, 후속 갱신 44.25초 /\allowbreak{} 4.23초.
+
+ToN — 공격 균등: TabPFN F1 69.09\% /\allowbreak{} XGB 71.22\%, 후속 갱신 48.75초 /\allowbreak{} 12.39초; 공격 내 자연비율: TabPFN F1 69.93\% /\allowbreak{} XGB 77.43\%, 후속 갱신 50.65초 /\allowbreak{} 11.29초.
+
+현재의 판단 — TabPFN은 사전학습 가중치를 바꾸지 않고 새 공격의 라벨 사례를 반영할 수 있다. 그러나 이 작동 방식만으로 XGB보다 낮은 갱신 비용이나 필요한 탐지 품질이 보장되지는 않는다. 갱신·추론 비용을 따로 측정하고, 소수 공격의 탐지 품질을 충족하는 입력 구성과 규모를 확인해야 한다.
+
+CIC2018 · 균등: 후속 갱신 합계는 XGB 5.24초, TabPFN 41.18초다. TabPFN−XGB 최종 Macro-F1 차이는 +\allowbreak{}0.31\%p, 정상 오탐률 차이는 -1.99\%p다. 전체 100,000개를 공급했고 최종 갱신에는 100,000개를 사용했다. 공격별 F1의 절대 차이가 가장 큰 두 클래스는 Infiltration XGB 10.65\% /\allowbreak{} TabPFN 20.77\%; Web attack XGB 37.79\% /\allowbreak{} TabPFN 29.47\%다.
+
+CIC2018 · 균등의 평가 표본이 가장 적은 두 공격을 따로 보면, Infiltration는 test 8,742개, 최초 공급 4,910개, 최종 context 잔존 4,910개다. XGB F1 10.65\% (P 6.12\% /\allowbreak{} R 41.29\%, 공격 \ensuremath{\rightarrow} Benign 5,064건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 55,411건); TabPFN F1 20.77\% (P 32.68\% /\allowbreak{} R 15.23\%, 공격 \ensuremath{\rightarrow} Benign 7,333건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 2,737건). Web attack는 test 127개, 최초 공급 450개, 최종 context 잔존 450개다. XGB F1 37.79\% (P 24.42\% /\allowbreak{} R 83.46\%, 공격 \ensuremath{\rightarrow} Benign 21건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 260건); TabPFN F1 29.47\% (P 17.69\% /\allowbreak{} R 88.19\%, 공격 \ensuremath{\rightarrow} Benign 14건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 285건). 이 혼동 건수는 최종 예측에서 직접 확인한 관찰이며, 사례 수 부족이나 context 구성 중 무엇이 원인인지는 이 비교만으로 분리할 수 없다.
+
+CIC2018 · 공격 내 자연: 후속 갱신 합계는 XGB 4.23초, TabPFN 44.25초다. TabPFN−XGB 최종 Macro-F1 차이는 +\allowbreak{}1.39\%p, 정상 오탐률 차이는 -0.30\%p다. 전체 100,000개를 공급했고 최종 갱신에는 100,000개를 사용했다. 공격별 F1의 절대 차이가 가장 큰 두 클래스는 Web attack XGB 4.05\% /\allowbreak{} TabPFN 17.83\%; Infiltration XGB 26.25\% /\allowbreak{} TabPFN 23.07\%다.
+
+CIC2018 · 공격 내 자연의 평가 표본이 가장 적은 두 공격을 따로 보면, Infiltration는 test 8,742개, 최초 공급 641개, 최종 context 잔존 641개다. XGB F1 26.25\% (P 23.81\% /\allowbreak{} R 29.25\%, 공격 \ensuremath{\rightarrow} Benign 6,167건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 8,180건); TabPFN F1 23.07\% (P 80.45\% /\allowbreak{} R 13.46\%, 공격 \ensuremath{\rightarrow} Benign 7,561건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 286건). Web attack는 test 127개, 최초 공급 9개, 최종 context 잔존 9개다. XGB F1 4.05\% (P 14.29\% /\allowbreak{} R 2.36\%, 공격 \ensuremath{\rightarrow} Benign 124건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 14건); TabPFN F1 17.83\% (P 46.67\% /\allowbreak{} R 11.02\%, 공격 \ensuremath{\rightarrow} Benign 113건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 12건). 이 혼동 건수는 최종 예측에서 직접 확인한 관찰이며, 사례 수 부족이나 context 구성 중 무엇이 원인인지는 이 비교만으로 분리할 수 없다.
+
+ToN · 균등: 후속 갱신 합계는 XGB 12.39초, TabPFN 48.75초다. TabPFN−XGB 최종 Macro-F1 차이는 -2.13\%p, 정상 오탐률 차이는 +\allowbreak{}2.53\%p다. 전체 100,000개를 공급했고 최종 갱신에는 100,000개를 사용했다. 공격별 F1의 절대 차이가 가장 큰 두 클래스는 Scanning XGB 30.76\% /\allowbreak{} TabPFN 15.37\%; MitM XGB 13.46\% /\allowbreak{} TabPFN 4.58\%다.
+
+ToN · 균등의 평가 표본이 가장 적은 두 공격을 따로 보면, MitM는 test 1,161개, 최초 공급 2,856개, 최종 context 잔존 2,856개다. XGB F1 13.46\% (P 7.24\% /\allowbreak{} R 95.35\%, 공격 \ensuremath{\rightarrow} Benign 51건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 13,426건); TabPFN F1 4.58\% (P 2.34\% /\allowbreak{} R 97.33\%, 공격 \ensuremath{\rightarrow} Benign 29건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 45,689건). Ransomware는 test 709개, 최초 공급 2,151개, 최종 context 잔존 2,151개다. XGB F1 14.11\% (P 7.60\% /\allowbreak{} R 98.87\%, 공격 \ensuremath{\rightarrow} Benign 7건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 8,526건); TabPFN F1 14.15\% (P 7.63\% /\allowbreak{} R 97.60\%, 공격 \ensuremath{\rightarrow} Benign 5건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 8,376건). 이 혼동 건수는 최종 예측에서 직접 확인한 관찰이며, 사례 수 부족이나 context 구성 중 무엇이 원인인지는 이 비교만으로 분리할 수 없다.
+
+ToN · 공격 내 자연: 후속 갱신 합계는 XGB 11.29초, TabPFN 50.65초다. TabPFN−XGB 최종 Macro-F1 차이는 -7.50\%p, 정상 오탐률 차이는 +\allowbreak{}4.29\%p다. 전체 100,000개를 공급했고 최종 갱신에는 100,000개를 사용했다. 공격별 F1의 절대 차이가 가장 큰 두 클래스는 MitM XGB 71.94\% /\allowbreak{} TabPFN 3.74\%; XSS XGB 87.81\% /\allowbreak{} TabPFN 83.98\%다.
+
+ToN · 공격 내 자연의 평가 표본이 가장 적은 두 공격을 따로 보면, MitM는 test 1,161개, 최초 공급 31개, 최종 context 잔존 31개다. XGB F1 71.94\% (P 89.92\% /\allowbreak{} R 59.95\%, 공격 \ensuremath{\rightarrow} Benign 253건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 75건); TabPFN F1 3.74\% (P 1.93\% /\allowbreak{} R 61.24\%, 공격 \ensuremath{\rightarrow} Benign 230건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 36,146건). Ransomware는 test 709개, 최초 공급 20개, 최종 context 잔존 20개다. XGB F1 38.84\% (P 26.76\% /\allowbreak{} R 70.80\%, 공격 \ensuremath{\rightarrow} Benign 198건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 1,374건); TabPFN F1 40.39\% (P 28.37\% /\allowbreak{} R 70.10\%, 공격 \ensuremath{\rightarrow} Benign 166건 /\allowbreak{} Benign \ensuremath{\rightarrow} 공격 1,255건). 이 혼동 건수는 최종 예측에서 직접 확인한 관찰이며, 사례 수 부족이나 context 구성 중 무엇이 원인인지는 이 비교만으로 분리할 수 없다.
+
+RTX 4090, 동일 입력으로 모델 worker를 순차 실행했다. TabPFN ensemble 4, fit\_\allowbreak{}with\_\allowbreak{}cache, CPU KV cache; XGB CUDA hist 300 rounds, depth 8. 단계별 1회 timing이며 프로세스 시작·데이터 준비·배포·직렬화는 비용에 포함하지 않는다.
+
+입력 확대 전 누적 실행 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp71/\allowbreak{}\allowbreak{}20261013\allowbreak{}\_\allowbreak{}\allowbreak{}174035\_\allowbreak{}\allowbreak{}cumulati\allowbreak{}ve\_\allowbreak{}\allowbreak{}recov\allowbreak{}ery\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}4229fd93\allowbreak{}}과 동일 test·출현 순서·모델 설정으로 비교했다. scale\_\allowbreak{}validation.json에서 기존 공급 IDs가 같은 확대 단계에 포함되는 것을 검증했다. 일부 이전 worker와 driver/\allowbreak{}kernel이 달라 비용 변화를 입력 규모만의 인과 효과로 해석하지 않는다.
+
+후속 판단은 자연비율에서 부족한 공격의 실제 context 표본 수와 균등 조건의 P/\allowbreak{}R/\allowbreak{}F1을 함께 확인하여, 입력 확대가 누락된 공격 탐지와 정상 오탐을 동시에 개선하는지 평가하는 것이다. 특정 실패를 사례 수나 context 비율 하나로 확정하지 않는다. 단일 seed이며 같은 개발 holdout을 반복 관찰한 탐색 결과다.
+
+출처: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp71/\allowbreak{}\allowbreak{}20261014\allowbreak{}\_\allowbreak{}\allowbreak{}103108\_\allowbreak{}\allowbreak{}cumulati\allowbreak{}ve\_\allowbreak{}\allowbreak{}100k\_\allowbreak{}\allowbreak{}uniform\_\allowbreak{}\allowbreak{}natural\_\allowbreak{}\allowbreak{}s43\_\allowbreak{}\allowbreak{}43a7\allowbreak{}66d9/\allowbreak{}\allowbreak{}sum\allowbreak{}mary.\allowbreak{}csv\allowbreak{}}, \texttt{class\_\allowbreak{}\allowbreak{}me\allowbreak{}trics.\allowbreak{}cs\allowbreak{}v}, \texttt{jobs/\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}s\allowbreak{}tage\_\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}m\allowbreak{}etrics.\allowbreak{}j\allowbreak{}son}, \texttt{validati\allowbreak{}on.\allowbreak{}json}. HTML: \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}1014.\allowbreak{}tex\allowbreak{}}. 프로토콜: \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}1014.\allowbreak{}tex\allowbreak{}}.
+
+
+
+\section{2026-10-14 · 순차 공격 도입에서 XGB와 TabPFN의 성능 및 비용 사전 검증}
+\label{report:20261014_exp72_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+새 공격의 확인된 사례가 확보된 뒤 모델을 갱신할 때, 분류 성능의 차이와 갱신이 끝날 때까지 이전 버전을 사용하는 영향을 구분했다. CIC2018에서는 TabPFN의 Macro-F1과 정상 오탐률이 유리했지만 ToN에서는 XGB의 Macro-F1이 높았다. 두 데이터 모두 누적 10만 행을 사용하는 현재 구현의 갱신·추론 비용은 XGB가 낮았다. 따라서 TabPFN의 채택 근거를 가중치 재학습이 없다는 사실만으로 설명하기보다, context의 구성과 사용량을 제어했을 때 희소 공격의 분류 성능과 비용을 함께 개선할 수 있는지를 검증해야 한다.
+
+\subsection{목적과 설정}
+10/\allowbreak{}13의 갱신비용 사전 실험은 각 갱신이 끝난 모델의 성능과 비용을 측정했다. 이번에는 본 실험에 사용할 평가 프로토콜을 두 단일 모델로 사전 검증했다. 원본 클래스의 도입 순서에 따라 라벨 사례를 공개하고, 갱신이 끝날 때까지 구버전으로 입력을 분류한다. 실제 timestamp 기반의 트래픽 재현이나 네트워크 환경 변화를 시험한 것은 아니다. 제안 모델의 expert/\allowbreak{}S/\allowbreak{}V 및 BoostPFN·LoCalPFN·DistPFN은 포함하지 않았다.
+
+Seed 43, 최종 누적 100,000행(Benign 75,000 +\allowbreak{} 공격 25,000)을 사용했다. 공격 내 자연비율과 가용량 상한을 적용한 균등 배분을 비교했다. 정상 사례도 매 단계 추가했다. XGB와 TabPFN은 같은 누적 train IDs를 사용했으며, 각 test 행은 정책별로 정확히 한 번 평가했다. 1,024행 배치에 대해 갱신 지연 없음, 100행/\allowbreak{}초, 1,000행/\allowbreak{}초의 세 정책을 비교했다. 실제 GPU 시간은 순차 측정했고 시뮬레이션의 갱신·서비스 worker는 독립 자원으로 가정했다. 상세 설계와 인용은 프로토콜에 있다.
+
+\subsection{관찰 결과}
+아래 값은 1,000행/\allowbreak{}초에서 갱신 지연을 포함한 전체 재생 행의 Macro-F1이다. 각 단계의 예측을 모아 혼동행렬에서 계산했으므로 최종 모델 하나의 전체 test 성능과 다르다. 모든 입력은 마지막까지 처리하며 늦은 응답을 오답이나 드롭으로 계산하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16140\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19649\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22281\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25789\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 공격 배분 & XGB F1 (\%) & TabPFN F1 (\%) & TabPFN − XGB (\%p) \\ \midrule
+\endfirsthead
+데이터 & 공격 배분 & XGB F1 (\%) & TabPFN F1 (\%) & TabPFN − XGB (\%p) \\ \midrule
+\endhead
+{}CIC2018 & 자연비율 & 76.79 & 77.47 & +\allowbreak{}0.69 \\
+{}CIC2018 & 균등 & 77.01 & 81.17 & +\allowbreak{}4.15 \\
+{}ToN & 자연비율 & 79.28 & 73.39 & −5.89 \\
+{}ToN & 균등 & 74.46 & 72.72 & −1.74 \\
+\bottomrule
+\end{longtable}
+\endgroup
+CIC2018의 정상 오탐률은 자연비율에서 XGB 0.148\%, TabPFN 0.006\%, 균등에서 0.900\%, 0.127\%였다. 균등 조건의 Infiltration F1은 20.32\%에서 31.50\%, Web attack은 20.18\%에서 39.64\%로 TabPFN이 높았다. 다만 자연비율의 Infiltration은 XGB 34.18\%, TabPFN 23.18\%로 반대였다. 이는 희소 클래스 전반의 우위가 아니라 배분·클래스별 차이로 해석한다.
+
+ToN 균등의 Scanning F1은 XGB 14.83\%, TabPFN 25.75\%인 반면 MitM은 46.75\%, 22.07\%였다. 자연비율의 Scanning은 XGB 2.64\%, TabPFN 0.00\%였고 MitM은 74.13\%, 17.80\%였다. 특정 클래스의 개선으로 전체 희소 공격의 개선을 대신 주장할 수 없다. 자연비율과 균등의 차이는 클래스별 학습 사례 수뿐 아니라 context의 전체 조성을 함께 바꾸므로 개별 원인의 인과적 검증은 아니다.
+
+후속 갱신 합계는 CIC2018 자연비율에서 XGB 4.17초, TabPFN 44.30초, 균등에서 5.09초, 41.00초였다. ToN 자연비율은 11.09초, 50.45초, 균등은 12.31초, 48.56초였다. 초기 구축을 제외하고 각 단계의 첫 측정값을 합했다. TabPFN은 누적 context 전체의 전처리·캐시를 매번 다시 준비한다. 가중치 최적화가 없어도 입력에 의존하는 계산이 존재하며, 이번 규모·구현·하드웨어에서는 그 갱신비용이 XGB의 CUDA hist 재학습보다 컸다. 입력 규모에 따른 비용 분해를 추가 확인하기 전에는 모든 비용이 어느 한 연산에서 발생한다고 단정하지 않는다.
+
+같은 재생 정책의 추론 서비스시간 합계도 CIC2018에서 XGB 7.44–8.16초, TabPFN 776.63–797.84초, ToN에서 11.58–12.35초, 599.45–606.72초였다. 이 값은 배치 연산시간의 합이며 입력 유입 대기나 배치 수집시간이 아니다. 1,000행/\allowbreak{}초의 행별 응답 p95는 XGB 0.975–0.978초, TabPFN 1.256–1.277초였다. 100행/\allowbreak{}초에서 p95가 약 10초인 이유는 1,024행 배치의 수집 대기다. 이 응답시간을 모델 추론시간으로 해석하지 않는다.
+
+1,000행/\allowbreak{}초에서 TabPFN은 38,912–48,128행을 구버전으로 처리했다. 갱신 지연이 없는 동일 재생과 비교한 Macro-F1 감소는 TabPFN 0.182–0.282\%p, XGB 0.015–0.090\%p였다. TabPFN에서 공격을 Benign으로 분류한 건수의 순증가는 조건별 1,491–3,075건이었다. 이는 갱신 지연의 측정 가능한 영향이지만 ToN의 모델 간 격차 전체를 설명하지 못한다. 측정한 유입률에서는 지속적인 추론 큐 누적이 발생하지 않았다.
+
+\subsection{해석과 후속 판단}
+이 사전 검증은 준비된 모델의 분류 능력과 사례 반영 지연을 구분하는 평가 틀을 확보했다. 각 단계는 수십만 test 행을 포함하며 라벨은 해당 단계 시작에 공개한다. 100/\allowbreak{}1,000행·초와 1,024행 배치 조건에서는 일부 갱신이 첫 배치 수집 중에 끝나므로 지연 영향이 작을 수 있다. 이를 실제 IDS의 모든 유입률·갱신 간격·라벨 지연에 대한 결론으로 넓히지 않는다. 결과를 유리하게 만들기 위해 유입률을 선택하는 대신 실제 적용에서 요구되는 응답 지연과 갱신 빈도를 정하고 평가 조건을 고정하는 것이 필요하다.
+
+다음 개선 후보는 전체 누적 저장소를 유지하면서 TabPFN에 넣는 context의 크기와 선택을 제어하는 것이다. 희소 공격과 다양한 Benign을 유지할 때 분류 성능을 보존·개선하면서 캐시 재구축과 추론비용을 줄일 수 있는지가 핵심이다. 이는 직전 단계의 일부 사례만 보관하는 제한 보존 조건으로 돌아가는 것이 아니다. 같은 사례 접근권한과 공개 시점, 자원 조건에서 XGB를 비교하고, 제안 방식의 실제 기여가 정해지면 SOTA 및 구성요소 비교를 이 프로토콜에 추가한다. 이번 요청에서는 새 실험을 실행하지 않았으며 이러한 개선 효과는 아직 확인하지 않았다.
+
+\subsection{출처와 검증}
+\par\noindent \textbullet\enspace 실행: EXP72 결과
+
+
+\par\noindent \textbullet\enspace 검증: verification.json, 24/\allowbreak{}24 통과. 원본 train IDs, test 행의 단일 평가, 모델 준비 시점 및 예측·혼동행렬·F1의 일치를 확인했다.
+
+
+\par\noindent \textbullet\enspace 보고서: 1014 개별 HTML, 통합 HTML
+
+
+\par\noindent \textbullet\enspace 코드: 결과 게시, 재생 실행
+
+
+2026-10-14 15:02에 8개 설정이 완료됐다. 중간에 발견한 XGB 모델 복구 시 실행 장치 초기화 문제는 수정했고 CUDA 추론을 다시 완료한 결과만 채택했다. 이전 CPU 추론은 실행의 audit 폴더에 분리 보존했다. 단일 시드 사전 검증이며 논문의 검증된 제안 모델 기여로 등록하지 않는다. 사용자의 완료 후 HTML 갱신 요청에 따라 결과를 게시한다.
+
+
+
+\section{IDS 시스템 관점 시나리오 평가를 위한 참고 보안 논문 리스트}
+작성: 2026-10-14. 목적: 본 실험에서 제안 모델(TAILGUARD, 불확실성 기반 앙상블)을 F1 경쟁이 아니라 IDS 운영 시나리오로 평가하기 위한 설계 참고. 현재 lablog 탭(EXP71)은 TabPFN 채택 근거를 위한 사전 실험이고, 본 실험 설계는 이 리스트를 바탕으로 사용자와 합의 후 확정한다.
+
+각 항목: 제목 /\allowbreak{} venue·연도 /\allowbreak{} 실험 시나리오 설계 요약 /\allowbreak{} 링크. 검증: 모든 venue·연도·링크는 2026-10-14에 학회 수록 목록(USENIX Security 2024–2026, NDSS 2024–2026, IEEE S\&P 2024–2026, CCS 2024, RAID 2024–2025, ACSAC 2024–2025, EuroS\&P 2024–2025)과 OpenAlex·웹 검색으로 확인했다. 요약은 초록과 공개 자료 기준이며, 세부 수치를 인용하려면 원문을 다시 확인할 것.
+
+\subsection{A. 평가 방법론과 함정: 시나리오를 설계하기 전에 피해야 할 것}
+\par\noindent \textbullet\enspace Outside the Closed World: On Using Machine Learning for Network Intrusion Detection
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2010, 2020 Test-of-Time Award
+
+
+\par\noindent \textbullet\enspace 요약: ML 기반 NIDS가 연구실 밖에서 쓰이지 않는 이유를 정리한 고전. 오류 비용의 비대칭, 의미 격차, 트래픽 다양성, 평가의 어려움을 지적하고, 탐지율 너머에 운영자가 결과를 어떻게 소비하는지를 평가 기준에 넣으라고 권고한다. 시나리오 평가의 문제 정의 출발점.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}SP.2010.25
+
+
+
+\par\noindent \textbullet\enspace The Base-Rate Fallacy and the Difficulty of Intrusion Detection
+
+\par\noindent \textbullet\enspace venue: ACM TISSEC 2000, 초판 CCS 1999
+
+
+\par\noindent \textbullet\enspace 요약: 침입이 희귀할 때 Bayesian detection rate P(침입|알림)가 탐지율이 아니라 오경보율에 지배됨을 보인다. 하루 알림 수와 분석가 처리량을 시나리오 지표로 쓸 때 오경보율 목표치를 정하는 근거.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}357830.357849
+
+
+
+\par\noindent \textbullet\enspace Dos and Don'ts of Machine Learning in Computer Security
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2022, Distinguished Paper
+
+
+\par\noindent \textbullet\enspace 요약: 보안 ML 논문 30편에서 반복되는 함정 10가지(샘플링 편향, 라벨 부정확, 데이터 스누핑, 허위 상관, 편향된 파라미터 선택, 부적절한 베이스라인과 지표, base-rate 오류, 실험실 전용 평가, 부적절한 위협 모델)를 정리하고 각 함정이 성능을 얼마나 부풀리는지 실험으로 보인다. 시나리오 설계 체크리스트로 쓸 것.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity22/\allowbreak{}presentation/\allowbreak{}arp
+
+
+
+\par\noindent \textbullet\enspace TESSERACT: Eliminating Experimental Bias in Malware Classification across Space and Time
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2019
+
+
+\par\noindent \textbullet\enspace 요약: 시간 편향(훈련·테스트 시간 순서 위반)과 공간 편향(테스트의 악성·정상 비율이 비현실적)을 제거하는 세 가지 실험 제약과, 시간 구간별 성능을 적분한 AUT 지표를 제안한다. 3년치 데이터로 기존 결과가 부풀려졌음을 보이고 능동학습 같은 완화책을 같은 틀에서 비교한다. 시간순 시나리오 평가의 표준 틀.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity19/\allowbreak{}presentation/\allowbreak{}pendlebury
+
+
+
+\par\noindent \textbullet\enspace SoK: Pragmatic Assessment of Machine Learning for Network Intrusion Detection
+
+\par\noindent \textbullet\enspace venue: IEEE EuroS\&P 2023
+
+
+\par\noindent \textbullet\enspace 요약: 이전 방법보다 높은 F1이 실무 가치를 말해주지 않는다고 보고, 하드웨어 4종·수백 가지 설정·적대적 시나리오에서 기존 ML-NIDS를 재평가하고 실무자 사용자 연구로 검증한다. 학습·추론 비용과 설정 민감도를 결과 튜플에 넣는 설계의 근거.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}EuroSP57164.2023.00042
+
+
+
+\par\noindent \textbullet\enspace AI/\allowbreak{}ML for Network Security: The Emperor has no Clothes
+
+\par\noindent \textbullet\enspace venue: ACM CCS 2022, Best Paper Honorable Mention
+
+
+\par\noindent \textbullet\enspace 요약: Trustee로 발표된 모델에서 결정 트리 설명을 뽑아 과소특정을 진단한다. 사례는 VPN 탐지 1D-CNN의 지름길 학습, CIC-IDS-2017 Heartbleed 분류기가 응답 패킷 최대 길이에 의존하는 OOD 취약, nPrintML IDS의 허위 상관, Kitsune Mirai의 OOD 실패. 높은 F1이 지름길 때문인지 확인하는 절차를 시나리오에 포함할 근거.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3548606.3560609
+
+
+
+\par\noindent \textbullet\enspace Bad Design Smells in Benchmark NIDS Datasets
+
+\par\noindent \textbullet\enspace venue: IEEE EuroS\&P 2024, Distinguished Paper
+
+
+\par\noindent \textbullet\enspace 요약: 널리 쓰이는 합성 NIDS 벤치마크 7종을 수작업 분석해 6가지 설계 결함과 그 빈도를 재는 휴리스틱을 제시하고, 4개 사례로 실험 편향을 보인다. CIC·UNSW·ToN 계열 데이터를 쓰는 시나리오에서 어떤 결함이 결과를 왜곡하는지 점검하는 기준.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}EuroSP60621.2024.00042
+
+
+
+\par\noindent \textbullet\enspace Establishing the Contaminating Effect of Metadata Feature Inclusion in Machine-Learned Network Intrusion Detection Models
+
+\par\noindent \textbullet\enspace venue: DIMVA 2022
+
+
+\par\noindent \textbullet\enspace 요약: 목적지 포트 같은 메타데이터 특징만으로 IDS 데이터셋 10종을 70–100\% 분리할 수 있음을 보이고, 모델과 데이터셋 양쪽에서 메타데이터 특징을 빼라고 권고한다. NetFlow 특징 선택 시나리오의 근거.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1007/\allowbreak{}978-3-031-09484-2\_\allowbreak{}2
+
+
+
+\par\noindent \textbullet\enspace SoK: Decoding the Enigma of Encrypted Network Traffic Classifiers
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2025
+
+
+\par\noindent \textbullet\enspace 요약: 암호화 트래픽 분류 연구의 데이터셋과 설계 가정을 체계화하고, 348개 특징 가림 실험으로 과적합과 지름길을 드러낸다. 구형 데이터셋 탓에 실제로는 비암호화 트래픽을 학습한 경우가 많음을 지적. 특징 가림 실험을 시나리오에 넣는 방법의 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2503.20093
+
+
+
+\par\noindent \textbullet\enspace R+\allowbreak{}R: From Claims to Crashes: A Systematic Re-evaluation of Graph-Based Network Intrusion Detection Systems
+
+
+\par\noindent \textbullet\enspace venue: ACSAC 2025
+
+
+\par\noindent \textbullet\enspace 요약: 그래프 기반 NIDS 5종을 공개 데이터 4종과 신규 기업망 데이터에서 재현·재검증한다. 원 코드로도 지표가 최대 40\% 변동하고, 기업 트래픽에서 높은 오경보율과 확장성 문제, 스냅샷 크기·임계값 전략의 미문서화, 회피 공격 취약을 보고한다. 같은 run·같은 split에서 베이스라인을 계산하는 규칙의 외부 근거.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}ACSAC67867.2025.00050
+
+
+\par\noindent \textbullet\enspace Sometimes Simpler is Better: A Comprehensive Analysis of State-of-the-Art Provenance-Based Intrusion Detection Systems
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2025
+
+
+\par\noindent \textbullet\enspace 요약: provenance 기반 IDS 8종을 단일 프레임워크로 재구현해 DARPA 데이터 7종에서 비교하고, 실배치를 막는 결함 9가지를 식별한다. 단순 신경망이 7종 중 5종에서 SOTA와 대등하면서 더 가볍고 실시간이다. 호스트 측이지만 near-perfect 보고와 배치 가능성의 괴리를 다루는 평가 틀.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity25/\allowbreak{}presentation/\allowbreak{}bilot
+
+
+\par\noindent \textbullet\enspace What We Talk About When We Talk About Logs: Understanding the Effects of Dataset Quality on Endpoint Threat Detection Research
+
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2025
+
+
+\par\noindent \textbullet\enspace 요약: 엔드포인트 탐지 벤치마크(DARPA TC·OpTC, ATLAS)의 배경 활동이 얼마나 합성적인지, 악성 활동이 얼마나 눈에 띄는지를 측정한다. 합성 배경은 TNR을, 눈에 띄는 악성은 TPR을 부풀림을 IDS 4종으로 보인다. 데이터셋의 benign 배경 현실성을 시나리오 조건으로 보고하는 근거.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}sts.cs.illinois.edu/\allowbreak{}papers/\allowbreak{}paper/\allowbreak{}WhatWeTalkAboutWhenW20250512.html
+
+
+\par\noindent \textbullet\enspace Detecting and Mitigating Sampling Bias in Cybersecurity with Unlabeled Data
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2024
+
+
+\par\noindent \textbullet\enspace 요약: 논문 정확도와 배치 정확도의 차이를 샘플링 편향으로 설명하고, 라벨 없는 운영 데이터로 편향을 탐지(도메인 판별, kNN 거리 분포)하고 완화(self-training)하는 방법을 악성코드·도메인·IDS 4개 데이터셋에서 평가한다. 운영 분포와 훈련 분포가 다른 시나리오.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity24/\allowbreak{}presentation/\allowbreak{}thirumuruganathan
+
+
+\subsection{B. 시간 흐름, 새 공격 등장, 드리프트, 갱신 비용}
+\par\noindent \textbullet\enspace CADE: Detecting and Explaining Concept Drift Samples for Security Applications
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2021
+
+
+\par\noindent \textbullet\enspace 요약: 기존 클래스에서 벗어난 드리프트 샘플을 샘플 단위로 탐지하고 거리 기반으로 설명한다. Android 악성코드와 IDS2018에서 한 가족이나 공격을 훈련에서 빼고 나중에 등장시키는 미지 클래스 시나리오로 평가하고 보안회사 실데이터로 추가 검증한다.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity21/\allowbreak{}presentation/\allowbreak{}yang
+
+
+\par\noindent \textbullet\enspace Transcending TRANSCEND: Revisiting Malware Classification in the Presence of Concept Drift
+
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2022
+
+
+\par\noindent \textbullet\enspace 요약: conformal evaluation으로 불확실한 예측을 거부해 전문가에게 넘기는 틀을 정식화하고, 5년치 시간순 데이터로 거부율과 거부 후 성능의 trade-off를 평가한다. 불확실성 기반 거부를 분석가 검토량 비용과 함께 보고하는 시나리오의 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}SP46214.2022.9833659
+
+
+\par\noindent \textbullet\enspace Continuous Learning for Android Malware Detection
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2023
+
+
+\par\noindent \textbullet\enspace 요약: 1년 학습 후 6개월 만에 F1이 0.99에서 0.76으로 떨어지는 드리프트 상황에서, 라벨 예산 안에서 능동학습으로 샘플을 골라 재학습하는 지속 갱신 프로토콜을 7년 데이터로 평가한다. 갱신 주기, 라벨 예산, 성능 유지의 세 축 시나리오 설계 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity23/\allowbreak{}presentation/\allowbreak{}chen-yizheng
+
+
+\par\noindent \textbullet\enspace Anomaly Detection in the Open World: Normality Shift Detection, Explanation, and Adaptation
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2023
+
+
+\par\noindent \textbullet\enspace 요약: 정상만 학습하는 이상탐지에서 정상의 정의가 바뀌는 normality shift를 라벨 없이 탐지·설명·적응한다. 장기 실데이터 3개 응용에서 평가하고 SCADA 초기 배치를 보고한다. benign 유지 축에 정상 분포 변화 시나리오를 넣을 때 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.ndss-symposium.org/\allowbreak{}ndss-paper/\allowbreak{}anomaly-detection-in-the-open-world-normality-shift-detection-explanation-and-adaptation/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace INSOMNIA: Towards Concept-Drift Robustness in Network Intrusion Detection
+
+
+\par\noindent \textbullet\enspace venue: AISec 2021, CCS 워크숍
+
+
+\par\noindent \textbullet\enspace 요약: TESSERACT의 시간 인식 평가를 NIDS로 확장한다. CIC-IDS2017을 시간순 스트림으로 흘리며 능동학습(갱신 지연 단축), 라벨 추정(라벨 비용 절감), XAI를 결합한 반지도 갱신을 평가한다. 시간순 NIDS 갱신 실험의 직접 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}s2lab.cs.ucl.ac.uk/\allowbreak{}downloads/\allowbreak{}insomnia.pdf
+
+
+\par\noindent \textbullet\enspace ENIDrift: A Fast and Adaptive Ensemble System for Network Intrusion Detection under Real-World Drift
+
+
+\par\noindent \textbullet\enspace venue: ACSAC 2022
+
+
+\par\noindent \textbullet\enspace 요약: 실제 드리프트 데이터셋 RWDIDS를 공개하고, 들어오는 데이터 청크의 안정성과 정확도에 따라 서브 분류기를 생성하는 적응형 앙상블을 제안한다. 라벨이 늦거나 부족한 조건의 현장 테스트를 포함한다. 앙상블 갱신 비용 시나리오 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3564625.3567992
+
+
+\par\noindent \textbullet\enspace Mateen: Adaptive Ensemble Learning for Network Anomaly Detection
+
+
+\par\noindent \textbullet\enspace venue: RAID 2024
+
+
+\par\noindent \textbullet\enspace 요약: 오프라인 오토인코더 기반 이상탐지가 정상 행동 변화로 오경보를 내는 문제에 대해, 들어오는 샘플의 1\%만 라벨링하며 앙상블을 적응시키는 설계를 Kitsune 데이터로 평가한다. 적응형 앙상블에 소량 라벨을 결합한 시나리오.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3678890.3678901
+
+
+\par\noindent \textbullet\enspace NIDP: Solving Feature Distribution Shifts in Network Intrusion Detection via Neural Pruning
+
+
+\par\noindent \textbullet\enspace venue: RAID 2025
+
+
+\par\noindent \textbullet\enspace 요약: 드리프트를 미지 클래스 등장과 기존 클래스의 특징 분포 변화로 나누고 후자를 다룬다. 패킷 길이 같은 특징이 네트워크 설정에 따라 변함을 보이고, Kyoto2016·CIC-IDS2017/\allowbreak{}2018과 변화를 증폭한 합성 변형으로 평가한다. 특징 분포 변화 시나리오 설계 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}RAID67961.2025.00053
+
+
+\par\noindent \textbullet\enspace Detecting and Adapting to Stealthy Label-Inversion Drifts via Conditional Distribution Inference
+
+
+\par\noindent \textbullet\enspace venue: RAID 2025
+
+
+\par\noindent \textbullet\enspace 요약: 특징은 비슷한데 라벨이 뒤집히는 은밀한 드리프트를 정의하고, 소량의 대표 샘플만 라벨링해 조건부 분포 변화를 추정한 뒤 증분 학습한다. 지도·비지도 탐지기 6종과 데이터 7종(공개 3, 합성 4)에서 AUT로 비교한다.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}RAID67961.2025.00052
+
+
+\par\noindent \textbullet\enspace Revisiting Concept Drift in Windows Malware Detection: Adaptation to Real Drifted Malware with Minimal Samples
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2025
+
+
+\par\noindent \textbullet\enspace 요약: 공개 벤치마크와 2024년에 일 단위로 보고된 실제 악성코드로, 가족당 새 샘플 10개만으로 드리프트 적응을 평가하고 라벨링 노력 약 5배 절감을 보고한다. 새 공격 가족을 소량 샘플로 공급하는 시나리오.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2407.13918
+
+
+\par\noindent \textbullet\enspace Combating Concept Drift with Explanatory Detection and Adaptation for Android Malware Classification
+
+
+\par\noindent \textbullet\enspace venue: ACM CCS 2025
+
+
+\par\noindent \textbullet\enspace 요약: 드리프트 탐지기와 분류기를 함께 갱신하며 전문가가 라벨과 개념 설명을 수정하는 설명 기반 적응 절차를 제안하고, 재학습 기반 적응과 라벨링 비용·성능으로 비교한다.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3719027.3744792
+
+
+\par\noindent \textbullet\enspace When Adversarial Perturbations meet Concept Drift: An Exploratory Analysis on ML-NIDS
+
+
+\par\noindent \textbullet\enspace venue: AISec 2024, CCS 워크숍
+
+
+\par\noindent \textbullet\enspace 요약: 대형 조직 실트레이스로 8일 단기와 4년 장기 드리프트 아래 탐지기 48개에 problem-space 섭동을 가해, 드리프트와 회피가 겹칠 때 탐지율이 어떻게 변하는지 탐색한다. 장기 시나리오에 적대적 조건을 얹는 설계 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3689932.3694757
+
+
+\par\noindent \textbullet\enspace Training Robust Classifiers for Classifying Encrypted Traffic under Dynamic Network Conditions
+
+
+\par\noindent \textbullet\enspace venue: ACM CCS 2025
+
+
+\par\noindent \textbullet\enspace 요약: 네트워크 환경 변화와 난독화로 훈련·테스트 특징 패턴이 달라지는 조건을 명시적으로 만들고(공개 3종과 신규 대규모 3종), 메타러닝으로 안정 표현을 학습한다. 암호화 트래픽 분류이지만 환경 조건 변화 시나리오 구성의 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3719027.3765073
+
+
+\par\noindent \textbullet\enspace KnowML: Improving Generalization of ML-NIDS with Attack Knowledge Graphs
+
+
+\par\noindent \textbullet\enspace venue: IEEE EuroS\&P 2026
+
+
+\par\noindent \textbullet\enspace 요약: 이상 기반 NIDS가 공격 변종에 일반화하지 못하는 원인을 특징 공간의 두 한계로 규정하고, 데이터셋 4종의 공격 변종 28개(신규 수집 10개 포함)에서 변종 일반화를 평가한다. 같은 공격의 변종이 나타나는 시나리오 설계 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2506.19802
+
+
+\subsection{C. 미지 공격, 롱테일, 소량·저품질 라벨}
+\par\noindent \textbullet\enspace Kitsune: An Ensemble of Autoencoders for Online Network Intrusion Detection
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2018
+
+
+\par\noindent \textbullet\enspace 요약: 라벨 없이 온라인으로 학습하는 오토인코더 앙상블. IoT 테스트베드에 공격 9종(Mirai, SYN DoS, ARP MitM, 스캔, 퍼징, 영상 주입 등)을 주입한 시간순 pcap으로 평가하고 Raspberry Pi에서 처리 성능을 보고한다. 실기기에서 돌아가는지를 묻는 시나리오의 고전.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.14722/\allowbreak{}ndss.2018.23204
+
+
+\par\noindent \textbullet\enspace Detecting Unknown Encrypted Malicious Traffic in Real Time via Flow Interaction Graph Analysis
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2023
+
+
+\par\noindent \textbullet\enspace 요약: 라벨 없는 실시간 암호화 악성 트래픽 탐지(HyperVision). 데이터셋 92개와 암호화 공격 48종으로 미지 공격 탐지를 평가하고 처리율 80.6 Gb/\allowbreak{}s, 평균 지연 0.83 s를 함께 보고한다. 탐지 품질과 처리 성능을 한 표에 두는 보고 형식 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.14722/\allowbreak{}ndss.2023.23080
+
+
+\par\noindent \textbullet\enspace Realtime Robust Malicious Traffic Detection via Frequency Domain Analysis
+
+
+\par\noindent \textbullet\enspace venue: ACM CCS 2021
+
+
+\par\noindent \textbullet\enspace 요약: 주파수 영역 특징으로 공격 42종을 탐지하면서(Whisper) 회피 공격 아래 정확도 유지와 고처리율을 함께 평가한다. 회피 조건과 처리율을 같이 보는 축.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3460120.3484585
+
+
+\par\noindent \textbullet\enspace Are Existing Out-Of-Distribution Techniques Suitable for Network Intrusion Detection?
+
+
+\par\noindent \textbullet\enspace venue: IEEE CNS 2023, 비주류 venue이지만 주제 직결
+
+
+\par\noindent \textbullet\enspace 요약: OOD 탐지 6종을 여러 학습 방식의 모델에 붙여, 같은 데이터셋과 다른 데이터셋의 미지 악성 트래픽에 노출시키는 시나리오로 평가한다. 임베딩 품질과 탐지기 조합이 효과를 좌우한다. 불확실성·OOD 게이트 평가 설계의 직접 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2308.14376
+
+
+\par\noindent \textbullet\enspace Low-Quality Training Data Only? A Robust Framework for Detecting Encrypted Malicious Network Traffic
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2024
+
+
+\par\noindent \textbullet\enspace 요약: 라벨이 적고 45\% 노이즈가 섞인 1000개 샘플만으로 암호화 악성 트래픽을 탐지하는 조건을 설계하고(RAPIER), 공개 2종, 결합 데이터, 실제 기업 데이터로 평가한다. 저품질 라벨 시나리오.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.ndss-symposium.org/\allowbreak{}ndss-paper/\allowbreak{}low-quality-training-data-only-a-robust-framework-for-detecting-encrypted-malicious-network-traffic/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace CoLD: Collaborative Label Denoising Framework for Network Intrusion Detection
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2026
+
+
+\par\noindent \textbullet\enspace 요약: NIDS 라벨 노이즈를 다루는 협업 디노이징. 여러 벤치마크에서 베이스라인 8개 대비 노이즈 강건성을 비교한다. 라벨 노이즈 비율을 시나리오 변수로 두는 설계 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.ndss-symposium.org/\allowbreak{}ndss-paper/\allowbreak{}cold-collaborative-label-denoising-framework-for-network-intrusion-detection/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace Training with Only 1.0‰ Samples: Malicious Traffic Detection via Cross-Modality Feature Fusion
+
+
+\par\noindent \textbullet\enspace venue: ACM CCS 2025
+
+
+\par\noindent \textbullet\enspace 요약: 완전히 새 네트워크에서 트래픽의 1.0‰만 라벨링해 탐지기를 세우는 조건을 정의한다(tFusion). 패킷·플로우·호스트 세 granularity를 교차 주의로 융합하고 토폴로지 편향을 줄이는 대조 사전학습을 쓰며, 기관망에 5일간 배치해 측정한다. 새 환경에 극소량 라벨만 있는 시나리오.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3719027.3765143
+
+
+\par\noindent \textbullet\enspace LotBoNC: Novel Botnet Traffic Classification under Long-tailed Distributions
+
+
+\par\noindent \textbullet\enspace venue: ACM AsiaCCS 2026
+
+
+\par\noindent \textbullet\enspace 요약: 봇넷 트래픽 분류를 롱테일과 오픈월드가 겹친 배치 조건으로 정의한다. 헤드는 알려진 다수 클래스, 테일은 희귀한 신규 변종. 자기지도 사전학습, 최적수송 의사라벨, EM 반복으로 암호화 트래픽 데이터셋 3종의 여러 롱테일 시나리오에서 알려진 봇넷 분류와 신규 변종 발견을 평가한다. 우리 롱테일 시나리오 정의와 가장 가깝다.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3779208.3785276
+
+
+\par\noindent \textbullet\enspace TIPSO-GAN: Malicious Network Traffic Detection Using a Novel Optimized Generative Adversarial Network
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2026
+
+
+\par\noindent \textbullet\enspace 요약: 방법보다 평가 프로토콜이 참고 대상이다. 표준 벤치마크 성능 외에 leave-one-family-out 제로데이 평가, 교차 데이터셋 평가, 지연·처리율·메모리 footprint를 함께 보고한다.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.ndss-symposium.org/\allowbreak{}ndss-paper/\allowbreak{}tipso-gan-malicious-network-traffic-detection-using-a-novel-optimized-generative-adversarial-network/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace A Hard-Label Black-Box Evasion Attack against ML-based Malicious Traffic Detection Systems
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2026
+
+
+\par\noindent \textbullet\enspace 요약: 하드라벨 블랙박스 조건에서 강화학습으로 공격 플로우를 정상처럼 변형해(NetMasquerade) 탐지기 6종, 공격 시나리오 80개에서 회피를 평가한다. 시나리오에 적응형 공격자 축을 둘 때 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.ndss-symposium.org/\allowbreak{}ndss-paper/\allowbreak{}a-hard-label-black-box-evasion-attack-against-ml-based-malicious-traffic-detection-systems/\allowbreak{}
+
+
+\subsection{D. 운영 비용, 처리율, 배치}
+\par\noindent \textbullet\enspace HorusEye: A Realtime IoT Malicious Traffic Detection Framework using Programmable Switches
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2023
+
+
+\par\noindent \textbullet\enspace 요약: 데이터 플레인(P4 스위치)에서 iForest를 화이트리스트 규칙으로 바꿔 1차 탐지하고, 컨트롤 플레인의 DL이 오경보를 줄이는 2단 구조. 데이터 플레인이 이상의 약 99\%를 잡고 트래픽의 약 76\%를 오프로드한다. 어느 단계에서 얼마나 거르는지를 묻는 비용 시나리오.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity23/\allowbreak{}presentation/\allowbreak{}dong-yutao
+
+
+\par\noindent \textbullet\enspace MineShark: Cryptomining Traffic Detection at Scale
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2025
+
+
+\par\noindent \textbullet\enspace 요약: 10 Gbps 캠퍼스망에 10개월 배치. 능동 probing으로 모델 출력을 자동 확인해 오경보 99.3\% 이상을 걸러내고 확인된 라벨로 자기 갱신한다. 동시 운용된 상용 시스템보다 먼저 마이닝 풀 연결 105건을 탐지했고 1.3 Mpps를 처리했다. 장기 실배치 보고 형식의 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}ndss-symposium.org/\allowbreak{}wp-content/\allowbreak{}uploads/\allowbreak{}2025-402-paper.pdf
+
+
+\par\noindent \textbullet\enspace In Search of netUnicorn: A Data-Collection Platform to Develop Generalizable ML Models for Network Security Problems
+
+
+\par\noindent \textbullet\enspace venue: ACM CCS 2023
+
+
+\par\noindent \textbullet\enspace 요약: 설명 도구가 찾은 데이터 문제를 새 데이터 수집으로 되먹이는 반복 파이프라인과 수집 플랫폼. 환경 간 일반화를 수집 설계로 개선한다. 일반화 시나리오에서 어떤 환경 차이를 만들 것인지의 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3576915.3623075
+
+
+\par\noindent \textbullet\enspace Are we there yet? An Industrial Viewpoint on Provenance-based Endpoint Detection and Response Tools
+
+
+\par\noindent \textbullet\enspace venue: ACM CCS 2023
+
+
+\par\noindent \textbullet\enspace 요약: 인터뷰, 설문, 문헌 조사, 측정 연구로 학계와 산업의 세 격차(클라이언트 오버헤드 간과, 알림 분류 비용과 해석 비용의 불균형, 서버 메모리 과다)를 도출한다. 호스트 측이지만 운영 비용 항목을 무엇으로 잡을지 정하는 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3576915.3616580
+
+
+\par\noindent \textbullet\enspace Facade: High-Precision Insider Threat Detection Using Deep Contextual Anomaly Detection
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2026
+
+
+\par\noindent \textbullet\enspace 요약: Google 내부에서 2018년부터 운용 중인 내부자 위협 탐지. 라벨 없는 benign 데이터만으로 대조학습하고, 오경보율 0.01\% 미만과 학습 후 1년간 정밀도 유지를 보고한다. 배치 후 1년 유지를 지표로 두는 보고 방식.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity26/\allowbreak{}presentation/\allowbreak{}kantchelian
+
+
+\subsection{E. 알림, 분석가, SOC 관점}
+\par\noindent \textbullet\enspace True Attacks, Attack Attempts, or Benign Triggers? An Empirical Measurement of Network Alerts in a Security Operations Center
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2024
+
+
+\par\noindent \textbullet\enspace 요약: 실제 SOC의 4년치 네트워크 알림 1.15억 건과 20년간 성공 공격 227건을 대조한다. 하루 2.4만에서 13.4만 건의 알림 중 실제 공격 관련은 약 0.01\%, 27\%는 실패한 공격 시도, 49\%는 업무상 정당한 benign trigger였다. 탐지는 당일에 되지만 조사는 평균 53일이 걸렸다. 알림량과 조사 시간 시나리오의 실측 근거.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity24/\allowbreak{}presentation/\allowbreak{}yang-limin
+
+
+\par\noindent \textbullet\enspace 99\% False Positives: A Qualitative Study of SOC Analysts' Perspectives on Security Alarms
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2022
+
+
+\par\noindent \textbullet\enspace 요약: SOC 실무자 설문 20명과 질적 연구 21명으로 오경보의 다수가 benign trigger임을 보이고, 알림이 갖춰야 할 다섯 속성(Reliable, Explainable, Analytical, Contextual, Transferable)을 제안한다. 알림 품질 지표 설계 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity22/\allowbreak{}presentation/\allowbreak{}alahmadi
+
+
+\par\noindent \textbullet\enspace DeepCASE: Semi-Supervised Contextual Analysis of Security Events
+
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2022
+
+
+\par\noindent \textbullet\enspace 요약: 같은 장치의 선행 이벤트 맥락으로 보안 이벤트를 묶어 분석가가 한 번만 보게 한다. 실제 SOC 데이터에서 이벤트 86.72\%를 자동 필터하고 분석가 작업량을 90.53\% 줄이면서 위험 과소평가는 0.001\% 미만이었다. 작업량 감소와 놓침을 같이 보고하는 형식.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}SP46214.2022.9833671
+
+
+\par\noindent \textbullet\enspace Point Cloud Analysis for ML-Based Malicious Traffic Detection: Reducing Majorities of False Positive Alarms
+
+
+\par\noindent \textbullet\enspace venue: ACM CCS 2023
+
+
+\par\noindent \textbullet\enspace 요약: 탐지기 출력 알림을 특징 공간의 점구름으로 보고 밀도로 오경보 복셀을 식별한다(pVoxel). 실데이터 75종과 SOTA 탐지기 11종에서 오경보 95.55\% 감소, 초당 20.1만 알림 처리를 보고한다. 탐지기에 붙는 오경보 후처리를 시나리오 비교군으로 넣는 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1145/\allowbreak{}3576915.3616631
+
+
+\par\noindent \textbullet\enspace NoDoze: Combatting Threat Alert Fatigue with Automated Provenance Triage
+
+
+\par\noindent \textbullet\enspace venue: NDSS 2019
+
+
+\par\noindent \textbullet\enspace 요약: 알림별 인과 의존 그래프에 기업 내 이벤트 빈도 기반 이상 점수를 전파해 triage한다. 알림 364건에서 오경보 86\% 감소, 분석가 시간 90시간 이상 절감을 보고한다. 알림 triage 비용 계산 방식의 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.ndss-symposium.org/\allowbreak{}ndss-paper/\allowbreak{}nodoze-combatting-threat-alert-fatigue-with-automated-provenance-triage/\allowbreak{}
+
+
+\par\noindent \textbullet\enspace Carbon Filter: Scalable, Efficient, and Secure Alert Triage for Endpoint Detection \& Response
+
+
+\par\noindent \textbullet\enspace venue: RAID 2025
+
+
+\par\noindent \textbullet\enspace 요약: EDR 알림의 명령행 인자를 맥락으로 삼아 대규모 클러스터링으로 triage한다. 초당 5천 건 이상 처리, 오경보 82\% 이상 감소, 상용 EDR 고객에 적용 중이다. 처리율과 오경보 감소를 함께 보고하는 사례.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}sts.cs.illinois.edu/\allowbreak{}papers/\allowbreak{}paper/\allowbreak{}CarbonFilterScalable20251019.html
+
+
+\par\noindent \textbullet\enspace xNIDS: Explaining Deep Learning-based Network Intrusion Detection Systems for Active Intrusion Responses
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2023
+
+
+\par\noindent \textbullet\enspace 요약: DL-NIDS의 설명을 방어 규칙으로 바꿔 능동 대응에 쓰는 틀. DL-NIDS 4종에서 설명의 충실도, 희소성, 완전성, 안정성으로 평가한다. 탐지에서 대응까지 닫힌 루프를 시나리오에 넣을 때 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity23/\allowbreak{}presentation/\allowbreak{}wei-feng
+
+
+\subsection{F. 캠페인·APT 시나리오 설계, 호스트 측 템플릿}
+\par\noindent \textbullet\enspace HOLMES: Real-time APT Detection through Correlation of Suspicious Information Flows
+
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2019
+
+
+\par\noindent \textbullet\enspace 요약: 킬체인 단계에 매핑한 의심 정보 흐름을 상관시켜 캠페인 단위로 탐지하고 고수준 그래프를 실시간 생성한다. DARPA TC 레드팀 engagement로 평가한다. 공격 캠페인 단위 시나리오와 시간 내 탐지 설계의 원형.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}doi.org/\allowbreak{}10.1109/\allowbreak{}SP.2019.00026
+
+
+\par\noindent \textbullet\enspace Tactical Provenance Analysis for Endpoint Detection and Response Systems
+
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2020
+
+
+\par\noindent \textbullet\enspace 요약: EDR 알림 간 인과 관계로 Tactical Provenance Graph를 만들고 MITRE ATT\&CK 전술 순서로 위협 점수를 매긴다(RapSheet). Symantec EDR 기업 환경에서 평가하고 로그 보존 비용 절감까지 측정한다.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.cs.virginia.edu/\allowbreak{}\textasciitilde{}hur7wv/\allowbreak{}papers/\allowbreak{}hassan-oakland20.pdf
+
+
+\par\noindent \textbullet\enspace SoK: History is a Vast Early Warning System: Auditing the Provenance of System Intrusions
+
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2023
+
+
+\par\noindent \textbullet\enspace 요약: provenance 기반 감사 문헌을 계층 분류하고 DARPA TC로 로그 축소 기법 8종을 독립 재평가한다. 저장 효율과 이상탐지 성능의 역관계를 보고한다. 저장 비용과 탐지의 trade-off 보고 형식.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}par.nsf.gov/\allowbreak{}servlets/\allowbreak{}purl/\allowbreak{}10443648
+
+
+\par\noindent \textbullet\enspace KAIROS: Practical Intrusion Detection and Investigation using Whole-system Provenance
+
+
+\par\noindent \textbullet\enspace venue: IEEE S\&P 2024
+
+
+\par\noindent \textbullet\enspace 요약: provenance IDS의 네 가지 요구(범위, 공격 불가지론, 적시성, 공격 재구성)를 정의하고 이를 동시에 만족하는지로 평가한다. 시나리오 평가 축을 요구 조건 목록으로 정식화하는 방법 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}arxiv.org/\allowbreak{}abs/\allowbreak{}2308.05034
+
+
+\par\noindent \textbullet\enspace ORTHRUS: Achieving High Quality of Attribution in Provenance-based Intrusion Detection Systems
+
+
+\par\noindent \textbullet\enspace venue: USENIX Security 2025
+
+
+\par\noindent \textbullet\enspace 요약: 탐지 점수와 산업 채택의 괴리를 Quality of Attribution(분석가가 경보를 조사해 근본 원인을 찾는 노력)으로 정의하고, SOTA 5종 대비 분석가가 살펴볼 노드 수가 수 자릿수 줄어듦을 보고한다. 분석가 노력을 수치화하는 지표 설계 참고.
+
+
+\par\noindent \textbullet\enspace 링크: https:/\allowbreak{}/\allowbreak{}www.usenix.org/\allowbreak{}conference/\allowbreak{}usenixsecurity25/\allowbreak{}presentation/\allowbreak{}jiang-baoxiang
+
+
+\subsection{우리 시나리오 축에 대응시키면}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.53571\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.46429\linewidth-2\tabcolsep\relax}}
+\toprule
+시나리오 축 & 1순위 참고 번호 \\ \midrule
+\endfirsthead
+시나리오 축 & 1순위 참고 번호 \\ \midrule
+\endhead
+{}시간순 새 공격 등장과 갱신 비용(EXP71 계열) & 4, 18, 16, 19, 20, 34 \\
+{}미지 공격 거부와 불확실성 게이트 & 15, 14, 31, 29 \\
+{}롱테일, 소량·저품질 라벨 & 35, 32, 33, 23 \\
+{}benign 유지와 정상 분포 변화 & 17, 21, 22 \\
+{}알림량, base rate, 분석가 비용 & 2, 43, 45, 46, 54 \\
+{}처리율, 하드웨어, 배치 & 5, 38, 39, 42 \\
+{}데이터 함정 점검 & 3, 7, 8, 6, 10 \\
+\bottomrule
+\end{longtable}
+\endgroup
+검토 과정에서 보고 제외한 것: Entente(NDSS 2026, 연합학습 IDS), GeCo(USENIX Security 2025, 산업 IDS), Tracegram·DUPIN·Retrofit(USENIX Security 2026), ADAPT·CasinoLimit(RAID 2025), TempoNet·AutoLabel(ACSAC 2025·USENIX Security 2025, 데이터 생성), Jbeil(S\&P 2024, 횡적 이동), LLMs in the SOC(S\&P 2026), ACSAC 2024 Tier-1 분석가 도구. 필요하면 추가한다.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

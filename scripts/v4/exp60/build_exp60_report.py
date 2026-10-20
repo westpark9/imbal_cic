@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Local EXP60 report from completed, frozen predictions; no new inference."""
 
+# HTML reporting was retired by the 2026-10-20 documentation reorganization.
+if __name__ == '__main__':
+    raise SystemExit('이 HTML 발행 명령은 폐기되었습니다. 결과를 검토한 뒤 scripts/common/lablog.py의 write_record로 한국어 LaTeX·PDF와 log.md를 갱신하세요. 기존 결과 계산 함수는 이력 참조용입니다.')
+
+
 # Repository layout bootstrap: works in the workspace and portable source snapshots.
 from pathlib import Path as _LayoutPath
 import sys as _layout_sys
@@ -30,7 +35,7 @@ BASE=ROOT/'tabpfn/results/v4/exp59/20260928_exp59_residual_oracle_s43'
 REPORT_ID='counterexample_context_0929'
 REPORT=ROOT/'lablog/html_report'/f'{REPORT_ID}.html'
 INDEX=REPORT.parent/'post_tabpfn.html'
-DOCS=ROOT/'docs/research/20260929'
+DOCS=ROOT/'docs/lablog/evidence/20260929'
 ARMS=['designed','counter_random','counter_near']
 ARM_NAMES={'designed':'기존 context','counter_random':'무작위 상대사례','counter_near':'가까운 상대사례'}
 DS={'cic2018':'CIC2018','toniot':'ToN-IoT'}

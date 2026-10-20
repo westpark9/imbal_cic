@@ -6,7 +6,7 @@ import hashlib
 import json
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "docs/latex/20261007"
+OUT = ROOT / "docs/latex/generated"
 INPUTS = {}
 TABLES = {}
 
@@ -39,8 +39,8 @@ def row(items):
     return " & ".join(str(x) for x in items) + r" \\"
 
 def main():
-    sota = read_json("docs/research/20260930/exp61_report_data.json")
-    expert = read_json("docs/research/20260930/exp63_capability_report_data.json")
+    sota = read_json("docs/lablog/evidence/20260930/exp61_report_data.json")
+    expert = read_json("docs/lablog/evidence/20260930/exp63_capability_report_data.json")
     datasets = ("cic2018", "toniot")
     ds_names = {"cic2018": "CIC2018", "toniot": "ToN-IoT"}
     names = {
@@ -130,17 +130,17 @@ def main():
     table("cost","@{}l *{4}{S[table-format=5.1]}@{}",body,
           "Static-baseline elapsed times on a shared RTX 4090 (up to two concurrent workers). These include contention, not isolated latency. Global timing is from its baseline run, separate from the cached expert-policy evaluation. LoCalPFN includes validation in fit and retrieval in inference; DistPFN includes the shared Global computation. No online conditional-service latency is claimed for the proposed system.", "cost",True)
 
-    record("docs/research/20261002/exp70_results.md")
-    record("docs/research/20261002/exp70_protocol.md")
-    record("docs/research/20260930/exp63_k_sweep_protocol.md")
-    record("docs/research/20260929/exp61_local_run.md")
-    record("docs/research/20260929/exp61_a100_run.md")
+    record("docs/lablog/reports/20261002.tex")
+    record("docs/lablog/reports/20261002.tex")
+    record("docs/lablog/reports/20260930.tex")
+    record("docs/lablog/reports/20260929.tex")
+    record("docs/lablog/reports/20260929.tex")
     for p in ["tabpfn/scripts/v4/exp62/exp62_sv_current_bank.py",
               "tabpfn/scripts/v4/exp63/exp63_k_sweep.py",
               "tabpfn/scripts/v4/exp51/nfv3_v3_exp51_scorer_target.py"]:
         record(p)
-    for p in ["docs/latex/main.tex", "docs/latex/ref.bib", "docs/latex/acmart.cls",
-              "docs/latex/ACM-Reference-Format.bst", "docs/latex/20261007/template/provenance.json",
+    for p in ["docs/latex/main.tex", "docs/latex/ref.bib", "docs/latex/_support/acmart.cls",
+              "docs/latex/_support/ACM-Reference-Format.bst", "docs/latex/_support/sources.json",
               "scripts/common/build_manuscript_tables.py"]:
         record(p)
     sources={

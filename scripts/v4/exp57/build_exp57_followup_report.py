@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Append audited EXP57 results and EXP58 oracle correction to the existing 0918 tab."""
 
+# HTML reporting was retired by the 2026-10-20 documentation reorganization.
+if __name__ == '__main__':
+    raise SystemExit('이 HTML 발행 명령은 폐기되었습니다. 결과를 검토한 뒤 scripts/common/lablog.py의 write_record로 한국어 LaTeX·PDF와 log.md를 갱신하세요. 기존 결과 계산 함수는 이력 참조용입니다.')
+
+
 # Repository layout bootstrap: works in the workspace and portable source snapshots.
 from pathlib import Path as _LayoutPath
 import sys as _layout_sys
@@ -30,9 +35,9 @@ ROOT = repo_root(__file__)
 RESULTS = ROOT / 'tabpfn/results'
 LOCAL = resolve_path(RESULTS / '20260922_143529_exp57_expert_quality_s42_44')
 ORACLE = resolve_path(RESULTS / 'exp58_six_condition_20260922')
-REPORT = ROOT / 'lablog/html_report/scorer_verifier_target_0918.html'
+REPORT = ROOT / 'docs/lablog/reports/20260930.tex'
 INDEX = ROOT / 'lablog/html_report/post_tabpfn.html'
-OUT = ROOT / 'docs/research/20260923'
+OUT = ROOT / 'docs/lablog/evidence/20260923'
 DATASETS = {'cic2018': 'CIC2018', 'toniot': 'ToN'}
 ARMS = ['designed', 'matched_random', 'balanced_random']
 ARM_LABELS = ['현재 선택', '클래스 비율 일치 무작위', '같은 크기 균형 무작위']
@@ -409,7 +414,7 @@ def main():
            '<p class="eyebrow">2026-09-23 후속 결과 · EXP57 / EXP58</p>']
     parts+=oracle_section(oracle_fig)+result_section(jobs,status,focuses,quality_fig)+detail_section(jobs)+verdict_section()
     parts += ['<details><summary>계산·검증 출처</summary><p>EXP58: <code>tabpfn/results/v4/exp58/exp58_six_condition_20260922</code>. '
-              'EXP57의 실제 채택 경로와 CSV SHA-256은 <code>docs/research/20260923/exp57_report_manifest.json</code>에 기록했다. '
+              'EXP57의 실제 채택 경로와 CSV SHA-256은 <code>docs/lablog/evidence/20260923/exp57_report_manifest.json</code>에 기록했다. '
               '모든 완료본의 클래스별 TP·FP·FN으로 F1·전체 Macro-F1·Accuracy를 재검산하고, context 대조의 클래스별 행 수·총 예산과 test support 일치를 검증했다.</p></details></section>']
     fragment='\n'.join(parts)+'\n'
     (OUT/'exp57_followup_fragment.html').write_text(fragment)

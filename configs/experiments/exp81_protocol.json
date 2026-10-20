@@ -1,0 +1,18 @@
+{
+  "version": "v7",
+  "experiment": "exp81",
+  "authorization": "Within user-requested final-model evaluation alignment; assistant identified label-homogeneous original query batches, asked optional preference, and stated proceeding with recommended mixed-batch diagnostic while retaining originals",
+  "purpose": "Separate final-model performance from label-homogeneous query-batch composition",
+  "seed": 43,
+  "seed_repetitions": 1,
+  "training": "No retraining; saved small and 100k model states",
+  "query_order": "numpy default_rng(43).permutation of all test row indices, independent of features and labels",
+  "batch": 8192,
+  "pfn": "Recompute every test probability in mixed query order; scatter predictions and probabilities back to original row IDs",
+  "distpfn": "Use only the current mixed query batch for posterior correction; also compute original-group counterfactual from the identical saved probabilities",
+  "static_models": "XGB, proposed model and BoostPFN are row-wise predictors without batch posterior correction; verify on an 8192-row mixed query audit and reuse saved full predictions if exact, otherwise rerun complete mixed-order inference",
+  "budget_audit": "Audit no-FT PFN predictions at budgets 10/20/50/200/400 under the same mixed query order; XGB is row-wise",
+  "scope": "Small final comparison and large natural/uniform final comparison; no test-driven tuning",
+  "html_publication": false,
+  "overleaf_publication": false
+}

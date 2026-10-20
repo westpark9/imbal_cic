@@ -1,0 +1,1734 @@
+{
+  "revision": "compact_100k_main_bilingual",
+  "language": "ko",
+  "layout_preview": false,
+  "slides": [
+    {
+      "page": 1,
+      "title": "",
+      "notes": "No title. Rephrase the user intent into concise presentation language instead of copying their draft. Adaptation to changing networks motivates the research; current class-arrival tests do not establish network-drift robustness."
+    },
+    {
+      "page": 2,
+      "title": "TabPFN · 표 데이터 예측 규칙을 사전학습한 모델 (v3: arXiv, 2026)",
+      "notes": "Source: https://arxiv.org/pdf/2605.13986 §2.5, PDF page 10: more than 8 trillion tokens, not datasets. Official TabPFN 8.2.0: https://github.com/PriorLabs/TabPFN/blob/main/src/tabpfn/finetuning/finetuned_base.py. The archived initial-FT ablation in EXP77 uses AdamW, learning rate 1e-5, 10 fixed epochs, context/query cross-entropy; current displayed PFN results use no IDS FT. The v3 decoder weights context one-hot labels, so old-class examples remain necessary in the inference context. Validation is inside the 1000 revealed-label budget; no test tuning."
+    },
+    {
+      "page": 3,
+      "title": "v3 구조",
+      "notes": "Original Figure 5, https://arxiv.org/pdf/2605.13986#page=6. Native PPTX crop excludes the original caption. Labels and source remain in speaker notes. First three stages: feature grouping/cell embedding; target-aware column distribution embedding; row-level feature aggregation. Plain language deliberately omits implementation dimensions."
+    },
+    {
+      "page": 4,
+      "title": "v3 구조",
+      "notes": "Same Figure 5, https://arxiv.org/pdf/2605.13986#page=6; no visible caption by user request. ICL attends to training/context keys; many-class decoder uses attention-weighted one-hot context labels. This is learned contextual relevance, not merely raw-feature nearest-neighbour distance. Context determines available class labels."
+    },
+    {
+      "page": 5,
+      "title": "평가시나리오",
+      "notes": "Displayed XGB and no-FT PFN use the same released IDs as EXP76/77. XGB cumulatively retrains; PFN retains original pretrained weights and cumulative context. Initial and repeated IDS FT ablations remain in the experiment archive and are not shown. This small-label scenario supports slides6 and8; slide7 instead uses100000 training rows and separate proposed-model validation, detailed on pages9 and10. Stage order chronological, within-stage sample counts descending. Main score is the FINAL state on ALL held-out rows, not pooled stage predictions. Final evaluation convention: EXP81 seed43 permutation of test row indices independent of labels, query batch8192. PFN probabilities and DistPFN correction recomputed on all mixed batches. Row-wise XGB/proposed/Boost predictions retained only after exact mixed-query audit; any mismatching model is fully reevaluated. Budget10/20/50/200/400 PFN predictions checked with the same audit. Original-order results preserved in EXP77/78/79/80. No model tuning on test. Source: tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/results.json"
+    },
+    {
+      "page": 6,
+      "title": "결과",
+      "notes": "EXP77 final-model full-test results: tabpfn/results/v7/exp77/20261015_230535_initialft10_finalfull_s43_2eb2237d/results.json. Two displayed methods: XGB cumulative retraining from scratch at every stage and original pretrained TabPFN with cumulative context, no IDS fine-tuning. Initial-FT results are retained in EXP77/EXP78, removed from slides 6 and 7 at user request. Slide 6 alone reports later-stage update cost: GPU-synchronized context selection + model construction + fit summed AFTER the initial stage; initial preparation and all inference excluded. Single seed 43. A separate EXP78 label-budget artifact covers 100/50/20/10 new examples per class, with initial 1000 fixed. Final evaluation convention: EXP81 seed43 permutation of test row indices independent of labels, query batch8192. PFN probabilities and DistPFN correction recomputed on all mixed batches. Row-wise XGB/proposed/Boost predictions retained only after exact mixed-query audit; any mismatching model is fully reevaluated. Budget10/20/50/200/400 PFN predictions checked with the same audit. Original-order results preserved in EXP77/78/79/80. No model tuning on test. Source: tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/results.json"
+    },
+    {
+      "page": 7,
+      "title": "학습 10만 개 · 제안 모델·SOTA 비교",
+      "notes": "User-requested replacement of the small-label SOTA comparison after EXP82 diagnosis. EXP79/81 final-stage models, same complete test as the small-data evaluation, mixed query convention, no retraining or threshold tuning for reevaluation. Every method uses a 100000-row training pool (75000 Benign +25000 attacks), with natural and availability-capped uniform attack allocations. Proposed Global context is approximately50000 rows; its separate validation is additional to the training pool. Exact stage and validation counts are on appendix pages9 and10. BoostPFN uses v1; other PFN methods use v3, no IDS weight FT. Results do not establish consistent superiority: proposed is highest at CIC2018 uniform79.00%, while XGB leads both ToN allocations. Improve expert construction and routing using held-out training/validation evidence. Small-label comparison was removed from presentation at user request, not invalidated: EXP82 reproduced52.89% and identical probabilities with the695-row Global-only control. tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/results.json Final evaluation convention: EXP81 seed43 permutation of test row indices independent of labels, query batch8192. PFN probabilities and DistPFN correction recomputed on all mixed batches. Row-wise XGB/proposed/Boost predictions retained only after exact mixed-query audit; any mismatching model is fully reevaluated. Budget10/20/50/200/400 PFN predictions checked with the same audit. Original-order results preserved in EXP77/78/79/80. No model tuning on test. Source: tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/results.json"
+    },
+    {
+      "page": 8,
+      "title": "신규 공격 표본 수에 따른 성능",
+      "notes": "EXP78 and EXP80. Initial 1000 fixed (Benign750 + two attacks125 each), seed43 once, no IDS FT. EXP80 preserves the original 100 incoming IDs and appends nested 200/400 samples; Web attacks availability 450 limits the shared budget. Final models predict the complete held-out test. EXP81 aligns query composition and audits row-wise prediction reuse. Varying new-class counts also changes class priors. Sources: tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487 and tabpfn/results/v7/exp80/20261016_022614_new200_400_noft_s43_c6f6ea24 Final evaluation convention: EXP81 seed43 permutation of test row indices independent of labels, query batch8192. PFN probabilities and DistPFN correction recomputed on all mixed batches. Row-wise XGB/proposed/Boost predictions retained only after exact mixed-query audit; any mismatching model is fully reevaluated. Budget10/20/50/200/400 PFN predictions checked with the same audit. Original-order results preserved in EXP77/78/79/80. No model tuning on test. Source: tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/results.json"
+    },
+    {
+      "page": 9,
+      "title": "부록 · 학습 10만 개 시나리오 · CIC2018",
+      "notes": "Original EXP72/73 stage-wise data. Same attack introduction order as current small-data experiment, but Benign is also added each stage: 15000 CIC2018 /12500 ToN, reaching75000. Small-data Benign750 is initial-only. Natural and uniform each reach25000 attack rows; uniform respects class availability caps. Rows are chronological; classes within each stage sorted by NATURAL incoming count descending. Each numeric cell lists class-specific newly supplied samples in matching order; cumulative totals are separate columns. Separate validation is outside100k; tune40% selects residual temperature, cal60% selects expert gate thresholds. Original LoCalPFN uses validation checkpoint selection; XGB/TabPFN/BoostPFN/DistPFN do not use those labels. Small proposed validation is inside total1400/1700. Sources: tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc and tabpfn/results/v7/exp72/20261014_134735_replay_100k_xgb_tabpfn_s43_de8b4a78"
+    },
+    {
+      "page": 10,
+      "title": "부록 · 학습 10만 개 시나리오 · ToN",
+      "notes": "Original EXP72/73 stage-wise data. Same attack introduction order as current small-data experiment, but Benign is also added each stage: 15000 CIC2018 /12500 ToN, reaching75000. Small-data Benign750 is initial-only. Natural and uniform each reach25000 attack rows; uniform respects class availability caps. Rows are chronological; classes within each stage sorted by NATURAL incoming count descending. Each numeric cell lists class-specific newly supplied samples in matching order; cumulative totals are separate columns. Separate validation is outside100k; tune40% selects residual temperature, cal60% selects expert gate thresholds. Original LoCalPFN uses validation checkpoint selection; XGB/TabPFN/BoostPFN/DistPFN do not use those labels. Small proposed validation is inside total1400/1700. Sources: tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc and tabpfn/results/v7/exp72/20261014_134735_replay_100k_xgb_tabpfn_s43_de8b4a78"
+    }
+  ],
+  "text_boxes": [
+    {
+      "page": 1,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "1",
+      "size": 10
+    },
+    {
+      "page": 1,
+      "x": 0.93,
+      "y": 1.75,
+      "w": 11.48,
+      "h": 1.4,
+      "text": "고정된 환경의 분류 정확도를 넘어\n변화하는 네트워크에서의 적응성 평가",
+      "size": 31
+    },
+    {
+      "page": 1,
+      "x": 0.93,
+      "y": 4.18,
+      "w": 11.48,
+      "h": 1.4,
+      "text": "사전학습 TabPFN을 활용한\n소량 라벨·저비용 탐지 모델 갱신",
+      "size": 31
+    },
+    {
+      "page": 2,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "TabPFN · 표 데이터 예측 규칙을 사전학습한 모델 (v3: arXiv, 2026)",
+      "size": 23
+    },
+    {
+      "page": 2,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "2",
+      "size": 10
+    },
+    {
+      "page": 2,
+      "x": 0.7,
+      "y": 1.4,
+      "w": 2.7,
+      "h": 0.5,
+      "text": "사전학습",
+      "size": 22
+    },
+    {
+      "page": 2,
+      "x": 3.45,
+      "y": 1.4,
+      "w": 9.15,
+      "h": 1.0,
+      "text": "합성 표 데이터의 8조 개 이상 토큰으로 학습\n일부 행의 정답을 맞히며 표 데이터의 예측 규칙 습득",
+      "size": 21
+    },
+    {
+      "page": 2,
+      "x": 0.7,
+      "y": 2.68,
+      "w": 2.7,
+      "h": 1.0,
+      "text": "In-context learning",
+      "size": 22
+    },
+    {
+      "page": 2,
+      "x": 3.45,
+      "y": 2.68,
+      "w": 9.15,
+      "h": 1.0,
+      "text": "라벨된 사례(context)를 참고해 새 flow(query)의 라벨 예측\n추론 중 모델 가중치는 그대로 유지",
+      "size": 21
+    },
+    {
+      "page": 2,
+      "x": 0.7,
+      "y": 3.96,
+      "w": 2.7,
+      "h": 0.5,
+      "text": "Fine-tuning",
+      "size": 22
+    },
+    {
+      "page": 2,
+      "x": 3.45,
+      "y": 3.96,
+      "w": 9.15,
+      "h": 1.0,
+      "text": "초기 IDS를 context와 query로 나눠 query의 정답 예측\n예측 오류를 역전파해 모델 가중치를 IDS에 맞게 조정",
+      "size": 21
+    },
+    {
+      "page": 2,
+      "x": 0.91,
+      "y": 5.55,
+      "w": 11.5,
+      "h": 0.36,
+      "text": "갱신: 사전학습 가중치 유지 → 기존 클래스 사례 보존 + 신규 사례 누적",
+      "size": 20
+    },
+    {
+      "page": 2,
+      "x": 0.91,
+      "y": 6.06,
+      "w": 11.5,
+      "h": 0.34,
+      "text": "기대: 반복 재학습과 비슷한 탐지 품질을 더 적은 데이터·갱신 비용으로 달성",
+      "size": 20
+    },
+    {
+      "page": 3,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "v3 구조",
+      "size": 28
+    },
+    {
+      "page": 3,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "3",
+      "size": 10
+    },
+    {
+      "page": 3,
+      "x": 5.12,
+      "y": 1.4,
+      "w": 7.52,
+      "h": 0.48,
+      "text": "① 입력 변환 · Cell embedding",
+      "size": 23
+    },
+    {
+      "page": 3,
+      "x": 5.14,
+      "y": 1.9899999999999998,
+      "w": 7.48,
+      "h": 0.85,
+      "text": "패킷 길이·지속시간 등의 값을 숫자 벡터로 변환\n값이 비어 있는 위치도 함께 표시",
+      "size": 21
+    },
+    {
+      "page": 3,
+      "x": 5.12,
+      "y": 3.18,
+      "w": 7.52,
+      "h": 0.48,
+      "text": "② 특징별 분포 파악 · Feature embedding",
+      "size": 23
+    },
+    {
+      "page": 3,
+      "x": 5.14,
+      "y": 3.77,
+      "w": 7.48,
+      "h": 0.85,
+      "text": "여러 flow를 살펴 각 특징의 값 분포를 요약\nContext의 정상·공격 라벨도 함께 반영",
+      "size": 21
+    },
+    {
+      "page": 3,
+      "x": 5.12,
+      "y": 4.96,
+      "w": 7.52,
+      "h": 0.48,
+      "text": "③ Flow별 정보 통합 · Feature aggregation",
+      "size": 23
+    },
+    {
+      "page": 3,
+      "x": 5.14,
+      "y": 5.55,
+      "w": 7.48,
+      "h": 0.85,
+      "text": "한 flow의 여러 특징을 하나의 표현으로 통합\n이 표현을 이용해 flow 사이의 관계 비교",
+      "size": 21
+    },
+    {
+      "page": 4,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "v3 구조",
+      "size": 28
+    },
+    {
+      "page": 4,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "4",
+      "size": 10
+    },
+    {
+      "page": 4,
+      "x": 5.12,
+      "y": 1.74,
+      "w": 7.52,
+      "h": 0.48,
+      "text": "④ 사례 참조 · In-context learning",
+      "size": 23
+    },
+    {
+      "page": 4,
+      "x": 5.14,
+      "y": 2.33,
+      "w": 7.48,
+      "h": 0.85,
+      "text": "새 flow(query)가 라벨된 기존 사례(context)를 참조\n어떤 사례가 예측에 도움이 되는지 attention으로 계산",
+      "size": 21
+    },
+    {
+      "page": 4,
+      "x": 5.12,
+      "y": 4.15,
+      "w": 7.52,
+      "h": 0.48,
+      "text": "⑤ 확률 출력 · Many-class decoder",
+      "size": 23
+    },
+    {
+      "page": 4,
+      "x": 5.14,
+      "y": 4.74,
+      "w": 7.48,
+      "h": 0.85,
+      "text": "관련성이 큰 사례의 라벨에 더 큰 가중치 부여\n참고한 라벨을 모아 정상·공격별 확률 계산",
+      "size": 21
+    },
+    {
+      "page": 4,
+      "x": 5.14,
+      "y": 5.94,
+      "w": 7.48,
+      "h": 0.64,
+      "text": "기존 클래스도 분류하려면\n해당 라벨의 context 유지 필요",
+      "size": 19
+    },
+    {
+      "page": 5,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "평가시나리오",
+      "size": 28
+    },
+    {
+      "page": 5,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "5",
+      "size": 10
+    },
+    {
+      "page": 5,
+      "x": 0.66,
+      "y": 1.02,
+      "w": 12.0,
+      "h": 0.38,
+      "text": "초기 1,000개 · 신규 공격당 100개 누적 · 단계순, 단계 내 표본 수 내림차순",
+      "size": 16
+    },
+    {
+      "page": 5,
+      "x": 0.66,
+      "y": 1.5,
+      "w": 5.75,
+      "h": 0.4,
+      "text": "CIC2018",
+      "size": 22
+    },
+    {
+      "page": 5,
+      "x": 6.9,
+      "y": 1.5,
+      "w": 5.75,
+      "h": 0.4,
+      "text": "ToN",
+      "size": 22
+    },
+    {
+      "page": 5,
+      "x": 0.7,
+      "y": 6.68,
+      "w": 11.95,
+      "h": 0.27,
+      "text": "전체 test: CIC2018 3,042,473개 / ToN 2,271,723개 · 최종 모델 · seed 43 혼합 순서",
+      "size": 14.5
+    },
+    {
+      "page": 6,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "결과",
+      "size": 28
+    },
+    {
+      "page": 6,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "6",
+      "size": 10
+    },
+    {
+      "page": 6,
+      "x": 0.66,
+      "y": 1.04,
+      "w": 12.0,
+      "h": 0.36,
+      "text": "최종 상태 전체 test 평가 · XGB: 누적 재학습 · TabPFN: FT 없이 누적 context 갱신",
+      "size": 16.5
+    },
+    {
+      "page": 6,
+      "x": 0.69,
+      "y": 6.63,
+      "w": 12.0,
+      "h": 0.25,
+      "text": "비용: 2단계 이후 갱신 합계 · 초기 준비·추론 제외 · 두 데이터셋 동일 비용 눈금",
+      "size": 14
+    },
+    {
+      "page": 7,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "학습 10만 개 · 제안 모델·SOTA 비교",
+      "size": 28
+    },
+    {
+      "page": 7,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "7",
+      "size": 10
+    },
+    {
+      "page": 7,
+      "x": 0.66,
+      "y": 1.03,
+      "w": 12.0,
+      "h": 0.36,
+      "text": "Benign 75,000개 + 공격 25,000개 · 최종 모델 전체 test · Macro-F1 (%)",
+      "size": 16
+    },
+    {
+      "page": 7,
+      "x": 0.69,
+      "y": 6.67,
+      "w": 12.0,
+      "h": 0.24,
+      "text": "제안 모델 Global 약 5만 개 + 별도 검증 · 표본 수: 부록 9·10 · BoostPFN v1, 나머지 PFN v3",
+      "size": 13.5
+    },
+    {
+      "page": 7,
+      "x": 0.69,
+      "y": 7.085,
+      "w": 11.55,
+      "h": 0.31,
+      "text": "CIC2018 균등 배분: 제안 모델 79.00% · ToN 두 배분 조건: XGB 우세",
+      "size": 16.5
+    },
+    {
+      "page": 8,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "신규 공격 표본 수에 따른 성능",
+      "size": 28
+    },
+    {
+      "page": 8,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "8",
+      "size": 10
+    },
+    {
+      "page": 8,
+      "x": 0.66,
+      "y": 1.04,
+      "w": 12.0,
+      "h": 0.36,
+      "text": "초기 1,000개 고정 · 신규 공격당 10·20·50·100·200·400개 · 최종 상태 전체 test · seed 43",
+      "size": 15.5
+    },
+    {
+      "page": 8,
+      "x": 0.9,
+      "y": 6.23,
+      "w": 11.5,
+      "h": 0.4,
+      "text": "신규 공격 400개 · XGB 대비 TabPFN 차이: CIC2018 +0.60%p · ToN +2.56%p",
+      "size": 18
+    },
+    {
+      "page": 9,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "부록 · 학습 10만 개 시나리오 · CIC2018",
+      "size": 28
+    },
+    {
+      "page": 9,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "9",
+      "size": 10
+    },
+    {
+      "page": 9,
+      "x": 0.66,
+      "y": 1.03,
+      "w": 12.0,
+      "h": 0.36,
+      "text": "동일 공격 순서 · 소규모: 신규 공격당 100개 · 대규모: Benign 매 단계 15,000개 추가",
+      "size": 15.5
+    },
+    {
+      "page": 9,
+      "x": 3.45,
+      "y": 1.48,
+      "w": 4.35,
+      "h": 0.3,
+      "text": "이번 단계 추가 수 (개)",
+      "size": 16
+    },
+    {
+      "page": 9,
+      "x": 7.8,
+      "y": 1.48,
+      "w": 4.8,
+      "h": 0.3,
+      "text": "누적 수 (개)",
+      "size": 16
+    },
+    {
+      "page": 9,
+      "x": 0.69,
+      "y": 6.4,
+      "w": 12.0,
+      "h": 0.26,
+      "text": "별도 검증: 제안 모델의 잔차 확률 보정·expert 채택 기준 선택 · 소규모는 전체 예산 내 분할",
+      "size": 14
+    },
+    {
+      "page": 9,
+      "x": 0.69,
+      "y": 6.73,
+      "w": 12.0,
+      "h": 0.23,
+      "text": "자연: 학습 공격 비율 · 균등: 공격별 균등, 표본 상한 반영 · 단계순, 단계 내 자연 추가 수 내림차순",
+      "size": 13.5
+    },
+    {
+      "page": 10,
+      "x": 0.6,
+      "y": 0.29,
+      "w": 12.1,
+      "h": 0.72,
+      "text": "부록 · 학습 10만 개 시나리오 · ToN",
+      "size": 28
+    },
+    {
+      "page": 10,
+      "x": 12.48,
+      "y": 7.09,
+      "w": 0.4,
+      "h": 0.25,
+      "text": "10",
+      "size": 10
+    },
+    {
+      "page": 10,
+      "x": 0.66,
+      "y": 1.03,
+      "w": 12.0,
+      "h": 0.36,
+      "text": "동일 공격 순서 · 소규모: 신규 공격당 100개 · 대규모: Benign 매 단계 12,500개 추가",
+      "size": 15.5
+    },
+    {
+      "page": 10,
+      "x": 3.45,
+      "y": 1.48,
+      "w": 4.35,
+      "h": 0.3,
+      "text": "이번 단계 추가 수 (개)",
+      "size": 16
+    },
+    {
+      "page": 10,
+      "x": 7.8,
+      "y": 1.48,
+      "w": 4.8,
+      "h": 0.3,
+      "text": "누적 수 (개)",
+      "size": 16
+    },
+    {
+      "page": 10,
+      "x": 0.69,
+      "y": 6.4,
+      "w": 12.0,
+      "h": 0.26,
+      "text": "별도 검증: 제안 모델의 잔차 확률 보정·expert 채택 기준 선택 · 소규모는 전체 예산 내 분할",
+      "size": 14
+    },
+    {
+      "page": 10,
+      "x": 0.69,
+      "y": 6.73,
+      "w": 12.0,
+      "h": 0.23,
+      "text": "자연: 학습 공격 비율 · 균등: 공격별 균등, 표본 상한 반영 · 단계순, 단계 내 자연 추가 수 내림차순",
+      "size": 13.5
+    }
+  ],
+  "chart_data": [
+    {
+      "slide": 6,
+      "dataset": "cic2018",
+      "case": "final_full_test",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 72.1624859759845
+    },
+    {
+      "slide": 6,
+      "dataset": "cic2018",
+      "case": "final_full_test",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 73.11345197617001
+    },
+    {
+      "slide": 6,
+      "dataset": "cic2018",
+      "case": "final_full_test",
+      "method": "xgb",
+      "metric": "update",
+      "value": 2.6066797329694964
+    },
+    {
+      "slide": 6,
+      "dataset": "cic2018",
+      "case": "final_full_test",
+      "method": "pfn_pretrained",
+      "metric": "update",
+      "value": 1.2637662939669099
+    },
+    {
+      "slide": 6,
+      "dataset": "toniot",
+      "case": "final_full_test",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 63.116270822646456
+    },
+    {
+      "slide": 6,
+      "dataset": "toniot",
+      "case": "final_full_test",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 66.6075145115604
+    },
+    {
+      "slide": 6,
+      "dataset": "toniot",
+      "case": "final_full_test",
+      "method": "xgb",
+      "metric": "update",
+      "value": 5.624506077030674
+    },
+    {
+      "slide": 6,
+      "dataset": "toniot",
+      "case": "final_full_test",
+      "method": "pfn_pretrained",
+      "metric": "update",
+      "value": 1.5376382069953252
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_10",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 71.04911286563774
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_20",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 72.55343395000189
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_50",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 71.27969841766803
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_100",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 72.1624859759845
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_200",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 71.40030759285325
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_400",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 70.69166015693587
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_10",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 71.53750854278317
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_20",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 71.90223550522924
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_50",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 73.95495762057426
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_100",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 73.11345197617001
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_200",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 72.36453145959345
+    },
+    {
+      "slide": 8,
+      "dataset": "cic2018",
+      "case": "new_400",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 71.2928491004493
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_10",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 57.24708127143605
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_20",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 58.71072622677358
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_50",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 61.39698882880366
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_100",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 63.116270822646456
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_200",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 64.75424360902764
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_400",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 67.36252755056225
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_10",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 57.64016628453091
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_20",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 58.961441782135694
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_50",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 61.93879612275152
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_100",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 66.6075145115604
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_200",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 69.84071766807749
+    },
+    {
+      "slide": 8,
+      "dataset": "toniot",
+      "case": "new_400",
+      "method": "pfn_pretrained",
+      "metric": "f1",
+      "value": 69.91828999340372
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "natural",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 75.66443558642193
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "natural",
+      "method": "tabpfn",
+      "metric": "f1",
+      "value": 77.04048185868079
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "natural",
+      "method": "ours",
+      "metric": "f1",
+      "value": 75.9946348322738
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "natural",
+      "method": "boostpfn",
+      "metric": "f1",
+      "value": 71.46589285613005
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "natural",
+      "method": "distpfn",
+      "metric": "f1",
+      "value": 77.40217017953518
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "uniform",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 78.11699257519071
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "uniform",
+      "method": "tabpfn",
+      "metric": "f1",
+      "value": 78.57551193908522
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "uniform",
+      "method": "ours",
+      "metric": "f1",
+      "value": 79.0036717154549
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "uniform",
+      "method": "boostpfn",
+      "metric": "f1",
+      "value": 74.21656089130776
+    },
+    {
+      "slide": 7,
+      "dataset": "cic2018",
+      "case": "uniform",
+      "method": "distpfn",
+      "metric": "f1",
+      "value": 78.00791525002644
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "natural",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 77.42855578358903
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "natural",
+      "method": "tabpfn",
+      "metric": "f1",
+      "value": 70.0112980037685
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "natural",
+      "method": "ours",
+      "metric": "f1",
+      "value": 69.82391752707645
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "natural",
+      "method": "boostpfn",
+      "metric": "f1",
+      "value": 65.69344611554422
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "natural",
+      "method": "distpfn",
+      "metric": "f1",
+      "value": 67.07639378893823
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "uniform",
+      "method": "xgb",
+      "metric": "f1",
+      "value": 71.21891314893189
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "uniform",
+      "method": "tabpfn",
+      "metric": "f1",
+      "value": 69.53391989185323
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "uniform",
+      "method": "ours",
+      "metric": "f1",
+      "value": 70.77788553794552
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "uniform",
+      "method": "boostpfn",
+      "metric": "f1",
+      "value": 65.76836346606203
+    },
+    {
+      "slide": 7,
+      "dataset": "toniot",
+      "case": "uniform",
+      "method": "distpfn",
+      "metric": "f1",
+      "value": 69.6627481912952
+    }
+  ],
+  "scenario_data": [
+    {
+      "dataset": "cic2018",
+      "stage": 1,
+      "classes": [
+        "Benign",
+        "Brute force",
+        "DoS"
+      ],
+      "new_counts": [
+        750,
+        125,
+        125
+      ],
+      "cumulative": 1000
+    },
+    {
+      "dataset": "cic2018",
+      "stage": 2,
+      "classes": [
+        "DDoS"
+      ],
+      "new_counts": [
+        100
+      ],
+      "cumulative": 1100
+    },
+    {
+      "dataset": "cic2018",
+      "stage": 3,
+      "classes": [
+        "Web attacks"
+      ],
+      "new_counts": [
+        100
+      ],
+      "cumulative": 1200
+    },
+    {
+      "dataset": "cic2018",
+      "stage": 4,
+      "classes": [
+        "Infiltration"
+      ],
+      "new_counts": [
+        100
+      ],
+      "cumulative": 1300
+    },
+    {
+      "dataset": "cic2018",
+      "stage": 5,
+      "classes": [
+        "Bot"
+      ],
+      "new_counts": [
+        100
+      ],
+      "cumulative": 1400
+    },
+    {
+      "dataset": "toniot",
+      "stage": 1,
+      "classes": [
+        "Benign",
+        "DoS",
+        "Scanning"
+      ],
+      "new_counts": [
+        750,
+        125,
+        125
+      ],
+      "cumulative": 1000
+    },
+    {
+      "dataset": "toniot",
+      "stage": 2,
+      "classes": [
+        "DDoS",
+        "Injection"
+      ],
+      "new_counts": [
+        100,
+        100
+      ],
+      "cumulative": 1200
+    },
+    {
+      "dataset": "toniot",
+      "stage": 3,
+      "classes": [
+        "Password"
+      ],
+      "new_counts": [
+        100
+      ],
+      "cumulative": 1300
+    },
+    {
+      "dataset": "toniot",
+      "stage": 4,
+      "classes": [
+        "XSS"
+      ],
+      "new_counts": [
+        100
+      ],
+      "cumulative": 1400
+    },
+    {
+      "dataset": "toniot",
+      "stage": 5,
+      "classes": [
+        "Backdoor",
+        "Ransomware"
+      ],
+      "new_counts": [
+        100,
+        100
+      ],
+      "cumulative": 1600
+    },
+    {
+      "dataset": "toniot",
+      "stage": 6,
+      "classes": [
+        "MitM"
+      ],
+      "new_counts": [
+        100
+      ],
+      "cumulative": 1700
+    }
+  ],
+  "historical_counts": [
+    {
+      "dataset": "cic2018",
+      "name": "benign",
+      "natural": 75000,
+      "uniform": 75000,
+      "current": 750
+    },
+    {
+      "dataset": "cic2018",
+      "name": "ddos",
+      "natural": 16780,
+      "uniform": 4910,
+      "current": 100
+    },
+    {
+      "dataset": "cic2018",
+      "name": "bot",
+      "natural": 2649,
+      "uniform": 4910,
+      "current": 100
+    },
+    {
+      "dataset": "cic2018",
+      "name": "dos",
+      "natural": 2518,
+      "uniform": 4910,
+      "current": 125
+    },
+    {
+      "dataset": "cic2018",
+      "name": "brute_force",
+      "natural": 2403,
+      "uniform": 4910,
+      "current": 125
+    },
+    {
+      "dataset": "cic2018",
+      "name": "infiltration",
+      "natural": 641,
+      "uniform": 4910,
+      "current": 100
+    },
+    {
+      "dataset": "cic2018",
+      "name": "web_attacks",
+      "natural": 9,
+      "uniform": 450,
+      "current": 100
+    },
+    {
+      "dataset": "toniot",
+      "name": "benign",
+      "natural": 75000,
+      "uniform": 75000,
+      "current": 750
+    },
+    {
+      "dataset": "toniot",
+      "name": "xss",
+      "natural": 9308,
+      "uniform": 2856,
+      "current": 100
+    },
+    {
+      "dataset": "toniot",
+      "name": "password",
+      "natural": 6009,
+      "uniform": 2856,
+      "current": 100
+    },
+    {
+      "dataset": "toniot",
+      "name": "ddos",
+      "natural": 5785,
+      "uniform": 2856,
+      "current": 100
+    },
+    {
+      "dataset": "toniot",
+      "name": "injection",
+      "natural": 1899,
+      "uniform": 2856,
+      "current": 100
+    },
+    {
+      "dataset": "toniot",
+      "name": "backdoor",
+      "natural": 1136,
+      "uniform": 2857,
+      "current": 100
+    },
+    {
+      "dataset": "toniot",
+      "name": "dos",
+      "natural": 644,
+      "uniform": 2856,
+      "current": 125
+    },
+    {
+      "dataset": "toniot",
+      "name": "scanning",
+      "natural": 168,
+      "uniform": 2856,
+      "current": 125
+    },
+    {
+      "dataset": "toniot",
+      "name": "mitm",
+      "natural": 31,
+      "uniform": 2856,
+      "current": 100
+    },
+    {
+      "dataset": "toniot",
+      "name": "ransomware",
+      "natural": 20,
+      "uniform": 2151,
+      "current": 100
+    }
+  ],
+  "budget_counts": [
+    {
+      "dataset": "cic2018",
+      "new_per_class": 10,
+      "total": 1040
+    },
+    {
+      "dataset": "cic2018",
+      "new_per_class": 20,
+      "total": 1080
+    },
+    {
+      "dataset": "cic2018",
+      "new_per_class": 50,
+      "total": 1200
+    },
+    {
+      "dataset": "cic2018",
+      "new_per_class": 100,
+      "total": 1400
+    },
+    {
+      "dataset": "cic2018",
+      "new_per_class": 200,
+      "total": 1800
+    },
+    {
+      "dataset": "cic2018",
+      "new_per_class": 400,
+      "total": 2600
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 10,
+      "total": 1070
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 20,
+      "total": 1140
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 50,
+      "total": 1350
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 100,
+      "total": 1700
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 200,
+      "total": 2400
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 400,
+      "total": 3800
+    }
+  ],
+  "large_scenario_data": [
+    {
+      "page": 9,
+      "dataset": "cic2018",
+      "stage": 1,
+      "classes": [
+        "benign",
+        "dos",
+        "brute_force"
+      ],
+      "new_counts": {
+        "natural": [
+          15000,
+          2518,
+          2403
+        ],
+        "uniform": [
+          15000,
+          4910,
+          4910
+        ],
+        "small": [
+          750,
+          125,
+          125
+        ]
+      },
+      "cumulative": {
+        "small": 1000,
+        "natural": 19921,
+        "uniform": 24820
+      }
+    },
+    {
+      "page": 9,
+      "dataset": "cic2018",
+      "stage": 2,
+      "classes": [
+        "ddos",
+        "benign"
+      ],
+      "new_counts": {
+        "natural": [
+          16780,
+          15000
+        ],
+        "uniform": [
+          4910,
+          15000
+        ],
+        "small": [
+          100,
+          0
+        ]
+      },
+      "cumulative": {
+        "small": 1100,
+        "natural": 51701,
+        "uniform": 44730
+      }
+    },
+    {
+      "page": 9,
+      "dataset": "cic2018",
+      "stage": 3,
+      "classes": [
+        "benign",
+        "web_attacks"
+      ],
+      "new_counts": {
+        "natural": [
+          15000,
+          9
+        ],
+        "uniform": [
+          15000,
+          450
+        ],
+        "small": [
+          0,
+          100
+        ]
+      },
+      "cumulative": {
+        "small": 1200,
+        "natural": 66710,
+        "uniform": 60180
+      }
+    },
+    {
+      "page": 9,
+      "dataset": "cic2018",
+      "stage": 4,
+      "classes": [
+        "benign",
+        "infiltration"
+      ],
+      "new_counts": {
+        "natural": [
+          15000,
+          641
+        ],
+        "uniform": [
+          15000,
+          4910
+        ],
+        "small": [
+          0,
+          100
+        ]
+      },
+      "cumulative": {
+        "small": 1300,
+        "natural": 82351,
+        "uniform": 80090
+      }
+    },
+    {
+      "page": 9,
+      "dataset": "cic2018",
+      "stage": 5,
+      "classes": [
+        "benign",
+        "bot"
+      ],
+      "new_counts": {
+        "natural": [
+          15000,
+          2649
+        ],
+        "uniform": [
+          15000,
+          4910
+        ],
+        "small": [
+          0,
+          100
+        ]
+      },
+      "cumulative": {
+        "small": 1400,
+        "natural": 100000,
+        "uniform": 100000
+      }
+    },
+    {
+      "page": 10,
+      "dataset": "toniot",
+      "stage": 1,
+      "classes": [
+        "benign",
+        "dos",
+        "scanning"
+      ],
+      "new_counts": {
+        "natural": [
+          12500,
+          644,
+          168
+        ],
+        "uniform": [
+          12500,
+          2856,
+          2856
+        ],
+        "small": [
+          750,
+          125,
+          125
+        ]
+      },
+      "cumulative": {
+        "small": 1000,
+        "natural": 13312,
+        "uniform": 18212
+      }
+    },
+    {
+      "page": 10,
+      "dataset": "toniot",
+      "stage": 2,
+      "classes": [
+        "benign",
+        "ddos",
+        "injection"
+      ],
+      "new_counts": {
+        "natural": [
+          12500,
+          5785,
+          1899
+        ],
+        "uniform": [
+          12500,
+          2856,
+          2856
+        ],
+        "small": [
+          0,
+          100,
+          100
+        ]
+      },
+      "cumulative": {
+        "small": 1200,
+        "natural": 33496,
+        "uniform": 36424
+      }
+    },
+    {
+      "page": 10,
+      "dataset": "toniot",
+      "stage": 3,
+      "classes": [
+        "benign",
+        "password"
+      ],
+      "new_counts": {
+        "natural": [
+          12500,
+          6009
+        ],
+        "uniform": [
+          12500,
+          2856
+        ],
+        "small": [
+          0,
+          100
+        ]
+      },
+      "cumulative": {
+        "small": 1300,
+        "natural": 52005,
+        "uniform": 51780
+      }
+    },
+    {
+      "page": 10,
+      "dataset": "toniot",
+      "stage": 4,
+      "classes": [
+        "benign",
+        "xss"
+      ],
+      "new_counts": {
+        "natural": [
+          12500,
+          9308
+        ],
+        "uniform": [
+          12500,
+          2856
+        ],
+        "small": [
+          0,
+          100
+        ]
+      },
+      "cumulative": {
+        "small": 1400,
+        "natural": 73813,
+        "uniform": 67136
+      }
+    },
+    {
+      "page": 10,
+      "dataset": "toniot",
+      "stage": 5,
+      "classes": [
+        "benign",
+        "backdoor",
+        "ransomware"
+      ],
+      "new_counts": {
+        "natural": [
+          12500,
+          1136,
+          20
+        ],
+        "uniform": [
+          12500,
+          2857,
+          2151
+        ],
+        "small": [
+          0,
+          100,
+          100
+        ]
+      },
+      "cumulative": {
+        "small": 1600,
+        "natural": 87469,
+        "uniform": 84644
+      }
+    },
+    {
+      "page": 10,
+      "dataset": "toniot",
+      "stage": 6,
+      "classes": [
+        "benign",
+        "mitm"
+      ],
+      "new_counts": {
+        "natural": [
+          12500,
+          31
+        ],
+        "uniform": [
+          12500,
+          2856
+        ],
+        "small": [
+          0,
+          100
+        ]
+      },
+      "cumulative": {
+        "small": 1700,
+        "natural": 100000,
+        "uniform": 100000
+      }
+    }
+  ],
+  "source_deck": "docs/slides/kor/1002_labmeeting_ko_draft.pptx",
+  "source_deck_sha256": "922ed2a9f0114bbff25fe0de552f4f5c654cc0915d45d70c898b2a6b588b2c8f",
+  "output": "docs/slides/kor/1015_labmeeting_ko.pptx",
+  "primary_v3_source": "https://arxiv.org/pdf/2605.13986",
+  "pretraining_quantity": "more than 8 trillion tokens, not dataset count; report section 2.5",
+  "new_source": "tabpfn/results/v7/exp77/20261015_230535_initialft10_finalfull_s43_2eb2237d/results.json",
+  "additional_sources": [
+    "tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487/dist_results.json"
+  ],
+  "budget_source": "tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487/results.json",
+  "historical_source": "docs/lablog/evidence/20261015/exp73_report_data.json",
+  "expanded_budget_source": "tabpfn/results/v7/exp80/20261016_022614_new200_400_noft_s43_c6f6ea24/results.json",
+  "large_final_source": "tabpfn/results/v7/exp79/20261016_022105_saved100k_finalfull_s43_7f90866d/results.json",
+  "mixed_final_source": "tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/results.json",
+  "query_order": "seed43_mixed",
+  "query_batch_rows": 8192,
+  "main_slide_count": 8,
+  "appendix_slides": [
+    9,
+    10
+  ],
+  "large_final_slide": 7,
+  "small_sota_removed": true,
+  "historical_evaluation": "final_full_test",
+  "cost_metric_by_slide": {
+    "6": "update_seconds",
+    "7": null
+  },
+  "cost_excludes": [
+    "initial_preparation",
+    "all_inference"
+  ],
+  "cost_axis": "linear_shared_between_datasets_on_slide_6",
+  "distpfn_initial_ft": false,
+  "current_results_include_initial_ids_finetuning": false,
+  "source_experiment_includes_initial_ids_finetuning": true,
+  "evaluation": "final_full_test",
+  "proposed_design": "pretrained weights fixed, cumulative labelled context; initial-FT ablation retained in experiment records",
+  "original_25_slide_archive": "docs/slides/_support/archive/20261015_before_7slide_revision",
+  "previous_revision_archive": "docs/slides/_support/archive/20261016_before_100k_main_and_english",
+  "figure_caption_visible": false,
+  "data_scope_by_slide": {
+    "6": "small_label_1400_1700",
+    "7": "100000_train_plus_separate_validation",
+    "8": "new_attack_budget_sweep"
+  },
+  "source_sha256": {
+    "tabpfn/results/v7/exp77/20261015_230535_initialft10_finalfull_s43_2eb2237d/results.json": "de5dd98b43c1fa742df9bfbe406a002038b37f2723850e1dd6d8190944762ff3",
+    "tabpfn/results/v7/exp77/20261015_230535_initialft10_finalfull_s43_2eb2237d/verification.json": "b45651580fcfa8f2b48167537854e72d90d9cd5b5276a509e0b078cc12618382",
+    "tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487/dist_results.json": "01fc4bddc51a67dde5951bed6535b17ee7ff65a2679de87276024aa6c219d8c7",
+    "tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487/dist_verification.json": "ec2af94bbe01058763a1f0e64ea8e3221bbb86f47e33e5c864f0373407e57c86",
+    "tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487/results.json": "e55e702cbf7ff535a9fe1099e798ca17029f681c17a87a54269565e7f9abafc3",
+    "tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487/verification.json": "9be0360bc8af80291c1e135351795e5edfd8ba69e5ac7d5f80e0f0e2809ea036",
+    "docs/lablog/evidence/20261015/exp73_report_data.json": "a78389af05156e9f32659eabd0e42abed7c1d7bae1ebb3c78b323ea412dc66cb",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/verification.json": "e993b8ddd5d53d33f5f4510f28be5a3181dd6d8766e5648106c7d62b6c8c506f",
+    "tabpfn/results/v7/exp72/20261014_134735_replay_100k_xgb_tabpfn_s43_de8b4a78/verification.json": "f51b0a27795b4775a985e4aa3e674493a2ddbf860a46ce85b7391357e092fae1",
+    "tabpfn/results/v7/exp79/20261016_022105_saved100k_finalfull_s43_7f90866d/results.json": "29e3d489b54fe165cdd07ed3bf51260d7f5422acd03064a02043eaddf85dba4f",
+    "tabpfn/results/v7/exp79/20261016_022105_saved100k_finalfull_s43_7f90866d/verification.json": "60d4a1bd62aca440301f2325809c79724a97b7851780177bc4e41635ee06f552",
+    "tabpfn/results/v7/exp80/20261016_022614_new200_400_noft_s43_c6f6ea24/results.json": "a566642d3fdab4bacc0a8476ad1d107617a8bc366b8a773ca4e8993e1d923daf",
+    "tabpfn/results/v7/exp80/20261016_022614_new200_400_noft_s43_c6f6ea24/verification.json": "6b5aeb1ff4ad7d83f97a37d2bf76ef15e8153328f48b17e7741fc804ef95757e",
+    "tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/results.json": "d13e99dc81ee294622f0c7e2caeec9686829ddc819950310e6afe6d95a5fa0c1",
+    "tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/verification.json": "01447aec03f59c8a92bd1c680725d4984849cae16a4d06b58d74af729cc86975",
+    "tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/budget_order_audits.json": "682bb65ba27623f29aa59ad2c352fda238a005593183783c0f8ff4e551d65b22"
+  }
+}

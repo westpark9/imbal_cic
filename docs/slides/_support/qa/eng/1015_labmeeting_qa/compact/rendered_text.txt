@@ -1,0 +1,168 @@
+Evaluating adaptation to changing networks
+beyond accuracy in a fixed environment
+
+
+
+Updating IDS models with few labeled examples
+at low cost using pretrained TabPFN
+
+
+
+                                                1
+TabPFN · Pretrained prediction rules for tabular data (v3: arXiv, 2026)
+
+
+Pretraining          Pretrained on over 8 trillion tokens of synthetic tables
+                     Learns prediction rules by predicting hidden targets
+
+
+In-context           Predicts a new flow using labeled examples as context
+learning             Model weights remain fixed during inference
+
+Fine-tuning          Splits initial IDS data into context and query examples
+                     Backpropagates query loss to adapt the model weights
+
+
+  Update: fixed pretrained weights → retain old classes and add new examples
+  Hypothesis: comparable detection quality with fewer labels and lower update cost
+
+
+                                                                                     2
+v3 architecture
+
+                  ① Encode inputs · Cell embedding
+                  Converts values such as packet length into vectors
+                  Also indicates which entries are missing
+
+                  ② Summarize columns · Feature embedding
+                  Summarizes each feature across multiple flows
+                  Uses the benign and attack labels in the context
+
+                  ③ Combine features · Feature aggregation
+                  Combines each flow’s features into one representation
+                  Uses it to compare relationships between flows
+
+
+                                                                          3
+v3 architecture
+
+
+                  ④ Consult examples · In-context learning
+                  A new flow queries the labeled context examples
+                  Attention identifies relevant examples for prediction
+
+
+
+                  ⑤ Predict probabilities · Many-class decoder
+                  Assigns greater weight to labels of relevant examples
+                  Combines them into benign and attack probabilities
+
+                  Keep context examples of existing classes
+                  to continue predicting those classes
+
+                                                                          4
+Evaluation scenario
+Initial 1,000 · Add 100 per new attack class · Stage order, then descending sample count
+
+CIC2018                                                             ToN
+ Stage   New classes              Per class     Cumulative            Stage   New classes   Per class    Cumulative
+
+   1     Benign                          750           1,000            1     Benign               750         1,000
+         Brute force                     125                                  DoS                  125
+         DoS                             125                                  Scanning             125
+
+   2     DDoS                             100          1,100            2     DDoS                 100         1,200
+                                                                              Injection            100
+   3     Web attacks                      100          1,200
+                                                                        3     Password             100         1,300
+   4     Infiltration                     100          1,300
+                                                                        4     XSS                  100         1,400
+   5     Bot                              100          1,400
+                                                                        5     Backdoor             100         1,600
+                                                                              Ransomware           100
+                                                                        6     MitM                 100         1,700
+
+Full test: CIC2018 3,042,473 / ToN 2,271,723 · Final model · Mixed order, seed 43
+                                                                                                                       5
+Results
+Final model, full test · XGB: cumulative retraining · TabPFN: cumulative context, no FT
+
+
+
+
+Cost: updates from stage 2 onward · Initial setup and inference excluded · Shared time scale
+
+                                                                                               6
+100k training samples · Proposed model and SOTA
+75,000 benign + 25,000 attack samples · Final model, full test · Macro-F1 (%)
+
+
+
+
+Proposed: Global ≈50k + separate validation · Counts: pp. 9, 10 · BoostPFN v1, other PFNs v3
+
+Proposed: 79.00% on CIC2018 uniform · XGB leads both ToN allocations                           7
+Performance by new attack sample budget
+Initial 1,000 fixed · 10/20/50/100/200/400 per new attack class · Final model, full test · Seed 43
+
+
+
+
+  400 per new attack · TabPFN minus XGB: CIC2018 +0.60 pp · ToN +2.56 pp
+
+                                                                                                     8
+Appendix · 100k training sample scenario · CIC2018
+Same attack order · Small: 100 per new attack · Large: 15,000 new benign samples per stage
+                                            New samples at this stage                                     Cumulative samples
+Stage Added classes                Small budget      100k natural      100k uniform       Small budget         100k natural           100k uniform
+        Benign                                 750            15,000            15,000
+   1    DoS                                    125             2,518             4,910                1,000              19,921               24,820
+        Brute force                            125             2,403             4,910
+        DDoS                                   100            16,780             4,910
+   2                                                                                                   1,100             51,701               44,730
+        Benign                                   0            15,000            15,000
+        Benign                                   0            15,000            15,000
+   3                                                                                                  1,200              66,710                60,180
+        Web attacks                            100                 9               450
+        Benign                                   0            15,000            15,000
+   4                                                                                                  1,300              82,351               80,090
+        Infiltration                           100               641             4,910
+        Benign                                   0            15,000            15,000
+   5                                                                                                  1,400            100,000               100,000
+        Bot                                    100             2,649             4,910
+        Separate val.                                                                                      0                  8,211             8,047
+
+
+
+
+Separate validation: residual calibration and expert acceptance · Small setting: within total budget
+Natural: training attack ratios · Uniform: equal attack quotas, availability caps · Sorted by stage, then natural additions
+                                                                                                                                                        9
+Appendix · 100k training sample scenario · ToN
+Same attack order · Small: 100 per new attack · Large: 12,500 new benign samples per stage
+                                            New samples at this stage                                     Cumulative samples
+Stage Added classes                Small budget      100k natural       100k uniform      Small budget         100k natural       100k uniform
+        Benign                                 750            12,500            12,500
+   1    DoS                                    125               644             2,856                1,000              13,312            18,212
+        Scanning                               125                168            2,856
+        Benign                                   0            12,500            12,500
+   2    DDoS                                   100             5,785             2,856                1,200             33,496            36,424
+        Injection                              100             1,899             2,856
+        Benign                                   0            12,500            12,500
+   3                                                                                                  1,300             52,005             51,780
+        Password                               100             6,009             2,856
+        Benign                                   0            12,500            12,500
+   4                                                                                                  1,400              73,813            67,136
+        XSS                                    100             9,308             2,856
+        Benign                                   0            12,500            12,500
+   5    Backdoor                               100              1,136            2,857                1,600             87,469            84,644
+        Ransomware                             100                 20             2,151
+        Benign                                   0            12,500            12,500
+   6                                                                                                  1,700            100,000           100,000
+        MitM                                   100                 31            2,856
+        Separate val.                                                                                      0              8,668             8,605
+
+Separate validation: residual calibration and expert acceptance · Small setting: within total budget
+Natural: training attack ratios · Uniform: equal attack quotas, availability caps · Sorted by stage, then natural additions
+                                                                                                                                                    10
+

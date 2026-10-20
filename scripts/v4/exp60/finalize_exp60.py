@@ -64,9 +64,10 @@ def render(root, complete):
                         values = '— | — | —'
                     parts.append(f'| e{k} | {scope} | {cl} | {values} | {int(x.TP):,} / {int(x.FP):,} | {int(y.TP):,} / {int(y.FP):,} |')
         parts += ['', f'분석 원본: `{out.relative_to(ROOT)}`', '']
-    target = ROOT / 'docs/research/20260929/exp60_results.md'
-    target.write_text('\n'.join(parts)+'\n')
+    from lablog import write_record
+    target = write_record(ROOT / 'docs/lablog/evidence/20260929/exp60_results.md', '\n'.join(parts)+'\n')
     return str(target)
+
 
 
 def run(root):

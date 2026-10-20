@@ -1,0 +1,324 @@
+% !TeX root = 20260511.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-05-11}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-05-11 · 실험 진행 보고서 — 0511}
+\label{report:20260511_0511}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\textbf{작성일}: 2026-05-12 \textbf{기간}: 2026-04-27 \textasciitilde{} 2026-05-11 \textbf{프로젝트}: Imbalanced Multi-Class Classification with MoE (CIC-IDS /\allowbreak{} Vision Benchmark)
+
+
+\medskip\hrule\medskip
+\subsection{1. 이전 보고서(0427) 요약}
+이전 보고서(2026-04-28 작성, \texttt{manuscri\allowbreak{}pt/\allowbreak{}\allowbreak{}repor\allowbreak{}t/\allowbreak{}\allowbreak{}0427.\allowbreak{}m\allowbreak{}d})에서 확인한 핵심 결과:
+
+\par\noindent \textbullet\enspace \texttt{code\_\allowbreak{}\allowbreak{}dce\allowbreak{}.\allowbreak{}py}(DCE-XGB): CIFAR-10LT에서 macro-F1 \textbf{+\allowbreak{}0.0220}, CIFAR-100Tasks에서 \textbf{+\allowbreak{}0.0066} — CIC-IDS 실험 이래 \textbf{첫 양의 결과}
+
+
+\par\noindent \textbullet\enspace \texttt{code\_\allowbreak{}\allowbreak{}3.\allowbreak{}p\allowbreak{}y}(ConfMat-MoE): CIFAR-10 균형 데이터에서 macro-F1 \textbf{+\allowbreak{}0.0074} 소폭 개선
+
+
+\par\noindent \textbullet\enspace CIFAR-100 ConfMat-MoE 실험은 중간에 인터럽트로 미완료
+
+
+\par\noindent \textbullet\enspace 다음 목표: (1) CIC-IDS2017에 DCE-XGB 적용, (2) CIFAR-100 ConfMat-MoE 완료, (3) \texttt{tail\_\allowbreak{}\allowbreak{}pow\allowbreak{}er} 튜닝
+
+
+
+\medskip\hrule\medskip
+\subsection{2. 이번 기간(0427–0511)에 수행한 작업}
+\subsubsection{2.1 레포지토리 구조 개편 (2026-04-28, commit \texttt{d7af2c2})}
+기존에 루트에 산재해 있던 스크립트와 데이터 유틸리티를 논리적 디렉토리로 재배치했다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.58333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.41667\linewidth-2\tabcolsep\relax}}
+\toprule
+변경 전 & 변경 후 \\ \midrule
+\endfirsthead
+변경 전 & 변경 후 \\ \midrule
+\endhead
+{}루트의 \texttt{cic\_\allowbreak{}\allowbreak{}6.\allowbreak{}py\allowbreak{}}, \texttt{cic\_\allowbreak{}\allowbreak{}xg\_\allowbreak{}\allowbreak{}1\allowbreak{}9.\allowbreak{}py}, \texttt{code\_\allowbreak{}\allowbreak{}*.\allowbreak{}p\allowbreak{}y} 등 & \texttt{src/\allowbreak{}\allowbreak{}} 디렉토리로 이동 \\
+{}루트의 \texttt{1\_\allowbreak{}\allowbreak{}analyz\allowbreak{}e\_\allowbreak{}\allowbreak{}data.\allowbreak{}p\allowbreak{}y}, \texttt{3\_\allowbreak{}\allowbreak{}prepro\allowbreak{}cessed.\allowbreak{}p\allowbreak{}y} 등 & \texttt{scripts/\allowbreak{}\allowbreak{}} 디렉토리로 이동 \\
+{}\texttt{data/\allowbreak{}\allowbreak{}fri\allowbreak{}day\_\allowbreak{}\allowbreak{}peek\allowbreak{}.\allowbreak{}csv} 등 출력물 & \texttt{outputs/\allowbreak{}\allowbreak{}} 디렉토리로 이동 \\
+{}임시 pycache 파일들 & \texttt{.\allowbreak{}gitigno\allowbreak{}re}에 추가하여 정리 \\
+\bottomrule
+\end{longtable}
+\endgroup
+추가 신규 파일:
+
+\par\noindent \textbullet\enspace \texttt{CLAUDE.\allowbreak{}m\allowbreak{}d} — 프로젝트 가이드라인 문서 (최초 커밋)
+
+
+\par\noindent \textbullet\enspace \texttt{manuscri\allowbreak{}pt/\allowbreak{}\allowbreak{}slide\allowbreak{}s/\allowbreak{}\allowbreak{}code3.\allowbreak{}tex}, \texttt{history.\allowbreak{}tex} — LaTeX Beamer 발표 슬라이드
+
+
+\par\noindent \textbullet\enspace \texttt{docs/\allowbreak{}\allowbreak{}cod\allowbreak{}e3.\allowbreak{}pdf}, \texttt{docs/\allowbreak{}\allowbreak{}his\allowbreak{}tory.\allowbreak{}pdf\allowbreak{}} — 슬라이드 컴파일 결과물
+
+
+\par\noindent \textbullet\enspace \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}paper\_\allowbreak{}\allowbreak{}summary\_\allowbreak{}\allowbreak{}en.\allowbreak{}xlsx}, \texttt{paper\_\allowbreak{}\allowbreak{}su\allowbreak{}mmary\_\allowbreak{}\allowbreak{}ko\allowbreak{}.\allowbreak{}xlsx} — 문헌 정리 엑셀
+
+
+\par\noindent \textbullet\enspace \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}gen\_\allowbreak{}\allowbreak{}ex\allowbreak{}cel.\allowbreak{}py}, \texttt{gen\_\allowbreak{}\allowbreak{}slid\allowbreak{}es.\allowbreak{}py}, \texttt{generate\allowbreak{}\_\allowbreak{}\allowbreak{}summary\allowbreak{}\_\allowbreak{}\allowbreak{}pdf.\allowbreak{}py} — 문헌 정리 자동화 도구
+
+
+참조 문헌 24편 최초 추가 (01\textasciitilde{}24번, ICML/\allowbreak{}NeurIPS/\allowbreak{}ICLR/\allowbreak{}CVPR/\allowbreak{}ICCV/\allowbreak{}AAAI 2024–2025):
+
+IMMAX, DCE, PRIME, IP2SL, MORE, ImOOD, PRL, NCMC, LLM-AutoDA, EPIC, LOS, ConMix, LTRL, DaSC, BCE3S, NodeImport 등
+
+
+
+
+\medskip\hrule\medskip
+\subsubsection{2.2 FAR-MoE의 Vision Benchmark 확장 (2026-04-28, commit \texttt{d7af2c2})}
+\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py}(CIC-IDS용 FAR-MoE)의 구조를 네 가지 CV 벤치마크로 포팅했다.
+
+\paragraph{추가된 스크립트 (\texttt{src/\allowbreak{}\allowbreak{}})}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22948\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25933\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24440\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26679\linewidth-2\tabcolsep\relax}}
+\toprule
+스크립트 & 데이터셋 & Backbone & 특징 \\ \midrule
+\endfirsthead
+스크립트 & 데이터셋 & Backbone & 특징 \\ \midrule
+\endhead
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}cifar.\allowbreak{}p\allowbreak{}y} & CIFAR-10/\allowbreak{}100-LT (IR=\allowbreak{}100) & ResNet-32 (scratch) & CIFAR 전용 32×32 아키텍처, cosine LR \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}imagene\allowbreak{}t.\allowbreak{}py} & ImageNet-LT (IR\ensuremath{\approx}256, 1000 클래스) & ResNet-50 (pretrained fine-tune) & OLTR 어노테이션 자동 다운로드, tar 자동 추출 \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}inat.\allowbreak{}py\allowbreak{}} & iNaturalist-2018 (8,142 클래스) & ResNet-50 (pretrained fine-tune) & torchvision 자동 다운로드, \texttt{-\allowbreak{}-\allowbreak{}max\_\allowbreak{}\allowbreak{}cl\allowbreak{}asses} 서브셋 옵션 \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}mini\_\allowbreak{}\allowbreak{}im\allowbreak{}agenet.\allowbreak{}p\allowbreak{}y} & Downsampled ImageNet 64×64 & ResNet-50 (pretrained fine-tune) & pickle 배치 직접 로드, \texttt{-\allowbreak{}-\allowbreak{}lt\_\allowbreak{}\allowbreak{}sam\allowbreak{}pling} 지수 LT 서브샘플링 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\paragraph{공통 파이프라인 구조}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+[Phase 1 — Backbone]
+  ResNet 훈련 (CE loss, LT 데이터)  →  특징 추출기
+
+[Phase 2 — Probe]
+  Backbone features  →  XGBoost probe  →  val 예측  →  정규화 혼동 행렬
+
+[Phase 3 — Expert 설계]
+  off-diagonal conf[i,j] > τ 쌍  →  union-find 클러스터링
+  전문가 로스터:
+    Anchor       : 전 클래스, 균일 가중 (항상 포함)
+    ConfMat_k    : 혼동 클러스터 k 내 클래스 upweight (OOD-게이팅)
+    Tail         : threshold 미만 희귀 클래스 upweight (OOD-게이팅)
+    ColSplit_0/1 : 특징 차원 반반 (OOD-게이팅)
+
+[Phase 4 — Router]
+  각 전문가  →  LogisticRegression 역량 모델 (val에서 정답 여부 레이블)
+  OOD 게이팅: LedoitWolf 공분산  →  Mahalanobis z-score
+
+[추론]
+  final_proba = Σ_e α_e(x) · proba_e(x), argmax  →  예측 클래스
+
+\end{Verbatim}
+\paragraph{CIC-IDS 대비 핵심 차이점}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22381\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.40238\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.37381\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & CIC-IDS (\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py}) & Vision 버전 \\ \midrule
+\endfirsthead
+항목 & CIC-IDS (\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py}) & Vision 버전 \\ \midrule
+\endhead
+{}특징 & 탭형 네트워크 통계량 & ResNet 심층 특징 (64 /\allowbreak{} 2048 dim) \\
+{}전문가 입력 & 원본 tabular feature & Backbone 출력 embedding \\
+{}전문가 종류 & Family/\allowbreak{}ConfMat/\allowbreak{}Tail/\allowbreak{}Random/\allowbreak{}Anchor & ColSplit/\allowbreak{}ConfMat/\allowbreak{}Tail/\allowbreak{}Anchor \\
+{}Backbone & 없음 (XGBoost 직접) & ResNet-32/\allowbreak{}50 사전학습 +\allowbreak{} fine-tune \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\medskip\hrule\medskip
+\subsubsection{2.3 문헌 정리 도구 구축 및 레퍼런스 확장 (2026-04-28\textasciitilde{}05-12, commits \texttt{d7af2c2}, \texttt{fc752ff})}
+\paragraph{자동화 도구}
+\texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}} 디렉토리에 다음 세 가지 유틸리티가 신규 작성되었다:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.44841\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.55159\linewidth-2\tabcolsep\relax}}
+\toprule
+파일 & 기능 \\ \midrule
+\endfirsthead
+파일 & 기능 \\ \midrule
+\endhead
+{}\texttt{gen\_\allowbreak{}\allowbreak{}exce\allowbreak{}l.\allowbreak{}py} & 논문 메타데이터(제목/\allowbreak{}동기/\allowbreak{}방법/\allowbreak{}평가)  \ensuremath{\rightarrow}  \texttt{paper\_\allowbreak{}\allowbreak{}su\allowbreak{}mmary\_\allowbreak{}\allowbreak{}en\allowbreak{}/\allowbreak{}\allowbreak{}ko.\allowbreak{}xlsx\allowbreak{}} 생성 \\
+{}\texttt{gen\_\allowbreak{}\allowbreak{}slid\allowbreak{}es.\allowbreak{}py} & 엑셀 데이터  \ensuremath{\rightarrow}  LaTeX Beamer 슬라이드 자동 생성 \\
+{}\texttt{generate\allowbreak{}\_\allowbreak{}\allowbreak{}summary\allowbreak{}\_\allowbreak{}\allowbreak{}pdf.\allowbreak{}py} & 엑셀  \ensuremath{\rightarrow}  PDF 요약 자동 생성 \\
+{}\texttt{update\_\allowbreak{}\allowbreak{}p\allowbreak{}apers.\allowbreak{}py\allowbreak{}} & 신규 논문 항목을 기존 엑셀에 추가 +\allowbreak{} PDF 링크 열 추가 \\
+{}\texttt{make\_\allowbreak{}\allowbreak{}bac\allowbreak{}kbone\_\allowbreak{}\allowbreak{}ta\allowbreak{}ble.\allowbreak{}py} & 논문별 backbone 아키텍처 비교표  \ensuremath{\rightarrow}  \texttt{lt\_\allowbreak{}\allowbreak{}backb\allowbreak{}one\_\allowbreak{}\allowbreak{}comp\allowbreak{}arison.\allowbreak{}x\allowbreak{}lsx} 생성 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\paragraph{레퍼런스 확장 (commit \texttt{fc752ff}, 2026-05-12)}
+기존 24편에서 \textbf{44편}으로 대폭 확장 (+\allowbreak{}20편):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.17430\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22359\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20951\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39261\linewidth-2\tabcolsep\relax}}
+\toprule
+번호 & 논문 약칭 & 학회 & 주제 \\ \midrule
+\endfirsthead
+번호 & 논문 약칭 & 학회 & 주제 \\ \midrule
+\endhead
+{}25 & LOS & ICLR 2025 & Classifier retraining, Label Over-Smoothing \\
+{}26 & ConMix & ICLR 2025 & Contrastive Mixup for long-tail \\
+{}27 & LTRL & ECCV 2024 & Reflective LT learning \\
+{}28 & DaSC & ECCV 2024 & Distribution-Aware Robust classifier \\
+{}29 & RRB & ECCV 2024 & Rectify Regression Bias \\
+{}30 & SIMBA & WSDM 2025 & Graph size-imbalanced learning \\
+{}31 & AD-GSMOTE & WSDM 2025 & Adaptive Graph SMOTE \\
+{}\textbf{32} & \textbf{MATI} & \textbf{WSDM 2026} & \textbf{MoE +\allowbreak{} Test-Time Imbalance} (핵심 관련 논문) \\
+{}33 & GraphMuGu & IJCAI 2025 & Graph reweighting \\
+{}34 & DILDL & IJCAI 2025 & Decoupled imbalanced label distribution \\
+{}35 & LT-SpikeFormer & IJCAI 2025 & Long-tail spiking NN \\
+{}36 & CFAMG & KDD 2025 & Time series imbalance \\
+{}38 & Uni-GNN & NeurIPS 2025 & Class imbalance on graphs \\
+{}39 & IP-DPP & NeurIPS 2025 & Info-preservable LT \\
+{}40 & IBCL & NeurIPS 2025 & Improved balanced classification \\
+{}41 & OSB-SMOTE & NeurIPS 2025 & SMOTE concentration theory \\
+{}42 & ImGDA & NeurIPS 2025 & Dual prototype enhanced \\
+{}43 & RLAL & CIKM 2025 & Revisiting LT architectural choices \\
+{}44 & GraphIAM & CIKM 2025 & Class-imbalanced node classification \\
+\bottomrule
+\end{longtable}
+\endgroup
+특히 \textbf{MATI (WSDM 2026)} — "Mixture of Experts +\allowbreak{} Test-Time Imbalanced" — 가 본 연구와 직접적으로 관련되어 있어 중요 문헌으로 식별됨.
+
+추가 관리 파일:
+
+\par\noindent \textbullet\enspace \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}Top Co\allowbreak{}nference\allowbreak{} List.\allowbreak{}pd\allowbreak{}f} — top-tier 학회 목록
+
+
+\par\noindent \textbullet\enspace \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}lt\_\allowbreak{}\allowbreak{}bac\allowbreak{}kbone\_\allowbreak{}\allowbreak{}co\allowbreak{}mparison\allowbreak{}.\allowbreak{}xlsx} — 논문별 backbone 비교표
+
+
+\par\noindent \textbullet\enspace \texttt{paper\_\allowbreak{}\allowbreak{}su\allowbreak{}mmary\_\allowbreak{}\allowbreak{}en\allowbreak{}/\allowbreak{}\allowbreak{}ko.\allowbreak{}xlsx\allowbreak{}} 업데이트 (14,893  \ensuremath{\rightarrow}  24,179 bytes /\allowbreak{} 14,999  \ensuremath{\rightarrow}  30,563 bytes)
+
+
+
+\medskip\hrule\medskip
+\subsubsection{2.4 이전 실험 결과 정리 (commit \texttt{fc752ff})}
+다음 실험 결과 디렉토리가 레포에서 제거됨 (정리 목적):
+
+\par\noindent \textbullet\enspace \texttt{results/\allowbreak{}\allowbreak{}code3\_\allowbreak{}\allowbreak{}20\allowbreak{}260424\_\allowbreak{}\allowbreak{}0\allowbreak{}94207/\allowbreak{}\allowbreak{}} — CIFAR-10 ConfMat-MoE 결과
+
+
+\par\noindent \textbullet\enspace \texttt{results/\allowbreak{}\allowbreak{}dce\_\allowbreak{}\allowbreak{}2026\allowbreak{}0424\_\allowbreak{}\allowbreak{}070\allowbreak{}346/\allowbreak{}\allowbreak{}} \textasciitilde{} \texttt{results/\allowbreak{}\allowbreak{}dce\_\allowbreak{}\allowbreak{}2026\allowbreak{}0424\_\allowbreak{}\allowbreak{}073\allowbreak{}622/\allowbreak{}\allowbreak{}} — DCE-XGB CIFAR 실험 결과들
+
+
+동시에 \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}} 내 임시 LaTeX 빌드 파일(\texttt{dce\_\allowbreak{}\allowbreak{}imoo\allowbreak{}d\_\allowbreak{}\allowbreak{}slides\allowbreak{}.\allowbreak{}aux/\allowbreak{}\allowbreak{}log\allowbreak{}/\allowbreak{}\allowbreak{}nav/\allowbreak{}\allowbreak{}out\allowbreak{}/\allowbreak{}\allowbreak{}snm/\allowbreak{}\allowbreak{}toc\allowbreak{}/\allowbreak{}\allowbreak{}tex/\allowbreak{}\allowbreak{}pdf\allowbreak{}})도 제거됨.
+
+
+\medskip\hrule\medskip
+\subsection{3. 현재 상태 요약}
+\subsubsection{스크립트 목록 (\texttt{src/\allowbreak{}\allowbreak{}})}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.32576\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36553\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30871\linewidth-2\tabcolsep\relax}}
+\toprule
+파일 & 목적 & 상태 \\ \midrule
+\endfirsthead
+파일 & 목적 & 상태 \\ \midrule
+\endhead
+{}\texttt{cic\_\allowbreak{}\allowbreak{}6.\allowbreak{}py\allowbreak{}} & TAILGUARD MoE (CIC-IDS) & 완료 (베이스라인 미초과) \\
+{}\texttt{cic\_\allowbreak{}\allowbreak{}xg\_\allowbreak{}\allowbreak{}1\allowbreak{}9.\allowbreak{}py} & XGBoost 라우터 MoE (CIC-IDS) & 완료 (베이스라인 미초과) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}fin\allowbreak{}al.\allowbreak{}py} & OOD 필터 앙상블 (CIC-IDS) & 완료 (베이스라인 미초과) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}chr\allowbreak{}ono.\allowbreak{}py} & 시간 분할 MoE & 완료 (성능 하락) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}fil\allowbreak{}e.\allowbreak{}py} & 파일 분할 MoE & 완료 (성능 하락) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py} & FAR-MoE (CIC-IDS) & 완료 (val 완벽, test 미초과) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}dce\allowbreak{}.\allowbreak{}py} & DCE-XGB (CIFAR benchmark) & 완료 (\textbf{첫 양의 결과}) \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}3.\allowbreak{}p\allowbreak{}y} & ConfMat-MoE (CIFAR benchmark) & CIFAR-10 완료, CIFAR-100 미완 \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}cifar.\allowbreak{}p\allowbreak{}y} & FAR-MoE +\allowbreak{} ResNet32 (CIFAR-LT) & \textbf{신규, 미실행} \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}imagene\allowbreak{}t.\allowbreak{}py} & FAR-MoE +\allowbreak{} ResNet50 (ImageNet-LT) & \textbf{신규, 미실행} \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}inat.\allowbreak{}py\allowbreak{}} & FAR-MoE +\allowbreak{} ResNet50 (iNaturalist) & \textbf{신규, 미실행} \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}mini\_\allowbreak{}\allowbreak{}im\allowbreak{}agenet.\allowbreak{}p\allowbreak{}y} & FAR-MoE +\allowbreak{} ResNet50 (64×64 ImageNet) & \textbf{신규, 미실행} \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{문헌 정리}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.46642\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.53358\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 상태 \\ \midrule
+\endfirsthead
+항목 & 상태 \\ \midrule
+\endhead
+{}수집 논문 수 & 44편 (ICML/\allowbreak{}NeurIPS/\allowbreak{}ICLR/\allowbreak{}CVPR/\allowbreak{}ICCV/\allowbreak{}AAAI/\allowbreak{}ECCV/\allowbreak{}WSDM/\allowbreak{}IJCAI/\allowbreak{}KDD/\allowbreak{}CIKM 2024–2026) \\
+{}\texttt{paper\_\allowbreak{}\allowbreak{}su\allowbreak{}mmary\_\allowbreak{}\allowbreak{}en\allowbreak{}/\allowbreak{}\allowbreak{}ko.\allowbreak{}xlsx\allowbreak{}} & 업데이트 완료 \\
+{}\texttt{lt\_\allowbreak{}\allowbreak{}backb\allowbreak{}one\_\allowbreak{}\allowbreak{}comp\allowbreak{}arison.\allowbreak{}x\allowbreak{}lsx} & 신규 작성 \\
+{}핵심 관련 논문 식별 & MATI (WSDM 2026): MoE +\allowbreak{} Test-Time Imbalance \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\medskip\hrule\medskip
+\subsection{4. 미완료 및 다음 단계}
+0427 보고서에서 제시한 목표 대비 현황:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.45769\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.54231\linewidth-2\tabcolsep\relax}}
+\toprule
+목표 & 진행 상태 \\ \midrule
+\endfirsthead
+목표 & 진행 상태 \\ \midrule
+\endhead
+{}CIC-IDS2017에 DCE-XGB 적용 & \textbf{미완료} — 스크립트는 준비됨, 실행 필요 \\
+{}CIFAR-100 ConfMat-MoE 완료 & \textbf{미완료} — \texttt{code\_\allowbreak{}\allowbreak{}3.\allowbreak{}p\allowbreak{}y} CIFAR-100 재실행 필요 \\
+{}\texttt{tail\_\allowbreak{}\allowbreak{}pow\allowbreak{}er} 튜닝 & \textbf{미완료} \\
+{}Vision benchmark FAR-MoE 실행 & \textbf{미완료} — 스크립트 4종 구현 완료, 실험 필요 \\
+{}MATI 논문 아이디어 적용 검토 & \textbf{신규 과제} — WSDM 2026, MoE +\allowbreak{} test-time 보정 방식 검토 필요 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{우선순위 제안}
+\par\noindent \textbullet\enspace \textbf{\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}\_\allowbreak{}\allowbreak{}cifar.\allowbreak{}p\allowbreak{}y} 실행} — 가장 가볍고 빠른 CV 벤치마크. FAR-MoE가 ResNet feature 위에서 작동하는지 확인.
+
+
+\par\noindent \textbullet\enspace \textbf{\texttt{code\_\allowbreak{}\allowbreak{}dce\allowbreak{}.\allowbreak{}py}를 CIC-IDS2017에 적용} — DCE 양의 결과를 네트워크 IDS 도메인으로 전이 가능한지 검증.
+
+
+\par\noindent \textbullet\enspace \textbf{MATI (32번) 방법론 분석} — MoE +\allowbreak{} test-time imbalance 보정은 routing 오류 문제를 우회할 가능성이 있음.
+
+
+
+\medskip\hrule\medskip
+\subsection{5. 파일 위치 요약}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.37000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.63000\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 경로 \\ \midrule
+\endfirsthead
+항목 & 경로 \\ \midrule
+\endhead
+{}실험 스크립트 & \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}mat\_\allowbreak{}\allowbreak{}cif\allowbreak{}ar.\allowbreak{}py}, \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}mat\_\allowbreak{}\allowbreak{}ima\allowbreak{}genet.\allowbreak{}py\allowbreak{}}, \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}mat\_\allowbreak{}\allowbreak{}ina\allowbreak{}t.\allowbreak{}py}, \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}mat\_\allowbreak{}\allowbreak{}min\allowbreak{}i\_\allowbreak{}\allowbreak{}imagen\allowbreak{}et.\allowbreak{}py} \\
+{}기존 실험 스크립트 & \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}dce.\allowbreak{}py}, \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}3.\allowbreak{}py}, \texttt{src/\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}mat.\allowbreak{}py} \\
+{}논문 요약 & \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}paper\_\allowbreak{}\allowbreak{}summary\_\allowbreak{}\allowbreak{}en.\allowbreak{}xlsx}, \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}paper\_\allowbreak{}\allowbreak{}summary\_\allowbreak{}\allowbreak{}ko.\allowbreak{}xlsx} \\
+{}Backbone 비교표 & \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}lt\_\allowbreak{}\allowbreak{}bac\allowbreak{}kbone\_\allowbreak{}\allowbreak{}co\allowbreak{}mparison\allowbreak{}.\allowbreak{}xlsx} \\
+{}발표 슬라이드 & \texttt{manuscri\allowbreak{}pt/\allowbreak{}\allowbreak{}slide\allowbreak{}s/\allowbreak{}\allowbreak{}code3.\allowbreak{}pdf}, \texttt{manuscri\allowbreak{}pt/\allowbreak{}\allowbreak{}slide\allowbreak{}s/\allowbreak{}\allowbreak{}histor\allowbreak{}y.\allowbreak{}pdf} \\
+{}이전 보고서 & \texttt{manuscri\allowbreak{}pt/\allowbreak{}\allowbreak{}repor\allowbreak{}t/\allowbreak{}\allowbreak{}0427.\allowbreak{}m\allowbreak{}d} \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

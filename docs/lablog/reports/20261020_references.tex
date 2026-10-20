@@ -1,0 +1,1454 @@
+% !TeX root = 20261020_references.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-10-20 자료 정리}{기존 모델 설계 지침과 비교 문헌}
+
+\recordnote{이 문서는 이전에 작성·제공된 설계 지침과 문헌 목록을 수합한 참고 기록이다. 수합일을 실험일로 해석하지 않는다. 당시 설계 의도와 실제 구현·검증 성과를 구별하며 최신 방향은 같은 날짜의 연구 검토 보고서를 따른다.}
+
+\section{초기 모델 설계 지침}
+
+\subsection{Residual Context Experts와 시간순 Context Adaptation을 이용한 강건한 IDS}
+\textbf{문서 목적:} 이 문서는 RACE-PFN의 최종 연구 목표, 핵심 가설, 알고리즘, 구현 순서와 검증 기준을 하나의 연구 설계로 정리한다. 각 구성요소는 별개의 기능을 추가하기 위한 것이 아니라, \texttt{Global f\allowbreak{}ailure s\allowbreak{}tructure\allowbreak{}   \ensuremath{\rightarrow}   com\allowbreak{}plementa\allowbreak{}ry conte\allowbreak{}xts   \ensuremath{\rightarrow}   \allowbreak{}conditio\allowbreak{}nal util\allowbreak{}ity rout\allowbreak{}ing   \ensuremath{\rightarrow}   \allowbreak{}bounded-\allowbreak{}memory t\allowbreak{}emporal \allowbreak{}adaptati\allowbreak{}on}이라는 하나의 논문 논리를 실증하기 위해 배치한다.
+
+
+\medskip\hrule\medskip
+\subsection{1. 우리가 최종적으로 만들려는 시스템}
+우리가 만들려는 것은 단순히 TabPFN으로 XGBoost보다 높은 IID 분류 성능을 내는 모델이 아니다.
+
+최종 목표는 다음과 같다.
+
+전체 트래픽을 처리하는 강한 Global PFN을 기본 행동으로 유지하면서, Global이 반복적으로 실패하는 long-tail 및 temporal traffic regime을 자동으로 찾아 specialist contexts를 만들고, 실제 이득이 기대되는 입력에 대해서만 specialist 하나를 선택적으로 호출하며, 소량의 최신 검증 라벨로 context memory를 시간순으로 갱신하는 적응형 IDS를 구현한다.
+
+
+
+이 시스템의 핵심 원칙은 네 가지다. 
+
+\par\noindent \textbullet\enspace \textbf{Global-first:} 모든 입력은 먼저 Global PFN이 처리한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Residual specialization:} Expert는 공격 이름이 아니라 Global의 구조적인 실패에서 만든다.
+
+
+\par\noindent \textbullet\enspace \textbf{Sparse and conservative override:} 필요한 경우에만 top-1 expert를 호출하고, 충분한 이득이 확인될 때만 Global 예측을 교체한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Context adaptation:} 새로운 시점에서는 PFN backbone을 재학습하지 않고 제한된 context memory를 갱신한다.
+
+
+\subsubsection{1.1 논문의 중심 가설}
+이 연구가 검증하려는 중심 가설은 다음과 같다.
+
+Global PFN의 오류는 무작위가 아니라 feature regime, posterior와 confusion direction에 따라 반복되는 구조를 가지며, 이 구조를 대표하는 full-label contexts는 Global과 상보적인 prediction을 제공할 수 있다. 이 상보성을 global-relative utility로 선택하고 최신 검증 라벨로 갱신하면, 일반 성능을 보존하면서 long-tail과 temporal shift에서 더 안정적인 IDS를 만들 수 있다.
+
+
+
+\subsubsection{1.2 논문의 핵심 기여}
+논문 기여는 다음 세 축으로 유지한다.
+
+\par\noindent \textbullet\enspace \textbf{Residual-conditioned context construction} Global PFN의 held-out, class-balanced failure signature에서 상보적인 full-label specialist contexts를 자동 구성한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Cost-sensitive and calibration-controlled routing} Context proximity가 아니라 Global 대비 조건부 utility를 기준으로 top-1 specialist만 호출하고, 보정된 predictive-gain 하한이 양수일 때만 prediction을 교체한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Few-label bounded-memory temporal adaptation} Frozen PFN과 고정 메모리 조건에서 최신 verified labels로 context를 갱신하고, 효과를 다음 temporal window에서 검증한다.
+
+
+OOD/\allowbreak{}unsupported traffic은 위 세 기여가 충분히 검증된 뒤 다루는 보조 확장으로 둔다.
+
+
+\medskip\hrule\medskip
+\subsection{2. 쉬운 비유}
+RACE-PFN을 병원에 비유하면 다음과 같다.
+
+\par\noindent \textbullet\enspace \textbf{Global PFN:} 대부분의 환자를 먼저 진료하는 일반의
+
+
+\par\noindent \textbullet\enspace \textbf{Residual expert:} 일반의가 반복적으로 어려워하는 특정 증상에 강한 전문의
+
+
+\par\noindent \textbullet\enspace \textbf{Proposal router:} 전문의를 부를 가치가 있는지 판단하는 시스템
+
+
+\par\noindent \textbullet\enspace \textbf{Verifier:} 전문의의 진단으로 최종 결과를 바꿔도 되는지 확인하는 시스템
+
+
+\par\noindent \textbullet\enspace \textbf{Context refresh:} 최근 환자 사례를 전문의의 참고 자료에 반영하는 과정
+
+
+중요한 점은 전문의의 이름을 사람이 미리 \texttt{Web 전문가}, \texttt{DoS 전문가}로 정하지 않는다는 것이다. Global이 실제로 어떤 입력에서 어떤 방향으로 실패하는지를 분석하여 전문 분야를 자동으로 발견한다.
+
+
+\medskip\hrule\medskip
+\subsection{3. 우리가 하지 않는 것}
+다음은 이 연구의 목표가 아니다.
+
+\par\noindent \textbullet\enspace TabPFN backbone을 IDS 데이터로 처음부터 다시 학습하는 것
+
+
+\par\noindent \textbullet\enspace 모든 입력에 모든 expert를 실행하는 dense ensemble
+
+
+\par\noindent \textbullet\enspace 공격 family를 사람이 미리 나누어 expert를 만드는 것
+
+
+\par\noindent \textbullet\enspace 가장 가까운 cluster의 expert를 무조건 사용하는 것
+
+
+\par\noindent \textbullet\enspace Expert를 호출했다는 이유만으로 그 결과를 채택하는 것
+
+
+\par\noindent \textbullet\enspace Final test 결과를 반복 확인하며 알고리즘을 수정하는 것
+
+
+\par\noindent \textbullet\enspace 미래 window의 라벨로 context를 갱신한 뒤 같은 window를 다시 평가하는 것
+
+
+\par\noindent \textbullet\enspace Label-free temporal adaptation 또는 새로운 공격 attribution까지 한 번에 주장하는 것
+
+
+Tabular foundation model의 parameter는 고정한다. 우리가 학습하거나 갱신하는 것은 labeled context와 작은 router/\allowbreak{}verifier다.
+
+
+\medskip\hrule\medskip
+\subsection{4. 전체 파이프라인}
+\subsubsection{4.1 Offline construction}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+Pretrained frozen PFN
+        │
+        ▼
+전체 class를 담당하는 Global context C0 구성
+        │
+        ▼
+Held-out 데이터에서 Global의 per-sample failure 측정
+        │
+        ▼
+Failure signature 구성
+  [feature regime, global posterior,
+   confusion direction, residual severity]
+        │
+        ▼
+Residual regime clustering
+        │
+        ▼
+각 regime에서 다양성을 보존한 specialist context 생성
+        │
+        ▼
+Global과 모든 expert의 paired predictive gain 계산
+        │
+        ├── Shared pre-call utility scorer 학습
+        └── Shared post-call lower-bound verifier 학습·보정
+
+\end{Verbatim}
+\subsubsection{4.2 Online inference}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+입력 x
+  │
+  ▼
+Global PFN 실행
+  │
+  ▼
+Pre-call scorer가 모든 expert의 예상 net utility 평가
+  │
+  ├── 기준 이하  →  Global 결과 반환
+  │
+  └── 가장 유망한 top-1 expert 하나만 실행
+                       │
+                       ▼
+             Post-call verifier가 보수적 gain 하한 계산
+                       │
+              ┌────────┴────────┐
+              │                 │
+          하한이 양수        하한이 불충분
+              │                 │
+              ▼                 ▼
+        Expert 결과 채택     Global 결과 유지
+
+\end{Verbatim}
+\subsubsection{4.3 논문에서 입증해야 할 증거 사슬}
+연구는 다음 순서로 성립해야 한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+① Global failure가 구조를 갖는가?
+        ↓
+② 그 구조로 만든 contexts가 Global과 실제로 상보적인가?
+        ↓
+③ Pre-call scorer가 이 상보성을 호출 전 예측할 수 있는가?
+        ↓
+④ Post-call verifier가 잘못된 교체를 줄일 수 있는가?
+        ↓
+⑤ Sparse execution이 dense evaluation보다 충분히 효율적인가?
+        ↓
+⑥ 제한된 최신 라벨로 다음 temporal window 성능을 회복하는가?
+
+\end{Verbatim}
+이 순서는 구현 우선순위이기도 하다. 특히 ②의 oracle complementarity가 충분하지 않다면 router를 복잡하게 만드는 것이 아니라 residual representation과 context selection을 먼저 강화한다. 반대로 oracle gap은 크지만 실제 성능 회수율이 낮다면 그때는 routing과 calibration이 병목이다.
+
+
+\medskip\hrule\medskip
+\subsection{5. 데이터 분할: 최종 6-way split}
+이 연구에서는 데이터 재사용으로 인한 과대평가를 막는 것이 매우 중요하다. 최종 구현은 다음 여섯 역할을 분리한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22088\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39558\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.38353\linewidth-2\tabcolsep\relax}}
+\toprule
+Split & 역할 & 금지 사항 \\ \midrule
+\endfirsthead
+Split & 역할 & 금지 사항 \\ \midrule
+\endhead
+{}\texttt{D\_\allowbreak{}\allowbreak{}global\allowbreak{}} & 전처리 fitting, Global context, common anchor 구성 & Expert/\allowbreak{}router/\allowbreak{}test 결과를 보고 다시 선택하지 않음 \\
+{}\texttt{D\_\allowbreak{}\allowbreak{}expert\allowbreak{}} & Held-out Global failure 계산, residual regime 및 specialist block 구성 & Global context에 포함하지 않음 \\
+{}\texttt{D\_\allowbreak{}\allowbreak{}route} & 고정된 Global·expert의 offline prediction, router/\allowbreak{}verifier 학습 & Threshold와 최종 성능 선택에 직접 사용하지 않음 \\
+{}\texttt{D\_\allowbreak{}\allowbreak{}tune} & K, context budget, class weight, prior correction, cost, model capacity 선택 & Final report용 test로 사용하지 않음 \\
+{}\texttt{D\_\allowbreak{}\allowbreak{}cal} & Probability calibration, lower-bound correction, proposal/\allowbreak{}override threshold 고정 & Model 구조 선택에 반복 사용하지 않음 \\
+{}\texttt{D\_\allowbreak{}\allowbreak{}test} & 모든 알고리즘을 동결한 후 최종 1회 평가 & 결과를 보고 다시 알고리즘 수정하지 않음 \\
+\bottomrule
+\end{longtable}
+\endgroup
+권장 초기 비율은 final test를 제외한 pre-test pool에서 다음과 같다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+D_global : D_expert : D_route : D_tune : D_cal
+   40%   :    20%   :   15%   :   10%  :  15%
+
+\end{Verbatim}
+비율 자체보다 중요한 것은 각 split의 역할을 섞지 않는 것이다. 각 class, day/\allowbreak{}session/\allowbreak{}capture group이 필요한 split에 충분히 존재하도록 조정해야 한다.
+
+\subsubsection{반드시 저장할 split 정보}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+dataset
+row_id
+source_file
+timestamp
+group_id 또는 session/capture ID
+fine_label
+family_label
+canonical_feature_hash
+split
+temporal_window
+
+\end{Verbatim}
+동일 flow, duplicate row, session, attack episode가 서로 다른 split에 들어가면 안 된다. Imputer, scaler, PCA 등 모든 전처리도 허용된 과거 데이터에서만 fit한다.
+
+현재 반복해서 성능을 확인한 402만 행은 final test로 부르지 않는다. 이미 결과를 보고 알고리즘 개선에 사용했다면 development holdout이며, 별도의 untouched future block을 final test로 동결해야 한다.
+
+
+\medskip\hrule\medskip
+\subsection{6. Step 1 — 전체 class를 담당하는 Global PFN}
+먼저 \texttt{D\_\allowbreak{}\allowbreak{}global\allowbreak{}}에서 전체 데이터 분포를 대표하는 context를 만든다.
+
+[ C\_\allowbreak{}0=\allowbreak{}\textbackslash{}operatorname\{RepresentativeCoreset\}(D\_\allowbreak{}\{\textbackslash{}mathrm\{global\}\},B\_\allowbreak{}0) ]
+
+Global prediction은 다음과 같다.
+
+[ p\_\allowbreak{}0\textasciicircum{}\{\textbackslash{}mathrm\{raw\}\}(y\textbackslash{}mid x)=\allowbreak{}F\_\allowbreak{}\textbackslash{}theta(C\_\allowbreak{}0,x) ]
+
+\par\noindent \textbullet\enspace (F\_\allowbreak{}\textbackslash{}theta): pretrained frozen TabFM
+
+
+\par\noindent \textbullet\enspace (C\_\allowbreak{}0): 전체 class를 대표하는 labeled context
+
+
+\par\noindent \textbullet\enspace (B\_\allowbreak{}0): Global context budget
+
+
+Global context를 단순 random sample 한 번으로 만들지 않는다. 기본 구현은 group-aware, class-aware medoid 또는 stratified k-center를 사용한다. Context row ID와 selection seed를 저장한다.
+
+Global의 역할은 다음과 같다.
+
+\par\noindent \textbullet\enspace 일반적인 benign/\allowbreak{}head traffic 처리
+
+
+\par\noindent \textbullet\enspace 모든 expert가 불리할 때의 기본 행동
+
+
+\par\noindent \textbullet\enspace Expert 이득을 측정하는 기준선
+
+
+\par\noindent \textbullet\enspace 시간 변화 전후의 안정성 기준
+
+
+
+\medskip\hrule\medskip
+\subsection{7. Step 2 — Context-induced prior correction}
+Expert context마다 class 비율이 다르면 posterior 차이가 실제 전문성 때문이 아니라 context의 class prior 때문일 수 있다.
+
+예를 들어 Web sample이 많이 들어간 context는 실제 feature 근거가 약해도 Web posterior를 과도하게 높일 수 있다. 현재 EXP22B에서 나타난 Web false positive도 이 문제와 관련될 가능성이 있다.
+
+Context (C\_\allowbreak{}k)의 smoothed prior를 다음처럼 저장한다.
+
+\subsection{[ \textbackslash{}widehat\textbackslash{}pi\_\allowbreak{}\{k,c\}}
+\textbackslash{}frac\{n\_\allowbreak{}\{k,c\}+\allowbreak{}\textbackslash{}alpha\}\{|C\_\allowbreak{}k|+\allowbreak{}\textbackslash{}alpha C\} ]
+
+Raw posterior는 공통 reference prior로 정렬한다.
+
+\subsection{[ \textbackslash{}widetilde z\_\allowbreak{}\{k,c\}(x)}
+\textbackslash{}log(p\_\allowbreak{}\{k,c\}\textasciicircum{}\{\textbackslash{}mathrm\{raw\}\}(x)+\allowbreak{}\textbackslash{}epsilon) +\allowbreak{}\textbackslash{}beta\textbackslash{}left[ \textbackslash{}log\textbackslash{}pi\_\allowbreak{}c\textasciicircum{}\{\textbackslash{}mathrm\{ref\}\}- \textbackslash{}log\textbackslash{}widehat\textbackslash{}pi\_\allowbreak{}\{k,c\} \textbackslash{}right] ]
+
+[ \textbackslash{}widetilde p\_\allowbreak{}k(x)=\allowbreak{}\textbackslash{}operatorname\{softmax\}(\textbackslash{}widetilde z\_\allowbreak{}k(x)/\allowbreak{}T) ]
+
+(\textbackslash{}beta)와 (T)는 \texttt{D\_\allowbreak{}\allowbreak{}tune}에서 선택하고 \texttt{D\_\allowbreak{}\allowbreak{}cal}에서 확인한다. Prior correction 없음/\allowbreak{}있음은 필수 ablation이다.
+
+
+\medskip\hrule\medskip
+\subsection{8. Step 3 — Global의 per-sample failure 계산}
+\texttt{D\_\allowbreak{}\allowbreak{}expert\allowbreak{}}는 Global context에 포함되지 않은 held-out 데이터다. 각 sample에 대해 Global의 class-balanced loss를 계산한다.
+
+\subsection{[ r\_\allowbreak{}i}
+\textbackslash{}bar w\_\allowbreak{}\{y\_\allowbreak{}i\} [-\textbackslash{}log(\textbackslash{}widetilde p\_\allowbreak{}\{0,y\_\allowbreak{}i\}(x\_\allowbreak{}i)+\allowbreak{}\textbackslash{}epsilon)] ]
+
+Class weight는 \texttt{D\_\allowbreak{}\allowbreak{}global\allowbreak{}}의 class count만 사용한다.
+
+\subsection{[ \textbackslash{}bar w\_\allowbreak{}c}
+\textbackslash{}frac\{n\_\allowbreak{}c\textasciicircum{}\{-\textbackslash{}gamma\}\} \{\textbackslash{}sum\_\allowbreak{}d (n\_\allowbreak{}d/\allowbreak{}N)n\_\allowbreak{}d\textasciicircum{}\{-\textbackslash{}gamma\}\} ]
+
+이 정규화가 있어야 \texttt{benign w\allowbreak{}eight=\allowbreak{}\allowbreak{}0.\allowbreak{}16}, \texttt{web weig\allowbreak{}ht=\allowbreak{}\allowbreak{}1133}처럼 큰 범위의 값을 명확하게 설명할 수 있다. 단순히 (1/\allowbreak{}n\_\allowbreak{}c\textasciicircum{}\textbackslash{}gamma)라고만 적으면 실제 수치와 식이 맞지 않는다.
+
+극단적인 label noise가 clustering을 지배하지 않도록 residual을 clip한다.
+
+[ \textbackslash{}bar r\_\allowbreak{}i=\allowbreak{}\textbackslash{}min(r\_\allowbreak{}i,r\_\allowbreak{}\{\textbackslash{}max\}) ]
+
+여기서 얻는 것은 Global Macro-F1 같은 단일 점수가 아니다. 각 sample에서 Global이 어떻게 실패했는지에 대한 정보다.
+
+
+\medskip\hrule\medskip
+\subsection{9. Step 4 — Residual failure signature}
+Embedding 위치와 loss 크기만 사용하는 초기 구성에서는 서로 다른 confusion pattern이 같은 cluster에 섞일 수 있다. 이를 분리하기 위해 posterior와 confusion direction을 residual signature에 포함한다.
+
+최종 residual signature는 다음 네 가지를 결합한다.
+
+[ e\_\allowbreak{}i=\allowbreak{} \textbackslash{}left[ \textbackslash{}operatorname\{norm\}(z\_\allowbreak{}i), \textbackslash{}alpha\_\allowbreak{}p\textbackslash{}widetilde p\_\allowbreak{}0(x\_\allowbreak{}i), \textbackslash{}alpha\_\allowbreak{}e(\textbackslash{}mathbf e\_\allowbreak{}\{y\_\allowbreak{}i\}-\textbackslash{}widetilde p\_\allowbreak{}0(x\_\allowbreak{}i)), \textbackslash{}alpha\_\allowbreak{}r\textbackslash{}log(1+\allowbreak{}\textbackslash{}bar r\_\allowbreak{}i) \textbackslash{}right] ]
+
+각 항의 의미는 다음과 같다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.51761\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.48239\linewidth-2\tabcolsep\relax}}
+\toprule
+항 & 의미 \\ \midrule
+\endfirsthead
+항 & 의미 \\ \midrule
+\endhead
+{}(z\_\allowbreak{}i=\allowbreak{}\textbackslash{}phi(x\_\allowbreak{}i)) & 입력이 feature space의 어느 regime에 있는가 \\
+{}(\textbackslash{}widetilde p\_\allowbreak{}0(x\_\allowbreak{}i)) & Global이 어떤 class들을 가능성 있게 보았는가 \\
+{}(\textbackslash{}mathbf e\_\allowbreak{}\{y\_\allowbreak{}i\}-\textbackslash{}widetilde p\_\allowbreak{}0(x\_\allowbreak{}i)) & 정답 대비 Global의 confusion direction \\
+{}(\textbackslash{}log(1+\allowbreak{}\textbackslash{}bar r\_\allowbreak{}i)) & 오류가 얼마나 심각한가 \\
+\bottomrule
+\end{longtable}
+\endgroup
+예를 들어 다음 두 sample은 모두 Global이 틀렸지만 다른 failure signature를 가져야 한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+Sample A
+정답: Web
+Global: Benign 0.85 / Web 0.08
+
+Sample B
+정답: Infiltration
+Global: DoS 0.55 / Infiltration 0.35
+
+\end{Verbatim}
+초기 primary representation은 \texttt{D\_\allowbreak{}\allowbreak{}global\allowbreak{}}에서만 fit한 robust scaler +\allowbreak{} PCA로 둔다. TabPFN embedding은 접근성과 안정성을 확인한 후 ablation으로 비교한다. 각 signature block은 clustering 전에 개별적으로 standardize해야 한다.
+
+
+\medskip\hrule\medskip
+\subsection{10. Step 5 — Residual regime clustering}
+Residual이 큰 sample이 cluster 형성에 더 큰 영향을 주도록 weighted robust clustering을 사용한다.
+
+[ \textbackslash{}min\_\allowbreak{}\{\textbackslash{}mu\_\allowbreak{}1,\textbackslash{}ldots,\textbackslash{}mu\_\allowbreak{}K\} \textbackslash{}sum\_\allowbreak{}\{i\textbackslash{}in D\_\allowbreak{}\{\textbackslash{}mathrm\{expert\}\}\} \textbackslash{}bar r\_\allowbreak{}i\textbackslash{}min\_\allowbreak{}k d(e\_\allowbreak{}i,\textbackslash{}mu\_\allowbreak{}k) ]
+
+권장 순서는 다음과 같다.
+
+\par\noindent \textbullet\enspace Weighted k-medoids 또는 trimmed clustering
+
+
+\par\noindent \textbullet\enspace 비교용 weighted k-means
+
+
+\par\noindent \textbullet\enspace (K\textbackslash{}in\{2,4,8\}) 후보
+
+
+\par\noindent \textbullet\enspace \texttt{D\_\allowbreak{}\allowbreak{}tune}에서 oracle utility, expert 중복, memory/\allowbreak{}cost를 함께 고려해 K 선택
+
+
+Cluster는 class membership이 아니다. 하나의 class가 여러 residual regimes로 나뉠 수 있고, 서로 다른 class가 같은 confusion pattern을 가지면 한 regime에 들어갈 수 있다.
+
+
+\medskip\hrule\medskip
+\subsection{11. Step 6 — 서로 다른 Context Expert 만들기}
+\subsubsection{11.1 Common anchor}
+모든 expert가 전체 label space를 유지하도록 \texttt{D\_\allowbreak{}\allowbreak{}global\allowbreak{}}에서 공통 anchor를 만든다.
+
+[ A=\allowbreak{}\textbackslash{}operatorname\{ClassAwareCoreset\}(D\_\allowbreak{}\{\textbackslash{}mathrm\{global\}\},B\_\allowbreak{}A) ]
+
+모든 specialist는 동일한 anchor row를 사용한다. Anchor에는 가능한 모든 class가 포함되어야 한다.
+
+\subsubsection{11.2 Diversity-aware specialist block}
+EXP22B가 드러낸 첫 번째 설계 병목은 다음 TopB 점수에서 발생했다.
+
+[ s\_\allowbreak{}\{ik\}=\allowbreak{}r\_\allowbreak{}i\textbackslash{}exp(-d\_\allowbreak{}\{ik\}\textasciicircum{}2/\allowbreak{}\textbackslash{}tau) ]
+
+Residual scale이 거리항을 압도하면서 여러 expert가 유사한 high-loss rows를 선택했다. EXP22B에서 expert block의 class composition이 거의 같고 router target이 Expert 2에 94\% 집중된 결과는, 다음 iteration에서 context diversity를 우선 강화해야 한다는 직접적인 설계 신호다.
+
+최종 구현은 먼저 sample을 residual regime에 hard assignment한 뒤, 각 regime 내부에서 서로 다른 영역을 대표하는 row를 선택한다.
+
+\subsection{[ S\_\allowbreak{}k}
+\textbackslash{}arg\textbackslash{}min\_\allowbreak{}\{\textbackslash{}substack\{S\textbackslash{}subseteq R\_\allowbreak{}k\textbackslash{}|S|=\allowbreak{}B\_\allowbreak{}S\}\} \textbackslash{}sum\_\allowbreak{}\{i\textbackslash{}in R\_\allowbreak{}k\} \textbackslash{}bar r\_\allowbreak{}i\textbackslash{}min\_\allowbreak{}\{j\textbackslash{}in S\}|e\_\allowbreak{}i-e\_\allowbreak{}j|\textasciicircum{}2 ]
+
+실제 구현은 weighted greedy k-center, weighted k-medoids 또는 facility-location approximation을 사용한다.
+
+최종 expert context는 다음과 같다.
+
+[ C\_\allowbreak{}k=\allowbreak{}A\textbackslash{}cup S\_\allowbreak{}k ]
+
+모든 expert는 같은 total budget을 가져야 한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+|Ck| = anchor budget + specialist budget
+
+\end{Verbatim}
+\subsubsection{반드시 측정할 expert 다양성}
+\par\noindent \textbullet\enspace Context row-ID pairwise Jaccard overlap
+
+
+\par\noindent \textbullet\enspace Expert prediction agreement/\allowbreak{}disagreement
+
+
+\par\noindent \textbullet\enspace Expert별 gain vector correlation
+
+
+\par\noindent \textbullet\enspace Expert별 positive-gain coverage
+
+
+\par\noindent \textbullet\enspace Router target distribution
+
+
+\par\noindent \textbullet\enspace Expert별 class composition과 context prior
+
+
+Class count가 비슷하다고 같은 row가 들어갔다고 단정할 수 없다. 실제 row overlap과 prediction/\allowbreak{}gain correlation으로 clone 여부를 확인해야 한다.
+
+
+\medskip\hrule\medskip
+\subsection{12. Step 7 — Expert viability와 redundancy pruning}
+Residual cluster가 존재한다고 해서 그 context가 Global을 실제로 보완하는 것은 아니다.
+
+\texttt{D\_\allowbreak{}\allowbreak{}tune}에서 각 expert의 predictive gain을 계산한다.
+
+[ L\_\allowbreak{}\{i0\}=\allowbreak{}\textbackslash{}ell\_\allowbreak{}\{\textbackslash{}mathrm\{bal\}\}(\textbackslash{}widetilde p\_\allowbreak{}0(x\_\allowbreak{}i),y\_\allowbreak{}i) ]
+
+[ L\_\allowbreak{}\{ik\}=\allowbreak{}\textbackslash{}ell\_\allowbreak{}\{\textbackslash{}mathrm\{bal\}\}(\textbackslash{}widetilde p\_\allowbreak{}k(x\_\allowbreak{}i),y\_\allowbreak{}i) ]
+
+[ G\_\allowbreak{}\{ik\}=\allowbreak{}L\_\allowbreak{}\{i0\}-L\_\allowbreak{}\{ik\} ]
+
+\par\noindent \textbullet\enspace (G\_\allowbreak{}\{ik\}>0): Expert가 Global보다 predictive loss를 줄임
+
+
+\par\noindent \textbullet\enspace (G\_\allowbreak{}\{ik\}\textbackslash{}le0): Global을 유지하는 편이 나음
+
+
+다음 expert는 제거하거나 병합한다.
+
+\par\noindent \textbullet\enspace Positive-gain sample이 너무 적음
+
+
+\par\noindent \textbullet\enspace 다른 expert와 context row가 거의 동일함
+
+
+\par\noindent \textbullet\enspace Prediction과 gain vector가 다른 expert와 거의 동일함
+
+
+\par\noindent \textbullet\enspace 추가했을 때 oracle utility가 거의 증가하지 않음
+
+
+\par\noindent \textbullet\enspace Context memory와 호출 비용에 비해 이득이 작음
+
+
+Router를 복잡하게 만들기 전에 context bank 자체가 충분한 complementarity를 가져야 한다.
+
+
+\medskip\hrule\medskip
+\subsection{13. Step 8 — Offline paired utility matrix}
+최종 expert bank를 고정한 후 \texttt{D\_\allowbreak{}\allowbreak{}route}에서 Global과 모든 expert를 offline으로 실행한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+각 row i에 대해:
+Global loss L_i0
+Expert 1 loss L_i1
+...
+Expert K loss L_iK
+
+\end{Verbatim}
+이 단계에서는 모든 expert를 실행해도 된다. Dense execution은 학습용 utility matrix를 만드는 offline 비용이며, 실제 배포 시에는 top-1만 호출한다.
+
+\texttt{G\_\allowbreak{}\allowbreak{}ik}는 causal counterfactual이 아니다. 같은 labeled row에서 Global과 Expert의 loss를 모두 관찰한 paired difference다. 논문에서는 다음 표현을 사용한다.
+
+\par\noindent \textbullet\enspace Global-relative predictive gain
+
+
+\par\noindent \textbullet\enspace Global-relative conditional utility
+
+
+\par\noindent \textbullet\enspace Paired oracle utility target
+
+
+\texttt{Counterf\allowbreak{}actual a\allowbreak{}dvantage\allowbreak{}}라는 표현은 피한다.
+
+
+\medskip\hrule\medskip
+\subsection{14. Step 9 — Post-call lower-bound verifier}
+Expert를 실행한 뒤에는 Global과 selected expert의 실제 posterior를 모두 사용할 수 있다.
+
+[ h\_\allowbreak{}\{\textbackslash{}mathrm\{post\}\}(x,k)=\allowbreak{} [ \textbackslash{}widetilde p\_\allowbreak{}0, \textbackslash{}widetilde p\_\allowbreak{}k, \textbackslash{}widetilde p\_\allowbreak{}k-\textbackslash{}widetilde p\_\allowbreak{}0, H(\textbackslash{}widetilde p\_\allowbreak{}0),H(\textbackslash{}widetilde p\_\allowbreak{}k), m\_\allowbreak{}0,m\_\allowbreak{}k,d\_\allowbreak{}k(x),q\_\allowbreak{}k ] ]
+
+(q\_\allowbreak{}k)는 expert descriptor다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+cluster 중심과 분산
+context prior
+평균 residual
+context 크기
+호출 비용
+
+\end{Verbatim}
+Verifier는 expert별 별도 모델이 아니라 expert descriptor를 입력받는 shared model로 만든다.
+
+Huber regression으로 평균 (\textbackslash{}widehat G) 하나만 예측하고 \texttt{>0}을 적용하는 초기 verifier는 useful proof-of-concept이지만 prediction uncertainty를 충분히 반영하지 못한다. Primary verifier는 낮은 조건부 quantile을 예측하도록 확장한다.
+
+[ \textbackslash{}widehat q\_\allowbreak{}\{\textbackslash{}alpha,k\}(x) =\allowbreak{}v\_\allowbreak{}\textbackslash{}psi(h\_\allowbreak{}\{\textbackslash{}mathrm\{post\}\}(x,k)) ]
+
+학습 loss는 pinball loss를 사용한다.
+
+그 후 \texttt{D\_\allowbreak{}\allowbreak{}cal}의 독립 데이터에서 one-sided correction을 적용해 보수적 lower bound를 만든다.
+
+\subsection{[ \textbackslash{}underline G\_\allowbreak{}k(x)}
+\textbackslash{}widehat q\_\allowbreak{}\{\textbackslash{}alpha,k\}(x)-Q\_\allowbreak{}\{1-\textbackslash{}delta\} ]
+
+최종 채택 조건은 다음과 같다.
+
+[ b(x,k)=\allowbreak{}\textbackslash{}mathbf 1[ \textbackslash{}underline G\_\allowbreak{}k(x)>\textbackslash{}tau\_\allowbreak{}\{\textbackslash{}mathrm\{post\}\} ] ]
+
+여기서 (\textbackslash{}tau\_\allowbreak{}\{\textbackslash{}mathrm\{post\}\}\textbackslash{}ge0)이며 다음 제약을 만족하도록 \texttt{D\_\allowbreak{}\allowbreak{}cal}에서 고정한다.
+
+\par\noindent \textbullet\enspace Harmful override rate upper bound
+
+
+\par\noindent \textbullet\enspace Benign FPR 증가 제한
+
+
+\par\noindent \textbullet\enspace 최소 accepted sample 수
+
+
+\par\noindent \textbullet\enspace Coverage/\allowbreak{}utility trade-off
+
+
+Verifier는 안전을 보장하는 장치가 아니라 calibration-controlled conservative rejection gate다. Calibration이 구현되기 전에는 \texttt{risk-\allowbreak{}con\allowbreak{}trolled} 또는 \texttt{safe}라고 주장하지 않는다.
+
+\subsubsection{Cost를 Verifier target에 넣지 않는 이유}
+Expert가 이미 실행된 뒤에는 호출 비용이 발생한 상태다. 따라서 최종 prediction 교체 여부는 순수 predictive gain을 기준으로 판단한다.
+
+[ G\_\allowbreak{}\{ik\}=\allowbreak{}L\_\allowbreak{}\{i0\}-L\_\allowbreak{}\{ik\} ]
+
+Cost는 다음 proposal 단계에서만 사용한다.
+
+
+\medskip\hrule\medskip
+\subsection{15. Step 10 — Pre-call shared utility scorer}
+Proposal은 Expert를 실행하기 전에 계산 가능한 정보만 사용한다.
+
+[ h\_\allowbreak{}\{\textbackslash{}mathrm\{pre\}\}(x,k)=\allowbreak{} [ \textbackslash{}widetilde p\_\allowbreak{}0(x),H(\textbackslash{}widetilde p\_\allowbreak{}0),m\_\allowbreak{}0, z(x),d\_\allowbreak{}k(x),q\_\allowbreak{}k ] ]
+
+각 query-expert pair에 동일한 shared scorer를 적용한다.
+
+[ \textbackslash{}widehat U\_\allowbreak{}k\textasciicircum{}\{\textbackslash{}mathrm\{pre\}\}(x) =\allowbreak{}s\_\allowbreak{}\textbackslash{}phi(h\_\allowbreak{}\{\textbackslash{}mathrm\{pre\}\}(x,k)) ]
+
+기본 target은 cost-adjusted predictive utility다.
+
+[ V\_\allowbreak{}\{ik\}=\allowbreak{}G\_\allowbreak{}\{ik\}-\textbackslash{}lambda\_\allowbreak{}\{\textbackslash{}mathrm\{cost\}\}c\_\allowbreak{}k ]
+
+권장 최종 target은 verifier가 실제로 채택할 가능성까지 반영한 OOF realized policy utility다.
+
+\subsection{[ U\_\allowbreak{}\{ik\}\textasciicircum{}\{\textbackslash{}mathrm\{OOF\}\}}
+b\_\allowbreak{}\{ik\}\textasciicircum{}\{\textbackslash{}mathrm\{OOF\}\}G\_\allowbreak{}\{ik\} -\textbackslash{}lambda\_\allowbreak{}\{\textbackslash{}mathrm\{cost\}\}c\_\allowbreak{}k ]
+
+Verifier가 거절하여 prediction gain은 얻지 못하고 호출 비용만 발생한 wasted call도 proposal이 학습하게 된다.
+
+최종 proposal은 다음과 같다.
+
+[ k\textasciicircum{}*(x)=\allowbreak{}\textbackslash{}arg\textbackslash{}max\_\allowbreak{}k \textbackslash{}widehat U\_\allowbreak{}k\textasciicircum{}\{\textbackslash{}mathrm\{pre\}\}(x) ]
+
+[ a(x)=\allowbreak{} \textbackslash{}begin\{cases\} k\textasciicircum{}\emph{(x), \& \textbackslash{}widehat U\_\allowbreak{}\{k\textasciicircum{}}\}\textasciicircum{}\{\textbackslash{}mathrm\{pre\}\}(x)>\textbackslash{}tau\_\allowbreak{}\{\textbackslash{}mathrm\{pre\}\},\textbackslash{} 0, \& \textbackslash{}text\{otherwise\}. \textbackslash{}end\{cases\} ]
+
+Global은 별도의 \texttt{NO EXPER\allowbreak{}T} class로 강제 학습하지 않는다. 모든 expert의 예상 net utility가 기준보다 낮으면 자연스럽게 Global action (a=\allowbreak{}0)을 선택한다.
+
+이 구조가 기존 \texttt{NO EXPER\allowbreak{}T/\allowbreak{}\allowbreak{}Expert\allowbreak{} 1/\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}E\allowbreak{}xpert K} hard classifier보다 좋은 이유는 다음과 같다.
+
+\par\noindent \textbullet\enspace Expert 순서에 덜 의존함
+
+
+\par\noindent \textbullet\enspace Expert descriptor를 통해 각 expert의 특성을 직접 반영함
+
+
+\par\noindent \textbullet\enspace Expert bank가 수정되어도 동일한 scorer를 사용할 수 있음
+
+
+\par\noindent \textbullet\enspace 특정 expert로 target이 몰리는 class imbalance를 완화함
+
+
+\par\noindent \textbullet\enspace Cost와 call budget을 명시적으로 최적화할 수 있음
+
+
+
+\medskip\hrule\medskip
+\subsection{16. 최종 test-time algorithm}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+Input: query x
+
+1. p0_raw ← FrozenPFN(C0, x)
+2. p0 ← PriorCorrectAndCalibrate(p0_raw, C0)
+3. z(x)와 각 expert의 cheap distance/support를 계산한다.
+4. 모든 expert k에 대해 pre-call utility ûk를 계산한다.
+5. k* ← argmaxk ûk
+6. ûk* ≤ τpre 이면 p0를 반환한다.                 [GLOBAL_ONLY]
+7. pk*_raw ← FrozenPFN(Ck*, x)                    [전문가 1회 추가 호출]
+8. pk* ← PriorCorrectAndCalibrate(pk*_raw, Ck*)
+9. lower_gain ← CalibratedLowerBound(x, k*)
+10. lower_gain > τpost 이면 pk*를 반환한다.       [EXPERT_OVERRIDE]
+11. 아니면 p0를 반환한다.                         [EXPERT_REJECTED]
+
+\end{Verbatim}
+Specialist proposal rate를 (\textbackslash{}rho)라고 하면 평균 PFN 호출 횟수는 (1+\allowbreak{}\textbackslash{}rho)다. 그러나 호출 횟수를 wall-clock 배수로 간주하면 안 된다. Context cache, dynamic batching, context size, GPU transfer를 포함한 실제 latency를 측정한다.
+
+
+\medskip\hrule\medskip
+\subsection{17. Temporal context refresh}
+정적 expert bank만으로는 이미 관찰된 failure regime을 보완할 수 있지만, 실제 temporal drift에 대응하려면 context를 시간순으로 갱신해야 한다.
+
+\subsubsection{17.1 시간순 설정}
+[ D\_\allowbreak{}\{\textbackslash{}mathrm\{history\}\}\textbackslash{}rightarrow W\_\allowbreak{}1\textbackslash{}rightarrow W\_\allowbreak{}2\textbackslash{}rightarrow W\_\allowbreak{}3 ]
+
+Primary 조건은 다음과 같다.
+
+\par\noindent \textbullet\enspace Frozen PFN backbone
+
+
+\par\noindent \textbullet\enspace Frozen preprocessing
+
+
+\par\noindent \textbullet\enspace Fixed K
+
+
+\par\noindent \textbullet\enspace Fixed total context memory
+
+
+\par\noindent \textbullet\enspace Window별 verified-label budget (B\textbackslash{}in\{0,50,200,1000\})
+
+
+\par\noindent \textbullet\enspace 모든 adaptive baseline에 동일 verified row 제공
+
+
+\subsubsection{17.2 Strict prequential 순서}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+For each window Wt:
+
+1. 현재 시스템 Mt-1로 Wt 전체를 먼저 예측한다.
+2. Prediction, routing, latency와 Wt 성능을 확정한다.
+3. 사전 선언된 방법으로 최대 B개 label만 공개한다.
+4. 공개된 sample의 Global residual과 failure signature를 계산한다.
+5. 기존 residual regime에 할당한다.
+6. Global recent context, common anchor, specialist recent block을 갱신한다.
+7. Total memory budget은 유지한다.
+8. 갱신된 Mt는 Wt+1에서 처음 평가한다.
+9. 과거 reference set에서도 성능을 측정해 forgetting을 확인한다.
+
+\end{Verbatim}
+같은 window의 라벨을 사용해 context를 갱신하고 같은 window를 다시 평가하면 leakage다.
+
+\subsubsection{17.3 Context memory 구조}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+Global context    = stable global block + recent global block
+Common anchor     = stable anchor + recent anchor
+Specialist block  = stable specialist block + recent specialist block
+
+\end{Verbatim}
+최근 sample을 무조건 FIFO로 넣지 않는다. Residual severity, recency, class/\allowbreak{}group balance와 diversity를 함께 고려한다. Total logical context와 unique storage budget은 모든 window에서 동일하게 유지한다.
+
+
+\medskip\hrule\medskip
+\subsection{18. EXP22B가 제공하는 설계 근거}
+EXP22B는 최종 결과가 아니라 핵심 가설을 점검한 development experiment다. 이 실험에서 확인한 설계 근거는 다음과 같다.
+
+\par\noindent \textbullet\enspace Frozen Global PFN, full-label context experts, sparse top-1 call과 exact Global fallback의 end-to-end 실행 경로가 동작한다.
+
+
+\par\noindent \textbullet\enspace Global Macro-F1이 \texttt{0.\allowbreak{}6700}에서 \texttt{0.\allowbreak{}7084}로 상승하여, context specialization으로 Global residual을 회수할 수 있다는 가능성이 확인되었다.
+
+
+\par\noindent \textbullet\enspace Brute-force와 DoS에서 큰 개선이 나타나 residual-focused context가 Global과 다른 유용한 evidence를 제공할 수 있음을 보였다.
+
+
+\par\noindent \textbullet\enspace Proposal rate \texttt{0.\allowbreak{}23}으로 평균 PFN 호출 수 \texttt{1.\allowbreak{}23}을 달성하여 sparse activation의 기본 가능성을 확인했다.
+
+
+\par\noindent \textbullet\enspace Web precision 저하와 유사한 expert composition은 다음 성능 향상을 위해 어디를 우선 강화해야 하는지 명확히 보여준다.
+
+
+EXP22B의 관찰을 다음 연구 설계로 연결한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.31481\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34259\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34259\linewidth-2\tabcolsep\relax}}
+\toprule
+EXP22B 관찰 & 연구적 해석 & 다음 설계 \\ \midrule
+\endfirsthead
+EXP22B 관찰 & 연구적 해석 & 다음 설계 \\ \midrule
+\endhead
+{}Global보다 Macro-F1 향상 & Residual contexts에 회수 가능한 signal이 존재 & Expert complementarity를 여러 seed와 stress setting에서 확대·검증 \\
+{}Expert block 조성이 매우 유사 & Router보다 context construction이 현재 병목 & Full residual signature +\allowbreak{} hard regime assignment +\allowbreak{} diversity-aware coreset \\
+{}Router target이 Expert 2에 94\% 집중 & Hard K+\allowbreak{}1 target이 expert redundancy를 반영하지 못함 & Expert descriptor를 사용하는 shared utility scorer \\
+{}Web F1과 precision 저하 & Context prior와 adoption uncertainty를 더 잘 통제할 필요 & Prior alignment +\allowbreak{} lower-quantile verifier +\allowbreak{} benign/\allowbreak{}classwise harm constraints \\
+{}제안 23\%, 채택 3.4\% & 유망한 sparsity와 함께 rejected/\allowbreak{}wasted call 최적화 여지 존재 & OOF realized-policy utility를 proposal target에 반영 \\
+{}Brute-force·DoS 개선 & 일부 residual regimes는 실제 상보성을 가짐 & 해당 gain을 보존하면서 Web harmful transition을 줄이는 목적함수·calibration 적용 \\
+\bottomrule
+\end{longtable}
+\endgroup
+용어와 protocol도 최종 논문에 맞게 정리한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.50000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.50000\linewidth-2\tabcolsep\relax}}
+\toprule
+초기 표현/\allowbreak{}구성 & 연구 명세의 표현/\allowbreak{}구성 \\ \midrule
+\endfirsthead
+초기 표현/\allowbreak{}구성 & 연구 명세의 표현/\allowbreak{}구성 \\ \midrule
+\endhead
+{}\texttt{D\_\allowbreak{}\allowbreak{}mine} & Specialist-building split인 \texttt{D\_\allowbreak{}\allowbreak{}expert\allowbreak{}} \\
+{}Global context 밖의 행을 \texttt{cross-\allowbreak{}fi\allowbreak{}t}이라고 표현 & 실제 OOF가 없으면 \texttt{held-\allowbreak{}out\allowbreak{} residua\allowbreak{}l} \\
+{}\texttt{D\_\allowbreak{}\allowbreak{}val} 하나에서 선택과 보정 & \texttt{D\_\allowbreak{}\allowbreak{}tune}과 독립 \texttt{D\_\allowbreak{}\allowbreak{}cal} 분리 \\
+{}Cost-adjusted Δ를 proposal과 verifier 모두에 사용 & Proposal은 net utility, post-call verifier는 pure predictive gain \\
+{}반복 관찰한 402만 행을 final test로 표현 & Development holdout으로 사용하고 untouched future test를 별도 동결 \\
+\bottomrule
+\end{longtable}
+\endgroup
+다음 iteration의 목적은 EXP22B 결과를 설명하는 데 머무르지 않는다. Expert specialization과 conservative adoption을 강화하여, Global 대비 Macro-F1 개선을 유지하면서 tail F1과 Web precision까지 함께 개선하는 것이 목표다.
+
+
+\medskip\hrule\medskip
+\subsection{19. 연구 실행 우선순위}
+\subsubsection{Phase 0 — 데이터와 평가 고정}
+\par\noindent \textbullet\enspace 6-way split manifest 작성
+
+
+\par\noindent \textbullet\enspace Duplicate/\allowbreak{}group/\allowbreak{}time leakage 검사
+
+
+\par\noindent \textbullet\enspace 현재 402만 행을 development로 재분류
+
+
+\par\noindent \textbullet\enspace Untouched final future block 동결
+
+
+\par\noindent \textbullet\enspace Context row ID와 모든 seed 저장
+
+
+\subsubsection{Phase 1 — Expert complementarity 강화}
+\par\noindent \textbullet\enspace Residual clip 및 block별 standardization
+
+
+\par\noindent \textbullet\enspace Full residual signature 구현
+
+
+\par\noindent \textbullet\enspace Weighted robust clustering
+
+
+\par\noindent \textbullet\enspace Hard regime assignment
+
+
+\par\noindent \textbullet\enspace Weighted k-center/\allowbreak{}medoid 기반 context selection
+
+
+\par\noindent \textbullet\enspace Jaccard, gain correlation, prediction disagreement 측정
+
+
+이 단계에서 expert complementarity가 확인되기 전에는 router를 복잡하게 만들지 않는다.
+
+\subsubsection{Phase 2 — Prior correction과 expert pruning}
+\par\noindent \textbullet\enspace Context별 prior 저장
+
+
+\par\noindent \textbullet\enspace Common reference prior alignment
+
+
+\par\noindent \textbullet\enspace Prior correction 전후 balanced NLL/\allowbreak{}F1 비교
+
+
+\par\noindent \textbullet\enspace Positive-gain coverage가 낮거나 중복된 expert 제거
+
+
+\subsubsection{Phase 3 — Shared utility router}
+\par\noindent \textbullet\enspace Query-expert pair dataset 생성
+
+
+\par\noindent \textbullet\enspace Expert descriptor 구현
+
+
+\par\noindent \textbullet\enspace Shared scorer 학습
+
+
+\par\noindent \textbullet\enspace Cost-aware utility와 call-budget threshold 선택
+
+
+\par\noindent \textbullet\enspace Hard router, nearest-centroid, mean-gain scorer와 비교
+
+
+\subsubsection{Phase 4 — Calibrated verifier}
+\par\noindent \textbullet\enspace Shared lower-quantile verifier 학습
+
+
+\par\noindent \textbullet\enspace Grouped OOF verifier decision 생성
+
+
+\par\noindent \textbullet\enspace Independent one-sided calibration
+
+
+\par\noindent \textbullet\enspace Harmful override와 benign FPR 제약 아래 threshold 고정
+
+
+\par\noindent \textbullet\enspace Helpful/\allowbreak{}harmful/\allowbreak{}wrong-to-wrong 전이 분석
+
+
+\subsubsection{Phase 5 — Temporal refresh}
+\par\noindent \textbullet\enspace History \ensuremath{\rightarrow} W1 \ensuremath{\rightarrow} W2 \ensuremath{\rightarrow} W3 구성
+
+
+\par\noindent \textbullet\enspace Zero-update baseline 확정
+
+
+\par\noindent \textbullet\enspace (B=\allowbreak{}0,50,200,1000) 동일 verified row 생성
+
+
+\par\noindent \textbullet\enspace Fixed-memory context-only refresh
+
+
+\par\noindent \textbullet\enspace 다음 window recovery와 forgetting 측정
+
+
+
+\medskip\hrule\medskip
+\subsection{20. 반드시 수행할 실험}
+\subsubsection{20.1 Expert feasibility}
+Router를 만들기 전에 다음을 비교한다.
+
+\par\noindent \textbullet\enspace Global context
+
+
+\par\noindent \textbullet\enspace Equal-memory random contexts
+
+
+\par\noindent \textbullet\enspace Feature-only/\allowbreak{}proximity contexts
+
+
+\par\noindent \textbullet\enspace Full residual-signature contexts
+
+
+\par\noindent \textbullet\enspace Residual +\allowbreak{} diversity contexts
+
+
+\par\noindent \textbullet\enspace Per-sample label-informed loss oracle
+
+
+핵심 질문은 하나다.
+
+각 sample에서 Global보다 실제로 나은 context가 충분히 존재하는가?
+
+
+
+Oracle gain이 작으면 router 문제가 아니라 context construction 문제다.
+
+\subsubsection{20.2 IID guardrail}
+\par\noindent \textbullet\enspace Known-class Macro-F1
+
+
+\par\noindent \textbullet\enspace Fixed-tail Macro-F1
+
+
+\par\noindent \textbullet\enspace Macro-AUPRC
+
+
+\par\noindent \textbullet\enspace Balanced accuracy
+
+
+\par\noindent \textbullet\enspace Benign FPR
+
+
+\par\noindent \textbullet\enspace Calibration
+
+
+RACE가 모든 IID setting에서 XGBoost를 반드시 이길 필요는 없다. 그러나 Global의 일반 성능과 benign safety를 크게 훼손하면 안 된다.
+
+\subsubsection{20.3 Controlled long-tail}
+[ IF\textbackslash{}in\{10,50,100,500\} ]
+
+Imbalance가 심해질수록 RACE의 Macro-F1과 tail F1 감소폭이 Global, full-data XGBoost, strongest PFN baseline보다 작은지 본다.
+
+\subsubsection{20.4 Test prior shift}
+\par\noindent \textbullet\enspace Tail-heavy
+
+
+\par\noindent \textbullet\enspace Balanced
+
+
+\par\noindent \textbullet\enspace Training-like
+
+
+\par\noindent \textbullet\enspace Head-heavy
+
+
+DistPFN 또는 동등한 posterior correction을 반드시 포함한다.
+
+\subsubsection{20.5 Authentic temporal drift}
+\par\noindent \textbullet\enspace Zero-update temporal generalization
+
+
+\par\noindent \textbullet\enspace Same verified-label supervised refresh
+
+
+\par\noindent \textbullet\enspace Window별 및 prequential Macro-F1/\allowbreak{}tail F1/\allowbreak{}FPR
+
+
+\par\noindent \textbullet\enspace 초기 대비 최종 degradation
+
+
+\subsubsection{20.6 Efficiency}
+\par\noindent \textbullet\enspace Global-only latency
+
+
+\par\noindent \textbullet\enspace Dense all-expert latency
+
+
+\par\noindent \textbullet\enspace Sparse RACE latency
+
+
+\par\noindent \textbullet\enspace Batch 1 p50/\allowbreak{}p95/\allowbreak{}p99
+
+
+\par\noindent \textbullet\enspace Batch 32/\allowbreak{}256/\allowbreak{}1024 throughput
+
+
+\par\noindent \textbullet\enspace Peak GPU memory
+
+
+\par\noindent \textbullet\enspace Context cache 크기
+
+
+\par\noindent \textbullet\enspace Proposal, override, rejected-call, wasted-call rate
+
+
+
+\medskip\hrule\medskip
+\subsection{21. 필수 Baselines}
+\subsubsection{Static classifiers}
+\par\noindent \textbullet\enspace Full-data XGBoost
+
+
+\par\noindent \textbullet\enspace Class-weighted XGBoost
+
+
+\par\noindent \textbullet\enspace XGBoost posterior/\allowbreak{}threshold correction
+
+
+\par\noindent \textbullet\enspace CatBoost 또는 LightGBM
+
+
+XGBoost는 PFN context 크기로 학습 데이터를 제한하면 안 된다. RACE가 method construction에 사용하는 전체 pre-test labeled pool을 사용하도록 해야 한다.
+
+\subsubsection{PFN baselines}
+\par\noindent \textbullet\enspace Deterministic Global PFN
+
+
+\par\noindent \textbullet\enspace Balanced-context PFN
+
+
+\par\noindent \textbullet\enspace DistPFN 또는 동등한 context-prior correction
+
+
+\par\noindent \textbullet\enspace Multiple random contexts
+
+
+\par\noindent \textbullet\enspace Nearest/\allowbreak{}local-context PFN 또는 LoCalPFN
+
+
+\par\noindent \textbullet\enspace MixturePFN/\allowbreak{}MICP
+
+
+\par\noindent \textbullet\enspace 기존 수동 exp21 heuristic
+
+
+\par\noindent \textbullet\enspace Compatible setting의 Drift-Resilient TabPFN
+
+
+\subsubsection{Routing baselines}
+\par\noindent \textbullet\enspace Nearest-centroid
+
+
+\par\noindent \textbullet\enspace Residual-cluster ownership classifier
+
+
+\par\noindent \textbullet\enspace Global entropy/\allowbreak{}confidence gate
+
+
+\par\noindent \textbullet\enspace Hard K+\allowbreak{}1 router
+
+
+\par\noindent \textbullet\enspace Mean-gain scorer
+
+
+\par\noindent \textbullet\enspace Shared expected-utility scorer
+
+
+\par\noindent \textbullet\enspace Proposal +\allowbreak{} calibrated lower-bound verifier
+
+
+\par\noindent \textbullet\enspace Dense all-expert selector
+
+
+\par\noindent \textbullet\enspace Label-informed per-sample oracle
+
+
+
+\medskip\hrule\medskip
+\subsection{22. 반드시 보고할 Routing 지표}
+단순 routing accuracy만 보고해서는 안 된다.
+
+\subsubsection{Correctness transition}
+각 class별로 다음 전이를 모두 보고한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+Global correct  →  Final correct
+Global wrong    →  Final correct    [helpful]
+Global correct  →  Final wrong      [harmful]
+Global wrong    →  Final wrong
+
+\end{Verbatim}
+현재 EXP22B의 \texttt{correcti\allowbreak{}on preci\allowbreak{}sion=\allowbreak{}\allowbreak{}0.\allowbreak{}9\allowbreak{}4}는 helpful/\allowbreak{}harmful만 사용하므로 Web의 wrong \ensuremath{\rightarrow} wrong false-positive 이동을 포착하지 못한다.
+
+\subsubsection{추가 지표}
+\par\noindent \textbullet\enspace Proposal rate
+
+
+\par\noindent \textbullet\enspace Expert call rate
+
+
+\par\noindent \textbullet\enspace Override rate
+
+
+\par\noindent \textbullet\enspace Proposal 중 override 비율
+
+
+\par\noindent \textbullet\enspace Positive-utility proposal precision/\allowbreak{}recall
+
+
+\par\noindent \textbullet\enspace Verifier false accept/\allowbreak{}false reject
+
+
+\par\noindent \textbullet\enspace Overall/\allowbreak{}benign harmful override
+
+
+\par\noindent \textbullet\enspace Mean realized gain among calls/\allowbreak{}overrides
+
+
+\par\noindent \textbullet\enspace Class·window별 activation
+
+
+\par\noindent \textbullet\enspace Rejected-call 및 wasted-call rate
+
+
+\par\noindent \textbullet\enspace Oracle utility recovery
+
+
+Metric에는 항상 분모와 절대 행 수를 함께 기록한다.
+
+
+\medskip\hrule\medskip
+\subsection{23. 통계와 재현성}
+\par\noindent \textbullet\enspace 5개 independent end-to-end seed
+
+
+\par\noindent \textbullet\enspace Seed마다 context selection, clustering, router initialization 변경
+
+
+\par\noindent \textbullet\enspace Day/\allowbreak{}session/\allowbreak{}capture/\allowbreak{}incident 단위 paired block bootstrap 95\% CI
+
+
+\par\noindent \textbullet\enspace 동일 seed와 동일 row를 모든 비교 방법에 제공
+
+
+\par\noindent \textbullet\enspace Prior-shift resample은 독립 model seed로 세지 않음
+
+
+다음을 반드시 저장한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+Raw data checksum
+Split manifest
+All context row IDs
+Context class priors
+Cluster membership and medoids
+Expert descriptors
+Offline gain matrix hash
+Model/config/library versions
+Seed별 prediction과 metrics
+Thresholds and calibration outputs
+Hardware, precision, cache, batch settings
+Temporal verified-row indices and update log
+
+\end{Verbatim}
+
+\medskip\hrule\medskip
+\subsection{24. 구현 성공 여부를 판단하는 순서}
+\subsubsection{Gate 1 — Expert complementarity}
+\par\noindent \textbullet\enspace Residual expert oracle이 random/\allowbreak{}proximity contexts보다 명확히 좋음
+
+
+\par\noindent \textbullet\enspace Expert별 positive-gain coverage가 존재함
+
+
+\par\noindent \textbullet\enspace Expert 간 gain correlation이 과도하게 높지 않음
+
+
+\par\noindent \textbullet\enspace Severe long-tail에서 의미 있는 oracle tail gain 존재
+
+
+실패하면 router를 고치는 것이 아니라 residual representation과 context selection을 수정한다.
+
+\subsubsection{Gate 2 — Routing feasibility}
+\par\noindent \textbullet\enspace Oracle utility의 의미 있는 비율 회수
+
+
+\par\noindent \textbullet\enspace Helpful override가 harmful override보다 충분히 많음
+
+
+\par\noindent \textbullet\enspace Specialist proposal rate가 과도하지 않음
+
+
+\par\noindent \textbullet\enspace Rejected/\allowbreak{}wasted call이 비용을 지배하지 않음
+
+
+\subsubsection{Gate 3 — Long-tail/\allowbreak{}temporal robustness}
+\par\noindent \textbullet\enspace Severe long-tail 또는 temporal setting에서 strongest non-oracle baseline보다 Macro-F1/\allowbreak{}tail F1 개선
+
+
+\par\noindent \textbullet\enspace IID Macro-F1과 benign FPR guardrail 유지
+
+
+\par\noindent \textbullet\enspace 여러 seed와 여러 데이터셋에서 같은 방향
+
+
+\subsubsection{Gate 4 — Temporal refresh}
+\par\noindent \textbullet\enspace (B\textbackslash{}le200)의 적은 라벨로 다음-window 성능을 의미 있게 회복
+
+
+\par\noindent \textbullet\enspace Global context replacement와 same-budget XGBoost보다 높은 성능 또는 비용 효율
+
+
+\par\noindent \textbullet\enspace 과거 source reference 성능을 크게 훼손하지 않음
+
+
+
+\medskip\hrule\medskip
+\subsection{25. 재현 가능한 연구 산출물}
+\par\noindent \textbullet\enspace \textbf{코드와 실행 설정}
+
+\par\noindent \textbullet\enspace Commit hash
+
+
+\par\noindent \textbullet\enspace 실행 명령
+
+
+\par\noindent \textbullet\enspace 전체 hyperparameter
+
+
+\par\noindent \textbullet\enspace Package/\allowbreak{}checkpoint version
+
+
+
+\par\noindent \textbullet\enspace \textbf{데이터 무결성}
+
+\par\noindent \textbullet\enspace Split별 시간 범위, row 수, class 수
+
+
+\par\noindent \textbullet\enspace Duplicate/\allowbreak{}group/\allowbreak{}hash overlap 결과
+
+
+\par\noindent \textbullet\enspace 전처리 fitting 범위
+
+
+
+\par\noindent \textbullet\enspace \textbf{Expert 분석}
+
+\par\noindent \textbullet\enspace Context class composition
+
+
+\par\noindent \textbullet\enspace Row-ID Jaccard matrix
+
+
+\par\noindent \textbullet\enspace Prediction disagreement matrix
+
+
+\par\noindent \textbullet\enspace Gain correlation matrix
+
+
+\par\noindent \textbullet\enspace Positive-gain coverage
+
+
+
+\par\noindent \textbullet\enspace \textbf{Router/\allowbreak{}verifier 분석}
+
+\par\noindent \textbullet\enspace Proposal/\allowbreak{}override 절대 수와 비율
+
+
+\par\noindent \textbullet\enspace Class별 correctness transition
+
+
+\par\noindent \textbullet\enspace Harmful override와 wrong \ensuremath{\rightarrow} wrong confusion 이동
+
+
+\par\noindent \textbullet\enspace Calibration curve 및 lower-bound coverage
+
+
+
+\par\noindent \textbullet\enspace \textbf{성능과 비용}
+
+\par\noindent \textbullet\enspace Global/\allowbreak{}RACE/\allowbreak{}XGBoost/\allowbreak{}PFN baselines
+
+
+\par\noindent \textbullet\enspace Classwise precision, recall, F1
+
+
+\par\noindent \textbullet\enspace Macro/\allowbreak{}tail/\allowbreak{}AUPRC/\allowbreak{}FPR
+
+
+\par\noindent \textbullet\enspace Latency, throughput, GPU memory
+
+
+\par\noindent \textbullet\enspace Seed별 결과와 CI
+
+
+
+결과 그림은 핵심 경향을 전달하는 용도로 사용하고, 구현과 결론의 재현성은 split manifest, context indices, raw prediction, confusion matrix와 configuration으로 뒷받침한다.
+
+
+\medskip\hrule\medskip
+\subsection{26. 최종 핵심 정리}
+RACE-PFN의 핵심은 expert를 여러 개 만드는 것 자체가 아니다.
+
+가장 중요한 흐름은 다음이다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+1. 전체 class를 처리하는 강한 Global PFN을 만든다.
+2. Held-out 데이터에서 Global이 어디서, 어떤 방향으로, 얼마나 실패하는지 표현한다.
+3. 서로 다른 failure regimes를 대표하는 full-label specialist contexts를 만든다.
+4. 각 expert가 Global보다 실제로 얼마나 유용한지를 paired prediction으로 학습한다.
+5. 비용을 고려해 필요한 top-1 expert만 호출한다.
+6. 보수적으로 검증된 predictive gain이 있을 때만 Global prediction을 교체한다.
+7. 소량의 최신 verified labels로 고정 크기의 context memory를 갱신한다.
+8. 갱신 효과는 반드시 다음 temporal window에서 측정한다.
+
+\end{Verbatim}
+다음 research iteration의 최우선 목표는 \textbf{expert complementarity 확보}다. Expert들이 실제로 서로 다른 Global failure를 보완해야 이후 utility routing과 verifier가 회수할 수 있는 이득도 커진다.
+
+따라서 다음 구현의 첫 번째 목표는 다음과 같다.
+
+Full residual signature와 diversity-aware context selection을 적용하여 서로 다른 predictive gain을 갖는 specialist context bank를 만들고, 그 oracle complementarity를 먼저 입증한다.
+
+
+
+이 complementarity를 먼저 확보한 뒤 shared utility router로 oracle gain을 회수하고, calibrated verifier로 harmful adoption을 줄이며, temporal refresh로 다음-window 성능 회복까지 연결한다. 이 순서를 유지하면 각 실험이 다음 구성요소의 필요성을 뒷받침하여 논문의 기여와 결과가 하나의 인과적인 서사로 정리된다.
+
+
+
+\section{NF-v3 계열 비교 문헌}
+
+이 프로젝트의 \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass\_\allowbreak{}\allowbreak{}t\allowbreak{}est.\allowbreak{}py}, \texttt{src/\allowbreak{}\allowbreak{}s32\textasciitilde{}\allowbreak{}s44\_\allowbreak{}\allowbreak{}nfv3\allowbreak{}\_\allowbreak{}\allowbreak{}*.\allowbreak{}py}가 쓰는 \texttt{data/\allowbreak{}\allowbreak{}nfv\allowbreak{}3\_\allowbreak{}\allowbreak{}energy\allowbreak{}\_\allowbreak{}\allowbreak{}suite\_\allowbreak{}\allowbreak{}u\allowbreak{}ncapped\_\allowbreak{}\allowbreak{}scenario\allowbreak{}s.\allowbreak{}pkl}은 University of Queensland(UQ)의 \textbf{NetFlow-based NIDS 데이터셋 계열}(\texttt{NF-\allowbreak{}UNSW-\allowbreak{}NB15}, \texttt{NF-\allowbreak{}ToN-\allowbreak{}I\allowbreak{}oT}, \texttt{NF-\allowbreak{}BoT-\allowbreak{}I\allowbreak{}oT}, \texttt{NF-\allowbreak{}CSE-\allowbreak{}C\allowbreak{}IC-\allowbreak{}IDS20\allowbreak{}18})의 \textbf{v3} 릴리즈에서 만들어진다. 아래는 TabPFN-v3 외에, 같은 계열 데이터셋(v2/\allowbreak{}v3) 위에서 비교 실험을 한 SOTA 논문들을 정리한 것. \textbf{주의: NF-v3는 2025년 3월에야 공개된 매우 최신 릴리즈라, 아직 v3 자체로 분류/\allowbreak{}불균형 실험을 한 논문은 거의 없고 대부분의 SOTA 비교 논문은 이 계열의 v2(43-feature 표준안)에서 수행됨.} v3와 v2는 같은 연구 그룹(UQ, Sarhan/\allowbreak{}Layeghy/\allowbreak{}Portmann 등)이 만든 동일 계열 데이터셋이라 스키마/\allowbreak{}클래스 구성이 이어지지만, feature 수(43  \ensuremath{\rightarrow}  53/\allowbreak{}57)와 온전한 시간 정보 유무가 다르므로 "동일 벤치마크"로 인용하지 말 것.
+
+\subsection{1. NF-v3 원 논문 (이 프로젝트가 쓰는 데이터셋의 출처)}
+\par\noindent \textbullet\enspace \textbf{제목}: Temporal Analysis of NetFlow Datasets for Network Intrusion Detection Systems
+
+
+\par\noindent \textbullet\enspace \textbf{arXiv}: 2503.04404
+
+
+\par\noindent \textbullet\enspace \textbf{연도/\allowbreak{}venue}: 2025년 3월 arXiv 게재, IEEE Access 게재 예정(2026)
+
+
+\par\noindent \textbullet\enspace \textbf{저자}: Majed Luay, Siamak Layeghy, Seyedehfaezeh Hosseininoorbin, Mohanad Sarhan, Nour Moustafa, Marius Portmann (UQ)
+
+
+\par\noindent \textbullet\enspace \textbf{요약}: 기존 NetFlow 계열 데이터셋(v2)에 inter-packet arrival time, flow duration 같은 시간적(temporal) feature가 빠져 있다는 문제를 지적하고, 이를 보강한 \texttt{NF3-\allowbreak{}UNSW\allowbreak{}-\allowbreak{}NB15}, \texttt{NF3-\allowbreak{}CSE-\allowbreak{}CIC-\allowbreak{}IDS2\allowbreak{}018}, \texttt{NF3-\allowbreak{}ToN-\allowbreak{}IoT}, \texttt{NF3-\allowbreak{}BoT-\allowbreak{}IoT} 4종을 새로 공개. feature 분포의 시계열 변화와, 신호처리에서 가져온 time-frequency 표현(TFSP)으로 공격 유형별 패턴이 실제로 구분되는지 분석한 \textbf{데이터셋+\allowbreak{}분석 논문}이며, 분류기 벤치마크(SOTA 비교 실험)는 포함하지 않음.
+
+
+\par\noindent \textbullet\enspace \textbf{사용 데이터}: NF3-UNSW-NB15 /\allowbreak{} NF3-CSE-CIC-IDS2018 /\allowbreak{} NF3-ToN-IoT /\allowbreak{} NF3-BoT-IoT (43-feature v2 표준안 +\allowbreak{} temporal feature 추가, 총 53\textasciitilde{}57열 — 논문 본문 수치와 이 프로젝트 전처리 스크립트(\texttt{scripts/\allowbreak{}\allowbreak{}preproce\allowbreak{}ss\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}energy\_\allowbreak{}\allowbreak{}s\allowbreak{}uite.\allowbreak{}py})가 말하는 "53-column schema"가 정확히 일치하는지는 미확인, 재인용 시 직접 컬럼 수를 세어 확인할 것)
+
+
+\par\noindent \textbullet\enspace \textbf{실험한 SOTA}: 없음(분류기 비교 실험 자체가 없는 데이터셋/\allowbreak{}분석 논문). 이 프로젝트 입장에서는 "우리가 쓰는 원본 데이터가 어떻게 만들어졌는지"의 근거 문헌으로만 인용.
+
+
+\subsection{2. NF-v2 표준 feature set 원 논문 (v3의 직접 선행 연구)}
+\par\noindent \textbullet\enspace \textbf{제목}: Towards a Standard Feature Set for Network Intrusion Detection System Datasets
+
+
+\par\noindent \textbullet\enspace \textbf{arXiv}: 2101.11315
+
+
+\par\noindent \textbullet\enspace \textbf{연도/\allowbreak{}venue}: 2021년 arXiv, \emph{Mobile Networks and Applications} 2022 게재
+
+
+\par\noindent \textbullet\enspace \textbf{저자}: Mohanad Sarhan, Siamak Layeghy, Marius Portmann (UQ)
+
+
+\par\noindent \textbullet\enspace \textbf{요약}: 개별 NIDS 데이터셋마다 feature 정의가 제각각이라 서로 다른 논문 결과를 공정 비교할 수 없다는 문제의식에서, NetFlow v9 기반 12-feature(basic)/\allowbreak{}43-feature (extended) 표준 셋을 제안하고 \texttt{NF-\allowbreak{}UNSW-\allowbreak{}NB15-\allowbreak{}v2}, \texttt{NF-\allowbreak{}BoT-\allowbreak{}I\allowbreak{}oT-\allowbreak{}v2}, \texttt{NF-\allowbreak{}ToN-\allowbreak{}I\allowbreak{}oT-\allowbreak{}v2}, \texttt{NF-\allowbreak{}CSE-\allowbreak{}C\allowbreak{}IC-\allowbreak{}IDS20\allowbreak{}18-\allowbreak{}v2} 및 이를 합친 \texttt{NF-\allowbreak{}UQ-\allowbreak{}NI\allowbreak{}DS-\allowbreak{}v2}를 공개. 43-feature 셋이 기존 proprietary feature set보다 분류 성능이 더 좋음을 보임. NF-v3는 이 표준안에 temporal feature를 얹은 버전이라, 이 논문이 이 프로젝트가 쓰는 스키마의 직접적 뿌리.
+
+
+\par\noindent \textbullet\enspace \textbf{사용 데이터}: NF-UNSW-NB15-v2, NF-BoT-IoT-v2, NF-ToN-IoT-v2, NF-CSE-CIC-IDS2018-v2, NF-UQ-NIDS-v2 (12-feature /\allowbreak{} 43-feature 두 버전)
+
+
+\par\noindent \textbullet\enspace \textbf{실험한 SOTA}: 별도 SOTA 모델 비교보다는 \textbf{Extra Trees classifier}를 주 벤치마크 모델로 두고, binary/\allowbreak{}multi-class, accuracy/\allowbreak{}AUC/\allowbreak{}F1/\allowbreak{}Detection Rate/\allowbreak{}False Alarm Rate 지표로 12-feature vs 43-feature 두 feature set을 비교하는 ablation 성격.
+
+
+\subsection{3. E-GraphSAGE (같은 데이터 계열에서 가장 많이 인용되는 GNN 베이스라인)}
+\par\noindent \textbullet\enspace \textbf{제목}: E-GraphSAGE: A Graph Neural Network based Intrusion Detection System for IoT
+
+
+\par\noindent \textbullet\enspace \textbf{arXiv}: 2103.16329
+
+
+\par\noindent \textbullet\enspace \textbf{연도/\allowbreak{}venue}: 2021년 arXiv, NOMS 2022 (IEEE/\allowbreak{}IFIP Network Operations and Management Symposium) 게재
+
+
+\par\noindent \textbullet\enspace \textbf{저자}: Wai Weng Lo, Siamak Layeghy, Mohanad Sarhan, Marcus Gallagher, Marius Portmann (UQ)
+
+
+\par\noindent \textbullet\enspace \textbf{요약}: edge feature(=\allowbreak{}flow feature)와 네트워크 토폴로지 구조를 동시에 활용하는 GraphSAGE 변형으로, flow 기반 NIDS에 GNN을 적용한 초기·대표 논문. 이후 NF-v2/\allowbreak{}v3 계열 데이터셋을 쓰는 후속 GNN NIDS 논문 대부분이 이 논문을 baseline으로 인용.
+
+
+\par\noindent \textbullet\enspace \textbf{사용 데이터}: BoT-IoT/\allowbreak{}NF-BoT-IoT, ToN-IoT/\allowbreak{}NF-ToN-IoT (원본 feature 버전 vs NetFlow 12-feature 버전을 나란히 비교; NF-UNSW-NB15은 관련 연구로만 언급, 본 실험엔 미포함)
+
+
+\par\noindent \textbullet\enspace \textbf{실험한 SOTA}: XGBoost, Extra Tree Classifier, K-Nearest Neighbors(KNN) — 그 외 decision tree/\allowbreak{}naive Bayes/\allowbreak{}random forest 앙상블, Deep Autoencoder+\allowbreak{}LSTM 계열도 비교.
+
+
+\subsection{4. Anomal-E (self-supervised GNN, E-GraphSAGE 계열 확장)}
+\par\noindent \textbullet\enspace \textbf{제목}: Anomal-E: A Self-Supervised Network Intrusion Detection System based on Graph Neural Networks
+
+
+\par\noindent \textbullet\enspace \textbf{arXiv}: 2207.06819
+
+
+\par\noindent \textbullet\enspace \textbf{연도/\allowbreak{}venue}: 2022년 arXiv, \emph{Knowledge-Based Systems} (Vol. 258) 2022 게재
+
+
+\par\noindent \textbullet\enspace \textbf{저자}: Evan Caville, Wai Weng Lo, Siamak Layeghy, Marius Portmann (UQ)
+
+
+\par\noindent \textbullet\enspace \textbf{요약}: 라벨 없이 edge feature +\allowbreak{} 그래프 구조를 self-supervised로 학습(Deep Graph Infomax 기반)한 뒤 anomaly detection에 활용하는 방법. 라벨 의존도를 낮춰 unseen attack에 대한 적응력을 높이려는 동기가 이 프로젝트의 open-set/\allowbreak{}OOD 문제의식과 맞닿음.
+
+
+\par\noindent \textbullet\enspace \textbf{사용 데이터}: NF-UNSW-NB15-v2 (약 239만 flow, attack 3.96\%), NF-CSE-CIC-IDS2018-v2 (약 1,889만 flow, attack 11.95\%)
+
+
+\par\noindent \textbullet\enspace \textbf{실험한 SOTA}: GraphSAGE(지도학습판), DGI(Deep Graph Infomax), Isolation Forest, PCA, raw-feature 베이스라인.
+
+
+\subsection{5. Energy-based Flow Classifier — Open-Set NIDS (이 프로젝트의 energy-OOD 설계와 가장}
+개념적으로 가까운 논문)
+
+\par\noindent \textbullet\enspace \textbf{제목}: A Novel Open Set Energy-based Flow Classifier for Network Intrusion Detection
+
+
+\par\noindent \textbullet\enspace \textbf{arXiv}: 2109.11224
+
+
+\par\noindent \textbullet\enspace \textbf{연도/\allowbreak{}venue}: 2021년 arXiv, \emph{Computers \& Security} 2025 게재
+
+
+\par\noindent \textbullet\enspace \textbf{저자}: Manuela M. C. Souza, Camila Pontes, Joao Gondim, Luis P. F. Garcia, Luiz DaSilva, Eduardo F. M. Cavalcante, Marcelo A. Marotta
+
+
+\par\noindent \textbullet\enspace \textbf{요약}: 원래 단일 클래스(정상 트래픽)만 학습하는 Energy-based Flow Classifier(EFC)를 다중 클래스 +\allowbreak{} open-set 인식이 가능하도록 확장. 학습 시 보지 못한 새 공격 유형을 단일 레이어 구조로 저비용에 탐지하면서, closed-set 다중분류 SOTA와도 비등한 성능을 낸다고 주장 — 이 프로젝트가 쓰는 \texttt{E =\allowbreak{}\allowbreak{} -\allowbreak{}T*l\allowbreak{}ogsumexp\allowbreak{}(logits/\allowbreak{}\allowbreak{}T)} energy 컨벤션 및 "known-class 분류 성능과 OOD 탐지 성능을 분리해서 본다"는 평가 철학과 정확히 같은 선행연구 라인.
+
+
+\par\noindent \textbullet\enspace \textbf{사용 데이터}: CICIDS2017 (CICFlowMeter 기반 flow, 80-feature; NF-v3와 스키마는 다르지만 이 프로젝트의 \texttt{s25\textasciitilde{}s30\_\allowbreak{}\allowbreak{}code\_\allowbreak{}\allowbreak{}ood\allowbreak{}\_\allowbreak{}\allowbreak{}*} 트랙이 쓰는 \texttt{cic2017\_\allowbreak{}\allowbreak{}chrono\_\allowbreak{}\allowbreak{}v\allowbreak{}2.\allowbreak{}pkl}와 같은 원천 데이터셋 계열)
+
+
+\par\noindent \textbullet\enspace \textbf{실험한 SOTA}: closed-set: Decision Tree, SVM, MLP. open-set 비교: Baseline (softmax 기반), \textbf{ODIN}, \textbf{OCN}(Open set Classification Network) — 이 셋이 open-set/\allowbreak{}OOD 인식 SOTA로 직접 비교됨.
+
+
+\subsection{6. GEAFL-IDS — 같은 NF 데이터 계열에서 클래스 불균형을 정면으로 다루는 최신 논문}
+\par\noindent \textbullet\enspace \textbf{제목}: Intrusion Detection Method based on Graph Edge Attention and Focal Loss
+
+
+\par\noindent \textbullet\enspace \textbf{arXiv}: 없음 (arXiv preprint 미확인, ACM 학회 논문집으로만 출판)
+
+
+\par\noindent \textbullet\enspace \textbf{연도/\allowbreak{}venue}: 2025년, \emph{Proceedings of the 2025 4th International Conference on Cryptography, Network Security and Communication Technology (ICCNSCT 2025)}, DOI: 10.1145/\allowbreak{}3723890.3723895
+
+
+\par\noindent \textbullet\enspace \textbf{요약}: flow 데이터를 그래프로 구성한 뒤 edge attention으로 edge(=\allowbreak{}flow) feature를 강조하고, focal loss로 소수 클래스(rare attack)에 대한 학습 가중치를 높이는 방식. 이 프로젝트의 "tail class F1을 올리는 구조"라는 목표와 방향이 같지만, 접근은 routing/\allowbreak{}expert가 아니라 loss reweighting +\allowbreak{} graph attention 쪽. \texttt{docs/\allowbreak{}\allowbreak{}his\allowbreak{}tory.\allowbreak{}pdf\allowbreak{}}가 정리한 이 프로젝트의 실패 모드 4번("XGBoost의 boosting이 이미 암묵적 MoE")과 대비해 볼 가치가 있음 — focal loss도 "hard/\allowbreak{}rare 샘플 재가중"이라는 점에서 같은 계열 아이디어.
+
+
+\par\noindent \textbullet\enspace \textbf{사용 데이터}: NF-BoT-IoT, NF-UNSW-NB15 (버전 명시 없음 — 발표 시점상 v2로 추정, 직접 확인 필요)
+
+
+\par\noindent \textbullet\enspace \textbf{실험한 SOTA}: GaussianNB, KNN, Decision Tree, AdaBoost, \textbf{Random Forest}, \textbf{CNN}, \textbf{E-GraphSAGE} 등 7개 비교 — 이 중 성격이 다른 3개를 뽑으면 Random Forest(classical ML) /\allowbreak{} CNN(plain DL) /\allowbreak{} E-GraphSAGE(GNN, 3번 항목과 동일 논문) 정도가 대표적.
+
+
+\subsection{요약 비교}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.12273\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22338\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20714\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22338\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22338\linewidth-2\tabcolsep\relax}}
+\toprule
+\# & 논문 & 연도/\allowbreak{}venue & NF 계열 데이터 & 이 프로젝트와의 접점 \\ \midrule
+\endfirsthead
+\# & 논문 & 연도/\allowbreak{}venue & NF 계열 데이터 & 이 프로젝트와의 접점 \\ \midrule
+\endhead
+{}1 & Temporal Analysis of NetFlow Datasets & 2025 /\allowbreak{} IEEE Access(예정) & NF3-* 4종 (원 논문) & 우리가 쓰는 원본 데이터의 출처 \\
+{}2 & Standard Feature Set for NIDS Datasets & 2021 /\allowbreak{} Mobile Netw Appl 2022 & NF-*-v2 4종 +\allowbreak{} NF-UQ-NIDS-v2 & NF-v3 스키마의 직접 선행 연구 \\
+{}3 & E-GraphSAGE & 2021 /\allowbreak{} NOMS 2022 & NF-BoT-IoT, NF-ToN-IoT & 이 계열 데이터에서 가장 흔한 GNN 베이스라인 \\
+{}4 & Anomal-E & 2022 /\allowbreak{} Knowledge-Based Systems & NF-UNSW-NB15-v2, NF-CSE-CIC-IDS2018-v2 & 라벨 최소화·unseen attack 적응 — open-set 문제의식 공유 \\
+{}5 & Open Set Energy-based Flow Classifier & 2021 /\allowbreak{} Computers \& Security 2025 & CICIDS2017 (NF-v3와 다른 스키마, 같은 CIC 계열) & energy 기반 open-set 설계가 이 프로젝트와 가장 유사 \\
+{}6 & GEAFL-IDS & 2025 /\allowbreak{} ACM ICCNSCT 2025 & NF-BoT-IoT, NF-UNSW-NB15 (버전 미확인) & class imbalance를 loss/\allowbreak{}attention으로 정면 대응 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{재확인이 필요한 부분 (M1: 문서보다 원문 확인 우선)}
+\par\noindent \textbullet\enspace 1번 논문(NF-v3 원 논문)의 정확한 feature/\allowbreak{}column 수(53 vs 57)는 arXiv HTML 요약에서 나온 값이라 원문 표로 직접 대조 안 함 — 이 프로젝트 \texttt{data/\allowbreak{}\allowbreak{}nfv\allowbreak{}3\_\allowbreak{}\allowbreak{}energy\allowbreak{}\_\allowbreak{}\allowbreak{}suite\_\allowbreak{}\allowbreak{}*\allowbreak{}.\allowbreak{}pkl}의 실제 column 수와 비교해 검증 필요.
+
+
+\par\noindent \textbullet\enspace 6번(GEAFL-IDS)은 arXiv 사본이 없어 ACM 페이지 검색 결과로만 요약함 — 데이터셋 버전(v2/\allowbreak{}v3 여부)과 baseline 표 원문은 ACM Digital Library 접속 후 재확인 권장.
+
+
+\par\noindent \textbullet\enspace 5번은 NF-v3와 feature 스키마 자체는 다르므로(CICFlowMeter 80-feature vs NetFlow 53/\allowbreak{}57-feature), "같은 데이터셋" 비교가 아니라 "같은 open-set/\allowbreak{}energy 방법론" 비교로만 인용할 것.
+
+
+
+
+\end{document}

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Render EXP56 comparisons and expert-quality diagnostics from frozen CSVs."""
 
+# HTML reporting was retired by the 2026-10-20 documentation reorganization.
+if __name__ == '__main__':
+    raise SystemExit('이 HTML 발행 명령은 폐기되었습니다. 결과를 검토한 뒤 scripts/common/lablog.py의 write_record로 한국어 LaTeX·PDF와 log.md를 갱신하세요. 기존 결과 계산 함수는 이력 참조용입니다.')
+
+
 # Repository layout bootstrap: works in the workspace and portable source snapshots.
 from pathlib import Path as _LayoutPath
 import sys as _layout_sys
@@ -139,7 +144,7 @@ def plots(data):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--results-root',type=Path,required=True)
-    parser.add_argument('--out-dir',type=Path,default=Path('docs/research/20260922'))
+    parser.add_argument('--out-dir',type=Path,default=Path('docs/lablog/evidence/20260922'))
     args=parser.parse_args();args.out_dir.mkdir(parents=True,exist_ok=True)
     data={}
     for ds,_ in DATASETS:
@@ -269,7 +274,7 @@ def main():
     (args.out_dir/'exp56_results_manifest.json').write_text(json.dumps({'results_root':str(args.results_root),'runs':{ds:data[ds]['meta'] for ds in data}},indent=2)+'\n')
     css=(ASSETS/'exp56_report.css').read_text();font_path=ASSETS/'report_typography.css';font_css=font_path.read_text() if font_path.exists() else ''
     page='<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CIC2018·ToN — Expert 역량 검증과 평가 설계 수정</title><style>'+css+'</style><style id="report-typography">'+font_css+'</style></head><body><main><header><p class="eyebrow">0918 연구 보고서 · 2026-09-22 평가 설계 수정 · EXP56</p><h1>Expert 역량을 검증하는 평가</h1><p class="lede">정답 없는 다섯 조건 비교, 점수 차이의 원인, 지표별 검증 목적과 생성 품질의 근거를 채울 추가 실험.</p></header>\n<!-- EXP56_RESULTS_START -->\n'+fragment+'<!-- EXP56_RESULTS_END -->\n</main></body></html>\n'
-    (ROOT/'lablog/html_report/scorer_verifier_target_0918.html').write_text(page)
+    (ROOT/'docs/lablog/reports/20260930.tex').write_text(page)
     print('Wrote revised shared results, 0918 report, and two SVG/PNG figures.')
 
 if __name__=='__main__':main()

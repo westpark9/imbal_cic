@@ -1,0 +1,394 @@
+% !TeX root = 20260427.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-04-27}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-04-27 · 실험 진행 보고서 — 0427}
+\label{report:20260427_0427}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\textbf{작성일}: 2026-04-28 \textbf{기간}: 2026-04-24 \textbf{프로젝트}: Imbalanced Multi-Class Classification with MoE (CIC-IDS /\allowbreak{} CIFAR benchmark)
+
+
+\medskip\hrule\medskip
+\subsection{1. 배경 및 목표}
+\subsubsection{문제 정의}
+네트워크 침입 탐지(IDS) 데이터셋(CIC-IDS2017/\allowbreak{}2018, UNSW-NB15)에서 \textbf{tail 클래스 F1을 단일 XGBoost 베이스라인보다 높이는 것}이 핵심 목표다. Imbalance Ratio(IR)가 1,000을 초과하는 tail 공격 클래스(Heartbleed: train 7개, Infiltration: train 22개 등)에서 XGBoost 베이스라인의 recall이 붕괴한다.
+
+\subsubsection{직전까지의 실패 요약}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.35569\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34959\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29472\linewidth-2\tabcolsep\relax}}
+\toprule
+스크립트 & 아이디어 & 결과 \\ \midrule
+\endfirsthead
+스크립트 & 아이디어 & 결과 \\ \midrule
+\endhead
+{}\texttt{cic\_\allowbreak{}\allowbreak{}6.\allowbreak{}py\allowbreak{}} & Taxonomy-aware MoE (TAILGUARD) & 베이스라인 대비 개선 없음 \\
+{}\texttt{cic\_\allowbreak{}\allowbreak{}xg\_\allowbreak{}\allowbreak{}1\allowbreak{}9.\allowbreak{}py} & XGBoost 라우터 +\allowbreak{} 전문가별 SMOTE & 베이스라인 대비 개선 없음 \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}fin\allowbreak{}al.\allowbreak{}py} & OOD 필터 +\allowbreak{} 역량 가중 앙상블 & 개선 없음 \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}chr\allowbreak{}ono.\allowbreak{}py} /\allowbreak{} \texttt{code\_\allowbreak{}\allowbreak{}fil\allowbreak{}e.\allowbreak{}py} & 시간/\allowbreak{}파일 기반 분할(leakage 방지) & 성능 하락 \\
+{}\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py} & FAR-MoE: CM 유도 전문가 +\allowbreak{} OOD 게이팅 & val 거의 완벽, test 개선 없음 \\
+\bottomrule
+\end{longtable}
+\endgroup
+핵심 실패 원인 네 가지:
+
+\par\noindent \textbullet\enspace \textbf{라우팅 오류가 불균형을 증폭}: tail 클래스가 드물어 라우터가 학습 못 함  \ensuremath{\rightarrow}  잘못된 전문가로 라우팅  \ensuremath{\rightarrow}  베이스라인보다 악화
+
+
+\par\noindent \textbullet\enspace \textbf{전문가 내 불균형 미해결}: 클래스를 전문가에 분배해도 각 전문가의 IR은 그대로
+
+
+\par\noindent \textbullet\enspace \textbf{혼동 행렬 leakage}: val 분포의 CM으로 설계한 전문가가 test 분포에 일반화 안 됨
+
+
+\par\noindent \textbullet\enspace \textbf{XGBoost의 내재적 MoE}: 부스팅이 이미 hard sample을 반복 가중  \ensuremath{\rightarrow}  명시적 라우팅이 추가 이득 없음
+
+
+
+\medskip\hrule\medskip
+\subsection{2. 이번 세션에서 수행한 작업 (2026-04-24)}
+\subsubsection{2.1 새로운 방향: Synthetic Benchmark로 전환}
+\textbf{핵심 가설}: CIC-IDS에서 MoE가 실패하는 것이 (a) \textbf{도메인 특화 데이터 아티팩트} 때문인지, 아니면 (b) \textbf{혼동행렬 기반 전문가 설계 자체가 근본적으로 취약}한 것인지 를 구분하기 위해, 잘 연구된 균형/\allowbreak{}불균형 benchmark(CIFAR-10/\allowbreak{}100)에서 동일한 구조를 테스트하는 방향으로 전환했다.
+
+두 가지 신규 스크립트가 구현되었다.
+
+
+\medskip\hrule\medskip
+\subsubsection{2.2 \texttt{code\_\allowbreak{}\allowbreak{}dce\allowbreak{}.\allowbreak{}py} — DCE-XGB (Dual-Balance Collaborative Experts)}
+\paragraph{구조}
+ICML 2025 DCE 논문 아이디어를 XGBoost로 구현:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+세 XGBoost 전문가 (동일 훈련 데이터, 다른 sample weighting):
+  head     : log-inverse frequency (다수 클래스 가중치 유지)
+  balanced : inverse frequency (표준 균형 가중)
+  tail     : power-law upweighting (희귀 클래스 공격적 가중)
+
+Dynamic Expert Selector (DES):
+  1. val에서 전문가별 per-class recall  →  affinity matrix 계산
+  2. 각 클래스를 최적 전문가에 배정
+  3. 클래스별 Gaussian pseudo-sample 생성 (centroid/covariance 기반)
+  4. LogisticRegression 라우터를 pseudo-sample로 훈련
+  5. 추론: α = router.predict_proba(x), 최종 확률 = Σ_e α_e · proba_e(x)
+
+\end{Verbatim}
+\paragraph{하이퍼파라미터}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.63158\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.36842\linewidth-2\tabcolsep\relax}}
+\toprule
+파라미터 & 값 \\ \midrule
+\endfirsthead
+파라미터 & 값 \\ \midrule
+\endhead
+{}n\_\allowbreak{}estimators & 200 \\
+{}max\_\allowbreak{}depth & 6 \\
+{}learning\_\allowbreak{}rate & 0.1 \\
+{}subsample /\allowbreak{} colsample\_\allowbreak{}bytree & 0.8 /\allowbreak{} 0.8 \\
+{}tail\_\allowbreak{}power & 2.0 \\
+{}n\_\allowbreak{}pseudo\_\allowbreak{}per\_\allowbreak{}class & 300 \\
+{}PCA 차원 (CIFAR-100) & 256 \\
+{}seed & 42 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\paragraph{실험 1: CIFAR-10LT (Long-Tail, IR=\allowbreak{}100)}
+단순 7-클래스 long-tail 설정 (class\_\allowbreak{}0 =\allowbreak{} 1000, class\_\allowbreak{}6 =\allowbreak{} 10개):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25833\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25833\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24167\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24167\linewidth-2\tabcolsep\relax}}
+\toprule
+지표 & Baseline & DCE-XGB & Δ \\ \midrule
+\endfirsthead
+지표 & Baseline & DCE-XGB & Δ \\ \midrule
+\endhead
+{}macro-F1 & 0.1718 & 0.1938 & \textbf{+\allowbreak{}0.0220} \\
+\bottomrule
+\end{longtable}
+\endgroup
+Per-class 결과:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21111\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19722\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19722\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19722\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19722\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 지지도 & f1(B) & f1(DCE) & Δ \\ \midrule
+\endfirsthead
+클래스 & 지지도 & f1(B) & f1(DCE) & Δ \\ \midrule
+\endhead
+{}class\_\allowbreak{}0 & 1000 & 0.3607 & 0.3999 & +\allowbreak{}0.0392 \\
+{}class\_\allowbreak{}1 & 1000 & 0.4459 & 0.4560 & +\allowbreak{}0.0101 \\
+{}class\_\allowbreak{}4 & 1000 & 0.1801 & 0.2552 & +\allowbreak{}0.0751 \\
+{}class\_\allowbreak{}5 & 1000 & 0.0946 & 0.1258 & +\allowbreak{}0.0312 \\
+{}class\_\allowbreak{}6 & 1000 & 0.0218 & 0.0502 & +\allowbreak{}0.0285 \\
+\bottomrule
+\end{longtable}
+\endgroup
+모든 클래스에서 개선. tail class(class\_\allowbreak{}6)도 +\allowbreak{}0.0285 향상.
+
+
+
+\paragraph{실험 2: CIFAR-100Tasks (CIFAR-100 superclass 구조, 20 tasks)}
+\textbf{데이터셋 구성}:
+
+\par\noindent \textbullet\enspace 20개 superclass 태스크 (각 superclass당 5개 fine-grained class)
+
+
+\par\noindent \textbullet\enspace 균형 태스크(IR=\allowbreak{}1): 10개 superclass (aquatic\_\allowbreak{}mammals, fish, 등)
+
+
+\par\noindent \textbullet\enspace IR=\allowbreak{}50 태스크: 5개 superclass (flowers, fruit\_\allowbreak{}and\_\allowbreak{}vegetables, 등)
+
+
+\par\noindent \textbullet\enspace IR=\allowbreak{}100 태스크: 5개 superclass (insects, people, household\_\allowbreak{}furniture, 등)
+
+
+\par\noindent \textbullet\enspace 전체 100개 클래스, train=\allowbreak{}26,088 /\allowbreak{} val=\allowbreak{}6,522 /\allowbreak{} test=\allowbreak{}10,000
+
+
+\textbf{결과} (최종 실행: \texttt{dce\_\allowbreak{}\allowbreak{}2026\allowbreak{}0424\_\allowbreak{}\allowbreak{}073\allowbreak{}622}):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29167\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24621\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}}
+\toprule
+지표 & Baseline & DCE-XGB & Δ \\ \midrule
+\endfirsthead
+지표 & Baseline & DCE-XGB & Δ \\ \midrule
+\endhead
+{}macro-F1 & 0.1459 & 0.1525 & \textbf{+\allowbreak{}0.0066} \\
+{}weighted-F1 & 0.1459 & 0.1525 & \textbf{+\allowbreak{}0.0066} \\
+\bottomrule
+\end{longtable}
+\endgroup
+주목할 클래스별 개선:
+
+\par\noindent \textbullet\enspace \texttt{turtle}: 0.0829  \ensuremath{\rightarrow}  0.1641 (+\allowbreak{}0.0812)
+
+
+\par\noindent \textbullet\enspace \texttt{televisi\allowbreak{}on}: 0.1818  \ensuremath{\rightarrow}  0.2544 (+\allowbreak{}0.0726)
+
+
+\par\noindent \textbullet\enspace \texttt{chimpanz\allowbreak{}ee}: 0.2719  \ensuremath{\rightarrow}  0.3269 (+\allowbreak{}0.0550)
+
+
+\par\noindent \textbullet\enspace \texttt{willow\_\allowbreak{}\allowbreak{}t\allowbreak{}ree}: 0.1533  \ensuremath{\rightarrow}  0.2079 (+\allowbreak{}0.0546)
+
+
+일부 클래스 하락:
+
+\par\noindent \textbullet\enspace \texttt{sunflowe\allowbreak{}r}: 0.1441  \ensuremath{\rightarrow}  0.0755 (−0.0687)
+
+
+\par\noindent \textbullet\enspace \texttt{possum}: 0.0855  \ensuremath{\rightarrow}  0.0265 (−0.0590)
+
+
+\par\noindent \textbullet\enspace \texttt{plate}: 0.4305  \ensuremath{\rightarrow}  0.3755 (−0.0549)
+
+
+\textbf{이전 실험 비교} (CIFAR-100Tasks 설정별):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16471\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32353\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17059\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14118\linewidth-2\tabcolsep\relax}}
+\toprule
+실험 & tasks 구성 & Baseline macro-F1 & DCE macro-F1 & Δ \\ \midrule
+\endfirsthead
+실험 & tasks 구성 & Baseline macro-F1 & DCE macro-F1 & Δ \\ \midrule
+\endhead
+{}\texttt{dce\_\allowbreak{}\allowbreak{}0729\allowbreak{}46} & 10 tasks (5 balanced, 2 IR=\allowbreak{}50, 3 IR=\allowbreak{}100) & 0.1514 & 0.1614 & +\allowbreak{}0.0099 \\
+{}\texttt{dce\_\allowbreak{}\allowbreak{}0736\allowbreak{}22} & 20 tasks (10 balanced, 5 IR=\allowbreak{}50, 5 IR=\allowbreak{}100) & 0.1459 & 0.1525 & +\allowbreak{}0.0066 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{라우터 affinity 패턴}: 대부분의 클래스에서 \texttt{balanced\allowbreak{}} 전문가가 최적으로 선택됨. 극도로 희귀한 클래스(train 4개 미만)는 recall=\allowbreak{}0 으로 DCE도 개선 불가.
+
+
+\medskip\hrule\medskip
+\subsubsection{2.3 \texttt{code\_\allowbreak{}\allowbreak{}3.\allowbreak{}p\allowbreak{}y} — ConfMat-MoE (CIFAR benchmark)}
+\paragraph{구조}
+\texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py}의 혼동행렬 기반 전문가 설계를 CIC-IDS가 아닌 \textbf{CIFAR-10/\allowbreak{}100}에 적용하여, 실패 원인이 도메인 아티팩트인지 설계 자체의 문제인지 검증:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+Phase 1 (PROBE): train 60%에서 XGBoost 훈련  →  val 20%에서 예측  →  정규화 혼동 행렬
+Phase 2 (CLUSTER): off-diagonal conf[i,j] > τ 인 클래스 쌍을 union-find로 클러스터링
+Phase 3 (EXPERT): K+1 XGBoost 전문가 훈련
+  - Anchor 전문가: 균일 가중
+  - ConfMat 전문가_k: 클러스터 k 내 클래스에 w_focus(=5) 가중
+Phase 4 (ROUTER): 각 전문가에 Logistic Regression 역량 모델 훈련 (val에서 정답 여부 레이블)
+추론: final_proba = Σ_e α_e(x) · proba_e(x)
+
+\end{Verbatim}
+\paragraph{결과 — CIFAR-10 (균형 데이터셋, 10 클래스)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24265\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24265\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.28676\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22794\linewidth-2\tabcolsep\relax}}
+\toprule
+지표 & Baseline & ConfMat-MoE & Δ \\ \midrule
+\endfirsthead
+지표 & Baseline & ConfMat-MoE & Δ \\ \midrule
+\endhead
+{}macro-F1 & 0.4992 & 0.5066 & \textbf{+\allowbreak{}0.0074} \\
+\bottomrule
+\end{longtable}
+\endgroup
+Phase 1에서 10개 클래스가 \textbf{단일 클러스터}로 묶임 (모든 클래스가 서로 혼동됨). 따라서 ConfMat 전문가는 사실상 모든 클래스에 w\_\allowbreak{}focus를 부여하는 전문가가 됨.
+
+Per-class 결과:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.26293\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24569\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24569\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24569\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & f1(B) & f1(MoE) & Δ \\ \midrule
+\endfirsthead
+클래스 & f1(B) & f1(MoE) & Δ \\ \midrule
+\endhead
+{}airplane & 0.5681 & 0.5812 & +\allowbreak{}0.0131 \\
+{}cat & 0.3476 & 0.3714 & +\allowbreak{}0.0237 \\
+{}dog & 0.4022 & 0.4152 & +\allowbreak{}0.0130 \\
+{}truck & 0.5604 & 0.5616 & +\allowbreak{}0.0011 \\
+\bottomrule
+\end{longtable}
+\endgroup
+모든 클래스에서 소폭 개선.
+
+\paragraph{결과 — CIFAR-100 (100 클래스)}
+Phase 1에서 \textbf{5개 혼동 클러스터} 발견:
+
+\par\noindent \textbullet\enspace Cluster 0: 11개 클래스 (야외/\allowbreak{}자연 물체 계열)
+
+
+\par\noindent \textbullet\enspace Cluster 1: 62개 클래스 (최대 규모, 대부분 동물/\allowbreak{}사물)
+
+
+\par\noindent \textbullet\enspace Cluster 2: 3개 클래스
+
+
+\par\noindent \textbullet\enspace Cluster 3, 4: 각 2개 클래스
+
+
+실험이 훈련 중 타임아웃 또는 인터럽트로 최종 test 결과가 로그에 기록되지 않음.
+
+
+
+
+\medskip\hrule\medskip
+\subsection{3. 핵심 관찰 및 시사점}
+\subsubsection{3.1 DCE-XGB: 첫 번째 양의 결과}
+\par\noindent \textbullet\enspace \textbf{CIFAR-10LT에서 macro-F1 +\allowbreak{}0.0220}: 모든 클래스에서 개선. tail 클래스(class\_\allowbreak{}6, IR=\allowbreak{}100)도 개선.
+
+
+\par\noindent \textbullet\enspace \textbf{CIFAR-100Tasks에서 macro-F1 +\allowbreak{}0.0066}: 소폭 개선. IR=\allowbreak{}100 tail 클래스 중 일부는 크게 개선(turtle: +\allowbreak{}0.0812), 일부는 하락.
+
+
+\par\noindent \textbullet\enspace \textbf{CIC-IDS 대비 성공 이유}: CIFAR은 각 클래스당 test sample이 충분(각 100개)하고, 분포 이동이 없는 i.i.d. 환경. CIC-IDS처럼 시간적 leakage나 file-level 분포 이동이 없음.
+
+
+\subsubsection{3.2 ConfMat-MoE: CIFAR-10에서 소폭 개선}
+\par\noindent \textbullet\enspace CIFAR-10에서 +\allowbreak{}0.0074 개선은, \texttt{code\_\allowbreak{}\allowbreak{}mat\allowbreak{}.\allowbreak{}py}의 실패가 \textbf{CM leakage +\allowbreak{} CIC-IDS 분포 이동} 때문이었음을 시사.
+
+
+\par\noindent \textbullet\enspace 단, CIFAR-10에서 모든 클래스가 하나의 클러스터로 묶인 것은 clustering threshold τ=\allowbreak{}0.05가 너무 낮다는 의미. 전문가가 실질적으로 분화되지 않음.
+
+
+\subsubsection{3.3 DCE affinity 패턴 — \texttt{balanced\allowbreak{}} 전문가의 지배}
+CIFAR-100Tasks에서 대부분의 클래스가 \texttt{balanced\allowbreak{}} 전문가를 최적으로 선택. 이는:
+
+\par\noindent \textbullet\enspace \texttt{tail} 전문가의 power-law 가중이 지나치게 희귀 클래스에 집중되어 일반 클래스의 분류 품질을 희생시키는 trade-off가 있음을 시사.
+
+
+\par\noindent \textbullet\enspace 혹은 CIFAR 특성상 IR이 CIC-IDS만큼 극단적이지 않아(max IR=\allowbreak{}100 vs CIC IR=\allowbreak{}1000+\allowbreak{}) \texttt{tail} 전문가의 이점이 제한적임.
+
+
+
+\medskip\hrule\medskip
+\subsection{4. 실험 설정 요약}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.32778\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.67222\linewidth-2\tabcolsep\relax}}
+\toprule
+설정 & 값 \\ \midrule
+\endfirsthead
+설정 & 값 \\ \midrule
+\endhead
+{}기반 학습기 & XGBoost (multi:softprob, n\_\allowbreak{}estimators=\allowbreak{}200, max\_\allowbreak{}depth=\allowbreak{}6) \\
+{}데이터 분할 & Stratified 80/\allowbreak{}20 (CIFAR: train/\allowbreak{}val/\allowbreak{}test =\allowbreak{} 60/\allowbreak{}20/\allowbreak{}20) \\
+{}PCA & CIFAR-10: 128차원 (설명력 91.6\%), CIFAR-100: 256차원 (설명력 96.0\%) \\
+{}라우터 & LogisticRegression (pseudo-sample 기반, C=\allowbreak{}1.0) \\
+{}OOD 모델 & LedoitWolf 공분산  \ensuremath{\rightarrow}  Mahalanobis 거리 \\
+{}GPU & CUDA (XGBoost tree\_\allowbreak{}method=\allowbreak{}hist, device=\allowbreak{}cuda) \\
+{}seed & 42 \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\medskip\hrule\medskip
+\subsection{5. 다음 방향 (Open Questions)}
+\par\noindent \textbullet\enspace \textbf{CIC-IDS2017에 DCE-XGB 적용}: CIFAR에서 긍정적 결과를 얻었으므로, CIC-IDS2017에서 DCE-XGB를 직접 실행. 단, \texttt{subsampl\allowbreak{}e\_\allowbreak{}\allowbreak{}train} 파라미터로 500,000개 이하로 서브샘플링 필요.
+
+
+\par\noindent \textbullet\enspace \textbf{CIFAR-100 ConfMat-MoE 완료}: code\_\allowbreak{}3.py의 CIFAR-100 실험이 중단됨. 완료하여 혼동 클러스터 5개 전문가 설계의 test F1 확인 필요.
+
+
+\par\noindent \textbullet\enspace \textbf{tail\_\allowbreak{}power 튜닝}: DCE에서 \texttt{balanced\allowbreak{}} 전문가가 대부분의 클래스를 가져가는 현상  \ensuremath{\rightarrow}  \texttt{tail\_\allowbreak{}\allowbreak{}pow\allowbreak{}er}를 낮추거나 가중치 clip 상한을 조정하여 전문가 분화를 촉진.
+
+
+\par\noindent \textbullet\enspace \textbf{비대칭 앙상블}: IR=\allowbreak{}100 이상 클래스에는 tail 전문가의 출력을 더 많이 반영하는 클래스별 혼합 가중 전략 검토.
+
+
+
+\medskip\hrule\medskip
+\subsection{6. 결과 파일 위치}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.51812\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.48188\linewidth-2\tabcolsep\relax}}
+\toprule
+실험 & 결과 경로 \\ \midrule
+\endfirsthead
+실험 & 결과 경로 \\ \midrule
+\endhead
+{}DCE-XGB CIFAR-10LT +\allowbreak{} 초기 시도 & \texttt{results/\allowbreak{}\allowbreak{}dce\_\allowbreak{}\allowbreak{}2026\allowbreak{}0424\_\allowbreak{}\allowbreak{}070\allowbreak{}539/\allowbreak{}\allowbreak{}} \\
+{}DCE-XGB CIFAR-100Tasks (10 tasks) & \texttt{results/\allowbreak{}\allowbreak{}dce\_\allowbreak{}\allowbreak{}2026\allowbreak{}0424\_\allowbreak{}\allowbreak{}072\allowbreak{}946/\allowbreak{}\allowbreak{}} \\
+{}DCE-XGB CIFAR-100Tasks (20 tasks, 최종) & \texttt{results/\allowbreak{}\allowbreak{}dce\_\allowbreak{}\allowbreak{}2026\allowbreak{}0424\_\allowbreak{}\allowbreak{}073\allowbreak{}622/\allowbreak{}\allowbreak{}} \\
+{}ConfMat-MoE CIFAR-10 +\allowbreak{} CIFAR-100 & \texttt{results/\allowbreak{}\allowbreak{}code3\_\allowbreak{}\allowbreak{}20\allowbreak{}260424\_\allowbreak{}\allowbreak{}0\allowbreak{}94207/\allowbreak{}\allowbreak{}} \\
+\bottomrule
+\end{longtable}
+\endgroup
+주요 산출물:
+
+\par\noindent \textbullet\enspace \texttt{cifar100\allowbreak{}tasks\_\allowbreak{}\allowbreak{}ba\allowbreak{}seline\_\allowbreak{}\allowbreak{}v\allowbreak{}s\_\allowbreak{}\allowbreak{}dce.\allowbreak{}cs\allowbreak{}v} — 클래스별 Baseline vs DCE 비교
+
+
+\par\noindent \textbullet\enspace \texttt{cifar100\allowbreak{}tasks\_\allowbreak{}\allowbreak{}ba\allowbreak{}seline\_\allowbreak{}\allowbreak{}v\allowbreak{}s\_\allowbreak{}\allowbreak{}dce.\allowbreak{}pn\allowbreak{}g} — 컬러 비교 테이블 PNG
+
+
+\par\noindent \textbullet\enspace \texttt{cifar100\allowbreak{}tasks\_\allowbreak{}\allowbreak{}ex\allowbreak{}pert\_\allowbreak{}\allowbreak{}aff\allowbreak{}inity.\allowbreak{}cs\allowbreak{}v} — 전문가 affinity 행렬
+
+
+\par\noindent \textbullet\enspace \texttt{CIFAR10\_\allowbreak{}\allowbreak{}comparis\allowbreak{}on.\allowbreak{}csv} /\allowbreak{} \texttt{CIFAR10\_\allowbreak{}\allowbreak{}comparis\allowbreak{}on.\allowbreak{}png} — CIFAR-10 ConfMat-MoE 결과
+
+
+\par\noindent \textbullet\enspace \texttt{experime\allowbreak{}nt.\allowbreak{}log} — 전체 실험 로그
+
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

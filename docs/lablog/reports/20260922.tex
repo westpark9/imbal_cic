@@ -1,0 +1,994 @@
+% !TeX root = 20260922.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-09-22}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-09-22 · EXP56 수정: 정답 없는 다섯 조건과 expert 역량 검증}
+\label{report:20260922_exp56_five_condition_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\subsection{1. 비교 기준과 평가 설계}
+Expert가 입력을 보고 클래스를 구분하는지 평가하려면, 정답은 채점에만 사용하고 expert 선택이나 오답 복구에 제공하지 않아야 한다. 아래 다섯 조건은 같은 bank와 test를 사용하며, 이전 2번의 정답 클래스 배정을 정답을 쓰지 않는 고정 영역 배정으로 교체했다.
+
+| 조건 | 예측 규칙 | 무엇을 확인하는가 |
+
+| --- | --- | --- |
+
+| 1. Global | 모든 행에 global의 원래 예측 | 공통 기준선 |
+
+| 2. 고정 영역 배정 | 특징 표현·global 확률의 최근접 centroid로 expert를 배정하고 원래 답을 사용 | 정해진 입력 영역과 expert의 결합 성능; S/\allowbreak{}V 없음 |
+
+| 3. 각 expert 전체 test | 각 expert를 전체 test의 모든 클래스에 독립 적용 | 해당 클래스를 맞히는 능력과 다른 클래스를 오인하는 정도 |
+
+| 4. Scorer-only | 기존 S+\allowbreak{}V의 scorer 후보·호출 조건 유지, verifier만 제거 | 동일 호출 조건의 scorer-only 결과 |
+
+| 5. Scorer +\allowbreak{} verifier | 기존 scorer·호출 조건·verifier 사용 | 제안 모델의 최종 성능 |
+
+진단은 세 질문으로 나눈다. ① Global보다 오탐을 억제하면서 더 잘 구분하는가? ② 사전에 정한 입력 영역에서 global·다른 expert·상수 예측보다 나은가? ③ 그 차이가 context 생성 방식의 효과이며 독립 평가에서도 재현되는가? 각 자료가 답하는 질문과 추가 대조를 §4–6에 연결한다.
+
+생성 조건: 1 \ensuremath{\leq} K < C. K는 global을 제외한 expert 수, C는 benign을 포함한 모델 클래스 수다. 생성 코드에서 K\ensuremath{\geq}C 후보를 제외하도록 적용했다. 정답 클래스 배정의 문제는 K를 줄이는 것만으로 해결되지 않으므로 그 배정 규칙도 주 평가에서 제거했다. 고정 영역 배정은 관측 가능한 규칙의 baseline이며 oracle이나 성능 상한으로 부르지 않는다.
+
+현재 수치는 기존 bank를 이용한 재진단이다. CIC K=\allowbreak{}8·C=\allowbreak{}7은 새 제약을 충족하지 않으므로 새 설계의 결과로 주장하지 않는다. ToN K=\allowbreak{}7·C=\allowbreak{}10은 개수 조건을 충족한다. 이번에 bank 재학습은 하지 않았다.
+
+\subsection{2. 클래스별 점수 차이}
+\subsubsection{CIC infiltration: 이전 정답 배정에서만 F1 0.9140이 나온 이유}
+| 예측 규칙 | TP | FP | FN | Precision | Recall | F1 |
+
+| --- | --- | --- | --- | --- | --- | --- |
+
+| Global | 2,733 | 3,948 | 6,009 | 0.4091 | 0.3126 | 0.3544 |
+
+| e6 전체 test | 7,556 | 806,387 | 1,186 | 0.0093 | 0.8643 | 0.0184 |
+
+| 제외한 정답 클래스 배정 | 7,556 | 236 | 1,186 | 0.9697 | 0.8643 | 0.9140 |
+
+정답 배정은 실제 infiltration 행만 e6에 주고 다른 클래스는 다른 예측기에 보낸다. 그래서 TP 7,556과 FN 1,186은 e6 그대로인데, e6 전체 적용에서 생기던 FP 806,387 대신 선택된 다른 예측기의 FP 236만 남는다. F1 =\allowbreak{} 2×7,556 /\allowbreak{} (2×7,556 +\allowbreak{} 236 +\allowbreak{} 1,186) =\allowbreak{} 0.9140이다. 정답을 아는 배정 규칙이 음성을 걸러준 결과이며 e6의 분류 성능이 0.9140이라는 뜻이 아니다. 이 이유로 해당 값을 주 비교에서 제거했다.
+
+\subsubsection{ToN scanning: 개별 expert보다 S+\allowbreak{}V의 F1이 높은 이유}
+| 예측 규칙 | TP | FP | FN | Precision | Recall | F1 |
+
+| --- | --- | --- | --- | --- | --- | --- |
+
+| Global | 452 | 50 | 5,577 | 0.9004 | 0.0750 | 0.1384 |
+
+| e2 전체 test | 5,439 | 54,321 | 590 | 0.0910 | 0.9021 | 0.1653 |
+
+| e4 전체 test: 개별 expert 최고 F1 | 4,240 | 7,715 | 1,789 | 0.3547 | 0.7033 | 0.4715 |
+
+| S-only | 4,270 | 287 | 1,759 | 0.9370 | 0.7082 | 0.8067 |
+
+| S+\allowbreak{}V | 4,245 | 172 | 1,784 | 0.9611 | 0.7041 | 0.8128 |
+
+S+\allowbreak{}V는 expert 하나를 모든 행에 적용하지 않는다. 입력에 따라 expert를 선택하고 호출·승인 조건을 통과한 답만 사용한다. Scanning TP 4,245개를 확보하면서 FP를 172개로 제한하므로 F1 =\allowbreak{} 2×4,245 /\allowbreak{} (2×4,245 +\allowbreak{} 172 +\allowbreak{} 1,784) =\allowbreak{} 0.8128이다. 전체 test에 e4를 적용한 경우와 TP는 비슷하지만 FP는 7,715개다. 따라서 합성 정책의 F1은 각 expert 전면 적용 F1의 최댓값보다 높을 수 있다.
+
+실제 예측 출처도 확인했다. S+\allowbreak{}V scanning의 TP는 global 452개 +\allowbreak{} 선택된 expert들 3,793개이며, FP는 global 50개 +\allowbreak{} expert들 122개다. 이 예측을 구성할 때 test 정답은 사용하지 않았고, 정답 배정의 음성 제거와는 평가 규칙이 다르다.
+
+| 예측 출처 | TP | FP |
+
+| --- | --- | --- |
+
+| global | 452 | 50 |
+
+| expert1 | 436 | 5 |
+
+| expert2 | 2,852 | 105 |
+
+| expert3 | 8 | 5 |
+
+| expert4 | 156 | 6 |
+
+| expert5 | 194 | 1 |
+
+| expert6 | 71 | 0 |
+
+| expert7 | 76 | 0 |
+
+\subsection{3. 수정된 다섯 조건의 성능}
+2번은 정답을 쓰지 않는 고정 영역 배정으로 재계산했다. 1·3·4·5번은 기존 예측·점수와 일치한다. 굵은 값은 다섯 조건의 최고값이며 소수 넷째 자리 표시가 같으면 함께 강조한다. 3번은 K개 독립 실행의 최소–최대이고, 괄호는 최대값 expert다.
+
+| 데이터 | 1. Global | 2. 고정 영역 배정 | 3. 각 expert 전체 test | 4. Scorer-only | 5. Scorer +\allowbreak{} verifier |
+
+| --- | --- | --- | --- | --- | --- |
+
+| CIC-IDS2018 | 0.8107 | 0.7477 | 0.7001–0.7946 (e2) | 0.8107 | 0.8107 |
+
+| ToN-IoT | 0.6837 | 0.6620 | 0.6205–0.6859 (e7) | 0.7549 | 0.7555 |
+
+\subsubsection{CIC-IDS2018 — 클래스별 F1}
+| 클래스 | Test 수 | 1. Global | 2. 고정 영역 | 3. Expert 범위 | 4. S-only | 5. S+\allowbreak{}V |
+
+| --- | --- | --- | --- | --- | --- | --- |
+
+| benign | 2,652,203 | 0.9978 | 0.9838 | 0.8199–0.9975 (e2) | 0.9978 | 0.9978 |
+
+| ddos | 262,680 | 0.9991 | 0.9937 | 0.9919–1.0000 (e3) | 0.9991 | 0.9991 |
+
+| bot | 41,542 | 0.9982 | 0.9977 | 0.9934–0.9978 (e2) | 0.9982 | 0.9982 |
+
+| dos | 39,483 | 0.9920 | 0.9920 | 0.9846–0.9923 (e7) | 0.9920 | 0.9920 |
+
+| brute\_\allowbreak{}force | 37,696 | 0.9997 | 0.9997 | 0.9997–0.9997 (e1) | 0.9997 | 0.9997 |
+
+| infiltration | 8,742 | 0.3544 | 0.0862 | 0.0184–0.2209 (e2) | 0.3544 | 0.3544 |
+
+| web\_\allowbreak{}attacks | 127 | 0.3333 | 0.1808 | 0.0152–0.3622 (e2) | 0.3333 | 0.3333 |
+
+| 클래스 | Test 수 | 1. G | 2. 고정 영역 | 3. e1 | 3. e2 | 3. e3 | 3. e4 | 3. e5 | 3. e6 | 3. e7 | 3. e8 | 4. S | 5. S+\allowbreak{}V |
+
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+| benign | 2,652,203 | 0.9978 | 0.9838 | 0.8948 | 0.9975 | 0.9042 | 0.9027 | 0.8954 | 0.8199 | 0.8925 | 0.8962 | 0.9978 | 0.9978 |
+
+| ddos | 262,680 | 0.9991 | 0.9937 | 0.9996 | 0.9919 | 1.0000 | 1.0000 | 0.9983 | 1.0000 | 0.9998 | 1.0000 | 0.9991 | 0.9991 |
+
+| bot | 41,542 | 0.9982 | 0.9977 | 0.9934 | 0.9978 | 0.9978 | 0.9974 | 0.9973 | 0.9974 | 0.9973 | 0.9973 | 0.9982 | 0.9982 |
+
+| dos | 39,483 | 0.9920 | 0.9920 | 0.9846 | 0.9921 | 0.9919 | 0.9913 | 0.9887 | 0.9903 | 0.9923 | 0.9920 | 0.9920 | 0.9920 |
+
+| brute\_\allowbreak{}force | 37,696 | 0.9997 | 0.9997 | 0.9997 | 0.9997 | 0.9997 | 0.9997 | 0.9997 | 0.9997 | 0.9997 | 0.9997 | 0.9997 | 0.9997 |
+
+| infiltration | 8,742 | 0.3544 | 0.0862 | 0.0270 | 0.2209 | 0.0262 | 0.0261 | 0.0271 | 0.0184 | 0.0235 | 0.0256 | 0.3544 | 0.3544 |
+
+| web\_\allowbreak{}attacks | 127 | 0.3333 | 0.1808 | 0.0152 | 0.3622 | 0.0715 | 0.0695 | 0.0419 | 0.0749 | 0.0536 | 0.1854 | 0.3333 | 0.3333 |
+
+\subsubsection{ToN-IoT — 클래스별 F1}
+| 클래스 | Test 수 | 1. Global | 2. 고정 영역 | 3. Expert 범위 | 4. S-only | 5. S+\allowbreak{}V |
+
+| --- | --- | --- | --- | --- | --- | --- |
+
+| benign | 1,474,302 | 0.9119 | 0.8913 | 0.8250–0.8932 (e6) | 0.9199 | 0.9200 |
+
+| xss | 343,854 | 0.8070 | 0.8574 | 0.7309–0.8616 (e5) | 0.8372 | 0.8374 |
+
+| password | 210,951 | 0.8909 | 0.8921 | 0.8835–0.8922 (e2) | 0.8909 | 0.8909 |
+
+| ddos | 103,338 | 0.9687 | 0.9653 | 0.9626–0.9746 (e4) | 0.9727 | 0.9727 |
+
+| injection | 68,891 | 0.9315 | 0.9027 | 0.3883–0.9539 (e7) | 0.9321 | 0.9321 |
+
+| backdoor | 40,030 | 0.9987 | 0.9985 | 0.9973–0.9989 (e7) | 0.9988 | 0.9988 |
+
+| dos | 22,458 | 0.9831 | 0.7312 | 0.4594–0.9766 (e7) | 0.9839 | 0.9832 |
+
+| scanning | 6,029 | 0.1384 | 0.3062 | 0.1426–0.4715 (e4) | 0.8067 | 0.8128 |
+
+| mitm | 1,161 | 0.0674 | 0.0432 | 0.0282–0.0614 (e3) | 0.0673 | 0.0674 |
+
+| ransomware | 709 | 0.1397 | 0.0319 | 0.0305–0.1237 (e2) | 0.1396 | 0.1397 |
+
+| 클래스 | Test 수 | 1. G | 2. 고정 영역 | 3. e1 | 3. e2 | 3. e3 | 3. e4 | 3. e5 | 3. e6 | 3. e7 | 4. S | 5. S+\allowbreak{}V |
+
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+| benign | 1,474,302 | 0.9119 | 0.8913 | 0.8878 | 0.8856 | 0.8912 | 0.8250 | 0.8901 | 0.8932 | 0.8344 | 0.9199 | 0.9200 |
+
+| xss | 343,854 | 0.8070 | 0.8574 | 0.8603 | 0.8448 | 0.8358 | 0.8175 | 0.8616 | 0.8528 | 0.7309 | 0.8372 | 0.8374 |
+
+| password | 210,951 | 0.8909 | 0.8921 | 0.8835 | 0.8922 | 0.8920 | 0.8835 | 0.8921 | 0.8921 | 0.8897 | 0.8909 | 0.8909 |
+
+| ddos | 103,338 | 0.9687 | 0.9653 | 0.9626 | 0.9697 | 0.9648 | 0.9746 | 0.9656 | 0.9689 | 0.9644 | 0.9727 | 0.9727 |
+
+| injection | 68,891 | 0.9315 | 0.9027 | 0.8896 | 0.8520 | 0.8467 | 0.3883 | 0.8473 | 0.9140 | 0.9539 | 0.9321 | 0.9321 |
+
+| backdoor | 40,030 | 0.9987 | 0.9985 | 0.9973 | 0.9979 | 0.9988 | 0.9974 | 0.9984 | 0.9983 | 0.9989 | 0.9988 | 0.9988 |
+
+| dos | 22,458 | 0.9831 | 0.7312 | 0.9496 | 0.9709 | 0.4594 | 0.7779 | 0.7576 | 0.8835 | 0.9766 | 0.9839 | 0.9832 |
+
+| scanning | 6,029 | 0.1384 | 0.3062 | 0.1430 | 0.1653 | 0.1719 | 0.4715 | 0.4447 | 0.1426 | 0.4467 | 0.8067 | 0.8128 |
+
+| mitm | 1,161 | 0.0674 | 0.0432 | 0.0319 | 0.0282 | 0.0614 | 0.0385 | 0.0383 | 0.0345 | 0.0331 | 0.0673 | 0.0674 |
+
+| ransomware | 709 | 0.1397 | 0.0319 | 0.0906 | 0.1237 | 0.0965 | 0.0310 | 0.0305 | 0.1232 | 0.0308 | 0.1396 | 0.1397 |
+
+\subsection{4. 어떤 자료가 expert의 어떤 역량을 검증하는가?}
+핵심은 그 클래스 이름을 많이 출력하는가가 아니라 그 클래스인 샘플과 아닌 샘플을 구분하는가다. 아래 자료는 동일한 성능을 중복 나열한 것이 아니라 서로 다른 실패 원인을 구분하는 검사다.
+
+| 자료 | 검증하려는 질문 | 좋은 결과의 의미 /\allowbreak{} 해석 한계 |
+
+| --- | --- | --- |
+
+| 전체 test의 precision·recall·F1·FP | 원래 예측 규칙으로 양성과 음성을 구분하는가? | Recall과 precision이 함께 좋아야 한다. 전역 macro-F1만으로 특화 영역의 능력을 판정하지 않는다. |
+
+| AP (average precision) | 양성에 음성보다 높은 점수를 부여하는가? | Precision–recall 전반의 순위 성능. 특정 FPR을 고정한 지표는 아니다. 같은 클래스·같은 test에서 G와 비교한다. |
+
+| R@FPR\ensuremath{\leq}0.1\% | 음성 1,000개당 최대 1개 오탐 수준에서도 양성을 얼마나 찾는가? | 동일 오탐 한도에서의 식별력 비교. 여기서는 test ROC의 기술적 요약이며 배포 임계값을 정한 결과가 아니다. |
+
+| Val에서 고정한 임계값의 test recall·FPR | 다음 데이터에서도 정한 오탐 수준과 탐지율이 유지되는가? | 임계값 전이·안정성 검사. AP가 높아도 test FPR이 크게 벗어나면 그 운영점을 바로 쓸 근거는 없다. |
+
+| 관측 가능한 영역 내 비교 | 미리 정한 입력 영역에 해당 expert를 두는 것이 적절한가? | 영역과 expert의 적합성 검사. 단일 클래스 영역의 높은 accuracy는 구분 능력을 증명하지 못하므로 상수 대조·영역 macro-F1을 함께 본다. |
+
+AP와 R@0.1\%는 모두 ①의 식별력 진단에 속하지만 역할이 다르다. AP는 임계값 전반의 precision–recall 관계이고, R@0.1\%가 명시적으로 동일 FPR 한도를 고정한다. 모든 샘플에 같은 점수를 주면 AP는 양성 비율 수준이고, FPR 0.1\%에서는 전부 양성이라고 할 수 없다. 0.1\%는 이번 비교에 사용한 진단 기준이며 실제 허용 오탐률을 확정한 값은 아니다. One-vs-rest 점수로 계산한 AP·R@0.1\%와 원래 다중 클래스 argmax의 F1은 서로 다른 평가다.
+
+\subsubsection{CIC-IDS2018 — 양성·음성 구분 능력}
+| Expert | 주로 포함된 클래스 | G AP | Expert AP | 타 expert 최고 AP | G R@0.1\% | Expert R@0.1\% | 타 expert 최고 R | 읽는 법 |
+
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+| e1 | bot | 0.9974 | 0.9981 | 0.9996 | 0.9971 | 0.9971 | 0.9971 | 지표 혼재 /\allowbreak{} 이득 제한 |
+
+| e2 | benign | 0.9996 | 0.9990 | 0.9996 | 0.6286 | 0.3605 | 0.6613 | G 대비 우위 미확인 |
+
+| e3 | brute\_\allowbreak{}force | 1.0000 | 0.9999 | 1.0000 | 1.0000 | 0.9996 | 1.0000 | G 대비 우위 미확인 |
+
+| e4 | dos | 0.9909 | 0.9995 | 0.9999 | 0.9849 | 0.9973 | 1.0000 | G 개선 · 타 expert도 유효 |
+
+| e5 | brute\_\allowbreak{}force | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 지표 혼재 /\allowbreak{} 이득 제한 |
+
+| e6 | infiltration | 0.2178 | 0.0944 | 0.1671 | 0.3007 | 0.0991 | 0.1374 | G 대비 우위 미확인 |
+
+| e7 | ddos | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 지표 혼재 /\allowbreak{} 이득 제한 |
+
+| e8 | benign | 0.9996 | 0.9993 | 0.9996 | 0.6286 | 0.4783 | 0.6613 | G 대비 우위 미확인 |
+
+“주로 포함된 클래스”는 context 특화 block의 최다 클래스다. 실제 정답 배정에 사용하지 않는다. 타 expert 최고값은 비교용 요약이며 해당 expert를 test에서 선택한 정책의 점수가 아니다.
+
+특정 클래스 recall이 높을 때 precision과 FP를 함께 확인한다. Precision이 낮고 FP가 많으면 현재 argmax 규칙이 그 클래스를 과잉 출력하는 것이다. 이것만으로 점수 순위까지 나쁘다고 단정하지 않고 위 AP·R@0.1\%와 대조한다.
+
+| Expert | 클래스 | 전면 macro-F1 | Precision | Recall | F1 | 다른 클래스에서 온 FP |
+
+| --- | --- | --- | --- | --- | --- | --- |
+
+| e1 | bot | 0.7020 | 0.9902 | 0.9967 | 0.9934 | 411 |
+
+| e2 | benign | 0.7946 | 0.9953 | 0.9998 | 0.9975 | 12,576 |
+
+| e3 | brute\_\allowbreak{}force | 0.7130 | 1.0000 | 0.9995 | 0.9997 | 0 |
+
+| e4 | dos | 0.7124 | 0.9983 | 0.9845 | 0.9913 | 68 |
+
+| e5 | brute\_\allowbreak{}force | 0.7069 | 1.0000 | 0.9995 | 0.9997 | 0 |
+
+| e6 | infiltration | 0.7001 | 0.0093 | 0.8643 | 0.0184 | 806,387 |
+
+| e7 | ddos | 0.7084 | 1.0000 | 0.9996 | 0.9998 | 5 |
+
+| e8 | benign | 0.7280 | 0.9986 | 0.8129 | 0.8962 | 3,118 |
+
+Val의 음성 점수에서 FPR\ensuremath{\leq}0.1\%를 만족하는 임계값을 고정한 뒤 test에 그대로 적용했다. 실제 test FPR을 먼저 읽고 그때의 recall을 비교한다. 서로 다른 test FPR의 recall만 비교하면 동일 오탐 조건의 우위라고 말할 수 없다.
+
+| Expert | 클래스 | G test recall | Expert test recall | G test FPR | Expert test FPR |
+
+| --- | --- | --- | --- | --- | --- |
+
+| e1 | bot | 0.9971 | 0.9971 | 0.177\% | 0.054\% |
+
+| e2 | benign | 0.6130 | 0.3968 | 0.090\% | 0.123\% |
+
+| e3 | brute\_\allowbreak{}force | 1.0000 | 1.0000 | 0.178\% | 0.762\% |
+
+| e4 | dos | 0.9878 | 0.9973 | 0.415\% | 0.091\% |
+
+| e5 | brute\_\allowbreak{}force | 1.0000 | 1.0000 | 0.178\% | 0.070\% |
+
+| e6 | infiltration | 0.1128 | 0.0746 | 0.003\% | 0.014\% |
+
+| e7 | ddos | 1.0000 | 1.0000 | 0.087\% | 0.969\% |
+
+| e8 | benign | 0.6130 | 0.5667 | 0.090\% | 0.125\% |
+
+Test 정답 없이 정한 최근접 centroid 영역에서 비교한다. 상수 대조는 각 영역의 학습용 route 행에서 가장 많은 클래스 하나만 항상 출력한다. 이번 수정에서 추가 계산했다. 영역 내 실제 등장 클래스들의 F1 평균을 표시하며, 같은 행의 세 모델끼리 비교한다.
+
+| 담당 expert /\allowbreak{} 영역 | Test 수 | 등장 클래스 수 | G 영역 macro-F1 | Expert 영역 macro-F1 | 학습 다수 클래스 상수 |
+
+| --- | --- | --- | --- | --- | --- |
+
+| e1 | 41,370 | 2 | 0.5000 | 0.5000 | 0.5000 |
+
+| e2 | 2,549,948 | 7 | 0.3157 | 0.1809 | 0.1426 |
+
+| e3 | 6,686 | 1 | 1.0000 | 1.0000 | 1.0000 |
+
+| e4 | 38,875 | 2 | 0.7999 | 0.6599 | 0.4999 |
+
+| e5 | 30,990 | 1 | 1.0000 | 1.0000 | 1.0000 |
+
+| e6 | 120,135 | 4 | 0.6181 | 0.4087 | 0.0172 |
+
+| e7 | 253,572 | 2 | 0.5000 | 0.9000 | 0.5000 |
+
+| e8 | 897 | 5 | 0.1613 | 0.2184 | 0.0462 |
+
+CIC 영역 3·5는 test에 한 클래스만 있어 상수 예측도 1.0000이다. 이런 영역의 높은 점수는 분류 역량의 증거가 되지 않는다. 영역별 등장 클래스가 달라 이 수치를 서로 다른 영역이나 전체 test macro-F1과 직접 비교하지 않는다. Global·모든 타 expert의 영역 accuracy 원본 행렬도 CSV에 보존했다.
+
+\subsubsection{ToN-IoT — 양성·음성 구분 능력}
+| Expert | 주로 포함된 클래스 | G AP | Expert AP | 타 expert 최고 AP | G R@0.1\% | Expert R@0.1\% | 타 expert 최고 R | 읽는 법 |
+
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+| e1 | injection | 0.9736 | 0.9604 | 0.9800 | 0.9380 | 0.8023 | 0.9434 | G 대비 우위 미확인 |
+
+| e2 | scanning | 0.3310 | 0.8312 | 0.6794 | 0.1415 | 0.7462 | 0.6004 | 두 지표의 관측 우위 |
+
+| e3 | dos | 0.9917 | 0.9918 | 0.9921 | 0.9887 | 0.9876 | 0.9863 | 지표 혼재 /\allowbreak{} 이득 제한 |
+
+| e4 | injection | 0.9736 | 0.9666 | 0.9800 | 0.9380 | 0.7739 | 0.9434 | G 대비 우위 미확인 |
+
+| e5 | ransomware | 0.0477 | 0.2267 | 0.0693 | 0.0310 | 0.6996 | 0.0085 | 두 지표의 관측 우위 |
+
+| e6 | benign | 0.9699 | 0.9709 | 0.9749 | 0.3869 | 0.6805 | 0.7753 | G 개선 · 타 expert도 유효 |
+
+| e7 | xss | 0.7522 | 0.7116 | 0.7613 | 0.0148 | 0.0072 | 0.0199 | G 대비 우위 미확인 |
+
+| Expert | 클래스 | 전면 macro-F1 | Precision | Recall | F1 | 다른 클래스에서 온 FP |
+
+| --- | --- | --- | --- | --- | --- | --- |
+
+| e1 | injection | 0.6696 | 0.8245 | 0.9659 | 0.8896 | 14,165 |
+
+| e2 | scanning | 0.6730 | 0.0910 | 0.9021 | 0.1653 | 54,321 |
+
+| e3 | dos | 0.6219 | 0.2984 | 0.9980 | 0.4594 | 52,697 |
+
+| e4 | injection | 0.6205 | 0.2411 | 0.9974 | 0.3883 | 216,303 |
+
+| e5 | ransomware | 0.6726 | 0.0155 | 0.9661 | 0.0305 | 43,586 |
+
+| e6 | benign | 0.6703 | 0.9960 | 0.8096 | 0.8932 | 4,771 |
+
+| e7 | xss | 0.6859 | 0.5761 | 0.9996 | 0.7309 | 252,906 |
+
+| Expert | 클래스 | G test recall | Expert test recall | G test FPR | Expert test FPR |
+
+| --- | --- | --- | --- | --- | --- |
+
+| e1 | injection | 0.9515 | 0.9588 | 0.189\% | 0.433\% |
+
+| e2 | scanning | 0.2554 | 0.6193 | 0.149\% | 0.004\% |
+
+| e3 | dos | 0.9884 | 0.9855 | 0.077\% | 0.018\% |
+
+| e4 | injection | 0.9515 | 0.9340 | 0.189\% | 0.364\% |
+
+| e5 | ransomware | 0.9140 | 0.9196 | 0.451\% | 0.364\% |
+
+| e6 | benign | 0.4114 | 0.7037 | 0.167\% | 0.228\% |
+
+| e7 | xss | 0.9377 | 0.8858 | 6.693\% | 5.289\% |
+
+| --- | --- | --- | --- | --- | --- |
+
+| e1 | 76,017 | 6 | 0.3637 | 0.3504 | 0.1547 |
+
+| e2 | 10,048 | 9 | 0.2877 | 0.3191 | 0.0612 |
+
+| e3 | 47,541 | 9 | 0.1588 | 0.1867 | 0.0707 |
+
+| e4 | 40,748 | 10 | 0.1514 | 0.1848 | 0.0079 |
+
+| e5 | 8,544 | 3 | 0.0482 | 0.0488 | 0.0470 |
+
+| e6 | 1,976,859 | 10 | 0.4793 | 0.4937 | 0.0192 |
+
+| e7 | 111,966 | 9 | 0.1095 | 0.1777 | 0.0457 |
+
+\subsection{5. 현재 결과로 내릴 수 있는 판단}
+현재 bank 전체가 충분하다는 결론은 내릴 수 없다. 근거가 없는 부분을 다음처럼 구분해야 한다. 이미 식별력 저하가 관측된 대상은 context를 개선하고, 상대 우위가 있는 대상은 고정 운영점과 독립 반복으로 검증한다.
+
+| 대상 | 현재 근거 | 지금 가능한 판단 | 다음 확인 |
+
+| --- | --- | --- | --- |
+
+| CIC infiltration e6 | AP 0.2178 \ensuremath{\rightarrow} 0.0944; R@0.1\% 0.3007 \ensuremath{\rightarrow} 0.0991 | G 대비 식별력 보완 근거가 없다. 0.9140 정답 배정 F1을 근거로 쓰지 않는다. | K<C로 재생성하고 클래스 비율을 맞춘 무작위 context·어려운 음성 대조 |
+
+| ToN scanning e2 | AP 0.3310 \ensuremath{\rightarrow} 0.8312; R@0.1\% 0.1415 \ensuremath{\rightarrow} 0.7462 | 이 holdout에서 G·타 expert 대비 점수 구분 능력의 이득이 있다. | 같은 예산·클래스 비율 대조와 독립 seed/\allowbreak{}시간 분할 |
+
+| ToN ransomware e5 | AP 0.0477 \ensuremath{\rightarrow} 0.2267; R@0.1\% 0.0310 \ensuremath{\rightarrow} 0.6996 | 순위 이득은 있지만 val 0.1\% 임계값의 test FPR은 0.364\%로 목표를 넘는다. | 임계값 전이 검증·시간 변화 보정 후 새 test 재평가 |
+
+| CIC bank | 고정 영역 0.7477; G/\allowbreak{}S/\allowbreak{}S+\allowbreak{}V 0.8107 | 기존 bank·고정 영역의 결합은 G보다 낮고 실제 정책은 개입하지 않는다. | 새 K 조건의 bank 재학습 및 정답 없는 validation 비교 |
+
+“충분”을 최종 판정하려면 목표 클래스·허용 FPR·최소 recall·허용 global 성능 저하를 평가 전에 정해야 한다. 지금의 AP 또는 R@0.1\%에 임의의 합격선을 사후 부여하지 않는다. 다음 실험은 그 판정에 필요한 원인·전이·재현성 근거를 채우기 위한 것이다.
+
+\subsection{6. 추가로 필요한 실험과 각각의 판정 기준}
+| 우선순위 /\allowbreak{} 실험 | 무엇을 고정하고 비교하는가 | 무엇이 확인돼야 하는가 | 상태 |
+
+| --- | --- | --- | --- |
+
+| 0. 정답 없는 배정 +\allowbreak{} 상수 expert 대조 | 동일 cache·고정 영역에서 원래 expert와 학습 다수 클래스 상수 예측 비교 | 높은 점수가 영역의 단일 클래스 구성만으로 설명되는지 확인 | 이번 수정에서 계산 완료 |
+
+| 1. K<C bank 재생성과 context 선택 대조 | 같은 K·anchor·총 context 행 수·클래스별 행 수에서 현재 실패 패턴 선택 vs 무작위 선택; 별도 동일 크기 균형 context 대조 | 현재 방식이 클래스 비율을 맞춘 무작위보다 AP·낮은 FPR recall에서 반복적으로 높아야 생성 방식의 효과를 지지 | 추가 학습 필요 |
+
+| 2. Global 보정만 한 대조 | 새 expert 없이 global의 prior/\allowbreak{}β·온도·클래스 임계값만 validation에서 보정; expert도 같은 선택 절차 사용 | expert 이득이 global의 운영점 변경만으로 설명되는지 구별 | 추가 대조 필요 |
+
+| 3. 고정 운영점의 시간 전이 | 목표 FPR 0.1\%·1\%를 먼저 정하고 val에서 임계값 고정  \ensuremath{\rightarrow}  이후 test에서 recall·실제 FPR·FP 수 평가 | 허용 FPR을 지키면서 G보다 높은 recall이 유지돼야 그 운영점의 이득을 지지 | 현재 holdout 계산 완료; 새 시간 분할 필요 |
+
+| 4. 독립 학습 반복·그룹 불확실성 | 최소 3개의 실제 context 추첨·학습 seed; 새 시간 holdout; 같은 벡터·시간 블록 단위 paired bootstrap | 평균 이득과 불확실성 구간을 함께 제시하고 특정 seed·중복 행에만 의존하는지 확인 | 추가 학습·새 평가 필요 |
+
+| 선택. Bank 내 개별 expert 제거 | 해당 expert를 제거하고 같은 validation 절차로 비교 정책 재선택 | bank에 꼭 필요한 expert라는 주장에만 필요; 단독 식별력 검증을 대신하지 않는다 | 고유 시스템 기여를 주장할 때 실행 |
+
+생성 품질을 주장하기 위한 우선 조합은 1·2·3·4번이다. 새 K 조건을 만족하는 bank를 만들고, 동일 예산 대조에서 식별력 이득이 남는지와 새 데이터에서도 정한 오탐 한도를 지키는지를 확인한다. 현재 이미 계산된 0번과 기존 확률 진단을 새 학습 결과로 세지 않는다.
+
+기존 EXP52의 행 선택·anchor 대조와 EXP53–54의 context 구성·prior 대조는 이미 수행된 부분 근거다. 이를 폐기하거나 미실행으로 세지 않는다. 여기서 추가로 요구하는 것은 K<C의 동일 bank 예산·클래스 구성 통제, 같은 저오탐 지표, 독립 반복·새 시간 평가를 갖춘 비교다.
+
+기존 correctness oracle과 정답 클래스 배정은 주 품질 비교에서 모두 제외했다. 전자는 정오를 보고 유리한 답을 고르고, 후자는 정답 클래스로 양성과 음성을 분리한다. 과거 수치는 재현·차이 설명용으로만 보존한다. 0911 원본 데이터 감사의 과거 참조값도 별도로 구분한다.
+
+이번 수정의 2번·상수 대조·예측 출처 추적: tabpfn/\allowbreak{}scripts/\allowbreak{}exp56\_\allowbreak{}label\_\allowbreak{}free\_\allowbreak{}revision.py. 새 평가 기본 규칙: tabpfn/\allowbreak{}scripts/\allowbreak{}exp56\_\allowbreak{}five\_\allowbreak{}condition\_\allowbreak{}evaluation.py. 결과: tabpfn/\allowbreak{}results/\allowbreak{}exp56\_\allowbreak{}label\_\allowbreak{}free\_\allowbreak{}20260922. AP·FPR 진단은 동일 cache의 기존 CSV를 hash와 함께 재사용했다. 기존 조건 1·3·4·5의 점수와 S/\allowbreak{}S+\allowbreak{}V 예측 배열은 원본과 일치한다. K 제약: tabpfn/\allowbreak{}scripts/\allowbreak{}nfv3\_\allowbreak{}v3\_\allowbreak{}exp31\_\allowbreak{}c0alloc.py. 개수 제약만 구현했으며 K 선택 목적함수를 새로 최적화하거나 기존 bank를 재학습하지 않았다.
+
+
+
+\section{2026-09-22 · EXP58: 고정 bank의 Accuracy·Macro-F1 상한}
+\label{report:20260922_exp58_oracle_upper_bound}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+기존 다섯 조건을 보존하고 6번에 정답 참조 bank selector를 추가했다. 선택 가능한 답은 같은 행에서 고정 global·expert가 실제로 출력한 클래스뿐이다. 정답이 후보 안에 있으면 그 답을 사용하고, 모든 후보가 틀린 행도 반드시 후보 중 하나를 출력한다. Test 정답을 사용하는 달성 불가능한 참조이므로 expert 생성 품질의 근거나 실제 일반화 성능으로 해석하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14118\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18824\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21176\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21176\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24706\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 현재 S+\allowbreak{}V Macro-F1 & 전체 bank Macro-F1 상한 & 전체 bank Accuracy 상한 & 현재 호출 위치를 고정한 Macro-F1 상한 \\ \midrule
+\endfirsthead
+데이터 & 현재 S+\allowbreak{}V Macro-F1 & 전체 bank Macro-F1 상한 & 전체 bank Accuracy 상한 & 현재 호출 위치를 고정한 Macro-F1 상한 \\ \midrule
+\endhead
+{}CIC2018 & 0.810653 & 0.991366 & 0.999503 & 0.810653 \\
+{}ToN & 0.755490 & 0.786694 & 0.920577 & 0.757126 \\
+\bottomrule
+\end{longtable}
+\endgroup
+전체 bank 상한은 호출 위치·scorer·verifier를 이상적으로 선택하고 비용과 운영 FPR 제약을 적용하지 않은 상한이다. 호출 위치 고정 상한은 실제 호출하지 않은 행에서 global만 허용하고, 호출한 행에서 global과 모든 expert를 허용한다. 같은 제약 안에서 선택기만 바꿀 때의 상한이며, 전체 모델 구조의 상한과 구분한다.
+
+현재 bank는 CIC K=\allowbreak{}8/\allowbreak{}C=\allowbreak{}7, ToN K=\allowbreak{}7/\allowbreak{}C=\allowbreak{}10인 기존 EXP47·48이다. 따라서 CIC 결과는 새 K<C 설계를 만족하는 bank의 결과가 아니다. K=\allowbreak{}4 재학습은 EXP57로 별도 실행 중이다. 두 데이터 모두 기존 모순 제거 개발 holdout을 사용한다.
+
+\subsection{기존 global fallback과의 차이}
+정답 후보가 있는 모든 행을 맞히면 Accuracy는 상한에 도달한다. 하지만 모두 틀린 행에서 global을 유지하는 규칙은 Macro-F1을 최대화하지 않을 수 있다. 그 행의 오탐을 어느 클래스에 배정하는지가 Macro-F1을 바꾸기 때문이다. 기존 global fallback 방식의 Macro-F1은 CIC 0.962640, ToN 0.784667이며, 이번 계산은 남은 오답의 선택도 최적화했다.
+
+\subsection{Macro-F1 최적화}
+맞힐 수 있는 행은 모두 맞히는 것이 각 클래스 F1에 불리하지 않으므로, 최적점에서는 TP·FN이 고정된다. 남은 행은 후보 클래스 집합별로 묶고 FP 목적지 선택만 최적화한다. 목적함수는 \texttt{mean(2 T\allowbreak{}P\_\allowbreak{}\allowbreak{}c /\allowbreak{}\allowbreak{} (s\allowbreak{}upport\_\allowbreak{}\allowbreak{}c\allowbreak{} +\allowbreak{}\allowbreak{} TP\_\allowbreak{}\allowbreak{}c \allowbreak{}+\allowbreak{}\allowbreak{} FP\_\allowbreak{}\allowbreak{}c))\allowbreak{}}로 FP에 대한 분리 가능한 볼록 함수다.
+
+최적점에서 어떤 후보 집합의 오답 목적지를 더 큰 편미분을 가진 클래스로 옮길 수 있다면 볼록 함수의 기울기 부등식에 따라 목적함수가 증가하므로 최적점에 모순된다. 양의 TP를 가진 클래스 사이의 편미분 동률도 엄격 볼록성 때문에 유리한 이동을 만들며, TP=\allowbreak{}0인 클래스끼리의 동률은 목적함수를 바꾸지 않는다. 따라서 어떤 최적해는 클래스의 단일 우선순위에 따라 각 후보 집합의 첫 클래스를 고르는 형태로 표현된다.
+
+클래스 부분집합 DP로 모든 우선순위를 \texttt{O(C 2\textasciicircum{}C)\allowbreak{}}에 비교했다. 이는 임의 탐색의 최고값이 아니라 이 고정 bank와 행별 자유 선택이라는 정의 안에서의 정확한 최댓값이다. 작은 문제 120개에서 가능한 모든 행별 선택을 열거한 결과와 일치함을 테스트했고, 출력한 oracle 예측 배열의 F1이 DP 값과 일치함을 검증했다. 클래스별 독립 F1 상한은 동시에 달성되지 않을 수 있으므로 별도 열로 구분했다.
+
+재현:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+python tabpfn/scripts/exp58_bank_oracle_upper_bound.py \
+  --source-root tabpfn/results/exp56_label_free_20260922 \
+  --out-root tabpfn/results/exp58_six_condition_reproduction
+
+\end{Verbatim}
+원래 frozen prediction cache가 필요하다. 결과는 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp58\_\allowbreak{}\allowbreak{}six\allowbreak{}\_\allowbreak{}\allowbreak{}conditi\allowbreak{}on\_\allowbreak{}\allowbreak{}20260\allowbreak{}922/\allowbreak{}\allowbreak{}}에 있으며 기존 다섯 조건의 수치가 그대로인지 검증했다. HTML은 변경하지 않았다.
+
+
+
+\section{EXP57 외부 GPU 실행 — 기존 PKL 직접 사용}
+외부 배정은 \textbf{CIC2018·ToN seed 42}다. 로컬은 seed 43·44를 계속 실행한다. 데이터·seed 하나당 global 1개와 K=\allowbreak{}4 bank 세 개를 fit한다. 세 bank는 현재 선택 방식, 클래스별 행 수를 맞춘 무작위 선택, 같은 크기의 균형 선택이다. 각 seed 안에서 global·anchor·영역 정의·expert별 context 크기를 공유한다. Scorer/\allowbreak{}verifier는 이 생성 품질 실험에서 다시 학습하지 않는다.
+
+\subsection{필요한 입력}
+\texttt{exp57\_\allowbreak{}\allowbreak{}in\allowbreak{}puts\_\allowbreak{}\allowbreak{}*.\allowbreak{}t\allowbreak{}ar.\allowbreak{}zst}는 필수가 아니다. 외부에 있는 아래 두 파일을 직접 지정한다.
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}data}: 기존 \texttt{nfv3\_\allowbreak{}\allowbreak{}ene\allowbreak{}rgy\_\allowbreak{}\allowbreak{}suit\allowbreak{}e\_\allowbreak{}\allowbreak{}uncapp\allowbreak{}ed\_\allowbreak{}\allowbreak{}scena\allowbreak{}rios.\allowbreak{}pkl\allowbreak{}} 경로.
+
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}model-\allowbreak{}path}: 기존 \texttt{tabpfn-\allowbreak{}v\allowbreak{}3-\allowbreak{}classi\allowbreak{}fier-\allowbreak{}v3\_\allowbreak{}\allowbreak{}20260417\allowbreak{}\_\allowbreak{}\allowbreak{}multicl\allowbreak{}ass.\allowbreak{}ckpt\allowbreak{}} 경로. 저장소의 \texttt{tabpfn/\allowbreak{}\allowbreak{}} 아래에 있으면 생략할 수 있다.
+
+
+모순 제거 split이 없으면 원본 PKL에서 자동으로 만든다. 같은 feature 벡터에 서로 다른 모델 클래스가 붙은 모든 행을 제거하고, 같은 라벨의 중복과 원래 train/\allowbreak{}validation/\allowbreak{}test 소속은 유지한다. 기본 저장 위치는 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp57\_\allowbreak{}\allowbreak{}cle\allowbreak{}an\_\allowbreak{}\allowbreak{}split\allowbreak{}s/\allowbreak{}\allowbreak{}}이며 \texttt{-\allowbreak{}-\allowbreak{}clean-\allowbreak{}root}로 바꿀 수 있다. 다음 실행에서는 저장된 split을 재사용한다.
+
+생성한 split은 단순히 행 수만 맞추는 것이 아니다. Git의 \texttt{tabpfn/\allowbreak{}\allowbreak{}c\allowbreak{}onfigs/\allowbreak{}\allowbreak{}e\allowbreak{}xp57\_\allowbreak{}\allowbreak{}cle\allowbreak{}an\_\allowbreak{}\allowbreak{}split\allowbreak{}\_\allowbreak{}\allowbreak{}referen\allowbreak{}ce.\allowbreak{}json}에 고정한 원본 PKL SHA-256, 클래스 정의, 정제 규칙, train/\allowbreak{}validation/\allowbreak{}test 인덱스 SHA-256과 대조한다. 기존 EXP47·48과 다른 데이터나 분할이면 학습 전에 중단한다. 준비는 별도 CPU 프로세스에서 실행해 데이터 정제용 메모리를 학습 전에 반환한다.
+
+\subsection{마운트에 실행 환경 저장}
+2026-10-06 환경 명세 정리: \texttt{requirem\allowbreak{}ents-\allowbreak{}exp\allowbreak{}57.\allowbreak{}txt}는 루트 \texttt{requirem\allowbreak{}ents.\allowbreak{}txt\allowbreak{}}로 통합했고 아래 설치 명령은 유지한다. 이전 명세는 \texttt{configs/\allowbreak{}\allowbreak{}environm\allowbreak{}ents/\allowbreak{}\allowbreak{}arc\allowbreak{}hive/\allowbreak{}\allowbreak{}202\allowbreak{}61006\_\allowbreak{}\allowbreak{}be\allowbreak{}fore\_\allowbreak{}\allowbreak{}req\allowbreak{}uirement\allowbreak{}s\_\allowbreak{}\allowbreak{}merge/\allowbreak{}\allowbreak{}}에 보존했다.
+
+\texttt{pip inst\allowbreak{}all -\allowbreak{}r r\allowbreak{}equireme\allowbreak{}nts.\allowbreak{}txt}만으로는 장비 드라이버와 PyTorch의 CUDA 빌드가 맞는다고 보장되지 않는다. \textbf{Conda 환경 자체를 마운트 경로에 만들고, 드라이버에 맞는 PyTorch wheel을 먼저 고정한다.} Conda를 새로 만드는 것만으로 호환 문제가 해결되는 것은 아니다.
+
+업데이트한 저장소 루트에서 다음을 실행한다. \texttt{/\allowbreak{}\allowbreak{}workspa\allowbreak{}ce}는 예시이므로 실제 영구 마운트 경로로 바꾼다. \texttt{-\allowbreak{}-\allowbreak{}prefix\allowbreak{}}는 기존 base 환경이 아닌 새 전용 경로여야 한다. 첫 생성 때는 Conda 또는 Miniforge가 필요하다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+python scripts/common/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
+
+\end{Verbatim}
+스크립트는 Python 3.12 환경을 만들고 \texttt{nvidia-\allowbreak{}s\allowbreak{}mi}에 표시되는 \textbf{드라이버의 CUDA 지원 버전}에 따라 아래 중 하나를 선택한다. 시스템에 설치된 \texttt{nvcc} 버전과 같아야 한다는 뜻은 아니다. CUDA minor compatibility에 기대지 않는 보수적인 선택이며, 마지막에 GPU 연산으로 확인한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.57812\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.42188\linewidth-2\tabcolsep\relax}}
+\toprule
+드라이버가 표시하는 CUDA 지원 버전 & 설치할 PyTorch \\ \midrule
+\endfirsthead
+드라이버가 표시하는 CUDA 지원 버전 & 설치할 PyTorch \\ \midrule
+\endhead
+{}12.8 이상 & 2.7.1+\allowbreak{}cu128 \\
+{}12.4 이상, 12.8 미만 & 2.6.0+\allowbreak{}cu124 \\
+{}12.1 이상, 12.4 미만 & 2.5.1+\allowbreak{}cu121 \\
+{}11.8 이상, 12.1 미만 & 2.6.0+\allowbreak{}cu118 \\
+\bottomrule
+\end{longtable}
+\endgroup
+공식 근거: PyTorch wheel 설치 조합, NVIDIA 드라이버 호환 규칙, Conda prefix 환경. Blackwell은 CUDA 12.8 이상 조합을 요구한다. GPU compute capability 8.0 미만은 이 실험에서 지원하지 않는다.
+
+의존성을 설치할 때도 선택한 torch 버전을 constraint로 고정한다. 설치 후 \texttt{pip chec\allowbreak{}k}, CUDA 초기화, 실제 Flash Attention 연산, 주요 패키지 import를 확인한다. 설치 정보와 전체 패키지 목록은 환경 안의 \texttt{exp57\_\allowbreak{}\allowbreak{}se\allowbreak{}tup.\allowbreak{}json\allowbreak{}}, \texttt{exp57\_\allowbreak{}\allowbreak{}pa\allowbreak{}ckages.\allowbreak{}t\allowbreak{}xt}에 저장한다. 먼저 선택만 확인하려면 \texttt{-\allowbreak{}-\allowbreak{}dry-\allowbreak{}ru\allowbreak{}n}을 추가한다.
+
+같은 경로가 마운트되고 호환되는 OS·장비라면 재접속 후 라이브러리를 다시 설치할 필요 없이 \textbf{저장한 환경의 Python}을 사용한다. 활성화나 base Conda 재설치도 필요 없다. 새 노드에서 호환성을 재확인하려면 다음 명령을 실행한다. 설정이 같으면 패키지 설치는 생략하고 GPU 검증만 반복한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+/workspace/envs/exp57/bin/python scripts/common/setup_exp57_env.py --prefix /workspace/envs/exp57 --gpu 0
+
+\end{Verbatim}
+다른 드라이버 때문에 선택되는 torch 빌드가 바뀌면 기존 환경을 덮어쓰지 않고 중단한다. 그 경우 \texttt{/\allowbreak{}\allowbreak{}workspa\allowbreak{}ce/\allowbreak{}\allowbreak{}envs/\allowbreak{}\allowbreak{}exp57-\allowbreak{}cu\allowbreak{}124}처럼 새 \texttt{-\allowbreak{}-\allowbreak{}prefix\allowbreak{}}를 지정한다. 설치 캐시도 마운트의 \texttt{envs/\allowbreak{}\allowbreak{}.\allowbreak{}ex\allowbreak{}p57-\allowbreak{}cach\allowbreak{}e/\allowbreak{}\allowbreak{}}에 보존한다. \texttt{conda cr\allowbreak{}eate -\allowbreak{}n \allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}}만 사용하면 환경이 임시 홈 디렉터리에 생성되어 재접속 때 사라질 수 있다.
+
+\subsection{실행}
+로컬 참조 환경은 Python 3.13, torch 2.11.0+\allowbreak{}cu130, RTX 4090 24 GB, host RAM 128 GB다. 외부는 드라이버에 맞춘 위 조합을 사용하며 실제 버전은 각 실행의 \texttt{environm\allowbreak{}ent.\allowbreak{}json\allowbreak{}}에 기록된다. 서로 다른 torch/\allowbreak{}GPU의 수치 재현성이 검증됐다는 뜻은 아니므로 결과를 합칠 때 환경 차이도 확인한다. 원본 PKL 크기와 전처리·worker 메모리를 고려하면 host RAM 64 GB 이상을 권장한다. CPU로 자동 전환하지 않는다.
+
+아래 환경·입력 경로를 외부 파일 경로로 바꿔 실행한다. 재접속할 때도 \texttt{EXP57\_\allowbreak{}\allowbreak{}PY\allowbreak{}}를 다시 지정한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+EXP57_PY=/workspace/envs/exp57/bin/python
+
+"$EXP57_PY" scripts/v4/exp57/run_exp57_external.py \
+  --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl \
+  --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt \
+  --datasets cic2018 toniot \
+  --seeds 42 \
+  --gpu 0 \
+  --root tabpfn/results/exp57_external_s42 \
+  --detach
+
+\end{Verbatim}
+\texttt{-\allowbreak{}-\allowbreak{}detach\allowbreak{}}이면 원본 검증·split 생성·학습 전체가 백그라운드에서 이어진다. 별도의 archive 전송이나 압축 해제가 필요 없다. 기본 예측 배치는 125,000, CPU 스레드는 1이다. 로컬의 일부 500,000 배치 실행에서 native segmentation fault가 발생해 복구 설정으로 낮췄으며, 오류 해결이 검증됐다는 뜻은 아니다. faulthandler로 native stack trace를 기록한다.
+
+한 GPU에서 두 데이터는 순차 실행한다. GPU가 두 개라면 위 명령 대신 데이터별로 나눌 수 있다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+"$EXP57_PY" scripts/v4/exp57/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets cic2018 --seeds 42 --gpu 0 --root tabpfn/results/exp57_external_cic_s42 --detach
+"$EXP57_PY" scripts/v4/exp57/run_exp57_external.py --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt --datasets toniot --seeds 42 --gpu 1 --root tabpfn/results/exp57_external_ton_s42 --detach
+
+\end{Verbatim}
+두 프로세스를 동시에 실행하면 host RAM도 두 작업의 데이터 준비·학습을 수용해야 한다. 같은 데이터의 split을 동시에 준비할 경우 잠금으로 중복 생성을 막는다. 검증에 성공한 완성 디렉터리만 재사용 대상으로 공개한다.
+
+이미 입력 묶음을 풀어 놓았다면 예전 \texttt{-\allowbreak{}-\allowbreak{}inputs\allowbreak{} /\allowbreak{}\allowbreak{}worksp\allowbreak{}ace/\allowbreak{}\allowbreak{}exp5\allowbreak{}7\_\allowbreak{}\allowbreak{}inputs\allowbreak{}} 방식도 계속 지원한다. 이미 생성한 clean 디렉터리가 따로 있다면 \texttt{-\allowbreak{}-\allowbreak{}clean-\allowbreak{}root /\allowbreak{}\allowbreak{}pa\allowbreak{}th/\allowbreak{}\allowbreak{}to/\allowbreak{}\allowbreak{}de\allowbreak{}rived}를 추가하면 된다.
+
+\subsection{진행 확인과 결과 반환}
+단일 GPU 실행 기준:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+cat tabpfn/results/exp57_external_s42/status.json
+tail -F tabpfn/results/exp57_external_s42/controller.log
+
+\end{Verbatim}
+처음에는 \texttt{verifyin\allowbreak{}g\_\allowbreak{}\allowbreak{}source\allowbreak{}} 또는 \texttt{preparin\allowbreak{}g\_\allowbreak{}\allowbreak{}clean} 상태가 나타나며 준비가 끝나면 \texttt{running}으로 바뀐다. 학습 상세 로그는 \texttt{cic2018\_\allowbreak{}\allowbreak{}s42/\allowbreak{}\allowbreak{}work\allowbreak{}er.\allowbreak{}log}, \texttt{toniot\_\allowbreak{}\allowbreak{}s\allowbreak{}42/\allowbreak{}\allowbreak{}worke\allowbreak{}r.\allowbreak{}log}다. \texttt{clean\_\allowbreak{}\allowbreak{}in\allowbreak{}put\_\allowbreak{}\allowbreak{}veri\allowbreak{}fication\allowbreak{}.\allowbreak{}json}에는 각 데이터의 split 생성·재사용 여부와 검증된 해시를 저장한다.
+
+완료 시 \texttt{status.\allowbreak{}j\allowbreak{}son}의 \texttt{state: c\allowbreak{}omplete}와 각 job의 \texttt{COMPLETE\allowbreak{}.\allowbreak{}json}을 확인한다. \texttt{input\_\allowbreak{}\allowbreak{}pr\allowbreak{}eparatio\allowbreak{}n\_\allowbreak{}\allowbreak{}failed\allowbreak{}}이면 원본/\allowbreak{}split 검증 오류를, \texttt{complete\allowbreak{}\_\allowbreak{}\allowbreak{}with\_\allowbreak{}\allowbreak{}er\allowbreak{}rors}이면 실패 job의 \texttt{worker.\allowbreak{}l\allowbreak{}og}를 전달한다. 재시도는 새로운 \texttt{-\allowbreak{}-\allowbreak{}root}를 사용하며 기존 clean split은 그대로 재사용할 수 있다. \texttt{-\allowbreak{}-\allowbreak{}prepar\allowbreak{}e-\allowbreak{}only}는 입력 준비·검증과 job 설정까지만 수행한다.
+
+완료 후 큰 확률 배열을 제외한 결과를 묶는다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+tar --zstd --exclude='*/probabilities' \
+  -cf /workspace/exp57_external_s42_results.tar.zst \
+  -C tabpfn/results exp57_external_s42
+
+\end{Verbatim}
+이 결과 묶음을 반환하면 로컬 seed 43·44와 합쳐 분석할 수 있다. 확률 배열은 추가 재분석을 위해 외부 결과 디렉터리에 보존한다. 입력 split을 다시 만들더라도 동일한 개발 holdout을 재현하는 것이므로 새 독립 test를 확보한 실험으로 해석하지 않는다.
+
+
+
+\section{TabPFN × 클래스 불균형 — 방법 논문 조사 (2026-09-22)}
+목적: \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}evid\allowbreak{}ence/\allowbreak{}\allowbreak{}ref\allowbreak{}erences/\allowbreak{}\allowbreak{}tabpfn\_\allowbreak{}\allowbreak{}p\allowbreak{}apers\_\allowbreak{}\allowbreak{}su\allowbreak{}rvey.\allowbreak{}xls\allowbreak{}x} Ch.2(TabPFN을 개선·확장한 방법)에 해당하는 \textbf{불균형 처리 방법} 논문을 학회 accepted 목록을 순회하며 찾고, 각 논문의 method·평가 방식·차용할 아이디어를 정리한다. 도메인 응용(Ch.3 대부분)은 제외한다.
+
+관련: \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}evid\allowbreak{}ence/\allowbreak{}\allowbreak{}ref\allowbreak{}erences/\allowbreak{}\allowbreak{}tabpfn\_\allowbreak{}\allowbreak{}p\allowbreak{}apers\_\allowbreak{}\allowbreak{}su\allowbreak{}rvey.\allowbreak{}xls\allowbreak{}x}(시트 반영), \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0918.\allowbreak{}tex\allowbreak{}}(EXP49–56), \texttt{.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}SRC\_\allowbreak{}\allowbreak{}H\allowbreak{}ISTORY.\allowbreak{}m\allowbreak{}d}(실패 유형 1–6).
+
+
+\medskip\hrule\medskip
+\subsection{0. 요약 판정}
+\par\noindent \textbullet\enspace \textbf{본회의 문헌은 사실상 한 편이다.} ICML 2025/\allowbreak{}2026·AISTATS 2025/\allowbreak{}2026·UAI 2025/\allowbreak{}2026 본회의 11,852편(PMLR·virtual JSON 전수), ICLR 2025/\allowbreak{}2026·NeurIPS 2024/\allowbreak{}2025(OpenReview 검색), KDD/\allowbreak{}AAAI/\allowbreak{}IJCAI/\allowbreak{}CIKM/\allowbreak{}SDM/\allowbreak{}ICDM/\allowbreak{}WWW/\allowbreak{}WSDM/\allowbreak{}PAKDD(Crossref DOI prefix 전수), FMSD@ICML 2025/\allowbreak{}2026(70+\allowbreak{}151편)·TRL@NeurIPS 2024(51편)·EurIPS 2025 AI-TD(43편)·AutoML 2025/\allowbreak{}2026 전수를 훑었을 때 "TabPFN/\allowbreak{}PFN × 클래스 불균형"을 주제로 한 방법 논문은 \textbf{DistPFN(ICML 2026)} 하나다. PFN-Imb(IEEE ITW 2026)는 FMSD@ICML 2026 워크숍 미러가 있을 뿐이다. 이 주제는 아직 본회의 문헌이 형성되지 않았다.
+
+
+\par\noindent \textbullet\enspace \textbf{가장 일관된 신호: 불균형 이득의 대부분은 결정 규칙(threshold) 효과다.} 서로 독립인 세 출처가 같은 방향이다.
+
+\par\noindent \textbullet\enspace PFN-Imb: thresholding(τ=\allowbreak{}π₁)이 balanced acc 0.710 \ensuremath{\rightarrow} 0.793, worst-class 0.446 \ensuremath{\rightarrow} 0.729로 최선; 오버샘플링·TabPFGen 합성은 악화.
+
+
+\par\noindent \textbullet\enspace L2C-TFM(RL 데이터 정제): 소수 클래스 macro-F1 이득 +\allowbreak{}0.035 중 threshold 튜닝 무관 잔여분은 +\allowbreak{}0.008(p=\allowbreak{}0.80).
+
+
+\par\noindent \textbullet\enspace Cai(43개 데이터셋 remedy 격자, 정오표): SMOTE의 TFM 상호작용 −0.083(raw 0.5)  \ensuremath{\rightarrow}  검증 threshold 선택 후 −0.004  \ensuremath{\rightarrow}  Platt 후 −0.002.  \ensuremath{\rightarrow}  \textbf{s44 계열의 어떤 구조 개선안이든 "threshold-matched XGBoost 기준선"과 비교하지 않으면 주장이 서지 않는다.}
+
+
+
+\par\noindent \textbullet\enspace \textbf{합성 오버샘플링(SMOTE·TabPFGen)을 컨텍스트에 넣는 것은 TFM에 해롭다}는 결과가 네 독립 출처(PFN-Imb, CreditTFM, Cai v1, SAR-Crop)에서 반복된다. Cai의 표현: "행을 만드는(fabricate) remedy와 빼는(remove) remedy의 구분"이며 언더샘플링·threshold 보정만 TFM에 전이된다.
+
+
+\par\noindent \textbullet\enspace \textbf{실제 지렛대는 컨텍스트 구성이다.} CreditTFM은 컨텍스트 전략 간 AUC 격차(0.03–0.05)가 TFM 모델 간 격차보다 크다고 보고하고, Fair-TabICL은 "균등 균형 표집은 거의 효과 없고 경계(불확실) 표본 선택이 효과", IM-Context는 "전체 학습셋 컨텍스트는 꼬리 구간에서 편향을 키운다"는 상계를 준다.
+
+
+\par\noindent \textbullet\enspace \textbf{평가 프로토콜에서 배울 것이 방법보다 많다.} 고정 예산 IR 스윕(AWARE 5 \ensuremath{\rightarrow} 500, ClinImb), Many/\allowbreak{}Median/\allowbreak{}Few 구간 분해(IM-Context), worst-class coverage(Sanghi), 4-way fold(context/\allowbreak{}bias-estimation/\allowbreak{}calibration/\allowbreak{}test), 비용 사전 선언 threshold(Song), AUPRC+\allowbreak{}ECE/\allowbreak{}Brier 병기(Cai: 미처리 TFM이 최고 보정이고 모든 remedy가 ECE 6–7배 악화), 저장 확률 배열로 결정 규칙 오프라인 재계산(Cai).
+
+
+
+\medskip\hrule\medskip
+\subsection{1. 조사 범위와 방법}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17618\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27461\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27461\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27461\linewidth-2\tabcolsep\relax}}
+\toprule
+갈래 & 대상 & 도구 & 결과 \\ \midrule
+\endfirsthead
+갈래 & 대상 & 도구 & 결과 \\ \midrule
+\endhead
+{}OpenReview 계열 & ICLR 2025/\allowbreak{}26, NeurIPS 2024/\allowbreak{}25, TMLR, AutoML/\allowbreak{}CoLLAs & OpenReview \texttt{/\allowbreak{}\allowbreak{}notes/\allowbreak{}\allowbreak{}s\allowbreak{}earch} 45쿼리(forum·PDF는 CAPTCHA 차단), TRL/\allowbreak{}AI-TD 사이트 & 본회의 0편; TMLR 2편(IM-Context, Fair-TabICL); reject 3편(TAAR, ProFiT, RCB) \\
+{}PMLR/\allowbreak{}virtual & ICML 2025/\allowbreak{}26, AISTATS 2025/\allowbreak{}26, UAI 2025/\allowbreak{}26, ACML, CoLLAs & PMLR 볼륨 인덱스, icml.cc/\allowbreak{}aistats virtual JSON, OpenAlex 34쿼리, arXiv API & 11,852편 중 DistPFN 1편; 인접 이론 다수(§4) \\
+{}KDD/\allowbreak{}AAAI/\allowbreak{}저널 & KDD/\allowbreak{}AAAI/\allowbreak{}IJCAI/\allowbreak{}CIKM/\allowbreak{}SDM/\allowbreak{}ICDM/\allowbreak{}WWW/\allowbreak{}WSDM/\allowbreak{}PAKDD, 주요 저널 & Crossref DOI prefix 스윕, OpenAlex 2,037편 필터, Zenodo & KDD 2026 1편(Stream-TabPFN), ECML PKDD 2026 1편(AttnDistill), WWW 2026 2편(FT-Explore, TFM4GAD); AAAI/\allowbreak{}IJCAI/\allowbreak{}SDM/\allowbreak{}ICDM/\allowbreak{}CIKM/\allowbreak{}WSDM 0편 \\
+{}워크숍/\allowbreak{}arXiv/\allowbreak{}인용 & FMSD 2025/\allowbreak{}26, TRL 2024, EurIPS AI-TD, AutoML, arXiv API 18쿼리, TabPFN v1/\allowbreak{}v2·TabICL 인용 86편 & arXiv Atom, OpenAlex cites 필터 & 워크숍 1편(CURE), 프리프린트 다수; 인용 86편은 99\% 도메인 응용 \\
+\bottomrule
+\end{longtable}
+\endgroup
+차단된 도구: DBLP(Anubis 봇 차단, 3개 미러 전부), OpenReview forum/\allowbreak{}PDF(브라우저 검증), Semantic Scholar(429), Springer/\allowbreak{}MDPI 본문(403; MDPI는 r.jina.ai 경유 일부 성공). 그래서 TAAR·ProFiT·TabPFN v2.5 개방환경 평가(FMSD 2026)는 에이전트 요약만 있고 본문 미확인이다(§5).
+
+
+\medskip\hrule\medskip
+\subsection{2. 논문별 정리}
+표기: \textbf{불균형이 파이프라인 어디에 들어가는가}  \ensuremath{\rightarrow}  C(컨텍스트 구성) /\allowbreak{} P(사전학습 prior) /\allowbreak{} F(파인튜닝) /\allowbreak{} A(사후 posterior 보정) /\allowbreak{} D(결정 규칙) /\allowbreak{} U(불확실성·집합 예측). ★ =\allowbreak{} 프로젝트 제약(얼린 TabPFN-v3, 100k 컨텍스트, 시간순 split, IR>1000)과 호환.
+
+\subsubsection{2.1 TabPFN/\allowbreak{}PFN 기반 방법·분석 (시트 Ch.2 해당)}
+\paragraph{DistPFN — Mitigating Label Shift in Tabular ICL via Test-Time Posterior Adjustment (ICML 2026, arXiv 2605.04363) [A] ★}
+\par\noindent \textbullet\enspace 방법: p̃(y) \ensuremath{\propto} p̂(y)²/\allowbreak{}p\_\allowbreak{}train(y), 즉 p̂에 α=\allowbreak{}p̂/\allowbreak{}p\_\allowbreak{}train을 곱해 정규화. DistPFN-T는 τ=\allowbreak{}CE(p̂, p\_\allowbreak{}train)로 온도를 정해 p̂·p̂\_\allowbreak{}T/\allowbreak{}p\_\allowbreak{}train. p\_\allowbreak{}train은 컨텍스트의 경험 클래스 빈도. 모델 수정·학습 없음.
+
+
+\par\noindent \textbullet\enspace 평가: OpenML 253개, 50/\allowbreak{}50 split, 5 seed. 라벨 시프트는 역빈도 오버샘플링 w\_\allowbreak{}k \ensuremath{\propto} p\_\allowbreak{}k\textasciicircum{}\{−β\}(β\ensuremath{\in}\{0,0.1,0.5,1,2,5\})로 학습 셋만 재표집(test 고정). TabPFN-v2·LoCalPFN·TabICL; 베이스라인 EME/\allowbreak{}BBE(라벨 시프트 추정), GBDT/\allowbreak{}DL 다수. 지표 accuracy(주)·ECE·precision·평균 순위(CD 다이어그램, β=\allowbreak{}2).
+
+
+\par\noindent \textbullet\enspace 수치: TabPFN-v2 β=\allowbreak{}5에서 0.727  \ensuremath{\rightarrow}  DistPFN 0.769  \ensuremath{\rightarrow}  -T 0.775; 심한 불균형(<0.4) 데이터셋 +\allowbreak{}0.095, 균형 +\allowbreak{}0.002. CostaMadre1 소수 recall 1.7 \ensuremath{\rightarrow} 15.9\%. 추론 시간 증가 \ensuremath{\approx}0.001 s.
+
+
+\par\noindent \textbullet\enspace 차용: 다중 클래스 prior 보정의 기본형. 우리 exp37 재현(0907)에서 C0(균등) 위에서는 중립(−0.0008)이었는데, 이는 C0가 이미 균형이라 p\_\allowbreak{}train이 균등에 가까웠기 때문으로 해석된다 — \textbf{C0-natural 컨텍스트 +\allowbreak{} DistPFN} 조합이 미검증.
+
+
+\par\noindent \textbullet\enspace 주의: feature shift 미처리; 논문 지표에 F1 없음; oracle 갭 남음.
+
+
+\paragraph{PFN-Imb — Correcting Class Imbalance in Prior-Data Fitted Networks (IEEE ITW 2026; FMSD@ICML 2026 미러, arXiv 2605.21742) [D, C] ★}
+\par\noindent \textbullet\enspace 방법: 비용 최소화에서 τ =\allowbreak{} C₁₀/\allowbreak{}(C₁₀+\allowbreak{}C₀₁) =\allowbreak{} π₁ 유도; balanced acc 최대점이 τ=\allowbreak{}π₁을 추적함을 실증. PFN은 균형에서 잘 보정되고 불균형에서 "다수 편향"만 생기므로(과신이 아니라) 단순 threshold로 교정된다. 언더샘플링(π₀=\allowbreak{}π₁까지), 오버샘플링(복제  \ensuremath{\rightarrow}  "spiky posterior"로 악화), TabPFGen 합성(악화) 비교.
+
+
+\par\noindent \textbullet\enspace 평가: OpenML-CC18 이진 11개, test 클래스당 500 균형, 컨텍스트 N\ensuremath{\in}\{100,500,1000\}, π₁\ensuremath{\in}\{0.05,0.1,0.2,0.3\}; TabPFN-2.5; 클래스별 정확도·balanced acc·worst-class acc·ROC. seed 미명시.
+
+
+\par\noindent \textbullet\enspace 수치(평균): None 0.710/\allowbreak{}0.446  \ensuremath{\rightarrow}  Thresholding 0.793/\allowbreak{}0.729, Downsampling 0.779/\allowbreak{}0.737, Oversampling 0.621/\allowbreak{}0.259, TabPFGen 0.691/\allowbreak{}0.407 (BA/\allowbreak{}WCA).
+
+
+\par\noindent \textbullet\enspace 차용: \textbf{"threshold-to-prior" arm을 s44의 명명된 기준선으로}(재적합 없음, 확률 불변). 다중 클래스 확장은 저자도 미해결 — 클래스별 prior로 p̂/\allowbreak{}π를 나누는 형태(=\allowbreak{}DistPFN의 α와 동형)가 자연스러운 확장.
+
+
+\par\noindent \textbullet\enspace 주의: 이진 전용; 컨텍스트 \ensuremath{\leq}1,000.
+
+
+\paragraph{CreditTFM — Data Presentation Over Architecture (arXiv 2605.18635; 시트 Ch.3, 사용자 취소선) [C] ★}
+\par\noindent \textbullet\enspace 방법: 리샘플링을 \textbf{컨텍스트 구성 전략}으로 재정의. 7전략: Uniform, Stratified /\allowbreak{} Balanced(m\_\allowbreak{}c\ensuremath{\approx}m/\allowbreak{}K), Oversample+\allowbreak{}(역빈도 가중 +\allowbreak{} boost +\allowbreak{} \textbf{최소 소수 개수 하한}), SMOTE /\allowbreak{} Diversity-KM(MiniBatchKMeans 대표), Hybrid(ρ·Balanced +\allowbreak{} (1−ρ)·Diversity-KM).
+
+
+\par\noindent \textbullet\enspace 평가: Home Credit(307K, 부도 8\%), Lending Club(533K, 12–22\%, \textbf{시간순 split}: train \ensuremath{\leq}2019-06, test 2019 H2). 컨텍스트 \{1k,2k,5k,10k,20k,50k\}. TabPFN·TabICL·OrionMSP v1/\allowbreak{}1.5·OrionBix vs RF/\allowbreak{}XGB/\allowbreak{}LGBM/\allowbreak{}CatBoost(클래스 가중·threshold 튜닝 없음). ROC-AUC 주, MCC·default recall·BA·F1 보조. seed 미명시.
+
+
+\par\noindent \textbullet\enspace 수치: 평균 AUC(HC/\allowbreak{}LC) Uniform 0.703/\allowbreak{}0.673, Balanced 0.734/\allowbreak{}0.683, Hybrid 0.732/\allowbreak{}0.686, SMOTE 0.690/\allowbreak{}0.673, Diversity-KM 0.681/\allowbreak{}0.656. 전략 간 격차 0.03–0.05 > 모델 간 격차. GBDT는 zero-recall trap(XGB HC recall 0.0\%, MCC 0.000); 50k balanced 컨텍스트에서 TFM 5종 MCC 0.19–0.26, default-F1 0.24–0.31, BA 0.65–0.71.
+
+
+\par\noindent \textbullet\enspace 차용: \textbf{Hybrid(ρ 한 knob)와 Oversample+\allowbreak{}의 최소 소수 하한}은 C0-균등의 직접 일반화. IR>1000에서 "클래스당 균등"은 100k 안에 불가능하지만 "family당 \ensuremath{\geq}n행 보장 +\allowbreak{} 나머지 역빈도"는 가능. SMOTE-in-context 음성 결과로 해당 arm은 생략.
+
+
+\par\noindent \textbullet\enspace 주의: 이진, IR \ensuremath{\leq} \textasciitilde{}12; GBDT가 threshold 튜닝 없이 평가돼 zero-recall 수치는 불공정 — 우리 s44는 이미 threshold를 맞추므로 3–4점 선물은 기대 금물.
+
+
+\paragraph{IM-Context — In-Context Learning for Imbalanced Regression (TMLR; arXiv 2405.18202; 코드) [C] ★}
+\par\noindent \textbullet\enspace 방법: 얼린 PFN 인코더(Müller 2023, 18차원)·GPT-2 ICL 모델에서 \textbf{쿼리별 kNN 컨텍스트}: 원본 셋에서 k′개 +\allowbreak{} "역밀도 데이터셋"(구간 표현 비율에 반비례해 재표집)에서 k̃개 이웃(코사인 유사도). k′=\allowbreak{}k̃=\allowbreak{}15(PFN). 이론: c-Lipschitz 가정 아래 E[오차] \ensuremath{\leq} 편향² +\allowbreak{} σ²/\allowbreak{}k +\allowbreak{} σ²; 다수 구간은 k 증가로 단조 감소, \textbf{소수 구간은 편향 지배로 U자} — 전체 학습셋 컨텍스트가 꼬리에 불리한 이유.
+
+
+\par\noindent \textbullet\enspace 평가: AgeDB-DIR·IMDB-WIKI-DIR·STS-B-DIR +\allowbreak{} 표 6종; \textbf{Few(<20)/\allowbreak{}Median(20–100)/\allowbreak{}Many(>100)} 구간별 MAE/\allowbreak{}MSE/\allowbreak{}RMSE, 균형 test, 3 seed. 베이스라인 LDS+\allowbreak{}FDS·RankSim·ConR·VIR·GBM/\allowbreak{}NN.
+
+
+\par\noindent \textbullet\enspace 수치: AgeDB few-shot MAE 7.83(9.21), IMDB few-shot 16.33(20.96), STS-B few 0.566(0.780), 표 few-shot RMSE 3.31로 1위.
+
+
+\par\noindent \textbullet\enspace 차용: (1) "100k 균등 컨텍스트는 다수 prior 주입"이라는 인용 가능한 논거. (2) \textbf{역밀도 보조 풀 +\allowbreak{} 원본 풀의 sub-budget 분할} — β를 지렛대로 쓰던 EXP52–54의 연장. (3) Many/\allowbreak{}Median/\allowbreak{}Few 분해 보고.
+
+
+\par\noindent \textbullet\enspace 주의: 회귀; IR>1000에서 쿼리별 kNN은 꼬리 이웃을 0개 반환할 수 있어 역밀도 가지가 전부를 떠맡는다.
+
+
+\paragraph{Fair-TabICL — Towards Fair In-Context Learning with TFMs (TMLR 2026; arXiv 2505.09503; 코드) [C] ★}
+\par\noindent \textbullet\enspace 방법: TabPFNv2·TabICL·TabDPT에 컨텍스트 개입 3종. (1) Correlation Remover(민감속성 투영 제거, α); (2) \textbf{Group-balanced}(다수 그룹 무작위 하향표집); (3) \textbf{Uncertainty-based}: 별도 20\% 분할로 학습한 민감속성 분류기(LR/\allowbreak{}TabPFN)의 conformal 예측집합이 2개 이상인 "불확실" 표본만 컨텍스트에 포함(coverage ε로 조절).
+
+
+\par\noindent \textbullet\enspace 평가: ACS PUMS 5종(8.6k–47.8k)·CelebA·Diabetes·German Credit; 80/\allowbreak{}20 split +\allowbreak{} 20\% 예측기 학습 분할; 3 seed; Accuracy·ΔDP·ΔEOP·ΔEOD·민감속성 재구성 정확도.
+
+
+\par\noindent \textbullet\enspace 수치(TabPFN·ACSIncome): Vanilla ΔDP\ensuremath{\approx}14/\allowbreak{}acc 77  \ensuremath{\rightarrow}  Group-balanced 14/\allowbreak{}77  \ensuremath{\rightarrow}  CR 26/\allowbreak{}77(누출 100\%)  \ensuremath{\rightarrow}  Uncertain+\allowbreak{}TabPFN 5.5/\allowbreak{}82. Adult: acc 85.72 \ensuremath{\rightarrow} 82.05, ΔDP 16.99 \ensuremath{\rightarrow} 5.51.
+
+
+\par\noindent \textbullet\enspace 차용: "그룹"을 "클래스"로 바꾸면 \textbf{균등 균형 표집이 약하고 경계 표본 선택이 강하다}는 C0 실험의 직접 대조군. IR>1000에서는 "꼬리 이웃 +\allowbreak{} 꼬리 경계의 어려운 다수 행"으로 채우라는 뜻. 단 불확실성 점수기는 라벨로 학습하므로 시간순에서는 \textbf{과거 구간에서만 적합}(SRC\_\allowbreak{}HISTORY \#2 회피).
+
+
+\par\noindent \textbullet\enspace 주의: 그룹비 50/\allowbreak{}50\textasciitilde{}80/\allowbreak{}20; 이진.
+
+
+\paragraph{Stream-TabPFN — In-context Learning of Evolving Data Streams with TFMs (KDD 2026; arXiv 2502.16840) [C]}
+\par\noindent \textbullet\enspace 방법: 무한 스트림을 on-the-fly 스케치로 요약해 얼린 TabPFN 컨텍스트로 공급하는 \textbf{슬라이딩 메모리}; 가중치 갱신 없음.
+
+
+\par\noindent \textbullet\enspace 평가: 비정상 스트림 벤치마크; ARF·SRP(Hoeffding-tree 앙상블) 대비 전 벤치마크 우위(초록 기준, 수치 미확인).
+
+
+\par\noindent \textbullet\enspace 차용: 시간순 split에서 "컨텍스트 교체가 유일한 적응 수단"이라는 프레이밍. 최근성 창은 일찍 한 번 나온 꼬리 family를 굶기므로 \textbf{최근성 × 클래스 하한} 두 knob이 필요(로그에 명시).
+
+
+\paragraph{CURE — Bounded Context Management for TFMs on Stream Learning (FMSD@ICML 2026 spotlight; arXiv 2606.18677; 코드) [C] ★}
+\par\noindent \textbullet\enspace 방법: 예산 B=\allowbreak{}1000을 short FIFO 뱅크(75\%)와 long 뱅크(25\%)로 분할. 승인: 라벨 관측 전 예측분포의 정규화 엔트로피 h(z)=\allowbreak{}−Σp log p/\allowbreak{}log C \ensuremath{\geq} τ(0–0.5)일 때만 long 뱅크로. 제거: 초과 시 \textbf{최다 클래스}에서 정규화 특징공간 L2 최근접 동클래스 쌍을 찾아 최근 중심에서 먼 쪽 제거. TabICL-v2 기본, LimiX-v1·TabPFN-2.5·TabDPT-v1로 전이.
+
+
+\par\noindent \textbullet\enspace 평가: NOAA·METER·RIALTO·POSTURE-No8(불균형)·POKER·NOMAO·AGR(A) 7 스트림; VFDT/\allowbreak{}EFDT/\allowbreak{}ARF/\allowbreak{}SRP/\allowbreak{}LevBag/\allowbreak{}BOLE +\allowbreak{} DualFIFO; prequential accuracy·평균 순위.
+
+
+\par\noindent \textbullet\enspace 수치: 최대 27.0\% 상대 개선(+\allowbreak{}0.45\textasciitilde{}+\allowbreak{}19.59\%p), 평균 순위 1.00(ARF 3.71, SRP 2.57); 스텝당 0.0024 s.
+
+
+\par\noindent \textbullet\enspace 차용: 100k 예산 관리의 직접 대응물. 승인은 라벨 무관·제거만 클래스 인지라 \textbf{꼬리 클래스가 중복 판정에서 살아남는 보장이 없음}  \ensuremath{\rightarrow}  "클래스당 최소 k행 floor"를 붙이는 한 칸 knob이 가장 좁고 검증 가능한 변경(에이전트 권고).
+
+
+\paragraph{AttnDistill-TabPFN — How Far Can We Compress? Attention-Guided Dataset Distillation for TabPFN (ECML PKDD 2026; 코드) [C]}
+\par\noindent \textbullet\enspace 방법: ICD-TabPFN을 TabPFNv2로 확장. 합성 특징과 \textbf{라벨을 함께 최적화해 클래스 균등 배분 제약을 완화}; TabPFN attention 질량으로 증류 행을 반복 가지치기해 압축 한계 탐색. 평균 압축률 15.7\%에서 정확도 유지, ICD·라벨-only 변형 상회.
+
+
+\par\noindent \textbullet\enspace 차용: 클래스별 컨텍스트 예산을 "학습되는 양"으로 두는 발상; \textbf{가지치기 기준이 라벨이 아니라 모델 내부 신호}(검증 적합 아님, \#2 회피). 합성 행 자체는 "행을 만드는" 계열이라 가지치기 절반만 권장.
+
+
+\par\noindent \textbullet\enspace 주의: 본문 미열람(유료); 심한 불균형 실험 여부 미확인.
+
+
+\paragraph{PUICL — In-Context Positive-Unlabeled Learning (arXiv 2605.05591) [P]}
+\par\noindent \textbullet\enspace 방법: TabPFN식 트랜스포머를 PU로 사전학습(SCM 합성  \ensuremath{\rightarrow}  pre-removal로 PU화  \ensuremath{\rightarrow}  다양한 class-prior 노출); 추론은 라벨 양성+\allowbreak{}unlabeled를 한 행렬로 넣는 transductive.
+
+
+\par\noindent \textbullet\enspace 평가: 반합성 PU 20개(라벨 양성 200/\allowbreak{}unlabeled 양성 400/\allowbreak{}음성 400), AUC·Acc·F1, PU 4종 대비 우위(수치표 미확인).
+
+
+\par\noindent \textbullet\enspace 차용: **"prior가 그 class-prior 영역을 본 적 없으면 ICL이 못 한다"**는 근본 설명(얼린 TabPFN이 IR>1000에서 무너지는 이유). unlabeled test 행을 컨텍스트에 함께 넣는 transductive 형식은 s43/\allowbreak{}s44 unseen resolution에 이식 가능한 형태.
+
+
+\par\noindent \textbullet\enspace 주의: 실효 불균형 1:1\textasciitilde{}1:2; 사전학습 필요.
+
+
+\paragraph{TFM-ImbRemedy (Cai) — Class-imbalance remedies for TFMs: a workflow-dependent empirical evaluation (Zenodo 22721350 v2.0.1, 2026-09-12; 코드) [D, C] ★(비교 규칙으로)}
+\par\noindent \textbullet\enspace 설계: 43개 자연 불균형 이진 과제(IR 2.0–580.2), 5 seed, 출처군 38. TabPFN-v2/\allowbreak{}v3·TabICLv2·TabDPT vs 튜닝 XGB/\allowbreak{}LGBM/\allowbreak{}CatBoost·balanced RF. remedy: random OS·SMOTE·Borderline·ADASYN·Simplicial SMOTE·표준화 거리 표집 대조·언더샘플링·threshold 보정·DistPFN/\allowbreak{}-T. 저장된 확률 배열 17,200개로 \textbf{결정 워크플로 7종}(raw 0.5, 검증 BA threshold, Platt, 온도, 클래스조건 conformal…)을 오프라인 재계산. 클러스터 부트스트랩·Wilcoxon·Nemenyi.
+
+
+\par\noindent \textbullet\enspace 수치: TabPFN-v2+\allowbreak{}TabICLv2, SMOTE, BA 상호작용 raw −0.0834 [−0.1434, −0.0235]  \ensuremath{\rightarrow}  검증 threshold 후 −0.0044  \ensuremath{\rightarrow}  Platt 후 −0.0022; raw AUPRC −0.0074(비유의). v1 관측: 미처리 TFM ECE 0.025(최고), 모든 remedy가 6–7배 악화; threshold-to-prior가 모든 리샘플링 상회. TabPFN-v3는 표준화 거리 표집에서 threshold 후에도 음의 상호작용 잔존.
+
+
+\par\noindent \textbullet\enspace 차용: (1) remedy는 \textbf{반드시 threshold 규칙과 함께} 보고. (2) 행을 만드는 remedy(합성)는 버리고 빼는 remedy(언더샘플링·threshold)만. (3) \textbf{저장 확률 배열을 산출물로} — s43/\allowbreak{}s44가 체크포인트를 안 남기는 규약과 맞고, threshold/\allowbreak{}보정/\allowbreak{}conformal 스윕이 재실행 없이 공짜가 된다. (4) ECE를 결과 튜플의 네 번째 다리로.
+
+
+\par\noindent \textbullet\enspace 주의: 동료 심사 없음·headline 철회; 전부 이진; TFM 컨텍스트 200–2,393행 vs GBDT 전체(데이터량 미분리); 30/\allowbreak{}215 분할이 양성 <10.
+
+
+\paragraph{AWARE — Retrieval-aligned TFMs for EHR (arXiv 2604.01841; 시트 Ch.3, 사용자 취소선) [C]}
+\par\noindent \textbullet\enspace 방법: 얼린 TFM 앞에 \textbf{SNNL로 학습한 retrieval encoder}(같은 outcome은 compact, 다른 outcome은 분리) +\allowbreak{} 표본별 attention 특징 가중  \ensuremath{\rightarrow}  top-k 컨텍스트. 불균형 대응: \textbf{클래스 빈도 역비례 mini-batch 표집}으로 encoder 학습, 5-fold encoder 앙상블. kNNPFN/\allowbreak{}TabDPT에는 경량 adapter.
+
+
+\par\noindent \textbullet\enspace 평가: MIMIC-IV·eICU·HIPE +\allowbreak{} OpenML/\allowbreak{}UCI 임상 12; \textbf{IR 5 \ensuremath{\rightarrow} 500 스트레스 테스트를 학습 표본 10,000 고정으로}; AUROC·AUPRC(주)·F1; 환자 단위 층화(시간순 아님); 3 seed.
+
+
+\par\noindent \textbullet\enspace 수치: IR=\allowbreak{}500에서 AUPRC +\allowbreak{}12.2\%; eICU ablation AUROC +\allowbreak{}23.8\% vs AUPRC +\allowbreak{}\ensuremath{\approx}140\%(지표 괴리); HIPE CPE AUPRC 0.141 \ensuremath{\rightarrow} 0.232.
+
+
+\par\noindent \textbullet\enspace 차용: 고정 예산 IR 스윕 프로토콜; AUROC/\allowbreak{}AUPRC 괴리 보고. encoder는 라벨로 학습하므로 시간순에서는 과거 구간 적합 ablation 필수.
+
+
+\paragraph{BAPS (arXiv 2608.12989; 시트 Ch.2) [C]}
+\par\noindent \textbullet\enspace 5기준 프로토타입 선택(대표성·경계·국소밀도·다양성·클래스 보존) 가중합, 512개 예산, "class-aware budget allocation"이 있으나 \textbf{할당 규칙·λ 미공개}; HIGGS/\allowbreak{}SUSY 이진, BA·macro-F1·AUC·ECE, 5회, Wilcoxon-Holm(p=\allowbreak{}0.031). 심한 불균형 실험 없음.
+
+
+\paragraph{L2C-TFM — Model-Aware Data Cleaning for TFMs (arXiv 2604.25154 v2) [D 교란]}
+\par\noindent \textbullet\enspace 얼린 TabPFN v2 앞 정제 순서를 PPO로 학습(보상 =\allowbreak{} 정확도 0.50 +\allowbreak{} 행 보존 2차 페널티 0.35 +\allowbreak{} 품질 0.15 +\allowbreak{} Wasserstein 0.05). OpenML CC18 10종, 8-seed 중첩 홀드아웃, accuracy·macro-F1·ECE. 결과 null(Δacc −0.0006, p=\allowbreak{}0.60). \textbf{소수 클래스 macro-F1 이득은 검증 fold threshold 튜닝(+\allowbreak{}0.035)이 대부분, 정제 고유 잔여분 +\allowbreak{}0.008(p=\allowbreak{}0.80).}
+
+
+\par\noindent \textbullet\enspace 차용: 행 제거 remedy에 ICL의 O(1/\allowbreak{}√n) 비용을 2차 페널티로 가격 매기는 발상; threshold-matched control 의무화.
+
+
+\paragraph{FT-Explore — Exploring Fine-Tuning for TFMs (WWW 2026; arXiv 2601.09654; 시트 갱신) [F]}
+\par\noindent \textbullet\enspace TALENT 155·CC18 63·TabZilla 27에서 zero-shot/\allowbreak{}meta-learning/\allowbreak{}SFT/\allowbreak{}PEFT × 6 TFM; \textbf{불균형 구간(IR<0.6)에서 meta-learning만 안정적으로 이득, SFT는 정확도·보정 악화}. TabPFN 불균형 구간: zero-shot 0.8808/\allowbreak{}0.8697(ACC/\allowbreak{}F1)  \ensuremath{\rightarrow}  meta 0.8784/\allowbreak{}0.8664  \ensuremath{\rightarrow}  SFT 0.8709/\allowbreak{}0.8578.
+
+
+\par\noindent \textbullet\enspace 차용: 얼린 TabPFN 선택의 외부 근거. 단 "불균형" 정의가 60:40 수준이라 수치는 인용 금물, 방향만.
+
+
+\paragraph{TACTIC — Tabular Anomaly Detection via In-Context inference (arXiv 2603.14171) [P, D]}
+\par\noindent \textbullet\enspace anomaly-centric 합성 prior로 PFN을 사전학습해 \textbf{점수+\allowbreak{}사후 임계값이 아닌 판별적 결정}을 한 forward pass로. 차용: "prior가 희소 클래스를 표현해야 ICL이 된다" +\allowbreak{} "점수를 자르지 말고 결정을 학습" — Energy gate가 long-tail에서 chance로 퇴화하는 \#6에 대한 외부 대응 논거. 사전학습 필요라 관련연구 인용용.
+
+
+\paragraph{TabPFN 라이브러리 v9 \texttt{majority\allowbreak{}\_\allowbreak{}\allowbreak{}downsam\allowbreak{}ple} [C]}
+\par\noindent \textbullet\enspace \texttt{Inferenc\allowbreak{}eConfig.\allowbreak{}SAMPLE\_\allowbreak{}\allowbreak{}S\allowbreak{}UBSAMPLI\allowbreak{}NG\_\allowbreak{}\allowbreak{}METHO\allowbreak{}D} 옵션: 최다 클래스 외 행 전량 보존, 나머지 예산만 다수 클래스에서 채움. 논문은 아니지만 Prior Labs가 채택한 "빼는 remedy". TabPFN-3 기술보고서에는 불균형 언급이 없다.
+
+
+\subsubsection{2.2 TabPFN을 쓰지 않지만 메커니즘이 이식되는 방법 (시트 Ch.3 해당)}
+\paragraph{AdapTable (TRL@NeurIPS 2024; arXiv 2407.10784; 코드) [A, D] ★(구조)}
+\par\noindent \textbullet\enspace 모델 무관 TTA. (1) shift-aware calibrator: 컬럼=\allowbreak{}노드 GNN이 배치 shift 추세와 로짓에서 표본별 온도 T\_\allowbreak{}i를 내고, 배치 내 불확실성 분위수(0.25/\allowbreak{}0.75)로 2차 보정; 기준 온도 \textbf{T=\allowbreak{}1.5ρ/\allowbreak{}(ρ−1+\allowbreak{}1e−6), ρ=\allowbreak{}max\_\allowbreak{}j p\_\allowbreak{}s(y)\_\allowbreak{}j /\allowbreak{} min\_\allowbreak{}j p\_\allowbreak{}s(y)\_\allowbreak{}j}(소스 불균형비). (2) label distribution handler: p̄ =\allowbreak{} [p̃ +\allowbreak{} norm(p̃·p\_\allowbreak{}t(y)/\allowbreak{}p\_\allowbreak{}s(y))]/\allowbreak{}2, p\_\allowbreak{}t(y) =\allowbreak{} (1−α)·mean(norm(p/\allowbreak{}p\_\allowbreak{}s)) +\allowbreak{} α·p\_\allowbreak{}t\textasciicircum{}\{oe\}, α=\allowbreak{}0.1, 배치 64. Theorem 3.1: 오차 격차 \ensuremath{\leq} K₁‖1−p\_\allowbreak{}t\textasciicircum{}\{oe\}/\allowbreak{}p\_\allowbreak{}t‖₁·BSE +\allowbreak{} K₂·ΔCE. Ablation: 보정 없이 prior 재가중만 하면 과신-오답 표본이 p\_\allowbreak{}t 추정을 망친다.
+
+
+\par\noindent \textbullet\enspace 평가: TableShift 6종 자연 shift +\allowbreak{} 3종×6 corruption; MLP·CatBoost·AutoInt·ResNet·FT-T; TTA PL/\allowbreak{}TTT+\allowbreak{}+\allowbreak{}/\allowbreak{}TENT/\allowbreak{}EATA/\allowbreak{}SAR/\allowbreak{}LAME; \textbf{macro-F1·balanced acc}("표 데이터의 극단 불균형" 때문에 accuracy 배제); 3회.
+
+
+\par\noindent \textbullet\enspace 수치: HELOC macro-F1 53.2 \ensuremath{\rightarrow} 65.8(본문 "26\%", 초록 "16\%" 불일치); corruption 10\%+\allowbreak{}.
+
+
+\par\noindent \textbullet\enspace 차용: 얼린 TabPFN 출력에 파라미터 0개로 얹는 구조; \textbf{시간순 NIDS 스트림은 family가 뭉쳐 도착하므로 배치 p\_\allowbreak{}t(y) 추정 +\allowbreak{} EMA가 이례적으로 잘 맞을 조건}(청크별 prior 재추정, re-fit 비용 0); "보정 먼저, prior 조정 나중" 순서.
+
+
+\par\noindent \textbullet\enspace 주의: TabPFN 실험 없음; IR>1000이면 배치 64당 꼬리 기대치 0.06개  \ensuremath{\rightarrow}  p\_\allowbreak{}t 추정 붕괴(\#6과 같은 메커니즘); T 공식은 ρ가 크면 1.5로 포화.
+
+
+\paragraph{CalibOnlineLS — Calibration-Aware Online Adaptation under Label Shift (UAI 2026, PMLR 337) [A]}
+\par\noindent \textbullet\enspace 얼린 기본 분류기 +\allowbreak{} \textbf{따로 보정된 보조 분류기}로 스트림 라벨 비율을 온라인 추정해 기본 예측을 보정; 오차 =\allowbreak{} 소멸 항 +\allowbreak{} 보정 품질 항; 보정 세분도–유한표본 오차 트레이드오프. DistPFN이 "주어졌다"고 가정하는 타깃 prior를 구하는 구조. 수치는 PDF 미확인.
+
+
+\paragraph{Plugin — An Efficient Plugin Method for Metric Optimization of Black-Box Models (arXiv 2503.02119; ICLR 2025 철회) [D]}
+\par\noindent \textbullet\enspace 블랙박스 확률 +\allowbreak{} 소량 타깃 라벨로 혼동행렬 지표(macro-F1 등)를 직접 최적화하는 사후 변환, 특징 불필요, 라벨 시프트·잡음 하 표·언어 검증. 우리 고정 운영점 CSV의 상위 개념. 검증 적합 규칙  \ensuremath{\rightarrow}  과거 구간에서만 적합하고 전이 갭 보고.
+
+
+\paragraph{RCB — Exploring Imbalanced Annotations for Effective ICL (arXiv 2502.04037; ICLR 2026 reject) [C]}
+\par\noindent \textbullet\enspace LLM ICL: 불균형 데모 풀의 성능 저하는 클래스 가중만으로 안 고쳐짐(조건부 편향). 균형 프로브로 조건부 편향 추정  \ensuremath{\rightarrow}  데모 검색 점수를 재가중(최대 +\allowbreak{}5.4\%). 풀 리샘플 대신 \textbf{검색 점수 재가중}은 TabPFN 컨텍스트 선택에 이식 가능; 심사에서 "극단 희소 꼬리 적용성" 지적.
+
+
+\paragraph{Conformal 클러스터 [U]}
+\par\noindent \textbullet\enspace \textbf{Conformal-LT}(ICLR 2026, arXiv 2507.06867): prevalence-adjusted softmax(macro-coverage 최적화) +\allowbreak{} marginal \ensuremath{\leftrightarrow} class-conditional 임계값 선형 보간. Pl@ntNet-300K(1,081 클래스)·iNat-2018(8,142).
+
+
+\par\noindent \textbullet\enspace \textbf{MacroCov-CP}(arXiv 2606.28598, Bhattacharyya·Ding·Barber): macro-coverage(클래스별 coverage 비가중 평균)에 label-weighted conformal 유한표본 보장; 그룹핑 일반화; 최소 집합 특성화. \textbf{우리 "known macro-F1 including tail"의 conformal 대응물}이며 클래스별 보정점이 극소수일 때의 현실적 목표.
+
+
+\par\noindent \textbullet\enspace \textbf{Quiet Failure}(arXiv 2607.06605): marginal CP가 전역 90\%를 맞추며 소수 coverage 4.2\%까지 붕괴; \textbf{보존 항등식}(소수 부족분 =\allowbreak{} 다수 잉여 × IR)으로 격차를 1\%p 이내 예측; Mondrian CP가 복구. RF/\allowbreak{}GNN/\allowbreak{}화학 LM.
+
+
+\par\noindent \textbullet\enspace \textbf{MAKE 8(7):190}(2026-07, AlThani): IR 1:345에서 표준 CP 이상 coverage 52.94\%  \ensuremath{\rightarrow}  Mondrian 90.59\%; 실패 조건(기본 판별력 낮음·소수 보정셋 작음) 명시. XGB/\allowbreak{}RF/\allowbreak{}NN.
+
+
+\par\noindent \textbullet\enspace \textbf{Sanghi — Classwise Conformal Coverage for Frozen TabPFN v2 under Imbalance}(Zenodo 보조자료만, 2026-08-15; 본문 미발견): OpenML 다중 클래스 20개, \textbf{context /\allowbreak{} bias-estimation /\allowbreak{} calibration /\allowbreak{} test 4-way fold}, worst-class coverage 분포, leave-one-dataset-out. "reviewer-requested" 표현으로 심사 중 추정.
+
+
+\par\noindent \textbullet\enspace 차용: s44의 unseen resolved accuracy 0.125(중앙값)를 point prediction 대신 \textbf{prediction set +\allowbreak{} abstention 비용}으로 재정의하는 출구; 4-way fold로 prior 보정량 추정(bias-estimation)과 threshold 선택(calibration)을 분리하면 \#2를 구조적으로 차단. 시간순 split은 교환가능성을 깨므로 weighted/\allowbreak{}adaptive conformal 필수 — 생략하면 \#2의 새 옷.
+
+
+\paragraph{Song 2026 — TabICLv2 비용 민감 비교 (J. Comput. Technol. Appl. Math.) [D]}
+\par\noindent \textbullet\enspace 임계값을 \textbf{사전 선언한 OOF 비용 C=\allowbreak{}10·FP+\allowbreak{}500·FN}으로 잠그고 OOF AUPRC로 모델 선택, test 봉인. Scania 10k: AUPRC +\allowbreak{}0.033 [0.021, 0.046], 비용 −3,454(유의), Brier 0.00685 vs 0.00840; SECOM 비유의; \textbf{TabICLv2 413× 계산}을 그대로 보고.
+
+
+\par\noindent \textbullet\enspace 차용: family별 c\_\allowbreak{}FP·c\_\allowbreak{}FN을 사전 선언하면 "known macro-F1 /\allowbreak{} OOD /\allowbreak{} retention" 튜플이 하나의 비용으로 잠기고, 검증 적합 없이 threshold를 고정할 수 있다(비용은 fitted가 아니라 declared). 50–331× 비용 갭을 정직하게 병기하는 전례.
+
+
+\paragraph{Ensembling TFMs: Diversity Ceiling and Calibration Trap (FMSD@ICML 2026; arXiv 2605.18696) [진단]}
+\par\noindent \textbullet\enspace 6 TFM의 쌍별 Q-statistic 0.961(거의 중복)  \ensuremath{\rightarrow}  어떤 convex 결합도 상한에 묶임; 최고(2단 cascade stacking) +\allowbreak{}0.18\% acc를 253× compute로; LR meta-learner는 경계를 날카롭게 해 보정 파괴. 차용: s44 expert 앙상블이 "diversity ceiling"에 걸렸는지 Q-statistic으로 먼저 측정(\#3의 정량 진단).
+
+
+\subsubsection{2.3 우리 도메인(NIDS)·불균형 벤치마크 평가 논문 (참고)}
+\par\noindent \textbullet\enspace \textbf{FM-CyberEval}(Electronics 2025; FLLM 2025 자매): CIC-IDS2017·N-BaIoT·CIC-UNSW, 클래스당 20k(저널)/\allowbreak{}3k(FLLM) 캡 =\allowbreak{} 유일한 불균형 장치("빼는" 계열), TabPFN/\allowbreak{}TabICL만 전 클래스 non-zero recall(Heartbleed·Infiltration 포함). \textbf{무작위 층화 split}이라 99.59\%는 s05/\allowbreak{}s06이 겪은 누수 서명 — 도메인 관련연구로 인용하되 split 결함을 명시.
+
+
+\par\noindent \textbullet\enspace \textbf{Butt·Hotho·Schlör, Evaluating Tabular Representation Learning for NIDS}(IEEE CSR 2026; arXiv 2605.02519): NetFlow 벤치마크에서 TabICL이 CIDDS 최고, supervised ≫ unsupervised AD, cross-dataset 전이는 조합 의존. NetFlow-v3 커뮤니티와 같은 그룹.
+
+
+\par\noindent \textbullet\enspace \textbf{TabPFN-SmartCity}(arXiv 2604.11394; 시트 취소선): ToN-IoT·TabPFN v2.5, RF 대비 40× 빠른 추론, scanning F1 69.8\%(최악 클래스) — ToN 클래스별 비교용 외부 수치.
+
+
+\par\noindent \textbullet\enspace \textbf{ClinImb}(Sci Rep 2026): MIMIC-IV-ED에선 TabPFN v2.6/\allowbreak{}TabICL 최상, eICU에선 XGBoost 일관 우위; \textbf{IR을 인위로 올리며 macro-F1 열화 곡선}을 그리는 프로토콜 — "TabPFN이 XGB에 진다"를 "IR=\allowbreak{}X를 넘으면 진다"로 바꾸는 한 칸 ablation.
+
+
+\par\noindent \textbullet\enspace \textbf{BeyondArena}(시트): 142 non-IID 데이터셋에서 tree/\allowbreak{}DL이 여전히 우위 — s44 결과를 field-level 현상으로 프레이밍.
+
+
+\par\noindent \textbullet\enspace \textbf{MAKE 8(8):244 critical review}(2026): 961건 스크리닝, 142 non-i.i.d.에서 tree/\allowbreak{}DL 우위, 112개에서 TFM의 conditional coverage가 GBDT보다 약함.
+
+
+\par\noindent \textbullet\enspace SMOTE가 TFM에 해롭다는 도메인 재현: SAR-Crop(원본 불균형이 최선, SMOTE 3종 악화), EMBC 2025 SeqXGB(SMOTE 실패), EV-Crash(SMOTEENN).
+
+
+
+\medskip\hrule\medskip
+\subsection{3. 평가 프로토콜 비교}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11247\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20949\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14606\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13486\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10128\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14606\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14979\linewidth-2\tabcolsep\relax}}
+\toprule
+논문 & 불균형 생성 & 데이터/\allowbreak{}규모 & split & seed & 주지표 & 보조 \\ \midrule
+\endfirsthead
+논문 & 불균형 생성 & 데이터/\allowbreak{}규모 & split & seed & 주지표 & 보조 \\ \midrule
+\endhead
+{}DistPFN & 역빈도 β-오버샘플링(train만) & OpenML 253 & 50/\allowbreak{}50 무작위 & 5 & accuracy & ECE, precision, rank \\
+{}PFN-Imb & π₁\ensuremath{\in}\{.05,.1,.2,.3\}, N\ensuremath{\in}\{100,500,1k\} & CC18 이진 11 & test 균형 500/\allowbreak{}class & 미명시 & balanced acc & worst-class acc, ROC \\
+{}CreditTFM & 자연(8\%, 12–22\%), 컨텍스트 1k–50k & HC 307K, LC 533K & LC만 시간순 & 미명시 & ROC-AUC & MCC, recall, BA, F1 \\
+{}Cai & 자연 IR 2–580 & 43 이진 & 무작위, 215 분할 & 5 & balanced acc & AUPRC, ECE, 7 결정 워크플로 \\
+{}AWARE & IR 5 \ensuremath{\rightarrow} 500 스윕, 학습 10k 고정 & MIMIC·eICU·HIPE+\allowbreak{}12 & 환자 단위 층화 & 3 & AUPRC, AUROC & F1 \\
+{}IM-Context & 라벨 구간 Few/\allowbreak{}Median/\allowbreak{}Many & 8 (표 6) & 균형 test & 3 & MAE/\allowbreak{}RMSE 구간별 & GM \\
+{}Fair-TabICL & 자연 그룹비 & ACS 5 +\allowbreak{} 3 & 80/\allowbreak{}20 +\allowbreak{} 20\% 예측기 & 3 & ΔDP/\allowbreak{}ΔEOP/\allowbreak{}ΔEOD & acc, 재구성 정확도 \\
+{}CURE & 자연(POSTURE 불균형) & 7 스트림 & prequential & – & prequential acc & 평균 순위, 시간 \\
+{}AdapTable & 자연 shift +\allowbreak{} corruption & TableShift 6 & 도메인 split & 3 & macro-F1, BA & – \\
+{}ClinImb & IR 인위 증가 곡선 & MIMIC-IV-ED·eICU 7과제 & – & – & macro-F1 열화 & 학습시간 \\
+{}Song & 자연 희소 고장 & Scania 5k/\allowbreak{}10k, SECOM & 중첩 CV, test 봉인 & 5 & 사전 선언 비용 & AUPRC, MCC, Brier \\
+{}Sanghi(미확인) & 자연 & OpenML 다중 20 & 4-way fold & per-seed & worst-class coverage & 보정 예산 \\
+\bottomrule
+\end{longtable}
+\endgroup
+우리(s44)와의 차이: 우리는 시간순 split·IR>1000·다중 클래스·unseen family를 동시에 갖는데, 위 논문 중 셋 이상을 동시에 만족하는 프로토콜은 없다(시간순 split은 CreditTFM-LC와 Stream-TabPFN만). 이 점 자체가 논문의 프로토콜 기여 주장으로 쓸 수 있다.
+
+
+\medskip\hrule\medskip
+\subsection{4. 차용 아이디어 우선순위}
+각 항목: 공격 대상 수치 /\allowbreak{} SRC\_\allowbreak{}HISTORY 어느 실패 유형을 어떻게 피하는가 /\allowbreak{} knob 수.
+
+\par\noindent \textbullet\enspace \textbf{threshold-to-prior arm +\allowbreak{} threshold-matched XGBoost} [D] — known macro-F1 중앙값 −0.184. τ를 학습 prior에서 정하면(검증 적합 아님) \#2 회피. 0 knob(재실행 불필요: 저장 확률로 오프라인). 근거: PFN-Imb·Cai·L2C-TFM. 다중 클래스는 p̂/\allowbreak{}π 정규화(DistPFN의 α와 동형).
+
+
+\par\noindent \textbullet\enspace \textbf{C0-natural +\allowbreak{} DistPFN} [A] — exp37 재현이 중립이었던 이유가 C0가 이미 균형이라서인지 확인. 1 knob(컨텍스트 비율). 근거: DistPFN 심한 불균형 +\allowbreak{}0.095.
+
+
+\par\noindent \textbullet\enspace \textbf{Hybrid 컨텍스트: ρ·Balanced +\allowbreak{} (1−ρ)·Diversity-KM, family당 최소 n행 floor} [C] — known macro-F1. 1 knob(ρ 또는 n). 근거: CreditTFM Hybrid/\allowbreak{}Oversample+\allowbreak{}, majority\_\allowbreak{}downsample, IM-Context 역밀도 풀. "행을 빼는" 계열이라 Cai 결과와 정합.
+
+
+\par\noindent \textbullet\enspace \textbf{경계(불확실) 표본 우선 컨텍스트} [C] — Fair-TabICL·CURE. 불확실성은 \textbf{과거 구간의 얼린 TabPFN 자체 엔트로피}(CURE 방식, 라벨 무관)로 계산하면 \#2·\#4 회피(TTA 안정성과 다름: 소유 expert 식별이 아니라 컨텍스트 채우기). CURE에 클래스 floor를 붙이면 1 knob.
+
+
+\par\noindent \textbullet\enspace \textbf{저장 확률 배열을 산출물로 +\allowbreak{} 결정 규칙 스윕 오프라인} [프로토콜] — s43/\allowbreak{}s44 "체크포인트 없음" 규약과 정합; threshold·Platt·conformal을 재실행 없이 비교. 근거: Cai.
+
+
+\par\noindent \textbullet\enspace \textbf{결과 튜플에 ECE/\allowbreak{}Brier와 AUPRC 추가} [프로토콜] — Cai(remedy가 ECE 6–7배 악화), AWARE(AUROC +\allowbreak{}24\% vs AUPRC +\allowbreak{}140\%), Song(Brier).
+
+
+\par\noindent \textbullet\enspace \textbf{고정 예산 IR 스윕 곡선} [프로토콜] — AWARE·ClinImb. "XGB에 진다"를 "IR=\allowbreak{}X 이후 진다"로.
+
+
+\par\noindent \textbullet\enspace \textbf{4-way fold(context /\allowbreak{} bias-estimation /\allowbreak{} calibration /\allowbreak{} test)} [프로토콜] — Sanghi. 시간순에서는 bias-estimation을 context 이후·test 이전 구간에 둔다. \#2의 구조적 차단.
+
+
+\par\noindent \textbullet\enspace \textbf{unseen resolution을 macro-coverage conformal +\allowbreak{} abstention 비용으로 재정의} [U] — unseen resolved 0.125. weighted conformal 필수(시간순). 근거: MacroCov-CP·Conformal-LT·Quiet Failure.
+
+
+\par\noindent \textbullet\enspace \textbf{청크별 prior 온라인 재추정 +\allowbreak{} EMA} [A] — AdapTable/\allowbreak{}CalibOnlineLS. NIDS 스트림의 family 군집 도착에 유리하나 IR>1000에서 배치당 꼬리 0개 문제  \ensuremath{\rightarrow}  청크 크기를 family 등장 주기에 맞춰야 함. 2 knob.
+
+
+\par\noindent \textbullet\enspace \textbf{버릴 것}: SMOTE/\allowbreak{}TabPFGen-in-context(4개 출처 음성), TFM 파인튜닝(FT-Explore: 불균형에서 SFT 악화), 앙상블 확장 전 Q-statistic 진단(diversity ceiling).
+
+
+\par\noindent \textbullet\enspace \textbf{관련연구 프레이밍}: "TabPFN prior는 IR>1000 영역을 본 적이 없다"(PUICL·TACTIC·Categorical Prior Lock-in), "IR>1000 방법 문헌은 IR\ensuremath{\leq}580(Cai)·\ensuremath{\leq}500(AWARE)·\ensuremath{\leq}129(GILA)에서 멈춘다".
+
+
+
+\medskip\hrule\medskip
+\subsection{5. 본문 미확인·제외}
+\par\noindent \textbullet\enspace 본문 미확인(OpenReview 차단): \textbf{TAAR}(ICLR 2026 reject; attention 점수로 컨텍스트 검색 +\allowbreak{} CRLR로 다중 클래스 확장; 심사평 "불균형·잡음에서 CRLR 가정 실패 가능", TabPFN-v2에선 kNN 검색이 오히려 해로운 비대칭), \textbf{ProFiT}(ICLR 2026 reject; MotherNet에 proxy-task 무라벨 파인튜닝, AUPRC/\allowbreak{}F1; 얼린 제약 위반), \textbf{Realistic Evaluation of TabPFN v2.5 in Open Environments}(FMSD@ICML 2026; "class-imbalanced·prior-driven 과제에 적합, concept shift에 약함"), \textbf{Sanghi}(위), \textbf{Dipu, group-conditional conformal audit of TabPFN}(Zenodo 20662098, venue 미확인).
+
+
+\par\noindent \textbullet\enspace 인접 이론(TabPFN 없음, 시트 미반영): Do we need rebalancing strategies?(AISTATS 2026), Cortes et al. Balancing the Scales(ICML 2025), Latent Score-Based Reweighting(ICML 2025), Structured Matrix Scaling·Utility-Aware Multiclass Calibration(AISTATS 2026), Heterogeneous Label Shift(ICML 2025), Prior shift estimation for PU(AISTATS 2026), Anatomy and Boundary of Adaptation under Temporal Tabular Shift(arXiv 2609.12136 — 시간순 얼린 TFM 적응의 식별불가능성), Categorical Prior Lock-in(arXiv 2606.11961), SPN prior alignment(ICML 2026), GILA(ICLR 2026 reject; 44 불균형 표 데이터셋 IR 11.6–129, TFM 베이스라인 없음).
+
+
+\par\noindent \textbullet\enspace 제외: 도메인 응용 \textasciitilde{}40건(SMOTE+\allowbreak{}TabPFN 사례연구), MultiTabPFN(클래스 수 문제), BoostPFN(초록에 불균형 언급 없음 확인), TFM4GAD(그래프 이상탐지), MLF-ICL(URL, F1 99.78\% 누수 의심), CausalMixFT Zenodo 자동생성 기록 14건(저자 불명, 비실재 문헌으로 판단).
+
+
+
+\medskip\hrule\medskip
+\subsection{6. 시트 반영 (\texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}evid\allowbreak{}ence/\allowbreak{}\allowbreak{}ref\allowbreak{}erences/\allowbreak{}\allowbreak{}tabpfn\_\allowbreak{}\allowbreak{}p\allowbreak{}apers\_\allowbreak{}\allowbreak{}su\allowbreak{}rvey.\allowbreak{}xls\allowbreak{}x}, 2026-09-22 2차)}
+\par\noindent \textbullet\enspace Ch.2 추가 7편: IM-Context, Fair-TabICL, Stream-TabPFN, AttnDistill-TabPFN, CURE, PUICL, TFM-ImbRemedy. FT-Explore는 WWW 2026 게재로 출처·연도 갱신 후 학회/\allowbreak{}저널 그룹으로 이동.
+
+
+\par\noindent \textbullet\enspace Ch.3 추가 9편: TabICL-CostFault(Song), CalibOnlineLS, Conformal-LT, AdapTable, TACTIC, L2C-TFM, MacroCov-CP, Plugin-BB, RCB.
+
+
+\par\noindent \textbullet\enspace 미반영: 본문 미확인 5건(§5), 인접 이론(TabPFN 무관), Zenodo 보조자료만 있는 기록.
+
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

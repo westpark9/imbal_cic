@@ -1,0 +1,502 @@
+% !TeX root = 20260813.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-13}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날은 TabPFN의 메모리·비용과 일부 클래스의 예측 실패 원인을 점검했다. 당시 분포 변화 설명은 8월 17일의 표본 선택·클래스 누락 진단으로 정정된 부분이 있으므로 원인 주장과 관찰 수치를 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-13 · 0813 Follow-up: sota run 클래스별 0 P/\allowbreak{}R/\allowbreak{}F1 원인 재검토 +\allowbreak{} Colab 노트북 작성}
+\label{report:20260813_0813}
+\recordnote{일부 클래스의 원인 해석은 0817 기록에서 정정되었다. 당시 진단과 후속 정정을 함께 읽는다.}
+0812.md의 후속. \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass\_\allowbreak{}\allowbreak{}t\allowbreak{}est.\allowbreak{}py} sota-protocol run들에서 일부 클래스가 precision/\allowbreak{}recall/\allowbreak{}f1을 정확히 0.0을 기록했는데, 인덱싱 버그인지 다른 원인인지 재검토했다. 결론: \textbf{인덱싱 버그 아님}, 두 가지 서로 다른 진짜 원인.
+
+\subsection{대상 run}
+\par\noindent \textbullet\enspace \texttt{results/\allowbreak{}\allowbreak{}20260806\allowbreak{}\_\allowbreak{}\allowbreak{}201324\_\allowbreak{}\allowbreak{}cic2017\_\allowbreak{}\allowbreak{}full\_\allowbreak{}\allowbreak{}tab\allowbreak{}pfn\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass/\allowbreak{}\allowbreak{}} (protocol=\allowbreak{}sota, max\_\allowbreak{}train\_\allowbreak{}samples=\allowbreak{}1,000,000)
+
+
+\par\noindent \textbullet\enspace \texttt{results/\allowbreak{}\allowbreak{}20260810\allowbreak{}\_\allowbreak{}\allowbreak{}091207\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}tab\allowbreak{}pfn\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass/\allowbreak{}\allowbreak{}} (protocol=\allowbreak{}sota, max\_\allowbreak{}train\_\allowbreak{}samples=\allowbreak{}100,000)
+
+
+\texttt{per\_\allowbreak{}\allowbreak{}clas\allowbreak{}s\_\allowbreak{}\allowbreak{}metric\allowbreak{}s.\allowbreak{}csv}에서 정확히 0.0/\allowbreak{}0.0/\allowbreak{}0.0인 행:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25176\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36444\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20951\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17430\linewidth-2\tabcolsep\relax}}
+\toprule
+run & method & class & support \\ \midrule
+\endfirsthead
+run & method & class & support \\ \midrule
+\endhead
+{}cic2017\_\allowbreak{}full sota & tabpfn\_\allowbreak{}v3 \textbf{and} xgboost & \texttt{bot} & 392 \\
+{}cic2017\_\allowbreak{}full sota & tabpfn\_\allowbreak{}v3 \textbf{and} xgboost & \texttt{infiltra\allowbreak{}tion} & 8 \\
+{}cic2018 sota & xgboost only (tabpfn\_\allowbreak{}v3 f1=\allowbreak{}0.560) & \texttt{web\_\allowbreak{}\allowbreak{}atta\allowbreak{}cks} & 509 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{1차 확인: 인덱싱 버그인가}
+\par\noindent \textbullet\enspace \texttt{scripts/\allowbreak{}\allowbreak{}preproce\allowbreak{}ss\_\allowbreak{}\allowbreak{}cic20\allowbreak{}17\_\allowbreak{}\allowbreak{}full\_\allowbreak{}\allowbreak{}raw.\allowbreak{}py}: \texttt{y =\allowbreak{}\allowbreak{} Labe\allowbreak{}lEncoder\allowbreak{}().\allowbreak{}fit\_\allowbreak{}\allowbreak{}t\allowbreak{}ransform\allowbreak{}(.\allowbreak{}.\allowbreak{}.\allowbreak{})}, \texttt{class\_\allowbreak{}\allowbreak{}na\allowbreak{}mes =\allowbreak{}\allowbreak{} la\allowbreak{}bel\_\allowbreak{}\allowbreak{}enco\allowbreak{}der.\allowbreak{}clas\allowbreak{}ses\_\allowbreak{}\allowbreak{}.\allowbreak{}tol\allowbreak{}ist()} — \texttt{class\_\allowbreak{}\allowbreak{}na\allowbreak{}mes[i]}가 \texttt{y=\allowbreak{}\allowbreak{}=\allowbreak{}\allowbreak{}i}와 항상 일치하도록 sklearn이 보장. 버그 아님.
+
+
+\par\noindent \textbullet\enspace \texttt{exp\_\allowbreak{}\allowbreak{}util\allowbreak{}s.\allowbreak{}labels\allowbreak{}\_\allowbreak{}\allowbreak{}for}: \texttt{\{\allowbreak{}name: i\allowbreak{} for i,\allowbreak{} \allowbreak{}name in \allowbreak{}enumerat\allowbreak{}e(class\_\allowbreak{}\allowbreak{}names)\}\allowbreak{}} 매핑을 cic2018 로더 전체에서 동일하게 재사용 — 별도 인코딩 경로 없음. 버그 아님.
+
+
+\par\noindent \textbullet\enspace \texttt{exp\_\allowbreak{}\allowbreak{}util\allowbreak{}s.\allowbreak{}scenar\allowbreak{}io\_\allowbreak{}\allowbreak{}chron\allowbreak{}ological\allowbreak{}\_\allowbreak{}\allowbreak{}split}: 클래스(scenario)별로 \textbf{개별} 60/\allowbreak{}20/\allowbreak{}20 분할 (\texttt{for scen\allowbreak{}ario in \allowbreak{}sorted(n\allowbreak{}p.\allowbreak{}unique\allowbreak{}(scenari\allowbreak{}os[indic\allowbreak{}es]))}) — docstring이 말하는 "per-class" 그대로 구현되어 있고, 전역 quantile로 자르는 버그 없음.
+
+
+ \ensuremath{\rightarrow}  세 지점 모두 코드상 결함 없음. 실제 원인은 데이터/\allowbreak{}split 특성.
+
+\subsection{2차 확인: \texttt{bot}/\allowbreak{}\texttt{infiltra\allowbreak{}tion} =\allowbreak{} real train/\allowbreak{}test distribution shift}
+\texttt{train\_\allowbreak{}\allowbreak{}us\allowbreak{}ed} count 확인 결과 두 클래스 모두 학습 샘플이 아주 적은 건 아니었음 (\texttt{bot}=\allowbreak{}691, \texttt{infiltra\allowbreak{}tion}=\allowbreak{}12 — \texttt{heartble\allowbreak{}ed}는 겨우 4개로도 f1=\allowbreak{}1.0을 찍는 것과 대비됨). 즉 "학습 샘플 부족"만으로는 설명 안 됨.
+
+\texttt{time\_\allowbreak{}\allowbreak{}pro\allowbreak{}xy}를 까보면 \texttt{bot}은 파일 하나(\texttt{6\_\allowbreak{}\allowbreak{}Friday\allowbreak{}-\allowbreak{}Working\allowbreak{}Hours-\allowbreak{}Mo\allowbreak{}rning.\allowbreak{}pc\allowbreak{}ap\_\allowbreak{}\allowbreak{}ISCX.\allowbreak{}csv}, 원본 CIC-IDS2017의 Bot 캡처 세션) 안의 in-file row order, \texttt{infiltra\allowbreak{}tion}도 마찬가지로 하나의 파일 (\texttt{5\_\allowbreak{}\allowbreak{}Thursd\allowbreak{}ay-\allowbreak{}Worki\allowbreak{}ngHours-\allowbreak{}Afternoo\allowbreak{}n-\allowbreak{}Infilt\allowbreak{}eration.\allowbreak{}pcap\_\allowbreak{}\allowbreak{}ISC\allowbreak{}X.\allowbreak{}csv}) 안에 몰려 있음. per-class chronological split은 사실상 "같은 세션 안에서 앞쪽 60\% vs 뒤쪽 20\%"로 자르는 것과 동일.
+
+직접 측정 (\texttt{Xtr =\allowbreak{}\allowbreak{} X[\allowbreak{}train\_\allowbreak{}\allowbreak{}id\allowbreak{}x of cla\allowbreak{}ss]}, \texttt{Xte =\allowbreak{}\allowbreak{} X[\allowbreak{}test\_\allowbreak{}\allowbreak{}idx\allowbreak{} of clas\allowbreak{}s]}, \texttt{z =\allowbreak{}\allowbreak{} |mea\allowbreak{}n\_\allowbreak{}\allowbreak{}tr-\allowbreak{}mea\allowbreak{}n\_\allowbreak{}\allowbreak{}te|/\allowbreak{}\allowbreak{}st\allowbreak{}d\_\allowbreak{}\allowbreak{}tr}, 70 feature 전체의 median):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21111\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14938\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14321\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16173\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33457\linewidth-2\tabcolsep\relax}}
+\toprule
+class & train\_\allowbreak{}n & test\_\allowbreak{}n & median |z| & 최대 z 특징 \\ \midrule
+\endfirsthead
+class & train\_\allowbreak{}n & test\_\allowbreak{}n & median |z| & 최대 z 특징 \\ \midrule
+\endhead
+{}\texttt{bot} & 1,173 & 392 & \textbf{0.28} & \texttt{Fwd IAT \allowbreak{}Min} z=\allowbreak{}7226.8 (train mean 27.6  \ensuremath{\rightarrow}  test mean 504,000) \\
+{}\texttt{infiltra\allowbreak{}tion} & 21 & 8 & \textbf{0.59} & \texttt{Fwd IAT \allowbreak{}Min} z=\allowbreak{}8.0 (train mean 2.07e5  \ensuremath{\rightarrow}  test mean 7.06e6) \\
+{}\texttt{ddos} (control) & 76,815 & 25,605 & 0.08 & — (표면적 큰 z는 std\ensuremath{\approx}0인 degenerate 컬럼 artifact) \\
+{}\texttt{portscan\allowbreak{}} (control) & 95,282 & 31,762 & 0.04 & — (동일 artifact) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\texttt{bot}/\allowbreak{}\texttt{infiltra\allowbreak{}tion}은 median |z|가 control 대비 3.5\textasciitilde{}15배 높고, IAT(inter-arrival time) 계열 feature가 세션 초반부와 후반부에 수백\textasciitilde{}수천 배 다름 — Bot의 C2 비콘 주기나 Infiltration의 다단계(침투 \ensuremath{\rightarrow} lateral movement \ensuremath{\rightarrow} exfiltration) 공격이 캡처 세션 내에서 시간에 따라 행동 패턴이 바뀌는 것으로 보임. \textbf{TabPFN·XGBoost 둘 다 독립적으로 정확히 0을 찍은 이유}가 바로 이거: 두 모델 다 train에서 본 적 없는 분포의 test를 받은 것 — 알고리즘 문제가 아니라 "짧고 단일 세션인 다단계 공격을 클래스별 chronological split으로 자르면 구조적으로 OOD test가 된다"는 split 방법론 자체의 특성.
+
+\subsection{3차 확인: cic2018 \texttt{web\_\allowbreak{}\allowbreak{}atta\allowbreak{}cks} (xgboost만 0) =\allowbreak{} starvation}
+이 run은 \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les 1000\allowbreak{}00}. sota 정책은 자연 클래스 비율을 유지한 채 stratified subsample하므로, \texttt{web\_\allowbreak{}\allowbreak{}atta\allowbreak{}cks}의 자연 train pool(1,522)이 전체 pool (11,069,303, benign이 10,508,775로 압도) 대비 차지하는 비중만큼만 배정됨:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+1522 * 100000 / 11069303 ≈ 13.75  →  floor 13
+
+\end{Verbatim}
+\texttt{split\_\allowbreak{}\allowbreak{}au\allowbreak{}dit.\allowbreak{}csv}의 \texttt{train\_\allowbreak{}\allowbreak{}us\allowbreak{}ed} 행이 실제로 \texttt{web\_\allowbreak{}\allowbreak{}atta\allowbreak{}cks: 13}을 확인. XGBoost의 multiclass softmax는 13개짜리 클래스로는 10\textasciicircum{}5\textasciitilde{}10\textasciicircum{}7개짜리 클래스들과 경쟁에서 전혀 못 이김 ( \ensuremath{\rightarrow}  recall 0). TabPFN은 in-context few-shot 설계 덕에 같은 13개로도 f1=\allowbreak{}0.560을 냄 — 알고리즘 간 샘플 효율성 차이. 이것도 버그가 아니라 "작은 \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les}에서 sota의 비율보존 정책이 tail class를 굶긴다"는 알려진 트레이드오프(스크립트 자체 docstring에도 명시).
+
+\subsection{관찰과 판단}
+\par\noindent \textbullet\enspace 두 run 모두 \textbf{인덱싱/\allowbreak{}코드 버그 없음}. 원인은 (a) 클래스별 chronological split이 짧은 단일세션·다단계 공격에 대해 구조적으로 train/\allowbreak{}test를 다른 분포로 쪼개는 문제, (b) 작은 \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les}에서 sota의 비율보존 정책이 극소수 클래스를 거의 0개로 굶기는 문제 — 둘 다 방법론적으로 이미 예견 가능했던 특성이지 회귀는 아님.
+
+
+\par\noindent \textbullet\enspace (a)는 재현 가능한 진단 함수(\texttt{diagnose\allowbreak{}\_\allowbreak{}\allowbreak{}train\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}drif\allowbreak{}t}, median train/\allowbreak{}test feature z-score per class)로 노트북에 박아넣었음 — 다음에 이상하게 0 나오는 클래스가 있으면 이 셀로 바로 구분 가능(진짜 drift vs 단순 starvation).
+
+
+\par\noindent \textbullet\enspace (b)는 지금 Colab에서 더 큰 GPU를 쓸 수 있게 됐으니(아래) \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les}를 올려서 재확인해볼 가치 있음 — 다만 \texttt{bot}/\allowbreak{}\texttt{infiltra\allowbreak{}tion}류는 budget을 올려도 (a) 문제라 해결 안 됨.
+
+
+\subsection{Colab 노트북 작성 (\texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}cola\allowbreak{}b.\allowbreak{}ipynb})}
+로컬 4090에서 못 돌리는 스케일(cic2018 전체 등)을 Colab의 더 큰 GPU로 시도할 수 있도록 작성. 로컬 \texttt{nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}mul\allowbreak{}ticlass\_\allowbreak{}\allowbreak{}test.\allowbreak{}py}와의 차이:
+
+\par\noindent \textbullet\enspace Drive 마운트 — 데이터 pkl을 Drive에서 읽고, \texttt{per\_\allowbreak{}\allowbreak{}clas\allowbreak{}s\_\allowbreak{}\allowbreak{}metric\allowbreak{}s.\allowbreak{}csv}/\allowbreak{}\texttt{split\_\allowbreak{}\allowbreak{}au\allowbreak{}dit.\allowbreak{}csv}/\allowbreak{} \texttt{args.\allowbreak{}jso\allowbreak{}n}/\allowbreak{}\texttt{timings.\allowbreak{}json}을 Drive의 \texttt{results/\allowbreak{}\allowbreak{}}에 저장. \textbf{학습된 모델도 재사용 가능하게 저장}: XGBoost는 \texttt{booster.\allowbreak{}save\_\allowbreak{}\allowbreak{}mod\allowbreak{}el()}, TabPFN은 \texttt{tabpfn.\allowbreak{}m\allowbreak{}odel\_\allowbreak{}\allowbreak{}loa\allowbreak{}ding.\allowbreak{} sa\allowbreak{}ve\_\allowbreak{}\allowbreak{}fitte\allowbreak{}d\_\allowbreak{}\allowbreak{}tabpfn\allowbreak{}\_\allowbreak{}\allowbreak{}model()\allowbreak{}}(foundation weight는 빼고 fitted state만 저장, 작음) +\allowbreak{} \texttt{load\_\allowbreak{}\allowbreak{}fit\allowbreak{}ted\_\allowbreak{}\allowbreak{}tabp\allowbreak{}fn\_\allowbreak{}\allowbreak{}model\allowbreak{}()}로 재적합 없이 즉시 predict 가능 — 로컬에서 실제 저장 \ensuremath{\rightarrow} 재로드 \ensuremath{\rightarrow}  predict까지 end-to-end로 검증함.
+
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}protoc\allowbreak{}ol repro\allowbreak{}duce}(랜덤 split +\allowbreak{} class당 3,000 고정 cap) 완전 삭제. \texttt{random\_\allowbreak{}\allowbreak{}s\allowbreak{}tratifie\allowbreak{}d\_\allowbreak{}\allowbreak{}split}, \texttt{per\_\allowbreak{}\allowbreak{}clas\allowbreak{}s\_\allowbreak{}\allowbreak{}train\_\allowbreak{}\allowbreak{}cap} 분기 전부 제거 — 이제 chronological split
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les} stratified budget(구 sota)만 존재.
+
+
+
+\par\noindent \textbullet\enspace 위 drift 진단(\texttt{diagnose\allowbreak{}\_\allowbreak{}\allowbreak{}train\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}drif\allowbreak{}t})을 매 run 전에 자동 실행하도록 박아넣음.
+
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}target\allowbreak{}-\allowbreak{}dataset\allowbreak{}}에 \texttt{bot\_\allowbreak{}\allowbreak{}iot}/\allowbreak{}\texttt{ton\_\allowbreak{}\allowbreak{}iot} 추가 (사용자 요청). \texttt{nfv3\_\allowbreak{}\allowbreak{}ene\allowbreak{}rgy\_\allowbreak{}\allowbreak{}suit\allowbreak{}e\_\allowbreak{}\allowbreak{}*.\allowbreak{}pkl}이 원래 \texttt{cse\_\allowbreak{}\allowbreak{}cic\_\allowbreak{}\allowbreak{}ids2018} 외에 \texttt{bot\_\allowbreak{}\allowbreak{}iot}(16.9M rows, 5 class)/\allowbreak{}\texttt{ton\_\allowbreak{}\allowbreak{}iot}(27.5M rows, 10 class)/\allowbreak{}\texttt{unsw\_\allowbreak{}\allowbreak{}nb1\allowbreak{}5}(2.4M rows, 미연결)를 같은 스키마로 묶어놓고 있었다는 걸 확인하고, \texttt{load\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018}을 \texttt{load\_\allowbreak{}\allowbreak{}nfv\allowbreak{}3\_\allowbreak{}\allowbreak{}suite\_\allowbreak{}\allowbreak{}subset(a\allowbreak{}rgs,\allowbreak{} dat\allowbreak{}aset\_\allowbreak{}\allowbreak{}nam\allowbreak{}e)}으로 일반화해서 재사용. \texttt{nfv3\_\allowbreak{}\allowbreak{}ene\allowbreak{}rgy\_\allowbreak{}\allowbreak{}suit\allowbreak{}e\_\allowbreak{}\allowbreak{}cic201\allowbreak{}8\_\allowbreak{}\allowbreak{}scenar\allowbreak{}ios.\allowbreak{}pkl}(이름과 달리 4개 데이터셋 전부의 capped 슬라이스를 담고 있음: bot\_\allowbreak{}iot=\allowbreak{}353,604 /\allowbreak{} cse\_\allowbreak{}cic\_\allowbreak{}ids2018=\allowbreak{}602,538 /\allowbreak{} ton\_\allowbreak{}iot=\allowbreak{}809,984 /\allowbreak{} unsw\_\allowbreak{}nb15=\allowbreak{}227,693)를 \texttt{*\_\allowbreak{}\allowbreak{}capped\allowbreak{}} 타겟들의 기본 데이터로 지정 — 전부 60/\allowbreak{}20/\allowbreak{}20 split에 필요한 최소 클래스당 row 수를 만족함(최소가 bot\_\allowbreak{}iot의 \texttt{theft} 1,615개).
+
+
+\par\noindent \textbullet\enspace GPU 메모리 기반 \texttt{max\_\allowbreak{}\allowbreak{}trai\allowbreak{}n\_\allowbreak{}\allowbreak{}sample\allowbreak{}s} 자동 제안 셀 — [0812 대화](없음, 이번 세션 채팅 로그 참고)에서 실측한 RTX 4090 스케일링(\texttt{mem\_\allowbreak{}\allowbreak{}GB \ensuremath{\approx}\allowbreak{} 0.\allowbreak{}23 +\allowbreak{}\allowbreak{} \allowbreak{}rows/\allowbreak{}\allowbreak{}57,\allowbreak{}900}, 1.5M행부터 OOM 시작, plateau 없음)을 그대로 사용. cic2018/\allowbreak{}bot\_\allowbreak{}iot/\allowbreak{}ton\_\allowbreak{}iot의 uncapped 전체는 어떤 단일 GPU로도(Colab A100 포함) 안 들어가니 \texttt{\_\allowbreak{}\allowbreak{}capped} 타겟이나 낮춘 \texttt{max\_\allowbreak{}\allowbreak{}trai\allowbreak{}n\_\allowbreak{}\allowbreak{}sample\allowbreak{}s}를 쓰라고 명시.
+
+
+\subsection{재개 시 확인할 파일}
+\par\noindent \textbullet\enspace 이번 조사 원본: 이 세션 채팅 로그(z-score 계산 커맨드, GPU 메모리 스윕 결과)
+
+
+\par\noindent \textbullet\enspace 노트북: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}mult\allowbreak{}iclass\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}cola\allowbreak{}b.\allowbreak{}ipynb}
+
+
+\par\noindent \textbullet\enspace 노트북의 \texttt{diagnose\allowbreak{}\_\allowbreak{}\allowbreak{}train\_\allowbreak{}\allowbreak{}t\allowbreak{}est\_\allowbreak{}\allowbreak{}drif\allowbreak{}t} 셀을 아무 run에나 재적용하면 이 로그의 표를 재현 가능
+
+
+
+
+\section{추가 분석과 수치 검토}
+2026-08-18 · TabPFN 8.2.0 · tabpfn-v3-classifier-v3\_\allowbreak{}20260417\_\allowbreak{}multiclass.ckpt · RTX 4090 실측
+
+모든 실험 결과 표는 test 샘플 수 내림차순 으로 정렬돼 있습니다.
+
+결론. TabPFN은 체크포인트의 MAX\_\allowbreak{}NUMBER\_\allowbreak{}OF\_\allowbreak{}SAMPLES =\allowbreak{} 1,000,000 에 막혀 100만 샘플보다 더 넣기 어렵습니다. 이전에 full data를 참여시킨 것은 disjoint bagging (estimator마다 겹치지 않는 부분집합을 주고 확률 평균)을 시도한 것이며, 이 방식은 TabPFN 원 논문에 없습니다 .
+
+TabPFN에서 fit() 은 학습이 아니라 학습셋을 프롬프트로 받아두는 것 입니다. 그래서 predict() 를 부를 때마다 학습셋 전체가 GPU로 다시 올라갑니다.
+
+estimator와 배치는 순차 실행이라 메모리는 곱해지지 않고 시간만 곱해집니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.49510\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.50490\linewidth-2\tabcolsep\relax}}
+\toprule
+실측 (RTX 4090, 46 feature) & 값 \\ \midrule
+\endfirsthead
+실측 (RTX 4090, 46 feature) & 값 \\ \midrule
+\endhead
+{}fit() 후 GPU 상주 & 0.198 GiB (모델 가중치뿐, 데이터 0) \\
+{}학습 행당 & 18,530 B \\
+{}test 행당 & 12,343 B \\
+{}100만 행 컨텍스트 & 약 17.5 GiB \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection*{왜 100만이 상한인가}
+full data를 넣으려면 disjoint bagging밖에 없습니다. SUBSAMPLE\_\allowbreak{}SAMPLES=\allowbreak{}k 를 주면 estimator마다 겹치지 않는 k행을 가져가므로 n\_\allowbreak{}estimators =\allowbreak{} ⌈전체/\allowbreak{}k⌉ 면 풀을 100\% 덮습니다. 다만 각 예측기는 여전히 k행에만 조건화되고 앙상블은 확률 평균이라 "전체로 학습"이 아니라 "분할 학습 후 평균" 이며, TabPFN 원 논문에 없는 방식 입니다.
+
+공통 설정: 클래스별 chronological 60/\allowbreak{}20/\allowbreak{}20 , val 미사용, seed 42, XGBoost 300 trees /\allowbreak{} depth 8 /\allowbreak{} lr 0.05, class weighting 없음 , test cap 없음 (test pool 전체 평가).
+
+test cap을 뺀 것이 숫자를 바꿉니다. 이전 회차는 test\_\allowbreak{}cap\_\allowbreak{}per\_\allowbreak{}class=\allowbreak{}100000 으로 평가했는데, 이는 test 쪽 클래스 분포를 인위적으로 평탄화해 소수 클래스 precision을 부풀립니다. 학습 조건이 완전히 같고 test cap만 다른 두 CIC2018 full-XGB 런을 비교하면:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23793\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22931\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21207\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16034\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16034\linewidth-2\tabcolsep\relax}}
+\toprule
+CIC2018 full-XGB & test 행 (cap 없음) & test cap 100k & cap 없음 & Δ \\ \midrule
+\endfirsthead
+CIC2018 full-XGB & test 행 (cap 없음) & test cap 100k & cap 없음 & Δ \\ \midrule
+\endhead
+{}benign F1 & 3,502,926 & 0.876 & 0.995 & +\allowbreak{}0.119 \\
+{}infiltration F1 & 37,631 & 0.488 & 0.429 & −0.059 \\
+{}web\_\allowbreak{}attacks F1 & 509 & 0.603 & 0.162 & −0.441 \\
+{}macro F1 & 4,023,114 & 0.8063 & 0.7548 & −0.052 \\
+{}weighted F1 & 4,023,114 & 0.874 & 0.983 & +\allowbreak{}0.109 \\
+\bottomrule
+\end{longtable}
+\endgroup
+아래 숫자는 전부 cap 없는 쪽 입니다. 이전 회차 숫자와 직접 비교하면 안 됩니다.
+
+아래 표는 데이터셋 표·클래스 표 모두 test 행 수 내림차순 입니다 (정렬 키 열은 음영). 정렬은 행 순서만 바꿉니다 — 수치는 run 산출 그대로입니다.
+
+\subsection*{실험 1. 100만 샘플 — XGB vs TabPFN}
+학습 풀에서 클래스 비율을 유지한 채 100만 행 을 뽑아 XGBoost와 TabPFN에 똑같이 줍니다. 두 모델이 보는 학습 행은 완전히 동일하고, test는 pool 전체 를 씁니다. TabPFN은 n\_\allowbreak{}estimators=\allowbreak{}4 , fit\_\allowbreak{}mode=\allowbreak{}"fit\_\allowbreak{}with\_\allowbreak{}cache" , test 1배치.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21957\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20870\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19783\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19783\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17609\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 & train pool & 100만 커버리지 & test 행 & 클래스 \\ \midrule
+\endfirsthead
+데이터셋 & train pool & 100만 커버리지 & test 행 & 클래스 \\ \midrule
+\endhead
+{}1.1 ToN-IoT & 16,512,152 & 6.06\% & 5,504,060 & 10 \\
+{}1.2 CIC2018 & 12,069,313 & 8.29\% & 4,023,114 & 7 \\
+{}1.3 BoT-IoT & 10,160,284 & 9.84\% & 3,386,764 & 5 \\
+{}1.4 CIC2017 & 1,696,720 & 58.94\% & 565,586 & 15 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.10795\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09659\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.09091\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10795\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08523\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08523\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08523\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08523\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08523\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08523\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.08523\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 & test 행 & macro F1 & weighted F1 & tail F1 &  &  &  &  &  &  \\ \midrule
+\endfirsthead
+데이터셋 & test 행 & macro F1 & weighted F1 & tail F1 &  &  &  &  &  &  \\ \midrule
+\endhead
+{}XGB & TabPFN & Δ & XGB & TabPFN & Δ & XGB & TabPFN & Δ &  &  \\
+{}1.1 ToN-IoT & 5,504,060 & 0.6964 & 0.6672 & −0.029 & 0.8735 & 0.8552 & −0.018 & 0.2962 & 0.2060 & −0.090 \\
+{}1.2 CIC2018 & 4,023,114 & 0.7568 & 0.7518 & −0.005 & 0.9843 & 0.9838 & −0.001 & 0.5367 & 0.5261 & −0.011 \\
+{}1.3 BoT-IoT & 3,386,764 & 0.5639 & 0.5492 & −0.015 & 0.4288 & 0.4441 & +\allowbreak{}0.015 & 0.3800 & 0.3623 & −0.018 \\
+{}1.4 CIC2017 & 565,586 & 0.6538 & 0.6505 & −0.003 & 0.9771 & 0.9673 & −0.010 & 0.2847 & 0.3334 & +\allowbreak{}0.049 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+tail F1 =\allowbreak{} 스크립트에 데이터셋별로 지정된 tail 클래스들의 F1 평균 (ToN-IoT mitm·ransomware , CIC2018 bot·infiltration·web\_\allowbreak{}attacks , BoT-IoT theft , CIC2017 heartbleed·sql-injection·infiltration·xss·brute-force ).
+
+12개 지표 중 TabPFN이 앞선 것은 2개뿐이고, 둘 다 실체가 없습니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21905\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20714\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20714\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}}
+\toprule
+class & test 행 & XGB F1 & TabPFN F1 & Δ \\ \midrule
+\endfirsthead
+class & test 행 & XGB F1 & TabPFN F1 & Δ \\ \midrule
+\endhead
+{}benign & 3,358,444 & 0.916 & 0.899 & −0.017 \\
+{}ddos & 828,252 & 0.986 & 0.982 & −0.004 \\
+{}xss & 566,887 & 0.880 & 0.815 & −0.066 \\
+{}password & 318,956 & 0.842 & 0.839 & −0.003 \\
+{}scanning & 271,796 & 0.001 & 0.000 & −0.001 \\
+{}injection & 76,356 & 0.940 & 0.910 & −0.030 \\
+{}dos & 40,692 & 0.812 & 0.816 & +\allowbreak{}0.004 \\
+{}backdoor & 40,678 & 0.994 & 0.998 & +\allowbreak{}0.004 \\
+{}mitm & 1,204 & 0.208 & 0.038 & −0.169 \\
+{}ransomware & 795 & 0.385 & 0.374 & −0.011 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23636\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20227\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17955\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20227\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17955\linewidth-2\tabcolsep\relax}}
+\toprule
+class & test 행 & XGB F1 & TabPFN F1 & Δ \\ \midrule
+\endfirsthead
+class & test 행 & XGB F1 & TabPFN F1 & Δ \\ \midrule
+\endhead
+{}benign & 3,502,926 & 0.995 & 0.995 & 0.000 \\
+{}ddos & 264,872 & 0.995 & 0.992 & −0.003 \\
+{}brute\_\allowbreak{}force & 115,040 & 0.916 & 0.916 & 0.000 \\
+{}dos & 60,594 & 0.782 & 0.781 & 0.000 \\
+{}bot & 41,542 & 0.998 & 0.998 & +\allowbreak{}0.001 \\
+{}infiltration & 37,631 & 0.450 & 0.418 & −0.032 \\
+{}web\_\allowbreak{}attacks & 509 & 0.162 & 0.161 & −0.001 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25217\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19783\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17609\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19783\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17609\linewidth-2\tabcolsep\relax}}
+\toprule
+class & test 행 & XGB F1 & TabPFN F1 & Δ \\ \midrule
+\endfirsthead
+class & test 행 & XGB F1 & TabPFN F1 & Δ \\ \midrule
+\endhead
+{}dos & 1,606,838 & 0.678 & 0.685 & +\allowbreak{}0.007 \\
+{}ddos & 1,430,177 & 0.033 & 0.067 & +\allowbreak{}0.034 \\
+{}reconnaissance & 339,027 & 0.906 & 0.886 & −0.020 \\
+{}benign & 10,399 & 0.823 & 0.747 & −0.076 \\
+{}theft & 323 & 0.380 & 0.362 & −0.018 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.32222\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16481\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16481\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16481\linewidth-2\tabcolsep\relax}}
+\toprule
+class & test 행 & XGB F1 & TabPFN F1 & Δ \\ \midrule
+\endfirsthead
+class & test 행 & XGB F1 & TabPFN F1 & Δ \\ \midrule
+\endhead
+{}normal & 454,264 & 0.987 & 0.981 & −0.006 \\
+{}dos-hulk & 46,026 & 0.974 & 0.946 & −0.028 \\
+{}portscan & 31,762 & 0.984 & 0.977 & −0.007 \\
+{}ddos & 25,605 & 0.837 & 0.806 & −0.031 \\
+{}dos-goldeneye & 2,060 & 0.964 & 0.963 & −0.002 \\
+{}ftp-patator & 1,587 & 0.993 & 0.989 & −0.004 \\
+{}ssh-patator & 1,180 & 0.992 & 0.803 & −0.188 \\
+{}dos-slowloris & 1,160 & 0.835 & 0.820 & −0.014 \\
+{}dos-slowhttptest & 1,101 & 0.817 & 0.804 & −0.013 \\
+{}bot & 392 & 0.000 & 0.000 & 0.000 \\
+{}web-attack-brute-force & 302 & 0.705 & 0.304 & −0.401 \\
+{}web-attack-xss & 131 & 0.219 & 0.030 & −0.189 \\
+{}infiltration & 8 & 0.000 & 0.000 & 0.000 \\
+{}web-attack-sql-injection & 5 & 0.500 & 0.333 & −0.167 \\
+{}heartbleed & 3 & 0.000 & 1.000 & +\allowbreak{}1.000 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18462\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17692\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22308\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26154\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15385\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 & test 행 & XGB fit+\allowbreak{}predict & TabPFN fit+\allowbreak{}predict & 배수 \\ \midrule
+\endfirsthead
+데이터셋 & test 행 & XGB fit+\allowbreak{}predict & TabPFN fit+\allowbreak{}predict & 배수 \\ \midrule
+\endhead
+{}1.1 ToN-IoT & 5,504,060 & 183.1 s (117+\allowbreak{}66) & 8,580 s (1,265+\allowbreak{}7,315) & 46.9× \\
+{}1.2 CIC2018 & 4,023,114 & 99.5 s (71+\allowbreak{}29) & 6,535 s (1,245+\allowbreak{}5,290) & 65.7× \\
+{}1.3 BoT-IoT & 3,386,764 & 81.2 s (63+\allowbreak{}18) & 5,638 s (1,241+\allowbreak{}4,397) & 69.4× \\
+{}1.4 CIC2017 & 565,586 & 255.2 s (248+\allowbreak{}7) & 2,007 s (1,253+\allowbreak{}754) & 7.9× \\
+{}4개 합계 & 13,479,524 & 619 s (10분) & 22,760 s (6.3시간) & 36.8× \\
+\bottomrule
+\end{longtable}
+\endgroup
+TabPFN의 fit 은 데이터셋과 무관하게 1,241–1,265초로 거의 일정 합니다 (학습 컨텍스트가 항상 100만 행으로 고정이므로). 변하는 것은 predict 쪽이고, 이는 test 행 수에 비례 합니다 — 56만 행 754초, 550만 행 7,315초. 위 표가 test 행 내림차순이라 그 비례 관계가 predict 열에 그대로 보입니다.
+
+실험 1 결론. 동일한 100만 행을 주면 TabPFN은 4개 데이터셋 모두에서 macro F1이 XGBoost보다 낮고 (−0.003 \textasciitilde{} −0.029), 비용은 8–69배 입니다. 클래스별로 봐도 TabPFN이 유의하게 앞서는 칸은 CIC2017 heartbleed (test 3행)뿐이고, 크게 지는 칸은 ToN-IoT mitm (−0.169), CIC2017 web-attack-brute-force (−0.401)· ssh-patator (−0.188)· web-attack-xss (−0.189)입니다.
+
+\subsection*{실험 2. 데이터 전체 — XGB}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12744\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14042\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10795\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10795\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11445\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 & 전체 행 & train (60\%) & test (20\%) & 클래스 & 학습 시간 & macro F1 & weighted F1 \\ \midrule
+\endfirsthead
+데이터셋 & 전체 행 & train (60\%) & test (20\%) & 클래스 & 학습 시간 & macro F1 & weighted F1 \\ \midrule
+\endhead
+{}2.1 ToN-IoT & 27,520,260 & 16,512,152 & 5,504,060 & 10 & 782 s & 0.6687 & 0.8718 \\
+{}2.2 CIC2018 & 20,115,529 & 12,069,313 & 4,023,114 & 7 & 385 s & 0.7548 & 0.9834 \\
+{}2.3 BoT-IoT & 16,933,808 & 10,160,284 & 3,386,764 & 5 & 205 s & 0.5610 & 0.4253 \\
+{}2.4 CIC2017 & 2,827,876 & 1,696,720 & 565,586 & 15 & 124 s & 0.7643 & 0.9757 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+100만 행  \ensuremath{\rightarrow}  전체 행: XGBoost macro F1 변화 (실험 1의 XGB와 실험 2의 XGB, 같은 test set )
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16288\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18561\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16288\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16288\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16288\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16288\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터셋 & test 행 & 100만 행 & 전체 행 & Δ & 학습 배수 \\ \midrule
+\endfirsthead
+데이터셋 & test 행 & 100만 행 & 전체 행 & Δ & 학습 배수 \\ \midrule
+\endhead
+{}ToN-IoT & 5,504,060 & 0.6964 & 0.6687 & −0.028 & 16.5× \\
+{}CIC2018 & 4,023,114 & 0.7568 & 0.7548 & −0.002 & 12.1× \\
+{}BoT-IoT & 3,386,764 & 0.5639 & 0.5610 & −0.003 & 10.2× \\
+{}CIC2017 & 565,586 & 0.6538 & 0.7643 & +\allowbreak{}0.111 & 1.7× \\
+\bottomrule
+\end{longtable}
+\endgroup
+3개 데이터셋은 학습 데이터를 10–16배로 늘려도 오르지 않고, ToN-IoT는 오히려 내려갑니다 ( ransomware 0.385 \ensuremath{\rightarrow} 0.150, mitm 0.208 \ensuremath{\rightarrow} 0.162 — 795행·1,204행짜리 소수 클래스가 다수 클래스 물량에 더 밀립니다).
+
+CIC2017의 +\allowbreak{}0.111은 두 클래스에서 전부 나옵니다 : heartbleed (test 3행) 0.000 \ensuremath{\rightarrow} 0.800, infiltration (test 8행) 0.000 \ensuremath{\rightarrow} 0.857. 100만 행 stratified 샘플링이 이 두 클래스의 학습 행을 4개·12개까지 깎아 학습이 불가능해진 것으로, 15클래스 macro에서 (0.800+\allowbreak{}0.857)/\allowbreak{}15 =\allowbreak{} 0.110이 그대로 델타입니다. 데이터 양의 효과가 아니라 샘플링이 마이크로 클래스를 지운 효과 입니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.27652\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26136\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}}
+\toprule
+class & test 행 & F1 &  \\ \midrule
+\endfirsthead
+class & test 행 & F1 &  \\ \midrule
+\endhead
+{}benign & 3,358,444 & 0.914 &  \\
+{}ddos & 828,252 & 0.987 &  \\
+{}xss & 566,887 & 0.876 &  \\
+{}password & 318,956 & 0.842 &  \\
+{}scanning & 271,796 & 0.001 &  \\
+{}injection & 76,356 & 0.941 &  \\
+{}dos & 40,692 & 0.817 &  \\
+{}backdoor & 40,678 & 0.998 &  \\
+{}mitm & 1,204 & 0.162 &  \\
+{}ransomware & 795 & 0.150 &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29643\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25357\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22500\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22500\linewidth-2\tabcolsep\relax}}
+\toprule
+class & test 행 & F1 &  \\ \midrule
+\endfirsthead
+class & test 행 & F1 &  \\ \midrule
+\endhead
+{}benign & 3,502,926 & 0.994 &  \\
+{}ddos & 264,872 & 0.992 &  \\
+{}brute\_\allowbreak{}force & 115,040 & 0.916 &  \\
+{}dos & 60,594 & 0.782 &  \\
+{}bot & 41,542 & 0.998 &  \\
+{}infiltration & 37,631 & 0.429 &  \\
+{}web\_\allowbreak{}attacks & 509 & 0.172 &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.31419\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24662\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21959\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21959\linewidth-2\tabcolsep\relax}}
+\toprule
+class & test 행 & F1 &  \\ \midrule
+\endfirsthead
+class & test 행 & F1 &  \\ \midrule
+\endhead
+{}dos & 1,606,838 & 0.677 &  \\
+{}ddos & 1,430,177 & 0.031 &  \\
+{}reconnaissance & 339,027 & 0.884 &  \\
+{}benign & 10,399 & 0.826 &  \\
+{}theft & 323 & 0.387 &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.39167\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20278\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20278\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20278\linewidth-2\tabcolsep\relax}}
+\toprule
+class & test 행 & F1 &  \\ \midrule
+\endfirsthead
+class & test 행 & F1 &  \\ \midrule
+\endhead
+{}normal & 454,264 & 0.986 &  \\
+{}dos-hulk & 46,026 & 0.977 &  \\
+{}portscan & 31,762 & 0.985 &  \\
+{}ddos & 25,605 & 0.821 &  \\
+{}dos-goldeneye & 2,060 & 0.964 &  \\
+{}ftp-patator & 1,587 & 0.996 &  \\
+{}ssh-patator & 1,180 & 0.999 &  \\
+{}dos-slowloris & 1,160 & 0.808 &  \\
+{}dos-slowhttptest & 1,101 & 0.816 &  \\
+{}bot & 392 & 0.000 &  \\
+{}web-attack-brute-force & 302 & 0.686 &  \\
+{}web-attack-xss & 131 & 0.270 &  \\
+{}infiltration & 8 & 0.857 &  \\
+{}web-attack-sql-injection & 5 & 0.500 &  \\
+{}heartbleed & 3 & 0.800 &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+test 행 수로 줄을 세우면 붕괴가 tail 전용 현상이 아님이 보입니다. BoT-IoT에서 F1 0.031인 ddos 는 test 143만 행으로 그 데이터셋의 2위 규모 이고, ToN-IoT에서 F1 0.001인 scanning 은 27만 행으로 5위 입니다. 반대로 test 8행뿐인 CIC2017 infiltration 은 0.857로 멀쩡합니다. 샘플 수와 F1은 이 표에서 거의 무관합니다.
+
+\subsection*{+\allowbreak{} 몇몇 클래스가 0.0을 기록한 원인}
+학습 데이터가 부족해서가 아닙니다. 클래스별 chronological split이 train과 test에 서로 다른 시기의 트래픽을 넣기 때문 입니다. 같은 클래스라도 시간이 지나면 다른 것이 됩니다.
+
+진단은 이진 프로브 AUC 로 합니다 — 같은 클래스의 train 행과 test 행을 구분하도록 분류기를 학습시켜 AUC를 잽니다. 0.5 면 같은 개체군, 1.0 이면 완전히 다른 개체군입니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22619\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14177\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14177\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19372\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16775\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12879\linewidth-2\tabcolsep\relax}}
+\toprule
+케이스 & test 행 & 학습 행 & train vs test AUC & 오분류 대상 & F1 \\ \midrule
+\endfirsthead
+케이스 & test 행 & 학습 행 & train vs test AUC & 오분류 대상 & F1 \\ \midrule
+\endhead
+{}BoT-IoT /\allowbreak{} ddos & 1,430,177 & 4,290,529 & 1.0000 & dos 97\% & 0.031 \\
+{}ToN-IoT /\allowbreak{} scanning & 271,796 & 815,386 & 0.9900 & benign 99.9\% & 0.001 \\
+{}CIC2018 /\allowbreak{} web\_\allowbreak{}attacks & 509 & 1,522 & 0.6608 & benign & 0.172 \\
+{}CIC2017 /\allowbreak{} bot & 392 & 1,173 & 1.0000 & normal 100\% & 0.000 \\
+\bottomrule
+\end{longtable}
+\endgroup
+핵심: 429만 행을 학습한 ddos 도, 81만 행을 학습한 scanning 도 실패합니다. 데이터 양의 문제가 아니라 train 시기와 test 시기의 트래픽이 다른 것입니다. 이 표가 test 행 수 내림차순이라는 점이 그 자체로 근거입니다 — 맨 위 두 줄이 가장 큰 실패 입니다.
+
+\subsection*{사례 — CIC2017 /\allowbreak{} bot (표의 맨 아래, test 392행 — 규모는 가장 작지만 원인이 가장 명확한 케이스)}
+Friday-morning bot 캡처 1,956행 안에서 행 1,464에 행동 변화 가 있습니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.39474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.28947\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31579\linewidth-2\tabcolsep\relax}}
+\toprule
+ & 앞부분 (0–1463) & 뒷부분 (1464–1955) \\ \midrule
+\endfirsthead
+ & 앞부분 (0–1463) & 뒷부분 (1464–1955) \\ \midrule
+\endhead
+{}성격 & C2 command 플로우 & 0.5초 주기 heartbeat \\
+{}duration & \textasciitilde{}59 ms & \textasciitilde{}1.01 s \\
+{}Fwd IAT Min & \textasciitilde{}3 µs & \textasciitilde{}500,000 µs \\
+{}Init\_\allowbreak{}Win\_\allowbreak{}bytes\_\allowbreak{}backward & 110–16,390 & 전부 0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+세 feature의 값 범위가 전혀 겹치지 않습니다 (AUC 1.0). 그런데 60\% 컷이 행 1,173에 떨어져 변화 지점보다 291행 앞 이라, 변화 이후 데이터가 전부 val 구간 에 몰립니다.
+
+즉 모델은 한 번도 본 적 없는 행동 을 알아보라는 요구를 받습니다. 실제로 val을 학습에 넣으면 F1 0.000  \ensuremath{\rightarrow}  0.810 으로 회복됩니다.
+
+다만 val을 넣는 것이 일반 해법은 아닙니다. 같은 조작이 CIC2018의 web\_\allowbreak{}attacks 는 0.603  \ensuremath{\rightarrow}  0.090으로 악화 시켰습니다. 위상 변화가 val 구간에 걸린 경우에만 통합니다. 그리고 ToN-IoT /\allowbreak{} scanning 은 val을 넣어도 0.001  \ensuremath{\rightarrow}  0.005로 회복되지 않습니다 — 80\%를 학습해도 test 시기의 트래픽이 학습셋 어디에도 없는 경우입니다.
+
+단, 이 절의 숫자는 test cap 100k 체제에서 얻은 것입니다 ( web\_\allowbreak{}attacks 0.603이 cap 있는 baseline 값). cap 없는 baseline은 0.162이므로 val 투입 효과는 cap 없는 조건에서 재확인이 필요합니다.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

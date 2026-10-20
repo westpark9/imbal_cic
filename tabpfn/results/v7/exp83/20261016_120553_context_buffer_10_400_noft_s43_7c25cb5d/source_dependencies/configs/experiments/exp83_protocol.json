@@ -1,0 +1,32 @@
+{
+  "version": "v7",
+  "experiment": "exp83",
+  "authorization": "2026-10-16 user requested cumulative versus FIFO/random/similar context maintenance across new-attack budgets 10 through 400",
+  "purpose": "Extend the context-policy comparison to the existing nested label-budget sweep with final-model evaluation",
+  "datasets": ["cic2018", "toniot"],
+  "seed": 43,
+  "seed_repetitions": 1,
+  "initial_labels": 1000,
+  "initial_counts": [750, 125, 125],
+  "new_class_counts": [10, 20, 50, 100, 200, 400],
+  "buffer_capacity": 1000,
+  "methods": ["pfn_accumulate", "pfn_fifo", "pfn_random", "pfn_similar"],
+  "reference": "Existing XGB cumulative retraining on identical released IDs",
+  "sampling": "Reuse exact EXP77/78/80 stage plans; initial IDs unchanged and new-class subsets nested across budgets",
+  "deletion": {
+    "fifo": "Oldest acquisition order, with original within-stage ordering preserved; a proxy for age, not measured obsolescence",
+    "random": "Seeded permutation of current buffer using 43 + stage_index * 1009",
+    "similar": "Delete existing rows nearest to newly supplied labeled training rows; minimum Euclidean distance after standardization fitted only on current old buffer",
+    "common": "Delete as many old rows as newly supplied rows, retain at least one example of each old class, append every incoming row, never retrieve previously evicted rows"
+  },
+  "finetuning": false,
+  "model": "Existing pretrained TabPFN v3, 4 estimators, fit_with_cache, CPU cache, no context subsampling",
+  "evaluation": "Final model on the complete fixed test; identical label-independent seed-43 mixed query order, batch 8192, predictions stored in original row order",
+  "baseline_reuse": "Reuse cumulative fit states and update costs; reuse the fully mixed reevaluation at budget 100; fully reevaluate other saved cumulative PFN models in the same mixed order. XGB saved row-wise predictions are reused and audited.",
+  "cost": "Sum of later-stage context selection + model construction + fit, excluding initial preparation, all inference, checkpoint writing and audit checks. Historical cumulative costs and new buffer costs are explicitly identified.",
+  "primary_metrics": ["final full-test macro F1", "class precision/recall/F1", "benign false-positive rate", "later-stage update seconds", "final per-class context counts"],
+  "test_tuning": false,
+  "slides_publication": false,
+  "html_publication": false,
+  "overleaf_publication": false
+}

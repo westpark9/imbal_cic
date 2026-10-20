@@ -1,0 +1,59 @@
+% !TeX root = 20260827.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-27}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-27 · 2026-08-27}
+\label{report:20260827_0827}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\subsection{§1. EXP24A 사전 등록 — 원노브: §12 marginal을 regime-조건부로 (+\allowbreak{}min-support), anchor 2,000 고정 (결과 전 고정)}
+스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp24a\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}re\allowbreak{}gprune.\allowbreak{}p\allowbreak{}y} (exp23b 사본). \textbf{원노브}: \texttt{greedy\_\allowbreak{}\allowbreak{}r\allowbreak{}egime\_\allowbreak{}\allowbreak{}pr\allowbreak{}une()} — expert k의 marginal을 \textbf{자기 regime에 hard-배정된 masked tune 행 위에서만} 측정: \texttt{mean(min\allowbreak{}\_\allowbreak{}\allowbreak{}\{\allowbreak{}bank−k\allowbreak{}\}\allowbreak{} L) − m\allowbreak{}ean(min\_\allowbreak{}\allowbreak{}\{\allowbreak{}bank\}\allowbreak{} L\allowbreak{})} (balanced-loss 단위). 그 행들에선 anchor의 일반의 기여가 양변에 동일하게 깔려 상쇄되고 블록 고유 가치만 남음(exp23 실측: hard-brute regime에서 전문가 유무 =\allowbreak{} oracle \textasciitilde{}0.92 vs anchor 상한 \textasciitilde{}0.80). greedy 반복 유지. min-support: regime tune 행 < 50이면 후보 제외(23c 9행 bot 방지). \texttt{-\allowbreak{}-\allowbreak{}prune-\allowbreak{}mode off\allowbreak{}} =\allowbreak{} coverage-생존 전원 유지 ablation 스위치. 문턱 \texttt{-\allowbreak{}-\allowbreak{}prune-\allowbreak{}min-\allowbreak{}regi\allowbreak{}me-\allowbreak{}gain \allowbreak{}0.\allowbreak{}01}(선언 상수). assign\_\allowbreak{}tune은 tune의 full signature(r̄는 D\_\allowbreak{}expert의 r\_\allowbreak{}max로 클립)로 산출 — 시간순·역할 위반 없음. 합성 테스트: anchor-일반의 교란 하에서 전문가 생존(marginal 2.0)·mega 제거(0.005)·min-support 차단·off 모드 확인. \textbf{예상}: 균형 anchor를 유지한 채 brute·inf·web 전문가 생존  \ensuremath{\rightarrow}  oracle 0.85±, 시스템은 관문이 여전히 좁아 소폭 개선 예상(관문은 24b 담당). \textbf{판정}: 같은-run 튜플, 관심 =\allowbreak{} 2e 생존 구성(7a 복원)·oracle·recall.
+
+\subsection{§2. EXP24B 사전 등록 — 원노브: scorer를 회귀  \ensuremath{\rightarrow}  sign 분류 P(U>0)로 (결과 전 고정)}
+스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp24b\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}si\allowbreak{}gnscorer\allowbreak{}.\allowbreak{}py} (exp24a 사본). \textbf{원노브}: scorer =\allowbreak{} XGBClassifier(binary:logistic), label =\allowbreak{} 1[U>0] (U =\allowbreak{} b\_\allowbreak{}OOF·G − λc 정의 동일), sample\_\allowbreak{}weight =\allowbreak{} log1p(|G|), Û =\allowbreak{} P(U>0) \ensuremath{\in} [0,1] — 6자릿수 절대-이득 회귀가 죽이던 판별력을 부호 문제로 전환. τ\_\allowbreak{}pre 선택(quantile grid)·verifier·pruning(24a) 등 전부 동일. label 단일클래스 퇴화 시 SystemExit. \textbf{예상}: 제안 recall 0.05\textasciitilde{}0.16  \ensuremath{\rightarrow}  대폭 상승, harmful은 verifier가 방어. \textbf{대조군}: 같은 스크립트 \texttt{-\allowbreak{}-\allowbreak{}prune-\allowbreak{}mode off\allowbreak{}} 1 run — "bank vs 관문" 원인 분리(24b만 좋아지고 off도 같으면 pruning 무관, off에서만 좋아지면 pruning 잔존 병목). \textbf{실행 체인}: 24a 스모크 \ensuremath{\rightarrow} 기록, 24b 스모크 \ensuremath{\rightarrow} 기록, 24b(--prune-mode off) 기록. 전부 --skip-xgboost(0.7548 인용). 판정 기준: 같은-run 튜플 +\allowbreak{} 깔때기(제안 recall·utility 실현) +\allowbreak{} §24 Gate 재판정. 보고서는 exp23 계열 아래 가로선 구분 후 exp24 섹션 신설(사용자 지시).
+
+\subsection{§3-결과. EXP24A/\allowbreak{}24B/\allowbreak{}24B-off (\texttt{144730}/\allowbreak{}\texttt{161322}/\allowbreak{}\texttt{174858}) — 두 knob 모두 기계적으로 작동, 최고는 24b-off(+\allowbreak{}0.028·harmful 4); 새 병목 발견: hard-brute regime이 D\_\allowbreak{}tune에 부재}
+\textbf{튜플 (system /\allowbreak{} global /\allowbreak{} oracle /\allowbreak{} recall /\allowbreak{} harmful)}:
+
+\par\noindent \textbullet\enspace 24a (regime-prune): 0.6721 /\allowbreak{} 0.6461 (+\allowbreak{}0.026) /\allowbreak{} 0.7815 /\allowbreak{} 0.204 /\allowbreak{} 52 — 생존 5 (dos·inf·dos혼합·easy-brute·web-129행), marginal 1.0\textasciitilde{}10.2로 재분화 [확인]. 단 이 run global 자체가 붕괴(inf .205 — 최대 폭 drift).
+
+
+\par\noindent \textbullet\enspace 24b (sign-scorer): 0.6824 /\allowbreak{} 0.6690 (+\allowbreak{}0.013) /\allowbreak{} 0.8206 /\allowbreak{} 0.184 /\allowbreak{} 241 — 채택 138.8k(10×), dos .486 \ensuremath{\rightarrow} .720, \textbf{web .163 \ensuremath{\rightarrow} .012 붕괴}(web-140행 expert가 생존한 상태에서 관대해진 관문이 web FP 대량 통과).
+
+
+\par\noindent \textbullet\enspace \textbf{24b-off (pruning off)}: \textbf{0.6978 /\allowbreak{} 0.6698 (+\allowbreak{}0.028) /\allowbreak{} 0.8294 /\allowbreak{} 0.261 /\allowbreak{} 4 (precision 0.9997)} — exp24 최고. web 무손상, dos +\allowbreak{}0.194, 호출 1.158.
+
+
+\textbf{knob 판정}:
+
+\par\noindent \textbullet\enspace \textbf{regime-조건부 marginal [확인]} — anchor 유지 하에 5명 생존, marginal이 1.0\textasciitilde{}10.2로 분리(24a 2e). exp23b의 "쌍둥이 붕괴" 해결.
+
+
+\par\noindent \textbullet\enspace \textbf{sign-scorer [확인]} — 제안 recall 0.086 \ensuremath{\rightarrow} 0.18\textasciitilde{}0.26, τ\_\allowbreak{}pre가 확률 단위 (0.94\textasciitilde{}0.99)로 안정화, 채택 10×. 단 utility 실현은 여전히 \textasciitilde{}0.20.
+
+
+\par\noindent \textbullet\enspace \textbf{ablation 귀속}: 24b-off > 24b  \ensuremath{\rightarrow}  pruning은 여전히 소폭 손해 (run 간 clustering drift로 정밀 귀속은 제한).
+
+
+\textbf{신규 병목 — hard-brute regime의 D\_\allowbreak{}tune 부재}: 세 run 모두 hard-brute regime(질량 0.36\textasciitilde{}0.40 최대)이 \textbf{masked tune 행 0개}로 min-support 탈락. D\_\allowbreak{}expert(시간상 앞)의 hard-brute형 실패 서명이 D\_\allowbreak{}tune(val 앞 40\%) 구간에 없음 — brute 공격의 성격이 시간에 따라 변한 \textbf{temporal drift의 직접 증거}이자, "tune에서 잴 수 없는 전문가" 문제. brute F1이 전 계열에서 0.725에 동결된 이유. 후속 knob: tune-부재 regime은 marginal을 D\_\allowbreak{}route에서 측정(fallback) 또는 D\_\allowbreak{}expert 후반부를 검증용으로 분할.
+
+\textbf{24b web 붕괴 메커니즘}: w\_\allowbreak{}bal(web\ensuremath{\approx}1500)이 손실-oracle과 관문을 web 방향으로 편향 — oracle조차 web 0.024(참조 불능). γ tempering이 재부상.
+
+\textbf{위치}: 24b-off가 exp23(+\allowbreak{}0.032)과 유사 macro를 \textbf{훨씬 건강한 깔때기} (recall 3×, harmful 96 \ensuremath{\rightarrow} 4)로 달성. XGB 0.7548 대비로는 여전히 −0.057. 보고서는 exp23 계열 아래 가로선 후 exp24 섹션 신설.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

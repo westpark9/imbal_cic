@@ -1,0 +1,187 @@
+{
+  "update_seconds": 45.475348769003176,
+  "phases": [
+    {
+      "phase": "global_construct",
+      "seconds": 7.06389982951805e-05
+    },
+    {
+      "phase": "global_fit",
+      "seconds": 5.535620624999865
+    },
+    {
+      "phase": "global_embedding",
+      "seconds": 6.4195614170021145
+    },
+    {
+      "phase": "embedding_pca",
+      "seconds": 0.054871248998097144
+    },
+    {
+      "phase": "temperature_predictions",
+      "seconds": 0.48904516200127546
+    },
+    {
+      "phase": "residual_predictions",
+      "seconds": 3.230789505003486
+    },
+    {
+      "phase": "residual_embedding",
+      "seconds": 3.2662346539873397
+    },
+    {
+      "phase": "residual_clustering",
+      "seconds": 0.04316975500842091
+    },
+    {
+      "phase": "global_route",
+      "seconds": 3.276742287998786
+    },
+    {
+      "phase": "embedding_route",
+      "seconds": 3.3146800810063723
+    },
+    {
+      "phase": "global_cal",
+      "seconds": 0.7492061880038818
+    },
+    {
+      "phase": "embedding_cal",
+      "seconds": 0.7573850490007317
+    },
+    {
+      "phase": "expert1_construct",
+      "seconds": 5.756500468123704e-05
+    },
+    {
+      "phase": "expert1_fit",
+      "seconds": 1.088269368003239
+    },
+    {
+      "phase": "expert1_route",
+      "seconds": 1.6102568849892123
+    },
+    {
+      "phase": "expert1_cal",
+      "seconds": 0.3641708579962142
+    },
+    {
+      "phase": "expert2_construct",
+      "seconds": 5.3481999202631414e-05
+    },
+    {
+      "phase": "expert2_fit",
+      "seconds": 3.667432579997694
+    },
+    {
+      "phase": "expert2_route",
+      "seconds": 2.7300236470036907
+    },
+    {
+      "phase": "expert2_cal",
+      "seconds": 0.6236227549961768
+    },
+    {
+      "phase": "expert3_construct",
+      "seconds": 6.299899541772902e-05
+    },
+    {
+      "phase": "expert3_fit",
+      "seconds": 1.1273622699955013
+    },
+    {
+      "phase": "expert3_route",
+      "seconds": 1.6414551039924845
+    },
+    {
+      "phase": "expert3_cal",
+      "seconds": 0.374805257000844
+    },
+    {
+      "phase": "expert4_construct",
+      "seconds": 5.340400093700737e-05
+    },
+    {
+      "phase": "expert4_fit",
+      "seconds": 1.1303186800068943
+    },
+    {
+      "phase": "expert4_route",
+      "seconds": 1.5991578009998193
+    },
+    {
+      "phase": "expert4_cal",
+      "seconds": 0.3634741880086949
+    },
+    {
+      "phase": "affinity_indices",
+      "seconds": 0.00044314999831840396
+    },
+    {
+      "phase": "S1V0_fit",
+      "seconds": 1.8440128020010889
+    },
+    {
+      "phase": "threshold_selection",
+      "seconds": 0.05248271700111218
+    }
+  ],
+  "train_rows": 100000,
+  "validation_rows": 8605,
+  "global_rows": 49860,
+  "experts": 4,
+  "context_recipe": "common anchor + residual cluster block (all cluster rows below original 186000 cap)",
+  "policy": "EXP62 S1V0; original features, targets and threshold constraints",
+  "class_names": [
+    "benign",
+    "scanning",
+    "dos",
+    "injection",
+    "ddos",
+    "password",
+    "xss",
+    "ransomware",
+    "backdoor",
+    "mitm"
+  ],
+  "protocol_adaptations": [
+    "100k training budget plus separate validation; causal feature-group-disjoint role allocation",
+    "all disjoint D_cal selects thresholds; no chronological cal-confirm split",
+    "tail constraint neutral until original tail classes appear"
+  ],
+  "selection": {
+    "tau_pre": null,
+    "tau_post": null,
+    "delta_macro_f1": 0.0,
+    "delta_tail_f1": 0.0,
+    "delta_benign_fpr": 0.0,
+    "accepted": 0,
+    "changed": 0,
+    "helpful": 0,
+    "harmful": 0,
+    "feasible": true,
+    "proposal_rate": 0.0,
+    "reason": "global_fallback"
+  },
+  "stage": 5,
+  "dataset": "toniot",
+  "case": "uniform",
+  "method": "ours",
+  "input_prepare_seconds": 0.12045664500328712,
+  "train_ids_sha256": "84ba83ed6706311d3562c04ca3e0619c473a5fee24c8d90cb71a821243120382",
+  "validation_ids_sha256": "295e580b8e970f6f13b91f668e6b4fff1cfd6b81abd0dee9e4e2b4b70226a5e2",
+  "validation_available_rows": 8605,
+  "validation_used_rows": 8605,
+  "global_class_indices": [
+    1,
+    8,
+    3,
+    4,
+    2,
+    6,
+    9,
+    7,
+    0,
+    5
+  ]
+}

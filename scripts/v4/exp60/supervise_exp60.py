@@ -116,7 +116,7 @@ def run(root):
               seconds=time.time()-session['started_epoch'], completed_epoch=time.time()))
         notify(root, 'all_complete', '상대사례 실험 전체 완료',
                'CIC2018·ToN, 무작위·가까운 상대사례 16개 expert와 분석 완료\n'
-               '결과: docs/research/20260929/exp60_results.md')
+               '결과: docs/lablog/reports/20260929.tex')
     except BaseException:
         if active is not None and active.poll() is None:
             active.terminate()

@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "seed": 43,
+  "seed_repetitions": 1,
+  "jobs": [
+    {
+      "dataset": "cic2018",
+      "method": "distpfn_pretrained",
+      "new_per_class": 100,
+      "macro_f1": 0.7755840567780597,
+      "predictions_sha256": "99cc9f888037d2b1fad080d5c997308be5fb158d3c1b7636bb844514ed214fc1"
+    },
+    {
+      "dataset": "toniot",
+      "method": "distpfn_pretrained",
+      "new_per_class": 100,
+      "macro_f1": 0.7563789097914733,
+      "predictions_sha256": "99e0e98fb747fe4ab5dc92a316863ec81c559fbfa56e73a64580c9a0e5f22efe"
+    }
+  ],
+  "checks": [
+    "independent full-test confusion and F1",
+    "final-state evaluation",
+    "DistPFN no FT and exact base-prediction match",
+    "cost is later-stage updates only",
+    "initial 1000 unchanged",
+    "nested same-ID class budgets",
+    "all context updates preserve weights"
+  ]
+}

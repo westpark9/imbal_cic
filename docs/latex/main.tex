@@ -1,8 +1,11 @@
-% Working manuscript, revised 2026-10-12. Original: 20261007/original/.
+% Working manuscript, revised 2026-10-15. Original: 20261007/original/.
 % Keep the user-approved original title; change only on explicit user request.
+% All manuscript text, tables, and the TikZ diagram are embedded in this file.
+% References use ref.bib; the ACM class and bibliography style are standard files.
 % ASIACCS 2027: standard ACM two-column layout, no font/margin overrides.
 % DOI, ISBN, submission ID and anonymous artifact URL remain unassigned.
-\documentclass[sigconf,anonymous,pbalance]{acmart}
+% Build support lives below the manuscript's reading/editing entry points.
+\documentclass[sigconf,anonymous,pbalance]{_support/acmart}
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{siunitx}
@@ -15,7 +18,6 @@
 \acmDOI{}
 \acmISBN{}
 \acmConference[ASIACCS '27]{ACM Asia Conference on Computer and Communications Security}{July 12--16, 2027}{Macau}
-\IfFileExists{tables/quality.tex}{\newcommand{\paperassetroot}{.}}{\newcommand{\paperassetroot}{20261012}}
 \newcommand{\globalidx}{\mathrm{G}}
 \newcommand{\ctx}{\mathcal{C}}
 
@@ -47,7 +49,7 @@ An intrusion detector must use newly available attack examples while retaining i
 \keywords{intrusion detection, long-tailed classification, tabular foundation models, in-context learning, selective expert activation}
 \maketitle
 
-\noindent\textit{Working draft, 12 October 2026.} The architecture and evaluation remain under development. Reported results are existing single-seed observations; pending evaluations are identified explicitly.
+\noindent\textit{Working draft, 15 October 2026.} The architecture and evaluation remain under development. Reported results are existing single-seed observations; pending evaluations are identified explicitly.
 
 \section{Introduction}
 \label{sec:intro}
@@ -199,13 +201,31 @@ We call the third procedure a \emph{residual-assignment oracle diagnostic}. It d
 
 \section{Evaluation}
 \label{sec:eval}
-\subsection{Questions and Evidence Status}
-The current evaluation addresses three questions: (RQ1) how the implemented context-expert system compares with current tabular baselines on the filtered datasets; (RQ2) which expert interventions the policy actually retains; and (RQ3) whether context expansion provides a useful alternative to refitting XGBoost when labelled examples of new attack classes become available. RQ1--RQ2 use the static system; RQ3 currently uses a single TabPFN. All reported results use seed 43 and previously inspected development holdouts. They are exploratory evidence for design choices, not a final multi-seed benchmark claim.
+\subsection{Evaluation Scope and Evidence Status}
+The evaluation characterizes the context-expert system on the filtered datasets through static comparisons with tabular baselines and measurements of the expert interventions retained by the policy. A separate single-model experiment compares TabPFN context expansion with XGBoost refitting as labelled examples of new attack classes become available. This update comparison does not evaluate an updating expert bank. All reported results use seed 43 and previously inspected development holdouts. They are exploratory evidence for design choices, not a final multi-seed benchmark claim.
 
 \subsection{Data Quality and Evaluation Populations}
 We use the NF-v3 representations of CIC2018 and ToN-IoT with 46 features~\cite{luay2025NetFlowDatasetsV3}. An audit found identical model-input vectors with different family labels. For the current experiments, every row belonging to such a conflicting vector group is removed. Feature equality is checked after the documented float32 conversion and non-finite-value handling. Remaining rows retain their original train, validation, and test memberships; there is no re-splitting after removal. Identical-feature rows with the same label are preserved.
 
-\input{\paperassetroot/tables/quality.tex}
+% BEGIN embedded table: quality
+\begin{table}[t]
+\centering
+\caption{Offline conflict filtering. All rows of an identical-input group with inconsistent family labels are removed; retained rows keep their original split membership. Counts refer to full datasets and splits, not selected contexts.}
+\label{tab:quality}
+\begin{tabular}{@{}l *{2}{S[table-format=8.0]}@{}}
+\toprule
+Population & {CIC2018} & {ToN-IoT} \\
+\midrule
+Original rows & 20115529 & 27520260 \\
+Removed rows & 5360112 & 16712972 \\
+Retained rows & 14755417 & 10807288 \\
+Retained train & 8666430 & 4669119 \\
+Retained validation & 3046514 & 3866446 \\
+Retained test & 3042473 & 2271723 \\
+\bottomrule
+\end{tabular}
+\end{table}
+% END embedded table: quality
 
 This operation changes the evaluation population substantially (Table~\ref{tab:quality}). It removes contradictions in the chosen feature representation; it does not prove that the original labels are erroneous, or solve all ambiguities of intrusion detection. The audit uses labels across the benchmark, so it is an offline curation protocol rather than a deployment-time filter. Scores describe this filtered population and must not be compared directly with published results on unfiltered data. Class-wise support is reported in Table~\ref{tab:classwise}.
 
@@ -216,35 +236,147 @@ The Global and proposed experts use the stored checkpoint \texttt{v3\_\allowbrea
 
 Full-training-pool XGBoost is reported separately. The proposed system additionally uses expert-construction and route-training examples, so it is not an equal-label-budget comparison with the $100{,}000$-example baselines. Its current $K=4$ result is a previously used reference configuration, not the test-best choice from the $K$ sweep. Equal-information and equal-total-context comparisons remain necessary to isolate architectural gains.
 
-\subsection{RQ1: Static Classification Results}
-\input{\paperassetroot/tables/static.tex}
-\input{\paperassetroot/tables/classwise.tex}
+\subsection{Static Classification Results}
+% BEGIN embedded table: static
+\begin{table}[t]
+\centering
+\caption{Static macro-F1 (seed 43). The first five methods share the Global training IDs. Full XGBoost uses the clean training pool; the proposed system also uses expert and route pools. These last two rows are not equal-information comparisons with the first five.}
+\label{tab:static}
+\begin{tabular}{@{}l *{2}{S[table-format=1.4]}@{}}
+\toprule
+Method & {CIC2018} & {ToN-IoT} \\
+\midrule
+\multicolumn{3}{l}{Same 100,000 training IDs} \\
+Global TabPFN-v3 & 0.7824 & 0.6796 \\
+XGBoost (100k) & 0.7821 & 0.6983 \\
+BoostPFN & 0.7148 & 0.5866 \\
+LoCalPFN (FT) & 0.7024 & 0.6462 \\
+DistPFN (v3) & 0.7839 & 0.6682 \\
+\midrule
+\multicolumn{3}{l}{Additional training information} \\
+XGBoost (full) & 0.7795 & 0.7162 \\
+Proposed ($K=4$) & 0.7824 & 0.7617 \\
+\bottomrule
+\end{tabular}
+\end{table}
+% END embedded table: static
+% BEGIN embedded table: classwise
+\begin{table*}[t]
+\centering
+\caption{Per-class F1, sorted by descending test support within each dataset. Global and Proposed use paired predictions from the $K=4$ expert-policy evaluation; the remaining baselines use the same evaluation IDs. Proposed includes both scorer and verifier. Data-access qualifications from Table~\ref{tab:static} apply.}
+\label{tab:classwise}
+\begin{tabular}{@{}l S[table-format=7.0] *{7}{S[table-format=1.4]}@{}}
+\toprule
+Class & {Test rows} & {Global} & {XGB 100k} & {BoostPFN} & {LoCalPFN} & {DistPFN} & {XGB full} & {Proposed} \\
+\midrule
+\multicolumn{9}{l}{CIC2018} \\
+Benign & 2652203 & 0.9965 & 0.9933 & 0.9937 & 0.9921 & 0.9968 & 0.9887 & 0.9965 \\
+DDoS & 262680 & 0.9922 & 0.9998 & 0.9906 & 0.9433 & 0.9931 & 0.9036 & 0.9922 \\
+Bot & 41542 & 0.9985 & 0.9976 & 0.9942 & 0.9972 & 0.9982 & 0.9977 & 0.9985 \\
+DoS & 39483 & 0.9920 & 0.9998 & 0.9598 & 0.7309 & 0.9919 & 0.9999 & 0.9920 \\
+Brute force & 37696 & 0.9997 & 0.9995 & 0.9997 & 0.9999 & 0.9997 & 0.9996 & 0.9997 \\
+Infiltration & 8742 & 0.2880 & 0.1528 & 0.0653 & 0.1350 & 0.3055 & 0.2927 & 0.2880 \\
+Web attack & 127 & 0.2102 & 0.3321 & 0.0000 & 0.1183 & 0.2024 & 0.2745 & 0.2102 \\
+\midrule
+\multicolumn{9}{l}{ToN-IoT} \\
+Benign & 1474302 & 0.9217 & 0.9385 & 0.9042 & 0.9184 & 0.9064 & 0.9389 & 0.9231 \\
+XSS & 343854 & 0.8305 & 0.8734 & 0.7929 & 0.8469 & 0.8247 & 0.8714 & 0.8305 \\
+Password & 210951 & 0.8921 & 0.8920 & 0.6728 & 0.8911 & 0.8909 & 0.8918 & 0.8921 \\
+DDoS & 103338 & 0.9804 & 0.9842 & 0.9248 & 0.9786 & 0.9850 & 0.9928 & 0.9804 \\
+Injection & 68891 & 0.9027 & 0.9128 & 0.4793 & 0.8925 & 0.9164 & 0.9759 & 0.9047 \\
+Backdoor & 40030 & 0.9990 & 0.9990 & 0.9609 & 0.9988 & 0.9990 & 0.9924 & 0.9990 \\
+DoS & 22458 & 0.9771 & 0.9563 & 0.3954 & 0.5554 & 0.9823 & 0.9814 & 0.9771 \\
+Scanning & 6029 & 0.0394 & 0.0458 & 0.3281 & 0.0973 & 0.0060 & 0.0396 & 0.8587 \\
+MitM & 1161 & 0.1322 & 0.2363 & 0.0468 & 0.1655 & 0.0512 & 0.3236 & 0.1322 \\
+Ransomware & 709 & 0.1208 & 0.1449 & 0.3608 & 0.1170 & 0.1204 & 0.1539 & 0.1196 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+% END embedded table: classwise
 Table~\ref{tab:static} provides the present performance comparison; Table~\ref{tab:classwise} exposes the class-level outcomes behind the averages. The $K=4$ system attains macro-F1 $0.7824$ on CIC2018 and $0.7617$ on ToN-IoT. The matched-subset XGBoost results are $0.7821$ and $0.6983$, respectively. On CIC2018, DistPFN reaches $0.7839$; the current expert policy supplies no gain over its paired Global predictor. On ToN-IoT, the system's increase over Global is concentrated in Scanning, whose F1 changes from $0.0394$ to $0.8587$.
 
 This is not uniform tail improvement. ToN-IoT MitM remains near F1 $0.1322$, and Ransomware changes from $0.1208$ to $0.1196$. CIC2018 Infiltration and Web attacks remain difficult under the selected policy. The Scanning outcome demonstrates that a useful correction can be available in the bank and retained by the policy; it does not establish why the context caused that improvement. Controlled changes to composition at a fixed budget are needed for that causal attribution.
 
-\subsection{RQ2: Activation, Adoption, and Expert Count}
-\input{\paperassetroot/tables/policy.tex}
+\subsection{Activation, Adoption, and Expert Count}
+% BEGIN embedded table: policy
+\begin{table}[t]
+\centering
+\caption{Policy results for all tested expert counts (seed 43). Calls and adoptions are logical counts from cached predictions. Corrected/damaged counts compare with the paired Global prediction. Total context size differs across banks; no best $K$ is selected on test.}
+\label{tab:policy}
+\begin{tabular}{@{}r S[table-format=1.4] S[table-format=3.2] S[table-format=1.2] *{2}{S[table-format=5.0]}@{}}
+\toprule
+$K$ & {Macro-F1} & {Call (\%)} & {Adopt (\%)} & {Corrected} & {Damaged} \\
+\midrule
+\multicolumn{6}{l}{CIC2018} \\
+2 & 0.7824 & 0.00 & 0.00 & 0 & 0 \\
+4 & 0.7824 & 0.00 & 0.00 & 0 & 0 \\
+6 & 0.7824 & 0.00 & 0.00 & 0 & 0 \\
+8 & 0.7824 & 0.00 & 0.00 & 0 & 0 \\
+\midrule
+\multicolumn{6}{l}{ToN-IoT} \\
+2 & 0.7636 & 100.00 & 5.26 & 10443 & 5784 \\
+4 & 0.7617 & 100.00 & 1.23 & 5381 & 1101 \\
+6 & 0.7677 & 100.00 & 4.09 & 15289 & 2771 \\
+8 & 0.7463 & 100.00 & 0.69 & 8328 & 3741 \\
+\bottomrule
+\end{tabular}
+\end{table}
+% END embedded table: policy
 For every evaluated $K$, CIC2018 retains the Global output on all test rows. This identifies a lack of realized intervention in the current selected system. It does not establish that every expert is incapable, or that the verifier alone causes the outcome. Context quality, scorer ranking, verifier scores, and validation constraints jointly determine the selected policy.
 
 For ToN-IoT, the selected policy logically calls one expert on every row, but accepts only a subset of the outputs. At $K=4$, acceptance is $1.23\%$; $6{,}504$ labels change, with $5{,}381$ corrections and $1{,}101$ newly introduced errors. The remaining changed labels are wrong both before and after replacement. A high activation rate therefore does not mean that every expert is evaluated on each query or that every Global output is replaced. It also shows that the present policy has not achieved selective-call savings on this dataset.
 
 These counts come from applying the frozen policy to stored predictions. The experiment computes expert outputs beforehand to support matched comparisons; its logical call counts cannot be converted into measured online latency. The $K$ sweep also changes total context size. We therefore report the full sweep without selecting a preferred $K$ using these test results or attributing differences solely to expert count. A final attribution of scorer and verifier contributions requires matched component ablations after the context design is fixed.
 
-\subsection{RQ3: Incorporating Newly Labelled Attacks}
+\subsection{Incorporating Newly Labelled Attacks}
 \label{sec:arrival}
 A separate experiment adds labelled attack classes in stages, preserving the verified order of first class appearance in the source records. It does not replay all raw timestamps. CIC2018 starts with benign, Brute force, and DoS, then adds DDoS, Web attacks, Infiltration, and Bot. ToN-IoT starts with benign, Scanning, and DoS, then adds Injection/DDoS, Password, XSS, Ransomware/Backdoor, and MitM. Classes introduced together share a stage.
 
 At each stage, both methods receive identical cumulative training IDs and are evaluated on the same fixed-test rows belonging to introduced classes. Future classes are excluded from fitting and context construction until their stage. The final allocation is $100{,}000$ examples: $75{,}000$ benign and $25{,}000$ attack examples, with availability-capped allocation across attacks. The training pool and allocation differ from the static Global/Expert/Route experiment. Each XGBoost is fitted anew on the cumulative examples; TabPFN retains its pretrained weights but rebuilds preprocessing and context caches. No experts, scorer, or verifier participate in this experiment.
 
-\input{\paperassetroot/tables/arrival.tex}
+% BEGIN embedded table: arrival
+\begin{table*}[t]
+\centering
+\caption{Final stage of the separate attack-introduction experiment (seed 43; 100,000 cumulative examples per dataset). No experts or S/V are used. Times are for final-stage updating and the complete final test batch; GPU jobs run sequentially. These are not cumulative times over all stages.}
+\label{tab:arrival}
+\begin{tabular}{@{}ll S[table-format=1.4] S[table-format=2.2] S[table-format=2.2] S[table-format=3.2]@{}}
+\toprule
+Dataset & Method & {Macro-F1} & {Benign FPR (\%)} & {Update (s)} & {Infer (s)} \\
+\midrule
+CIC2018 & XGBoost & 0.7759 & 2.10 & 1.98 & 1.44 \\
+CIC2018 & TabPFN & 0.7864 & 0.14 & 16.98 & 522.63 \\
+ToN-IoT & XGBoost & 0.7130 & 11.03 & 3.59 & 1.61 \\
+ToN-IoT & TabPFN & 0.6951 & 13.33 & 17.15 & 391.50 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+% END embedded table: arrival
 
 At the final stage, TabPFN has higher macro-F1 and lower benign false-alarm rate on CIC2018, but lower macro-F1 and higher false-alarm rate on ToN-IoT (Table~\ref{tab:arrival}). Both measured context-update and inference times exceed the corresponding XGBoost times. Thus this workload demonstrates that context-based updating is executable, but not that it dominates refitting in performance or cost.
 
 Class-specific errors further qualify the result. At the ToN-IoT MitM introduction stage, TabPFN correctly identifies $1{,}126$ of $1{,}161$ MitM rows, yet produces $46{,}010$ false positives, including $41{,}330$ benign rows. High recall therefore coexists with low precision and F1. This directly motivates preserving benign distinctions when adding attack evidence; it does not prove that one particular sampling or representation choice is responsible. Stage-level macro-F1 also averages over changing class sets, so retention must be compared on fixed old-class populations rather than inferred from an aggregate decrease.
 
 \subsection{Cost Accounting}
-\input{\paperassetroot/tables/cost.tex}
+% BEGIN embedded table: cost
+\begin{table*}[t]
+\centering
+\caption{Static-baseline elapsed times on a shared RTX 4090 (up to two concurrent workers). These include contention, not isolated latency. Global timing is from its baseline run, separate from the cached expert-policy evaluation. LoCalPFN includes validation in fit and retrieval in inference; DistPFN includes the shared Global computation. No online conditional-service latency is claimed for the proposed system.}
+\label{tab:cost}
+\begin{tabular}{@{}l *{4}{S[table-format=5.1]}@{}}
+\toprule
+ & \multicolumn{2}{c}{CIC2018} & \multicolumn{2}{c}{ToN-IoT} \\
+Method & {Fit (s)} & {Infer (s)} & {Fit (s)} & {Infer (s)} \\
+\midrule
+Global TabPFN-v3 & 36.4 & 1099.3 & 36.7 & 821.7 \\
+XGBoost (100k) & 2.3 & 1.0 & 55.4 & 1.0 \\
+BoostPFN & 98.5 & 2308.5 & 97.8 & 1737.6 \\
+LoCalPFN (FT) & 3196.3 & 17300.8 & 5783.1 & 11144.8 \\
+DistPFN (v3) & 36.4 & 1099.4 & 36.7 & 821.9 \\
+XGBoost (full) & 107.8 & 1.0 & 143.2 & 1.1 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+% END embedded table: cost
 Static-baseline times in Table~\ref{tab:cost} were recorded on an RTX 4090 with up to two workers sharing the GPU. They include resource contention and are not isolated deployment latencies. LoCalPFN fit includes validation, and its inference includes retrieval. DistPFN includes the shared Global computation, not only its adjustment step. The attack-introduction experiment runs GPU jobs sequentially and reports final-stage update and full-batch inference separately. Its times are not combined with the concurrently measured static times to infer a speedup. Measurements of an online conditional expert service, full-system memory, and amortized cost over repeated updates remain pending.
 
 \section{Discussion}
@@ -265,7 +397,7 @@ The present results use one seed and previously examined holdouts. Filtering con
 \section{Conclusion}
 We investigate a TabPFN-based detector that specializes through labelled contexts and separates expert activation from output adoption. Existing experiments show a useful Scanning correction on ToN-IoT, while exposing limitations in tail precision, policy activation, and inference cost. The next step is to determine whether controlled context construction and intervention decisions can improve rare-attack detection while preserving benign decisions, and whether those gains remain useful when the complete system is updated with newly labelled attacks.
 
-\bibliographystyle{ACM-Reference-Format}
+\bibliographystyle{_support/ACM-Reference-Format}
 \bibliography{ref}
 
 \appendix

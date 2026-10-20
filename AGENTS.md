@@ -2,9 +2,30 @@
 
 모델을 개발하면서 발생한 문제/병목 지점에 대해 오류나 낮은 퍼포먼스를 인정하는 것이 아니라 개선하고 해결하기 위한 방안을 제시합니다.
 
+# 문서의 역할과 자동 실험 기록 (2026-10-20 사용자 확정)
+
+문서는 다음 세 위치와 언어로 관리합니다. 이전 경로·HTML 발행 지침보다 이 규칙이 우선합니다.
+
+- `docs/lablog/`: **한국어 실험 결과 보고서**. 상세 기록은 독립 컴파일 가능한 `reports/YYYYMMDD.tex` 또는 `reports/YYYYMMDD_expNN.tex`입니다. PDF는 상시 보관하지 않고 컴파일 검증·Cursor 미리보기에만 임시 생성합니다. 공용 서식은 `_support/style.tex`, 도표는 `figures/`, 수치·재현 근거는 `data/`·`evidence/`, 실험·실행 목록은 `inventory/`에 둡니다. 통합 `main.tex`는 만들지 않습니다.
+- `docs/lablog/log.md`: **유일한 Markdown 실험 흐름 로그**. 날짜순으로 실험당 한 줄(실험 ID·수행 내용·핵심 결과/상태·상세 보고서 링크)을 기록합니다. 같은 날 같은 실험은 해당 줄을 보완하며, 날짜별/실험별 상세 Markdown은 만들지 않습니다.
+- `docs/latex/main.tex`: **영어 Overleaf 논문 원고**. `ref.bib`, 필요한 스타일·그림, `_support/sources.json`을 함께 관리합니다. `main.pdf`는 상시 보관하지 않습니다. 실험 기록이나 `experiment_record`를 이 폴더에 만들지 않습니다. 개정 이력은 Git으로 관리하고 날짜별 전체 원고 사본을 자동 생성하지 않습니다. 실험 완료만으로 결과를 논문 주장에 채택하지 않습니다.
+- `docs/slides/`: **한국어 우선 발표자료**. 영어본은 사용자 요청 시 작성합니다. 발표자료의 내용·구성 변경은 요청된 범위에서 수행합니다.
+
+사용자 추가 요청(2026-10-20): 각 폴더 최상위의 일반 파일은 `docs/lablog/log.md`, `docs/latex/main.tex`·`ref.bib`만 둡니다. `docs/slides/` 최상위에는 일반 파일을 두지 않으며 `eng/`·`kor/`에는 날짜별 PPTX·PDF만 둡니다. `.gitignore`는 예외입니다. 서식·Makefile·출처/검증 JSON·지침·생성 코드·템플릿·작성 계획·QA·이전 발표본은 각 폴더의 `_support/` 아래에서 관리합니다. 앞으로 생성기 실행도 이 구조를 유지해야 합니다.
+
+사용자 추가 요청(2026-10-20): 슬라이드를 제외한 원고·보고서의 컴파일 PDF와 중간 파일은 영구 보관하지 않습니다. Cursor 자동 빌드는 LaTeX Workshop의 `%TMPDIR%` 아래에 미리보기·SyncTeX 캐시를 만들고 원본 폴더에 PDF를 복사하지 않습니다. 캐시 삭제 후 다시 빌드하면 재생성됩니다. 그림 입력·외부 참고논문 PDF와 슬라이드 PDF는 유지합니다. lablog의 독립 문서에는 자신의 파일명을 가리키는 `% !TeX root = 파일명.tex`와 `% !LW recipe=lablog XeLaTeX`를 유지합니다.
+
+실험을 수행한 agent는 **별도 요청 없이** 임시 PDF 컴파일로 검증 후 한국어 상세 LaTeX와 한 줄 로그를 작성합니다. 검증 PDF는 프로젝트에 저장하지 않습니다. 야간·무인·백그라운드 실험도 같습니다. 완료를 확인한 agent가 기록까지 마감하고, 실행 중 인계에는 실행 경로와 남은 기록 작업을 남깁니다. 실패·중단·부분 완료도 실제 상태와 원인, 복구·개선 방안을 기록합니다. 실제 실행/분석 날짜와 문서 작성일을 구별하고 값을 추정해 채우지 않습니다.
+
+상세 보고서는 목적·설정(버전/실험/실행 ID, 데이터·클래스별 수, seed) → 도표와 관찰 결과 → 근거가 뒷받침하는 해석 → 미검증 설명·한계 → 다음 개선안을 연결합니다. 단계 예측 합산·최종 모델 전체 test·개발 holdout·부분 표본 평가, 가중치 FT·context/cache 갱신, 초기 준비·후속 갱신·추론 비용을 각각 구별합니다. 정정 이유와 현재 사용할 근거를 명시하고 실행 완료와 논문 근거 채택을 구별합니다.
+
+`make -C docs/lablog/_support`로 날짜별 LaTeX를 임시 폴더에서 컴파일 검증하고 `make -C docs/lablog/_support check`로 연결·단일 Markdown·폐기 경로를 검사합니다. 결과 생성기는 `scripts/common/lablog.py`의 `write_record`로 메모리상 서술을 LaTeX와 로그에 저장하고 임시 컴파일 검증할 수 있습니다. 이 함수는 해석·성공 상태를 만들어 주지 않으므로 작성자가 검토합니다. XeLaTeX가 없는 실행 환경에서는 컴파일 검증 대기를 명시하고, 가능한 환경에서 컴파일하여 마감합니다.
+
+옛 `docs/research/`, 루트 `lablog/`, `docs/latex/experiment_record*`와 HTML 통합본은 수합 후 삭제했습니다. 다시 생성하거나 별도 보관 사본으로 중복시키지 않습니다. 문서 이동·통합·삭제 근거는 `configs/experiments/migrations/20261020_documents/manifest.json`에 있습니다. 원시 결과·예측·모델·당시 소스 스냅샷은 기존 results 경로를 유지합니다.
+
 # 발표자료 정렬
 
-발표자료 제작·수정 시 `docs/slides/지침.txt`를 적용합니다. 사용자 요청(2026-10-01): 클래스는 해당 표·그림의 기준 표본 수 내림차순으로 정렬하고, 집계 범위와 정렬 기준을 명시합니다. 정제 전후 분포 표는 정제 후 표본 수, 성능 표는 평가 표본 수를 기준으로 합니다. 정수는 일의자리, 소수는 소수점 위치가 맞도록 숫자 열을 우측 정렬하고 같은 열의 소수 자릿수와 단위를 통일합니다. 전후 수치나 서로 다른 데이터셋의 수치는 별도 열로 나눕니다.
+발표자료 제작·수정 시 `docs/slides/_support/guides/지침.txt`를 적용합니다. 사용자 요청(2026-10-01): 클래스는 해당 표·그림의 기준 표본 수 내림차순으로 정렬하고, 집계 범위와 정렬 기준을 명시합니다. 정제 전후 분포 표는 정제 후 표본 수, 성능 표는 평가 표본 수를 기준으로 합니다. 정수는 일의자리, 소수는 소수점 위치가 맞도록 숫자 열을 우측 정렬하고 같은 열의 소수 자릿수와 단위를 통일합니다. 전후 수치나 서로 다른 데이터셋의 수치는 별도 열로 나눕니다.
 
 # 논문 작성: 선행연구 Discussion 필수 (2026-10-07)
 
@@ -21,42 +42,22 @@
 
 현재 원고 개편에서는 일반적인 IDS 개론 소절을 제거하고, LT와 MoE의 정의·필수 표기는 Literature Review 이후의 Preliminaries로 옮깁니다. 정의와 선행 방법의 비교를 구분하며, 제안 모델만의 설계는 방법론 절에 둡니다. 첨부 예시 논문은 논리 전개를 참고하되 제출 형식은 해당 연도 AsiaCCS 공식 규정을 우선합니다.
 
-# 질문에 대한 답변과 HTML 편집
+# 질문 답변과 발표·원고 편집
 
-사용자 요청(2026-09-22): 질문에 대한 답변은 먼저 터미널·대화로만 제공합니다. 답변 내용을 HTML에 추가하는 것은 사용자가 명시적으로 요청할 때 진행합니다. 실험 실행 요청만으로 HTML에 설명이나 결과를 자동 추가하지 않습니다.
-
-# HTML 보고서와 온라인 아티팩트 동시 갱신
-
-사용자 요청(2026-09-10): 로컬 HTML 보고서를 수정하면 대응하는 온라인 아티팩트도 같은 내용으로 갱신합니다. 사용자가 매번 따로 요청하게 하지 않습니다.
-
-- 개별 보고서 원본: `lablog/html_report/<report_id>.html`.
-- TabPFN 도입 이후 통합본: `lablog/html_report/post_tabpfn.html`.
-  대응 아티팩트: https://claude.ai/code/artifact/688578fa-0974-4310-a8a4-200b6c9bad28
-- TabPFN 도입 이전 통합본: `lablog/html_report/pre_tabpfn.html`.
-  대응 아티팩트: https://claude.ai/code/artifact/2d550cef-c026-4638-957d-84bdb7889b31
-
-보고서 수정 시 다음 순서를 따릅니다.
-
-1. 원본 HTML을 수정하고 새 보고서라면 통합본의 목차·개요·`REPORTS` 항목도 추가합니다.
-2. `python scripts/sync_html_reports.py`로 개별 HTML의 내용을 통합본의 내장 사본에 반영합니다. `python scripts/sync_html_reports.py --check`로 동기화를 확인합니다.
-3. 연결된 아티팩트 편집 도구로 해당 온라인 아티팩트의 내용을 최신 통합 HTML로 갱신하고, 0909 같은 최신 항목과 본문이 실제로 반영되었는지 확인합니다. 기존 아티팩트 주소를 유지합니다.
-4. 로컬 파일·Git push·온라인 아티팩트 갱신의 완료 여부를 구분해서 보고합니다. Git push만으로 Claude 아티팩트가 갱신된 것으로 간주하지 않습니다.
-
-아티팩트 편집 도구나 접근 권한이 없으면 로컬 동기화와 검증까지 마친 뒤, 원격 갱신이 되지 않았다는 사실과 교체할 최신 HTML 경로를 명시합니다. 온라인 갱신이 완료됐다고 쓰거나 별도 서비스를 임의로 만들어 대신하지 않습니다.
-
+질문에는 먼저 대화로 답합니다. 실험 결과는 위 규칙에 따라 lablog에 기록하지만, 질문·실험 실행만으로 원고나 슬라이드를 자동 편집하지 않습니다. 로컬 HTML과 온라인 아티팩트 동시 발행은 폐기한 보고서 체계의 지침이며 현재 실험 기록에 적용하지 않습니다.
 
 # 연구 의도와 실험 기록 (2026-10-02)
 
-연구의 중심 목표는 소수 라벨 공격의 탐지 성능 개선입니다. 순차 공격 도입은 평가 시나리오이며 raw timestamp 재현이나 소수 라벨 확보 전후 적응 비교는 필수 조건이 아닙니다. OOD 확장과 온라인 갱신 여부는 구분합니다. 상세한 확정 사항과 미정 조건은 `docs/research/20261002/research_direction.md`를 확인합니다.
+연구의 중심 목표는 소수 라벨 공격의 탐지 성능 개선입니다. 순차 공격 도입은 평가 시나리오이며 raw timestamp 재현이나 소수 라벨 확보 전후 적응 비교는 필수 조건이 아닙니다. OOD 확장과 온라인 갱신 여부는 구분합니다. 방향의 변경 이력은 `docs/lablog/reports/20261002.tex`, 현재 근거와 개선안은 `docs/lablog/reports/20261020.tex` 및 최신 흐름 로그를 확인합니다.
 
 연구 버전(`vN`)의 생성·전환은 사용자가 명시적으로 요청하거나, agent가 변경 이유와 범위를 검토하여 제안한 뒤 사용자 확인을 받은 경우에만 합니다(2026-10-06 합의). 날짜·실험 수·점수 변화만으로 자동 생성·전환하지 않습니다. 확인 전에는 현재 승인된 버전을 유지하며, 기존 결과의 연구 버전 재분류도 같은 원칙을 적용합니다. 승인된 변경은 `scripts/results_versions.py new` 등으로 등록하고 요청·확인 근거를 기록합니다. 새 실험·seed·설정·재시도에 따른 실행 등록과 목록 갱신은 승인된 연구 버전 안에서 자동화합니다.
 
-2026-10-07 사용자 요청에 따라 기존 코드·결과를 실제 버전/실험 경로로 이동했고 `tabpfn/results_past/`는 `tabpfn/results/` 안으로 통합했습니다. 새 실행은 `python scripts/results_versions.py run --version vN --experiment expNN --scope root|tabpfn --label LABEL -- COMMAND ... {run_dir}`로 등록하여 실행 폴더·명령·상태·로그를 자동 보존합니다. Worker에는 출력 경로 `{run_dir}`를 전달합니다. 직접 실행했다면 이후 `index`로 목록을 갱신합니다. 공통 등록부는 `configs/experiments/registry.json`, 이전 경로 조회는 `where OLD_PATH`, 실험 조회는 `find expNN`을 사용합니다. 날짜로 연구 버전을 자동 재배정하지 않습니다. 기존 결과 내용·소스 사본은 보존했고 이동 매핑과 검증 기록은 `configs/experiments/migrations/20261007_layout/`에 있습니다. 사용법은 `docs/research/20261002/experiment_versioning.md`에 있습니다. 실행 성공과 논문 근거 채택을 구분하고, 타 도구가 생성한 시나리오·결과를 합의된 연구 설계로 자동 채택하지 않습니다.
+2026-10-07 사용자 요청에 따라 기존 코드·결과를 실제 버전/실험 경로로 이동했고 `tabpfn/results_past/`는 `tabpfn/results/` 안으로 통합했습니다. 새 실행은 `python scripts/results_versions.py run --version vN --experiment expNN --scope root|tabpfn --label LABEL -- COMMAND ... {run_dir}`로 등록하여 실행 폴더·명령·상태·로그를 자동 보존합니다. Worker에는 출력 경로 `{run_dir}`를 전달합니다. 직접 실행했다면 이후 `index`로 목록을 갱신합니다. 공통 등록부는 `configs/experiments/registry.json`, 이전 경로 조회는 `where OLD_PATH`, 실험 조회는 `find expNN`을 사용합니다. 날짜로 연구 버전을 자동 재배정하지 않습니다. 기존 결과 내용·소스 사본은 보존했고 이동 매핑과 검증 기록은 `configs/experiments/migrations/20261007_layout/`에 있습니다. 사용법은 `configs/experiments/README.md`에 있습니다. 실행 성공과 논문 근거 채택을 구분하고, 타 도구가 생성한 시나리오·결과를 합의된 연구 설계로 자동 채택하지 않습니다.
 
-논문 원고는 `docs/latex/`에 날짜순으로 관리합니다(2026-10-06 사용자 확인). 개편 시 `docs/latex/YYYYMMDD/` 안에 논문의 본문 구조와 생성 표·그림·`sources.json`을 함께 두며, 실험/연구 버전별 폴더로 나누지 않습니다. 연구 버전·실험·실행 ID는 출처 메타데이터로 연결합니다. 생성 표와 수동 본문을 분리하고 실험 실행마다 원고 날짜 폴더를 자동 생성하지 않습니다. 실험 실행 요청만으로 HTML을 자동 수정하지 않는 기존 규칙은 유지합니다.
+영어 논문의 현재 편집 진입점은 `docs/latex/main.tex`이며 위 문서 역할 규칙을 따릅니다. 연구 버전·실험·실행 ID는 출처 메타데이터로 연결하고 문서 개편을 새 연구 버전으로 간주하지 않습니다.
 
-HTML의 상세 수치·시각화와 별개로, 기존 `docs/research/`의 실험 결과 기록에는 논문 본문 작성을 위한 서술형 글감을 정리합니다(2026-10-06 후속 확인). 실험 목적·설정 → 관찰 결과 → 근거가 뒷받침하는 해석 → 확인되지 않은 설명·한계 → 후속 판단을 연결된 문단으로 작성하고 해당 결과 파일·표·그림을 연결합니다. 관찰과 인과적 추정을 구별하며 HTML의 모든 내용을 기계적으로 복제하지 않습니다. 이는 최종 논문 원고와 구별되는 재사용 가능한 연구 기록이며, 사용자가 제공하는 최신 tex·bib의 구조와 인용을 기준으로 본문에 반영합니다.
+논문 본문 작성을 위한 서술형 글감은 이제 `docs/lablog/`의 한국어 상세 LaTeX에 정리합니다(2026-10-20 경로 개편). 실험 목적·설정 → 관찰 결과 → 근거가 뒷받침하는 해석 → 확인되지 않은 설명·한계 → 후속 판단을 연결된 문단으로 작성하고 해당 결과 파일·표·그림을 연결합니다. 관찰과 인과적 추정을 구별하며 HTML의 모든 내용을 기계적으로 복제하지 않습니다. 이는 최종 영어 원고와 구별되는 재사용 가능한 연구 기록입니다.
 
 기본 의존성은 루트 `requirements.txt`, SOTA 추가 의존성은 기본 파일을 포함하는 `requirements-sota.txt`에서 관리합니다. GPU 환경 설치는 `scripts/common/setup_exp57_env.py` 및 `scripts/common/setup_exp61_env.py`를 사용하여 PyTorch CUDA 빌드를 고정합니다. 통합 이전 명세는 `configs/environments/archive/20261006_before_requirements_merge/`에 보존합니다.
 
-코드는 `scripts/vN/expNN/` 및 `tabpfn/scripts/vN/expNN/`, 공용 코드는 각 `scripts/common/`, 결과는 각 `results/vN/expNN/<run_id>/`에 둡니다. 중간 `experiments/`를 두지 않으며 기존 `s43`, `s44`, `multiclass` 식별자는 유지합니다. EXP70은 EXP69 runner와 별도 allocation 설정을 공유합니다. 관리 진입점 `scripts/results_versions.py`와 HTML 동기화 진입점 `scripts/sync_html_reports.py`는 루트에 유지합니다. 새 코드에서는 `scripts/common/experiment_paths.py`의 경로 도우미를 사용하고 파일 위치의 부모 깊이에 의존하지 않습니다. 데이터·보고서 산출물은 기존 `data/`, `lablog/`, `docs/latex/`에 둡니다. HTML·Markdown의 상세 분석과 연구 분기점을 보존하고 LaTeX에서도 연구 질문·설계·결과·해석·채택 상태와 입력 출처를 연결합니다.
+코드는 `scripts/vN/expNN/` 및 `tabpfn/scripts/vN/expNN/`, 공용 코드는 각 `scripts/common/`, 결과는 각 `results/vN/expNN/<run_id>/`에 둡니다. 중간 `experiments/`를 두지 않으며 기존 `s43`, `s44`, `multiclass` 식별자는 유지합니다. EXP70은 EXP69 runner와 별도 allocation 설정을 공유합니다. 실행 관리 진입점은 `scripts/results_versions.py`입니다. 새 코드에서는 `scripts/common/experiment_paths.py`의 경로 도우미를 사용하고 파일 위치의 부모 깊이에 의존하지 않습니다. 데이터는 `data/`, 상세 실험 보고서는 `docs/lablog/`, 영어 원고는 `docs/latex/`, 발표자료는 `docs/slides/`에 둡니다. 이전 보고서의 유효한 상세 분석과 연구 분기점은 한국어 LaTeX로 통합하여 연구 질문·설계·결과·해석·채택 상태와 입력 출처를 연결합니다.

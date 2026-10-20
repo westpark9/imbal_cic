@@ -1,0 +1,886 @@
+% !TeX root = 20260918.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-09-18}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{Expert 생성 품질 평가 — 2026-09-22 설계 수정}
+생성 품질의 다섯 조건과 별도로, 모델 상한을 확인하는 6번 bank oracle을 EXP58에서 추가 측정했다. 정답 참조 선택은 이 상한 진단에서만 허용한다. EXP58의 정의·계산·결과를 따른다.
+
+주 비교에서 정답 클래스 배정과 correctness oracle을 모두 제외한다. 정답은 채점에만 사용한다. 이전의 ‘배정에만 정답을 쓰면 expert 자체 역량을 평가할 수 있다’는 설계는 상수 클래스 expert를 구별하지 못하므로 폐기한다.
+
+\subsection{1. 생성 조건과 다섯 비교}
+\par\noindent \textbullet\enspace \texttt{1 <=\allowbreak{}\allowbreak{} K <\allowbreak{} C}: K는 global 제외 expert 수, C는 benign 포함 모델 클래스 수.
+
+
+\par\noindent \textbullet\enspace \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp31\_\allowbreak{}\allowbreak{}c0\allowbreak{}alloc.\allowbreak{}py\allowbreak{}}가 학습 전에 부적격 K 후보를 제외한다. 유효 후보가 없으면 실패한다.
+
+
+\par\noindent \textbullet\enspace 현재 결과의 CIC K=\allowbreak{}8/\allowbreak{}C=\allowbreak{}7은 기존 bank 진단으로만 남는다. 새 조건에 맞춘 CIC bank 재학습 결과가 아니다. ToN K=\allowbreak{}7/\allowbreak{}C=\allowbreak{}10은 개수 조건을 충족한다.
+
+
+\par\noindent \textbullet\enspace K<C만으로 정답 개입 문제가 해결되지는 않는다. 평가 입력에서도 정답을 제거한다.
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.27510\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39558\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32932\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 예측 규칙 & 목적 \\ \midrule
+\endfirsthead
+조건 & 예측 규칙 & 목적 \\ \midrule
+\endhead
+{}1. Global & \texttt{g(x)} & 기준선 \\
+{}2. 고정 영역 배정 & \texttt{r(x)=\allowbreak{}\allowbreak{}arg\allowbreak{}min\_\allowbreak{}\allowbreak{}k di\allowbreak{}stance(z\allowbreak{}(x),\allowbreak{}p0(x\allowbreak{}),\allowbreak{}centro\allowbreak{}id\_\allowbreak{}\allowbreak{}k)} 후 \texttt{e\_\allowbreak{}\allowbreak{}r(x)(x\allowbreak{})} 그대로 & S/\allowbreak{}V 없이 고정 영역과 expert의 결합 성능 \\
+{}3. Expert 전체 test & 각 \texttt{e\_\allowbreak{}\allowbreak{}k(x)}를 test 전체에 독립 적용 & 양성·음성 전체의 혼동행렬·확률 식별력 \\
+{}4. Scorer-only & 기존 S+\allowbreak{}V 후보·호출 조건 고정, V 제거 & 같은 호출 조건의 대조 \\
+{}5. Scorer+\allowbreak{}verifier & 기존 S1V0 정책 & 제안 모델 \\
+\bottomrule
+\end{longtable}
+\endgroup
+2번은 관측 가능한 고정 배정 baseline이며 oracle 또는 성능 상한이 아니다. Test 라벨로 담당을 정하거나 정오를 보고 global로 복구하지 않는다. 생성에 쓰인 training 라벨과 평가 입력에 test 정답을 제공하는 것은 구별한다.
+
+\subsection{2. 실행과 출처}
+수정 결과: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}lab\allowbreak{}el\_\allowbreak{}\allowbreak{}free\_\allowbreak{}\allowbreak{}20260922\allowbreak{}/\allowbreak{}\allowbreak{}\{\allowbreak{}cic201\allowbreak{}8,\allowbreak{}toniot\allowbreak{}\}\allowbreak{}/\allowbreak{}\allowbreak{}}.
+
+\par\noindent \textbullet\enspace 실행: \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}lab\allowbreak{}el\_\allowbreak{}\allowbreak{}free\_\allowbreak{}\allowbreak{}revision\allowbreak{}.\allowbreak{}py}.
+
+
+\par\noindent \textbullet\enspace 향후 평가 기본 규칙: \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}fiv\allowbreak{}e\_\allowbreak{}\allowbreak{}condit\allowbreak{}ion\_\allowbreak{}\allowbreak{}eval\allowbreak{}uation.\allowbreak{}p\allowbreak{}y}.
+
+
+\par\noindent \textbullet\enspace 2번 예측은 저장된 observable \texttt{eval\_\allowbreak{}\allowbreak{}dis\allowbreak{}tance.\allowbreak{}np\allowbreak{}y}와 각 expert의 예측으로 계산하며, 함수에 y 인자가 없다.
+
+
+\par\noindent \textbullet\enspace 추가 상수 대조: 각 영역의 학습용 route 표본에서 가장 많은 클래스만 출력. 배정과 상수는 test 라벨 로딩 전에 고정한다.
+
+
+\par\noindent \textbullet\enspace 1·3·4·5의 점수는 기존 EXP56과 일치하고 S/\allowbreak{}S+\allowbreak{}V는 저장된 예측과 행 단위로 일치한다.
+
+
+\par\noindent \textbullet\enspace AP·FPR 진단은 같은 cache의 기존 계산을 hash와 함께 재사용한다.
+
+
+\par\noindent \textbullet\enspace 새로운 expert 학습이나 독립 final test는 실행하지 않았다.
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.40860\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.29570\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.29570\linewidth-2\tabcolsep\relax}}
+\toprule
+Macro-F1 & CIC2018 & ToN \\ \midrule
+\endfirsthead
+Macro-F1 & CIC2018 & ToN \\ \midrule
+\endhead
+{}Global & 0.810653 & 0.683734 \\
+{}고정 영역 배정 & 0.747722 & 0.661978 \\
+{}Scorer-only & 0.810653 & 0.754919 \\
+{}Scorer+\allowbreak{}verifier & 0.810653 & 0.755490 \\
+\bottomrule
+\end{longtable}
+\endgroup
+CIC EXP47·ToN EXP48의 모순 제거 고정 분할이다. Clean manifest hash와 cache identity, test 행 수가 일치한다. 서로 다른 모델 클래스 라벨을 가진 동일 벡터의 모든 행을 제거하고 동일 라벨 중복은 보존했으며 재분할하지 않았다. 두 manifest 모두 잔여 모순 벡터 그룹 0이다. 전체 데이터 라벨을 이용한 벤치마크 정리이며 실제 운영 전처리나 새로운 독립 holdout으로 주장하지 않는다.
+
+\subsection{3. 혼동되던 점수의 원인}
+\subsubsection{CIC global·S-only·S+\allowbreak{}V 동일}
+Calibration 개입 후보 65개 모두 \texttt{benign\_\allowbreak{}\allowbreak{}f\allowbreak{}pr,\allowbreak{}tail\_\allowbreak{}\allowbreak{}f1} 제약 위반. \texttt{global\_\allowbreak{}\allowbreak{}f\allowbreak{}allback}, \texttt{tau\_\allowbreak{}\allowbreak{}pre=\allowbreak{}\allowbreak{}null}, \texttt{tau\_\allowbreak{}\allowbreak{}post\allowbreak{}=\allowbreak{}\allowbreak{}null}이 선택돼 호출이 0건이다. S-only는 같은 호출 조건을 유지하므로 V를 제거해도 예측이 그대로다. 세 예측은 반올림만 같은 것이 아니라 행 단위로 같다.
+
+\subsubsection{CIC infiltration 정답 배정 F1 0.9140}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25476\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19524\linewidth-2\tabcolsep\relax}}
+\toprule
+규칙 & TP & FP & FN & F1 \\ \midrule
+\endfirsthead
+규칙 & TP & FP & FN & F1 \\ \midrule
+\endhead
+{}Global & 2,733 & 3,948 & 6,009 & 0.354406 \\
+{}e6 전체 test & 7,556 & 806,387 & 1,186 & 0.018369 \\
+{}제외한 정답 클래스 배정 & 7,556 & 236 & 1,186 & 0.913995 \\
+\bottomrule
+\end{longtable}
+\endgroup
+정답을 이용해 양성만 e6에 보내고 음성을 다른 expert에 보내면 e6의 TP는 보존하면서 FP가 사라진다. 원래 e6의 식별력 개선으로 해석할 수 없다.
+
+\subsubsection{ToN scanning S+\allowbreak{}V F1 0.8128}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.31000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18000\linewidth-2\tabcolsep\relax}}
+\toprule
+규칙 & TP & FP & FN & F1 \\ \midrule
+\endfirsthead
+규칙 & TP & FP & FN & F1 \\ \midrule
+\endhead
+{}Global & 452 & 50 & 5,577 & 0.138417 \\
+{}e2 전체 test & 5,439 & 54,321 & 590 & 0.165347 \\
+{}e4 전체 test (개별 최고 F1) & 4,240 & 7,715 & 1,789 & 0.471530 \\
+{}S-only & 4,270 & 287 & 1,759 & 0.806726 \\
+{}S+\allowbreak{}V & 4,245 & 172 & 1,784 & 0.812751 \\
+\bottomrule
+\end{longtable}
+\endgroup
+선택 정책은 각 expert를 전체 test에 적용하는 규칙과 다르다. S+\allowbreak{}V의 TP는 global 452 +\allowbreak{} expert 3,793, FP는 global 50 +\allowbreak{} expert 122다. 표본별 출처를 재계산했고 test 정답은 합성 예측 선택에 쓰이지 않는다. 합성 정책 F1은 개별 expert의 전면 적용 F1 최댓값보다 높을 수 있다.
+
+\subsection{4. 자료별 검증 목적}
+\par\noindent \textbullet\enspace \textbf{전체 test 적용}: 현재 argmax 예측의 실제 양성·음성 구분. Recall과 함께 precision·FP·F1을 본다. Global을 대체할 전역 모델의 품질과 제한된 영역의 특화를 동일시하지 않는다.
+
+
+\par\noindent \textbullet\enspace \textbf{AP}: 양성을 음성보다 높은 점수에 두는 능력. Precision–recall 전반의 요약이며 특정 FPR을 고정하지 않는다. 상수 점수 AP는 양성 비율 수준이다.
+
+
+\par\noindent \textbullet\enspace \textbf{R@FPR\ensuremath{\leq}0.1\%}: 같은 오탐 예산에서의 recall. 현재 표는 경험적 test ROC 기술 지표다. 이 임계값을 실제 모델에 적용하지 않는다.
+
+
+\par\noindent \textbullet\enspace \textbf{Validation 고정 임계값의 test 전이}: 사전 운영점이 다음 데이터에서도 오탐 예산과 탐지율을 지키는지 검사한다. Test FPR이 서로 다르면 recall만으로 동일 오탐 조건의 우위를 주장하지 않는다.
+
+
+\par\noindent \textbullet\enspace \textbf{영역 비교}: 미리 정한 입력 영역과 expert의 적합성 검사. 영역 정확도가 높아도 한 클래스뿐이면 상수 expert로 충분할 수 있다. 학습 route 다수 클래스 상수 대조와 영역 내 등장 클래스 macro-F1을 추가했다. CIC 영역 3·5는 상수도 1.0이므로 그 점수를 분류 역량의 근거로 쓰지 않는다.
+
+
+R@0.1\%가 명시적으로 오탐 한도를 고정한다. AP는 식별력 진단의 다른 측면이다. 둘 모두 one-vs-rest 확률 점수 기반이고 원래 다중 클래스 argmax F1과 구분한다. 0.1\%·1\%는 진단 기준이지 합의된 배포 합격선이 아니다.
+
+\subsection{5. 필요한 근거 실험}
+\par\noindent \textbullet\enspace \textbf{K<C 재학습 +\allowbreak{} context 선택 대조}: 같은 K·anchor·전체 context 크기·클래스별 행 수에서 실패 패턴 선택 vs 무작위 선택. 같은 크기의 균형 context는 별도 대조. 클래스 prior와 예산 효과를 통제한 뒤 AP·저오탐 recall의 이득이 남아야 생성 방식의 효과를 지지한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Global 보정 대조}: expert 없이 global prior/\allowbreak{}β·온도·임계값만 보정. 같은 validation 절차로 선택해 단순 운영점 변경으로 이득이 설명되는지 검증한다.
+
+
+\par\noindent \textbullet\enspace \textbf{고정 운영점의 새 시간 평가}: val에서 임계값 고정 후 이후 holdout에서 실제 FPR·FP 수·recall 보고. 목표를 지키며 G 대비 이득을 유지하는지 확인한다.
+
+
+\par\noindent \textbullet\enspace \textbf{독립 반복·불확실성}: 최소 3개의 실제 context 추첨/\allowbreak{}학습 seed와 새 시간 holdout, 벡터·시간 그룹 단위 paired bootstrap. 동일 cache 재계산은 독립 반복이 아니다.
+
+
+\par\noindent \textbullet\enspace \textbf{선택적 expert 제거 대조}: 해당 expert가 bank 시스템에 꼭 필요하다는 주장에만 추가. 제거 후 같은 validation 절차로 비교 정책을 재선택한다.
+
+
+EXP52 행 선택/\allowbreak{}anchor, EXP53–54 context/\allowbreak{}prior 대조는 기존의 부분 근거다. 미실행으로 취급하지 않는다. 추가 조건은 K<C bank, 동일 클래스 구성·예산 통제, 같은 저오탐 지표, 독립 반복과 새 시간 평가다.
+
+지금은 CIC infiltration의 G 대비 식별력 개선 근거가 없고, ToN scanning e2/\allowbreak{}ransomware e5에는 이 holdout의 순위 식별력 이득이 있다. Ransomware e5의 val FPR 0.1\% 임계값은 test에서 0.364\%가 되어 운영점 전이가 남는다. 합격 판정에는 목표 클래스·최소 recall·허용 FPR·global 성능 저하 한도를 사전에 정해야 한다.
+
+\subsection{6. 과거 자료 보존}
+\par\noindent \textbullet\enspace 정답 클래스 배정과 이전 correctness oracle 결과는 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}fiv\allowbreak{}e\_\allowbreak{}\allowbreak{}condit\allowbreak{}ion\_\allowbreak{}\allowbreak{}2026\allowbreak{}0922\_\allowbreak{}\allowbreak{}fin\allowbreak{}al/\allowbreak{}\allowbreak{}} 및 EXP55 결과에 보존한다. 현재 주 비교와 구별한다.
+
+
+\par\noindent \textbullet\enspace 0911의 원본 데이터 참조값은 다른 test·bank이며, bank 정답 포함률과 데이터 다수 라벨 참조값을 구분한다. 성능 차이를 이번 모순 제거 평가의 개선량으로 해석하지 않는다.
+
+
+\par\noindent \textbullet\enspace 최신 표와 HTML 공유 본문: \texttt{docs/\allowbreak{}\allowbreak{}res\allowbreak{}earch/\allowbreak{}\allowbreak{}20\allowbreak{}260922/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}fiv\allowbreak{}e\_\allowbreak{}\allowbreak{}condit\allowbreak{}ion\_\allowbreak{}\allowbreak{}resu\allowbreak{}lts.\allowbreak{}\{\allowbreak{}md,\allowbreak{}html\}\allowbreak{}}.
+
+
+
+
+\section{2026-09-18 · 2026-09-18 — Scorer/\allowbreak{}verifier target 대조 마감 · expert 전면 적용 F1·담당 recall 분리(09-22 정정) · context 구성 실험(EXP52–54) · H1–H6 판정}
+\label{report:20260918_0918}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+0917.md는 없다. 09-17 야간 run(EXP49–51)은 §0에 보충 기록한다. 모든 ToN run은 모순제거 고정 분할 \texttt{data/\allowbreak{}\allowbreak{}der\allowbreak{}ived/\allowbreak{}\allowbreak{}ton\allowbreak{}iot\_\allowbreak{}\allowbreak{}conf\allowbreak{}lict\_\allowbreak{}\allowbreak{}fre\allowbreak{}e\_\allowbreak{}\allowbreak{}fixed\_\allowbreak{}\allowbreak{}split\_\allowbreak{}\allowbreak{}20\allowbreak{}260916\_\allowbreak{}\allowbreak{}0\allowbreak{}21730}(train 4,669,119 /\allowbreak{} test 2,271,723) 위에서 seed 42 단일 실행이다. \textbf{09-22 정정:} 전면 적용 F1과 담당 클래스 recall을 분리한다. 기존의 “routing이 아니라 expert 자체의 문제”라는 단정은 철회한다. 담당 영역·오탐·실제 S/\allowbreak{}V를 나눠 개선하고, β는 공통 prior 이동을 분리하는 대조로 평가한다. 자세한 평가 정의는 §8 및 \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0918.\allowbreak{}tex\allowbreak{}}를 따른다.
+
+
+
+\subsection{0. 09-17 야간 기록 보충 — EXP49 · EXP50 · EXP51}
+\subsubsection{0a. BoT-IoT 모순 제거 +\allowbreak{} EXP49 (기존 구조 재검증)}
+\texttt{nfv3\_\allowbreak{}\allowbreak{}con\allowbreak{}flict\_\allowbreak{}\allowbreak{}cl\allowbreak{}ean.\allowbreak{}py}에 \texttt{bot\_\allowbreak{}\allowbreak{}iot} 로더를 추가하고(\texttt{data/\allowbreak{}\allowbreak{}der\allowbreak{}ived/\allowbreak{}\allowbreak{}bot\allowbreak{}iot\_\allowbreak{}\allowbreak{}conf\allowbreak{}lict\_\allowbreak{}\allowbreak{}fre\allowbreak{}e\_\allowbreak{}\allowbreak{}fixed\_\allowbreak{}\allowbreak{}split\_\allowbreak{}\allowbreak{}20\allowbreak{}260917\_\allowbreak{}\allowbreak{}2\allowbreak{}02829}), 같은 규칙(정확일치 벡터·상반 라벨 그룹 전체 삭제, 같은 라벨 중복·원 split 보존)으로 정제했다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.49324\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.50676\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 값 \\ \midrule
+\endfirsthead
+항목 & 값 \\ \midrule
+\endhead
+{}원본  \ensuremath{\rightarrow}  삭제  \ensuremath{\rightarrow}  유지 & 16,933,808  \ensuremath{\rightarrow}  1,034,125  \ensuremath{\rightarrow}  15,899,683 \\
+{}모순 그룹 & 722 (hash 충돌 검증 0, 잔여 0) \\
+{}train /\allowbreak{} val /\allowbreak{} test & 9,466,348 /\allowbreak{} 3,157,930 /\allowbreak{} 3,275,405 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21758\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19835\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09835\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12912\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09835\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10220\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15604\linewidth-2\tabcolsep\relax}}
+\toprule
+run & C0 구성 & K & global macro-F1 & tail F1 & accuracy & 시스템 \\ \midrule
+\endfirsthead
+run & C0 구성 & K & global macro-F1 & tail F1 & accuracy & 시스템 \\ \midrule
+\endhead
+{}\texttt{20260917\allowbreak{}\_\allowbreak{}\allowbreak{}203021\_\allowbreak{}\allowbreak{}…exp49\_\allowbreak{}\allowbreak{}c\allowbreak{}lean\_\allowbreak{}\allowbreak{}rev\allowbreak{}alidatio\allowbreak{}n\_\allowbreak{}\allowbreak{}s42} & CIC 오버라이드(benign 0.75 /\allowbreak{} balanced) & 3 & 0.3460 & 0.808 & 0.084 & global\_\allowbreak{}fallback(채택 0) \\
+{}\texttt{20260917\allowbreak{}\_\allowbreak{}\allowbreak{}210728\_\allowbreak{}\allowbreak{}…exp49\_\allowbreak{}\allowbreak{}c\allowbreak{}lean\_\allowbreak{}\allowbreak{}rev\allowbreak{}alidatio\allowbreak{}n\_\allowbreak{}\allowbreak{}natura\allowbreak{}lc0\_\allowbreak{}\allowbreak{}s42} & 스크립트 기본(natural) & 4 & 0.2036 & 0.692 & 0.083 & global\_\allowbreak{}fallback(채택 0) \\
+\bottomrule
+\end{longtable}
+\endgroup
+두 번째 run은 BoT benign이 train의 0.1\%라 CIC용 오버라이드가 무의미해서 기본값으로 되돌린 재실행이다(launch.json note). 어느 구성이든 accuracy 0.08대·채택 0으로, 0911 감사의 "bot\_\allowbreak{}iot 부적합" 판정과 같다. 이 데이터로는 더 해석하지 않는다. 결과는 clean\_\allowbreak{}revalidation\_\allowbreak{}0916.html에 BoT 사례로 추가했다(\texttt{add\_\allowbreak{}\allowbreak{}bot\_\allowbreak{}\allowbreak{}case\_\allowbreak{}\allowbreak{}to\_\allowbreak{}\allowbreak{}report.\allowbreak{}p\allowbreak{}y}).
+
+\subsubsection{0b. EXP50 — verifier target 대조 (저장 캐시, 학습 없음)}
+EXP48(ToN)/\allowbreak{}EXP47(CIC) frozen cache 위에서 verifier target을 기존 NLL 개선(\texttt{legacy}) vs 교정/\allowbreak{}훼손/\allowbreak{}중립(\texttt{hdn}, λ=\allowbreak{}1)으로 바꿔 같은 scorer·후보 격자·임계값 조건으로 비교했다. 실행 244 s /\allowbreak{} 172 s.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13718\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19872\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13718\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13718\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20641\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & arm & macro-F1 & 호출 & 변경 & H /\allowbreak{} D \\ \midrule
+\endfirsthead
+데이터 & arm & macro-F1 & 호출 & 변경 & H /\allowbreak{} D \\ \midrule
+\endhead
+{}ToN & global & 0.6837 & – & – & – \\
+{}ToN & legacy (S0V0) & 0.7543 & 162,730 & 24,104 & 23,332 /\allowbreak{} 389 \\
+{}ToN & hdn (S0V1) & 0.7534 & 143,563 & 20,832 & 20,148 /\allowbreak{} 396 \\
+{}CIC & legacy · hdn & 0.8107 =\allowbreak{} global & 0 & 0 & global\_\allowbreak{}fallback \\
+\bottomrule
+\end{longtable}
+\endgroup
+verifier target만 바꿔서는 ToN −0.001, CIC 불변.
+
+\subsubsection{0c. EXP51 — scorer target × verifier target 2×2 (seed 42/\allowbreak{}43/\allowbreak{}44)}
+S1 =\allowbreak{} scorer를 "교정확률 − 훼손위험"으로 직접 회귀. 4 arm: legacy(S0V0) · hdn(S0V1) · s1v0 · s1v1.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13557\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14303\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19527\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18781\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13557\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20274\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & arm & macro-F1 & 호출 & 변경 & H /\allowbreak{} D \\ \midrule
+\endfirsthead
+데이터 & arm & macro-F1 & 호출 & 변경 & H /\allowbreak{} D \\ \midrule
+\endhead
+{}ToN & s1v0 & \textbf{0.7555} & \textbf{31,227} (−81\%) & 25,604 & 24,975 /\allowbreak{} 517 \\
+{}ToN & s1v1 & 0.7522 & 2,271,723 (전부) & 19,537 & 17,119 /\allowbreak{} 2,367 \\
+{}CIC & 4 arm 모두 & 0.8107 =\allowbreak{} global & 0 & 0 & global\_\allowbreak{}fallback \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace ToN 최선은 s1v0: 호출을 81\% 줄이면서 macro +\allowbreak{}0.001. "불필요한 호출을 걸러낸 것"이지 expert가 새로 잘하게 된 게 아니다(§1).
+
+
+\par\noindent \textbullet\enspace [주의] \textbf{seed 43/\allowbreak{}44 run의 \texttt{summary.\allowbreak{}csv}가 seed 42와 md5까지 동일하다}(ToN 3개 \texttt{b76a82d2\allowbreak{}…}, CIC 3개 \texttt{c74e4f15\allowbreak{}…}). \texttt{args.\allowbreak{}jso\allowbreak{}n}의 seed는 42/\allowbreak{}43/\allowbreak{}44로 다르다. scorer/\allowbreak{}verifier 학습 경로에 seed가 전달되지 않거나 완전 결정적이라는 뜻이며, 원인은 확인하지 않았다. 이 6개 run을 "3-seed 재현"으로 인용하면 안 된다.
+
+
+\par\noindent \textbullet\enspace 계획 문서 expert\_\allowbreak{}acceptance\_\allowbreak{}next\_\allowbreak{}plan.md에 §0(중립 호출 허용 정책 조건 대조)과 "K는 최종 라우팅 결과로 다시 선택" 절을 추가했다.
+
+
+\subsection{1. 진단 정정 — expert 전면 적용 F1과 담당 클래스 recall은 다른 지표}
+HTML: scorer\_\allowbreak{}verifier\_\allowbreak{}target\_\allowbreak{}0918.html. EXP48/\allowbreak{}51의 \texttt{expertK\_\allowbreak{}\allowbreak{}always}는 expert K를 \textbf{test 전체에 적용한} 예측이다. 클래스별 F1에는 다른 클래스에서 들어온 FP가 포함된다.
+
+\par\noindent \textbullet\enspace 최선 expert의 전면 적용 F1도 global을 못 넘는 클래스는 \textbf{4/\allowbreak{}10}(benign, dos, mitm, ransomware)이다. 기존 6/\allowbreak{}10을 정정한다.
+
+
+\par\noindent \textbullet\enspace 담당 context 기준 7개 중 6개 expert의 담당 클래스 \textbf{recall은 global보다 높다}. Dos e3: 0.9822 \ensuremath{\rightarrow} 0.9980, injection e4: 0.9611 \ensuremath{\rightarrow} 0.9974. 반면 다른 클래스 오탐이 늘어 F1은 하락한다.
+
+
+\par\noindent \textbullet\enspace Dos e3의 FP는 52,697(global 359), injection e4는 216,303(global 7,051)이다. 따라서 낮은 전면 적용 F1만으로 “자기 클래스를 못 배움”, “라우팅해도 교정 표적 없음”을 결론내리지 않는다.
+
+
+\par\noindent \textbullet\enspace Recall만 높이는 상수 예측도 가능하므로 동일 FPR의 recall·영역별 global/\allowbreak{}타 expert 비교·H/\allowbreak{}D를 함께 제시한다. Centroid 영역에는 다수의 비담당 클래스가 들어오므로 영역 배정과 expert 식별력을 분리해 개선한다.
+
+
+\par\noindent \textbullet\enspace Residual 상위 행 선택이 유일한 원인이라는 초기 가설은 EXP52로 지지되지 않았다. 아래 EXP52–54는 오탐·prior·context 대조 설계의 근거로 읽는다.
+
+
+\subsection{2. EXP52 — expert 행 선택 방식 · anchor 크기 (전체 파이프라인 재실행)}
+\texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp52\_\allowbreak{}\allowbreak{}ex\allowbreak{}pert\_\allowbreak{}\allowbreak{}con\allowbreak{}text.\allowbreak{}py}. EXP48(residual, anchor 2,000/\allowbreak{}클래스)과 한 knob씩 다르게 세 run.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18910\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22756\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11699\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11699\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15064\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19872\linewidth-2\tabcolsep\relax}}
+\toprule
+run & 바꾼 knob & 시간 & global & 시스템(legacy 정책) & 채택 /\allowbreak{} H /\allowbreak{} D \\ \midrule
+\endfirsthead
+run & 바꾼 knob & 시간 & global & 시스템(legacy 정책) & 채택 /\allowbreak{} H /\allowbreak{} D \\ \midrule
+\endhead
+{}EXP48 (참조) & residual, anchor 2,000 & 48 min & 0.6837 & \textbf{0.7390} & 271,715 /\allowbreak{} 32,786 /\allowbreak{} 8,704 \\
+{}\texttt{…exp52\_\allowbreak{}\allowbreak{}c\allowbreak{}onfident\allowbreak{}\_\allowbreak{}\allowbreak{}s42} & select=\allowbreak{}confident & 96 min & 0.6821 & 0.7249 & 2,463 /\allowbreak{} 2,325 /\allowbreak{} 0 \\
+{}\texttt{…exp52\_\allowbreak{}\allowbreak{}r\allowbreak{}andom\_\allowbreak{}\allowbreak{}s4\allowbreak{}2} & select=\allowbreak{}random & 95 min & 0.6839 & 0.7062 & 1,236 /\allowbreak{} 991 /\allowbreak{} 0 \\
+{}\texttt{…exp52\_\allowbreak{}\allowbreak{}a\allowbreak{}nchor200\allowbreak{}\_\allowbreak{}\allowbreak{}s42} & anchor 2,000  \ensuremath{\rightarrow}  200 & 42 min & 0.6835 & 0.7343 & 6,178 /\allowbreak{} 3,393 /\allowbreak{} 1 \\
+\bottomrule
+\end{longtable}
+\endgroup
+Expert를 test 전체에 적용했을 때 지배 클래스의 ΔF1(global 대비; 담당 클래스 recall과 구별):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.26667\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19195\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15172\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14023\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24943\linewidth-2\tabcolsep\relax}}
+\toprule
+지배 클래스 & residual (EXP48) & confident & random & anchor200 \\ \midrule
+\endfirsthead
+지배 클래스 & residual (EXP48) & confident & random & anchor200 \\ \midrule
+\endhead
+{}dos 100\% (block 1,314) & −0.524 & −0.520 & −0.525 & −0.487 \\
+{}injection \ensuremath{\geq}93\% (block \textasciitilde{}2k) & −0.543 & −0.538 & −0.471 & \textbf{−0.757} \\
+{}injection (block 50–60k) & −0.042 & −0.047 & −0.045 & – \\
+{}ransomware 100\% (391–491) & −0.109 & −0.109 & −0.109 & −0.115 \\
+{}xss 95–96\% & −0.076 & −0.072 & −0.079 & −0.114 \\
+{}scanning 99\% & +\allowbreak{}0.027 & +\allowbreak{}0.015 & +\allowbreak{}0.019 & \textbf{+\allowbreak{}0.379 /\allowbreak{} +\allowbreak{}0.224} (2 expert) \\
+{}benign 잔여 혼합 & −0.019 & −0.072 & −0.013 & −0.023 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace \textbf{행 선택 방식은 효과가 없다.} dos −0.52는 세 방식에서 동일. "residual 편향 때문"이라는 §1 기제 가설은 이 축에서는 기각.
+
+
+\par\noindent \textbullet\enspace \textbf{anchor를 줄이면 scanning expert만 살아나고 나머지는 더 나빠진다}(injection −0.757, benign F1 0.58). 공유 anchor가 작은 block을 압도한다는 가설은 방향은 맞지만 해법이 아니다.
+
+
+\par\noindent \textbullet\enspace global이 run마다 0.6821–0.6839로 흔들린다(같은 C0 규칙, RNG 순서 차이). 인용 시 run id를 같이 적는다.
+
+
+\subsection{3. EXP53 — "순도" 직접 검증 (단독 fit)}
+\texttt{exp53\_\allowbreak{}\allowbreak{}co\allowbreak{}ntext\_\allowbreak{}\allowbreak{}pu\allowbreak{}rity\_\allowbreak{}\allowbreak{}dia\allowbreak{}g.\allowbreak{}py}, injection expert, context 20,000행, TabPFN-v3 단독 fit(n\_\allowbreak{}estimators 4), test 전체.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.45573\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32292\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22135\linewidth-2\tabcolsep\relax}}
+\toprule
+context & injection F1 (P /\allowbreak{} R) & macro \\ \midrule
+\endfirsthead
+context & injection F1 (P /\allowbreak{} R) & macro \\ \midrule
+\endhead
+{}balanced (2,000 × 10) & 0.877 (.80 /\allowbreak{} .97) & 0.674 \\
+{}majority (injection 18,000 +\allowbreak{} 222 × 9) & \textbf{0.390} (.24 /\allowbreak{} –) & 0.632 \\
+\bottomrule
+\end{longtable}
+\endgroup
+target을 90\%로 채우면 자기 클래스 F1이 반 이하로 떨어진다. TabPFN이 context 비율을 사전확률로 믿기 때문이며, 따라서 높은 recall과 FP를 함께 만드는 prior 이동을 대조해야 한다. F1만으로 담당 클래스의 식별력을 단정하지 않는다.
+
+\subsection{4. EXP54 — expert context 구성 가설 H1–H6}
+전체 표·수치·판정: exp54\_\allowbreak{}context\_\allowbreak{}design\_\allowbreak{}summary.md. run \texttt{…155043\_\allowbreak{}\allowbreak{}…exp54\_\allowbreak{}\allowbreak{}e\allowbreak{}xpert\_\allowbreak{}\allowbreak{}co\allowbreak{}ntext\_\allowbreak{}\allowbreak{}de\allowbreak{}sign}(11 arm) · \texttt{…160238\_\allowbreak{}\allowbreak{}…exp54r2\allowbreak{}\_\allowbreak{}\allowbreak{}…}(8 arm), context 20,000행 단독 fit, 기준 global(EXP48 C0, benign 75\%) 0.6837.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.37319\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25362\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.37319\linewidth-2\tabcolsep\relax}}
+\toprule
+가설 & 판정 & 핵심 수치 \\ \midrule
+\endfirsthead
+가설 & 판정 & 핵심 수치 \\ \midrule
+\endhead
+{}H1 순도 (target 30\%) & 기각 4/\allowbreak{}4 & 재현율 0.99, 정밀도 붕괴. EXP53과 같은 기제 \\
+{}H2 경계 (benign 14k 주입 /\allowbreak{} hard-negative 8k) & scanning만 부분 채택 & scanning 0.386  \ensuremath{\rightarrow}  0.578; mitm·ransomware 정밀도 0.02–0.08 불변 \\
+{}H3 규칙 share \ensuremath{\propto} n\textasciicircum{}p & 채택 (scanning 한정) & p=\allowbreak{}0.5 raw \textbf{0.730 /\allowbreak{} 0.748 /\allowbreak{} 0.738}(seed 42/\allowbreak{}43/\allowbreak{}44); 이득 전부 scanning(0.14  \ensuremath{\rightarrow}  0.61–0.80), 추첨 분산 ±0.1 \\
+{}H4 운영점 β (PriorCorrector 사후 적용) & 채택 & balanced +\allowbreak{} β0.5 =\allowbreak{} \textbf{0.771} > 전체 시스템 0.754. 파이프라인은 균형-NLL 기준으로 β=\allowbreak{}0을 골라 이 보정을 스스로 끔. 필요한 β가 mitm/\allowbreak{}ransomware(β↑)와 scanning(β=\allowbreak{}0)에서 반대 \\
+{}H5 데이터 겹침 (kNN, 학습 없음) & 채택 & mitm FP =\allowbreak{} train과 z 중앙 1,954 떨어진 benign 블록; ransomware FP =\allowbreak{} ransomware train과 z 0.08 이내(근사 모순); 진짜 scanning 64\%가 benign 밀집 안 \\
+{}H6 거리 게이트 τ (train LOO 분위) & 채택 (부분) & τ =\allowbreak{} p99.9 =\allowbreak{} 4.5: mitm 0.067  \ensuremath{\rightarrow}  \textbf{0.335}, benign +\allowbreak{}0.011, macro 0.684  \ensuremath{\rightarrow}  0.712, 나머지 8클래스 불변. FP 절반은 4.5 이내라 못 잡음 \\
+\bottomrule
+\end{longtable}
+\endgroup
+scorer 후보 품질(H/\allowbreak{}D, global과 다르게 답한 행): 보정 없는 expert는 balanced 58k/\allowbreak{}95k, enriched30:ransomware 53k/\allowbreak{}113k로 \textbf{순손실}. β0.5에서 90k/\allowbreak{}33k. 09-18 "expert 역설"의 정량적 원인.
+
+\subsection{5. H5·H6 해설 (사용자 질문 3건에 대한 답, 기록용)}
+\par\noindent \textbullet\enspace \textbf{"소형 UDP 13만 패킷 흐름이 test에서 benign" — 모순 제거 후에도 그렇다.} 모순 제거는 정확일치 벡터·상반 라벨만 지운다. 이 행들(28,804행 중 z>50 21,287행)은 train 풀 어떤 행과도 수십\textasciitilde{}수천 σ 떨어져 있어 정의상 모순이 아니고, 모순 제거가 건드릴 수 없다. 라벨 충돌이 아니라 \textbf{test 구간에만 나타나는 benign 블록}(분포 이동)이며 라벨이 틀렸다는 뜻은 아니다. 정상 test benign은 train과 거리 중앙 0(33\% 정확일치)이라 이 블록은 확실히 이질적이다. 한계: benign 30만 표본 기준, train benign 201만 전체 대비 미확인, 시간축 미확인.
+
+
+\par\noindent \textbullet\enspace \textbf{H5는 분포가 아니라 1-NN 조사다.} train 풀(benign 30만 +\allowbreak{} 약한 4클래스 전량)을 z-표준화하고, (a) train X 행 각각의 leave-one-out 최근접 이웃 라벨·거리, (b) EXP48 global 예측에서 (실제, 예측)으로 고른 test 행 집합 각각의 train 최근접 이웃 라벨·거리를 쟀다. 표의 "대상" =\allowbreak{} 그 행 집합, "최근접 이웃 라벨" =\allowbreak{} 최근접 train 행의 라벨 비율, "z-거리 10/\allowbreak{}50/\allowbreak{}90\%" =\allowbreak{} 그 거리의 분위수. 참조행 "train 행끼리 LOO 99.9\% =\allowbreak{} 4.5"가 "멀다"의 기준이다. 예: mitm 오인 28,804행은 최근접이 90\% mitm이지만 그 최근접이 중앙 1,954σ 떨어져 있다  \ensuremath{\rightarrow}  아무것도 없는 곳이고 그나마 제일 가까운 게 mitm이었을 뿐.
+
+
+\par\noindent \textbullet\enspace \textbf{H6는 "non-benign 예측 행의 train 최근접 z-거리 > τ면 benign으로 되돌림"이 맞다.} 근거는 H5(mitm FP 중앙 1,954 vs 진짜 mitm 중앙 0.68·90\% 15.6). τ를 train LOO 분위로 정한 이유는 SRC\_\allowbreak{}HISTORY \#2(val 튜닝 임계값 비전이) 회피. benign으로 돌리는 이유는 closed-set 10-class 평가라 거부 선택지가 없고 되돌린 행의 98.7–99.7\%가 실제 benign이기 때문. \textbf{주의 두 가지.} (i) "train과 멀면 benign"은 open-set 관점에서 위험하다. unseen 공격도 train과 멀기 때문에 이 게이트는 그것을 benign이라 부른다 — OOD 게이트의 정반대. H6는 ToN benign 드리프트에 대한 closed-set 사후 보정이지 OOD 탐지가 아니며, 논문 프레임에서는 먼 행을 unknown으로 보내야 하고 그러면 macro 이득은 사라진다. (ii) τ=\allowbreak{}4.5는 후보 셋 중 test macro 최상을 고른 것이라 β와 같은 진단이지 배포 선택이 아니다. p99(0.89)에서 scanning이 죽는 것도 같은 이유(진짜 scanning이 benign 밀집 안에 있어 조금만 먼 행도 쓸려감).
+
+
+\subsection{6. 제안 (사용자 확정 후 실행 — 0915 합의 규칙)}
+\par\noindent \textbullet\enspace C0 구성(benign 75\%  \ensuremath{\rightarrow}  균등 또는 √) +\allowbreak{} β 선택 기준 교체(사전 고정 0.5, 0/\allowbreak{}0.5/\allowbreak{}1.0 모두 보고). baseline 재실행 \ensuremath{\approx}45 min. 기대 global 0.684  \ensuremath{\rightarrow}  0.75–0.77.
+
+
+\par\noindent \textbullet\enspace 거리 게이트 τ =\allowbreak{} train p99.9, 재학습 없음. 단, §5(i)의 open-set 문제를 먼저 결정해야 한다(benign 회귀 vs unknown).
+
+
+\par\noindent \textbullet\enspace expert =\allowbreak{} 같은 context에 다른 β(운영점). "mitm/\allowbreak{}ransomware용" =\allowbreak{} 균등+\allowbreak{}β1.0, "scanning용" =\allowbreak{} √+\allowbreak{}β0. scorer는 운영점 선택기. 1 뒤 EXP39 라우팅으로 검증.
+
+
+\par\noindent \textbullet\enspace 단일 추첨 수치(enriched30:ransomware+\allowbreak{}β0.5 =\allowbreak{} 0.813, mitm 0.73) seed 43·44 재현 — 3 fit, 3 min.
+
+
+\par\noindent \textbullet\enspace ransomware 근사 모순은 보고만(삭제 안 함, 0915 합의).
+
+
+\par\noindent \textbullet\enspace (추가) EXP51 seed 미전달 원인 확인 — scorer/\allowbreak{}verifier 학습에 seed가 실제로 들어가는지.
+
+
+\textbf{주의.} §4의 β·τ 판독은 전부 test에서 읽은 것이다. 배포 선택이 아니라 진단이며, 제안 1에서 β를 사전 고정하는 이유다.
+
+\subsection{7. 저장소}
+이 세션에서 09-17·18 산출물 전부(스크립트 \texttt{exp49\_\allowbreak{}\allowbreak{}tr\allowbreak{}ace /\allowbreak{}\allowbreak{} ex\allowbreak{}p53 /\allowbreak{}\allowbreak{} ex\allowbreak{}p54 /\allowbreak{}\allowbreak{} ex\allowbreak{}p54r2 /\allowbreak{}\allowbreak{} \allowbreak{}nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp49–52\allowbreak{}}, 결과 dir 12개의 CSV·JSON, \texttt{docs/\allowbreak{}\allowbreak{}res\allowbreak{}earch/\allowbreak{}\allowbreak{}20\allowbreak{}260918/\allowbreak{}\allowbreak{}}, HTML 2편, 이 로그)를 커밋·푸시했다. \texttt{.\allowbreak{}npy/\allowbreak{}\allowbreak{}.\allowbreak{}pn\allowbreak{}g/\allowbreak{}\allowbreak{}.\allowbreak{}log/\allowbreak{}\allowbreak{}.\allowbreak{}joblib}는 gitignore 규칙대로 제외. \texttt{imbalcic\allowbreak{}.\allowbreak{}code-\allowbreak{}wo\allowbreak{}rkspace}는 로컬 IDE 파일이라 넣지 않았다.
+
+\subsection{8. (추가, 18:15) oracle 재정의와 expert 특화도 측정 — EXP55}
+\textbf{계기 및 09-22 정정.} 기존 oracle은 정답을 보고 유리한 후보만 선택해 expert의 훼손을 제거했다. 이를 expert 생성 품질의 기준으로 쓰지 않는다. 새 주 oracle은 담당 배정만 이상화하고 expert 원래 답을 그대로 평가한다. EXP55 결과 키·수치는 유지하되 아래 명칭과 해석을 정정한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}}
+\toprule
+이름 & 정의 (코드) & 실체 \\ \midrule
+\endfirsthead
+이름 & 정의 (코드) & 실체 \\ \midrule
+\endhead
+{}\texttt{correctn\allowbreak{}ess\_\allowbreak{}\allowbreak{}orac\allowbreak{}le} (EXP39 L480, EXP50/\allowbreak{}51 L519) & \texttt{any\_\allowbreak{}\allowbreak{}corr\allowbreak{}ect =\allowbreak{}\allowbreak{} (n\allowbreak{}preds =\allowbreak{}\allowbreak{}=\allowbreak{}\allowbreak{} y).\allowbreak{}any(\allowbreak{}1); orac\allowbreak{}le =\allowbreak{}\allowbreak{} whe\allowbreak{}re(any\_\allowbreak{}\allowbreak{}c\allowbreak{}orrect,\allowbreak{} \allowbreak{}y,\allowbreak{} globa\allowbreak{}l)} & K개 expert 중 \textbf{하나라도} 맞으면 정답. 행 단위 완벽 선택기 \\
+{}\texttt{row\_\allowbreak{}\allowbreak{}leve\allowbreak{}l\_\allowbreak{}\allowbreak{}oracle\allowbreak{}\_\allowbreak{}\allowbreak{}bank} (0911 \texttt{cic\_\allowbreak{}\allowbreak{}bank\allowbreak{}\_\allowbreak{}\allowbreak{}realist\allowbreak{}ic\_\allowbreak{}\allowbreak{}oracl\allowbreak{}e.\allowbreak{}py} L10) & 같은 식 & 같음. \texttt{realisti\allowbreak{}c\_\allowbreak{}\allowbreak{}oracle\allowbreak{}\_\allowbreak{}\allowbreak{}bank}는 여기에 모순 벡터 다수 라벨 제약만 추가 \\
+{}\texttt{dense\_\allowbreak{}\allowbreak{}or\allowbreak{}acle} (EXP31 L1808) & 행마다 (global, expert 1..K) 중 balanced-CE 최소 모델 선택 & 손실 기준이지만 역시 라벨로 행마다 고르는 선택기 \\
+\bottomrule
+\end{longtable}
+\endgroup
+셋 다 "expert가 자기 영역에서 잘하는가"를 재지 않는다. 7개 noisy 예측의 합집합 +\allowbreak{} 라벨을 아는 검증기다.
+
+\textbf{EXP55의 실제 계산과 수정된 의미} (\texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp55\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}spec\allowbreak{}ializati\allowbreak{}on\_\allowbreak{}\allowbreak{}oracl\allowbreak{}e.\allowbreak{}py}, frozen cache만 사용, 학습 없음, run당 1초). 스크립트 원래 docstring의 “완벽 scorer” 표현보다 아래 정의를 따른다:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18698\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.28202\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24897\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.28202\linewidth-2\tabcolsep\relax}}
+\toprule
+policy & 라우팅 & 검증 & 뜻 \\ \midrule
+\endfirsthead
+policy & 라우팅 & 검증 & 뜻 \\ \midrule
+\endhead
+{}\texttt{regime\_\allowbreak{}\allowbreak{}r\allowbreak{}oute} & 라벨 없음: \texttt{eval\_\allowbreak{}\allowbreak{}dis\allowbreak{}tance} argmin (관측 가능 signature  \ensuremath{\rightarrow}  expert가 만들어진 regime centroid) & 없음 & \textbf{Centroid 고정 배정 baseline}, 영역 규칙 +\allowbreak{} expert의 결합 성능 \\
+{}\texttt{regime\_\allowbreak{}\allowbreak{}r\allowbreak{}oute+\allowbreak{}\allowbreak{}V} & 같음 & expert 답이 맞을 때만 채택, 아니면 global & 고정 centroid 배정 +\allowbreak{} 정답 참조 V의 참고 진단 \\
+{}\texttt{class\_\allowbreak{}\allowbreak{}ro\allowbreak{}ute} & 정답 클래스의 담당 expert(block 지배 클래스; 담당 없으면 global) & 없음 & 정답 클래스 배정 oracle; 오답도 그대로 평가 \\
+{}\texttt{class\_\allowbreak{}\allowbreak{}ro\allowbreak{}ute+\allowbreak{}\allowbreak{}V} & 같음 & 완벽 verifier &  \\
+{}\texttt{union} & – & – & 기존 correctness\_\allowbreak{}oracle (참조) \\
+\bottomrule
+\end{longtable}
+\endgroup
+특화도 판독: regime별 own-expert acc vs global vs 최선 타 expert(2a), expert×regime 정확도 K×K(2b), expert×class 재현율 K×C(2c).
+
+\textbf{결과} (\texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp55\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}spec\allowbreak{}ializati\allowbreak{}on\_\allowbreak{}\allowbreak{}\{\allowbreak{}ton\_\allowbreak{}\allowbreak{}iot,\allowbreak{}cic2\allowbreak{}018\}\allowbreak{}/\allowbreak{}\allowbreak{}}):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.27281\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13596\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15175\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15175\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13596\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15175\linewidth-2\tabcolsep\relax}}
+\toprule
+macro-F1 & ToN EXP48 & CIC EXP47 & ToN confident & ToN random & ToN anchor200 \\ \midrule
+\endfirsthead
+macro-F1 & ToN EXP48 & CIC EXP47 & ToN confident & ToN random & ToN anchor200 \\ \midrule
+\endhead
+{}global & 0.6837 & 0.8107 & 0.6821 & 0.6839 & 0.6835 \\
+{}regime\_\allowbreak{}route (centroid 배정, S/\allowbreak{}V 없음) & \textbf{0.6620} & \textbf{0.7477} & 0.6905 & 0.6749 & 0.7009 \\
+{}regime\_\allowbreak{}route H /\allowbreak{} D & 61k /\allowbreak{} \textbf{110k} & 1.9k /\allowbreak{} \textbf{75k} & 60k /\allowbreak{} 89k & 53k /\allowbreak{} 98k & 52k /\allowbreak{} \textbf{135k} \\
+{}regime\_\allowbreak{}route+\allowbreak{}V (centroid +\allowbreak{} 정답 참조 V) & 0.7681 & 0.8863 & 0.7663 & 0.7678 & 0.7730 \\
+{}class\_\allowbreak{}route & 0.6874 & 0.8673 (D 86) & 0.6919 & 0.6881 & 0.7259 \\
+{}class\_\allowbreak{}route+\allowbreak{}V & 0.7785 & 0.9017 & 0.7760 & 0.7766 & 0.7814 \\
+{}union (기존 oracle) & 0.7847 & 0.9626 & 0.7821 & 0.7828 & 0.8088 \\
+{}own expert > global인 regime 수 & 2/\allowbreak{}7 & 2/\allowbreak{}8 & 4/\allowbreak{}7 & 1/\allowbreak{}7 & 2/\allowbreak{}7 \\
+{}own expert > 모든 타 expert & 2/\allowbreak{}7 & 3/\allowbreak{}8 & 1/\allowbreak{}7 & 1/\allowbreak{}7 & 2/\allowbreak{}7 \\
+\bottomrule
+\end{longtable}
+\endgroup
+수정된 판독.
+
+\par\noindent \textbullet\enspace Centroid 배정은 ToN 0.6620, CIC 0.7477로 global보다 낮다. 이는 완벽 배정 결과가 아니라 관측 가능한 특정 영역 규칙의 결과다. ToN injection context e4의 centroid 영역은 benign 93.0\%다.
+
+
+\par\noindent \textbullet\enspace 담당 \textbf{클래스 recall}에서는 ToN 6/\allowbreak{}7 expert가 global보다 높고 5/\allowbreak{}7은 타 expert보다 엄격히 높다(e5는 동률). 담당 \textbf{centroid 영역}에서는 global보다 높은 expert가 2/\allowbreak{}7이다. 두 집합을 혼동하지 않는다.
+
+
+\par\noindent \textbullet\enspace 정답 클래스 배정 후 원래 답을 쓰면 ToN 0.6874, CIC 0.8673이다. CIC의 이득과 centroid 손실은 영역 선택 개선의 근거다. ToN은 높은 공격 recall과 benign 훼손을 함께 관리할 선택 규칙 및 식별력 대조가 필요하다.
+
+
+\par\noindent \textbullet\enspace Class-route에 정답 참조 V를 추가한 0.7785/\allowbreak{}0.9017, union의 0.7847/\allowbreak{}0.9626은 유리한 결과만 채택한 참고 진단이다. Expert 생성 품질·배포 가능한 성능의 증거로 제시하지 않는다.
+
+
+\par\noindent \textbullet\enspace 기존 union과 class-route+\allowbreak{}V의 차이는 비담당 expert가 추가로 제공하는 정답의 효과다. 고유 기여·중복을 조사할 근거일 뿐, 이를 우연이나 무의미한 예측이라고 원인까지 단정하지 않는다.
+
+
+\textbf{앞으로 인용 규칙.} 주 배정 oracle은 \texttt{class\_\allowbreak{}\allowbreak{}ro\allowbreak{}ute}처럼 train/\allowbreak{}validation에서 고정한 담당 매핑으로 정답 클래스/\allowbreak{}독립적인 정답 영역에 배정하고 예측을 그대로 사용한다. 정오 판정에 의한 fallback은 제외한다. 이 배정 oracle도 모든 라우터의 성능 상한은 아니며, 클래스별 상수 예측 대조를 통과해야 생성 품질의 증거가 된다. \texttt{regime\_\allowbreak{}\allowbreak{}r\allowbreak{}oute}는 고정 centroid baseline, \texttt{union}은 bank 정답 포함률 진단, \texttt{+\allowbreak{}\allowbreak{}V}는 정답 참조 선택의 참고 결과로 명시한다.
+
+\textbf{매핑 한계.} 기존 EXP55는 block 지배 클래스 후보 중 해당 클래스 행 수가 가장 큰 expert를 선택했다(ToN injection=\allowbreak{}e1, benign=\allowbreak{}e6/\allowbreak{}26.6\%). 담당 없는 클래스는 global. Train 통계를 쓰지만 사후 진단으로 정한 매핑이므로 다음 실험에서는 설계 시점에 고정한다. Scorer는 centroid 거리 외 다른 feature도 사용하므로 centroid argmin을 실제 scorer의 완벽한 버전으로 간주하지 않는다.
+
+\subsection{9. 09-22 — 0911·0918 정의와 보고 방식 정정}
+\par\noindent \textbullet\enspace 0911의 bank 정답 선택(원본 CIC 0.849159), bank+\allowbreak{}다수 라벨 정책(0.803623), bank 없는 test 정답/\allowbreak{}다수 라벨 대입(0.855907)을 분리했다. 다수 라벨 정책은 macro-F1 상한이 아니다. Bank·동일 벡터 제약의 클래스별 max-F1 평균은 0.804844이며 한 정책의 동시 달성값과도 다르다.
+
+
+\par\noindent \textbullet\enspace 기존 oracle의 문제는 정확히 1.0인지가 아니라 \textbf{정답 여부를 보고 유리한 출력만 채택해 expert의 오탐·훼손을 평가에서 제거하는 설계}다. Expert 생성 품질의 주 평가에서 제외한다.
+
+
+\par\noindent \textbullet\enspace 새 비교는 global, 고정 담당 영역 배정, 각 expert 전면 적용, 실제 S-only/\allowbreak{}S+\allowbreak{}V, 정답 클래스 배정 oracle이다. 사용자의 담당 expert 평가가 이미 정답 클래스 배정이면 마지막 항목과 동일하므로 중복하지 않는다.
+
+
+\par\noindent \textbullet\enspace 후속 측정: 영역×expert 행렬, 동일 FPR의 recall·PR-AUC, H/\allowbreak{}D·영역 밖 FP, context/\allowbreak{}prior 대조, 고유 기여, 실제 라우팅 회수율. 평가 프로토콜에 분모·선택 절차·한계를 명시했다. 새로운 학습 실험은 실행하지 않았다.
+
+
+\par\noindent \textbullet\enspace HTML 원본 두 편과 통합본의 명칭·본문·요약을 갱신한다. Git push와 온라인 아티팩트 배포는 로컬 갱신과 별도 상태로 보고한다.
+
+
+\subsection{09-22 EXP56 — 다섯 조건 실행 완료}
+CIC EXP47·ToN EXP48의 모순 제거 고정 split과 기존 EXP51 S1V0 정책으로 \textbf{global /\allowbreak{} 새 담당 배정 oracle /\allowbreak{} expert별 전면 적용 /\allowbreak{} scorer-only /\allowbreak{} scorer+\allowbreak{}verifier}를 실행했다. 기존 정답 참조 union은 주 비교에서 제외했다. 새 학습·독립 seed 재실행이 아닌 frozen prediction 평가다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.34591\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.32704\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.32704\linewidth-2\tabcolsep\relax}}
+\toprule
+Macro-F1 & CIC2018 & ToN \\ \midrule
+\endfirsthead
+Macro-F1 & CIC2018 & ToN \\ \midrule
+\endhead
+{}Global & 0.810653 & 0.683734 \\
+{}새 담당 배정 oracle & 0.867295 & 0.687397 \\
+{}Expert 전면 적용 범위 & 0.700074–0.794586 & 0.620527–0.685941 \\
+{}Scorer-only (동일 호출) & 0.810653 & 0.754919 \\
+{}Scorer+\allowbreak{}verifier & 0.810653 & 0.755490 \\
+\bottomrule
+\end{longtable}
+\endgroup
+ToN에서 V는 교정 183건을 거절하는 대신 훼손 475건을 막았다. CIC는 저장된 calibration 정책이 호출 0을 선택하므로 S-only도 0이며 V 효과를 식별하지 못한다. Class×expert·영역×expert·H/\allowbreak{}D와 확률 AP, validation 고정 FPR 운영점의 test 전이, 경험적 test ROC의 R@FPR 0.1\%/\allowbreak{}1\%를 추가 계산했다. 주 정책의 예측을 test 임계값으로 변경하지 않았다.
+
+ToN scanning e2·ransomware e5는 AP 및 R@FPR 0.1\%에서도 global·타 expert보다 높다. CIC infiltration e6은 담당 recall이 높아도 AP·동일 FPR recall은 global보다 낮다. 따라서 담당 배정 oracle 점수와 expert 식별력을 따로 제시한다. 세 관점의 관측 품질 분석은 이번 결과로 가능하며, 생성 규칙의 원인을 입증하려면 동일 예산의 무작위/\allowbreak{}균형/\allowbreak{}β 대조와 seed 반복·시간/\allowbreak{}그룹별 불확실성이 추가 필요하다.
+
+결과: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}fiv\allowbreak{}e\_\allowbreak{}\allowbreak{}condit\allowbreak{}ion\_\allowbreak{}\allowbreak{}2026\allowbreak{}0922\_\allowbreak{}\allowbreak{}fin\allowbreak{}al/\allowbreak{}\allowbreak{}\{\allowbreak{}cic2\allowbreak{}018,\allowbreak{}toni\allowbreak{}ot\}\allowbreak{}}. 전체 표와 한계: EXP56 결과. 재현 스크립트 \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}fiv\allowbreak{}e\_\allowbreak{}\allowbreak{}condit\allowbreak{}ion\_\allowbreak{}\allowbreak{}eval\allowbreak{}uation.\allowbreak{}p\allowbreak{}y}, 보고서 생성 \texttt{scripts/\allowbreak{}\allowbreak{}build\_\allowbreak{}\allowbreak{}ex\allowbreak{}p56\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt\_\allowbreak{}\allowbreak{}secti\allowbreak{}on.\allowbreak{}py}. 기존 S+\allowbreak{}V 예측의 행 단위 재현과 과학적 불변조건 단위 검증 5개를 통과했다.
+
+\subsubsection{2026-09-22 HTML 재작성}
+다섯 조건과 세 진단 관점을 도입에 배치하고, 전체 bank의 충분성 판단·개선 과제를 명시했다. 클래스 표는 test support 내림차순, expert는 번호 순서로 유지하며 다섯 조건의 표시 정밀도 최고값(동률 포함)을 강조했다. Macro-F1 비교·고정 FPR 식별력 차이·context 구성 그림을 추가하고 Noto Sans CJK KR을 내장했다.
+
+생성 코드를 확인한 결과 K는 클래스 수로 고정한 것이 아니라 2/\allowbreak{}4/\allowbreak{}8 후보의 tune 정답 기반 최소 손실 선택 지표로 결정됐다. CIC는 8개, ToN은 8개 중 최소 tune 영역 표본 조건 미달 1개를 제거해 7개다. 평가용 지배 클래스 매핑과 실제 생성·scorer 정책을 구별하며 K 선택 기준 자체를 개선 과제로 제시한다. 숫자·bank 재학습 없이 EXP56 final CSV를 재사용했다.
+
+\subsubsection{2026-09-22 후속 수정 — 정답 배정 제외, K<C, 지표의 검증 목적}
+이전 개정의 정답 클래스 배정은 상수 expert의 높은 점수를 허용하므로 주 평가에서 제외했다. 2번은 정답 없는 고정 centroid 영역 배정(S/\allowbreak{}V 없음)으로 교체: CIC macro-F1 0.747722, ToN 0.661978. 생성 코드에 1<=\allowbreak{}K<C를 추가했고 기존 CIC 8/\allowbreak{}7 bank는 제약 적용 전 진단이라는 점을 표시했다. Bank 재학습은 하지 않았다.
+
+CIC 동일 성능은 calibration 65개 후보의 benign FPR/\allowbreak{}tail F1 제약 위반과 호출 0의 결과다. Infiltration 정답 배정 0.9140은 e6의 TP 7,556을 유지하면서 FP 806,387 대신 다른 예측기의 FP 236만 남긴 결과다. ToN scanning S+\allowbreak{}V는 TP 4,245/\allowbreak{}FP 172/\allowbreak{}FN 1,784로 0.8128이며 모델별 예측 출처를 검증했다.
+
+추가 계산: 학습 route 다수 클래스를 출력하는 영역별 상수 대조. HTML에서 expert 개수의 상세 결정 경위와 라우팅 회수율 절을 제거하고, 전체 test/\allowbreak{}AP/\allowbreak{}동일 FPR recall/\allowbreak{}val 임계값 전이/\allowbreak{}영역 대조의 목적을 설명했다. 필요한 근거를 동일 예산·클래스 구성 context 대조, global 보정 대조, 새 시간 운영점 전이, 독립 학습 seed 반복으로 구체화했다. EXP52–54의 기존 부분 대조는 보존·구분했다. 결과: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp56\_\allowbreak{}\allowbreak{}lab\allowbreak{}el\_\allowbreak{}\allowbreak{}free\_\allowbreak{}\allowbreak{}20260922\allowbreak{}/\allowbreak{}\allowbreak{}}.
+
+\subsection{2026-09-22 — EXP57 실행 및 EXP58 모델 상한 추가}
+현재 2번은 정답 없는 고정 영역 배정이며 oracle이 아니다. 기존 bank에서 가능한 모델 상한은 EXP58의 6번 bank oracle로 별도 측정했다. Accuracy뿐 아니라 모두 틀린 행의 오탐 목적지까지 최적화한 Macro-F1 상한은 CIC 0.991366, ToN 0.786694다. 같은 예측 bank와 test에서의 상한이며 새 K=\allowbreak{}4 bank의 결과가 아니다. 상한 정의·검증.
+
+EXP57은 K=\allowbreak{}4, seed 42·43·44의 실제 context fit과 세 생성 방식 대조를 진행 중이다. Seed 42의 두 로컬 작업이 native segmentation fault로 종료돼 외부 GPU에 배정했고, 로컬은 seed 43·44를 이어간다. 외부 실행 명령. 이번 설명·상한 결과는 사용자 요청에 따라 HTML에 추가하지 않았다.
+
+\subsection{2026-09-29 — EXP59 보고서 정리와 다음 실험 후보 (사용자 결정 반영)}
+EXP59(0928 탭, seed 43, K=\allowbreak{}4) 한 줄 요약: 정답 residual 소속을 아는 oracle에서는 bank가 global을 보완하지만(CIC 0.7824 \ensuremath{\rightarrow} 0.8996, ToN 0.6796 \ensuremath{\rightarrow} 0.7437), 그 능력은 현재 residual 선택 규칙의 것이 아니고(같은 크기 무작위 context와 우열 혼재), 정답 없는 최근접 배정은 CIC 0.7613으로 global 이하 — 병목은 expert가 아니라 "무엇이 능력을 만들고 정답 없이 어떻게 고르느냐".
+
+제안 5개 중 사용자 기각 2건 (재제안 금지):
+
+\par\noindent \textbullet\enspace 행 라우팅 없이 클래스 단위 specialist 확률 치환 — \texttt{model\_\allowbreak{}\allowbreak{}st\allowbreak{}ructure\_\allowbreak{}\allowbreak{}0826} Figure 1(global  \ensuremath{\rightarrow}  scorer Û>τpre  \ensuremath{\rightarrow}  top-1 expert  \ensuremath{\rightarrow}  verifier G\_\allowbreak{}low>τpost, 행 단위 조건부·순차)에 어긋남.
+
+
+\par\noindent \textbullet\enspace open-set/\allowbreak{}unseen-family 다리 재부착 — 현재 트랙 제외.
+
+
+남은 후보 (0915 합의 규칙: 사용자 선택 후 launch):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.10455\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14091\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19848\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19848\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15909\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19848\linewidth-2\tabcolsep\relax}}
+\toprule
+\# & 단계 & knob & 대조군 & 비용 & 가장 가까운 묻힌 실패 · 회피 \\ \midrule
+\endfirsthead
+\# & 단계 & knob & 대조군 & 비용 & 가장 가까운 묻힌 실패 · 회피 \\ \midrule
+\endhead
+{}A & ① global & β(§7 prior correction)·클래스별 threshold를 train 시간순 뒷 slice에서 고정, expert 측 β>0 강제 포함 & 같은 예산 global β=\allowbreak{}0, threshold-matched XGB, 3 seed(seed 전달 검증) & 17분/\allowbreak{}run × 3 × 2 & \#2 val-tuned 비전이  \ensuremath{\rightarrow}  test 아닌 train 내부 slice, 전이 격차 보고 \\
+{}B & ②–⑤ scorer/\allowbreak{}verifier & K=\allowbreak{}4 bank에 sign-scorer(24b)·quantile verifier 재학습, 타깃은 소속이 아니라 순이득 G\_\allowbreak{}ik & global /\allowbreak{} S만 /\allowbreak{} V만 /\allowbreak{} S+\allowbreak{}V /\allowbreak{} 무작위 context bank S+\allowbreak{}V, 같은 bank·같은 test & bank 고정이라 fit 1회 +\allowbreak{} 추론 5조건 & \#1 라우팅 오류·\#2  \ensuremath{\rightarrow}  harmful·benign FPR 병기, τ는 D\_\allowbreak{}cal 제약 grid \\
+{}C & ① expert context & 특화 block에 global이 혼동하는 음성(train 측 confusion) 추가 vs 무작위 음성, 양성·총행 수 고정 & 현재 block, 3 seed matched & EXP57 규모 & EXP52–54 행 선택 효과 0, 0928 무작위\ensuremath{\approx}현재  \ensuremath{\rightarrow}  보조 ablation \\
+\bottomrule
+\end{longtable}
+\endgroup
+권장 순서: A와 B를 병렬(GPU 여유 시), C는 B의 ablation이 "관문"이 아니라 "expert 품질"을 병목으로 지목할 때만.
+
+
+
+\section{EXP54 — Expert context 구성 실험: 가설·실험·결과 (2026-09-18)}
+\subsection{0. 질문과 배경}
+\textbf{질문.} context를 어떻게 구성해야 특정 클래스에 강한 expert가 되고, 그 expert가 scorer의 후보로도 쓸 만한가?
+
+\textbf{배경 (09-18 오전까지 확인된 것).}
+
+\par\noindent \textbullet\enspace EXP52: residual/\allowbreak{}confident/\allowbreak{}random 중 어떤 행을 고르든 expert의 자기-클래스 F1은 global보다 나쁘다.
+
+
+\par\noindent \textbullet\enspace EXP53: injection expert context를 injection 90\%로 채우면 F1 0.877  \ensuremath{\rightarrow}  0.390 (정밀도 0.80  \ensuremath{\rightarrow}  0.24). "순도"가 오히려 해친다.
+
+
+\par\noindent \textbullet\enspace ToN 약한 클래스 3개: scanning(F1 0.138), mitm(0.067), ransomware(0.140). 전부 global 기준.
+
+
+\textbf{공통 설정.} ToN 모순제거 고정 분할(\texttt{data/\allowbreak{}\allowbreak{}der\allowbreak{}ived/\allowbreak{}\allowbreak{}ton\allowbreak{}iot\_\allowbreak{}\allowbreak{}conf\allowbreak{}lict\_\allowbreak{}\allowbreak{}fre\allowbreak{}e\_\allowbreak{}\allowbreak{}fixed\_\allowbreak{}\allowbreak{}split\_\allowbreak{}\allowbreak{}20\allowbreak{}260916\_\allowbreak{}\allowbreak{}0\allowbreak{}21730}), train 4,669,119 /\allowbreak{} test 2,271,723. context 20,000행(고정), TabPFN-v3 단독 fit(n\_\allowbreak{}estimators 4, random\_\allowbreak{}state 42), test 전체 예측. 기준선 =\allowbreak{} EXP48의 global(100k C0, benign 75\%) macro-F1 \textbf{0.6837}, 같은 행·같은 순서. Run: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260918\_\allowbreak{}\allowbreak{}155043\_\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}toni\allowbreak{}ot\_\allowbreak{}\allowbreak{}exp54\allowbreak{}\_\allowbreak{}\allowbreak{}expert\_\allowbreak{}\allowbreak{}context\_\allowbreak{}\allowbreak{}design}(1라운드 11 arm), \texttt{…/\allowbreak{}\allowbreak{}202609\allowbreak{}18\_\allowbreak{}\allowbreak{}16023\allowbreak{}8\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}t\allowbreak{}oniot\_\allowbreak{}\allowbreak{}ex\allowbreak{}p54r2\_\allowbreak{}\allowbreak{}ex\allowbreak{}pert\_\allowbreak{}\allowbreak{}con\allowbreak{}text\_\allowbreak{}\allowbreak{}des\allowbreak{}ign}(2라운드 8 arm). 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp54\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}cont\allowbreak{}ext\_\allowbreak{}\allowbreak{}desi\allowbreak{}gn.\allowbreak{}py}, \texttt{exp54r2\_\allowbreak{}\allowbreak{}expert\_\allowbreak{}\allowbreak{}c\allowbreak{}ontext\_\allowbreak{}\allowbreak{}d\allowbreak{}esign.\allowbreak{}py\allowbreak{}}.
+
+\subsubsection{용어}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.41071\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.58929\linewidth-2\tabcolsep\relax}}
+\toprule
+용어 & 뜻 \\ \midrule
+\endfirsthead
+용어 & 뜻 \\ \midrule
+\endhead
+{}raw & TabPFN 출력 확률의 argmax 그대로 \\
+{}β (PriorCorrector) & TabPFN은 context의 클래스 비율을 "실제 비율"로 믿고 확률을 낸다. β는 그 믿음을 train 실제 비율 쪽으로 되돌리는 세기: \texttt{log p' =\allowbreak{}\allowbreak{} log p +\allowbreak{}\allowbreak{} β·(log \allowbreak{}π\_\allowbreak{}\allowbreak{}train \allowbreak{}− log π\_\allowbreak{}\allowbreak{}context)\allowbreak{}}. β=\allowbreak{}0 보정 없음, β=\allowbreak{}1 완전 되돌림. 균등 context에서 mitm(train 0.07\%)의 보정량은 log(0.0007/\allowbreak{}0.1) \ensuremath{\approx} −5  \ensuremath{\rightarrow}  β=\allowbreak{}1이면 mitm으로 부르려면 \textasciitilde{}150배 강한 증거가 필요. 파이프라인(EXP31)에 이미 있는 부품이며, 여기서는 재학습 없이 확률에 사후 적용했다. \\
+{}H /\allowbreak{} D & expert가 global과 \textbf{다르게} 답한 행 중 H=\allowbreak{}교정(global 틀림·expert 맞음), D=\allowbreak{}훼손(global 맞음·expert 틀림). scorer 후보 품질의 대리 지표. \\
+{}z-거리 & 46개 feature를 train 기준으로 표준화한 뒤의 유클리드 거리. 1 =\allowbreak{} 표준편차 1개. \\
+{}share \ensuremath{\propto} n\textasciicircum{}p & 클래스 c의 context 행 수를 train 행 수 n\_\allowbreak{}c의 p제곱에 비례해 배분. p=\allowbreak{}1 자연 비율, p=\allowbreak{}0 균등, p=\allowbreak{}0.5 제곱근. \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\medskip\hrule\medskip
+\subsection{1. 가설 H1 — "순도": target 비중을 올리면 그 클래스에 강해진다}
+\textbf{실험.} \texttt{enriched\allowbreak{}30:<targ\allowbreak{}et>} =\allowbreak{} target 30\%(6,000행, 풀이 모자라면 전량), 나머지 9클래스 균등. target \ensuremath{\in} \{mitm, ransomware, scanning, injection\}. 비교군 \texttt{balanced\allowbreak{}} =\allowbreak{} 2,000행 × 10클래스.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.34339\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25718\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.23420\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16523\linewidth-2\tabcolsep\relax}}
+\toprule
+구성 & target F1 (raw) & 같은 클래스 balanced raw & global \\ \midrule
+\endfirsthead
+구성 & target F1 (raw) & 같은 클래스 balanced raw & global \\ \midrule
+\endhead
+{}enriched30:mitm (풀 한계로 3,285=\allowbreak{}16\%) & 0.028 (P .014 /\allowbreak{} R .994) & 0.031 & 0.067 \\
+{}enriched30:ransomware (풀 한계로 2,151=\allowbreak{}10.7\%) & 0.091 (P .048 /\allowbreak{} R .999) & 0.093 & 0.140 \\
+{}enriched30:scanning & 0.184 (P .101 /\allowbreak{} R .984) & 0.386 & 0.138 \\
+{}enriched30:injection & 0.846 (P .737 /\allowbreak{} R .992) & 0.868 & 0.932 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{결과.} 4/\allowbreak{}4에서 balanced보다 나쁘거나 같다. 재현율은 0.99까지 올라가고 정밀도가 무너진다 — EXP53과 같은 기제(context 비율 =\allowbreak{} 사전확률 부풀리기). \textbf{판정: 기각.} 순도로는 특화 expert가 만들어지지 않는다.
+
+
+\medskip\hrule\medskip
+\subsection{2. 가설 H2 — "경계": 혼동 상대(benign)를 많이 넣으면 target-vs-benign 경계를 배운다}
+09-18 confusion matrix에서 세 약한 클래스의 오류 상대는 모두 benign이었다.
+
+\textbf{실험.}
+
+\par\noindent \textbullet\enspace \texttt{contrast\allowbreak{}ive:<tar\allowbreak{}get>} =\allowbreak{} target 2,000 +\allowbreak{} benign 14,000(무작위) +\allowbreak{} 나머지 500×8.
+
+
+\par\noindent \textbullet\enspace \texttt{hardneg:\allowbreak{}<target>\allowbreak{}} =\allowbreak{} target 2,000 +\allowbreak{} \textbf{target에 가장 가까운 benign train 행} 8,000 +\allowbreak{} 무작위 benign 6,000 +\allowbreak{} 나머지 500×8. (2라운드)
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16757\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22838\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22838\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22838\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14730\linewidth-2\tabcolsep\relax}}
+\toprule
+target & balanced raw & contrastive raw & hardneg raw & global \\ \midrule
+\endfirsthead
+target & balanced raw & contrastive raw & hardneg raw & global \\ \midrule
+\endhead
+{}scanning & 0.386 (P .25/\allowbreak{}R .87) & 0.522 (P .40/\allowbreak{}R .75) & \textbf{0.578} (P .46/\allowbreak{}R .77) & 0.138 \\
+{}mitm & 0.031 & 0.039 & 0.039 & 0.067 \\
+{}ransomware & 0.093 & 0.141 & 0.131 & 0.140 \\
+{}injection & 0.868 & 0.887 & – & 0.932 \\
+\bottomrule
+\end{longtable}
+\endgroup
+부수 관찰: scanning의 hard negative 8,000개는 scanning 행과 z-거리 \textbf{0.0002} 이내 — 사실상 같은 벡터에 다른 라벨(정확일치 삭제에서 살아남은 근사 모순).
+
+\textbf{결과.} scanning만 정밀도/\allowbreak{}재현율 균형이 좋아진다(0.386  \ensuremath{\rightarrow}  0.578). mitm·ransomware는 어떤 benign을 넣어도 정밀도 0.02\textasciitilde{}0.08 그대로. \textbf{판정: scanning에 부분 채택, mitm/\allowbreak{}ransomware에는 기각.} mitm/\allowbreak{}ransomware의 FP는 context가 가르칠 수 있는 경계 문제가 아니다( \ensuremath{\rightarrow}  H5).
+
+
+\medskip\hrule\medskip
+\subsection{3. 가설 H3 — "규칙": 클래스별 행 수를 손으로 정하지 않고 share \ensuremath{\propto} n\textasciicircum{}p 한 줄로 정할 수 있고, 중간 p가 최선이다}
+(사용자 지적: "몇 천으로 경험적으로 조절할 순 없다"에 대한 대안)
+
+\textbf{실험.} p \ensuremath{\in} \{1(natural), 0.75, 0.5(sqrt), 0.25, 0(balanced)\}. sqrt는 추첨 seed 42/\allowbreak{}43/\allowbreak{}44 3회, 40k 크기 1회 추가.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17117\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21171\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15428\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15428\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15428\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15428\linewidth-2\tabcolsep\relax}}
+\toprule
+p & context 예 (benign /\allowbreak{} scanning /\allowbreak{} mitm 행) & macro raw & scanning F1 & mitm F1 & ransomware F1 \\ \midrule
+\endfirsthead
+p & context 예 (benign /\allowbreak{} scanning /\allowbreak{} mitm 행) & macro raw & scanning F1 & mitm F1 & ransomware F1 \\ \midrule
+\endhead
+{}1 natural & 8,640 /\allowbreak{} 77 /\allowbreak{} 14 & 0.671 & 0.006 (R .003) & 0.049 & 0.117 \\
+{}0.75 & 7,050 /\allowbreak{} 204 /\allowbreak{} 57 & 0.685 & 0.182 & 0.038 & 0.127 \\
+{}\textbf{0.5 sqrt} s42 /\allowbreak{} s43 /\allowbreak{} s44 & 5,369 /\allowbreak{} 506 /\allowbreak{} 217 & \textbf{0.730 /\allowbreak{} 0.748 /\allowbreak{} 0.738} & \textbf{0.613 /\allowbreak{} 0.796 /\allowbreak{} 0.730} & 0.055 /\allowbreak{} 0.043 /\allowbreak{} 0.043 & 0.126 /\allowbreak{} 0.125 /\allowbreak{} 0.086 \\
+{}0.5 sqrt, 40k & 10,738 /\allowbreak{} 1,011 /\allowbreak{} 433 & 0.731 & 0.610 & 0.043 & 0.136 \\
+{}0.25 & 3,635 /\allowbreak{} 1,115 /\allowbreak{} 730 & 0.718 & 0.643 & 0.034 & 0.099 \\
+{}0 balanced & 2,000 /\allowbreak{} 2,000 /\allowbreak{} 2,000 & 0.688 & 0.386 & 0.031 & 0.093 \\
+{}global (100k, benign 75\%) & 75,000 /\allowbreak{} 3,182 /\allowbreak{} 1,642 & 0.684 & 0.138 & 0.067 & 0.140 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{결과.}
+
+\par\noindent \textbullet\enspace p=\allowbreak{}0.5가 raw 최상이고 이득은 전부 scanning(0.138  \ensuremath{\rightarrow}  0.61\textasciitilde{}0.80)에서 온다. 나머지 8클래스는 ±0.02.
+
+
+\par\noindent \textbullet\enspace scanning은 context 내 scanning 비중이 재현율/\allowbreak{}정밀도 운영점을 직접 정한다: 77행  \ensuremath{\rightarrow}  R 0.003, 506행  \ensuremath{\rightarrow}  P .55/\allowbreak{}R .69, 2,000행  \ensuremath{\rightarrow}  P .25/\allowbreak{}R .87.
+
+
+\par\noindent \textbullet\enspace 같은 규칙인데 \textbf{추첨에 따라 scanning이 0.61\textasciitilde{}0.80} 움직인다. 크기 2배(40k)는 효과 없음.
+
+
+\par\noindent \textbullet\enspace mitm·ransomware는 p와 무관하게 0.03\textasciitilde{}0.06 /\allowbreak{} 0.09\textasciitilde{}0.14. \textbf{판정: 채택(단, scanning 한정).} 규칙으로 정할 수 있고 p=\allowbreak{}0.5 근처가 최선. 그러나 mitm/\allowbreak{}ransomware는 이 축으로는 안 움직인다.
+
+
+
+\medskip\hrule\medskip
+\subsection{4. 가설 H4 — "운영점": 구성 간 차이의 본질은 context가 담은 지식이 아니라 사전확률이다  \ensuremath{\rightarrow}  사후 β 보정이 구성 차이를 대신할 수 있다}
+\textbf{실험.} 모든 arm의 raw 확률에 파이프라인 PriorCorrector(ref =\allowbreak{} train 비율, α=\allowbreak{}1)를 β=\allowbreak{}0.5, 1.0으로 사후 적용. 기존 global(eval\_\allowbreak{}p0)에도 적용.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.31312\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22896\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22896\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22896\linewidth-2\tabcolsep\relax}}
+\toprule
+구성 & raw & β=\allowbreak{}0.5 & β=\allowbreak{}1.0 \\ \midrule
+\endfirsthead
+구성 & raw & β=\allowbreak{}0.5 & β=\allowbreak{}1.0 \\ \midrule
+\endhead
+{}global (100k C0, benign 75\%) & 0.684 & 0.704 & 0.699 \\
+{}natural & 0.671 & 0.671 & 0.672 \\
+{}sqrt s42 /\allowbreak{} s43 /\allowbreak{} s44 & 0.730 /\allowbreak{} 0.748 /\allowbreak{} 0.738 & 0.716 /\allowbreak{} 0.723 /\allowbreak{} 0.709 & 0.720 /\allowbreak{} 0.715 /\allowbreak{} 0.716 \\
+{}pow0.25 & 0.718 & 0.753 & 0.731 \\
+{}\textbf{balanced} & 0.688 & \textbf{0.771} & 0.765 \\
+{}enriched30:ransomware (=\allowbreak{} ransomware 전량 2,151 +\allowbreak{} 1,556×9 \ensuremath{\approx} 균등) & 0.667 & \textbf{0.813} & 0.749 \\
+{}enriched30:\{mitm, scanning, injection\} & 0.678 /\allowbreak{} 0.668 /\allowbreak{} 0.699 & 0.755 /\allowbreak{} 0.756 /\allowbreak{} 0.762 & 0.662 /\allowbreak{} 0.694 /\allowbreak{} 0.743 \\
+{}hardneg:\{scanning, mitm, ransomware\} & 0.719 /\allowbreak{} 0.727 /\allowbreak{} 0.727 & 0.745 /\allowbreak{} 0.741 /\allowbreak{} 0.719 & 0.702 /\allowbreak{} 0.725 /\allowbreak{} 0.699 \\
+\bottomrule
+\end{longtable}
+\endgroup
+클래스별로 보면 방향이 갈린다 (balanced 기준):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.19853\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27206\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26471\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26471\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & raw & β=\allowbreak{}0.5 & β=\allowbreak{}1.0 \\ \midrule
+\endfirsthead
+클래스 & raw & β=\allowbreak{}0.5 & β=\allowbreak{}1.0 \\ \midrule
+\endhead
+{}mitm & 0.031 (P .016/\allowbreak{}R .98) & 0.347 (P .22/\allowbreak{}R .84) & \textbf{0.705} (P .77/\allowbreak{}R .65) \\
+{}ransomware & 0.093 & 0.200 & \textbf{0.413} (P .27/\allowbreak{}R .90) \\
+{}scanning & 0.386 (P .25/\allowbreak{}R .87) & \textbf{0.643} (P .94/\allowbreak{}R .49) & \textbf{0.000} \\
+{}benign & 0.897 & 0.932 & 0.934 \\
+{}backdoor & 0.995 & 0.998 & 0.962 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{결과.}
+
+\par\noindent \textbullet\enspace 같은 균등 context가 β=\allowbreak{}0.5로 0.688  \ensuremath{\rightarrow}  0.771. 전체 라우팅 시스템(EXP48, 0.754)보다 높다. expert·scorer·verifier 없이.
+
+
+\par\noindent \textbullet\enspace \textbf{파이프라인은 이 보정을 스스로 껐다.} \texttt{1c\_\allowbreak{}\allowbreak{}prior\allowbreak{}\_\allowbreak{}\allowbreak{}grid.\allowbreak{}cs\allowbreak{}v}: 균형-NLL 기준으로 β=\allowbreak{}0.0, T=\allowbreak{}1.25 선택. 균형-NLL은 균등 사전확률을 선호하므로 β=\allowbreak{}0이 항상 이긴다. 선택 기준이 macro-F1과 반대 방향.
+
+
+\par\noindent \textbullet\enspace 기존 global에 β를 사후 적용하면 0.704가 한계: mitm은 오르지만(0.07  \ensuremath{\rightarrow}  0.32) scanning이 죽는다(0.138  \ensuremath{\rightarrow}  0.04). C0의 benign 75\%가 scanning 운영점을 이미 보수적으로 잡아 놓아 β가 갈 방향이 없다.
+
+
+\par\noindent \textbullet\enspace \textbf{필요한 β가 클래스마다 반대다.} mitm/\allowbreak{}ransomware는 β↑(FP 제거), scanning은 β=\allowbreak{}0(증거가 약해 조금만 눌러도 소멸). 단일 β는 절충이고, 클래스별 β는 val-튜닝 임계값과 같은 함정(SRC\_\allowbreak{}HISTORY \#2).
+
+
+\par\noindent \textbullet\enspace \texttt{enriched\allowbreak{}30:ranso\allowbreak{}mware +\allowbreak{}\allowbreak{} \allowbreak{}β0.\allowbreak{}5 =\allowbreak{}\allowbreak{} 0\allowbreak{}.\allowbreak{}813}은 mitm 0.728·scanning 0.658이 동시에 나온 단일 추첨. balanced β0.5의 mitm은 0.347  \ensuremath{\rightarrow}  같은 β에서 추첨에 따라 mitm이 0.35\textasciitilde{}0.73으로 갈리는 칼날 위. seed 재현 필요. \textbf{판정: 채택.} 구성보다 β가 큰 지렛대이며, 파이프라인의 β 선택 기준이 문제.
+
+
+\subsubsection{scorer 후보 품질 (H4의 따름 결과)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.26884\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27568\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22774\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22774\linewidth-2\tabcolsep\relax}}
+\toprule
+expert & raw H /\allowbreak{} D & β0.5 H /\allowbreak{} D & β1.0 H /\allowbreak{} D \\ \midrule
+\endfirsthead
+expert & raw H /\allowbreak{} D & β0.5 H /\allowbreak{} D & β1.0 H /\allowbreak{} D \\ \midrule
+\endhead
+{}balanced & 58,453 /\allowbreak{} 95,093 (\textbf{순손실}) & 90,090 /\allowbreak{} 33,488 & 89,501 /\allowbreak{} 26,826 \\
+{}sqrt s42 & 60,698 /\allowbreak{} 41,242 & 80,093 /\allowbreak{} 22,774 & 86,945 /\allowbreak{} 20,106 \\
+{}enriched30:ransomware & 52,742 /\allowbreak{} 113,329 (순손실) & 91,658 /\allowbreak{} 23,777 & 88,832 /\allowbreak{} 20,643 \\
+\bottomrule
+\end{longtable}
+\endgroup
+보정 없는 expert는 global과 다르게 답할 때 틀리는 쪽이 더 많다  \ensuremath{\rightarrow}  09-18 "expert 역설"의 정량적 원인. mitm 영역만 보면 balanced β1.0은 H 28,145 /\allowbreak{} D 308.
+
+
+\medskip\hrule\medskip
+\subsection{5. 가설 H5 — mitm·ransomware의 정밀도 붕괴는 context 문제가 아니라 데이터(feature 공간 겹침) 문제다}
+\textbf{실험 (학습 없음, kNN).} \texttt{knn\_\allowbreak{}\allowbreak{}sepa\allowbreak{}rability\allowbreak{}.\allowbreak{}py}: train 풀(benign 30만 표본 +\allowbreak{} 4개 약한 클래스 전량)에서 각 약한 클래스 행의 leave-one-out 최근접 이웃 라벨. \texttt{test\_\allowbreak{}\allowbreak{}sid\allowbreak{}e\_\allowbreak{}\allowbreak{}knn.\allowbreak{}py\allowbreak{}}: global이 틀린 test 행들의 train 풀 최근접 이웃 라벨과 z-거리.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.26894\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23864\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26136\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23106\linewidth-2\tabcolsep\relax}}
+\toprule
+대상 & 최근접 이웃 라벨 & z-거리 (10/\allowbreak{}50/\allowbreak{}90\%) & 해석 \\ \midrule
+\endfirsthead
+대상 & 최근접 이웃 라벨 & z-거리 (10/\allowbreak{}50/\allowbreak{}90\%) & 해석 \\ \midrule
+\endhead
+{}train mitm 행 (LOO) & mitm 96.5\%, benign 1.8\% & 중앙 0.086 & mitm끼리 뭉쳐 있음 \\
+{}\textbf{test benign  \ensuremath{\rightarrow}  mitm 오인 28,804행} & mitm 90\%, benign 10\% & \textbf{8.8 /\allowbreak{} 1,954 /\allowbreak{} 8,819} & train 어떤 행과도 멀다 \\
+{}test 진짜 mitm 1,161행 & mitm 91\% & 0.09 /\allowbreak{} 0.68 /\allowbreak{} 15.6 & 정상 범위 \\
+{}train 행끼리 LOO 거리 (참조) & – & 99\%: 0.89, 99.9\%: 4.5, 99.99\%: 21 &  \\
+{}\textbf{test benign  \ensuremath{\rightarrow}  ransomware 오인 7,923행} & ransomware 59\%, benign 40\% & 0.02 /\allowbreak{} \textbf{0.077} /\allowbreak{} 2.1 & ransomware train 행과 거의 같은 벡터 \\
+{}train ransomware 행 (LOO) & ransomware 98.4\% & 중앙 0.011 &  \\
+{}\textbf{test 진짜 scanning 6,029행} & \textbf{benign 64\%}, scanning 36\% & 0.01 /\allowbreak{} 0.042 /\allowbreak{} 0.51 & benign 밀집 영역 안 \\
+{}train scanning 행 (LOO) & scanning 74.7\%, benign 24.2\% &  & train에서도 1/\allowbreak{}4이 benign 옆 \\
+{}train injection 행 (LOO) & injection 99.7\% &  & 분리됨 \\
+\bottomrule
+\end{longtable}
+\endgroup
+mitm 오인 행의 정체(z-거리 > 50인 21,287행): \texttt{NUM\_\allowbreak{}\allowbreak{}PKTS\allowbreak{}\_\allowbreak{}\allowbreak{}UP\_\allowbreak{}\allowbreak{}TO\_\allowbreak{}\allowbreak{}1\allowbreak{}28\_\allowbreak{}\allowbreak{}BYTES\allowbreak{}} 중앙값 \textbf{130,872}(train benign 중앙값 2), PROTOCOL 17(UDP), \texttt{DST\_\allowbreak{}\allowbreak{}TO\_\allowbreak{}\allowbreak{}S\allowbreak{}RC\_\allowbreak{}\allowbreak{}AVG\_\allowbreak{}\allowbreak{}T\allowbreak{}HROUGHPU\allowbreak{}T} 3.2 MB/\allowbreak{}s(train benign 4,188), MIN\_\allowbreak{}TTL 128. 소형 UDP 패킷이 flow당 13만 개인 흐름이 test에서 benign으로 라벨돼 있다.
+
+\textbf{결과.} 세 클래스의 원인이 서로 다르다.
+
+\par\noindent \textbullet\enspace mitm: FP는 train 표본에 없는 형태의 benign 블록. context 구성으로는 못 배운다(train에 없는 것을 넣을 수 없다).
+
+
+\par\noindent \textbullet\enspace ransomware: FP는 ransomware train 행과 z 0.08 이내의 benign — 정확일치 삭제 후 남은 근사 모순. 정밀도 상한이 낮다.
+
+
+\par\noindent \textbullet\enspace scanning: test 행 64\%가 benign 밀집 영역 안  \ensuremath{\rightarrow}  어느 쪽으로 부를지는 순수 운영점 문제. 그래서 H3(context 비중)로 움직였다. \textbf{판정: 채택.} \textbf{한계.} "train에 없다"는 benign 30만 \textbf{표본}(전체 201만의 15\%) 기준. train benign 전체에 0건인지는 직접 세지 않았다(사용자 결정으로 보류). 시간축 확인(timestamps)도 하지 않았다.
+
+
+
+\medskip\hrule\medskip
+\subsection{6. 가설 H6 — "거리 게이트": train 기하만으로 정한 τ로 mitm FP를 라벨 없이 걸러낼 수 있다}
+\textbf{실험 (\texttt{ood\_\allowbreak{}\allowbreak{}gate\allowbreak{}\_\allowbreak{}\allowbreak{}posthoc\allowbreak{}.\allowbreak{}py}, 학습 없음).} 기존 global 예측 중 non-benign 예측 행의 train 풀 최근접 z-거리를 재고, τ보다 멀면 benign으로 되돌림. τ 후보 =\allowbreak{} train 행끼리 LOO 거리 분위(라벨 불사용).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13579\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10608\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13083\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14569\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11598\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10608\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25955\linewidth-2\tabcolsep\relax}}
+\toprule
+τ & 되돌린 행 & 그중 실제 benign & mitm F1 (P/\allowbreak{}R) & benign F1 & macro & 부작용 \\ \midrule
+\endfirsthead
+τ & 되돌린 행 & 그중 실제 benign & mitm F1 (P/\allowbreak{}R) & benign F1 & macro & 부작용 \\ \midrule
+\endhead
+{}없음 & – & – & 0.067 (.03/\allowbreak{}.91) & 0.912 & 0.684 &  \\
+{}p99.99 =\allowbreak{} 21.2 & 24,436 & 99.7\% & 0.243 (.14/\allowbreak{}.87) & 0.921 & 0.703 & 없음 \\
+{}\textbf{p99.9 =\allowbreak{} 4.5} & 28,352 & 98.7\% & \textbf{0.335} (.22/\allowbreak{}.72) & 0.923 & \textbf{0.712} & 없음 \\
+{}p99 =\allowbreak{} 0.89 & 62,989 & 88\% & 0.482 (.41/\allowbreak{}.59) & 0.931 & 0.731 & scanning .138 \ensuremath{\rightarrow} .093, ddos .969 \ensuremath{\rightarrow} .959 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{결과.} τ=\allowbreak{}4.5에서 mitm +\allowbreak{}0.27, benign +\allowbreak{}0.011, 나머지 8클래스 변화 없음. FP의 절반만 잡힘(나머지 14k는 거리 4.5 이내). \textbf{판정: 채택(부분 해결).} 재학습 없이 어떤 run에도 사후 적용 가능.
+
+
+\medskip\hrule\medskip
+\subsection{7. 종합}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.31333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26667\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.42000\linewidth-2\tabcolsep\relax}}
+\toprule
+가설 & 판정 & 한 줄 \\ \midrule
+\endfirsthead
+가설 & 판정 & 한 줄 \\ \midrule
+\endhead
+{}H1 순도 & 기각 & target 비중↑ =\allowbreak{} 정밀도↓, 4/\allowbreak{}4 \\
+{}H2 경계 (benign 주입) & scanning만 부분 채택 & hardneg로 scanning 0.386 \ensuremath{\rightarrow} 0.578; mitm/\allowbreak{}ransomware 불변 \\
+{}H3 규칙 share \ensuremath{\propto} n\textasciicircum{}p & 채택 (scanning) & p=\allowbreak{}0.5 최선 raw 0.73\textasciitilde{}0.75; 추첨 분산 ±0.1 \\
+{}H4 운영점 β & 채택 & balanced+\allowbreak{}β0.5 =\allowbreak{} 0.771 > 시스템 0.754; 파이프라인은 β=\allowbreak{}0 선택 중 \\
+{}H5 데이터 겹침 & 채택 & mitm=\allowbreak{}먼 OOD benign, ransomware=\allowbreak{}근사 모순, scanning=\allowbreak{}benign 밀도 안 \\
+{}H6 거리 게이트 & 채택 (부분) & τ=\allowbreak{}4.5, mitm +\allowbreak{}0.27, 부작용 없음 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{제안 (실행은 사용자 확정 후).}
+
+\par\noindent \textbullet\enspace C0 구성(benign 75\%  \ensuremath{\rightarrow}  균등 또는 √) +\allowbreak{} β 선택 기준 교체(사전 고정 0.5, 0/\allowbreak{}0.5/\allowbreak{}1.0 모두 보고). 파이프라인 baseline 재실행 \ensuremath{\approx}45분. 기대 global 0.684  \ensuremath{\rightarrow}  0.75\textasciitilde{}0.77.
+
+
+\par\noindent \textbullet\enspace 거리 게이트 τ =\allowbreak{} train p99.9. 재학습 없음.
+
+
+\par\noindent \textbullet\enspace expert =\allowbreak{} 같은 context에 다른 β(운영점). "mitm/\allowbreak{}ransomware용" =\allowbreak{} 균등+\allowbreak{}β1.0, "scanning용" =\allowbreak{} √+\allowbreak{}β0. scorer는 운영점 선택기. 1번 뒤 EXP39 라우팅으로 검증.
+
+
+\par\noindent \textbullet\enspace 단일 추첨 수치(0.813, mitm 0.73) seed 43·44 재현 — 3 fit, 3분.
+
+
+\par\noindent \textbullet\enspace ransomware 근사 모순은 보고만(삭제 안 함, 0915 합의).
+
+
+\textbf{주의.} 표의 모든 β 판독은 test에서 읽은 것. 배포 선택이 아니라 진단이며, 제안 1에서 β를 사전 고정하는 이유.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

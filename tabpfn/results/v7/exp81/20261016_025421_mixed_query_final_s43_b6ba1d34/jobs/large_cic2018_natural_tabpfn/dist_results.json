@@ -1,0 +1,442 @@
+{
+  "dataset": "cic2018",
+  "case": "natural",
+  "method": "distpfn",
+  "seed": 43,
+  "evaluation": "final_full_test",
+  "test_order": "seed43_mixed",
+  "batch": 8192,
+  "test_rows": 3042473,
+  "training_rows": 100000,
+  "final_stage": 4,
+  "source_model_dir": "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4",
+  "source_fit_metrics": {
+    "method": "tabpfn",
+    "dataset": "cic2018",
+    "update_seconds": 17.008015337996767,
+    "cost_repetitions": [
+      {
+        "construct_seconds": 0.0001069550053216517,
+        "fit_seconds": 17.005956191991572,
+        "first_batch_seconds": 0.379348835995188,
+        "first_batch_rows": 1024,
+        "update_seconds": 17.006063146996894
+      },
+      {
+        "construct_seconds": 0.0005369290011003613,
+        "fit_seconds": 16.95880541499355,
+        "first_batch_seconds": 0.37840664500254206,
+        "first_batch_rows": 1024,
+        "update_seconds": 16.95934234399465
+      },
+      {
+        "construct_seconds": 0.0005999419954605401,
+        "fit_seconds": 16.936116876997403,
+        "first_batch_seconds": 0.380053206012235,
+        "first_batch_rows": 1024,
+        "update_seconds": 16.936716818992863
+      }
+    ],
+    "update_median_seconds": 16.95934234399465,
+    "train_rows": 100000,
+    "validation_rows": 0,
+    "class_names": [
+      "benign",
+      "brute_force",
+      "dos",
+      "ddos",
+      "web_attacks",
+      "infiltration",
+      "bot"
+    ],
+    "train_class_counts": [
+      75000,
+      2403,
+      2518,
+      16780,
+      9,
+      641,
+      2649
+    ],
+    "phases": [
+      {
+        "phase": "construct",
+        "seconds": 0.0001069550053216517,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 17.005956191991572,
+        "complete": true
+      },
+      {
+        "phase": "construct",
+        "seconds": 0.0005369290011003613,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 16.95880541499355,
+        "complete": true
+      },
+      {
+        "phase": "construct",
+        "seconds": 0.0005999419954605401,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 16.936116876997403,
+        "complete": true
+      }
+    ],
+    "peak_gpu_gib": 7.14453125,
+    "stage": 4,
+    "case": "natural",
+    "select_seconds": 0.0019521909998729825,
+    "train_ids_sha256": "2a4e59bcb02143a6f355cbced861f214f4f5b336941e93877be0c58cf2487620",
+    "global_class_indices": [
+      0,
+      2,
+      4,
+      3,
+      6,
+      5,
+      1
+    ]
+  },
+  "source_hashes": {
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4/fit_metrics.json": "2853cb94d594cea270abdb82c6b276d0c09c54a0cfea8fd178d8d20dcaf98604",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4/train_ids.npy": "a1d15afb1bf0b0b4214980f11e9b858a6f6d4797592749e776d59581510a862e",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4/model.tabpfn_fit": "871e440477fbfba827334f56827def83f5300e5303cb64a97874e0a9ba97b118"
+  },
+  "metrics": {
+    "rows": 3042473,
+    "confusion": [
+      [
+        2651490,
+        4,
+        0,
+        3,
+        4,
+        648,
+        54
+      ],
+      [
+        32,
+        41411,
+        0,
+        0,
+        0,
+        99,
+        0
+      ],
+      [
+        20,
+        0,
+        37676,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1796,
+        0,
+        0,
+        260582,
+        0,
+        0,
+        302
+      ],
+      [
+        609,
+        0,
+        0,
+        0,
+        38848,
+        0,
+        26
+      ],
+      [
+        6669,
+        0,
+        0,
+        0,
+        0,
+        2060,
+        13
+      ],
+      [
+        106,
+        0,
+        0,
+        0,
+        0,
+        0,
+        21
+      ]
+    ],
+    "macro_f1": 0.7740217017953518,
+    "benign_false_positive_rate": 0.0002688331172236816,
+    "attack_to_benign": 9232,
+    "wrong_attack_family": 440,
+    "attack_detection_recall": 0.9763445819560816,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 2652203,
+        "precision": 0.9965302650934595,
+        "recall": 0.9997311668827763,
+        "f1": 0.9981281497480201,
+        "TP": 2651490,
+        "FP": 9232,
+        "FN": 713
+      },
+      {
+        "name": "bot",
+        "support": 41542,
+        "precision": 0.9999034166364844,
+        "recall": 0.9968465649222473,
+        "f1": 0.9983726508914257,
+        "TP": 41411,
+        "FP": 4,
+        "FN": 131
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 1.0,
+        "recall": 0.9994694397283531,
+        "f1": 0.9997346494719525,
+        "TP": 37676,
+        "FP": 0,
+        "FN": 20
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 0.9999884874417176,
+        "recall": 0.99201309578194,
+        "f1": 0.995984826044165,
+        "TP": 260582,
+        "FP": 3,
+        "FN": 2098
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 0.9998970451971585,
+        "recall": 0.9839171288909151,
+        "f1": 0.9918427267504947,
+        "TP": 38848,
+        "FP": 4,
+        "FN": 635
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.7338795867474172,
+        "recall": 0.23564401738732554,
+        "f1": 0.3567408433630617,
+        "TP": 2060,
+        "FP": 747,
+        "FN": 6682
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 0.05048076923076923,
+        "recall": 0.16535433070866143,
+        "f1": 0.07734806629834254,
+        "TP": 21,
+        "FP": 395,
+        "FN": 106
+      }
+    ]
+  },
+  "predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/jobs/large_cic2018_natural_tabpfn/dist_predictions.npy",
+  "training_rerun": false,
+  "restoration_mismatches": 0,
+  "scope": "large",
+  "prediction_storage_order": "original",
+  "full_reinference": true,
+  "original_order_prediction_mismatches": 0,
+  "source_model": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/cic2018_natural_tabpfn/stage_4/model.tabpfn_fit",
+  "source_model_sha256": "871e440477fbfba827334f56827def83f5300e5303cb64a97874e0a9ba97b118",
+  "query_order_sha256": "aab673b1ac432dba7208f26777a58a94fc8abda3731659a1f85bd4d0fe1879a4",
+  "probability_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/jobs/large_cic2018_natural_tabpfn/probabilities.npy",
+  "class_mapping": [
+    0,
+    2,
+    4,
+    3,
+    6,
+    5,
+    1
+  ],
+  "training_prior": [
+    0.75,
+    0.02403,
+    0.02518,
+    0.1678,
+    9e-05,
+    0.00641,
+    0.02649
+  ],
+  "source_result_scope": "EXP79",
+  "initial_finetuning": false,
+  "correction_scope": "current mixed query batch only",
+  "original_group_counterfactual": {
+    "rows": 3042473,
+    "confusion": [
+      [
+        2651571,
+        0,
+        0,
+        0,
+        0,
+        578,
+        54
+      ],
+      [
+        0,
+        41422,
+        0,
+        0,
+        0,
+        120,
+        0
+      ],
+      [
+        0,
+        0,
+        37696,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        260838,
+        0,
+        0,
+        1842
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        38873,
+        0,
+        610
+      ],
+      [
+        3206,
+        0,
+        0,
+        0,
+        0,
+        5488,
+        48
+      ],
+      [
+        52,
+        0,
+        0,
+        0,
+        0,
+        16,
+        59
+      ]
+    ],
+    "macro_f1": 0.823436883271991,
+    "benign_false_positive_rate": 0.00023829246856292674,
+    "attack_to_benign": 3258,
+    "wrong_attack_family": 2636,
+    "attack_detection_recall": 0.9916519332769621,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 2652203,
+        "precision": 0.9987728023160813,
+        "recall": 0.9997617075314371,
+        "f1": 0.9992670102611027,
+        "TP": 2651571,
+        "FP": 3258,
+        "FN": 632
+      },
+      {
+        "name": "bot",
+        "support": 41542,
+        "precision": 1.0,
+        "recall": 0.9971113571806846,
+        "f1": 0.9985535895087025,
+        "TP": 41422,
+        "FP": 0,
+        "FN": 120
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "TP": 37696,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 1.0,
+        "recall": 0.9929876656007309,
+        "f1": 0.9964814963382348,
+        "TP": 260838,
+        "FP": 0,
+        "FN": 1842
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 1.0,
+        "recall": 0.9845503127928475,
+        "f1": 0.9922150186329062,
+        "TP": 38873,
+        "FP": 0,
+        "FN": 610
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.8848758465011287,
+        "recall": 0.6277739647677877,
+        "f1": 0.734475374732334,
+        "TP": 5488,
+        "FP": 714,
+        "FN": 3254
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 0.022579410639112132,
+        "recall": 0.4645669291338583,
+        "f1": 0.043065693430656936,
+        "TP": 59,
+        "FP": 2554,
+        "FN": 68
+      }
+    ]
+  },
+  "original_group_predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/jobs/large_cic2018_natural_tabpfn/dist_original_groups.npy",
+  "base_inference_seconds": 575.2284552987549,
+  "serving_seconds_scope": "Total not measured; base_inference_seconds covers PFN forward only; posterior correction was not separately timed",
+  "inherited_metadata_from_source_result": {
+    "serving_seconds": 573.5024426953751
+  },
+  "note": "Saved model, unchanged training/context; seed43 mixed query evaluation or explicitly audited prediction reuse; update costs retain their original preparation measurements"
+}

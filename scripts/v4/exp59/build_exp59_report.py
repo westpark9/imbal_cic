@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Build a new 0928 report from audited single-seed residual-oracle results."""
 
+# HTML reporting was retired by the 2026-10-20 documentation reorganization.
+if __name__ == '__main__':
+    raise SystemExit('이 HTML 발행 명령은 폐기되었습니다. 결과를 검토한 뒤 scripts/common/lablog.py의 write_record로 한국어 LaTeX·PDF와 log.md를 갱신하세요. 기존 결과 계산 함수는 이력 참조용입니다.')
+
+
 # Repository layout bootstrap: works in the workspace and portable source snapshots.
 from pathlib import Path as _LayoutPath
 import sys as _layout_sys
@@ -33,9 +38,9 @@ ROOT=repo_root(__file__)
 RESULTS=ROOT/'tabpfn/results/v4/exp59/20260928_exp59_residual_oracle_s43'
 REPORT_ID='scorer_verifier_target_0928'
 REPORT=ROOT/'lablog/html_report'/f'{REPORT_ID}.html'
-OLD=ROOT/'lablog/html_report/scorer_verifier_target_0918.html'
+OLD=ROOT/'docs/lablog/reports/20260930.tex'
 INDEX=ROOT/'lablog/html_report/post_tabpfn.html'
-DOCS=ROOT/'docs/research/20260928'
+DOCS=ROOT/'docs/lablog/evidence/20260928'
 ARMS=['designed','matched_random','balanced_random']
 ARM_NAMES={'designed':'현재 residual 선택','matched_random':'클래스 비율 일치 무작위','balanced_random':'같은 크기 균형 무작위'}
 DATASETS={'cic2018':'CIC-IDS2018','toniot':'ToN-IoT'}

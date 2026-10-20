@@ -1,0 +1,104 @@
+고정된 환경의 분류 정확도를 넘어
+변화하는 네트워크에서의 적응성 평가
+
+
+
+사전학습 TabPFN 을 활용한
+소량 라벨 · 저비용 탐지 모델 갱신
+
+
+
+                       1
+TabPFN · 표 데이터 예측 규칙을 사전학습한 모델 (v3: arXiv, 2026)
+
+
+사전학습            합성 표 데이터의 8 조 개 이상 토큰으로 학습
+                일부 행의 정답을 맞히며 표 데이터의 예측 규칙 습득
+
+
+In-context      라벨된 사례 (context) 를 참고해 새 flow(query) 의 라벨 예측
+learning        추론 중 모델 가중치는 그대로 유지
+
+Fine-tuning     초기 IDS 를 context 와 query 로 나눠 query 의 정답 예측
+                예측 오류를 역전파해 모델 가중치를 IDS 에 맞게 조정
+
+
+ 초기 IDS 로 1 회 fine-tuning → 가중치 고정 → 신규 context 입력 / 누적 / 버퍼 교체
+ 기대 : 반복 재학습과 비슷한 탐지 품질을 더 적은 데이터 · 갱신 비용으로 달성
+
+
+                                                                  2
+v3 구조
+
+        ① 입력 변환 · Cell embedding
+        패킷 길이 · 지속시간 등의 값을 숫자 벡터로 변환
+        값이 비어 있는 위치도 함께 표시
+
+        ② 특징별 분포 파악 · Feature embedding
+        여러 flow 를 살펴 각 특징의 값 분포를 요약
+        Context 의 정상 · 공격 라벨도 함께 반영
+
+        ③ Flow 별 정보 통합 · Feature aggregation
+        한 flow 의 여러 특징을 하나의 표현으로 통합
+        이 표현을 이용해 flow 사이의 관계 비교
+
+
+                                               3
+v3 구조
+
+
+        ④ 사례 참조 · In-context learning
+        새 flow(query) 가 라벨된 기존 사례 (context) 를 참조
+        어떤 사례가 예측에 도움이 되는지 attention 으로 계산
+
+
+
+        ⑤ 확률 출력 · Many-class decoder
+        관련성이 큰 사례의 라벨에 더 큰 가중치 부여
+        참고한 라벨을 모아 정상 · 공격별 확률 계산
+
+
+
+
+                                                   4
+평가시나리오
+소규모 설정 · 단계별 신규 라벨 공급 수 · 같은 단계 안에서는 표본 수 내림차순
+
+CIC2018                                                 ToN
+단계    신규 공개 클래스             클래스별 수      누적 수             단계    신규 공개 클래스    클래스별 수    누적 수
+
+ 1    Benign                      750          1,000      1    Benign           750          1,000
+      Brute force                 125                          DoS              125
+      DoS                         125                          Scanning         125
+
+ 2    DDoS                        100          1,100      2    DDoS             100          1,200
+                                                               Injection        100
+ 3    Web attacks                 100          1,200
+                                                          3    Password         100          1,300
+ 4    Infiltration                100          1,300
+                                                          4    XSS              100          1,400
+ 5    Bot                         100          1,400
+                                                          5    Backdoor         100          1,600
+                                                               Ransomware       100
+                                                          6    MitM             100          1,700
+
+평가 : 별도 test 전체 · CIC2018 3,042,473 개 / ToN 2,271,723 개 · 버퍼 유지 시 1,000 개
+                                                                                                     5
+결과
+초기 IDS fine-tuning 미적용 사전 비교 · 초기 1,000 개 + 신규 클래스당 100 개 · seed 43
+
+
+
+
+전체 추론은 별도 : 누적 PFN 98.33 / 75.80 초 , XGB 1.26 / 1.40 초 (CIC2018 / ToN)
+
+                                                                         6
+1014 결과 · 누적 10 만 사례와 SOTA 비교
+최종 학습 100,000 개 · 동일 test · 초기 구축 제외 갱신 합계 · TabPFN 은 매 단계 누적 context 재구성
+● 자연 배분    ● 균등 배분 ( 공격 클래스 내 )
+
+
+
+
+                                                                            7
+

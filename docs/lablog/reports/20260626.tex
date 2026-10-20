@@ -1,0 +1,61 @@
+% !TeX root = 20260626.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-06-26}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-06-26: OOD expert 라우팅과 문턱 조정}
+\label{report:20260626_ood}
+\recordnote{영어로 남아 있던 원 기록을 한국어로 수합했다. 아래 수치는 당시 설정의 기록이며 최근 TabPFN 비교와 평가 조건이 다르다.}
+
+목적은 담당 클래스가 아닌 사례를 희소 클래스 expert가 과도하게 수락하는 현상을 줄이고,
+다수 클래스 성능을 유지하면서 라우팅 구조로 소수 클래스의 탐지를 개선할 수 있는지 확인하는 것이다.
+기준 실행은 \path{results/20260625_180906/}이며 원 기록의 옛 경로다.
+현재 등록부에서 확인되지 않는 초기 경로는 수합 과정에서 새 실행으로 복원하거나 검증 완료로 표시하지 않았다.
+
+첫째, expert 단위 문턱 탐색은 담당 클래스 수락과 정상·비담당 공격 수락을 함께 고려했다.
+하지만 WebBot\_Rare의 잘못된 수락을 해소하지 못하고 DoS\_DDoS와 Scan\_Brute를 지나치게 보수적으로 만들어
+dos-slowloris, dos-slowhttptest, ssh-patator 등의 재현율을 낮췄다.
+둘째, WebBot\_Rare를 bot/web-bf/web-xss의 WebBot\_Main과
+infiltration/heartbleed/web-sql의 Rare\_Micro로 분리했다.
+분할 자체는 일부 라우팅을 개선했지만 작은 expert의 과도한 확신과 비담당 사례 수락은 남았다.
+
+셋째, Rare\_Micro를 다른 expert가 모두 거절한 경우에만 호출하도록 바꿨다.
+web-bf와 web-xss에 대한 잘못된 개입은 줄었지만, web-sql을 먼저 수락하는 primary expert가 있으면
+Rare\_Micro에 도달할 수 없어 구제하지 못했다.
+ssh-patator는 WebBot\_Main이 잘못 수락하는 문제가 남았다.
+넷째, fallback margin gap을 0.5 또는 1.0으로 바꿨지만 전자는 기존 예측과 사실상 같았고,
+후자는 일부 희소 클래스 선택을 전체 거절로 바꾸는 수준으로 전체 F1을 개선하지 못했다.
+
+다섯째, validation의 정상·비담당 공격 오수락을 벌점으로 반영하는 hard-negative 문턱을 사용했다.
+담당 클래스의 수락 하한은 유지했다. 전체 Macro-F1은 0.7175에서 0.7341로 변했다.
+ssh-patator F1은 0.3749에서 0.5622로 개선됐지만 분리 직후 조건의 0.9841에는 못 미쳤다.
+web-sql은 primary expert가 모두 거절해야만 구제 가능한 구조적 제약이 남았다.
+
+\begin{longtable}{p{.50\linewidth}rr}
+\toprule 조건 & Macro-F1 & ssh-patator F1 \\\midrule\endhead
+분리 직후, fallback 제한 전 & 미기록 & 0.9841 \\
+Rare\_Micro를 fallback 전용으로 제한 & 0.7175 & 0.3749 \\
+fallback 전용 + hard-negative 문턱 & 0.7341 & 0.5622 \\\bottomrule
+\end{longtable}
+
+후속 개선 방향은 WebBot\_Main에 ssh-patator 같은 혼동 클래스의 음성 사례를 더 직접적으로 반영하고,
+Rare\_Micro가 충분한 근거가 있을 때 primary 예측을 교정할 수 있는 제한적 경로를 검토하는 것이다.
+문턱을 전체 expert에 일괄 적용하거나 fallback 선택 조건만 조정하는 것은 당시 병목을 충분히 해결하지 못했다.
+이 방향은 당시 제안이며 검증된 개선 성과로 간주하지 않는다.
+실행별 활성화 행렬, 클래스별 병목, 혼동행렬과 모든 실행 경로는 원 기록에 보존되어 있다.
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

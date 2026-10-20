@@ -1,0 +1,22 @@
+{
+  "version": "v7",
+  "experiment": "exp82",
+  "authorization": "2026-10-16 user requests checking and rerunning the proposed model, especially ToN on slide 7",
+  "purpose": "Separate reproducibility or implementation errors from the proposed model's internal label allocation and inactive expert policy",
+  "dataset": "toniot",
+  "seed": 43,
+  "seed_repetitions": 1,
+  "source": "EXP77 original no-IDS-FT proposed model, six cumulative stages, unchanged 1700 total labeled rows and five disjoint roles",
+  "conditions": [
+    "Restore original final proposed state and fully re-infer",
+    "Rebuild all six proposed stages from original pretrained weights and identical plans, then fully re-infer final state",
+    "Fresh standalone PFN using exactly the same 695 Global context rows, order, labels, preprocessing and model settings",
+    "Fresh standalone PFN using all 1700 released rows, matching the main no-FT PFN baseline"
+  ],
+  "evaluation": "Final model on every original test row; identical EXP81 seed43 mixed query order, batch 8192, predictions scattered to original row IDs",
+  "checks": ["regenerated plans equal original", "label mappings and context class coverage", "feature-disjoint internal roles", "train/test row-ID disjointness", "unchanged source hashes", "independent confusion matrix and F1", "expert calls and threshold support", "saved/rebuilt/control prediction agreement"],
+  "tuning": "None. Do not alter splits, thresholds, backbone, seed or hyperparameters to improve observed test scores",
+  "result_status": "Reproducibility and mechanism diagnostic, not an improved proposed model",
+  "html_publication": false,
+  "overleaf_publication": false
+}

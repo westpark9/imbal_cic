@@ -1,0 +1,1079 @@
+% !TeX root = 20260902.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-09-02}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-09-02 · 0902 종합 — 진단 결과 정리 (중요도순)}
+\label{report:20260902_0902}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+기간 0831–0902. 용어 통일: \textbf{global} =\allowbreak{} frozen TabPFN +\allowbreak{} C0(1M 컨텍스트) /\allowbreak{} \textbf{시스템} =\allowbreak{} global +\allowbreak{} 개입층(scorer \ensuremath{\rightarrow} expert \ensuremath{\rightarrow} verifier) /\allowbreak{} \textbf{격차} =\allowbreak{} full XGB 0.7548 대비 macro-F1 /\allowbreak{} \textbf{대역} =\allowbreak{} 동일 설정 반복 시 변동폭. 평가는 전부 동일 4,023,114행. 상세 근거: 0831.md §0–§3.
+
+
+\medskip\hrule\medskip
+\subsection{1. 격차 분해 — "지고 있다"의 절반은 정보예산이었다}
+XGB를 global과 같은 조건으로 제한하며 재측정 (E-0.5, CPU):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.38971\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19363\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19363\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22304\linewidth-2\tabcolsep\relax}}
+\toprule
+학습 행 & macro & brute & ssh recall \\ \midrule
+\endfirsthead
+학습 행 & macro & brute & ssh recall \\ \midrule
+\endhead
+{}XGB full 12.07M & 0.7548 & 0.9159 & 0.9995 \\
+{}\textbf{XGB c0 1.00M} (global과 동일 행) & \textbf{0.7283} & \textbf{0.7246} & \textbf{0.0} \\
+{}global (수리 전) & 0.6698 & 0.7246 & 0.0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 격차 −0.055 =\allowbreak{} \textbf{정보예산 −0.0265 +\allowbreak{} 실질 −0.0305}.
+
+
+\par\noindent \textbullet\enspace 같은 행이면 XGB의 brute도 \textbf{0.7246으로 우리와 동일} — brute 결손의 method 몫은 0.
+
+
+\subsection{2. 원인 A: 컨텍스트 구멍  \ensuremath{\rightarrow}  exp27로 수리 완료}
+pool 분할이 클래스내 시간순이라 C0에 \textbf{ssh·hulk·sql 0행}(hulk test 20,016행). 증거: random bank가 brute recall 0.9998로 그냥 고침 /\allowbreak{} SSH 50행 주입만으로 XGB-c0가 0.7283 \ensuremath{\rightarrow} 0.7565 (50행에서 포화; hulk·sql은 주입해도 회복 안 됨 — SSH 특유).
+
+\textbf{exp27(scenario 층화 분할) 결과}: global 0.6698  \ensuremath{\rightarrow}  \textbf{0.7277}(A100) /\allowbreak{} 0.7207±0.0006(로컬 ×3). \textbf{brute 0.9159 =\allowbreak{} XGB와 동일}, dos 0.524 \ensuremath{\rightarrow} 0.755+\allowbreak{}. \textbf{global \ensuremath{\approx} xgb\_\allowbreak{}c0 — 같은 정보예산이면 frozen TabPFN이 XGB와 동률}. 부작용: ddos 0.905 \ensuremath{\rightarrow} 0.83\textasciitilde{}0.90(층화가 C0의 ddos 슬롯 잠식).
+
+\subsubsection{2a. (0902 저녁 추가) "층화가 C0의 ddos 슬롯을 잠식" 전제 검증  \ensuremath{\rightarrow}  기각}
+\texttt{2c\_\allowbreak{}\allowbreak{}conte\allowbreak{}xt\_\allowbreak{}\allowbreak{}prior\allowbreak{}s.\allowbreak{}csv} 비교: C0 ddos 비중 chrono(exp25 \texttt{20260901\allowbreak{}\_\allowbreak{}\allowbreak{}141326}) 0.065838 =\allowbreak{} 층화(exp29 r3 \texttt{20260902\allowbreak{}\_\allowbreak{}\allowbreak{}021534}) 0.065838 — \textbf{행 수 동일}. 그런데 global ddos recall은 0.8205  \ensuremath{\rightarrow}  0.7233 (F1 0.9014  \ensuremath{\rightarrow}  0.8394). 스카우트 분석(context\_\allowbreak{}rows.npz × row\_\allowbreak{}meta): ddos 내부 구성만 이동 — hoic 36,653  \ensuremath{\rightarrow}  51,184(증가), loic\_\allowbreak{}http 28,854  \ensuremath{\rightarrow}  14,468; 하락은 전부 hoic recall(0.78  \ensuremath{\rightarrow}  0.66, miss는 benign으로)이고 loic\_\allowbreak{}http는 0.962 불변. XGB-c0는 chrono C0로 hoic recall 0.99997 (\texttt{scripts/\allowbreak{}\allowbreak{}results/\allowbreak{}\allowbreak{}budget\_\allowbreak{}\allowbreak{}d\allowbreak{}iag\_\allowbreak{}\allowbreak{}hole\allowbreak{}s/\allowbreak{}\allowbreak{}scenar\allowbreak{}io\_\allowbreak{}\allowbreak{}recal\allowbreak{}l.\allowbreak{}csv})  \ensuremath{\rightarrow}  정보는 C0에 있고 87\% benign 컨텍스트에서 TabPFN이 못 쓰는 것. \textbf{따라서 "다음 4(ddos 슬롯 보전)"은 개수 knob으로는 기전을 건드리지 못함.} 정직한 원노브 재정의 =\allowbreak{} "C0 benign:ddos 비율이 hoic recall을 움직이는가"(탐색). C0를 바꾸면 xgb\_\allowbreak{}c0 0.7283(§1)도 새 C0로 재계산 필요(\texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}bud\allowbreak{}get\_\allowbreak{}\allowbreak{}diag\allowbreak{}.\allowbreak{}py}, CPU \textasciitilde{}9분).
+
+\subsection{3. 재현성 — 옛 파이프라인은 판정 불가였고, 컨텍스트 수리가 절반을 고쳤다}
+동일 설정·seed 반복:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17212\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24423\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25865\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19135\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13365\linewidth-2\tabcolsep\relax}}
+\toprule
+파이프라인 & global 대역 & 시스템 delta & K & harmful \\ \midrule
+\endfirsthead
+파이프라인 & global 대역 & 시스템 delta & K & harmful \\ \midrule
+\endhead
+{}수리 전 (exp25 ×3) & 0.6663\textasciitilde{}0.6698 (\textbf{0.027} 포함 이전 run) & \textbf{+\allowbreak{}0.028 /\allowbreak{} −0.015 /\allowbreak{} +\allowbreak{}0.013 (부호 뒤집힘)} & 5 \ensuremath{\leftrightarrow} 6 & 4\textasciitilde{}1,132 \\
+{}\textbf{수리 후 (exp29 ×3)} & 0.7201\textasciitilde{}0.7212 (\textbf{0.0011, 25배↓}) & 0 /\allowbreak{} +\allowbreak{}0.007 /\allowbreak{} +\allowbreak{}0.018 & 2 \ensuremath{\leftrightarrow} 5 & 0\textasciitilde{}214 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace det-lite(bf16+\allowbreak{}결정성 커널) \textbf{실패} — bitwise 불일치, 1회는 게이트 셧다운.
+
+
+\par\noindent \textbullet\enspace \textbf{fp32 A/\allowbreak{}B 판정 (0902 완료): TabPFN 층은 비트 단위 재현 성립} — gain\_\allowbreak{}matrix\_\allowbreak{}sha256 완전 일치 (\texttt{e714009d\allowbreak{}…}, run 20260901\_\allowbreak{}191613 vs 20260902\_\allowbreak{}055231, 코드·args 동일·dense\_\allowbreak{}eval만 차이), global macro 0.678456=\allowbreak{}0.678456, XGB full 0.754831=\allowbreak{}0.754831 (6자리). 그러나 \textbf{개입층 학습 (scorer/\allowbreak{}verifier XGBoost)은 입력이 비트 동일한데도 산출물이 다름}: verifier 진단 e1 false\_\allowbreak{}accept 1,767 vs 56,358, τ\_\allowbreak{}pre 0.90967 vs 0.93864, τ\_\allowbreak{}post 1.0 vs 0.0  \ensuremath{\rightarrow}  \textbf{시스템 delta +\allowbreak{}0.0073 vs −0.0020, 부호 뒤집힘}. xgboost 3.2.0 자체는 동일 입력·스레드에서 비트 결정적 +\allowbreak{} 1-ULP 섭동 흡수(로컬 검증) — 후보: 실행 간 스레드/\allowbreak{}OMP 환경 차 또는 개입층 특징 (affinity/\allowbreak{}h\_\allowbreak{}post)의 비트 차. 비용: 4090 불가(peak 24.36GB), A100 7.0h(dense 없이)\textasciitilde{}11.7h/\allowbreak{}run.
+
+
+\par\noindent \textbullet\enspace 결론: \textbf{global의 잡음은 컨텍스트 구멍이 만든 것}(수리로 25배 축소). 남은 불안정은 전부 \textbf{개입층}: K 선택 2 \ensuremath{\leftrightarrow} 5, \textbf{게이트 셧다운(τ\_\allowbreak{}pre=\allowbreak{}\ensuremath{\infty}, 보정 제약 불충족) 7회 중 4회}, delta 0\textasciitilde{}+\allowbreak{}0.018.
+
+
+\subsection{4. 원인 B·C: 개입층 — 문턱은 고쳤고, 예측 실패가 남았다}
+\par\noindent \textbullet\enspace 병목은 scorer가 아니라 \textbf{verifier}: τ\_\allowbreak{}pre 전면 개방해도 채택 +\allowbreak{}1.7\% /\allowbreak{} verifier \ensuremath{\leftrightarrow} 실제 이득 상관 \ensuremath{\leq}0.15, 출력 클래스-상수.
+
+
+\par\noindent \textbullet\enspace 문턱 단위가 클래스 필터: ddos·benign은 오답 중 자격 0\% (완벽한 expert로도 통과 불가).
+
+
+\par\noindent \textbullet\enspace \textbf{exp26(단위 수정 G/\allowbreak{}w\_\allowbreak{}bal)}: ddos 채택 \textbf{0 \ensuremath{\rightarrow} 6,602} [확인], benign 289/\allowbreak{}204만 [확인], harmful 56 [확인], 단 \textbf{inf 42행만} — verifier 예측 실패는 단위와 독립인 잔존 병목.
+
+
+\subsection{5. expert bank 가치 — 기각}
+\par\noindent \textbullet\enspace \textbf{Gate 1 (등메모리, exp28)}: residual 0.8300 < random 0.8453 < \textbf{proximity 0.8857}. residual mining이 무작위 선택에 짐.
+
+
+\par\noindent \textbullet\enspace diversity selector는 expert 5개 중 4개에서 비활성(regime \ensuremath{\leq} 블록 예산).
+
+
+\par\noindent \textbullet\enspace \textbf{K=\allowbreak{}1 (exp29 기반)}: delta +\allowbreak{}0.0018(대역 안), \textbf{oracle 0.8837 \ensuremath{\geq} K=\allowbreak{}5 oracle 0.84} — K 다중화 근거 없음.
+
+
+\par\noindent \textbullet\enspace λ 스윕(0.1/\allowbreak{}1.0/\allowbreak{}21.145): \textbf{3회 전부 게이트 셧다운으로 판독 불가} — wasted-call 축은 λ로 못 고침, 보정 제약의 실현 가능성 문제.
+
+
+\subsection{6. 현재 위치와 남은 격차}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.42982\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.27193\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29825\linewidth-2\tabcolsep\relax}}
+\toprule
+ & macro & vs XGB \\ \midrule
+\endfirsthead
+ & macro & vs XGB \\ \midrule
+\endhead
+{}XGB full & 0.7548 & — \\
+{}\textbf{시스템 최고 (exp29 r3)} & \textbf{0.7395} & −0.015 \\
+{}global (수리 후, ×3 중앙) & 0.7207 & −0.034 \\
+{}dense oracle (exp29) & 0.81\textasciitilde{}0.88 & +\allowbreak{}0.06\textasciitilde{}+\allowbreak{}0.13 \\
+\bottomrule
+\end{longtable}
+\endgroup
+남은 격차의 구성: \textbf{ddos}(0.83\textasciitilde{}0.90 vs 0.992 — 층화 부작용 +\allowbreak{} 개입은 exp26으로 열림)와 \textbf{infiltration}(0.39 vs 0.43 — verifier 예측 실패; oracle 0.97로 회수분 존재). 나머지 클래스는 동률 또는 우위.
+
+\subsection{7. 서사 (데이터가 가리키는 결론)}
+\par\noindent \textbullet\enspace \textbf{"컨텍스트 구성이 아키텍처보다 중요하다"} — 층화 C0만으로 global이 matched-budget XGB와 동률, 재현성 25배 개선. (문헌 동조: Data Presentation Over Architecture, 2026 — docs/\allowbreak{}tabpfn\_\allowbreak{}imbalance\_\allowbreak{}papers.xlsx \#4)
+
+
+\par\noindent \textbullet\enspace \textbf{residual expert bank 우위 주장은 폐기} — Gate 1 기각, K=\allowbreak{}1 동등, selector 비활성.
+
+
+\par\noindent \textbullet\enspace 개입층의 남은 가치는 \textbf{"드물고 정확한 조건부 개입"}(ddos +\allowbreak{}0.015, dos 회복)이나 \textbf{안정화가 선행 조건}(셧다운 4/\allowbreak{}7, delta 대역 0.018).
+
+
+\par\noindent \textbullet\enspace IID 승부의 잔여 목표는 ddos·inf 두 클래스, 합계 \textasciitilde{}+\allowbreak{}0.02 여지  \ensuremath{\rightarrow}  0.755±는 산술적으로 사정권.
+
+
+\subsection{다음 (우선순위)}
+\par\noindent \textbullet\enspace \textasciitilde{}\textasciitilde{}fp32 A/\allowbreak{}B 판정\textasciitilde{}\textasciitilde{} 완료(§3, TabPFN 층 성립·개입층 국소화). 후속: 원인 분리 — 다음 run에서 h\_\allowbreak{}post/\allowbreak{}affinity 특징 해시 덤프 +\allowbreak{} scorer/\allowbreak{}verifier nthread 고정 (one knob).
+
+
+\par\noindent \textbullet\enspace 개입층 안정화: 게이트 셧다운 원인(τ\_\allowbreak{}pre=\allowbreak{}\ensuremath{\infty}) — D\_\allowbreak{}cal 제약 실현 가능성 검사 +\allowbreak{} 폴백 규칙.
+
+
+\par\noindent \textbullet\enspace inf 회수: verifier 특징(h\_\allowbreak{}post)에 regime·서명 정보 보강 or exp26b(sign).
+
+
+\par\noindent \textbullet\enspace \textasciitilde{}\textasciitilde{}ddos: 층화 시 C0 클래스 예산 재배분(ddos 슬롯 보전)\textasciitilde{}\textasciitilde{}  \ensuremath{\rightarrow}  §2a에서 전제 기각. 대체: C0 benign:ddos 비율 탐색(hoic recall 표적) — one knob, 결과 해석은 탐색 등급.
+
+
+\par\noindent \textbullet\enspace 논문 골격: §7 서사 1·3을 기여로, IID 표 +\allowbreak{} 개입 안전성 +\allowbreak{} 재현성 개선을 결과 축으로.
+
+
+
+\medskip\hrule\medskip
+\subsection{8. exp30 사전 등록 — C0 benign 비율 원노브 (0902 저녁)}
+\textbf{스크립트} \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp30\_\allowbreak{}\allowbreak{}c0s\allowbreak{}hare.\allowbreak{}py} (exp29 사본 +\allowbreak{} \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}ben\allowbreak{}ign-\allowbreak{}shar\allowbreak{}e}, 0g/\allowbreak{}6g 감사표, git\_\allowbreak{}dirty). \textbf{근거} §2a +\allowbreak{} r3 진단: ddos 오답 73,287행 전부 hoic \ensuremath{\rightarrow} benign, 놓친 행의 global p\_\allowbreak{}benign 중앙값 0.956 (정답 benign 0.98과 미구분), anchor(benign 2k:ddos 2k) 가진 expert는 제안만 되면 70\textasciitilde{}96\% 채택·정밀도 0.99+\allowbreak{}. scorer/\allowbreak{}verifier는 route 창(ddos 잔차 0.02)에서 학습되므로 test 실패를 배울 수 없음  \ensuremath{\rightarrow}  학습 성분을 우회하는 유일한 축이 컨텍스트 구성. 오답 73k 중 53\%(38,695)는 제안조차 없음.
+
+\textbf{탐색 레인} (4090, \textasciitilde{}30분/\allowbreak{}run, 직렬): C0 250k, \texttt{-\allowbreak{}-\allowbreak{}feasib\allowbreak{}ility-\allowbreak{}ba\allowbreak{}nks none\allowbreak{}}, dense off, \texttt{-\allowbreak{}-\allowbreak{}skip-\allowbreak{}x\allowbreak{}gboost}. S \ensuremath{\in} \{자연(0.8707), 0.75, 0.60\}. 각 run 뒤 \texttt{race\_\allowbreak{}\allowbreak{}bud\allowbreak{}get\_\allowbreak{}\allowbreak{}diag\allowbreak{}.\allowbreak{}py -\allowbreak{}-\allowbreak{}bu\allowbreak{}dgets c0\allowbreak{}}로 xgb\_\allowbreak{}c0 재계산(CPU). \textbf{판독} (global 열 기준, 같은 run): ① 6g hoic recall (r3 0.6557) ② benign recall 소수점 4자리(r3 0.9981, 0.001=\allowbreak{}3,500행) ③ inf precision(r3 0.689)·web precision(r3 0.131) ④ ddos F1·macro. \textbf{성공} hoic recall \ensuremath{\geq} 0.90이면서 benign recall 하락 \ensuremath{\leq} 0.001, inf precision \ensuremath{\geq} 0.6, web precision \ensuremath{\geq} 0.10. \textbf{기각} hoic가 열리지 않거나(S=\allowbreak{}0.60에서도 < 0.80), benign 하락이 0.002 초과. \textbf{규칙} 250k 레인은 방향 판정용 — 숫자 인용은 1M 확인 run. 250k 자연 비율 run이 레인 기준선.
+
+\subsubsection{8a. 레인 기준선 결과 (250k 자연 비율, run \texttt{20260902\allowbreak{}\_\allowbreak{}\allowbreak{}225616}, 21분, peak 6.39 GB)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29310\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34483\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36207\linewidth-2\tabcolsep\relax}}
+\toprule
+ & 1M r3 global & \textbf{250k 자연} \\ \midrule
+\endfirsthead
+ & 1M r3 global & \textbf{250k 자연} \\ \midrule
+\endhead
+{}hoic recall & 0.6557 (71k \ensuremath{\rightarrow} benign) & \textbf{0.8364} (33,769 \ensuremath{\rightarrow} benign) \\
+{}benign recall & 0.9981 & 0.9982 \\
+{}inf prec /\allowbreak{} web prec & 0.689 /\allowbreak{} 0.102 & 0.705 /\allowbreak{} 0.097 \\
+{}ftp\_\allowbreak{}bruteforce recall & 1.0 & \textbf{0.0} (77,344행 전부 dos) \\
+{}slowhttptest recall & 0.0 (전부 brute) & 1.0 \\
+{}macro (global) & 0.7212 & 0.6515 \\
+\bottomrule
+\end{longtable}
+\endgroup
+두 가지 뜻밖의 결과.
+
+\par\noindent \textbullet\enspace \textbf{benign 비율이 같은데(0.8707) 컨텍스트가 4배 작으면 hoic가 열린다} — C0 hoic 행 51,184  \ensuremath{\rightarrow}  12,833인데 recall은 0.66  \ensuremath{\rightarrow}  0.84. "비율"이 아니라 \textbf{benign 절대 질량}이 hoic를 누른다는 뜻(retrieval attention에서 benign 이웃 수가 포화)일 수 있음. 500k 자연 run을 병행 발사해 크기 축 단조성 확인 중(§12n 병행 주의).
+
+
+\par\noindent \textbullet\enspace \textbf{ftp \ensuremath{\leftrightarrow} slowhttptest 동일 벡터 쌍이 컨텍스트 크기에 따라 반대로 뒤집힘.} C0 내 ftp:slowhttptest 비율은 양쪽 모두 3.7:1로 같은데(19,214:5,224 vs 4,829:1,300) 1M은 전부 brute, 250k는 전부 dos. 개수 다수결이 아닌 무언가(순서·캐시)가 결정  \ensuremath{\rightarrow}  한 중복 벡터가 macro ±0.13을 좌우. 250k 레인의 macro는 인용 불가, hoic·benign·inf·web 열만 판독. 레인 판독 기준(§8)은 hoic 기준선을 0.8364로 갱신. gate는 셧다운(τ\_\allowbreak{}pre=\allowbreak{}\ensuremath{\infty})이라 시스템 열 =\allowbreak{} global 열.
+
+
+\subsubsection{8b. 레인 S=\allowbreak{}0.75 결과 (run \texttt{20260902\allowbreak{}\_\allowbreak{}\allowbreak{}233554}, 250k, 39분 — 500k와 병행이라 느림)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25151\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20331\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32982\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21536\linewidth-2\tabcolsep\relax}}
+\toprule
+ & 250k 자연 & \textbf{250k S=\allowbreak{}0.75} & 1M r3 \\ \midrule
+\endfirsthead
+ & 250k 자연 & \textbf{250k S=\allowbreak{}0.75} & 1M r3 \\ \midrule
+\endhead
+{}hoic recall & 0.8364 & \textbf{0.8620} (28,485 \ensuremath{\rightarrow} benign) & 0.6557 \\
+{}benign recall & 0.9982 & \textbf{0.9988} & 0.9981 \\
+{}inf prec /\allowbreak{} web prec & 0.705 /\allowbreak{} 0.097 & \textbf{0.813 /\allowbreak{} 0.111} & 0.689 /\allowbreak{} 0.102 \\
+{}ddos F1 /\allowbreak{} dos F1 & 0.927 /\allowbreak{} 0.606 & 0.939 /\allowbreak{} 0.773 & 0.839 /\allowbreak{} 0.755 \\
+{}macro global /\allowbreak{} system & 0.6515 /\allowbreak{} — & \textbf{0.7430 /\allowbreak{} 0.7470} & 0.7212 /\allowbreak{} 0.7395 \\
+\bottomrule
+\end{longtable}
+\endgroup
+C0 실현 구성: benign 0.750, ddos 0.127(hoic 24,708), brute 0.055, dos 0.029, inf 0.018. ftp \ensuremath{\leftrightarrow} slowhttptest는 이 run에서 brute 방향(1M r3와 같음)이라 macro가 r3와 비교 가능. \textbf{benign 비중을 0.87 \ensuremath{\rightarrow} 0.75로 줄였는데 benign recall이 오히려 올랐고 inf·web precision도 올랐다} — benign 대가는 0. hoic는 +\allowbreak{}0.026만 열림(절대 질량 가설과 일치: 250k에서는 이미 benign 질량이 작아 여지가 적음). gate 열림(τ\_\allowbreak{}pre 0.996, τ\_\allowbreak{}post 0): 채택 172k, inf helpful 646, benign harmful 190.
+
+\subsubsection{8c. [주의] matched-budget 비교의 정정 (0902 §1–§2)}
+지금까지의 xgb\_\allowbreak{}c0 0.7283은 전부 \textbf{exp24b chrono C0}(SSH 0행) 위의 값이다 (\texttt{scripts/\allowbreak{}\allowbreak{}results/\allowbreak{}\allowbreak{}budget\_\allowbreak{}\allowbreak{}d\allowbreak{}iag*/\allowbreak{}\allowbreak{}arg\allowbreak{}s.\allowbreak{}json} run\_\allowbreak{}dir 모두 20260827\_\allowbreak{}174858). SSH 50행 주입 곡선(§2)이 이미 0.7565를 보였고, 오늘 \textbf{층화 250k C0로 XGB-c0 =\allowbreak{} 0.7561}(budget\_\allowbreak{}diag\_\allowbreak{}exp30\_\allowbreak{}natural; hoic recall 0.993, brute 0.916, ftp 1.0/\allowbreak{}ssh 0.999)이다. 즉 §2의 "global 0.7277 \ensuremath{\approx} xgb\_\allowbreak{}c0 0.7283" 은 층화 global을 chrono xgb\_\allowbreak{}c0와 비교한 것이라 성립하지 않는다. 층화 C0라면 XGB는 250k로도 full XGB(0.7548)와 같고, \textbf{정보예산 몫은 0에 가깝다 — 격차는 전부 "같은 행을 TabPFN이 못 쓰는 것"}(hoic 0.66 vs 0.99). \textbf{r3 1M 층화 C0(같은 100만 행) 위 XGB-c0 =\allowbreak{} 0.7541} (budget\_\allowbreak{}diag\_\allowbreak{}exp29r3\_\allowbreak{}c0; hoic recall 0.988, ddos 0.995, brute 0.916, inf 0.426, web 0.168) — full XGB 0.7548과 동일. 즉 \textbf{같은 행에서 TabPFN global 0.7212 vs XGB 0.7541, 격차 −0.033은 전부 method}이고 §1의 "정보예산 −0.0265" 항은 삭제한다 (그 항은 chrono C0의 SSH 구멍이었다). 서사 갱신: "컨텍스트 구성"은 XGB에겐 무관하고 TabPFN에겐 결정적(benign 질량·비율) — 이것이 기여 1의 정확한 문장.
+
+\subsubsection{8d. 야간 큐 (0903 새벽, 컨텍스트 축만; 사용자 지시 "context를 고쳐서 퍼포먼스가 오를지 중점")}
+\par\noindent \textbullet\enspace \textbf{체인 2} (단독 순차): 500k S=\allowbreak{}0.75  \ensuremath{\rightarrow}  \textbf{1M S=\allowbreak{}0.75}  \ensuremath{\rightarrow}  \textbf{1M S=\allowbreak{}0.60} (기록급 확인; 1M은 exp29 r3와 원노브 비교).
+
+
+\par\noindent \textbullet\enspace \textbf{체인 3} (250k/\allowbreak{}100k, 2개 병행 — §12n 교란 감수, 효과 크기 \ensuremath{\geq}0.02만 판독): S=\allowbreak{}0.50 /\allowbreak{} 0.40 (benign 대가 시작점) · 100k 자연 /\allowbreak{} 100k S=\allowbreak{}0.75 (크기 축 하한) · S=\allowbreak{}0.75 seed 43/\allowbreak{}44 (복권 여부) · \textbf{exp31} \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp31\_\allowbreak{}\allowbreak{}c0\allowbreak{}alloc.\allowbreak{}py\allowbreak{}}: \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}att\allowbreak{}ack-\allowbreak{}allo\allowbreak{}c balanc\allowbreak{}ed} (benign 외 예산 클래스 균등  \ensuremath{\rightarrow}  inf·web 컨텍스트 확대) /\allowbreak{} \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}ded\allowbreak{}up exact\allowbreak{}} ((벡터,라벨) 중복 제거 풀에서 추출; S=\allowbreak{}0.75와 자연 두 점).
+
+
+\par\noindent \textbullet\enspace 모든 run 뒤 \texttt{race\_\allowbreak{}\allowbreak{}bud\allowbreak{}get\_\allowbreak{}\allowbreak{}diag\allowbreak{}.\allowbreak{}py -\allowbreak{}-\allowbreak{}bu\allowbreak{}dgets c0\allowbreak{}}로 같은 C0의 XGB-c0 재계산 (XGB가 구성에 무관한지 대조).
+
+
+\par\noindent \textbullet\enspace 판독: \texttt{scratchp\allowbreak{}ad/\allowbreak{}\allowbreak{}exp30\allowbreak{}\_\allowbreak{}\allowbreak{}readout\allowbreak{}.\allowbreak{}py}. 500k 자연은 250k S=\allowbreak{}0.75와 병행 실행됨(교란 주의).
+
+
+\subsubsection{8e. 500k 자연 비율 결과 (run \texttt{20260902\allowbreak{}\_\allowbreak{}\allowbreak{}235656}, 59분 — 0.75와 병행, peak 10.5 GB)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18011\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14247\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20699\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15323\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15323\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16398\linewidth-2\tabcolsep\relax}}
+\toprule
+크기(자연 비율, seed 42) & hoic recall & hoic \ensuremath{\rightarrow} benign & benign recall & inf/\allowbreak{}web prec & macro g /\allowbreak{} sys \\ \midrule
+\endfirsthead
+크기(자연 비율, seed 42) & hoic recall & hoic \ensuremath{\rightarrow} benign & benign recall & inf/\allowbreak{}web prec & macro g /\allowbreak{} sys \\ \midrule
+\endhead
+{}250k & 0.8364 & 33,769 & 0.9982 & 0.705 /\allowbreak{} 0.097 & 0.6515(ftp 뒤집힘) \\
+{}\textbf{500k} & \textbf{0.5798} & 86,761 & 0.9987 & 0.811 /\allowbreak{} 0.100 & 0.7191 /\allowbreak{} 0.7298 \\
+{}1M (r3) & 0.6557 & 71,096 & 0.9981 & 0.689 /\allowbreak{} 0.102 & 0.7212 /\allowbreak{} 0.7395 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{크기 축은 단조가 아니다} (0.84  \ensuremath{\rightarrow}  0.58  \ensuremath{\rightarrow}  0.66). "benign 절대 질량" 가설(§8a)은 이 세 점으로는 지지되지 않고, hoic recall이 C0 추첨에 따라 0.58\textasciitilde{}0.84를 오간다는 쪽이 더 그럴듯하다 — 0821 §14의 "global 추첨-복권"이 hoic에서 재현. r3의 재현 대역 0.0011은 \emph{같은 추첨}의 반복이었지 추첨 간 대역이 아니다. 판정은 체인 3의 seed 43/\allowbreak{}44 (250k S=\allowbreak{}0.75)로: S=\allowbreak{}0.75의 0.862/\allowbreak{}0.743이 추첨 밖에서 유지되는가. C0 내 ftp:slowhttptest 3.7:1(9,621:2,620)에서 brute 방향 — 1M과 같음; 250k만 dos 방향이었다.
+
+\subsubsection{8f. 250k S=\allowbreak{}0.60 결과 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}001440}) +\allowbreak{} \textbf{세 라벨 동일 벡터 발견}}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.36638\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18534\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19397\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25431\linewidth-2\tabcolsep\relax}}
+\toprule
+250k, seed 42 & 자연 & S=\allowbreak{}0.75 & \textbf{S=\allowbreak{}0.60} \\ \midrule
+\endfirsthead
+250k, seed 42 & 자연 & S=\allowbreak{}0.75 & \textbf{S=\allowbreak{}0.60} \\ \midrule
+\endhead
+{}hoic recall & 0.836 & 0.862 & 0.764 \\
+{}benign recall & 0.9982 & 0.9988 & 0.9987 \\
+{}inf precision & 0.705 & 0.813 & \textbf{0.092} \\
+{}ftp+\allowbreak{}slowhttptest 98,454행의 판정 & 전부 dos & 전부 brute & \textbf{전부 infiltration} \\
+\bottomrule
+\end{longtable}
+\endgroup
+S=\allowbreak{}0.60의 inf precision 붕괴는 benign 누수가 아니다(benign \ensuremath{\rightarrow} inf 2,156행, 다른 run과 같음). \textbf{port-21 동일 벡터 98,454행(ftp 77,344 +\allowbreak{} slowhttptest 21,110)이 통째로 inf로 갔다.} 즉 이 벡터는 훈련 데이터에 brute·dos·inf 세 라벨로 존재하고, C0 추첨에 따라 세 클래스 중 하나로 전부 쏠린다(250k 자연 dos /\allowbreak{} S=\allowbreak{}0.75·500k·1M brute /\allowbreak{} S=\allowbreak{}0.60 inf). 개수 다수결이 아님(C0 내 ftp:slowhttptest 3.7:1 고정). 영향: brute F1 0.92 \ensuremath{\leftrightarrow} 0.49, dos F1, inf precision 0.81 \ensuremath{\leftrightarrow} 0.09, macro ±0.13. XGB는 항상 brute. \textbf{레인 macro 인용 불가의 원인이자, 논문 데이터-품질 절의 핵심 사례(EXP18 dedup의 후속).} hoic 자체는 S=\allowbreak{}0.60에서 0.764로 S=\allowbreak{}0.75(0.862)보다 낮음 — 비율 축도 단조가 아니거나 추첨 잡음. seed run(체인 3·4)이 판정.
+
+\textbf{대응 knob (exp31 C, 00:20 추가)}: \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}con\allowbreak{}flict ma\allowbreak{}jority} — 풀에서 같은 벡터에 여러 라벨이 붙은 행은 다수 라벨만 남김. 체인 5: 250k S=\allowbreak{}0.75 /\allowbreak{} 250k 자연 (병행)  \ensuremath{\rightarrow}  1M S=\allowbreak{}0.75 (단독). 판독: ftp \ensuremath{\rightarrow} brute 고정 여부, inf precision, hoic.
+
+\subsubsection{8g. 500k S=\allowbreak{}0.75 결과 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}005042}, 36분 단독, peak 10.5 GB) — \textbf{S=\allowbreak{}0.75가 크기 축에서도 안정}}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22222\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15278\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15278\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15278\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15972\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15972\linewidth-2\tabcolsep\relax}}
+\toprule
+seed 42 & 250k 자연 & 500k 자연 & 1M 자연(r3) & \textbf{250k S=\allowbreak{}0.75} & \textbf{500k S=\allowbreak{}0.75} \\ \midrule
+\endfirsthead
+seed 42 & 250k 자연 & 500k 자연 & 1M 자연(r3) & \textbf{250k S=\allowbreak{}0.75} & \textbf{500k S=\allowbreak{}0.75} \\ \midrule
+\endhead
+{}hoic recall & 0.836 & 0.580 & 0.656 & 0.862 & \textbf{0.894} \\
+{}ddos F1 & 0.927 & 0.798 & 0.839 & 0.939 & \textbf{0.957} \\
+{}benign recall /\allowbreak{} prec & .9982/\allowbreak{}.982 & .9987/\allowbreak{}.967 & .9981/\allowbreak{}.971 & .9988/\allowbreak{}.983 & .9986/\allowbreak{}.986 \\
+{}inf prec /\allowbreak{} web prec & .705/\allowbreak{}.097 & .811/\allowbreak{}.100 & .689/\allowbreak{}.102 & .813/\allowbreak{}.111 & .803/\allowbreak{}.104 \\
+{}macro global & (뒤집힘) & 0.7191 & 0.7212 & 0.7430 & \textbf{0.7449} \\
+{}macro system & — & 0.7298 & 0.7395 & 0.7470 & 0.7459 \\
+\bottomrule
+\end{longtable}
+\endgroup
+자연 비율은 크기에 따라 hoic가 0.58\textasciitilde{}0.84를 오가는데 S=\allowbreak{}0.75는 250k·500k에서 0.86·0.89로 나란하다. ftp \ensuremath{\rightarrow} brute 고정. 같은 1M 행 XGB-c0 0.7541까지 남은 격차 −0.009: ddos 0.957 vs 0.995(hoic 21,880행 잔여), inf 0.402 vs 0.426, benign prec 0.986 vs 0.992 — 전부 hoic 잔여의 파생. 1M S=\allowbreak{}0.75(기록급, 단독) 진행 중  \ensuremath{\rightarrow}  r3와 원노브 비교.
+
+\subsubsection{8h. \textbf{기록급 1M S=\allowbreak{}0.75} (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}015043}, 60분 단독, peak 19.47 GB, seed 42) — r3와 원노브 비교}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16349\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21905\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22698\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17937\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21111\linewidth-2\tabcolsep\relax}}
+\toprule
+class F1 & r3 1M 자연 global & \textbf{1M S=\allowbreak{}0.75 global} & Δ & XGB-c0 같은 1M 행 \\ \midrule
+\endfirsthead
+class F1 & r3 1M 자연 global & \textbf{1M S=\allowbreak{}0.75 global} & Δ & XGB-c0 같은 1M 행 \\ \midrule
+\endhead
+{}benign & 0.9845 & \textbf{0.9907} & +\allowbreak{}0.006 & 0.9945 \\
+{}bot & 0.9984 & 0.9971 & −0.001(대역) & 0.9977 \\
+{}brute & 0.9159 & 0.9159 & 0 & 0.9159 \\
+{}ddos & 0.8394 & \textbf{0.9345} & +\allowbreak{}0.095 & 0.9950 \\
+{}dos & 0.7552 & \textbf{0.7813} & +\allowbreak{}0.026 & 0.7819 \\
+{}inf & 0.3880 & \textbf{0.4115} & +\allowbreak{}0.024 & 0.4256 \\
+{}web & 0.1671 & 0.1702 & +\allowbreak{}0.003 & 0.1680 \\
+{}\textbf{macro} & 0.7212 & \textbf{0.7430} & \textbf{+\allowbreak{}0.0218} & 0.7541 \\
+\bottomrule
+\end{longtable}
+\endgroup
+hoic recall 0.656  \ensuremath{\rightarrow}  0.843(잔여 32,396행), benign recall 0.9985(r3 0.9981), inf prec 0.772, web prec 0.104, ftp \ensuremath{\rightarrow} brute. 게이트는 셧다운(τ=\allowbreak{}\ensuremath{\infty})이라 시스템 =\allowbreak{} global =\allowbreak{} 0.7430  \ensuremath{\rightarrow}  r3 시스템 0.7395 대비 +\allowbreak{}0.0035, r3 global 대비 +\allowbreak{}0.0218(대역 0.0011의 20배). \textbf{컨텍스트 구성 원노브 하나가 개입층 전체(r3 delta +\allowbreak{}0.018)보다 크다.} XGB-c0까지 −0.011이며 ddos(0.9345 vs 0.995)가 그중 0.0086 — 남은 격차는 여전히 hoic 잔여 하나. S=\allowbreak{}0.75 세 크기: 250k 0.862 /\allowbreak{} 500k 0.894 /\allowbreak{} 1M 0.843 (자연: 0.836 /\allowbreak{} 0.580 /\allowbreak{} 0.656). 논문 표는 이 run.
+
+\subsubsection{8i. 1M S=\allowbreak{}0.60 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}025002}, 59분 단독) — S=\allowbreak{}0.60은 두 크기 모두 실패, 원인은 같은 벡터}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.28879\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23707\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23707\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23707\linewidth-2\tabcolsep\relax}}
+\toprule
+ & 1M S=\allowbreak{}0.75 & \textbf{1M S=\allowbreak{}0.60} & 250k S=\allowbreak{}0.60 \\ \midrule
+\endfirsthead
+ & 1M S=\allowbreak{}0.75 & \textbf{1M S=\allowbreak{}0.60} & 250k S=\allowbreak{}0.60 \\ \midrule
+\endhead
+{}hoic recall & 0.843 & 0.630 & 0.764 \\
+{}ftp+\allowbreak{}slowhttptest 판정 & brute & \textbf{inf} & \textbf{inf} \\
+{}inf prec /\allowbreak{} recall & 0.772 /\allowbreak{} 0.281 & \textbf{0.019 /\allowbreak{} 0.053} & 0.092 /\allowbreak{} 0.269 \\
+{}benign recall & 0.9985 & 0.9986 & 0.9987 \\
+{}macro global & 0.7430 & 0.6093 & 0.6366 \\
+\bottomrule
+\end{longtable}
+\endgroup
+S=\allowbreak{}0.60에서 port-21 벡터가 inf로 가는 현상이 250k·1M에서 \textbf{재현} — 추첨이 아니라 C0의 inf 사본 수(0.75: 1M×0.25×0.072 \ensuremath{\approx} 18k  \ensuremath{\rightarrow}  0.60: \ensuremath{\approx} 29k)가 그 벡터의 다수결을 뒤집는 개수 기전으로 보인다(즉 다수결은 \emph{inf까지 포함한} 세 라벨 사이의 경쟁). inf recall 0.05는 진짜 inf 행까지 함께 무너진 것. benign 대가는 여전히 0. 결론: \textbf{S 곡선은 0.75 근방이 최적} (0.87 자연 < 0.75 > 0.60); 0.50/\allowbreak{}0.40(체인 3)은 곡선 확인용. 벡터 충돌은 \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}con\allowbreak{}flict ma\allowbreak{}jority}(체인 5)가 표적.
+
+\subsubsection{8j. 250k benign 비율 곡선 완성 (S=\allowbreak{}0.50 \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}033544}, S=\allowbreak{}0.40 \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}033627}; 둘 병행)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21020\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15796\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15050\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15050\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16542\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16542\linewidth-2\tabcolsep\relax}}
+\toprule
+250k seed 42 & S=\allowbreak{}0.87(자연) & 0.75 & 0.60 & 0.50 & 0.40 \\ \midrule
+\endfirsthead
+250k seed 42 & S=\allowbreak{}0.87(자연) & 0.75 & 0.60 & 0.50 & 0.40 \\ \midrule
+\endhead
+{}hoic recall & 0.836 & \textbf{0.862} & 0.764 & 0.771 & 0.866 \\
+{}benign recall & 0.9982 & 0.9988 & 0.9987 & 0.9985 & 0.9735 \\
+{}inf prec & 0.705 & 0.813 & 0.092(벡터) & 0.776 & 0.131 \\
+{}web prec /\allowbreak{} recall & .097/\allowbreak{}.438 & .111/\allowbreak{}.515 & .101/\allowbreak{}.479 & 0.115/\allowbreak{}0.552 & 0.128/\allowbreak{}0.650 \\
+{}macro global & (뒤집힘) & 0.7430 & 0.6366 & 0.7343 & 0.7180 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{benign 대가는 S=\allowbreak{}0.50까지 0, S=\allowbreak{}0.40에서 시작} — benign recall 0.9985  \ensuremath{\rightarrow}  0.9735, benign \ensuremath{\rightarrow} inf 90,251행(inf prec 0.131은 benign 누수; port-21 벡터는 brute로 정상). 즉 "benign 기근 붕괴"(0820 bal50k)의 문턱이 250k에선 0.40\textasciitilde{}0.50 사이. S=\allowbreak{}0.40의 hoic 0.866·web recall 0.650은 benign을 팔아 산 것. \textbf{곡선 결론: 0.75 최적} (hoic 최고, benign 대가 0, ftp 정상); 0.50은 hoic 잃고 web 얻어 macro 0.734; 0.60은 port-21 벡터 뒤집힘(칼날) 예외.
+
+\subsubsection{8k. 100k 쌍 (S=\allowbreak{}0.75 \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}042146}, 자연 \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}042210}; 병행) — \textbf{크기×비율 격자 완성, 100k S=\allowbreak{}0.75가 최고}}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.32000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17000\linewidth-2\tabcolsep\relax}}
+\toprule
+global, seed 42 & 100k & 250k & 500k & 1M \\ \midrule
+\endfirsthead
+global, seed 42 & 100k & 250k & 500k & 1M \\ \midrule
+\endhead
+{}hoic recall — 자연(0.87) & 0.600 & 0.836 & 0.580 & 0.656 \\
+{}hoic recall — \textbf{S=\allowbreak{}0.75} & \textbf{0.899} & 0.862 & 0.894 & 0.843 \\
+{}macro — 자연 & 0.7261 & (뒤집힘) & 0.7191 & 0.7212 \\
+{}macro — \textbf{S=\allowbreak{}0.75} & \textbf{0.7491} & 0.7430 & 0.7449 & 0.7430 \\
+{}benign recall — S=\allowbreak{}0.75 & 0.9982 & 0.9988 & 0.9986 & 0.9985 \\
+\bottomrule
+\end{longtable}
+\endgroup
+자연 비율은 어느 크기에서도 hoic가 0.58\textasciitilde{}0.84로 요동하는데 S=\allowbreak{}0.75는 10배 크기 범위에서 0.84\textasciitilde{}0.90, macro 0.743\textasciitilde{}0.749로 평평하다. \textbf{100k S=\allowbreak{}0.75 =\allowbreak{} macro 0.7491} (ddos 0.959, inf 0.7403/\allowbreak{}0.315  \ensuremath{\rightarrow}  F1 최고, dos 0.781, benign 0.9866/\allowbreak{}0.9982) — XGB-c0 0.7541까지 −0.005. 즉 컨텍스트 1M은 필요 없었고(추론 비용 10배), 구성이 크기보다 중요하다는 CreditTFM 류 주장의 NIDS 판. ftp 전부 brute, benign \ensuremath{\rightarrow} inf 4,039(정상 범위). 단 100k도 단일 추첨 — seed 검증은 250k S=\allowbreak{}0.75 seed 43/\allowbreak{}44(진행 중).
+
+\subsubsection{8l. seed 분산 — 250k S=\allowbreak{}0.75 seed 42/\allowbreak{}43/\allowbreak{}44 (\texttt{20260902\allowbreak{}\_\allowbreak{}\allowbreak{}233554} /\allowbreak{} \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}051308} /\allowbreak{} \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}051253}; 43·44 병행)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.27544\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18772\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18772\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18772\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16140\linewidth-2\tabcolsep\relax}}
+\toprule
+250k S=\allowbreak{}0.75 & seed 42 & seed 43 & seed 44 & 범위 \\ \midrule
+\endfirsthead
+250k S=\allowbreak{}0.75 & seed 42 & seed 43 & seed 44 & 범위 \\ \midrule
+\endhead
+{}hoic recall & 0.862 & \textbf{0.737} & \textbf{0.927} & 0.19 \\
+{}ddos F1 & 0.939 & 0.886 & 0.966 &  \\
+{}benign recall /\allowbreak{} prec & .9988/\allowbreak{}.983 & .9987/\allowbreak{}.977 & .9991/\allowbreak{}.987 &  \\
+{}inf prec & 0.813 & 0.815 & 0.898 &  \\
+{}macro global & 0.7430 & 0.7322 & 0.7475 & 0.015 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{추첨 복권은 S=\allowbreak{}0.75에서도 남는다} — hoic 0.74\textasciitilde{}0.93, macro 0.732\textasciitilde{}0.748. 다만 셋 모두 ftp \ensuremath{\rightarrow} brute, benign 대가 0, macro가 r3 1M 자연(0.7212)보다 높다. 자연 비율은 seed 42 한 점씩(0.60/\allowbreak{}0.84/\allowbreak{}0.58/\allowbreak{}0.66)이라 분산 비교는 체인 4의 250k 자연 seed 43/\allowbreak{}44(같은 seed  \ensuremath{\rightarrow}  benign 추첨이 S=\allowbreak{}0.75의 상위집합, 공격 클래스는 부분집합인 짝 비교)로 확정. 현재 진술 가능한 것: S=\allowbreak{}0.75는 \emph{평균}을 올린다(S=\allowbreak{}0.75 6 run 평균 hoic 0.86 vs 자연 4 run 0.67); 분산 축소 여부는 미정. 논문에는 seed 3개 평균±범위로 보고해야 함 — 단일 seed 표(§8h)는 부족.
+
+\subsubsection{8m. exp31 \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}ded\allowbreak{}up exact\allowbreak{}} (250k S=\allowbreak{}0.75, run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}060315}) — \textbf{강한 음성: 중복은 잉여가 아니라 밀도 신호}}
+풀 6,034,654행  \ensuremath{\rightarrow}  distinct (벡터,라벨) 2,713,843 (55\%가 verbatim 중복; bot은 C0 비중 0.0103 \ensuremath{\rightarrow} 0.0014로 거의 전부 중복).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.44608\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26961\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.28431\linewidth-2\tabcolsep\relax}}
+\toprule
+250k S=\allowbreak{}0.75 seed 42 & dedup 없음 & \textbf{dedup exact} \\ \midrule
+\endfirsthead
+250k S=\allowbreak{}0.75 seed 42 & dedup 없음 & \textbf{dedup exact} \\ \midrule
+\endhead
+{}hoic recall & 0.862 & 0.937 \\
+{}ftp+\allowbreak{}slowhttptest 판정 & brute & \textbf{benign} (77,344행) \\
+{}benign recall /\allowbreak{} benign \ensuremath{\rightarrow} inf & 0.9988 /\allowbreak{} 2,183 & \textbf{0.9860 /\allowbreak{} 46,901} \\
+{}inf prec & 0.813 & 0.084 \\
+{}macro global & 0.7430 & \textbf{0.6334} \\
+\bottomrule
+\end{longtable}
+\endgroup
+기전: (벡터,라벨)당 1사본이면 port-21 벡터는 brute·dos·inf·benign 각 1표가 되어 benign으로 넘어가고, benign 다양체의 사본 밀도가 사라져 inf 쌍둥이가 benign 행을 끌어간다(benign \ensuremath{\rightarrow} inf 2k  \ensuremath{\rightarrow}  47k). hoic만 오른 것은 benign 질량 감소의 부수효과. \textbf{결론: retrieval attention에서 중복 사본 수는 클래스 사전확률·국소 밀도 정보이며 제거하면 안 된다.} dedup 축 종결 (자연 비율 dedup run은 체인 3에 남아 있으나 판정 불변 예상 — 확인용). 라벨 충돌은 다수결(체인 5)로만 다룬다.
+
+\subsubsection{8n. exp31 \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}att\allowbreak{}ack-\allowbreak{}allo\allowbreak{}c balanc\allowbreak{}ed} (250k S=\allowbreak{}0.75 seed 42, run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}060437}) — \textbf{macro 0.7513, 지금까지 최고}}
+C0: benign 0.75, 공격 6종 각 12,347행(web은 가용 762 전량; hoic 9,631로 자연 배분의 24,708보다 적음).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17794\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32500\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31912\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17794\linewidth-2\tabcolsep\relax}}
+\toprule
+class F1 & S=\allowbreak{}0.75 자연 배분 & \textbf{S=\allowbreak{}0.75 균등 배분} & XGB-c0 1M \\ \midrule
+\endfirsthead
+class F1 & S=\allowbreak{}0.75 자연 배분 & \textbf{S=\allowbreak{}0.75 균등 배분} & XGB-c0 1M \\ \midrule
+\endhead
+{}benign & 0.9832/\allowbreak{}.9988  \ensuremath{\rightarrow}  F1 .991 & 0.9852/\allowbreak{}\textbf{.9951}  \ensuremath{\rightarrow}  \textbf{0.9901} & 0.9945 \\
+{}ddos & 0.9385 & 0.9468 (hoic 0.872) & 0.9950 \\
+{}dos & 0.7726 & 0.7813 & 0.7819 \\
+{}inf & 0.3899 (p .813/\allowbreak{}r .267) & \textbf{0.3831} (p .456/\allowbreak{}r .330) & 0.4256 \\
+{}web & 0.1808 (p .111/\allowbreak{}r .515) & \textbf{0.2434} (p .142/\allowbreak{}r \textbf{.847}) & 0.1680 \\
+{}\textbf{macro} & 0.7430 & \textbf{0.7513} & 0.7541 \\
+{}tail\_\allowbreak{}avg & — & \textbf{0.5416} & 0.5305 \\
+\bottomrule
+\end{longtable}
+\endgroup
+web recall 0.52 \ensuremath{\rightarrow} 0.85(컨텍스트 web 61 \ensuremath{\rightarrow} 762행)가 +\allowbreak{}0.010, ddos +\allowbreak{}0.001, inf −0.004(benign \ensuremath{\rightarrow} inf 2.2k \ensuremath{\rightarrow} 14.7k, 쌍둥이 대가), benign recall −0.0037(사전 등록 기준 \ensuremath{\leq}0.001 \textbf{위반}, F1은 동급). 순이득 +\allowbreak{}0.0083  \ensuremath{\rightarrow}  XGB-c0까지 −0.003, full XGB까지 −0.0035. \textbf{tail\_\allowbreak{}avg 0.5416 > XGB 0.5305 — 꼬리 macro는 역전.} ftp \ensuremath{\rightarrow} brute. 단일 seed — 체인 6에서 seed 43/\allowbreak{}44·100k·1M 확인.
+
+\subsubsection{8o. dedup 확인 run (250k 자연 비율 +\allowbreak{} dedup, \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}063226}) — 판정 불변}
+hoic 0.991, benign recall 0.9930, inf prec 0.064, macro 0.6288 (자연 비율 dedup 없음: hoic 0.836, benign 0.9982, macro 0.6515). ftp \ensuremath{\rightarrow} benign, benign \ensuremath{\rightarrow} inf 22,253, dedup 후 자연 benign 비중 0.9098. §8m 결론 유지 — dedup 축 종결. 단 \textbf{hoic 0.991}은 기록할 가치: benign 중복 질량을 걷어내면 hoic는 완전히 열린다  \ensuremath{\rightarrow}  "benign 사본 질량이 hoic를 누른다" 가설(§8a)의 가장 강한 증거. 후속 후보(미실행): 사본 수 상한 \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}dup\allowbreak{}-\allowbreak{}cap k} (밀도 정보는 k까지 보존, 극단 질량만 제거) — S=\allowbreak{}0.75·균등 배분 위에 얹는 원노브. 체인 3 완료.
+
+\subsubsection{8p. \textbf{짝 비교 확정 — 250k, seed 42/\allowbreak{}43/\allowbreak{}44, 자연 vs S=\allowbreak{}0.75} (자연 s43 \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}072022}, s44 \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}071619})}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.12654\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12654\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15123\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13272\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15741\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30556\linewidth-2\tabcolsep\relax}}
+\toprule
+seed & 자연 hoic & \textbf{S=\allowbreak{}0.75 hoic} & 자연 macro & \textbf{S=\allowbreak{}0.75 macro} & port-21 벡터 (자연  \ensuremath{\rightarrow}  S=\allowbreak{}0.75) \\ \midrule
+\endfirsthead
+seed & 자연 hoic & \textbf{S=\allowbreak{}0.75 hoic} & 자연 macro & \textbf{S=\allowbreak{}0.75 macro} & port-21 벡터 (자연  \ensuremath{\rightarrow}  S=\allowbreak{}0.75) \\ \midrule
+\endhead
+{}42 & 0.836 & \textbf{0.862} & 0.6515 & \textbf{0.7430} & dos  \ensuremath{\rightarrow}  brute \\
+{}43 & 0.612 & \textbf{0.737} & 0.7186 & \textbf{0.7322} & brute  \ensuremath{\rightarrow}  brute \\
+{}44 & 0.740 & \textbf{0.927} & 0.6220 & \textbf{0.7475} & benign  \ensuremath{\rightarrow}  brute \\
+{}평균 & 0.729 & \textbf{0.842} & 0.664 & \textbf{0.741} &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{3/\allowbreak{}3 짝에서 S=\allowbreak{}0.75가 hoic·macro 모두 우위} (hoic +\allowbreak{}0.03/\allowbreak{}+\allowbreak{}0.13/\allowbreak{}+\allowbreak{}0.19). 자연 비율은 port-21 벡터가 seed마다 dos/\allowbreak{}brute/\allowbreak{}benign 으로 흩어지고(=\allowbreak{}macro 0.62\textasciitilde{}0.72 요동), S=\allowbreak{}0.75는 3/\allowbreak{}3 brute. benign recall은 양쪽 모두 \ensuremath{\geq}0.998. 이것이 논문 주표의 형식: 같은 seed 짝, 3 seed 평균±범위, 같은 split, 같은 4.02M 테스트. 남은 분산(S=\allowbreak{}0.75 hoic 0.74\textasciitilde{}0.93)은 추첨 고유분. 1M 자연 seed 43 (체인 4)  \ensuremath{\rightarrow}  r3(seed 42) 대비 1M 자연의 seed 대역.
+
+\subsubsection{8q. 1M 자연 seed 43 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}082151}, 61분 단독) — 1M 자연의 seed 대역}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20909\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20909\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16364\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16364\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25455\linewidth-2\tabcolsep\relax}}
+\toprule
+1M 자연 & seed 42 (r3) & seed 43 &  & 1M S=\allowbreak{}0.75 seed 42 \\ \midrule
+\endfirsthead
+1M 자연 & seed 42 (r3) & seed 43 &  & 1M S=\allowbreak{}0.75 seed 42 \\ \midrule
+\endhead
+{}hoic recall & 0.656 & 0.730 &  & 0.843 \\
+{}ddos F1 & 0.839 & 0.877 &  & 0.935 \\
+{}inf F1 & 0.388 & 0.410 &  & 0.412 \\
+{}macro global & 0.7212 & 0.7329 &  & 0.7430 \\
+\bottomrule
+\end{longtable}
+\endgroup
+1M 자연의 seed 간 대역은 \ensuremath{\geq}0.012 (같은 seed 반복 대역 0.0011의 10배 이상) — §3의 "재현성 25배 개선"은 \emph{추첨 고정} 조건이었음을 명시해야 한다. 1M S=\allowbreak{}0.75(seed 42)는 두 자연 seed 모두를 상회하나 1M에서의 짝 비교는 seed 42뿐  \ensuremath{\rightarrow}  \textbf{체인 7}: 1M S=\allowbreak{}0.75 seed 43·44, 1M 자연 seed 44 (각 1h 단독)로 1M 3-seed 짝 완성. ftp \ensuremath{\rightarrow} brute, benign \ensuremath{\rightarrow} inf 1,540.
+
+\subsubsection{8r. exp31 \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}con\allowbreak{}flict ma\allowbreak{}jority} (250k S=\allowbreak{}0.75 seed 42, run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}091253}) — \textbf{음성, 축 종결·1M run 취소}}
+풀에서 라벨 \ensuremath{\geq}2인 벡터 7,127개, 소수 라벨 행 59,315개 제거(풀의 1\%). 결과: ftp \ensuremath{\rightarrow} brute는 유지됐지만 \textbf{benign \ensuremath{\rightarrow} inf 2,183  \ensuremath{\rightarrow}  19,575}, benign recall 0.9988  \ensuremath{\rightarrow}  0.9937, inf prec 0.813  \ensuremath{\rightarrow}  0.347, hoic 0.862  \ensuremath{\rightarrow}  0.770(추첨 변화), macro \textbf{0.7430  \ensuremath{\rightarrow}  0.7207}. 기전: benign \ensuremath{\leftrightarrow} inf 쌍둥이 벡터 중 풀에서 inf 사본이 다수인 것들의 benign 사본이 제거되어, 지금까지 benign 사전확률로 benign에 남던 테스트 행이 inf로 넘어감. 즉 모델은 라벨 충돌을 이미 "사본 수 × 사전확률"로 처리하고 있었고, 풀 단위 다수결은 그 균형을 깨뜨린다. port-21 벡터는 S=\allowbreak{}0.75가 이미 고정하므로 이 knob의 남은 표적이 없다. 체인 5의 1M conflict run은 취소 (체인 6·7 시간 확보); 250k 자연+\allowbreak{}conflict는 진행 중이던 것만 확인용으로 완주. 확인용 250k 자연+\allowbreak{}conflict(run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}091415}): ftp \ensuremath{\rightarrow} \textbf{brute}(자연 seed 42는 dos였음), hoic 0.763, benign 0.9987, inf prec 0.796, macro 0.6515  \ensuremath{\rightarrow}  \textbf{0.7332}. 즉 conflict 다수결은 port-21 벡터가 불안정한 자연 비율에서는 양성(+\allowbreak{}0.08)이고, 이미 고정된 S=\allowbreak{}0.75에서는 benign \ensuremath{\rightarrow} inf 누수만 남겨 음성(−0.022). S=\allowbreak{}0.75와 결합할 이유 없음. \textbf{컨텍스트 정제 축 총평}: dedup·conflict 모두 S=\allowbreak{}0.75 위에서는 음성 — 중복과 충돌 사본은 제거 대상이 아니라 밀도·사전확률 정보. 남는 정제 후보는 사본 수 \emph{상한}(dup-cap)뿐.
+
+\subsubsection{8s. \textbf{100k S=\allowbreak{}0.75 균등 배분 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}094650}, 31분) — global 0.7562, full XGB 0.7548 최초 상회}}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13121\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16844\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.28546\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15780\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13121\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12589\linewidth-2\tabcolsep\relax}}
+\toprule
+class F1 & 100k 자연배분 S=\allowbreak{}0.75 & \textbf{100k 균등 S=\allowbreak{}0.75} & 250k 균등 S=\allowbreak{}0.75 & XGB-c0 1M & XGB full \\ \midrule
+\endfirsthead
+class F1 & 100k 자연배분 S=\allowbreak{}0.75 & \textbf{100k 균등 S=\allowbreak{}0.75} & 250k 균등 S=\allowbreak{}0.75 & XGB-c0 1M & XGB full \\ \midrule
+\endhead
+{}benign & 0.9924 (r .9982) & 0.9909 (r .9969,  \ensuremath{\rightarrow} inf 8,026) & 0.9901 & 0.9945 & 0.9943 \\
+{}ddos & 0.9586 & 0.9459 (hoic 0.869) & 0.9468 & 0.9950 & 0.9921 \\
+{}dos & 0.7810 & 0.7807 & 0.7813 & 0.7819 & 0.7822 \\
+{}inf & 0.442 & \textbf{0.4204} (p .602 /\allowbreak{} r .323) & 0.3831 & 0.4256 & 0.4291 \\
+{}web & 0.155 & \textbf{0.2420} (p .139 /\allowbreak{} r \textbf{.929}) & 0.2434 & 0.1680 & 0.1724 \\
+{}\textbf{macro} & 0.7491 & \textbf{0.7562} & 0.7513 & 0.7541 & 0.7548 \\
+{}tail\_\allowbreak{}avg & — & \textbf{0.5534} & 0.5416 & 0.5305 & — \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{개입층 없이(게이트 셧다운, 시스템 =\allowbreak{} global) frozen TabPFN이 같은 split에서 full XGBoost를 넘은 첫 구성.} 컨텍스트 100k =\allowbreak{} 1M의 1/\allowbreak{}10, peak 6 GB. C0: benign 75k +\allowbreak{} 공격 6종 \textasciitilde{}4.1k씩(web 762 전량). 100k에서는 inf 컨텍스트가 250k 균등(12.3k)보다 작아 benign \ensuremath{\rightarrow} inf 누수가 14.7k  \ensuremath{\rightarrow}  8.0k로 줄고 inf precision이 0.46  \ensuremath{\rightarrow}  0.60으로 회복 — \textbf{균등 배분의 inf 대가는 inf 컨텍스트 크기에 비례}(쌍둥이 벡터 사본 수). benign recall 0.9969는 사전 등록 기준(\ensuremath{\leq}0.001 하락) 경계(−0.0012). 단일 seed  \ensuremath{\rightarrow}  체인 7 앞에 100k 균등 seed 43/\allowbreak{}44 삽입.
+
+\subsubsection{8t. 250k 균등 배분 seed 43 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}095403}) — 균등의 이득은 seed 의존}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.28235\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17059\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18824\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17059\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18824\linewidth-2\tabcolsep\relax}}
+\toprule
+250k S=\allowbreak{}0.75 & seed 42 자연배분 & seed 42 균등 & seed 43 자연배분 & \textbf{seed 43 균등} \\ \midrule
+\endfirsthead
+250k S=\allowbreak{}0.75 & seed 42 자연배분 & seed 42 균등 & seed 43 자연배분 & \textbf{seed 43 균등} \\ \midrule
+\endhead
+{}hoic & 0.862 & 0.872 & 0.737 & 0.795 \\
+{}web F1 /\allowbreak{} recall & 0.181 /\allowbreak{} .515 & 0.243 /\allowbreak{} .847 & 0.154 /\allowbreak{} .442 & 0.217 /\allowbreak{} .723 \\
+{}inf F1 /\allowbreak{} benign \ensuremath{\rightarrow} inf & 0.390 /\allowbreak{} 2.2k & 0.383 /\allowbreak{} 14.7k & 0.390 /\allowbreak{} 2.1k & \textbf{0.316} /\allowbreak{} 6.9k \\
+{}benign recall & 0.9988 & 0.9951 & 0.9987 & 0.9973 \\
+{}macro & 0.7430 & 0.7513 (+\allowbreak{}0.008) & 0.7322 & 0.7332 (\textbf{+\allowbreak{}0.001}) \\
+\bottomrule
+\end{longtable}
+\endgroup
+seed 43에서는 web 이득(+\allowbreak{}0.06)을 inf precision 손실(0.815 \ensuremath{\rightarrow} 0.313)이 상쇄. 균등 배분의 순이득은 inf 쌍둥이 누수의 추첨에 좌우된다 — 100k에서 inf 컨텍스트가 작아 누수가 준 것(§8s)과 같은 기전. seed 44·100k seed 43/\allowbreak{}44로 판정.
+
+\subsubsection{8u. 250k 균등 배분 seed 44 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}104347}) +\allowbreak{} 균등+\allowbreak{}conflict (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}104321}) — 균등 3-seed 짝 완성}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21220\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15550\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11942\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20189\linewidth-2\tabcolsep\relax}}
+\toprule
+250k S=\allowbreak{}0.75 & seed 42 & seed 43 & seed 44 & 평균 & 짝 우위 \\ \midrule
+\endfirsthead
+250k S=\allowbreak{}0.75 & seed 42 & seed 43 & seed 44 & 평균 & 짝 우위 \\ \midrule
+\endhead
+{}자연 배분 macro & 0.7430 & 0.7322 & 0.7475 & 0.7409 &  \\
+{}\textbf{균등 배분 macro} & 0.7513 & 0.7332 & \textbf{0.7575} & \textbf{0.7473} & 3/\allowbreak{}3 (+\allowbreak{}.008/\allowbreak{}+\allowbreak{}.001/\allowbreak{}+\allowbreak{}.010) \\
+{}균등 hoic /\allowbreak{} web F1 /\allowbreak{} inf F1 & .872/\allowbreak{}.243/\allowbreak{}.383 & .795/\allowbreak{}.217/\allowbreak{}.316 & .914/\allowbreak{}.243/\allowbreak{}.406 &  &  \\
+{}균등 benign \ensuremath{\rightarrow} inf & 14.7k & 6.9k & 2.3k &  &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+균등 배분은 3/\allowbreak{}3 짝에서 우위이나 폭은 inf 누수 추첨에 좌우(+\allowbreak{}0.001\textasciitilde{}+\allowbreak{}0.010). \textbf{XGB-c0 0.7541 상회는 seed 44(0.7575)와 100k seed 42 (0.7562)에서만} — 250k 3-seed 평균 0.7473은 미달. 정직한 문장: "균등 배분 S=\allowbreak{}0.75는 3 seed 평균 0.747±0.012로 XGB-c0(0.754)와 겹치며, 절반의 추첨에서 상회". 100k 균등 seed 43/\allowbreak{}44(체인 7)가 최종. 균등+\allowbreak{}conflict(seed 42): benign \ensuremath{\rightarrow} inf 85,607, macro 0.7129 — conflict 축 최종 종결(3연속 음성).
+
+\subsubsection{8v. \textbf{1M 균등 배분 실패} (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}114748}, 64분 단독) — 균등 배분은 \ensuremath{\leq}250k에서만 성립}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.34752\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32624\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32624\linewidth-2\tabcolsep\relax}}
+\toprule
+1M S=\allowbreak{}0.75 seed 42 & 자연 배분 & \textbf{균등 배분} \\ \midrule
+\endfirsthead
+1M S=\allowbreak{}0.75 seed 42 & 자연 배분 & \textbf{균등 배분} \\ \midrule
+\endhead
+{}C0 inf 행 & 18,087 & \textasciitilde{}41,700 \\
+{}inf F1 (p/\allowbreak{}r) & 0.412 (.77/\allowbreak{}.28) & \textbf{0.089 (.40/\allowbreak{}.05)} \\
+{}port-21 벡터 & brute & \textbf{dos} \\
+{}hoic /\allowbreak{} ddos F1 & 0.843 /\allowbreak{} 0.935 & 0.760 /\allowbreak{} 0.892 \\
+{}macro & 0.7430 & \textbf{0.6052} \\
+\bottomrule
+\end{longtable}
+\endgroup
+inf recall 0.05 붕괴는 1M S=\allowbreak{}0.60(inf 28.9k)에서 본 것과 같은 현상  \ensuremath{\rightarrow}  \textbf{C0의 inf 절대 행 수가 \textasciitilde{}29k를 넘으면 inf recall이 무너진다(2/\allowbreak{}2)}. 균등 배분이 100k(inf 4.1k)·250k(12.3k)에서는 이득이고 1M(41.7k)에서는 재앙인 이유. 즉 작동 변수는 \emph{비율}이 아니라 \textbf{쌍둥이가 많은 클래스(inf)의 절대 사본 수}이며, "benign 비중 0.75"가 통한 것도 결과적으로 benign 사본 수를 줄이고 공격 사본 수를 적당히 늘린 조합이었다. 논문 서술은 "클래스별 절대 컨텍스트 행 수에 최적 구간이 있다(inf \ensuremath{\leq} \textasciitilde{}12k, benign \ensuremath{\leq} \textasciitilde{}190k, web 전량)"로 가야 하며, 1M 기록급은 자연 배분 S=\allowbreak{}0.75(0.7430)로 유지. \textbf{최종 후보 구성 =\allowbreak{} 100k\textasciitilde{}250k, S=\allowbreak{}0.75, 균등 배분.}
+
+\subsubsection{8w. 100k 균등 배분 seed 43 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}122210}, 34분) — \textbf{0.7617, 신기록}}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.33523\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16477\linewidth-2\tabcolsep\relax}}
+\toprule
+100k S=\allowbreak{}0.75 균등 & seed 42 & \textbf{seed 43} & seed 44 \\ \midrule
+\endfirsthead
+100k S=\allowbreak{}0.75 균등 & seed 42 & \textbf{seed 43} & seed 44 \\ \midrule
+\endhead
+{}macro & 0.7562 & \textbf{0.7617} & (진행 중) \\
+{}hoic /\allowbreak{} ddos F1 & 0.869 /\allowbreak{} 0.946 & 0.900 /\allowbreak{} 0.959 &  \\
+{}inf F1 (p/\allowbreak{}r) /\allowbreak{} benign \ensuremath{\rightarrow} inf & 0.420 (.60/\allowbreak{}.32) /\allowbreak{} 8.0k & \textbf{0.444 (.75/\allowbreak{}.32)} /\allowbreak{} 3.9k &  \\
+{}web F1 /\allowbreak{} recall & 0.242 /\allowbreak{} .929 & 0.242 /\allowbreak{} .906 &  \\
+{}benign recall & 0.9969 & \textbf{0.9981} &  \\
+{}tail\_\allowbreak{}avg & 0.5534 & \textbf{0.5613} &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+250k에서 가장 약했던 seed 43(0.7332)이 100k 균등에서는 0.7617 — full XGB 0.7548 +\allowbreak{}0.007, XGB-c0 +\allowbreak{}0.008. 2/\allowbreak{}2 seed에서 XGB 상회, benign recall은 r3(0.9981)와 동일. inf 컨텍스트 4.1k에서 benign \ensuremath{\rightarrow} inf 3.9k로 누수가 작아 inf precision 0.75.
+
+\subsubsection{8x. \textbf{100k S=\allowbreak{}0.75 균등 배분 3-seed 확정} (seed 44 run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}122328})}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18011\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15323\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15323\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15323\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19086\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16935\linewidth-2\tabcolsep\relax}}
+\toprule
+100k 균등 S=\allowbreak{}0.75 & seed 42 & seed 43 & seed 44 & \textbf{평균 (min–max)} & XGB-c0 1M /\allowbreak{} full \\ \midrule
+\endfirsthead
+100k 균등 S=\allowbreak{}0.75 & seed 42 & seed 43 & seed 44 & \textbf{평균 (min–max)} & XGB-c0 1M /\allowbreak{} full \\ \midrule
+\endhead
+{}macro & 0.7562 & 0.7617 & 0.7442 & \textbf{0.7540 (0.744–0.762)} & 0.7541 /\allowbreak{} 0.7548 \\
+{}tail\_\allowbreak{}avg & 0.5534 & 0.5613 & 0.5454 & \textbf{0.5534 (0.545–0.561)} & 0.5305 /\allowbreak{} — \\
+{}benign F1 (recall) & .9909 (.9969) & .9924 (.9981) & .9878 (.9986) & .9904 & .9945 \\
+{}ddos F1 (hoic) & .946 (.869) & .959 (.900) & .888 (.742) & .931 & .995 \\
+{}inf F1 & .420 & .444 & .405 & .423 & .426 \\
+{}web F1 & .242 & .242 & .233 & .239 & .168 \\
+{}dos F1 & .781 & .781 & .781 & .781 & .782 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{정직한 헤드라인}: frozen TabPFN global, 100k 컨텍스트(훈련 풀 12.07M의 0.8\%), 개입층 없음 — 3-seed 평균 macro 0.754 =\allowbreak{} full XGBoost 0.7548(±0.001), 2/\allowbreak{}3 seed 상회; \textbf{tail macro 0.553 vs 0.531은 3/\allowbreak{}3 seed 상회}; inf·dos·brute·bot은 XGB와 동률, web은 +\allowbreak{}0.07, benign −0.004, ddos −0.06(hoic 추첨 분산 0.74\textasciitilde{}0.90이 유일한 열세이자 분산원). ftp \ensuremath{\rightarrow} brute 3/\allowbreak{}3, benign \ensuremath{\rightarrow} inf 2.1k\textasciitilde{}8.0k. r3 개입층 시스템 최고(0.7395) 대비 +\allowbreak{}0.015이며 컨텍스트 1/\allowbreak{}10·추론 비용 1/\allowbreak{}10. \textbf{논문 주표 =\allowbreak{} 이 3-seed 표 +\allowbreak{} 1M 3-seed 짝(체인 7).}
+
+\subsubsection{8y. 체인 8 사전 등록 (0903 12:40) — 100k 배분 ablation seed +\allowbreak{} \textbf{exp32 C0 bagging}}
+\par\noindent \textbullet\enspace \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp32\_\allowbreak{}\allowbreak{}c0b\allowbreak{}ag.\allowbreak{}py} =\allowbreak{} exp31 +\allowbreak{} \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}bag\allowbreak{}s N}: bag i는 seed (args.seed+\allowbreak{}i)+\allowbreak{}SEED\_\allowbreak{}BAND\_\allowbreak{}GLOBAL로 추첨하므로 exp30/\allowbreak{}31의 \texttt{-\allowbreak{}-\allowbreak{}seed (\allowbreak{}42+\allowbreak{}\allowbreak{}i)} 단독 run의 C0와 행 단위 동일. global 예측 =\allowbreak{} N개 TabPFN predict\_\allowbreak{}proba 평균(임베딩·anchor·PriorCorrector는 bag 0).
+
+
+\par\noindent \textbullet\enspace 큐(체인 7 뒤): ① 100k S=\allowbreak{}0.75 자연 배분 seed 43/\allowbreak{}44 (병행) — 100k에서 배분 효과의 3-seed 짝 ② 100k 균등 bags=\allowbreak{}3 (=\allowbreak{} seed 42/\allowbreak{}43/\allowbreak{}44 세 추첨의 평균; 단독 0.7562/\allowbreak{}0.7617/\allowbreak{}0.7442) ③ 250k 균등 bags=\allowbreak{}3 ④ 100k 균등 bags=\allowbreak{}5.
+
+
+\par\noindent \textbullet\enspace 판독: bags=\allowbreak{}3 macro가 세 단독 run의 평균(0.7540)을 넘고 최대(0.7617)에 얼마나 다가가는가; hoic가 0.74\textasciitilde{}0.90 분산 위로 안정되는가; benign recall; 비용(100k×3 =\allowbreak{} 추론 0.3M-context 상당, 1M 단일보다 싸다). 성공 =\allowbreak{} macro \ensuremath{\geq} 0.760 \& hoic \ensuremath{\geq} 0.88 \& benign \ensuremath{\geq} 0.997.
+
+
+\par\noindent \textbullet\enspace XGB-c0(같은 100k 균등 C0) =\allowbreak{} 0.7525, 100k 자연 배분 =\allowbreak{} 0.7572 — XGB는 100k에서도 구성 무관.
+
+
+\subsubsection{8z. \textbf{1M S=\allowbreak{}0.75 seed 43 붕괴} (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}132033}, 57분 단독) — 1M 구성은 seed-불안정, 기록급은 100k 3-seed로}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.26667\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19910\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20360\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13153\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19910\linewidth-2\tabcolsep\relax}}
+\toprule
+1M, seed 43 & 자연 (\texttt{082151}) & \textbf{S=\allowbreak{}0.75} &  & 1M seed 42 자연 /\allowbreak{} S=\allowbreak{}0.75 \\ \midrule
+\endfirsthead
+1M, seed 43 & 자연 (\texttt{082151}) & \textbf{S=\allowbreak{}0.75} &  & 1M seed 42 자연 /\allowbreak{} S=\allowbreak{}0.75 \\ \midrule
+\endhead
+{}inf F1 (p/\allowbreak{}r) /\allowbreak{} benign \ensuremath{\rightarrow} inf & 0.410 (.86/\allowbreak{}.27) /\allowbreak{} 1.5k & \textbf{0.094 (.31/\allowbreak{}.055)} /\allowbreak{} 4.6k &  & 0.388 /\allowbreak{} 0.412 \\
+{}hoic /\allowbreak{} ddos F1 & 0.730 /\allowbreak{} 0.877 & 0.663 /\allowbreak{} 0.843 &  & 0.656 /\allowbreak{} 0.843 \\
+{}macro global & 0.7329 & \textbf{0.6836} &  & 0.7212 /\allowbreak{} 0.7430 \\
+{}macro system & 0.7346 & 0.7400 (게이트 열림, +\allowbreak{}0.056) &  & 0.7212 /\allowbreak{} 0.7430 \\
+\bottomrule
+\end{longtable}
+\endgroup
+inf recall 0.055 붕괴가 1M S=\allowbreak{}0.75(inf 18,087행)에서 seed 43에 발생 — 1M S=\allowbreak{}0.60(28.9k)·1M 균등(41.7k)과 같은 현상. \textbf{inf 절대 사본 수 임계: \ensuremath{\leq}12.3k 안전(100k·250k 균등 6/\allowbreak{}6, 250k S=\allowbreak{}0.75 3/\allowbreak{}3), \textasciitilde{}18k seed-의존(1M S=\allowbreak{}0.75 1/\allowbreak{}2), \ensuremath{\geq}29k 항상 붕괴(2/\allowbreak{}2).} 따라서 §8h의 "1M S=\allowbreak{}0.75 기록급 +\allowbreak{}0.0218"은 seed 42 한 점의 결과이고 짝 2개 평균은 (0.7430+\allowbreak{}0.6836)/\allowbreak{}2 =\allowbreak{} 0.713 < 자연 0.727. \textbf{1M 구성은 논문 주표에서 제외}; 주표 =\allowbreak{} 100k 균등 3-seed(§8x) +\allowbreak{} 250k 자연배분 3-seed 짝(§8p) +\allowbreak{} 250k 균등 3-seed(§8u). 1M 열은 "크기가 클수록 inf 사본 수가 임계를 넘어 불안정" 증거로만 인용. ftp \ensuremath{\rightarrow} brute 유지.
+
+\subsubsection{8aa. 1M S=\allowbreak{}0.75 seed 44 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}141831}) — \textbf{1M S=\allowbreak{}0.75 3-seed: 0.7430 /\allowbreak{} 0.6836 /\allowbreak{} 0.6393, 평균 0.689}}
+seed 44: port-21 벡터 98,454행 전부 \textbf{inf}(inf prec 0.089), hoic 0.805, benign 0.9988, macro 0.6393. 1M S=\allowbreak{}0.75는 seed 42만 성공(1/\allowbreak{}3): 43은 inf recall 붕괴, 44는 port-21 \ensuremath{\rightarrow} inf. 1M 자연은 0.7212 /\allowbreak{} 0.7329 /\allowbreak{} (s44 진행 중). \textbf{결론: benign 비중 0.75는 \ensuremath{\leq}250k에서 3/\allowbreak{}3 우위, 1M에서는 평균 −0.04로 열세.} 두 실패 모두 "inf 사본 18k"가 임계 근처에서 seed에 따라 다른 방식(recall 붕괴 /\allowbreak{} port-21 흡수)으로 터지는 것. 서사는 "구성 knob은 절대 사본 수 안전 구간(inf \ensuremath{\leq} 12k) 안에서만 유효"로 확정; 1M은 이 구간 밖. 주표에서 1M S=\allowbreak{}0.75 제외 유지.
+
+\subsubsection{8ab. 1M 자연 seed 44 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}151625}) — \textbf{1M은 구성과 무관하게 seed-불안정; 안전 변수는 benign 절대 질량}}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18219\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14795\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20274\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31918\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14795\linewidth-2\tabcolsep\relax}}
+\toprule
+1M & seed 42 & seed 43 & seed 44 & 평균 \\ \midrule
+\endfirsthead
+1M & seed 42 & seed 43 & seed 44 & 평균 \\ \midrule
+\endhead
+{}자연 macro & 0.7212 & 0.7329 & \textbf{0.6759} (inf recall 0.030 붕괴) & 0.710 \\
+{}S=\allowbreak{}0.75 macro & 0.7430 & 0.6836 (inf 붕괴) & 0.6393 (port-21 \ensuremath{\rightarrow} inf) & 0.689 \\
+\bottomrule
+\end{longtable}
+\endgroup
+1M 자연 seed 44에서 inf recall 붕괴(C0 inf 9,355행)  \ensuremath{\rightarrow}  §8z의 "inf 사본 수 임계" 가설은 틀렸다. 전체 run을 다시 보면:
+
+\par\noindent \textbullet\enspace \textbf{붕괴(inf recall \ensuremath{\leq}0.06 또는 port-21 \ensuremath{\rightarrow} inf) 발생 run}: 250k 자연 s44(benign 217k), 1M 자연 s44(871k), 1M S=\allowbreak{}0.75 s43·s44(750k), 1M S=\allowbreak{}0.60(600k), 1M 균등(750k), 250k S=\allowbreak{}0.60(150k, port-21만).
+
+
+\par\noindent \textbullet\enspace \textbf{무사 run 11/\allowbreak{}11}: 100k 전부(benign 75\textasciitilde{}87k), 250k S=\allowbreak{}0.75 ×3(187k), 250k 균등 ×3(187k), 250k S=\allowbreak{}0.50/\allowbreak{}0.40(125k/\allowbreak{}100k). \textbf{즉 안전 변수는 C0의 benign 절대 행 수 <\textasciitilde{} 190k}(250k S=\allowbreak{}0.75 이하). 그 위에서는 inf 쌍둥이·port-21 벡터의 판정이 추첨에 따라 뒤집히고, 어느 구성도 이를 막지 못한다(1M 8 run 중 3개만 정상). 기전 가설: inf 테스트 행의 58\%가 benign 쌍둥이라 benign 사본 질량이 크면 retrieval이 benign 사본에 잠식되고, 그 정도가 추첨에 좌우됨. dedup run에서 hoic 0.99와 같은 뿌리. \textbf{논문 문장}: "TabPFN-v3의 retrieval 헤드는 다수 클래스의 절대 사본 질량에 민감하며, 컨텍스트를 100k\textasciitilde{}250k·benign \ensuremath{\leq}190k로 구성하면 4.02M 테스트에서 full XGBoost와 동률(100k 균등 3-seed 0.754)이자 안정(11/\allowbreak{}11)이고, 1M 컨텍스트는 오히려 불안정(3/\allowbreak{}8)". 체인 7 완료. 1M 축 종결.
+
+
+\subsubsection{8ac. 체인 8 결과 (0903 15:17–17:02) — 100k 배분 ablation 3-seed 짝 +\allowbreak{} \textbf{C0 bagging 판정(미달)}}
+\textbf{100k S=\allowbreak{}0.75, 자연 배분 vs 균등 배분 (같은 seed 짝)}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.14930\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17746\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15634\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14930\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36761\linewidth-2\tabcolsep\relax}}
+\toprule
+seed & 자연 배분 macro & 균등 macro & Δ & 비고 \\ \midrule
+\endfirsthead
+seed & 자연 배분 macro & 균등 macro & Δ & 비고 \\ \midrule
+\endhead
+{}42 & 0.7491 & 0.7562 & +\allowbreak{}0.007 &  \\
+{}43 & \textbf{0.6526} & 0.7617 & +\allowbreak{}0.109 & 자연 배분은 port-21 \ensuremath{\rightarrow} dos(brute F1 0.49); 균등이 고정 \\
+{}44 & 0.7383 & 0.7442 & +\allowbreak{}0.006 &  \\
+{}평균 & 0.713 & \textbf{0.754} &  & 균등 3/\allowbreak{}3 우위(250k와 동일 결론) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{exp32 C0 bagging} (\texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp32\_\allowbreak{}\allowbreak{}c0\allowbreak{}bag.\allowbreak{}py}, bag i =\allowbreak{} seed 42+\allowbreak{}i의 C0와 동일)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11486\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20045\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11486\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11486\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23198\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22297\linewidth-2\tabcolsep\relax}}
+\toprule
+구성 & 단독 3-seed (평균) & \textbf{bags=\allowbreak{}3} & bags=\allowbreak{}5 & hoic (단독 평균  \ensuremath{\rightarrow}  bag) & 비용(eval\_\allowbreak{}global) \\ \midrule
+\endfirsthead
+구성 & 단독 3-seed (평균) & \textbf{bags=\allowbreak{}3} & bags=\allowbreak{}5 & hoic (단독 평균  \ensuremath{\rightarrow}  bag) & 비용(eval\_\allowbreak{}global) \\ \midrule
+\endhead
+{}100k 균등 & .7562/\allowbreak{}.7617/\allowbreak{}.7442 (0.7540) & \textbf{0.7508} & 0.7547 & 0.837  \ensuremath{\rightarrow}  0.772 /\allowbreak{} 0.816 & 105 s  \ensuremath{\rightarrow}  266 /\allowbreak{} 442 s \\
+{}250k 균등 & .7513/\allowbreak{}.7332/\allowbreak{}.7575 (0.7473) & \textbf{0.7577} & — & 0.860  \ensuremath{\rightarrow}  0.839 & 205 s  \ensuremath{\rightarrow}  588 s \\
+\bottomrule
+\end{longtable}
+\endgroup
+사전 등록 기준(macro \ensuremath{\geq}0.760 \& hoic \ensuremath{\geq}0.88 \& benign \ensuremath{\geq}0.997) \textbf{미달}. 확률 평균은 inf·web을 소폭 다듬지만(inf F1 0.44, web 0.23\textasciitilde{}0.25) hoic는 단독 평균보다 낮아진다 — 두 bag이 benign을 높게 주면 평균도 benign이라, "어느 benign 행이 뽑혔나"의 추첨은 posterior 평균으로 상쇄되지 않는다. 100k bags=\allowbreak{}3(0.7508) < 단독 평균(0.7540); 250k bags=\allowbreak{}3(0.7577)은 단독 최대(0.7575)와 같은 수준이라 한 번의 실현으로는 주장 불가. \textbf{bagging 축 종결(비용 대비 무이득)}. run: 160832 /\allowbreak{} 164008 /\allowbreak{} 170148.
+
+\subsubsection{8ad. 100k S=\allowbreak{}0.75 균등 배분 seed 45·46 (run \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}174159} /\allowbreak{} \texttt{20260903\allowbreak{}\_\allowbreak{}\allowbreak{}174111}, 병행 34분) — \textbf{seed 46 benign \ensuremath{\rightarrow} inf 붕괴, 100k도 1/\allowbreak{}5}}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14578\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10443\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10443\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10443\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09691\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11947\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08939\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11195\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12322\linewidth-2\tabcolsep\relax}}
+\toprule
+100k 균등 S=\allowbreak{}0.75 (global) & s42 & s43 & s44 & s45 & \textbf{s46} & 4-seed 평균 & 5-seed 평균 /\allowbreak{} 중앙값 & XGB-c0 100k /\allowbreak{} full \\ \midrule
+\endfirsthead
+100k 균등 S=\allowbreak{}0.75 (global) & s42 & s43 & s44 & s45 & \textbf{s46} & 4-seed 평균 & 5-seed 평균 /\allowbreak{} 중앙값 & XGB-c0 100k /\allowbreak{} full \\ \midrule
+\endhead
+{}macro & 0.7562 & 0.7617 & 0.7442 & 0.7539 & \textbf{0.6750} & 0.7540 & 0.7382 /\allowbreak{} 0.7539 & 0.7525 /\allowbreak{} 0.7548 \\
+{}tail\_\allowbreak{}avg & 0.5534 & 0.5613 & 0.5454 & 0.5426 & 0.4249 & 0.5507 & 0.5255 & 0.5260 /\allowbreak{} 0.5331 \\
+{}benign recall (inf FP 행) & .9969 (8,028) & .9981 (3,934) & .9986 (2,067) & .9991 (512) & \textbf{.6309 (1,290,001)} &  &  &  \\
+{}hoic recall & .869 & .900 & .742 & .911 & .955 &  &  &  \\
+{}inf P /\allowbreak{} R & .60 /\allowbreak{} .32 & .75 /\allowbreak{} .32 & .83 /\allowbreak{} .27 & .95 /\allowbreak{} .27 & \textbf{.02 /\allowbreak{} .84} &  &  &  \\
+{}web F1 (recall) & .242 (.93) & .242 (.91) & .233 (.92) & .212 (.92) & .230 (.92) &  &  &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+seed 45는 정상(hoic 0.911, inf precision 0.95 — 5 seed 중 benign \ensuremath{\rightarrow} inf 유출 최소 512행). \textbf{seed 46은 benign 3.50M 중 1.29M행이 infiltration으로} 넘어가 benign recall 0.631, inf precision 0.024. C0 구성은 다른 seed와 동일(benign 75,000 · inf 4,847 · hoic 3,769)이므로 원인은 비율·크기가 아니라 \textbf{어느 inf 사본이 뽑혔나} — 1M 균등(inf 41.7k)·1M S=\allowbreak{}0.60에서 본 붕괴와 같은 모드가 100k(inf 4.8k)에서도 1/\allowbreak{}5로 터진다. §8ab의 "benign \ensuremath{\leq}190k면 11/\allowbreak{}11 무사"는 \textbf{12/\allowbreak{}13으로 정정}: benign 절대 행 수는 위험을 낮추지만 0으로 만들지 못한다. 게이트: s45·s46 모두 τ=\allowbreak{}\ensuremath{\infty}(제안 0)  \ensuremath{\rightarrow}  system =\allowbreak{} global. s46 expert 구성은 K=\allowbreak{}3에 benign 182k+\allowbreak{}inf 3.8k /\allowbreak{} inf 5.6k+\allowbreak{}web 152 /\allowbreak{} benign 184k+\allowbreak{}inf 2k로 잔차가 benign 쪽에 몰렸다(global이 benign을 틀리고 있다는 자기 신호이나 게이트는 닫힘).
+
+\textbf{보고 방식}: 논문·발표 표는 5 seed 전부 표기(평균 0.738, 중앙값 0.754, 정상 4-seed 평균 0.754 =\allowbreak{} XGB). 붕괴 seed를 빼고 인용하지 않는다. \textbf{처방 후보}: 체인 9 후반의 exp33 \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}dup\allowbreak{}-\allowbreak{}cap k}(사본 수 상한 20·5)가 benign 쌍둥이 inf 사본 질량을 깎는 첫 시도 — 기본은 seed 42만 돌아가므로 \texttt{-\allowbreak{}-\allowbreak{}seed 4\allowbreak{}6} run을 추가해 s46 C0에서 붕괴가 사라지는지가 판정 기준. benign \ensuremath{\rightarrow} inf 1.29M행과 C0 inf 4,847행의 벡터 중복(0d 해시)을 대조하면 "쌍둥이 사본" 가설을 직접 검증할 수 있다(미실행).
+
+최종 후보 상세(C0 시나리오 구성·클래스별 P/\allowbreak{}R·expert 구성·게이트·실패 지점·run dir)는 캠페인 artifact ⑦b(접힘 섹션)에 정리.
+
+\subsubsection{8ae. 체인 10 사전 등록 (0903 17:55) — dup-cap을 붕괴 seed에 직접}
+체인 9의 dup-cap(k=\allowbreak{}20, 5)은 seed 42(정상 seed)에서 돌므로 "붕괴를 막는가"를 판정하지 못한다. 체인 10: \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp33\_\allowbreak{}\allowbreak{}c0\allowbreak{}dupcap.\allowbreak{}p\allowbreak{}y} 100k 균등 S=\allowbreak{}0.75, \textbf{seed 46(benign \ensuremath{\rightarrow} inf 1.29M 붕괴, §8ad)} 에 k=\allowbreak{}20 /\allowbreak{} 5, 이어 \textbf{seed 44(hoic 0.742 하단)} 에 k=\allowbreak{}20 /\allowbreak{} 5. 병행 2개. 판독: seed 46에서 benign recall이 0.63  \ensuremath{\rightarrow}  \ensuremath{\geq}0.99로 회복되는가(붕괴 방지), seed 44에서 hoic가 0.742 위로 오르는가, 정상 seed(42, 체인 9) 에서 macro 손실이 없는가. 셋 다 만족하면 dup-cap이 "benign 쌍둥이 사본 질량" 처방으로 채택 후보. 실행 세션이 둘이므로(랩로그 §8ad는 다른 세션이 작성) 판독은 상대 세션이 먼저 적으면 중복 기록하지 않는다.
+
+\subsubsection{8af. 체인 9 결과 (0903 17:42–19:02) — \textbf{250k 균등 5-seed 완성(5/\allowbreak{}5 무붕괴), dup-cap 강한 음성  \ensuremath{\rightarrow}  체인 10 취소}}
+\textbf{250k S=\allowbreak{}0.75 균등 배분, seed 42–46}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22527\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12431\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11951\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11951\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11951\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12431\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16758\linewidth-2\tabcolsep\relax}}
+\toprule
+seed & 42 & 43 & 44 & 45 & 46 & 평균 (min–max) \\ \midrule
+\endfirsthead
+seed & 42 & 43 & 44 & 45 & 46 & 평균 (min–max) \\ \midrule
+\endhead
+{}macro & 0.7513 & 0.7332 & 0.7575 & \textbf{0.7599} & 0.7475 & \textbf{0.7499 (0.733–0.760)} \\
+{}hoic & 0.872 & 0.795 & 0.914 & 0.949 & 0.941 & 0.894 \\
+{}benign recall /\allowbreak{}  \ensuremath{\rightarrow} inf & .9951/\allowbreak{}14.7k & .9973/\allowbreak{}6.9k & .9986/\allowbreak{}2.3k & .9978/\allowbreak{}5.1k & .9961/\allowbreak{}11.2k &  \\
+{}inf F1 & .383 & .316 & .406 & .436 & .346 & .377 \\
+{}tail\_\allowbreak{}avg & .5416 & .5104 & .5492 & .5498 & .5238 & .535 \\
+\bottomrule
+\end{longtable}
+\endgroup
+250k 균등은 5/\allowbreak{}5 붕괴 없음(100k 균등은 1/\allowbreak{}5 붕괴, §8ad) — seed 46이 100k에서는 benign \ensuremath{\rightarrow} inf 1.29M, 250k에서는 11.2k. benign 사본이 너무 적어도(100k s46) 너무 많아도(1M) 쌍둥이 추첨이 터지고, \textbf{250k 균등(benign 187k)이 경험적 안전 구간}. 평균 0.750 vs XGB-c0 0.754: 동률(범위 안), tail 0.535 vs 0.531 동률. 논문 주표 후보 =\allowbreak{} 250k 균등 5-seed(무붕괴) +\allowbreak{} 100k 균등 5-seed(붕괴 1건 포함 표기).
+
+\textbf{exp33 \texttt{-\allowbreak{}-\allowbreak{}c0-\allowbreak{}dup\allowbreak{}-\allowbreak{}cap k} (100k 균등 seed 42)}: k=\allowbreak{}5  \ensuremath{\rightarrow}  macro \textbf{0.6357}(풀 2.75M행 제거; port-21 \ensuremath{\rightarrow} \textbf{web}, web F1 0.009, benign \ensuremath{\rightarrow} inf 35.9k), k=\allowbreak{}20  \ensuremath{\rightarrow}  \textbf{0.6925}(2.33M행 제거; benign \ensuremath{\rightarrow} inf 32.0k, inf F1 0.12). dedup(k=\allowbreak{}1)과 같은 방향의 실패 — 사본 상한은 benign 밀도를 깎아 inf·web precision을 파괴하고 port-21 다수결까지 흔든다. \textbf{정제 축 3연속 음성(dedup·conflict·dup-cap) 최종 종결}; 체인 10 취소. run: 250k s45 \texttt{182702} /\allowbreak{} s46 \texttt{182859} /\allowbreak{} cap5 \texttt{190018} /\allowbreak{} cap20 \texttt{190203}. 체인 11: seed 47/\allowbreak{}48 (250k·100k 균등) — 붕괴 빈도·평균 정밀화.
+
+\subsubsection{8ag. 체인 11 (seed 47/\allowbreak{}48) — 균등 배분 7-seed 요약 +\allowbreak{} \textbf{exp34 추첨 선택 사전 등록}}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.11800\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07800\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07800\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07800\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07800\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07800\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07800\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.07800\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13400\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20200\linewidth-2\tabcolsep\relax}}
+\toprule
+균등 S=\allowbreak{}0.75 & s42 & s43 & s44 & s45 & s46 & s47 & s48 & 평균 /\allowbreak{} 중앙값 & 누수·붕괴 \\ \midrule
+\endfirsthead
+균등 S=\allowbreak{}0.75 & s42 & s43 & s44 & s45 & s46 & s47 & s48 & 평균 /\allowbreak{} 중앙값 & 누수·붕괴 \\ \midrule
+\endhead
+{}\textbf{100k} macro & .7562 & .7617 & .7442 & .7539 & \textbf{.6750} & \textbf{.7647} & .7574 & 0.7447 /\allowbreak{} \textbf{0.7562} & 1/\allowbreak{}7 (s46, benign \ensuremath{\rightarrow} inf 1.29M) \\
+{}100k 정상 6-seed 평균 &  &  &  &  &  &  &  & \textbf{0.7564} (> XGB 0.7548) &  \\
+{}\textbf{250k} macro & .7513 & .7332 & .7575 & .7599 & .7475 & .7526 & \textbf{.7230} & 0.7464 /\allowbreak{} 0.7513 & 1/\allowbreak{}7 부분(s48, benign rec .9866,  \ensuremath{\rightarrow} inf 44k) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+100k s47은 hoic 0.990·macro 0.7647로 신기록. 두 크기 모두 7 seed 중 1개가 benign \ensuremath{\rightarrow} inf 누수 사건(100k는 붕괴, 250k는 부분). \textbf{정직한 주표}: 100k 균등 7-seed 전부 표기, 중앙값 0.756·정상 평균 0.7564 vs XGB 0.7548, 붕괴 1/\allowbreak{}7 명시. 누수 사건은 D\_\allowbreak{}cal(benign 2.1M)에서도 관측 가능해야 하므로 \textbf{exp34 \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}exp34\_\allowbreak{}\allowbreak{}c0\allowbreak{}select.\allowbreak{}p\allowbreak{}y}: K=\allowbreak{}5 추첨 중 D\_\allowbreak{}cal 점수(benign recall \ensuremath{\geq}0.995  \ensuremath{\rightarrow}  macro 최대)로 하나를 선택}. 체인 12: 100k 균등, seed 42\textasciitilde{}48 각각 K=\allowbreak{}5(bag i =\allowbreak{} seed+\allowbreak{}i 추첨). 판독: seed 46에서 붕괴 추첨이 배제되는가(cal에서 보이는가), 7-seed 평균이 오르고 범위가 좁아지는가, 선택된 추첨의 cal 점수와 test macro의 상관. 비용: K개 fit +\allowbreak{} cal 예측(100k에서 \textasciitilde{}1분/\allowbreak{}후보), 추론은 단일. run: 250k s47 \texttt{195007} /\allowbreak{} s48 \texttt{195228}, 100k s47 \texttt{202445} /\allowbreak{} s48 \texttt{202602}.
+
+\subsubsection{8ah. exp34 추첨 선택 (체인 12, 100k 균등 seed 42\textasciitilde{}48, K=\allowbreak{}5) — \textbf{음성}, 그리고 \textbf{random\_\allowbreak{}state 교란 발견}}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.14348\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13804\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19239\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21957\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30652\linewidth-2\tabcolsep\relax}}
+\toprule
+run seed & 선택된 추첨 & test macro (선택) & 단일 run macro (같은 seed) & 비고 \\ \midrule
+\endfirsthead
+run seed & 선택된 추첨 & test macro (선택) & 단일 run macro (같은 seed) & 비고 \\ \midrule
+\endhead
+{}42 & 45 & 0.7518 & 0.7562 &  \\
+{}43 & 46 & 0.7347 & 0.7617 & 추첨 46이 여기서는 붕괴 안 함 \\
+{}44 & 46 & 0.7504 & 0.7442 & 추첨 46, 또 정상 \\
+{}45 & 47 & \textbf{0.6944} (inf 0.09) & 0.7539 & 추첨 47은 단일 run(rs 47)에서 0.7647 \\
+{}46 & 49 & 0.7436 & \textbf{0.6750} & 붕괴 추첨(46)은 cal에서 benign recall 0.632로 검출·배제됨 [확인] \\
+{}47 & 51 & \textbf{0.6930} & 0.7647 &  \\
+{}48 & 50 & 0.7411 & 0.7574 &  \\
+{}평균 &  & \textbf{0.7299} & 0.7447 (정상 6: 0.7564) &  \\
+\bottomrule
+\end{longtable}
+\endgroup
+① 붕괴 추첨은 D\_\allowbreak{}cal에서 보인다(seed 46 run: draw 46 cal benign recall 0.632, 오분류 18,387) — 검출 자체는 성립. ② 그러나 선택 규칙이 나빴다: benign recall \ensuremath{\geq}0.995를 cal에서 만족하는 후보가 한 run에도 없어(cal benign recall \textasciitilde{}0.99) 규칙이 "benign recall 최대"로 떨어졌고, macro는 무시됐다(seed 47 run은 cal macro 0.674짜리 draw 51을 선택). 규칙을 "recall \ensuremath{\geq}0.985 중 macro 최대"로 했다면 다른 추첨을 골랐을 것 — 미실행. ③ \textbf{더 중요한 발견: 같은 C0 추첨이 run에 따라 다른 결과를 낸다.} bag i의 C0는 seed+\allowbreak{}i 단일 run의 C0와 행 단위 동일한데, 추첨 46은 rs=\allowbreak{}46(단일 run)에서 0.675 붕괴 /\allowbreak{} rs=\allowbreak{}43에서 0.7347 /\allowbreak{} rs=\allowbreak{}44에서 0.7504; 추첨 47은 rs=\allowbreak{}47에서 0.7647 /\allowbreak{} rs=\allowbreak{}45에서 0.6944. run 간 차이는 \texttt{TabPFNCl\allowbreak{}assifier\allowbreak{}(random\_\allowbreak{}\allowbreak{}state=\allowbreak{}\allowbreak{}ar\allowbreak{}gs.\allowbreak{}seed)\allowbreak{}} — n\_\allowbreak{}estimators=\allowbreak{}1이라 random\_\allowbreak{}state가 전처리·feature 순열 config 하나를 고른다. \textbf{즉 "추첨 복권"의 상당 부분은 C0 행이 아니라 모델 쪽 config 복권}이며, 지금까지의 seed 스윕은 둘을 함께 바꿨다. fp32 A/\allowbreak{}B(§3)가 같은 seed에서 bit-재현이었던 것과 정합. 처방은 \textbf{n\_\allowbreak{}estimators>1(config 앙상블, TabPFN 기본값 4\textasciitilde{}8)} — 컨텍스트 축이 아니라 모델 축이지만 원플래그이고 100k에서 비용 4×105 s 수준. 체인 13: 100k 균등 seed 42\textasciitilde{}48 \texttt{-\allowbreak{}-\allowbreak{}n-\allowbreak{}esti\allowbreak{}mators 4\allowbreak{}}. 판독: 붕괴(seed 46)가 사라지는가, 7-seed 범위가 좁아지는가, 평균이 0.756 위인가.
+
+\subsubsection{8ai. \textbf{체인 13 — \texttt{-\allowbreak{}-\allowbreak{}n-\allowbreak{}esti\allowbreak{}mators 4\allowbreak{}} (config 앙상블), 100k 균등 S=\allowbreak{}0.75, seed 42\textasciitilde{}48: 7/\allowbreak{}7 full XGB 상회, 붕괴 0/\allowbreak{}7} (0904 02:55)}
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.10668\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08117\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08117\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08117\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08117\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08117\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08117\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08117\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14750\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.09137\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.08627\linewidth-2\tabcolsep\relax}}
+\toprule
+class F1 & s42 & s43 & s44 & s45 & s46 & s47 & s48 & 7-seed 평균 (범위) & XGB-c0 1M & XGB full \\ \midrule
+\endfirsthead
+class F1 & s42 & s43 & s44 & s45 & s46 & s47 & s48 & 7-seed 평균 (범위) & XGB-c0 1M & XGB full \\ \midrule
+\endhead
+{}benign & 0.9952 & 0.9942 & 0.9935 & 0.9948 & 0.9949 & 0.9949 & 0.9949 & \textbf{0.9946} (0.994–0.995) & 0.9945 & 0.9943 \\
+{}bot & 0.9984 & 0.9981 & 0.9985 & 0.9985 & 0.9985 & 0.9985 & 0.9985 & \textbf{0.9984} (0.998–0.999) & 0.9977 & 0.9978 \\
+{}brute\_\allowbreak{}force & 0.9159 & 0.9158 & 0.9159 & 0.9158 & 0.9159 & 0.9158 & 0.9159 & \textbf{0.9159} (0.916–0.916) & 0.9159 & 0.9159 \\
+{}ddos & 0.9997 & 0.9844 & 0.9754 & 0.9959 & 0.9919 & 0.9962 & 0.9955 & \textbf{0.9913} (0.975–1.000) & 0.9950 & 0.9921 \\
+{}dos & 0.7814 & 0.7816 & 0.7815 & 0.7813 & 0.7813 & 0.7813 & 0.7813 & \textbf{0.7814} (0.781–0.782) & 0.7819 & 0.7822 \\
+{}infiltration & 0.4007 & 0.4065 & 0.4035 & 0.4299 & 0.4461 & 0.3975 & 0.4400 & \textbf{0.4177} (0.398–0.446) & 0.4256 & 0.4291 \\
+{}web\_\allowbreak{}attacks & 0.2448 & 0.2493 & 0.2387 & 0.2471 & 0.2575 & 0.2461 & 0.2477 & \textbf{0.2473} (0.239–0.257) & 0.1680 & 0.1724 \\
+{}macro\_\allowbreak{}avg & 0.7623 & 0.7614 & 0.7582 & 0.7662 & 0.7694 & 0.7615 & 0.7677 & \textbf{0.7638} (0.758–0.769) & 0.7541 & 0.7548 \\
+{}tail\_\allowbreak{}avg & 0.5480 & 0.5513 & 0.5469 & 0.5585 & 0.5674 & 0.5474 & 0.5620 & \textbf{0.5545} (0.547–0.567) & 0.5305 & 0.5331 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+n\_\allowbreak{}estimators 1  \ensuremath{\rightarrow}  4: 7-seed macro 0.7447(붕괴 포함)/\allowbreak{}0.7563(정상 6)  \ensuremath{\rightarrow}  \textbf{0.7638 (0.758–0.769)}, 범위 0.090  \ensuremath{\rightarrow}  \textbf{0.011}. seed 46(n=\allowbreak{}1에서 0.675 붕괴)이 n=\allowbreak{}4에서 \textbf{0.7694로 최고}. hoic 0.94\textasciitilde{}1.00, benign recall 0.9976\textasciitilde{}0.9987, ftp \ensuremath{\rightarrow} brute 7/\allowbreak{}7, benign \ensuremath{\rightarrow} inf 2.0\textasciitilde{}5.7k. \textbf{§8ah의 진단 확정: 복권은 C0 행이 아니라 TabPFN 단일 config(random\_\allowbreak{}state)였고, config 4개 평균이 이를 제거한다.} 비용: 100k×4 config eval\_\allowbreak{}global 625\textasciitilde{}723 s =\allowbreak{} 1M×1 config(736 s)와 같음, peak 6.4 GB. \textbf{정직한 헤드라인(발표용)}: frozen TabPFN-v3, 컨텍스트 100k(훈련 풀의 0.8\%; benign 0.75 +\allowbreak{} 공격 6종 균등), config 앙상블 4, 개입층 없음 — 7 seed 모두 full XGBoost(12.07M행 학습, 0.7548)를 macro-F1로 상회(평균 +\allowbreak{}0.009, 최소 +\allowbreak{}0.003), tail macro 0.555 vs 0.533, web F1 0.25 vs 0.17, benign −0.003, ddos −0.002, inf·dos·brute·bot 동률. 남은 열세 없음. 남은 검증(체인 14, 진행): ① 자연 비율·자연 배분에서도 n=\allowbreak{}4가 같은 이득을 주는가(구성 효과가 앙상블에 흡수되지 않는지) ② 250k 균등 n=\allowbreak{}4 7-seed ③ n=\allowbreak{}8. 이 결과가 나오기 전까지 논문 주표 =\allowbreak{} 이 표.
+
+\subsubsection{8aj. 체인 14 — n\_\allowbreak{}estimators=\allowbreak{}4 대조군 +\allowbreak{} 250k 균등 n=\allowbreak{}4 (0904 04:08–13:10; 250k s48·n=\allowbreak{}8은 13:10경 외부 종료로 미실행)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.19872\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12821\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12821\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12821\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17949\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23718\linewidth-2\tabcolsep\relax}}
+\toprule
+100k, n=\allowbreak{}4 & s42 & s43 & s44 & 평균 & port-21 \\ \midrule
+\endfirsthead
+100k, n=\allowbreak{}4 & s42 & s43 & s44 & 평균 & port-21 \\ \midrule
+\endhead
+{}자연 비율 /\allowbreak{} 자연 배분 & 0.7511 & \textbf{0.6596} & 0.7464 & 0.719 & s43 \textbf{dos} — n=\allowbreak{}4로도 안 고정 \\
+{}S=\allowbreak{}0.75 /\allowbreak{} 자연 배분 & 0.7490 & 0.7516 & 0.7474 & 0.7493 & brute 3/\allowbreak{}3 (web F1 0.155) \\
+{}\textbf{S=\allowbreak{}0.75 /\allowbreak{} 균등 (§8ai)} & 0.7623 & 0.7614 & 0.7582 & \textbf{0.7638} (7-seed) & brute 7/\allowbreak{}7 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16576\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10054\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10054\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10054\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10054\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10054\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10054\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23098\linewidth-2\tabcolsep\relax}}
+\toprule
+250k S=\allowbreak{}0.75 균등, n=\allowbreak{}4 & s42 & s43 & s44 & s45 & s46 & s47 & 평균 (범위) \\ \midrule
+\endfirsthead
+250k S=\allowbreak{}0.75 균등, n=\allowbreak{}4 & s42 & s43 & s44 & s45 & s46 & s47 & 평균 (범위) \\ \midrule
+\endhead
+{}macro & 0.7586 & 0.7624 & 0.7586 & 0.7637 & 0.7591 & 0.7658 & \textbf{0.7614 (0.759–0.766)}, 6/\allowbreak{}6 > XGB \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+\textbf{결론: 구성 효과는 앙상블에 흡수되지 않는다.} n=\allowbreak{}4를 줘도 자연 비율은 0.719(port-21 복권 잔존), S=\allowbreak{}0.75 자연 배분은 0.749 (XGB 미달), S=\allowbreak{}0.75 균등만 0.764. 즉 \textbf{구성이 수준을 정하고 앙상블이 config 복권을 없앤다} — 둘은 상보적이며 논문의 기여 두 축이 그대로 성립한다. 250k 균등 n=\allowbreak{}4도 6/\allowbreak{}6 XGB 상회(0.761)로 100k(0.764)와 동급 — 100k가 비용 1/\allowbreak{}2.5로 우선. run: 100k nat n4 \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}040835/\allowbreak{}\allowbreak{}041034/\allowbreak{}\allowbreak{}0\allowbreak{}52327}, S075nat n4 \texttt{052139/\allowbreak{}\allowbreak{}0\allowbreak{}63540/\allowbreak{}\allowbreak{}06\allowbreak{}3636}, 250k bal n4 \texttt{084618/\allowbreak{}\allowbreak{}0\allowbreak{}84919/\allowbreak{}\allowbreak{}11\allowbreak{}0011/\allowbreak{}\allowbreak{}110\allowbreak{}003/\allowbreak{}\allowbreak{}1306\allowbreak{}28/\allowbreak{}\allowbreak{}13094\allowbreak{}4}. (0904 13:10 저장소 재배치: \texttt{manuscri\allowbreak{}pt/\allowbreak{}\allowbreak{}repor\allowbreak{}t/\allowbreak{}\allowbreak{}}  \ensuremath{\rightarrow}  \texttt{lablog/\allowbreak{}\allowbreak{}r\allowbreak{}eport/\allowbreak{}\allowbreak{}}; 이 파일 경로가 바뀜.)
+
+
+
+\section{추가 분석과 수치 검토}
+결과 보고 · 2026-09-02 · 진단 \ensuremath{\rightarrow} 분할 변경 \ensuremath{\rightarrow} 검증
+
+답이 나왔습니다. 격차 0.055의 절반은 두 모델에게 준 데이터량 차이 였고, 나머지는 ddos·infiltration 두 클래스 에 몰려 있었습니다. 분할 방법과 채택 단위를 바꾼 결과 시스템은 0.6978  \ensuremath{\rightarrow}  0.72\textasciitilde{}0.74(3반복) , 남은 격차는 −0.015\textasciitilde{}−0.035입니다. 부산물로 global의 재현성 대역이 25배 줄었고, expert bank 가설은 기각 됐습니다.
+
+\subsection*{기준선 — 학습 데이터량별 XGBoost, 그리고 우리의 위치}
+XGBoost를 두 조건으로 재측정했습니다: 전체 12.07M행(공식 기준선)과, global이 컨텍스트로 받는 것과 동일한 1M행 (정보예산을 맞춘 보조 기준선).
+
+Fig 1 — 기준선과 현재 위치 (동일 평가 4,023,114행, macro-F1)
+
+\subsection*{분할 방법 변경 (exp27) 완료}
+이 섹션이 다루는 단계: C0 컨텍스트 — 무엇을 보여줄 것인가
+
+기존 분할은 클래스 단위 로 시간순 정렬 후 앞 50\%를 컨텍스트(C0) 풀로 떼었습니다. 그런데 brute\_\allowbreak{}force 클래스는 ftp 공격(앞) +\allowbreak{} ssh 공격(뒤)이 시간순으로 붙어 있어, 50\% 컷이 ftp 안에서 끝나 C0에 ssh가 0행 이 됐습니다. 같은 이유로 dos의 hulk, web\_\allowbreak{}attacks의 sql\_\allowbreak{}injection도 0행.
+
+Fig 3 — 분할 방식 비교 (brute\_\allowbreak{}force 예시)
+
+기존 · 클래스 단위 시간순 50/\allowbreak{}25/\allowbreak{}25 — 컷이 scenario 경계를 무시
+
+층화 · (클래스, scenario) 그룹마다 같은 시간순 50/\allowbreak{}25/\allowbreak{}25 적용
+
+Fig 4 — 분할 변경 전후 (global 기준)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24286\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19524\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19524\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 기존 분할 & 층화 분할 & XGB c0 & XGB full \\ \midrule
+\endfirsthead
+클래스 & 기존 분할 & 층화 분할 & XGB c0 & XGB full \\ \midrule
+\endhead
+{}brute\_\allowbreak{}force & 0.7246 & 0.9159 & 0.7246 & 0.9159 \\
+{}dos & 0.5237 & 0.7552+\allowbreak{} & 0.7820 & 0.7822 \\
+{}ddos & 0.9047 & 0.83\textasciitilde{}0.90 & 0.9997 & 0.9921 \\
+{}macro & 0.6698 & 0.7207 & 0.7283 & 0.7548 \\
+\bottomrule
+\end{longtable}
+\endgroup
+부산물 — global 재현성 25배 재현성 대역 =\allowbreak{} 같은 설정·같은 seed로 같은 run을 반복했을 때 global macro-F1이 흔들리는 폭. GPU bf16 연산은 실행마다 비트 수준으로 조금씩 달라 확률값이 미세하게 변하는데, C0에 없던 scenario 행들은 global이 크게 틀리는(경계가 얇은) 행이라 이 미세 변동이 예측을 수만 행 단위로 뒤집었습니다(한 반복에서 infiltration 0.39 \ensuremath{\rightarrow} 0.21). 그 행들이 C0에 포함되자 뒤집힘이 사라져 대역이 0.027  \ensuremath{\rightarrow}  0.0011 .
+
+\subsection*{지금 시스템의 구조 — 병목이 어디인가}
+분할 변경 이후의 시스템을 한 장으로. 수치는 층화 분할 3반복 중 최고 run(exp29 r3, delta +\allowbreak{}0.018) 기준입니다.
+
+Fig 2 — 파이프라인과 각 단계의 실측 (4,023,114행 기준)
+
+Fig 2a — expert 뱅크 구성과 제안/\allowbreak{}채택 (exp29 r3)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12939\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12939\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30044\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14912\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16228\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12939\linewidth-2\tabcolsep\relax}}
+\toprule
+expert & 블록 행 & 구성 (지배 클래스) & scorer가 제안 & verifier가 채택 & 채택률 \\ \midrule
+\endfirsthead
+expert & 블록 행 & 구성 (지배 클래스) & scorer가 제안 & verifier가 채택 & 채택률 \\ \midrule
+\endhead
+{}e1 & 15,892 & infiltration 100\% & 36,780 & 33,587 & 91.3\% \\
+{}e2 & 40,275 & brute\_\allowbreak{}force 96\% & 289,705 & 1,414 & 0.5\% \\
+{}e3 & 405 & ddos 100\% & 247,864 & 4,725 & 1.9\% \\
+{}e4 & 186,000 & benign 86\% 잡탕 (유일하게 selector 작동) & 22,045 & 2,492 & 11.3\% \\
+{}e5 & 112 & web\_\allowbreak{}attacks 100\% & 590,025 & 6 & 0.0\% \\
+\bottomrule
+\end{longtable}
+\endgroup
+expert 형성 자체는 문제 없나 "틀렸다"기보다 가치를 더하지 못하고, 불안정의 진원 입니다. ① 내용은 유효 — 이 뱅크로 oracle 0.84가 나옵니다. ② 그러나 형성 방식(residual 서명 KMeans)이 등메모리 무작위 선택보다 낫지 않고 (Gate 1 기각), ③ KMeans가 1.93M짜리 잡탕 1개 +\allowbreak{} 112\textasciitilde{}405행짜리 미세 regime들로 갈라지는 구조라 run마다 K가 2 \ensuremath{\leftrightarrow} 5로 요동 — 재현 불안정과 게이트 셧다운(4/\allowbreak{}7)의 진원 입니다. ④ 미세 regime expert는 블록이 컨텍스트의 1\% 미만(공유 anchor 12,761행이 지배)이라 반쯤 퇴화 상태. 결론: expert를 더 정교하게 만드는 방향이 아니라 더 단순하게(K 축소·최소 크기 규칙) 만들고 게이트를 고치는 방향 이 데이터가 가리키는 길입니다.
+
+Fig 2b — 개선가능대상의 운명 구성 (exp29 r3 · 개선가능대상 =\allowbreak{} global이 오판한 행 · 막대 =\allowbreak{} 100\%)
+
+정밀 수치 · Panel A — 개선가능대상 (막대의 원자료)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14643\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12768\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11518\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 개선가능 대상 & 제안 미포함 & 제안 포함  \ensuremath{\rightarrow}  verifier 판정 & 구제율 &  &  \\ \midrule
+\endfirsthead
+클래스 & 개선가능 대상 & 제안 미포함 & 제안 포함  \ensuremath{\rightarrow}  verifier 판정 & 구제율 &  &  \\ \midrule
+\endhead
+{}채택 +\allowbreak{} (구제) & 채택 − (무익) & 기각 * &  &  &  &  \\
+{}ddos & 73,287 & 38,695 & 25,752 & 3,964 & 4,876 & 35.1\% \\
+{}infiltration & 27,473 & 9,950 & 49 & 194 & 17,280 & 0.2\% \\
+{}dos & 23,833 & 2,061 & 610 & 0 & 21,162 & 2.6\% \\
+{}web\_\allowbreak{}attacks & 273 & 116 & 125 & 4 & 28 & 45.8\% \\
+{}benign & 6,547 & 4,241 & 0 & 20 & 2,286 & 0.0\% \\
+{}brute\_\allowbreak{}force & 20 & 20 & 0 & 0 & 0 & 0.0\% \\
+{}bot & 127 & 124 & 0 & 0 & 3 & 0.0\% \\
+\bottomrule
+\end{longtable}
+\endgroup
+Panel B — 개선 불필요 행 (global 정답) : 여기 낸 제안은 이득이 없고 훼손 위험만 있음
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16784\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14671\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13263\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13263\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25235\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16784\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 정답 행 & 제안 포함 & 채택 & 훼손 − (정답 \ensuremath{\rightarrow} 오답) & 채택·무해 (답 유지) \\ \midrule
+\endfirsthead
+클래스 & 정답 행 & 제안 포함 & 채택 & 훼손 − (정답 \ensuremath{\rightarrow} 오답) & 채택·무해 (답 유지) \\ \midrule
+\endhead
+{}benign & 3,496,379 & 891,217 & 291 & 141 & 150 \\
+{}ddos & 191,585 & 124,661 & 2,629 & 0 & 2,629 \\
+{}infiltration & 10,158 & 8,887 & 8,586 & 0 & 8,586 \\
+{}brute\_\allowbreak{}force & 115,020 & 77,344 & 0 & 0 & 0 \\
+{}dos & 36,761 & 7,734 & 0 & 0 & 0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection*{채택 단위 변경 (exp26) 완료 · 목표 3/\allowbreak{}4 달성}
+이 섹션이 다루는 단계: verifier — 채택 문턱의 단위
+
+개입 흐름: scorer가 후보를 제안  \ensuremath{\rightarrow}  expert 실행  \ensuremath{\rightarrow}  verifier 가 이득을 예측  \ensuremath{\rightarrow}  예측값이 문턱을 넘으면 답 교체. 이득과 채택 조건의 정의:
+
+w c 는 클래스가 희귀할수록 커서(아래 표), 같은 문턱 21.145가 클래스마다 전혀 다른 난이도가 됩니다:
+
+Fig 5a — 클래스별 자격 조건 (기존 단위)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17708\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16146\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13802\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21615\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16927\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13802\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & n c (학습 풀) & w c & 필요 NLL (21.145/\allowbreak{}w) & p(정답) 조건 & 오답 중 자격 \\ \midrule
+\endfirsthead
+클래스 & n c (학습 풀) & w c & 필요 NLL (21.145/\allowbreak{}w) & p(정답) 조건 & 오답 중 자격 \\ \midrule
+\endhead
+{}web\_\allowbreak{}attacks & 1,522 & 1,132.8 & 0.019 & < 0.981 & 100\% \\
+{}infiltration & 112,891 & 15.27 & 1.38 & < 0.250 & 99.0\% \\
+{}bot & 124,621 & 13.84 & 1.53 & < 0.217 & 99.2\% \\
+{}dos & 181,779 & 9.49 & 2.23 & < 0.108 & 34.9\% \\
+{}brute\_\allowbreak{}force & 345,116 & 5.00 & 4.23 & < 0.015 & 100\% \\
+{}ddos & 794,609 & 2.17 & 9.74 & < 5.9×10 −5 & 0\% \\
+{}benign & 10,508,775 & 0.164 & 128.9 & < 10 −56 & 0\% \\
+\bottomrule
+\end{longtable}
+\endgroup
+변경: verifier의 학습 목표를 G  \ensuremath{\rightarrow}  G /\allowbreak{} w c =\allowbreak{} ΔNLL로 — 채택 조건이 「ΔNLL > τ」(전 클래스 공통, nat 단위)가 되어 위 표의 w c 열이 비교에서 소거됩니다. scorer는 그대로입니다.
+
+Fig 5 — 단위 변경 사전 등록 채점표 (exp26)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30833\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.46667\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22500\linewidth-2\tabcolsep\relax}}
+\toprule
+예측 & 결과 & 판정 \\ \midrule
+\endfirsthead
+예측 & 결과 & 판정 \\ \midrule
+\endhead
+{}ddos가 열린다 & 채택 0  \ensuremath{\rightarrow}  6,602 · F1 +\allowbreak{}0.015 & 적중 \\
+{}benign은 열리면 안 됨 & 204만 제안 중 289 채택 & 적중 \\
+{}harmful \ensuremath{\leq} 200 & 56 & 적중 \\
+{}infiltration이 열린다 & 42행뿐 (제안 35,193) & 미달 \\
+\bottomrule
+\end{longtable}
+\endgroup
+이 섹션이 다루는 단계: expert 뱅크 — 뱅크를 어떻게 만들 것인가
+
+Fig 6 — 판정 목록 (전부 등조건 측정)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.39558\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39558\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20884\linewidth-2\tabcolsep\relax}}
+\toprule
+가설 & 측정 & 판정 \\ \midrule
+\endfirsthead
+가설 & 측정 & 판정 \\ \midrule
+\endhead
+{}residual mining이 무작위/\allowbreak{}근접 선택보다 낫다 (Gate 1) & 등메모리 oracle: residual 0.830 < random 0.845 < proximity 0.886 & 기각 \\
+{}expert 다중화(K>1)가 필요하다 & K=\allowbreak{}1 vs K=\allowbreak{}5 만 비교(중간 격자 미측정): delta +\allowbreak{}0.002(대역 안) · K=\allowbreak{}1 oracle 0.884 \ensuremath{\geq} K=\allowbreak{}5 & 근거 없음 \\
+{}diversity selector가 블록을 고른다 & 5개 regime 중 4개가 크기\ensuremath{\leq}예산  \ensuremath{\rightarrow}  KMeans 배정 결과 전체가 그대로 블록(선택 과정 없음) & 사실상 미사용 \\
+{}15-클래스(scenario) 학습이 유리하다 & XGB 동일 행: family 0.7548 > fine 0.7391 & 기각 \\
+{}호출 비용 λ로 낭비 호출(제안 후 미채택 98\%)을 줄인다 & λ 3종 전부 게이트 셧다운(제안 0건) — 판독 불가 & 실패 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection*{재현성 — 남은 불안정은 개입층}
+잡음의 사슬: 원천 =\allowbreak{} TabPFN 추론(bf16, global·expert)  \ensuremath{\rightarrow}  증폭 =\allowbreak{} 뱅크(KMeans의 K 요동 2 \ensuremath{\leftrightarrow} 5)  \ensuremath{\rightarrow}  발현 =\allowbreak{} 문턱 보정(연속 잡음을 가능/\allowbreak{}불가능 이진 판정으로 바꿔 셧다운)
+
+시스템 delta =\allowbreak{} 시스템 − global (개입층이 얹는 개선폭). bf16/\allowbreak{}fp32는 GPU 수치 정밀도 포맷으로, bf16 연산은 실행 순서가 비결정적이라 같은 입력에도 매번 미세하게 다른 확률이 나옵니다. fp32+\allowbreak{}결정성 커널은 PyTorch가 문서화한 완전 결정성 조합이라 동일 명령 2회가 완전히 같은 결과를 내는지 (A/\allowbreak{}B 해시 비교)를 시험 중입니다.
+
+Fig 7 — 동일 설정 반복 결과
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15882\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16618\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25441\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15147\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26912\linewidth-2\tabcolsep\relax}}
+\toprule
+파이프라인 & global 대역 & 시스템 delta & harmful & 비고 \\ \midrule
+\endfirsthead
+파이프라인 & global 대역 & 시스템 delta & harmful & 비고 \\ \midrule
+\endhead
+{}기존 분할 ×3 & 0.027 & +\allowbreak{}.028 /\allowbreak{} −.015 /\allowbreak{} +\allowbreak{}.013 & 4\textasciitilde{}1,132 & 개선/\allowbreak{}개악 판정의 부호가 run마다 뒤집힘 \\
+{}층화 분할 ×3 & 0.0011 & 0 /\allowbreak{} +\allowbreak{}.007 /\allowbreak{} +\allowbreak{}.018 & 0\textasciitilde{}214 & 게이트 셧다운 7회 중 4회 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection*{최고 성능 run — 조건과 클래스별 지표}
+조건 : exp29(층화 분할 +\allowbreak{} verifier 단위 ΔNLL +\allowbreak{} 등메모리 대조) · K=\allowbreak{}5(자동 선택) · τ\_\allowbreak{}pre 0.8835, τ\_\allowbreak{}post 0.25 · prior T 1.25 · seed 42 · bf16 비결정 · 동일 설정 3반복 중 r3. 같은 run 안에서 XGB·oracle 동시 계산.
+
+Fig 8 — 클래스별 F1과 안전 지표 (exp29 r3, 동일 run)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24123\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15351\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17105\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & XGB full & global & 시스템 & oracle & 시스템 vs XGB \\ \midrule
+\endfirsthead
+클래스 & XGB full & global & 시스템 & oracle & 시스템 vs XGB \\ \midrule
+\endhead
+{}benign & 0.9943 & 0.9845 & 0.9882 & 0.9991 & −0.006 \\
+{}bot & 0.9978 & 0.9984 & 0.9984 & 0.9985 & +\allowbreak{}0.001 \\
+{}brute\_\allowbreak{}force & 0.9159 & 0.9159 & 0.9159 & 0.9159 & 0 (동일) \\
+{}ddos & 0.9921 & 0.8394 & 0.9014 & 0.9939 & −0.091 \\
+{}dos & 0.7822 & 0.7552 & 0.7629 & 0.7820 & −0.019 \\
+{}infiltration & 0.4291 & 0.3880 & 0.3891 & 0.9615 & −0.040 \\
+{}web\_\allowbreak{}attacks & 0.1724 & 0.1671 & 0.2207 & 0.2532 & +\allowbreak{}0.048 \\
+{}macro & 0.7548 & 0.7212 & 0.7395 & 0.8435 & −0.015 \\
+{}tail (bot·inf·web) & 0.5331 & 0.5178 & 0.5361 & 0.7377 & +\allowbreak{}0.003 \\
+{}weighted & 0.9834 & 0.9640 & 0.9714 & 0.9927 & −0.012 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.34868\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21711\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21711\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21711\linewidth-2\tabcolsep\relax}}
+\toprule
+안전 지표 & XGB & global & 시스템 \\ \midrule
+\endfirsthead
+안전 지표 & XGB & global & 시스템 \\ \midrule
+\endhead
+{}balanced accuracy & 0.7749 & 0.7226 & 0.7732 \\
+{}macro-AUPRC & 0.7426 & 0.7105 & 0.7157 \\
+{}ECE (낮을수록 좋음) & 0.0055 & 0.0127 & 0.0185 \\
+{}benign FPR & 0.00266 & 0.00187 & 0.00191 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13017\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21207\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26379\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26379\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13017\linewidth-2\tabcolsep\relax}}
+\toprule
+\# & 수리 대상 & 무엇을 바꾸나 & 겨냥하는 증상 (근거) & 기대 \\ \midrule
+\endfirsthead
+\# & 수리 대상 & 무엇을 바꾸나 & 겨냥하는 증상 (근거) & 기대 \\ \midrule
+\endhead
+{}0 & 병목 분해 진단 & r3 dump 오프라인: scorer 완전 개방 시 회수 상한 vs 완벽 선택 시 verifier 상한 & 새 파이프라인에서 A/\allowbreak{}B 병목 서열 미측정 (+\allowbreak{}1.7\% 근거는 옛 구조) & GPU 0 \\
+{}1 & scorer 타깃: ΔNLL 단위 +\allowbreak{} 크기 복원 & U를 b·(G/\allowbreak{}w c )−λc로, sign 분류 대신 기대이득(또는 ΔNLL 문턱) & 남발의 원인 =\allowbreak{} 크기를 버리는 sign 타깃 +\allowbreak{} λ=\allowbreak{}0. ΔNLL 단위면 web 인플레는 소거되고 ddos의 \textasciitilde{}2nat 이득은 보존  \ensuremath{\rightarrow}  남발을 잡아도 ddos 구제가 안 죽음 & 낭비 호출↓ \\
+{}2 & verifier 예측력 & 특징(h\_\allowbreak{}post)에 regime·서명 정보 보강 or sign 추정기 & inf: 자격 99\%인데 구제 49행 — 예측 \ensuremath{\leftrightarrow} 실제 상관 \ensuremath{\leq}0.15, oracle 0.9615 & \textasciitilde{}+\allowbreak{}0.01 \\
+{}3 & 게이트 폴백 & 보정 제약 불충족 시 τ\_\allowbreak{}pre=\allowbreak{}\ensuremath{\infty} 대신 "최소 안전 채택" 규칙 & 셧다운 4/\allowbreak{}7 — delta가 0이 되는 run들 & 안정화 \\
+{}4 & C0 ddos 몫 & 층화 시 클래스별 C0 예산 보전 (one knob) & ddos global 0.905 \ensuremath{\rightarrow} 0.839 하락 — 층화가 ddos 슬롯 잠식 & \textasciitilde{}+\allowbreak{}0.01 \\
+{}5 & 뱅크 단순화 & K 격자(1\textasciitilde{}4) +\allowbreak{} regime 최소 크기 규칙(112·405행짜리 expert 방지) & K 요동 2 \ensuremath{\leftrightarrow} 5, 미세 regime의 anchor 지배(블록<1\%) — Gate 1 기각 반영 & 재현성↑ \\
+{}6 & 개입 행 확률 보정 & 교체된 행의 posterior 재보정 & ECE 0.0127 \ensuremath{\rightarrow} 0.0185 악화 & ECE↓ \\
+{}7 & fp32 A/\allowbreak{}B 판정 (run B 진행 중) & 해시 비교 & 향후 프로토콜 (1회 vs ×3) & — \\
+\bottomrule
+\end{longtable}
+\endgroup
+산술 체크: 1·2·4가 겨냥대로 되면 ddos·inf에서 \textasciitilde{}+\allowbreak{}0.02  \ensuremath{\rightarrow}  macro 0.755± — XGB full 기준선이 사정권. 순서는 1 \ensuremath{\rightarrow} 3 \ensuremath{\rightarrow} 4 \ensuremath{\rightarrow} 2 (1이 2의 측정을 깨끗하게 만듦).
+
+수치 출처: 동일 평가 4,023,114행. 기준 run exp29 ×3 (0902) · exp23 (XGB 동일 run) · 상세 docs/\allowbreak{}lablog/\allowbreak{}reports/\allowbreak{}20260831.tex·0902.md · 문헌 대조 docs/\allowbreak{}tabpfn\_\allowbreak{}imbalance\_\allowbreak{}papers.xlsx .
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

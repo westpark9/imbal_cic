@@ -1,0 +1,1149 @@
+% !TeX root = 20260909.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-09-09}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-09-09 · 0909 — 고정 global 위의 scorer/\allowbreak{}verifier 교정 실험}
+\label{report:20260909_0909}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+\textbf{결론: 이번 실험에서 최종 모델 성능은 개선되지 않았다.} Test 4,023,114행의 최종 예측은 6조건 모두 global과 같다. EXP38·39가 정상 종료했다는 사실과 연구 목표를 달성했다는 것은 다르다.
+
+2026-09-10 설명 보완: 이번에 실행한 것은 \textbf{기존 context·global·expert bank를 고정한 scorer/\allowbreak{}verifier 비교}다. 세부 패턴의 context 지원 보강과 새 expert 구성은 아직 실행하지 않았다. 아래 단계 번호는 모델 내 위치이며, 6조건을 차례로 연결한 하나의 모델을 뜻하지 않는다. 각 조건은 별도로 평가했다.
+
+이전 표에서 혼동을 만든 \textbf{expert 전체 강제 적용의 큰 훼손 수}는 최종 모델의 훼손 수가 아니다. 실제 적용 결과는 §3-A, 무조건 적용 진단은 §3-B, 어디서 교정 후보가 사라졌는지는 §4-A에서 각각 확인한다.
+
+\subsection{1. 모델 처리 순서별 현재·변경·근거}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}}
+\toprule
+단계 & 현재(EXP31) & 변경(EXP38·39) & 근거·이번 실험에서 확인할 점 \\ \midrule
+\endfirsthead
+단계 & 현재(EXP31) & 변경(EXP38·39) & 근거·이번 실험에서 확인할 점 \\ \midrule
+\endhead
+{}① Context 내 세부 패턴 & Class/\allowbreak{}scenario 피복 보완을 수행했지만 내부 feature mode까지 최소 지원을 보장하지 않음. & \textbf{이번에는 행을 바꾸지 않음.} C0·anchor·expert block의 class×scenario 포함 수를 저장. Mode별 지원·고유 벡터 피복 개선은 다음 실험. & 먼저 동일 context에서 라우팅 효과를 분리. 모든 세부 클래스가 부족하다고 단정하지 않음. \\
+{}② Global 기준선 & C0 추첨·TabPFN config 변동이 개입층 비교에 섞일 수 있음. & \textbf{C0 행 ID·seed 42·n\_\allowbreak{}estimators=\allowbreak{}4를 고정}해 한 번 복원하고 모든 조건이 동일 예측 cache를 사용. & 저장된 fitted 모델이 없으므로 재복원 오차를 별도 기록. 원본 global과 새 기준선의 차이를 라우팅 효과로 세지 않음. \\
+{}③ Residual  \ensuremath{\rightarrow}  expert context & Shared anchor +\allowbreak{} residual block으로 취약 구간 전문화. & \textbf{기존 bank 3개를 고정.} 다음 구성 변경은 \texttt{anchor +\allowbreak{}\allowbreak{} residua\allowbreak{}l 취약 구간의\allowbreak{} support\allowbreak{} +\allowbreak{}\allowbreak{} 혼동 co\allowbreak{}ntrast}이며, tail·중간·큰 클래스 모두 대상. & Global residual은 취약 구간과 지원 사례를 고르는 핵심 정보로 유지. 이번에는 context 구성을 동시에 바꾸지 않아 scorer/\allowbreak{}verifier와 원인을 분리. \\
+{}④ Scorer 학습 정답 & 임시 OOF verifier의 수락 b를 NLL gain에 곱해 scorer sign 정답을 만듦. 거절한 후보는 negative로 학습. & \texttt{decision\allowbreak{}\_\allowbreak{}\allowbreak{}both\_\allowbreak{}\allowbreak{}ra\allowbreak{}w}는 \textbf{b를 곱하지 않고} 모든 route pair의 \texttt{expert\_\allowbreak{}\allowbreak{}c\allowbreak{}orrect −\allowbreak{} global\_\allowbreak{}\allowbreak{}correct}를 직접 학습. 기존 의존성을 유지한 control을 함께 둠. & Verifier의 놓침이 scorer의 정답으로 전달되는 경로를 분리. 모든 expert 실행은 원래도 수행하던 오프라인 학습 절차. \\
+{}⑤ Scorer  \ensuremath{\rightarrow}  expert 호출 & 호출 전 feature로 expert별 점수를 예측하고 top-1을 선택. & 이 추론 순서를 유지하고 \textbf{예상 결정 이득}을 학습. 진단용 \texttt{dense\_\allowbreak{}\allowbreak{}de\allowbreak{}cision\_\allowbreak{}\allowbreak{}r\allowbreak{}aw}만 scorer를 우회하고 전체 expert 출력을 관측. & 예상 점수 계산은 expert 호출과 다름. Dense 진단은 post 정보가 충분할 때의 교정력을 확인하는 비교이며 최종 sparse 모델과 구분. \\
+{}⑥ Verifier 입력 & p0·pk·차이·불확실성·거리·descriptor, z/\allowbreak{}raw 입력 없음. & \texttt{post\_\allowbreak{}\allowbreak{}z}는 \textbf{z만 추가}, \texttt{post\_\allowbreak{}\allowbreak{}raw\allowbreak{}}는 \textbf{raw46만 추가}. 같은 fitted legacy scorer와 NLL 목표 사용. & 입력 정보 보강만의 효과를 비교. 두 보강을 동시에 적용하지 않음. \\
+{}⑦ Verifier 학습 목표 & Normalized NLL gain의 0.25 분위수 예측. & \texttt{decision\allowbreak{}\_\allowbreak{}\allowbreak{}post\_\allowbreak{}\allowbreak{}ra\allowbreak{}w}는 raw 입력을 유지하고 \textbf{결정 손익의 평균 회귀}로 변경. Route의 클래스별 균형 sample weight 적용. & Expert만 정답 +\allowbreak{}1, global만 정답 −1, 나머지 0. 중간 클래스 교정도 보상. 목표와 회귀 방식이 함께 바뀌는 하나의 구성 변경으로 기록. \\
+{}⑧ Calibration  \ensuremath{\rightarrow}  최종 교정 & NLL 순이득 최대화, 기존 오경보·harmful fraction·호출량 제약. & 모든 조건에 \textbf{Δmacro-F1 최대화}, tail 평균 ΔF1\ensuremath{\geq}0, brute\_\allowbreak{}force/\allowbreak{}ddos/\allowbreak{}dos 각각 ΔF1\ensuremath{\geq}0, benign ΔFPR\ensuremath{\leq}0.0005, 결정 손익 표본\ensuremath{\geq}30 적용. & 학습 손익은 F1과 다르므로 최종 예측의 F1을 직접 계산. 과거 train prior로 confusion matrix를 표준화. 이 공통 평가 변경과 각 arm의 모델 변경을 구분. \\
+{}⑨ 확인 구간·비용 & 기존 calibration을 이용한 임계값 선택. & Route와 겹치는 hash 제외 후 class×scenario 안에서 앞 70\% 선택 /\allowbreak{} 뒤 30\% 확인. 확인 구간의 선택 구간 중복 hash도 제외. 호출 상한은 1.0, harmful fraction은 진단 지표로 전환. & 표본 비중 차이와 시간 전이를 구분. 이번 우선 목표는 교정 성능이며 비용만 줄어든 결과를 개선으로 세지 않음. 전역 달력 절단이 아닌 scenario 내부 시간 분할. \\
+\bottomrule
+\end{longtable}
+\endgroup
+학습 목표 \texttt{Δk =\allowbreak{}\allowbreak{} 1[e\allowbreak{}xpert 정답\allowbreak{}] − 1[gl\allowbreak{}obal 정답]\allowbreak{}}. 학습은 모든 pair의 관측 결과를 이용한 지도학습이다. 실제 추론은 \textbf{global  \ensuremath{\rightarrow}  scorer의 예상 점수  \ensuremath{\rightarrow}  선택 expert만 실행  \ensuremath{\rightarrow}  verifier 채택/\allowbreak{}거절} 순서를 유지한다.
+
+\subsection{2. 고정한 조건과 비교군}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.48611\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.51389\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 실행값 \\ \midrule
+\endfirsthead
+항목 & 실행값 \\ \midrule
+\endhead
+{}기준 run & \texttt{20260904\allowbreak{}\_\allowbreak{}\allowbreak{}010654\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}exp\allowbreak{}31\_\allowbreak{}\allowbreak{}c0all\allowbreak{}oc} \\
+{}새 run & \texttt{20260909\allowbreak{}\_\allowbreak{}\allowbreak{}160742\_\allowbreak{}\allowbreak{}1059961\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}cic\allowbreak{}2018\_\allowbreak{}\allowbreak{}exp\allowbreak{}39\_\allowbreak{}\allowbreak{}decis\allowbreak{}ion\_\allowbreak{}\allowbreak{}rout\allowbreak{}ing} \\
+{}C0 /\allowbreak{} anchor /\allowbreak{} expert block & 100,000 /\allowbreak{} 12,761 /\allowbreak{} 15,861·186,000·290행 \\
+{}모델 설정 & TabPFN-3, seed 42, n\_\allowbreak{}estimators=\allowbreak{}4, 고정된 3개 expert \\
+{}Global 재복원 & 원본 macro 0.762302  \ensuremath{\rightarrow}  재복원 0.762086; 예측 라벨 2,447행 차이. 모든 새 조건은 재복원 결과를 공동 사용 \\
+{}Route /\allowbreak{} calibration 선택 /\allowbreak{} 확인 /\allowbreak{} test & 391,486 /\allowbreak{} 81,472 /\allowbreak{} 33,213 /\allowbreak{} 4,023,114행 \\
+{}Calibration 선택의 benign /\allowbreak{} web & 22,325 /\allowbreak{} 100행; 확인 구간 9,353 /\allowbreak{} 41행 \\
+{}공통 XGBoost 학습기 예산 & 300 trees, depth 6, learning rate 0.05, CPU 16 threads \\
+{}결정 모델 가중 & Route 클래스별 \texttt{N /\allowbreak{}\allowbreak{} (C ×\allowbreak{} N\_\allowbreak{}\allowbreak{}c)} sample weight \\
+{}실행 시간 & Cache 32.38분 +\allowbreak{} EXP39 98.5초. Cache 조회 시간을 실제 sparse PFN 추론 지연으로 해석하지 않음 \\
+{}평가 범위 & 단일 seed, 기존에 반복 사용한 development holdout. 새로운 untouched test 검증이 아님 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23489\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21291\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23489\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31731\linewidth-2\tabcolsep\relax}}
+\toprule
+비교군 & Scorer & Verifier 입력·목표 & 변경 비교 \\ \midrule
+\endfirsthead
+비교군 & Scorer & Verifier 입력·목표 & 변경 비교 \\ \midrule
+\endhead
+{}legacy & OOF b×NLL sign & 기존 입력 /\allowbreak{} NLL 분위수 & 공통 프로토콜 대조 \\
+{}post\_\allowbreak{}z & 같은 legacy scorer & 기존+\allowbreak{}z /\allowbreak{} NLL 분위수 & legacy 대비 입력만 \\
+{}post\_\allowbreak{}raw & 같은 legacy scorer & 기존+\allowbreak{}raw46 /\allowbreak{} NLL 분위수 & legacy 대비 입력만 \\
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 같은 legacy scorer & 기존+\allowbreak{}raw46 /\allowbreak{} 결정 손익 평균 & post\_\allowbreak{}raw 대비 verifier 목표·회귀 방식 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 결정 손익 평균 & 같은 decision verifier & decision\_\allowbreak{}post\_\allowbreak{}raw 대비 scorer 감독 신호 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & 우회·전체 expert 관측 & 같은 decision verifier & 사후 정보에 기반한 진단 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\texttt{legacy}도 새 calibration 절차와 공통 학습기 설정을 쓰므로 EXP31 원본의 정확한 재실행은 아니다. 모든 조건의 학습·임계값을 결정한 뒤 test 정답으로 평가했다. 원본 실험 스크립트와 결과는 수정하지 않았다.
+
+\subsection{3. 최종 결과와 expert 진단을 구분해서 읽기}
+\subsubsection{3-A. 실제 선택된 최종 정책 — 성능 개선 0}
+교정은 \texttt{global 오\allowbreak{}답   \ensuremath{\rightarrow}   최종\allowbreak{} 정답}, 훼손은 \texttt{global 정\allowbreak{}답   \ensuremath{\rightarrow}   최종\allowbreak{} 오답}인 행 수다. 한 행에서 두 모델 모두 오답인 상태로 라벨만 바뀌면 어느 쪽에도 포함하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23958\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16146\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15365\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15365\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & Macro-F1 & Tail F1 & Benign FPR & 교정 /\allowbreak{} 훼손 행 & 해석 \\ \midrule
+\endfirsthead
+방법 & Macro-F1 & Tail F1 & Benign FPR & 교정 /\allowbreak{} 훼손 행 & 해석 \\ \midrule
+\endhead
+{}global & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & 기준선 \\
+{}legacy & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}post\_\allowbreak{}z & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}post\_\allowbreak{}raw & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{“개입 0”은 calibration에서 임계값 쌍을 고를 때 모든 후보가 탈락해, test에 들어가기 전에 “항상 global 사용” 정책을 선택했다는 뜻이다.} Code의 \texttt{global\_\allowbreak{}\allowbreak{}f\allowbreak{}allback}은 pre/\allowbreak{}post 임계값을 \texttt{None}으로 저장하고 global 예측을 그대로 반환한다. Test 각 행에서 verifier가 판단한 끝에 전부 거절했다는 뜻이 아니다.
+
+따라서 이 표로 확인한 최종 성과는 \textbf{Δmacro-F1=\allowbreak{}0, Δtail-F1=\allowbreak{}0, 교정=\allowbreak{}0, 훼손=\allowbreak{}0}이다. 성능 개선 성공으로 볼 수 없다. 비교용 cache를 만들 때는 모든 expert를 이미 실행했으므로 이 결과를 실측 계산비용 절감으로도 주장하지 않는다.
+
+\subsubsection{3-B. 진단용 강제 적용 — 최종 정책에 사용하지 않은 예측}
+아래는 scorer·verifier를 우회한 별도 계산이다. \texttt{expert1\_\allowbreak{}\allowbreak{}always}는 test 전체 4,023,114행을 expert 1의 정답 여부와 관계없이 그 expert의 예측으로 바꾼다. 반대로 oracle은 실제 정답을 보고 맞힐 수 있는 expert를 선택한다. \textbf{§3-A의 모델 처리 결과에 이어서 적용한 단계가 아니다.}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20513\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13462\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13462\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14744\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19872\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17949\linewidth-2\tabcolsep\relax}}
+\toprule
+진단 & Macro-F1 & Tail F1 & Benign FPR & 교정 /\allowbreak{} 훼손 행 & 계산 방법 \\ \midrule
+\endfirsthead
+진단 & Macro-F1 & Tail F1 & Benign FPR & 교정 /\allowbreak{} 훼손 행 & 계산 방법 \\ \midrule
+\endhead
+{}correctness\_\allowbreak{}oracle & 0.849159 & 0.748924 & 0.0693\% & 30,663 /\allowbreak{} 0 & 정답을 사용하는 진단 \\
+{}expert1\_\allowbreak{}always & 0.631228 & 0.362831 & 53.4832\% & 27,673 /\allowbreak{} 1,869,000 & 단일 expert 전체 적용 \\
+{}expert2\_\allowbreak{}always & 0.694409 & 0.409213 & 0.1343\% & 2,951 /\allowbreak{} 35,400 & 단일 expert 전체 적용 \\
+{}expert3\_\allowbreak{}always & 0.651426 & 0.367657 & 38.5245\% & 24,524 /\allowbreak{} 1,344,307 & 단일 expert 전체 적용 \\
+\bottomrule
+\end{longtable}
+\endgroup
+즉 \textbf{1,869,000건 훼손은 expert 1을 전 행에 강제 적용했을 때}의 결과다. 이 expert가 일부 global 오류를 고칠 수 있더라도, 다른 영역에서 global의 정답을 대량으로 망가뜨린다. 그래서 expert를 단독 대체 모델로 쓸 수 없고, 도움이 되는 구간을 선별해야 한다. Correctness oracle의 30,663건은 현재 bank가 제공하는 교정 가능 사례 수이며, 학습된 라우터가 전부 회수할 수 있다는 보장은 없다.
+
+\subsubsection{3-C. 어느 클래스에 교정 가능한 expert가 있는가}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18108\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16081\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22162\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24189\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19459\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 표본 수 & Global F1 =\allowbreak{} 6조건 F1 & Correctness oracle F1 & Oracle 교정 가능 행 \\ \midrule
+\endfirsthead
+클래스 & Test 표본 수 & Global F1 =\allowbreak{} 6조건 F1 & Correctness oracle F1 & Oracle 교정 가능 행 \\ \midrule
+\endhead
+{}benign & 3,502,926 & 0.994950 & 0.999301 & 2,907 \\
+{}bot & 41,542 & 0.998421 & 0.998529 & 5 \\
+{}brute\_\allowbreak{}force & 115,040 & 0.915874 & 0.915874 & 0 \\
+{}ddos & 264,872 & 0.995782 & 0.999994 & 2,214 \\
+{}dos & 60,594 & 0.781366 & 0.782174 & 64 \\
+{}infiltration & 37,631 & 0.400205 & 0.970450 & 25,423 \\
+{}web\_\allowbreak{}attacks & 509 & 0.248007 & 0.277793 & 50 \\
+\bottomrule
+\end{longtable}
+\endgroup
+현재 bank의 oracle 교정 30,663행 중 infiltration이 25,423행이다. Brute force는 \textbf{교정 가능한 expert 출력이 0행}이고 dos도 64행이다. 이 두 클래스는 라우팅만 바꾸어 해결할 수 있는 폭이 작으므로, 다음 context 실험에서 해당 residual 취약 구간의 support·contrast를 보강해야 한다. Oracle 격차 전체를 학습 가능한 라우팅 이득으로 간주하지 않는다.
+
+\subsection{4. 무엇을 바꿨고, 어디서 교정이 막혔는가}
+\subsubsection{4-A. 임계값을 적용하기 전의 단계별 진단}
+2026-09-10에 저장된 예측을 다시 집계했다. 재학습이나 새 정책의 test 실행은 하지 않았다. Calibration 선택 구간은 81,472행이며 global 오답 6,814행 중 \textbf{6,025행은 bank의 어떤 expert가 정답}이다.
+
+다음 표는 pre 임계값을 잠시 우회하고 scorer가 1위로 고른 expert를 조사한 것이다. “Verifier 양수”는 그 후보에 \texttt{post > 0\allowbreak{}}만 적용한 진단이며, calibration이 최종 채택한 정책이 아니다. Dense 행은 scorer 대신 모든 expert의 post 정보를 사용하므로 별도 진단이다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.19174\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20550\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13211\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19633\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27431\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 1위 후보가 교정 가능한 행 /\allowbreak{} 6,025 & 후보 회수율 & Verifier 양수 중 교정 /\allowbreak{} 훼손 & 이 비교에서 확인한 점 \\ \midrule
+\endfirsthead
+조건 & 1위 후보가 교정 가능한 행 /\allowbreak{} 6,025 & 후보 회수율 & Verifier 양수 중 교정 /\allowbreak{} 훼손 & 이 비교에서 확인한 점 \\ \midrule
+\endhead
+{}legacy & 5,286 & 87.7\% & 0 /\allowbreak{} 0 & Scorer가 맞는 후보를 상당수 골랐지만 NLL verifier의 양수 영역에 교정 사례가 없음 \\
+{}post\_\allowbreak{}z & 5,286 & 87.7\% & 0 /\allowbreak{} 0 & z 추가만으로 이 현상을 해결하지 못함 \\
+{}post\_\allowbreak{}raw & 5,286 & 87.7\% & 0 /\allowbreak{} 0 & raw 추가만으로 이 현상을 해결하지 못함 \\
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 5,286 & 87.7\% & 2,250 /\allowbreak{} 1,590 & 기존 scorer를 유지하고 verifier를 결정 손익으로 바꾸면 교정 후보가 통과하지만 훼손도 통과 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 2,793 & 46.4\% & 2,022 /\allowbreak{} 1,205 & 새 scorer는 후보 단계에서 더 많은 교정 기회를 잃음. Scorer 개선이 확인된 것이 아님 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & 3,029 & 50.3\% & 2,821 /\allowbreak{} 2,211 & 모든 post 정보를 보아도 현재 verifier 점수만으로 교정/\allowbreak{}훼손 구분이 충분하지 않음 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{이번 calibration에서 가장 먼저 확인된 차단점은 NLL verifier의 양수 판정이다.} 최종 채택 0만 보고 scorer가 아무 후보도 찾지 못했다고 해석하면 안 된다. 또한 새 scorer에서는 감독 신호·회귀 방식·가중치가 함께 바뀌었으므로 “임시 verifier 의존성을 제거한 것만이 회수율 하락의 원인”이라고 단정할 수도 없다.
+
+이 관찰을 test 전체로 일반화하지 않는다. 같은 \texttt{post\_\allowbreak{}\allowbreak{}raw\allowbreak{}}의 \texttt{post > 0\allowbreak{}} 진단은 calibration 선택에서는 교정/\allowbreak{}훼손 0/\allowbreak{}0이지만, 저장된 test 예측에서는 2,238/\allowbreak{}177이다. 이는 \textbf{선택 구간에서 관측한 교정 양상이 그대로 반복되지 않았음}을 보여 주며 calibration의 시간·scenario·오류 패턴 대표성을 점검할 이유다. 이 사후 수치로 임계값을 새로 선택하지 않았고, 원래 test 최종 정책은 계속 global 유지다.
+
+원본 집계: 단계별 CSV, 클래스별 CSV, 집계 코드.
+
+\subsubsection{4-B. 최종 임계값 선택에서 남은 후보가 없는 이유}
+다음 수치는 \textbf{calibration 선택 구간에서 기존 격자의 최고 macro 후보}이며 채택된 정책이나 test 개선 수치가 아니다. ΔF1은 과거 train prior로 표준화한 confusion matrix에서 계산했다. 교정/\allowbreak{}훼손은 원래 calibration 표본의 행 수다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11310\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11310\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10847\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21958\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 양의 macro 후보 /\allowbreak{} 전체 & 최고 Δmacro & 해당 Δtail & 해당 Δbenign FPR & 교정 /\allowbreak{} 훼손 & 선택되지 않은 이유 \\ \midrule
+\endfirsthead
+조건 & 양의 macro 후보 /\allowbreak{} 전체 & 최고 Δmacro & 해당 Δtail & 해당 Δbenign FPR & 교정 /\allowbreak{} 훼손 & 선택되지 않은 이유 \\ \midrule
+\endhead
+{}legacy & 0 /\allowbreak{} 52 & +\allowbreak{}0.000000 & +\allowbreak{}0.000000 & +\allowbreak{}0.0000\%p & 0 /\allowbreak{} 0 & 교정 표본 부족·일부 tail 하락 \\
+{}post\_\allowbreak{}z & 0 /\allowbreak{} 52 & +\allowbreak{}0.000000 & +\allowbreak{}0.000000 & +\allowbreak{}0.0000\%p & 0 /\allowbreak{} 0 & 교정 표본 부족·일부 tail 하락 \\
+{}post\_\allowbreak{}raw & 0 /\allowbreak{} 52 & +\allowbreak{}0.000000 & +\allowbreak{}0.000000 & +\allowbreak{}0.0000\%p & 0 /\allowbreak{} 0 & 교정 표본 부족(라벨 변경 0) \\
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 50 /\allowbreak{} 65 & +\allowbreak{}0.018208 & +\allowbreak{}0.042495 & +\allowbreak{}0.1254\%p & 764 /\allowbreak{} 28 & benign FPR 상한 초과 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 65 /\allowbreak{} 65 & +\allowbreak{}0.018270 & +\allowbreak{}0.042661 & +\allowbreak{}0.1478\%p & 780 /\allowbreak{} 33 & benign FPR 상한 초과 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & 4 /\allowbreak{} 18 & +\allowbreak{}0.016003 & +\allowbreak{}0.037473 & +\allowbreak{}0.2060\%p & 764 /\allowbreak{} 46 & benign FPR·일부 중간 클래스 제약 또는 표본 부족 \\
+\bottomrule
+\end{longtable}
+\endgroup
+§4-A의 후보에 pre/\allowbreak{}post 임계값을 함께 적용하면 위 후보들로 좁혀진다. 같은 raw 입력에서 \textbf{결정 손익 목표}로 바꾸면 최고 macro 후보에 infiltration 교정 764행과 benign 훼손 28행이 남는다. Scorer까지 바꾸면 교정 780행(infiltration 779·dos 1)과 benign 훼손 33행이다. 이것은 calibration에서 관측한 목표·회귀·가중 방식 변경의 효과이며, 최종 test 향상으로 주장할 수 없다.
+
+선택 구간의 benign은 22,325행이다. ΔFPR\ensuremath{\leq}0.0005를 지키려면 기존 오경보 교정을 차감한 신규 오경보가 약 11행 이하여야 한다. 28·33행을 함께 채택하는 기존 후보들은 이 상한을 넘는다.
+
+\subsection{5. 사후 진단: 임계값 격자에서 빠진 구간}
+기존 격자는 전체 행 점수의 99\% 분위수까지만 생성했다. \texttt{decision\allowbreak{}\_\allowbreak{}\allowbreak{}both\_\allowbreak{}\allowbreak{}ra\allowbreak{}w}의 post 임계값 최댓값은 \textbf{0.611627}이지만, 라벨이 바뀌는 후보의 post 점수 95\% 분위수는 \textbf{0.910811}이다. Pre 점수 역시 변경 후보 상위 구간이 충분히 포함되지 않았다. 후보가 적은 교정 문제에서 전체 행의 분위수만 사용하면 필요한 세밀한 선택 범위가 빠질 수 있다.
+
+\textbf{완료된 모델·cache와 calibration 선택 구간만 사용}해 라벨 변경 후보 점수의 분위수를 추가했다. Benign·tail·중간 클래스·최소 교정 표본 제약은 그대로 유지했다. 확인 구간과 test에는 새 후보를 적용하지 않았고, 원래 EXP39의 결과를 덮어쓰지 않았다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17767\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17767\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16824\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16352\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19182\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12107\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 추가 격자의 pre /\allowbreak{} post 후보 & Calibration Δmacro & Calibration Δtail & Calibration Δbenign FPR & 교정 /\allowbreak{} 훼손 \\ \midrule
+\endfirsthead
+조건 & 추가 격자의 pre /\allowbreak{} post 후보 & Calibration Δmacro & Calibration Δtail & Calibration Δbenign FPR & 교정 /\allowbreak{} 훼손 \\ \midrule
+\endhead
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 0.968356 /\allowbreak{} 0.870510 & +\allowbreak{}0.008035 & +\allowbreak{}0.018750 & +\allowbreak{}0.0493\%p & 310 /\allowbreak{} 11 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 0.926194 /\allowbreak{} 0.611627 & +\allowbreak{}0.009718 & +\allowbreak{}0.022659 & +\allowbreak{}0.0493\%p & 376 /\allowbreak{} 11 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & -inf /\allowbreak{} 0.929575 & +\allowbreak{}0.005550 & +\allowbreak{}0.012926 & +\allowbreak{}0.0269\%p & 215 /\allowbreak{} 6 \\
+\bottomrule
+\end{longtable}
+\endgroup
+이 결과는 \textbf{제약을 완화하지 않고도 탐색 격자를 수정할 근거}다. 새 모델의 검증된 성능으로 보고하지 않는다. 특히 11행 후보는 상한 근처이므로 다음 독립 확인 구간에서 안정성을 확인해야 한다. §4-A에서 확인한 구간별 차이도 있어, \textbf{격자만 보완하면 test 성능이 나아진다는 결론은 아직 없다.}
+
+[그림: Calibration 임계값 후보와 benign 오경보 상한]
+
+그림은 calibration의 낮은 오경보 증가 영역(0–0.25\%p)을 표시한다. 원래 격자와 사후 보완 격자를 구분하며, 모두 test 수치가 아니다.
+
+\subsection{6. 다음 변경 — 결과에서 직접 이어지는 수정}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20278\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26574\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26574\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26574\linewidth-2\tabcolsep\relax}}
+\toprule
+부분 & 현재 & 다음 변경 & 근거·검증 \\ \midrule
+\endfirsthead
+부분 & 현재 & 다음 변경 & 근거·검증 \\ \midrule
+\endhead
+{}임계값 격자 & 전체 행 분위수로 높은 교정 점수 구간 누락 & 라벨 변경 후보의 점수 분위수·경계값을 추가하고 같은 위험 상한 유지 & Calibration에서 유효 후보 확인. 별도 frozen 후속 실험으로 선택한 뒤 확인 구간에 적용; 기존 test 결과와 구분 \\
+{}Scorer/\allowbreak{}verifier & 기존 scorer 후보 회수율 87.7\%, 새 scorer 46.4\%; 결정 verifier는 교정과 훼손을 함께 통과 & 우선 기존 scorer +\allowbreak{} 결정 verifier에서 격자만 보완해 확인. 새 scorer는 개선된 것으로 채택하지 않고 감독 신호·손실·가중치의 영향을 따로 비교 & 최종 0뿐 아니라 후보 회수율·verifier 교정 생존율·훼손 통과량을 함께 보고 \\
+{}Calibration 대표성 & 같은 양수 gate에서도 선택 구간과 test의 교정 양상이 다름 & 선택·확인 구간의 class×scenario와 global 오류 유형을 비교하고, 선택된 정책의 다음 구간 교정/\allowbreak{}훼손을 확인 & Prior 가중만으로 class 내부의 시간·오류 패턴 차이까지 해결된 것으로 간주하지 않음 \\
+{}중간 클래스 expert context & Brute oracle 교정 0, dos 64행 & 모든 클래스의 residual 취약 구간에서 지원 사례와 혼동 negative를 구성 & 해당 클래스에 교정 가능한 expert 출력이 늘어나는지 같은 예산에서 먼저 확인 \\
+{}Context 피복 & 기존 행 고정 및 class×scenario 수만 감사 & 관측 가능한 mode별 지원·고유 벡터 수를 점검한 뒤 부족한 구간 보강 & 세부 클래스 결손이 이미 입증된 것으로 쓰지 않음; 같은 크기·비중·config 대조 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{7. 문헌·코드·재현 기록}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.33696\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.66304\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 반영 \\ \midrule
+\endfirsthead
+항목 & 반영 \\ \midrule
+\endhead
+{}원본 문헌조사 & tabpfn\_\allowbreak{}papers\_\allowbreak{}survey.xlsx: HINT(9/\allowbreak{}7), LoGIC(9/\allowbreak{}5), Xiaomi-TabLDM(v1 9/\allowbreak{}3·v2 9/\allowbreak{}4) 추가. 총 102편, Ch.2 38편 \\
+{}설계 근거 & 상세 조사, 학습·추론·지표 설명 \\
+{}구현 & EXP38, EXP39 \\
+{}완료 결과 & summary.csv, 클래스별 결과, 선택 임계값 \\
+{}사후 진단 & 진단 코드, calibration 격자 감사 \\
+{}검증 & 테스트 6개 통과: 손익 라벨, weighted F1, benign·중간 클래스 제약, 시간·hash 분리, 합성 end-to-end \\
+{}환경 & Python 3.13.12, torch 2.11.0+\allowbreak{}cu130, XGBoost 3.2.0, sklearn 1.8.0, RTX 4090 24GB \\
+{}초기 실행 수정 & pandas read-only 배열의 in-place 정규화를 새 배열 연산으로 변경. 실패 로그는 보존하고 \texttt{\_\allowbreak{}\allowbreak{}v2} cache로 정상 완료 \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+python -u tabpfn/scripts/nfv3_v3_exp38_frozen_cache.py \
+  --source-run tabpfn/results/20260904_010654_nfv3_cic2018_exp31_c0alloc \
+  --cache-dir tabpfn/resume/exp38_frozen_seed42_20260909_v2 --threads 16
+
+python -u tabpfn/scripts/nfv3_v3_exp39_decision_routing.py \
+  --cache-dir tabpfn/resume/exp38_frozen_seed42_20260909_v2 --threads 16
+
+python scripts/exp39_calibration_audit.py \
+  --run tabpfn/results/20260909_160742_1059961_nfv3_cic2018_exp39_decision_routing \
+  --cache tabpfn/resume/exp38_frozen_seed42_20260909_v2 \
+  --out docs/lablog/evidence/20260909/exp39_completed_audit
+
+\end{Verbatim}
+큰 cache·학습 모델·행별 예측은 로컬에 보관하며 Git에는 코드·설정·표·보고서를 반영한다. 새 context 구성과 보완 격자의 확인/\allowbreak{}test 실험은 아직 실행하지 않았다.
+
+\subsection{8. 9/\allowbreak{}10 보완 — 신규 논문의 성능 비교군 포함 판단}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32667\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.42000\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 이번 판단 & 우리 모델과의 관계·비교 범위 \\ \midrule
+\endfirsthead
+방법 & 이번 판단 & 우리 모델과의 관계·비교 범위 \\ \midrule
+\endhead
+{}Xiaomi-TabLDM & \textbf{주요 성능 비교군에 포함} & 공식 분류 코드·checkpoint가 있어 실행 비교가 가능하다. 프리프린트라는 이유로 제외하지 않는다. 내부 FFN MoE와 우리 context별 PFN expert는 학습·선택 단위가 다르지만, 조건부 expert 사용의 관련 연구로도 다룬다. 공식 코드, 논문 \\
+{}HINT & \textbf{조건부 호출 방식 비교군에 포함} & kNN confidence  \ensuremath{\rightarrow}  검색 context를 넣은 TabPFN 호출이 우리 gate/\allowbreak{}context 주장과 가깝다. Streaming 원문과 fixed-split adaptation을 구분하고, test 라벨로 memory를 갱신하지 않는 비교부터 수행한다. 원문 \\
+{}LoGIC & \textbf{관련 연구 포함, 현재 주 성능표에서는 제외} & 그래프 node 분류의 구조 검색·unlabeled halo가 핵심이다. NetFlow에 feature/\allowbreak{}coverage 부분만 이식하면 LoGIC-inspired adaptation으로 표시한다. 원문 \\
+\bottomrule
+\end{longtable}
+\endgroup
+MoE라는 공통점만으로 우리의 독창성을 주장할 수 없다. Xiaomi는 사전학습된 Transformer 내부 표현의 expert 선택, 우리는 frozen PFN의 context별 출력 선택과 교정을 다룬다. 우리의 기여는 같은 global 위에서 실제 교정이 늘어나는 결과로 입증해야 하며, 이번 최종 ΔF1=\allowbreak{}0으로는 아직 그 성능 기여를 입증하지 못했다.
+
+Xiaomi와 같은 C0 100k를 사용한 비교는 backbone 비교다. Ours 전체 시스템은 expert bank·route의 추가 라벨도 쓰므로 별도로 접근 가능한 train pool과 검증 예산을 맞춰야 한다. 상세 비교 판단과 프로토콜.
+
+
+
+\section{mechanism\_\allowbreak{}clarifications}
+\textbf{RACE-PFN 추가 설명 — residual 유지, 학습/\allowbreak{}추론 순서, 선택 지표}
+
+2026-09-09 사용자 추가 질의에 대한 보완이다. 제안 단계이며 모델 코드를 변경하거나 성능을 측정한 결과가 아니다.
+
+\par\noindent \textbullet\enspace \textbf{하위패턴 표본 확보:} 현재 모든 세부 공격의 표본이 부족하다고 단정하지 않는다. 기존 scenario 피복 보완 실험도 있다. 추가 제안은 최종 C0/\allowbreak{}Ck에 대해 class×scenario 및 관측 가능한 feature mode별 포함 수·고유 벡터 수를 점검하고, 부족한 구간에 최소 지원을 두는 것이다. 알려진 세부 공격명과 feature에서 발견한 mode는 같은 개념이 아니다. 대상은 큰 클래스뿐 아니라 모든 클래스다. 표본 수만 늘려 해결되는 문제인지 같은 예산의 대조 실험으로 확인한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Global 고정:} 초기에는 C0 행·backbone 설정·global 출력·expert bank까지 고정해 scorer/\allowbreak{}verifier 변경의 효과를 비교한다. context 실험은 그 뒤 별도 요인으로 수행한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Residual과 중간 클래스:} 앞서 쓴 \texttt{anchor +\allowbreak{}\allowbreak{} tail +\allowbreak{}\allowbreak{} \allowbreak{}사례}는 범위를 지나치게 좁혔다. 정확한 제안은 \texttt{anchor +\allowbreak{}\allowbreak{} global \allowbreak{}residual\allowbreak{}로 찾은 취약 \allowbreak{}구간의 지원 사\allowbreak{}례 +\allowbreak{}\allowbreak{} 그 구간\allowbreak{}과 혼동되는 대\allowbreak{}조 사례}다. Global의 약점 정보는 support를 찾는 주된 신호로 유지된다. 모든 클래스의 class-conditional error/\allowbreak{}residual과 내부 mode를 조사하므로 중간 빈도 클래스의 특정 공격 유형에서도 expert를 만들 수 있다. residual 후보 안에서 대표성이 높은 지원 사례를 고르고, 관련된 반대 라벨 사례를 추가한다. residual이 큰 순으로만 뽑지 않는다는 뜻이다. 같은 global 위의 실제 held-out 교정으로 bank의 유용성을 판단한다. 초기에는 class별로 정규화해 비교하여 행 수가 많은 클래스가 후보 예산을 독점하지 않게 하고, tail만을 expert의 소유 대상으로 정하지 않는다.
+
+
+\par\noindent \textbullet\enspace \textbf{현재 학습 중 의존성:} 최종 추론 순서는 scorer \ensuremath{\rightarrow} 선택 expert \ensuremath{\rightarrow} verifier다. 그러나 학습은 다음 순서다.
+
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+D_route에서 global 및 모든 expert 예측
+ →  NLL 이득 G 계산
+ →  임시 verifier를 fold별로 학습
+ →  다른 fold의 수락 여부 b_oof 생성
+ →  scorer 정답 = 1{b_oof × G − 계산비용 > 0}
+ →  scorer 학습
+ →  전체 route pair로 최종 verifier 학습
+
+\end{Verbatim}
+코드 근거: 전체 expert의 route 예측, OOF verifier와 scorer 정답 생성. “이전 verifier”는 여기서는 이전 실험의 모델이 아니라 \textbf{같은 훈련 과정에서 먼저 만드는 임시 OOF verifier}다. 학습 완료 후 온라인으로 scorer의 파라미터를 다시 바꾸는 과정은 이 코드에 없다.
+
+계산비용이 0일 때 어떤 pair의 G가 양수여도 b\_\allowbreak{}oof=\allowbreak{}0이면 scorer 라벨은 0이다. 이 경로를 분리하려는 것이다. 최초 비교에서는 임시 verifier의 b로 가리지 않은 결정 손익을 두 컴포넌트의 감독 신호로 사용한다. 검증된 최종 정책을 OOF로 증류하는 것은 이후의 선택적 확장이고 최초 변경에 포함하지 않는다.
+
+\par\noindent \textbullet\enspace \textbf{호출 전 예상과 호출 후 관측:} 학습 데이터에서는 expert를 실행해 결과를 알아야 감독 신호를 만들 수 있다. 이 과정은 현재도 존재한다. 실제 추론에서 scorer는 query의 입력 표현·global 출력·expert 설명자만으로 예상 이득을 계산한다. 후보별 점수 계산은 후보 expert의 TabPFN 실행과 다르다. 선택한 expert만 실행하고 verifier가 그때 얻은 출력을 본다.
+
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+추론: query  →  global
+              →  scorer가 호출 전 정보로 expert별 점수 예측
+              →  선택된 expert만 실행
+              →  verifier가 global/expert의 실제 출력을 비교
+              →  expert 채택 또는 global 유지
+
+\end{Verbatim}
+온라인 호출 코드. Scorer는 실제 정답을 보지 않으므로 예상이 틀릴 수 있다. 따라서 같은 bank에서 “교정 가능한 pair를 얼마나 선택했는가”를 별도 평가한다. scorer 입력에 pk를 넣는 변경은 제안하지 않는다.
+
+\par\noindent \textbullet\enspace \textbf{학습 목표는 실제 결정 교정:} 단순 0–1 loss 기준으로 pair의 정답은 아래와 같다.
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}}
+\toprule
+Global & Expert & Δk \\ \midrule
+\endfirsthead
+Global & Expert & Δk \\ \midrule
+\endhead
+{}오답 & 정답 & +\allowbreak{}1 \\
+{}정답 & 오답 & −1 \\
+{}정답 & 정답 & 0 \\
+{}오답 & 오답 & 0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+이 값 또는 class-balanced 가중값을 감독 신호로 사용한다. reward와 같은 해석은 가능하지만 새로운 강화학습을 도입하는 제안은 아니다. 모든 pair 결과가 있으므로 supervised regression 또는 correctness-state 분류로 학습한다. verifier는 post-call 정보, scorer는 pre-call 정보로 기대 이득을 예측한다. NLL은 보조 진단으로 남길 수 있다. 두 예측이 모두 오답이면 위 Δ는 0이지만 어느 클래스의 FP를 만드는지는 달라질 수 있어, 이 감독 신호만으로 macro-F1을 정확히 최적화한다고 주장하지 않는다.
+
+\par\noindent \textbullet\enspace \textbf{구체적인 임계값 선택 지표:} 앞선 “실제 교정 손익”을 다음처럼 학습 감독 신호와 최종 정책 선택으로 구분한다. 이 표는 제안을 구체화한 것으로 현재 코드에 이미 구현되었다는 뜻이 아니다.
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.26241\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36879\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36879\linewidth-2\tabcolsep\relax}}
+\toprule
+용도 & 지표 & 적용 \\ \midrule
+\endfirsthead
+용도 & 지표 & 적용 \\ \midrule
+\endhead
+{}Scorer/\allowbreak{}verifier 학습 & pair별 Δk 또는 class-balanced 가중 Δk & 전체 클래스의 교정/\allowbreak{}훼손 사례를 학습. tail에만 +\allowbreak{}1을 주지 않음. \\
+{}임계값 선택의 주지표 & \texttt{ΔMacroF1\allowbreak{}\_\allowbreak{}\allowbreak{}all =\allowbreak{}\allowbreak{} M\allowbreak{}acroF1(s\allowbreak{}ystem) −\allowbreak{} MacroF1\allowbreak{}(global)\allowbreak{}} & pre/\allowbreak{}post 임계값 grid의 실제 최종 예측에서 직접 계산해 최대화. 클래스별 F1의 단순 평균으로 큰 클래스의 행 수 지배를 줄임. \\
+{}Tail 유지·개선 확인 & \texttt{ΔMacroF1\allowbreak{}\_\allowbreak{}\allowbreak{}tail} & 선택 시 tail의 악화를 제한하고, tail 개선이라는 연구 목표의 성공은 양의 개선을 별도 요구. 전체 평균 향상만으로 tail 개선을 주장하지 않음. \\
+{}중간 클래스 보호 & 각 중간 클래스의 \texttt{ΔF1\_\allowbreak{}\allowbreak{}c} & 평균으로 숨겨지는 하락을 막기 위해 클래스별 허용 감소 εc를 사전 고정. 평균 하나로 합치지 않음. \\
+{}Benign 오경보 제한 & \texttt{ΔFPR\_\allowbreak{}\allowbreak{}B =\allowbreak{}\allowbreak{} FPR\_\allowbreak{}\allowbreak{}B(s\allowbreak{}ystem) −\allowbreak{} FPR\_\allowbreak{}\allowbreak{}B(g\allowbreak{}lobal)} & 기존 실험의 허용 상한 εB를 초기 비교에서 고정하고, absolute FPR도 보고. \\
+{}기전 진단 & \texttt{NetCorre\allowbreak{}ction\_\allowbreak{}\allowbreak{}c \allowbreak{}=\allowbreak{}\allowbreak{} (H\_\allowbreak{}\allowbreak{}c −\allowbreak{} D\_\allowbreak{}\allowbreak{}c)/\allowbreak{}\allowbreak{}N\_\allowbreak{}\allowbreak{}c} & Hc는 global 오답 \ensuremath{\rightarrow} system 정답, Dc는 global 정답 \ensuremath{\rightarrow} system 오답, Nc는 실제 class c의 전체 행 수. 정확히 class c의 recall 변화량. \\
+\bottomrule
+\end{longtable}
+\endgroup
+즉 임계값 쌍 θ에 대한 기본 선택은 다음과 같다.
+
+[ \textbackslash{}max\_\allowbreak{}\textbackslash{}theta\textbackslash{} \textbackslash{}Delta\textbackslash{}operatorname\{MacroF1\}\emph{\{all\}(\textbackslash{}theta) \textbackslash{}quad\textbackslash{}text\{s.t.\}\textbackslash{}quad \textbackslash{}Delta\textbackslash{}operatorname\{FPR\}}\{B\}\textbackslash{}le\textbackslash{}epsilon\_\allowbreak{}B,\textbackslash{}quad \textbackslash{}Delta\textbackslash{}operatorname\{MacroF1\}\emph{\{tail\}\textbackslash{}ge0,\textbackslash{}quad \textbackslash{}Delta\textbackslash{}operatorname\{F1\}}\{c\}\textbackslash{}ge-\textbackslash{}epsilon\_\allowbreak{}c\textbackslash{} (c\textbackslash{}in\textbackslash{}mathcal M). ]
+
+M은 train 통계로 미리 정의한 중간 빈도 클래스 집합이며 test 결과로 고르지 않는다. 별도로 합의된 손실 허용치가 없으면 최초 진단의 εc=\allowbreak{}0을 비교 기준으로 제시할 수 있다. 이는 성능 보장이나 운영상 정답인 허용치가 아니다. 표본이 적으면 불확실성이 크므로 실제 선택 안정성과 다음 시간 구간 결과도 보고한다. feasible한 양의 개선이 없으면 호출 0을 모델 개선 성공으로 처리하지 않는다.
+
+Benign FPR의 분모는 \textbf{전체 benign 행 수}다. \texttt{FPR\_\allowbreak{}\allowbreak{}B =\allowbreak{}\allowbreak{} \allowbreak{}\#\{\allowbreak{}y=\allowbreak{}\allowbreak{}beni\allowbreak{}gn,\allowbreak{} pred\allowbreak{}iction\ensuremath{\neq}b\allowbreak{}enign\}\allowbreak{}/\allowbreak{}\allowbreak{}\#\allowbreak{}\{\allowbreak{}y=\allowbreak{}\allowbreak{}benig\allowbreak{}n\}\allowbreak{}}. 예를 들어 benign 10,000개에서 기존 오경보 20건을 고치고 새 오경보 5건을 만들었다면 ΔFPRB는 \texttt{(5−20)/\allowbreak{}\allowbreak{}1\allowbreak{}0,\allowbreak{}000 =\allowbreak{}\allowbreak{} \allowbreak{}−0.\allowbreak{}0015}, 즉 −0.15\%p다. 기존 threshold 함수도 신규 오경보와 교정된 오경보를 함께 계산한다. 현재 선택 함수
+
+\texttt{ΣΔk} 또는 클래스 정규화한 순교정률은 정확도/\allowbreak{}recall 계열이다. 이것이 F1과 같지는 않으므로 threshold grid에서는 F1을 직접 계산한다. 미분이 필요 없는 유한 후보 선택이므로 supervised 학습의 대리 목표와 정책 선택 지표를 구분할 수 있다.
+
+표본추출로 calibration 비중이 달라졌다면 confusion matrix를 추출확률로 가중하거나 class-conditional confusion을 과거 목표 비중으로 재구성한 뒤 F1을 계산한다. \textbf{클래스별 F1을 나중에 prior로 가중하는 것만으로는 precision의 비중 의존성이 보정되지 않는다.} class 안의 편향·시간 이동까지 해결되는 것은 아니므로 독립된 다음 시간 구간에서 검증한다. threshold 선택에 test 정답은 쓰지 않는다.
+
+이 지표 설계의 목적은 모든 클래스의 global 약점을 교정하면서 tail 개선과 benign 유지가 실제로 함께 나타나는지 판별하는 것이다. 비용 감소만으로 성능 목표를 대체하지 않는다.
+
+
+
+\section{mechanism\_\allowbreak{}revision}
+\textbf{RACE-PFN 개선안 재정리 — 현재 /\allowbreak{} 변경 /\allowbreak{} 근거, 2026-09-09}
+
+추가 질의에 따른 학습·추론 구분과 구체적 선택 지표: expert의 지원 사례는 tail에 한정하지 않고 \textbf{global이 약한 모든 클래스의 residual 구간}에서 선택한다. 현재 코드도 D\_\allowbreak{}route의 모든 expert 출력을 계산한다. 수정 대상은 그 결과의 저장·활용 및 학습 정답 구성이다. 임계값 선택은 아래의 일반적인 “결정 손익” 표현을 구체화하여, 전체 macro-F1을 주지표로 하고 tail·중간 클래스 F1과 benign FPR를 함께 제한하는 설계를 제시했다.
+
+사용자 후속 요청에 따라 모델의 목적과 수정 위치를 명확히 한다. \textbf{제한된 global이 놓치는 tail을 적절한 expert로 보내 실제로 교정하는 것이 1차 목표다.} 앞선 제안에서 “scorer는 마지막에 호출 비용을 줄이는 역할로 복원한다”는 문장은 scorer의 역할을 지나치게 좁혔다. scorer는 \textbf{어떤 입력에 어떤 expert가 도움이 되는지}를 예측하고, verifier는 \textbf{그 expert의 관측된 출력을 채택할지} 판단한다. 계산 비용 감소는 교정 성능이 확보된 뒤의 추가 최적화다.
+
+global context를 개선하는 일은 가능하지만, 지금의 핵심 실험은 현재 global을 고정한 상태에서 scorer/\allowbreak{}verifier의 추가 기여를 만드는 것이다. global을 의도적으로 약하게 만들 필요도 없다. context 개선은 global의 독립적인 점수뿐 아니라 \textbf{specialist가 교정에 필요한 증거를 갖는지}까지 평가한다.
+
+아래는 준비 단계부터 추론·최종 결정까지의 순서다. \texttt{C0}는 global context, \texttt{Ck}는 expert k의 context, \texttt{p0/\allowbreak{}\allowbreak{}pk}는 각 모델의 예측 확률, \texttt{z}는 현재 pre-call에 사용되는 입력 표현이다. 모델 코드 변경이나 새 실험 결과가 아니라, 다음 실험에서 비교할 설계다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}}
+\toprule
+단계 & 현재 & 변경 & 근거 \\ \midrule
+\endfirsthead
+단계 & 현재 & 변경 & 근거 \\ \midrule
+\endhead
+{}① 데이터·context용 pool 준비 & train의 일부를 context·route·calibration에 사용하고 test는 원본 평가 구간 전체를 사용한다. 클래스별 cap·표본추출로 비중이 달라진다. & \textbf{전체 test 평가를 유지한다.} context는 tail 학습에 필요한 표본을 충분히 확보하고, 별도로 calibration 표본의 추출확률·클래스별 표본 수를 기록한다. train-only 전처리와 시간 분할을 유지한다. & 학습용 증거의 배분과 운영 분포에서의 위험 추정은 목적이 다르다. context와 test 비중이 같아야 한다는 조건은 없다. 전체 위험을 추정할 때는 표본추출로 바뀐 비중을 반영해야 한다. \\
+{}② C0 구성  \ensuremath{\rightarrow}  global 예측 & 최신 비교 기준은 C0=\allowbreak{}100k, benign 75\%, 공격 균등, n\_\allowbreak{}estimators=\allowbreak{}4이며 scenario 피복 보완을 이미 수행했다. 행 선택·config 변동도 성능에 영향을 준다. & \textbf{먼저 C0 행 ID·TabPFN config·global 출력을 고정한다.} context 실험으로 넘어가면 같은 크기·클래스 비중 안에서, 클래스 내부의 관측된 feature mode에 최소 지원 수를 두고 나머지는 빈도를 유지하며 선택한다. context seed와 model-config seed를 분리한다. & 지금 필요한 것은 같은 global 위에서 라우팅의 기여를 확인하는 것이다. 이후 mode 피복은 random 추출의 희귀 하위패턴 누락을 직접 줄인다. 기존 scenario 층화를 버리는 변경이 아니라, 같은 scenario/\allowbreak{}class 안의 관측 가능한 하위패턴까지 점검하는 보완이다. \\
+{}③ residual 추출  \ensuremath{\rightarrow}  expert context/\allowbreak{}bank 구성 & global residual을 중심으로 block을 만들고 shared anchor와 결합한다. residual이 큰 사례가 좋은 expert의 재료라는 가정에 의존한다. & \texttt{Ck =\allowbreak{}\allowbreak{} anc\allowbreak{}hor +\allowbreak{}\allowbreak{} re\allowbreak{}sidual 취\allowbreak{}약 구간의 su\allowbreak{}pport +\allowbreak{}\allowbreak{} \allowbreak{}혼동 negat\allowbreak{}ive}로 구성한다. \textbf{Global residual은 취약 구간을 찾는 주된 정보로 유지}하고 tail·중간·큰 클래스 모두를 대상으로 한다. 동일 예산에서 취약 구간 내부의 mode 피복과 contrast 배분을 각각 실험한다. 첫 비교에서는 기존 bank를 고정한다. & residual에는 교정 가능한 오답과 모순·잡음이 섞일 수 있다. residual을 버리는 것이 아니라 그 안의 다양한 오류 패턴을 대표하고, 구분에 필요한 반대 라벨 증거를 추가하는 수정이다. anchor+\allowbreak{}block 자체는 기존에도 있으므로 기여 후보는 합집합 모양이 아니라 support·contrast의 선택 기준이다. BAPS·LUCoS는 제한된 context 선택의 비교·설계 근거이며 IDS 교정을 보장하지 않는다. \\
+{}④ scorer/\allowbreak{}verifier 학습용 paired 결과 구성 & 현재도 D\_\allowbreak{}route에서 모든 expert를 실행한다. scorer 정답은 \texttt{1\{\allowbreak{}b\_\allowbreak{}\allowbreak{}oof \allowbreak{}× G − λc\allowbreak{} > 0\}\allowbreak{}}이며, 임시 OOF verifier가 거절한 양의 G도 negative가 된다. OOF verifier는 raw weighted G, final verifier는 normalized G를 사용한다. & 이미 계산하는 paired 결과에서 \textbf{실제 결정 손익을 직접 계산·보존}하고, 임시 verifier의 수락 여부로 원래 교정 라벨을 지우지 않는다. 기존 NLL 목표를 유지하는 대조 실험에서는 OOF/\allowbreak{}final 단위부터 맞춘다. & OOF verifier의 놓침이 scorer의 학습 정답으로 전달되는 경로를 분리한다. 학습 정답 구성의 변경이며, 온라인에서 모든 expert를 먼저 호출하는 구조로 바꾸는 것이 아니다. 단위 수정과 목표 변경은 별도 실험으로 구분한다. \\
+{}⑤ scorer  \ensuremath{\rightarrow}  expert 선택·호출 & pre-call 정보 \texttt{p0,\allowbreak{} z,\allowbreak{} 거\allowbreak{}리,\allowbreak{} affin\allowbreak{}ity,\allowbreak{} exp\allowbreak{}ert desc\allowbreak{}riptor}로 expert별 점수를 만들고 top-1과 임계값으로 호출한다. 점수의 정답이 이전 verifier에 의존한다. & \textbf{“어떤 expert가 global의 이 오답을 교정할 가능성이 크고, 손해는 얼마나 있는가”를 학습한다.} 먼저 직접 paired 손익을 학습하는 scorer를 비교한다. verifier의 교정력이 확인되면 그 최종 정책을 적용한 OOF 실제 손익으로 목표를 정렬한다. global이 확신하는 입력도 후보 평가에 포함한다. & expert의 소유 클래스나 독립 정확도보다 global 대비 상대 이득이 라우팅 목적에 맞는다. 다중 expert learning-to-defer는 고정 predictor 사이에서 예상 손실을 비교하는 이론적 출발점이다. 이 단계의 우선 지표는 tail의 교정 가능한 후보 회수율·잘못된 expert 선택 손실이다. 계산비용 계수는 진단 중 0으로 두되 실제 호출량은 기록한다. \\
+{}⑥ 선택된 expert 추론  \ensuremath{\rightarrow}  verifier 판정 & expert는 Ck로 pk를 만든다. post-call은 \texttt{p0,\allowbreak{} pk,\allowbreak{} \allowbreak{}pk−p0,\allowbreak{} e\allowbreak{}ntropy/\allowbreak{}\allowbreak{}m\allowbreak{}argin,\allowbreak{} 거\allowbreak{}리·affini\allowbreak{}ty,\allowbreak{} desc\allowbreak{}riptor}를 사용하며 pre-call의 z와 raw 46-feature가 없다. verifier는 NLL gain의 하위 분위수를 학습한다. & 먼저 \textbf{같은 목표에 z 추가}, 별도로 \textbf{raw feature 추가}를 비교한다. 그다음 입력을 고정하고 목표를 \textbf{실제 교정 손익}으로 바꾼다. “expert만 정답 /\allowbreak{} global만 정답 /\allowbreak{} 둘 다 정답 /\allowbreak{} 둘 다 오답” 또는 직접 action loss 차이를 학습해 global보다 나을 때 채택한다. & posterior가 비슷해도 원래 입력에서 구별되는 오답 원인이 있을 수 있다. 또 정답 확률 상승은 예측 라벨의 교정과 다르다. 순수 0–1 loss에서 기대 이득은 \texttt{P(expert\allowbreak{}만 정답) − \allowbreak{}P(global\allowbreak{}만 정답)}이다. 목표·입력을 따로 바꿔 어느 병목을 해소했는지 확인한다. \\
+{}⑦ 임계값 보정  \ensuremath{\rightarrow}  최종 출력 & Dcal에서 pre/\allowbreak{}post 임계값을 선택하며 helpful/\allowbreak{}harmful·benign FPR·호출률 제약도 이미 사용한다. 다만 클래스 cap으로 표본 비중이 바뀌고 최적화 이득은 NLL 기반이다. & 실제 결정 손익을 기준으로 두 임계값을 조정한다. \textbf{tail 교정 증가와 benign 오경보 제한을 함께 적용한다.} 클래스별 위험을 추정해 목표 비중으로 합치거나 추출확률로 가중한다. 정책 선택과 최종 보정·평가 표본을 분리하고 다음 시간 구간에서 확인한다. & 기존 제약을 없애거나 느슨하게 하는 제안이 아니다. 목적함수와 평가 모집단을 맞추는 수정이다. 순수 label-prior 변화는 benign 조건부 FPR를 바꾸지 않아도 전체 harmful 비율은 바꿀 수 있다. Learn then Test의 정책 단위 위험 검정은 참고할 수 있으나 시간 이동에서 자동 보장을 주장하지 않는다. \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{scorer와 verifier가 배우는 값의 차이}
+
+같은 학습 행에 대해 global과 expert의 결정 차이를 다음처럼 기록한다.
+
+[ \textbackslash{}Delta\_\allowbreak{}k(x,y)=\allowbreak{}\textbackslash{}ell(y,\textbackslash{}hat y\_\allowbreak{}0(x))-\textbackslash{}ell(y,\textbackslash{}hat y\_\allowbreak{}k(x)). ]
+
+순수 0–1 loss에서는 expert만 정답이면 +\allowbreak{}1, global만 정답이면 −1, 둘 다 정답 또는 둘 다 오답이면 0이다. verifier는 \textbf{expert 출력까지 관측한 정보}로 \texttt{E[Δk | p\allowbreak{}ost 정보]}를 추정한다. expert의 확신 자체보다 “global의 결정을 바꾸는 편이 나은가”에 맞는 목표다.
+
+scorer는 호출 전이므로 pk를 입력으로 쓸 수 없다. 첫 대조는 pre-call 정보로 동일 Δk의 기대값을 예측하는 단순 정책이다. 이후 검증된 verifier를 \texttt{b*k \ensuremath{\in} \{\allowbreak{}0\allowbreak{},\allowbreak{}1\}\allowbreak{}}로 고정하면, scorer의 실제 목표는 다음과 같다.
+
+[ V\_\allowbreak{}k(x)=\allowbreak{}\textbackslash{}mathbb E[b\_\allowbreak{}k\textasciicircum{}*(Z\_\allowbreak{}\{post\}),\textbackslash{}Delta\_\allowbreak{}k\textbackslash{}mid Z\_\allowbreak{}\{pre\}]. ]
+
+이는 \textbf{k를 호출하고 verifier의 최종 판단까지 거쳤을 때 얻을 교정 이득}이다. \texttt{b*k}는 held-out/\allowbreak{}OOF 예측으로 생성해야 하며, 해당 행으로 학습한 verifier의 in-sample 판정을 정답으로 쓰지 않는다. raw Δk와 네 가지 correctness 상태도 함께 보존하여, rejected pair 안의 놓친 교정 기회를 계속 점검한다. 기존의 부정확한 b\_\allowbreak{}oof를 그대로 증류하는 것과 이 검증된 정책에 목표를 맞추는 것은 구분한다.
+
+최적 post 정책과 정확한 조건부 위험 추정이라는 이상적 조건에서는 \texttt{V\_\allowbreak{}\allowbreak{}k =\allowbreak{}\allowbreak{} E[\allowbreak{}max(E[Δk\allowbreak{} | Zpost\allowbreak{}],\allowbreak{} 0) | \allowbreak{}Zpre]}로 해석할 수 있다. 따라서 호출 전의 단순 순이득 \texttt{E[Δk | Z\allowbreak{}pre]}와 호출 후 나쁜 결정을 거부할 수 있는 \textbf{조회 가치}는 일반적으로 같지 않다. 이 차이를 고려해야 pre/\allowbreak{}post 두 컴포넌트를 유지하는 이유가 분명해진다.
+
+tail 누락과 benign 오경보의 중요도를 다르게 줄 때는 bounded class-weighted loss 또는 사전 정의한 오분류 비용행렬로 Δ를 계산한다. 여기서 \textbf{오분류 비용은 예측 손해}, 계산 비용은 시간·호출량을 뜻한다. 전자는 현재 성능 목적에 포함되고 후자는 후순위다. class-balanced 0–1 loss는 macro-recall에 대응하는 대리 목표이며 macro-F1의 정확한 최적화와 같지는 않으므로 최종 tail F1·macro-F1을 따로 평가한다. 일반 비용행렬에서는 두 모델이 모두 오답이어도 손익이 0이 아닐 수 있어 Δ를 직접 사용한다.
+
+\textbf{context 피복의 이론적 근거와 적용 범위}
+
+N개 후보 중 어떤 관측된 하위패턴에 n개가 속할 때 B개를 균등 비복원 추출해서 그 패턴을 전혀 포함하지 않을 확률은 \texttt{C(N−n,\allowbreak{}B)\allowbreak{}/\allowbreak{}\allowbreak{}C(N,\allowbreak{}B) \allowbreak{}\ensuremath{\leq} exp(−B\allowbreak{}n/\allowbreak{}\allowbreak{}N)}이다. 클래스별 개수만 맞춰도 희귀한 클래스 내부 패턴은 누락될 수 있다. mode별 최소 지원을 두는 이유는 이 누락을 줄이기 위해서다. 모드 분할은 train feature에서만 정의하며, 아직 발견하지 못했거나 train에 없는 패턴까지 피복한다는 뜻은 아니다.
+
+각 class/\allowbreak{}mode 안의 대표점은 \texttt{F(S)=\allowbreak{}\allowbreak{}Σ\_\allowbreak{}\allowbreak{}i\allowbreak{} w\_\allowbreak{}\allowbreak{}i max\allowbreak{}\_\allowbreak{}\allowbreak{}\{\allowbreak{}j\ensuremath{\in}S\}\allowbreak{} s\allowbreak{}im(z\_\allowbreak{}\allowbreak{}i,\allowbreak{}z\allowbreak{}\_\allowbreak{}\allowbreak{}j)}와 같은 피복 목적함수로 선택할 수 있다. 고정된 비음수 가중치·유사도와 단순 개수 제한에서 표준 greedy의 \texttt{1−1/\allowbreak{}\allowbreak{}e} 보장은 \textbf{이 피복 목적함수에만} 적용된다. 이것이 TabPFN의 F1 보장으로 이어지는 것은 아니므로, 같은 context 크기·클래스 비중·model config의 random 선택과 비교해야 한다. Nemhauser·Wolsey·Fisher, 1978
+
+\textbf{train 부분 사용과 test 전체 사용에 대한 해석}
+
+사용자가 설명한 표본 비중 차이는 현재 프로토콜의 자연스러운 결과다. tail 증거를 늘린 C0/\allowbreak{}Ck를 원본 test 비중에 억지로 맞추자는 제안은 아니다. 조정 대상은 \textbf{모델 평가·보정에서 추정하려는 위험의 비중}이다.
+
+예를 들어 클래스별 평균 손실을 \texttt{R\_\allowbreak{}\allowbreak{}y}라 하면 목표 모집단의 위험은 \texttt{Σ\_\allowbreak{}\allowbreak{}y π\_\allowbreak{}\allowbreak{}ta\allowbreak{}rget(y) \allowbreak{}R\_\allowbreak{}\allowbreak{}y}로 계산한다. π\_\allowbreak{}target은 과거의 원본 학습 구간 또는 이용 가능한 최근 labeled window로 정하고, test 정답에서 구해 정책을 맞추지 않는다. 클래스 안에서도 특정 mode만 선택했다면 클래스 가중치만으로 해결되지 않으므로 추출확률을 반영하거나 별도의 대표성 있는 calibration 표본을 둔다. 시간에 따라 클래스 조건부 분포까지 달라지는 경우는 이 가중만으로 교정되지 않아 forward 평가가 필요하다.
+
+앞선 감사에서 seed 42의 Dcal benign 비중 21.35\%는 \textbf{class cap 후·hash mask 전}의 값이고, test 87.07\%와 비교한 진단 수치다. 실제 최종 Dcal 전체의 비중으로 단정하지 않는다. 이 차이만으로 라우팅 실패의 원인을 확정하지도 않는다.
+
+\textbf{실험 순서는 모델의 온라인 처리 순서와 구분한다}
+
+\par\noindent \textbullet\enspace 현재 global·작은 expert bank를 고정하고 모든 expert의 paired 출력을 저장한다. 같은 bank의 oracle과 후보별 교정 기회를 계산한다.
+
+
+\par\noindent \textbullet\enspace scorer를 진단 단계에서 우회하고 verifier의 \texttt{+\allowbreak{}\allowbreak{}z}, \texttt{+\allowbreak{}\allowbreak{}raw}, \texttt{결정 손익 목표\allowbreak{}}를 각각 비교한다. 좋은 expert 출력이 주어졌을 때 실제로 올바르게 채택하는지 확인한다.
+
+
+\par\noindent \textbullet\enspace scorer를 연결하여 tail의 교정 가능한 후보를 얼마나 회수하고, 잘못된 expert 선택으로 얼마나 잃는지 측정한다. 목표 단위와 OOF/\allowbreak{}final 정책을 맞춘다.
+
+
+\par\noindent \textbullet\enspace 그다음 같은 예산에서 context의 mode 피복과 contrast negatives를 각각 바꾼다. global만 개선되는지, specialist와 라우팅까지 추가 이득을 얻는지 구분한다.
+
+
+\par\noindent \textbullet\enspace tail 개선과 benign 유지가 성립한 설정에서 호출량·지연을 줄인다. 비용만 낮아진 모델을 tail 교정 목표의 성공으로 세지 않는다.
+
+
+label oracle은 정답을 보므로 도달 가능한 성능 보장은 아니다. 같은 feature 벡터에 상충하는 정답이 있으면 동일 입력만 보는 라우터가 정답별로 다른 expert를 고를 수 없다. 따라서 같은 bank의 label oracle과 함께, 관측 가능한 입력으로 학습한 정책의 다음 시간 구간 성능을 비교한다. 과거 exp17/\allowbreak{}exp20의 소유 expert 맞히기·확률 입력 selector와 달리, 이번 변경은 \textbf{실제 상대 결정 손익·입력 정보 보강·목표 정합성·시간 검증}을 각각 실험한다.
+
+원본 코드 근거: pair 입력과 임계값 선택, 상세 감사 및 개선 제안, 최신 저장 결과.
+
+\textbf{원본 문헌조사 엑셀 갱신}
+
+tabpfn\_\allowbreak{}papers\_\allowbreak{}survey.xlsx의 Ch.2에 다음 3편을 추가했다. 기존 99편의 값·서식·링크·취소선을 유지하고 출처등급 \ensuremath{\rightarrow} 날짜 정렬에 맞춰 총 102편, Ch.2 38편으로 갱신했다.
+
+\par\noindent \textbullet\enspace HINT: 2026-09-07, Streaming Continual Learning ECML PKDD Workshop 2026 표기. 조건부 TFM 호출과 검색 context의 관련 연구.
+
+
+\par\noindent \textbullet\enspace LoGIC: 2026-09-05, preprint. 그래프 ICL에서 제한된 context를 구성하는 관련 연구.
+
+
+\par\noindent \textbullet\enspace Xiaomi-TabLDM: v1 2026-09-03, 확인 버전 v2 2026-09-04. 내부 sparse MoE를 가진 TFM 기술 보고서. 외부 expert 라우팅과 구분하여 기록했다.
+
+
+이 세 논문을 추가했다는 사실과 위 설계의 이론 근거는 별개다. HINT의 비용 절감 목적을 현재 모델의 1차 목적으로 가져오거나, Xiaomi의 내부 MoE를 현재 expert bank와 동일한 구조로 간주하지 않는다.
+
+
+
+\section{research\_\allowbreak{}and\_\allowbreak{}model\_\allowbreak{}proposal}
+\textbf{RACE-PFN: 최근 문헌 갱신과 context·routing 개선 제안 — 2026-09-09}
+
+권고하는 다음 구조는 \textbf{피복 조건을 갖춘 context와, global 대비 의사결정 이득을 직접 배우는 선택적 교정층}이다. 우선 최신 global을 고정하고 verifier의 정보·목표를 수리한 뒤, scorer가 tail을 교정할 expert를 찾아 연결하도록 한다. scorer의 1차 역할은 교정에 도움이 되는 expert 선택이며, 호출 비용 감소는 실제 교정 성능을 확보한 다음의 최적화다. 그 교정층이 사용할 수 있는 context도 별도 실험으로 개선한다. 아래 제안은 아직 새 모델의 성능 결과가 아니라, 기존 기록·저장 배열·코드와 논문에 근거한 검증 가능한 설계다.
+
+후속 요청에 따른 모델 처리 순서별 현재·변경·근거 표에 목적의 우선순위와 train 부분 사용/\allowbreak{}test 전체 평가의 해석을 정리했다. 원본 문헌조사 xlsx에는 HINT·LoGIC·Xiaomi-TabLDM 3편을 추가하여 총 102편으로 갱신했다. 아래의 “기존 99편”은 갱신 전 조사 기준이다.
+
+추가 질의에 대한 학습·추론 순서 및 지표 명세에서는 residual을 유지해 중간 빈도 클래스를 포함한 모든 취약 구간을 다루도록 명확히 했다. D\_\allowbreak{}route의 전체 expert 예측은 현재도 수행한다. 학습은 paired 결정 손익, 임계값 선택은 전체 macro-F1과 tail·클래스별 F1·benign FPR 제약으로 구분하는 구체안을 기록했다.
+
+읽은 자료: \texttt{lablog/\allowbreak{}\allowbreak{}r\allowbreak{}eport/\allowbreak{}\allowbreak{}04\allowbreak{}27\textasciitilde{}0904.\allowbreak{}md}의 실험 계보·관련 진단, \texttt{lablog/\allowbreak{}\allowbreak{}h\allowbreak{}tml\_\allowbreak{}\allowbreak{}repo\allowbreak{}rt/\allowbreak{}\allowbreak{}racep\allowbreak{}fn\_\allowbreak{}\allowbreak{}statu\allowbreak{}s.\allowbreak{}md}, \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}evid\allowbreak{}ence/\allowbreak{}\allowbreak{}ref\allowbreak{}erences/\allowbreak{}\allowbreak{}tabpfn\_\allowbreak{}\allowbreak{}p\allowbreak{}apers\_\allowbreak{}\allowbreak{}su\allowbreak{}rvey.\allowbreak{}xls\allowbreak{}x}, \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}1020\_\allowbreak{}\allowbreak{}ref\allowbreak{}erences.\allowbreak{}tex}의 설계·학습 목표, \texttt{CLAUDE.\allowbreak{}m\allowbreak{}d}, 원본 저장소의 \texttt{.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}imbal\allowbreak{}\_\allowbreak{}\allowbreak{}cic/\allowbreak{}\allowbreak{}SRC\allowbreak{}\_\allowbreak{}\allowbreak{}HISTORY\allowbreak{}.\allowbreak{}md}, exp29·exp31 및 저장 결과. 오래된 상태 문서보다 0902 후반·0904의 최신 결과와 실제 run 배열을 우선했다. 검토 시 git HEAD는 \texttt{6962bc4e\allowbreak{}f88873a8\allowbreak{}8d169773\allowbreak{}d2c8b144\allowbreak{}6a0a9920\allowbreak{}}이다.
+
+이번에 생성한 문헌 보충표, 최신 라우팅 재계산, scorer 정답 생존율, 클래스별 전이를 함께 참조할 수 있다. 기존 학습 코드를 변경하거나 GPU 실험을 새로 돌리지는 않았다.
+
+\textbf{1. 지금까지의 접근에서 유지할 것과 바꿀 것}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21429\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39286\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39286\linewidth-2\tabcolsep\relax}}
+\toprule
+시기 & 접근과 확인된 사실 & 이번 설계에 반영할 점 \\ \midrule
+\endfirsthead
+시기 & 접근과 확인된 사실 & 이번 설계에 반영할 점 \\ \midrule
+\endhead
+{}4\textasciitilde{}6월 & taxonomy/\allowbreak{}confusion expert, confidence·energy·TTA 기반 선택. owning expert oracle과 실제 선택 사이 큰 차이 & 전문가의 자신감·안정성을 상대적 유능함의 대리값으로 쓰지 않는다. 실제 상대 손익을 학습한다. \\
+{}7\textasciitilde{}8월 초 & NF-v3, 독립 energy gate와 해소 단계. 불균형·미지 공격에서 활성과 benign 보존의 trade-off & tail recall 단독 개선 대신 benign 손해와 호출 비용을 같은 정책 평가에 포함한다. \\
+{}8월 중순 & TabPFN global, family context, local expert·anchor, 전처리·중복 진단 & 중복에는 질량·밀도 정보가 있다. 삭제를 기본 처방으로 삼지 않는다. \\
+{}8/\allowbreak{}25\textasciitilde{}8/\allowbreak{}31 & residual regime mining, context expert bank, scorer \ensuremath{\rightarrow} expert \ensuremath{\rightarrow} quantile verifier & label-informed oracle을 bank 최적화의 유일한 기준으로 삼지 않는다. 양의 NLL 이득과 실제 정답 회복을 구분한다. \\
+{}9/\allowbreak{}1\textasciitilde{}9/\allowbreak{}2 & scenario 피복으로 C0의 SSH 등의 결손 보완. verifier 단위 수정. 등메모리 bank 비교 & context 접근 가능성, 표본 선택, 라우팅을 분리한다. residual bank의 보편적 우위는 재가정하지 않는다. \\
+{}9/\allowbreak{}3\textasciitilde{}9/\allowbreak{}4 & 100k, benign 0.75, 공격 균등 배분, config ensemble 4로 global 안정화 & 이 구성을 새 기준선으로 고정한다. 과거 1M·n=\allowbreak{}1 oracle 격차를 새 기준선의 개선 여지로 가져오지 않는다. \\
+{}9/\allowbreak{}4\textasciitilde{}9/\allowbreak{}8 & BoostPFN·LoCalPFN·DistPFN 원본/\allowbreak{}이식 검토와 재현 & 방법·backbone·데이터·지표 차이를 분리한다. baseline의 한 데이터셋 결과를 방법 전체의 결론으로 확대하지 않는다. \\
+\bottomrule
+\end{longtable}
+\endgroup
+초기 \texttt{racepfn\_\allowbreak{}\allowbreak{}status.\allowbreak{}m\allowbreak{}d}의 “scorer 병목”, 중간 로그의 “verifier 상관 \ensuremath{\leq}0.15”는 당시 구성의 진단이다. 최신 seed 42에서는 verifier의 tune 상관이 expert별 0.482\textasciitilde{}0.862까지 올라간다. 따라서 현 문제를 “verifier가 아무것도 예측하지 못한다”로 고정하면 다음 실험의 표적이 어긋난다. \textbf{현재의 표적은 올바른 결정 변경을 구별하고, 그 이득을 다음 시간 구간에서 회수하는 능력이다.}
+
+\textbf{2. 최신 저장 결과로 다시 확인한 현재 위치}
+
+재계산 대상은 exp31의 \texttt{C0=\allowbreak{}\allowbreak{}100k}, \texttt{benign\_\allowbreak{}\allowbreak{}s\allowbreak{}hare=\allowbreak{}\allowbreak{}.\allowbreak{}75\allowbreak{}}, \texttt{attack\_\allowbreak{}\allowbreak{}a\allowbreak{}lloc=\allowbreak{}\allowbreak{}bal\allowbreak{}anced}, \texttt{n\_\allowbreak{}\allowbreak{}estima\allowbreak{}tors=\allowbreak{}\allowbreak{}4}, seed 42\textasciitilde{}48이다. \texttt{args.\allowbreak{}jso\allowbreak{}n}에서 uncapped CIC2018와 \texttt{test\_\allowbreak{}\allowbreak{}cap\allowbreak{}\_\allowbreak{}\allowbreak{}per\_\allowbreak{}\allowbreak{}cla\allowbreak{}ss=\allowbreak{}\allowbreak{}0}을 확인했다. 평가 4,023,114행, context·route 등의 내부 분할은 scenario 층화다. 재계산 코드는 모델을 학습하지 않고 저장된 지표·배열만 읽는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.11688\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16883\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16883\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12338\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11688\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12338\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18182\linewidth-2\tabcolsep\relax}}
+\toprule
+seed & global macro-F1 & system − global & τ\_\allowbreak{}pre & 채택 행 & 실제 라벨 변경 & helpful /\allowbreak{} harmful \\ \midrule
+\endfirsthead
+seed & global macro-F1 & system − global & τ\_\allowbreak{}pre & 채택 행 & 실제 라벨 변경 & helpful /\allowbreak{} harmful \\ \midrule
+\endhead
+{}42 & 0.762302 & +\allowbreak{}0.000256 & 0.893141 & 38,498 & 260 & 98 /\allowbreak{} 162 \\
+{}43 & 0.761430 & 0 & \ensuremath{\infty} & 0 & 0 & 0 /\allowbreak{} 0 \\
+{}44 & 0.758152 & 0 & \ensuremath{\infty} & 0 & 0 & 0 /\allowbreak{} 0 \\
+{}45 & 0.766185 & 0 & \ensuremath{\infty} & 0 & 0 & 0 /\allowbreak{} 0 \\
+{}46 & 0.769424 & 0 & \ensuremath{\infty} & 0 & 0 & 0 /\allowbreak{} 0 \\
+{}47 & 0.761482 & 0 & \ensuremath{\infty} & 0 & 0 & 0 /\allowbreak{} 0 \\
+{}48 & 0.767666 & 0 & \ensuremath{\infty} & 0 & 0 & 0 /\allowbreak{} 0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+global 평균은 \textbf{macro 0.763806 /\allowbreak{} tail 0.554495}다. 과거 full-XGB 기록은 0.7548 /\allowbreak{} 0.5331이지만 이는 고정 비교 기록이며, 7개의 새 XGB paired run은 아니다. 같은 C0로 별도 재학습한 0904 exp37 seed 42에서는 global 0.7617 /\allowbreak{} tail 0.5480, XGB-C0 0.7525 /\allowbreak{} 0.5260이다. \textbf{tail 개선은 global 구성 단계에서 이미 관측되었고, scorer·verifier의 추가 기여가 거의 실현되지 않는 것이 정확한 현재 질문}이다.
+
+추가로 주의할 세 점이 있다.
+
+\par\noindent \textbullet\enspace seed 42의 38,498건 채택 중 38,238건, 약 99.3\%는 라벨이 같다. 확률 품질 변화는 별도 가치가 있을 수 있지만, 이를 tail 정답 회복 건수로 세면 안 된다.
+
+
+\par\noindent \textbullet\enspace seed 42에서는 infiltration을 98건 추가로 맞히면서 benign 162건을 infiltration으로 바꾼다. macro는 +\allowbreak{}0.000256, 행 단위 정확도는 64건 순손해다. 이 둘은 모순이 아니다. 목적함수와 허용할 비용을 명시해야 한다. benign FPR 증가는 약 0.0000462다.
+
+
+\par\noindent \textbullet\enspace 최신 7개 run은 \texttt{dense\_\allowbreak{}\allowbreak{}ev\allowbreak{}al=\allowbreak{}\allowbreak{}False\allowbreak{}}다. 따라서 이전 구성의 oracle 0.83\textasciitilde{}0.88을 현재 global 0.764와 빼서 “회수 가능한 격차”라고 제시할 수 없다. \textbf{새 기준선 위에서 같은 bank의 oracle·실현 정책을 다시 짝지어야 한다.}
+
+
+수치 근거: 최신 요약, 전이표, \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0902.\allowbreak{}tex\allowbreak{}}의 §8ai\textasciitilde{}8aj, \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0904.\allowbreak{}tex\allowbreak{}}의 §6\textasciitilde{}§7. 9/\allowbreak{}7의 n=\allowbreak{}32 global 0.7693과 XGB-C0+\allowbreak{}EM 0.7645도 보조 비교 후보지만 단일 seed 및 추가 선택 비용을 명시해야 한다.
+
+\textbf{3. 문헌조사 이후 실제로 새로 나온 것}
+
+기존 xlsx는 99편이고 문서 속성상 생성·수정일은 2026-09-03이다. 정확한 조사 종료 시각을 단정하지 않고, \textbf{9/\allowbreak{}3\textasciitilde{}9/\allowbreak{}9를 갱신 구간}, 9/\allowbreak{}2를 검색 완충일로 삼았다. 파일에 있는 arXiv ID 89개를 API로 전부 재확인했으며, 나머지 비-arXiv 항목의 모든 출판 이력까지 전수 감사한 것은 아니다.
+
+검색은 웹 키워드 검색과 arXiv API의 다음 조건을 병행했다. \texttt{TabPFN}, \texttt{tabular \allowbreak{}foundati\allowbreak{}on}, \texttt{tabular \allowbreak{}in-\allowbreak{}conte\allowbreak{}xt}, context selection, routing, verifier, learning to defer를 사용했다. API 기간 검색은 \texttt{(all:Tab\allowbreak{}PFN OR a\allowbreak{}ll:"tabu\allowbreak{}lar foun\allowbreak{}dation" \allowbreak{}OR all:"\allowbreak{}tabular \allowbreak{}in-\allowbreak{}conte\allowbreak{}xt") AND\allowbreak{} lastUpd\allowbreak{}atedDate\allowbreak{}:[202609\allowbreak{}020000 T\allowbreak{}O 202609\allowbreak{}092359]}였다. 기간 검색 11건 중 아래 5건을 모델 설계·비교에 우선 포함했다. 이는 지정 검색 범위의 결과이며 모든 미색인 문헌까지 포괄하는 부재 증명은 아니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}}
+\toprule
+논문 & 확인된 날짜·상태 & RACE-PFN과의 관계 & 대응 \\ \midrule
+\endfirsthead
+논문 & 확인된 날짜·상태 & RACE-PFN과의 관계 & 대응 \\ \midrule
+\endhead
+{}HINT: Streaming Hierarchical Inference with Tabular Foundation Models & 9/\allowbreak{}7 v1; arXiv comment에 ECML PKDD 2026 workshop 명시 & bounded sliding-window ANN memory가 local predictor와 context selector를 겸하고, 불확실한 입력만 TabPFN으로 보낸다. \textbf{검색 context +\allowbreak{} 선택적 TFM 호출}이 겹친다. & 직접 관련 신규 baseline. 자신감 문턱 기반 호출과, 상대적 교정 이득 기반 호출을 비교한다. \\
+{}LoGIC & 9/\allowbreak{}5 v1; preprint & 구조·특징·피복 검색, query cluster별 context 공유, labeled context/\allowbreak{}unlabeled halo의 예산 분리 & context 예산과 배치 공유 설계의 신규 선행연구. 그래프 노드 과제이므로 IDS 수치 대조로 바로 취급하지 않는다. \\
+{}Xiaomi-TabLDM & 9/\allowbreak{}3 v1, 9/\allowbreak{}4 v2; technical report & ICL predictor 안에 shared/\allowbreak{}routed FFN experts와 top-k router를 둔다. & “TFM+\allowbreak{}MoE”라는 넓은 신규성은 피한다. 내부 사전학습 MoE와 외부 context expert bank의 차이를 명확히 한다. \\
+{}Mitra-v2 & 9/\allowbreak{}3 v1; technical report & synthetic pretraining·context 확장, 공개 backbone 비교 대상 & 모델 기여의 backbone 의존성을 검증할 다음 후보. 지금 당장 backbone 교체와 라우팅 수리를 한 실험으로 섞지 않는다. \\
+{}From Synthetic Priors to Model Behavior & 9/\allowbreak{}7 v1; preprint & 합성 사전학습 분포의 structural coverage와 downstream 거동을 연결 & context를 바꾸어도 해결되지 않는 prior mismatch를 연구하는 보조 근거. inference context coverage와는 다른 개념이다. \\
+\bottomrule
+\end{longtable}
+\endgroup
+HINT 본문은 6개 stream의 첫 20k에 대한 prequential 실험이며, local confidence와 이웃 수를 조절한다. 확인한 구조에는 RACE식 사후 verifier가 없다. 따라서 \textbf{“같은 전체 모델이 이미 나왔다”는 결론은 아니지만 “선택적 TabPFN 호출”만으로는 차별화가 부족해졌다.} HINT 원문
+
+LoGIC은 validation으로 검색 채널과 context 크기를 고른다. 그래프의 연결 구조·unlabeled halo가 중요한 구성요소이므로, 이를 그대로 NetFlow 행 분류에 옮기는 대신 “서로 다른 증거 채널을 예산 안에서 배분한다”는 설계 비교에 사용한다. LoGIC 원문
+
+기존 항목의 갱신도 있다. \textbf{TabPFN-Rel /\allowbreak{} RelArena-α /\allowbreak{} RPI가 9/\allowbreak{}7 v2로 업데이트}됐다. 조사한 기존 arXiv 89개 중 9/\allowbreak{}3 이후 갱신으로 확인된 것은 이 항목이다. 버전 갱신 사실과 본문의 어떤 기법이 새로 추가되었는지는 별개라, 여기서는 v2의 구체적인 신규 추가 내용을 단정하지 않는다.
+
+\textbf{4. 최신 논문과 별개로, 기존 xlsx에서 보완할 중요한 선행연구}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.36254\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27491\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36254\linewidth-2\tabcolsep\relax}}
+\toprule
+논문 & 기존 파일과 관계 & 이번 문제에 주는 근거 \\ \midrule
+\endfirsthead
+논문 & 기존 파일과 관계 & 이번 문제에 주는 근거 \\ \midrule
+\endhead
+{}Learning-to-Defer with Expert-Conditional Advice & 미수록; 3/\allowbreak{}15 최초, 5/\allowbreak{}29 v5 & expert와 expert에 제공할 추가 정보를 결합한 action 공간의 일관성 이론. \textbf{context 선택과 routing을 같은 결정 문제로 묶는 데 가장 직접적}이다. \\
+{}Mastering Multiple-Expert Routing & 미수록; ICML 2025 & 고정 expert의 정확도와 비용을 최적화하는 surrogate 및 H-consistency. 현재처럼 frozen predictor 위에 정책을 학습할 때의 출발점이다. \\
+{}LUCoS & 미수록; 5/\allowbreak{}26 & unsupervised PFN의 latent geometry로 medoid context를 선택. 임의 raw/\allowbreak{}PCA 거리를 그대로 쓰는 대신 \textbf{어떤 표현에서의 피복인가}를 검증하게 한다. \\
+{}Topological Signatures of Context-Level Reliability in TabPFN & 미수록; 7/\allowbreak{}20 & 합성 geometry에서 내부 topology와 context-level 신뢰도의 연관성. context 신뢰도 연구로 추가하되, 검증된 sample-level router로 포장하지 않는다. \\
+{}When More Experts Hurt & 미수록; 2/\allowbreak{}19 & multi-expert deferral의 학습 목적에 따른 underfitting을 다룸. frozen global과 공동 학습 classifier를 구별해야 하므로 우리 실패의 직접 증명으로 인용하지 않는다. \\
+\bottomrule
+\end{longtable}
+\endgroup
+반대로 \textbf{BAPS(8/\allowbreak{}13), CRUMB(6/\allowbreak{}9), Context Sampling(7/\allowbreak{}29), Spurious Routing(7/\allowbreak{}28), MixturePFN, LoCalPFN, TuneTables, DistPFN은 이미 xlsx에 있다.} 이번에 발견한 “새 논문”으로 다시 세지 않았다.
+
+가까운 기존 연구들의 비교축은 다음과 같다.
+
+\par\noindent \textbullet\enspace \textbf{MixturePFN}: local context bank와 nearest-centroid routing, 배포 prompt 구성에 맞춘 adaptation. context expert bank 자체는 이미 존재한다.
+
+
+\par\noindent \textbullet\enspace \textbf{BAPS}: 대표성·경계·밀도·균형·다양성을 고려한 compact context. “대표점+\allowbreak{}hard example+\allowbreak{}균형” 조합만으로 새로운 방법이라고 하기 어렵다.
+
+
+\par\noindent \textbullet\enspace \textbf{CRUMB}: query cluster와 MMD로 context를 맞추고 배치 추론. \texttt{P(X)} 일치가 모든 tail의 label evidence를 보장하지 않는다는 것이 우리 설정의 추가 질문이다.
+
+
+\par\noindent \textbullet\enspace \textbf{Understanding Context Sampling}: 작은 15개 데이터셋에서 context draw·coverage·비용을 비교한다. 비싼 선택기의 필요성을 random baseline과 비교해야 한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Spurious Routing}: ridge ICL에서의 이론과 TabPFN의 합성 실험은 context 증가가 spurious signal 의존을 강화할 수 있음을 보인다. “크면 반드시 좋아진다”는 가정을 버릴 근거다. 논문의 routing은 expert 선택이 아니라 입력 내부 신호 의존을 뜻한다.
+
+
+\par\noindent \textbullet\enspace \textbf{Correcting Class Imbalance in PFNs}: binary imbalance의 threshold·sampling 비교는 posterior와 decision rule을 분리해야 함을 뒷받침한다. multiclass macro-F1 개선을 그대로 보장하지는 않는다.
+
+
+\textbf{5. Oracle 격차를 어떻게 개선 목표로 바꿀 것인가}
+
+“oracle처럼 되지 않는 이유에 routing이 있다”는 판단은 맞는 부분이 크다. 다만 \textbf{좋은 router가 회수할 수 있는 몫}을 분리해야, context·feature·정책 중 어디에 노력을 써야 할지 결정할 수 있다.
+
+현재 dense oracle 코드는 true label로 각 expert의 weighted NLL을 계산하고 가장 작은 action을 택한 뒤 그 action의 argmax로 F1을 계산한다. 이것은 label-informed NLL selector다. \textbf{macro-F1 자체를 최대화하는 oracle도 아니고, 입력만 보는 router가 달성 가능한 상한도 아니다.} \texttt{exp31\_\allowbreak{}\allowbreak{}c0\allowbreak{}alloc.\allowbreak{}py\allowbreak{}}의 \texttt{L\_\allowbreak{}\allowbreak{}eval}, \texttt{oracle\_\allowbreak{}\allowbreak{}p\allowbreak{}ick} 구간이 근거다.
+
+고정된 context·모델 아래 action별 손실을 \texttt{ℓ\_\allowbreak{}\allowbreak{}a(X,\allowbreak{}Y)\allowbreak{}}, 허용 입력을 \texttt{X}, router 특징을 \texttt{Z=\allowbreak{}\allowbreak{}φ(X)}라 하자. 적절한 적분 가능성 아래 다음 세 위험을 정의할 수 있다.
+
+[ R\_\allowbreak{}\{label\}=\allowbreak{}\textbackslash{}mathbb E[\textbackslash{}min\_\allowbreak{}a\textbackslash{}ell\_\allowbreak{}a(X,Y)],\textbackslash{}quad R\_\allowbreak{}X\textasciicircum{}\emph{=\allowbreak{}\textbackslash{}mathbb E[\textbackslash{}min\_\allowbreak{}a\textbackslash{}mathbb E(\textbackslash{}ell\_\allowbreak{}a\textbackslash{}mid X)],\textbackslash{}quad R\_\allowbreak{}Z\textasciicircum{}}=\allowbreak{}\textbackslash{}mathbb E[\textbackslash{}min\_\allowbreak{}a\textbackslash{}mathbb E(\textbackslash{}ell\_\allowbreak{}a\textbackslash{}mid Z)]. ]
+
+\texttt{Z}가 \texttt{X}의 함수라면 \texttt{R\_\allowbreak{}\allowbreak{}label \allowbreak{}\ensuremath{\leq} R\_\allowbreak{}\allowbreak{}X* \ensuremath{\leq}\allowbreak{} R\_\allowbreak{}\allowbreak{}Z*}다. \texttt{Z}로 결정하는 정책의 격차는 다음처럼 나뉜다.
+
+[ R(\textbackslash{}pi)-R\_\allowbreak{}\{label\} =\allowbreak{}\textbackslash{}underbrace\{R(\textbackslash{}pi)-R\_\allowbreak{}Z\textasciicircum{}\emph{\}\_\allowbreak{}\{정책\textbackslash{} 학습\} +\allowbreak{}\textbackslash{}underbrace\{R\_\allowbreak{}Z\textasciicircum{}}-R\_\allowbreak{}X\textasciicircum{}\emph{\}\_\allowbreak{}\{특징\textbackslash{} 요약에서\textbackslash{} 잃은\textbackslash{} 정보\} +\allowbreak{}\textbackslash{}underbrace\{R\_\allowbreak{}X\textasciicircum{}}-R\_\allowbreak{}\{label\}\}\_\allowbreak{}\{정답을\textbackslash{} 미리\textbackslash{} 아는\textbackslash{} 것의\textbackslash{} 이점\}. ]
+
+이는 조건부 기대손실 최소화에서 직접 나오는 분해다. 여기서의 \texttt{ℓ}은 가산적 손실이다. macro-F1은 비가산적이므로 같은 식을 macro-F1 차이에 그대로 붙이지 않는다.
+
+동일한 46-feature 벡터가 benign과 infiltration 모두로 나타나면, 고정 context를 쓰는 어떤 함수도 그 두 행을 정답별로 다르게 라우팅할 수 없다. 그러나 label oracle은 서로 다른 expert를 골라 둘 다 맞힐 수 있다. 그렇다고 데이터 문제로 연구를 닫을 필요는 없다. \textbf{모순 벡터에서의 최선의 비용 선택과, 구별 가능한 입력에서의 교정을 나누면 된다.}
+
+기존 0821 scratch 진단은 infiltration test의 약 58.4\%가 train에서 benign·infiltration 두 라벨로 모두 등장한 벡터였다고 기록한다. 이는 해당 scratch split의 수치이며, 최신 test 37,631행의 비율로 재사용하지 않는다. 또한 충돌 그룹의 단순 다수결은 그 그룹의 경험적 0–1 오류 최적 선택이지 macro-F1 상한이 아니다.
+
+\textbf{먼저 만들 진단: 세 수준의 비교표}
+
+\par\noindent \textbullet\enspace 현재처럼 각 test 행의 label을 아는 oracle.
+
+
+\par\noindent \textbullet\enspace 동일 입력 hash에는 동일 action만 허용하는 oracle. 가산 손실에서 \texttt{Σ\_\allowbreak{}\allowbreak{}g min\_\allowbreak{}\allowbreak{}a Σ\_\allowbreak{}\allowbreak{}\{\allowbreak{}i\ensuremath{\in}g\allowbreak{}\}\allowbreak{} ℓ\_\allowbreak{}\allowbreak{}a(x\_\allowbreak{}\allowbreak{}i,\allowbreak{}y\_\allowbreak{}\allowbreak{}i)}로 계산한다. 이 역시 test label을 쓰는 사후 낙관적 진단이며 배포 정책이 아니다.
+
+
+\par\noindent \textbullet\enspace train-only forward-held-out 예측으로 학습한 실제 router. route/\allowbreak{}tune/\allowbreak{}cal/\allowbreak{}test의 같은 허용 정보로 평가한다.
+
+
+세 수준의 차이와, 충돌·비충돌·새 벡터별 손익을 제시한다. 최신 n=\allowbreak{}4 run에 all-expert 확률이 충분히 저장되어 있지 않으므로 이 표는 아직 계산하지 않았다. 다음 실험에서는 \textbf{같은 frozen C0와 bank의 dense 결과를 한 번 저장}하면 이후 대부분의 정책 대조를 CPU에서 할 수 있다.
+
+\textbf{6. 우선 제안 A — verifier를 상대적 오분류 비용의 추정기로 바꾼다}
+
+현재 코드를 보면 pre-call은 \texttt{[p0,\allowbreak{} ent\allowbreak{}ropy,\allowbreak{} ma\allowbreak{}rgin,\allowbreak{} z,\allowbreak{} distanc\allowbreak{}e,\allowbreak{} affin\allowbreak{}ity,\allowbreak{} exp\allowbreak{}ert desc\allowbreak{}riptor]}를 쓰지만, post-call은 \texttt{[p0,\allowbreak{} pk,\allowbreak{} pk−p0,\allowbreak{} \allowbreak{}entropy,\allowbreak{} margin,\allowbreak{} scalar \allowbreak{}distance\allowbreak{}s/\allowbreak{}\allowbreak{}affini\allowbreak{}ties,\allowbreak{} de\allowbreak{}scriptor\allowbreak{}]}만 사용한다. \textbf{post-call 입력에 z와 원래 46-feature가 없다.} 두 posterior가 비슷한데 실제 오답 원인이 다른 입력을 verifier가 구분할 기회가 줄어든다. 이는 정보 병목 후보이며 raw feature를 추가하면 무조건 좋아진다는 주장은 아니다. 코드 위치
+
+이 제안은 exp17·exp20의 확률 입력 selector와 가장 가깝다. 당시 target은 \texttt{y가 benig\allowbreak{}n이면 glob\allowbreak{}al,\allowbreak{} owne\allowbreak{}d class이\allowbreak{}면 소유 exp\allowbreak{}ert}였고, 이번 target은 \textbf{같은 row에서 실제로 어느 결정의 비용이 더 작은가}다. 기존 가이드 §13\textasciitilde{}15에도 paired utility와 OOF policy utility라는 큰 방향은 이미 있다. 따라서 상대 utility라는 개념을 새 아이디어로 주장하지 않는다. 구체적인 수정점은 \textbf{NLL \ensuremath{\rightarrow} 결정 비용, post-call 정보 보강, OOF 단위/\allowbreak{}목표 정합성, forward 평가, policy-aware context 선택}이다.
+
+변경을 두 개의 독립 ablation으로 나눈다.
+
+\textbf{A1: 목표를 유지한 채 입력만 보강.} 현재 normalized-gain verifier에 train-fit 전처리의 raw 46 features 또는 \texttt{z}를 각각 추가한다. 그 다음 확장으로 모든 클래스별 이웃 거리·라벨 지지율·유효 표본 수, context prior, global/\allowbreak{}expert의 예측 class pair를 제공한다. 데이터셋의 attack scenario 정답이나 test label을 query feature로 넣지 않는다.
+
+\textbf{A2: 입력을 고정한 채 목표를 교정 손익으로 교체.} class label 자체나 expert ID를 고르는 CE 대신, expert \texttt{k}가 global의 결정을 바꿨을 때의 비용 차를 학습한다.
+
+[ \textbackslash{}Delta\_\allowbreak{}\{ik\}=\allowbreak{}\textbackslash{}ell(y\_\allowbreak{}i,\textbackslash{}hat y\_\allowbreak{}0(x\_\allowbreak{}i))-\textbackslash{}ell(y\_\allowbreak{}i,\textbackslash{}hat y\_\allowbreak{}k(x\_\allowbreak{}i)),\textbackslash{}qquad A\_\allowbreak{}k(z)=\allowbreak{}\textbackslash{}mathbb E[\textbackslash{}Delta\_\allowbreak{}k\textbackslash{}mid z]. ]
+
+가장 투명한 출발점은 correctness의 네 상태를 예측하는 것이다: 둘 다 정답, global만 정답, expert만 정답, 둘 다 오답. 단위 0–1 손실이라면
+
+[ A\_\allowbreak{}k(z)=\allowbreak{}P(\textbackslash{}text\{expert만 정답\}\textbackslash{}mid z)-P(\textbackslash{}text\{global만 정답\}\textbackslash{}mid z). ]
+
+정책은 \texttt{A\_\allowbreak{}\allowbreak{}k(z) >\allowbreak{} 0}인 경우에만 교정하고, 비용을 포함한 호출 결정에서는 \texttt{A\_\allowbreak{}\allowbreak{}k(z) >\allowbreak{} λ c\_\allowbreak{}\allowbreak{}k}를 사용한다. 이미 호출한 뒤에는 계산 비용이 sunk cost이므로 verifier의 교정 선택과 pre-call 비용 선택을 구별한다. 여러 action의 현재 가능한 예상 손실을 비교하는 것이 multi-expert learning-to-defer의 결정이론적 출발점이다.
+
+IDS에서는 benign 오경보와 tail 누락의 비용이 다르다. 따라서 실제 모델은 사전 정의한 bounded cost matrix \texttt{ℓ(y,\allowbreak{}ŷ)} 또는 정규화한 class-balanced 0–1 loss로 확장한다. 이때 \texttt{E[w(Y)·1\allowbreak{}\{\allowbreak{}help\}\allowbreak{}|z\allowbreak{}]−E[w(Y)\allowbreak{}·1\{\allowbreak{}harm\}\allowbreak{}|z]}를 직접 추정해야 한다. query의 예측 label에 해당하는 가중치를 사후로 곱하면 다른 목적이 된다. class-balanced loss는 macro-recall에 대응하는 surrogate이고, macro-F1과 같은 목적이라는 주장은 하지 않는다. 최종 F1은 독립 평가에서 별도로 보고한다.
+
+가중 비용에서 서로 다른 두 오답의 비용도 다르다면 “둘 다 오답”을 한 상태로 합치지 말고 full action cost를 회귀하거나 \texttt{(y,\allowbreak{} ŷ0,\allowbreak{} \allowbreak{}ŷk)}에 따른 비용을 모델링한다. 확률 log-loss는 calibration을 위한 보조 지표로 유지할 수 있다.
+
+이렇게 하면 seed 42의 \textbf{38,238건 같은-label 채택이 classification utility 0}으로 정의된다. 현재 \texttt{G>0}이 포착한 확률 개선 중 실제 tail 의사결정을 바꾸는 기회에 학습·호출 예산을 집중할 수 있다.
+
+\textbf{확률만으로는 부족한 이유와 반증 방법.} expert가 맞을 확률만 추정하면 global도 맞는 쉬운 행을 고르는 경향이 생긴다. 반대로 \texttt{P(G>0)}만 추정하면 작은 이득과 큰 손해의 비대칭을 놓친다. 상대 비용 \texttt{A\_\allowbreak{}\allowbreak{}k}를 배우고, 같은 채택량에서 도움이 되는 변경과 해로운 변경을 비교한다. \texttt{p0/\allowbreak{}\allowbreak{}pk on\allowbreak{}ly   \ensuremath{\rightarrow}   +\allowbreak{}\allowbreak{}z   \ensuremath{\rightarrow}   +\allowbreak{}\allowbreak{}r\allowbreak{}aw46}이 forward holdout에서 향상되지 않으면 정보 보강 가설을 접고, 목표·expert 공급의 문제로 이동한다.
+
+\textbf{7. 우선 제안 B — scorer가 이전 verifier의 판단을 정답으로 물려받지 않게 한다}
+
+최신 exp31에서도 scorer target은 다음과 같다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+b_oof = 1{OOF quantile verifier predicts positive gain}
+U = b_oof * G - lambda * cost
+scorer_label = 1{U > 0}
+
+\end{Verbatim}
+이 설계는 “사후 verifier가 받아들일 이득만 제안한다”는 의도가 있다. 그러나 verifier가 유망한 expert를 놓치면 그 pair는 실제 \texttt{G>0}이어도 scorer의 negative가 된다. 그리고 \textbf{최종 verifier는 \texttt{G /\allowbreak{}\allowbreak{} w\_\allowbreak{}\allowbreak{}ba\allowbreak{}l(y)}로 학습하는 반면 b\_\allowbreak{}oof를 만드는 verifier는 여전히 raw weighted G로 학습한다.} exp26의 단위 수정이 이 OOF 경로까지 전달되지 않은 상태다. 현재 코드와 저장된 \texttt{route\_\allowbreak{}\allowbreak{}ga\allowbreak{}in.\allowbreak{}npz} 양쪽에서 확인했다.
+
+저장 배열의 최신 seed 42에서 \texttt{G>0}인 pair 중 b\_\allowbreak{}oof를 통과하는 비율은 전체 \textbf{19.81\%}, brute \textbf{0\%}, dos \textbf{0.018\%}, infiltration \textbf{59.82\%}, web **80.52\%**다. 7 seed 전체 생존율은 8.06\textasciitilde{}83.03\%로 차이가 크다. 이 수치는 \textbf{양의 NLL pair가 정답 구성에서 얼마나 남는지}이며, 그만큼 실제 정답 교정을 잃었다는 뜻은 아니다. 정답 구성 감사표
+
+제안하는 학습 순서는 다음과 같다.
+
+\par\noindent \textbullet\enspace \textbf{K=\allowbreak{}1 또는 작은 고정 bank에서 모든 route query에 expert를 실행한다.} scorer를 잠시 우회해 필요한 full-information action costs를 확보한다. 이것은 최종 추론 구조를 dense로 바꾸자는 뜻이 아니라, 정책이 학습 가능한지 분리하는 실험이다.
+
+
+\par\noindent \textbullet\enspace A의 verifier/\allowbreak{}교정 정책을 먼저 학습한다. old b\_\allowbreak{}oof로 label을 0으로 만드는 연결을 제거한다.
+
+
+\par\noindent \textbullet\enspace scorer는 pre-call 정보로 \textbf{expert 조회 후 허용할 최선 교정의 기대가치}를 예측한다. calibration된 post-call 정책이 고정된 후, 그 정책의 out-of-fold 실제 손익을 distill하는 변형을 별도 비교한다.
+
+
+\par\noindent \textbullet\enspace 같은 correction policy에서 scorer가 tail의 교정 가능한 expert를 얼마나 회수하는지와 잘못된 선택으로 잃는 이득을 먼저 평가한다. 실제 tail 교정 성능을 확보한 뒤 호출률·latency를 줄인다. scorer의 top1 expert 정답률이나 호출 감소만을 성공 기준으로 삼지 않는다.
+
+
+이를 value of information으로 쓰면, pre 정보 \texttt{z\_\allowbreak{}\allowbreak{}pre}, 조회 뒤 정보 \texttt{z\_\allowbreak{}\allowbreak{}post}에 대해
+
+[ V\_\allowbreak{}k(z\_\allowbreak{}\{pre\})=\allowbreak{}r\_\allowbreak{}0(z\_\allowbreak{}\{pre\})- \textbackslash{}mathbb E\textbackslash{}left[\textbackslash{}min\_\allowbreak{}\{a\textbackslash{}in\{0,k\}\}r\_\allowbreak{}a(Z\_\allowbreak{}\{post\})\textbackslash{}mid z\_\allowbreak{}\{pre\}\textbackslash{}right] -\textbackslash{}lambda c\_\allowbreak{}k. ]
+
+여기서 \texttt{r\_\allowbreak{}\allowbreak{}a}는 그 단계에서 관측 가능한 정보를 조건으로 한 예상 의사결정 손실이다. \textbf{scorer는 V를 보고 조회하고, verifier는 조회 후 0과 k 중 손실이 작은 결정을 고른다.} 둘의 역할과 목표가 일치한다. 실제 구현에서는 이 식의 정확한 조건부 기대를 알 수 없으므로 forward-held-out action costs로 근사한다.
+
+참고로 코드의 OOF는 앞 절반 \ensuremath{\rightarrow} 뒤 절반과 뒤 절반 \ensuremath{\rightarrow} 앞 절반 양방향이다. 두 절반 모두 outer train 안이라 이것만으로 test leakage라고 할 수는 없다. 다만 미래 배포의 재현 실험으로 쓰려면 \textbf{과거 \ensuremath{\rightarrow} 미래의 rolling/\allowbreak{}forward folds}로 바꾸어야 한다. route에 없는 미래 실패는 어떤 supervised target 수정만으로도 학습할 수 없으므로, 그때는 context refresh와 허용된 과거 정보 보강을 사용한다.
+
+\textbf{8. 우선 제안 C — context를 ‘행 추첨’에서 ‘필요한 증거의 피복’으로 바꾼다}
+
+현재 backbone은 v1/\allowbreak{}v2가 아니라 \textbf{TabPFN-3}다. 공식 보고서는 1M training rows까지의 확장을 다룬다. 따라서 논문의 동기를 “TabPFN은 1k/\allowbreak{}10k만 처리 가능”으로 쓰면 현 실험과 맞지 않는다. \textbf{12M pool에서 제한된 계산 예산으로 task-relevant evidence를 얼마나 잘 제공하느냐}, 그리고 최대 길이보다 작은 context가 왜 더 효과적일 수 있느냐가 정확한 문제다. TabPFN-3 report
+
+context에는 적어도 세 역할이 있다: decision boundary를 지지하는 사례, local density/\allowbreak{}빈도, 여러 공격 mode의 존재 증거. 전체 dedup이 악화된 이유를 “중복이 항상 좋다”로 일반화하지 말고, \textbf{빈도 보존과 피복을 서로 다른 제약으로 관리}한다.
+
+\textbf{C1: 안정적인 C0를 기준으로, class × mode 피복을 명시한다.}
+
+\par\noindent \textbullet\enspace 출발점은 검증된 100k·S=\allowbreak{}.75·공격 균등·n=\allowbreak{}4. .75와 100k가 이론적으로 최적이라고 주장하지 않는다.
+
+
+\par\noindent \textbullet\enspace train 구간 안에서 클래스별 관측 가능한 feature mode를 만든다. scenario metadata는 피복 진단과 train-only 층화에 사용할 수 있으나, query의 true scenario로 라우팅하지 않는다.
+
+
+\par\noindent \textbullet\enspace rare class 내부의 모든 충분히 관측된 mode에 최소 지원을 두고, 남은 예산을 conditional density를 유지하는 방식으로 뽑는다. background/\allowbreak{}benign 원래 선택을 먼저 고정한 뒤 attack 슬롯 안에서만 mode coverage를 바꾸면 원인 판독이 쉽다.
+
+
+\par\noindent \textbullet\enspace 같은 class prior를 유지한 \texttt{random}과 \texttt{coverage\allowbreak{}}를 비교하고, 같은 coverage 아래 prior만 바꾸는 실험을 별도로 한다. 이렇게 해야 피복 효과를 단순 prior 효과와 분리할 수 있다.
+
+
+유한 pool N개에서 mode g가 n\_\allowbreak{}g개이고 균등 비복원으로 B개를 뽑는다면, 해당 mode를 전혀 보지 못할 확률은 정확히
+
+[ P(N\_\allowbreak{}g(C)=\allowbreak{}0)=\allowbreak{}\textbackslash{}frac\{\textbackslash{}binom\{N-n\_\allowbreak{}g\}\{B\}\}\{\textbackslash{}binom\{N\}\{B\}\} \textbackslash{}le (1-n\_\allowbreak{}g/\allowbreak{}N)\textasciicircum{}B \textbackslash{}le e\textasciicircum{}\{-B n\_\allowbreak{}g/\allowbreak{}N\}. ]
+
+이는 작은 mode를 random context가 누락할 수 있다는 직접적인 근거다. 여러 mode에 union bound를 적용해 피복 예산을 잡거나, 알려진 mode에는 최소 quota를 강제해 누락을 막는다. 단 \textbf{모드를 아직 발견하지 못했거나 train에 0개라면 이 보장이 적용되지 않는다.} 모드의 최소 표본 수를 정하는 것과 PFN 정확도를 보장하는 것은 별개다.
+
+\textbf{C2: expert context는 tail positive와 혼동 negative를 함께 담는다.}
+
+각 query에 대해 global top1/\allowbreak{}top2에만 의존하지 않고, \textbf{모든 클래스의 train index에서} 작은 이웃 집합을 검색한다. 그 거리·지지율로 candidate context를 만든다. 이렇게 해야 global이 benign을 높은 확률로 예측한 tail도 탐색 대상에 들어간다. 선택되는 context row의 train label을 쓰는 것은 합법적인 supervised retrieval이며 query label은 사용하지 않는다.
+
+예를 들어 web specialist는 web 사례만 늘리는 대신, 그 web 사례 주변에서 같은 모양을 갖는 benign hard negatives와 함께 구성한다. infiltration specialist도 inf-only/\allowbreak{}benign-only/\allowbreak{}mixed의 과거 지지, sharp feature 경계에서의 반대 라벨 증거를 함께 보게 한다. 정확한 충돌 벡터는 지워서 답을 정하지 않고, 과거의 label counts를 별도 audit/\allowbreak{}feature로 남긴다.
+
+context budget을
+
+[ C\_\allowbreak{}k=\allowbreak{}C\_\allowbreak{}\{anchor\}\textbackslash{}cup C\_\allowbreak{}\{support,k\}\textbackslash{}cup C\_\allowbreak{}\{contrast,k\}, \textbackslash{}quad |C\_\allowbreak{}k|\textbackslash{}le B\_\allowbreak{}k ]
+
+로 고정한다. anchor는 정상/\allowbreak{}background 질량의 기준점, support는 고유 mode 피복, contrast는 오경보를 억제하는 대조 증거다. 현재도 anchor와 residual block이 있으므로 \textbf{이 합집합 형태 자체가 기여는 아니다.} 바뀌는 핵심은 residual 크기가 아니라 \textbf{관측 가능한 confusion과 상대적 결정 손익을 기준으로 support·contrast를 고르는 것}이다.
+
+class/\allowbreak{}mode cell별 대표점 선택에는 weighted facility-location을 피복 proxy로 쓸 수 있다.
+
+[ F\_\allowbreak{}g(S)=\allowbreak{}\textbackslash{}sum\_\allowbreak{}\{i\textbackslash{}in D\_\allowbreak{}g\}w\_\allowbreak{}i\textbackslash{}max\_\allowbreak{}\{j\textbackslash{}in S\}\textbackslash{}operatorname\{sim\}(z\_\allowbreak{}i,z\_\allowbreak{}j), \textbackslash{}qquad |S|\textbackslash{}le b\_\allowbreak{}g. ]
+
+고정된 비음수 similarity·weight와 cardinality 조건 아래 이 함수는 monotone submodular다. max가 현재 대표점의 similarity를 넘을 때만 증가하므로 집합이 커질수록 추가 이득이 줄어든다. 표준 greedy는 이 \textbf{피복 proxy}에 대해 \texttt{1−1/\allowbreak{}\allowbreak{}e} 근사 성질을 갖는다. 이 근사를 PFN의 F1 보장으로 옮기지는 않는다. cell별 분리 objective/\allowbreak{}고정 quota라면 각각 적용할 수 있으나, 임의의 추가 제약을 섞은 전체 선택기에 같은 비율이 자동 유지되는 것도 아니다.
+
+이 근사의 근거는 Nemhauser·Wolsey·Fisher, 1978다. \texttt{F\_\allowbreak{}\allowbreak{}g(\ensuremath{\varnothing})=\allowbreak{}\allowbreak{}0\allowbreak{}}으로 두고 정확한 greedy marginal을 선택할 때의 성질이다. 후보 축소·근사 greedy를 사용하면 해당 제한 후보집합/\allowbreak{}근사 오차에 맞추어 주장 범위를 줄인다. 또한 위 \texttt{w\_\allowbreak{}\allowbreak{}i}는 \textbf{선택 목적의 질량}이지 TabPFN에 자동 전달되는 sample weight가 아니다. 원래 빈도의 보존은 anchor와 cell 내부의 표본추출로 구현하고, 대표점 하나에 가중치만 붙이면 원래 context와 같아진다고 가정하지 않는다.
+
+이론의 주장은 작게 유지한다: \textbf{random의 rare-mode 누락을 줄이고, 정해진 budget에서 관측된 mode의 대표성을 최적화한다.} PFN의 예측 성능 연결은 실험으로 검증한다. 모든 행 쌍을 계산하지 않고 train-only 후보 축소·mini-batch selection을 쓰면 CPU 비용을 통제할 수 있다.
+
+거리 공간도 ablation이다. log/\allowbreak{}robust-scaled raw, train-fit z, 별도 unsupervised PFN embedding 중 어느 표현에서 선택하는지 비교한다. LUCoS는 이 구분의 근거이고, BAPS는 구성 방법 대조군이다. 단, 기존 raw kNN 재현의 결과를 새 v3 latent retrieval의 효과라고 해석하지 않는다.
+
+\textbf{C3: context 크기와 config variance를 직교화한다.}
+
+기존 seed 스윕은 row sampling과 \texttt{TabPFNCl\allowbreak{}assifier\allowbreak{}(random\_\allowbreak{}\allowbreak{}state=\allowbreak{}\allowbreak{}se\allowbreak{}ed)}를 동시에 바꿨다. 0902 §8ah\textasciitilde{}8ai에서 이 혼동이 드러났다. 다음 context 비교에서는 \texttt{seed\_\allowbreak{}\allowbreak{}con\allowbreak{}text}, \texttt{seed\_\allowbreak{}\allowbreak{}mod\allowbreak{}el\_\allowbreak{}\allowbreak{}confi\allowbreak{}g}, \texttt{seed\_\allowbreak{}\allowbreak{}rou\allowbreak{}ter}를 분리하고, 같은 C0 row IDs와 같은 ensemble config를 공유한다. 크기 비교도 이 둘을 고정한 nested sample을 포함한다. 1M에서의 하락을 attention dilution으로 부르는 것은 현재로서는 기전 가설이며, attention/\allowbreak{}config/\allowbreak{}duplicate effects를 분리하기 전에는 결론으로 쓰지 않는다.
+
+\textbf{9. 두 축을 묶는 연구 아이디어 — expert × context action의 공동 목적}
+
+유망한 논문 방향은 “좋은 context를 별도로 찾고 router를 추가했다”보다 \textbf{context의 가치를 실제로 라우팅 가능한 교정 이득으로 정의한다}는 것이다.
+
+expert를 \texttt{k}, 그 expert의 context recipe 또는 budget을 \texttt{b}라 하면 action을 \texttt{(k,\allowbreak{}b)}로 정의한다. \texttt{k=\allowbreak{}\allowbreak{}0}은 global 유지다. 같은 frozen backbone이어도 context가 다르면 action outcome이 달라지므로, 독립적인 class-router와 context-selector의 점수를 곱하는 대신 action별 비용을 일관되게 평가한다.
+
+[ \textbackslash{}min\_\allowbreak{}\{\textbackslash{}mathcal C,\textbackslash{}pi\}; \textbackslash{}mathbb E\textbackslash{}left[\textbackslash{}ell(Y,\textbackslash{}hat y\_\allowbreak{}\{\textbackslash{}pi(Z),\textbackslash{}mathcal C\}(X)) +\allowbreak{}\textbackslash{}lambda,cost(\textbackslash{}pi(Z))\textbackslash{}right] \textbackslash{}quad\textbackslash{}text\{s.t. context budgets, mode support, benign-risk constraint\}. ]
+
+이 방향의 직접적인 이론 선행연구는 Expert-Conditional Advice다. 그 논문은 expert와 추가 정보의 결합 action에 대한 surrogate를 제안하고 특정 분리 surrogate의 비일관성을 보인다. \textbf{현재 RACE의 scorer/\allowbreak{}verifier 두 컴포넌트가 곧 그 반례라는 뜻은 아니다.} 위처럼 context까지 action으로 선택하는 확장에 적용할 근거이며, 선택한 surrogate·가설 공간·손실·표본 가정이 맞는지 별도로 확인해야 한다.
+
+구현은 joint end-to-end 학습보다 작게 시작할 수 있다. frozen C0, 하나의 specialist, context recipe 두 개만 두고 full action-cost table을 만든다. context 후보는 design fold에서 구성하고, route policy는 다른 fold에서 학습하며, 다음 시간 fold에서 bank의 \textbf{실현 이득}을 비교한다. bank를 고를 때의 목적을 \texttt{label or\allowbreak{}acle 최대}에서 \texttt{held-\allowbreak{}out\allowbreak{} 실제 정책의 \allowbreak{}비용 감소}로 바꾼다. 후보를 반복 선택한 결과를 같은 fold의 최종 성능으로 보고하지 않도록 outer fold를 둔다.
+
+이 구조가 피해야 할 선행 중복은 명확하다. context bank는 MixturePFN, 정보 보존 구성은 BAPS, batch context matching은 CRUMB/\allowbreak{}LoGIC, conditional TFM 호출은 HINT, expert-information joint decision은 L2D with advice에 이미 있다. 따라서 가능한 추가 기여는 \textbf{중복·강한 imbalance·시간 이동 아래 어떤 context 증거가 상대적 교정 결정을 식별 가능하게 하는지}, 그리고 그 증거와 정책을 묶었을 때의 실제 tail–benign–cost 개선이다. 현재 조사만으로 “최초”를 주장할 단계는 아니다.
+
+\textbf{10. verifier의 안전성을 보정하는 방식도 목표에 맞춘다}
+
+현재는 D\_\allowbreak{}cal에서 \texttt{q\_\allowbreak{}\allowbreak{}hat−G}의 분위수로 q\_\allowbreak{}corr를 만들고, 같은 D\_\allowbreak{}cal에서 threshold grid를 선택한다. marginal lower-bound coverage 90\%는 **선택된 override 집합의 harmful rate \ensuremath{\leq}10\%**를 뜻하지 않는다. 선택률이 작을수록 전체 coverage와 선택 집합의 위험은 더 달라질 수 있다. 같은 calibration set을 이용한 77개 후보 선택도 고려해야 한다.
+
+latest seed 42는 calibration grid에서 feasible point를 찾았지만 test helpful/\allowbreak{}harmful이 98/\allowbreak{}162다. 이를 “90\% coverage 실패”로 곧바로 해석할 수는 없다. 원하는 위험 지표가 다르고 시간·prior·중복 구성이 다르기 때문이다. 개선책은 목표 지표에 대한 정책 단위 보정이다.
+
+\textbf{보정 모집단도 맞춰야 한다.} seed 42의 \texttt{0c\_\allowbreak{}\allowbreak{}split\allowbreak{}\_\allowbreak{}\allowbreak{}manifes\allowbreak{}t.\allowbreak{}csv}와 \texttt{cal\_\allowbreak{}\allowbreak{}cap\_\allowbreak{}\allowbreak{}per\_\allowbreak{}\allowbreak{}clas\allowbreak{}s=\allowbreak{}\allowbreak{}50000}을 대조하면, D\_\allowbreak{}cal은 클래스별 cap 후 234,163행이며 benign은 50,000행, **21.35\%**다. test의 benign은 **87.07\%**다. 이후 hash mask가 116,378행을 남기므로 실제 보정 prior는 다시 달라질 수 있다. 이 상태에서 calibration의 전체 helpful/\allowbreak{}harmful 비율을 자연 트래픽의 동일 비율로 해석할 수 없다. 이는 셧다운/\allowbreak{}위험 이동의 \textbf{검증할 원인 후보}이며 단독 원인으로 확정하지 않았다.
+
+따라서 class-conditional risk를 먼저 추정하고 운영 prior로 조합하거나, 자연 비율의 별도 calibration subset을 사용한다. sampling inclusion probability를 아는 경우 가중 추정도 가능하지만 가중치 분산과 위험 상한을 같이 고려한다. 라벨 prior 보정은 \texttt{P(Z|Y)}까지 바뀌는 시간 이동을 해결하지 못하므로 forward 검증을 유지한다. benign-conditional FPR는 순수 label-prior 변화에 불변일 수 있지만 전체 harmful fraction은 그렇지 않다는 점도 구분한다.
+
+\par\noindent \textbullet\enspace policy/\allowbreak{}threshold 후보를 training/\allowbreak{}tuning 구간에서 미리 고정한다.
+
+
+\par\noindent \textbullet\enspace 운영 모집단을 반영하는 별도 calibration 구간에서 \textbf{benign에 새로 추가한 FP}, helpful/\allowbreak{}harmful correction, 호출률의 상한을 측정한다.
+
+
+\par\noindent \textbullet\enspace 후보 여러 개 중 고르는 경우 Learn then Test의 다중 검정 방식이나, 후보 선택용/\allowbreak{}위험 평가용 split 분리를 사용한다.
+
+
+\par\noindent \textbullet\enspace time blocks를 이동시키며 다음 구간에서 위험을 측정하고, 원래 조건이 성립하는 범위에서만 보장을 기술한다. Conformal prediction beyond exchangeability는 시간 이동을 무시한 보장의 한계와 가중 보정의 조건을 다룬다.
+
+
+단순한 지표 예시로, \textbf{고정 정책·독립적인 Bernoulli 관측} 아래 harmful=\allowbreak{}0인 n건을 봤을 때 95\% one-sided 상한은 \texttt{1−0.\allowbreak{}05\textasciicircum{}(\allowbreak{}1/\allowbreak{}\allowbreak{}n)}이다. n=\allowbreak{}100이면 약 2.95\%, n=\allowbreak{}3,000이면 약 0.10\%다. 같은 vector의 사본 3,000개를 독립 증거 3,000개로 취급할 수는 없다. CIC2018에서는 표본/\allowbreak{}블록 의존성을 명시하고 block bootstrap을 경험적 불확실성으로 제시한다. block 수가 적다면 그 한계까지 보고한다.
+
+이 단계의 목적은 문턱을 무작정 낮추는 것이 아니라 \textbf{실제로 구별되는 유망한 subset에 대해 위험 예산을 배분하는 것}이다. 구별되는 subset이 없으면 feature/\allowbreak{}context evidence를 보강하는 A·C로 돌아간다.
+
+\textbf{11. 다른 IDS로 확장하기 전 실행할 최소 실험 순서}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16900\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27700\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27700\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27700\linewidth-2\tabcolsep\relax}}
+\toprule
+순서 & 바꾸는 것 & 고정할 것·대조 & 판독과 다음 분기 \\ \midrule
+\endfirsthead
+순서 & 바꾸는 것 & 고정할 것·대조 & 판독과 다음 분기 \\ \midrule
+\endhead
+{}E0 — 이번에 완료 & 기존 run 재분석 & 최신 100k·n=\allowbreak{}4 7 seed & global과 routing 기여 분리, NLL label 생존과 correctness transition 확보. \\
+{}E1 & 최신 C0에서 고정 expert의 dense action dump & C0 row/\allowbreak{}config/\allowbreak{}실제 외부 split, K=\allowbreak{}1 우선 및 작은 K bank & 같은 기준선의 label oracle·hash-consistent oracle·단일 best expert를 계산. 이후 정책 실험은 캐시 재사용. \\
+{}E2a & normalized-gain verifier에 +\allowbreak{}z, 그 다음 별도 +\allowbreak{}raw46 & target·bank·예측 cache 고정, scorer 우회 & forward-held-out에서 같은 채택률의 손익이 좋아지는지. 클래스 전체 상관보다 inf/\allowbreak{}web/\allowbreak{}benign confusion별 판별을 본다. \\
+{}E2b & verifier target을 상대 action cost로 변경 & E2a에서 정한 입력·bank 고정 & helpful/\allowbreak{}harmful 및 같은-label 호출 비중. 더 강한 단일 XGB/\allowbreak{}stacking과 같은 정보를 주고 비교. \\
+{}E3 & old b\_\allowbreak{}oof label 제거, 가치 기반 scorer 학습 & 검증된 post policy·bank 고정 & 허용 호출률에서 dense policy의 유익한 변경을 얼마나 유지하는지, harm와 p95 latency. \\
+{}E4 & class×mode 피복 context, 그 다음 contrast evidence & 총 row budget·class prior·model config 고정 & random 대비 피복과 실제 교정 이득의 관계. E4a 피복과 E4b hard negatives는 분리. \\
+{}E5 & action \texttt{(expert,\allowbreak{} context\allowbreak{})} 선택 및 policy-aware bank 비교 & 동일 bank 총 row·anchor·config·시간/\allowbreak{}메모리 예산 & residual/\allowbreak{}proximity/\allowbreak{}random/\allowbreak{}BAPS 및 global에 같은 row를 추가하는 대조보다 실현 이득이 좋은지. \\
+{}E6 & 선택된 최종 구조의 forward episode 평가 & 기존 test를 더 튜닝하지 않고, outer training 안에 새 pseudo-future fold 구성 & 방향이 반복되는지 확인한 뒤 다른 IDS로 확장. CIC의 최종 untouched 평가가 없으면 개발셋으로 명시. \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{우선순위는 E1 \ensuremath{\rightarrow} E2 \ensuremath{\rightarrow} E3이다.} global context의 작동 가능한 기준선이 이미 있으므로, 지금 다시 C0의 비율·크기를 넓게 탐색하기보다 “좋은 expert 출력이 주어졌을 때 현재 정보로 안전하게 사용할 수 있는가”를 먼저 푼다. 그 다음 그 교정층이 필요로 하는 evidence를 C에서 보강한다. 이는 context가 덜 중요해서가 아니라, 두 축의 효과를 분리하기 위해서다.
+
+시작할 때 미리 정할 성공 기준은 다음이다. 수치는 보장이 아니라 \textbf{제안하는 실용적 검증 기준}이며, 운영 비용이 정해지면 바꿀 수 있다.
+
+\par\noindent \textbullet\enspace 1차: 같은 global 대비 tail macro-F1 +\allowbreak{}0.01을 최소 유의미 개선의 목표로 두고, paired forward episode/\allowbreak{}block CI와 함께 제시한다. +\allowbreak{}0.01에 못 미친 결과도 전부 기록한다.
+
+
+\par\noindent \textbullet\enspace 안전: benign FPR 증가 허용치를 먼저 정한다. 초기 후보는 기존 기록과 연결되는 0.0005이며, row count와 추가 FP 수를 같이 표시한다. 위험 상한을 주장할 때는 앞 절의 가정을 만족해야 한다.
+
+
+\par\noindent \textbullet\enspace 분리: inf와 web 각각 P/\allowbreak{}R/\allowbreak{}F1·AUPRC, 도움이 된 변경과 해로운 변경을 보고한다. 쉬운 bot로 tail 평균을 올리는지 확인한다.
+
+
+\par\noindent \textbullet\enspace 비용: 평균 호출률, 같은-label 채택률, 실제 wall-clock/\allowbreak{}p95, peak memory. 호출 수를 wall-clock 배수로 환산하지 않는다.
+
+
+\par\noindent \textbullet\enspace 성립 조건: E1에서 현재 C0 위의 deployable policy headroom이 작다면 C/\allowbreak{}새로운 허용 feature로 정보의 질을 개선한다. raw feature에도 구별 신호가 없는 충돌 구간에서는 학습 가능한 비충돌 구간의 개선과 비용 최적 선택을 구분해 진행한다.
+
+
+고정 threshold 보정, XGB-C0/\allowbreak{}full, XGB+\allowbreak{}공정하게 선택한 calibration, global+\allowbreak{}같은 추가 context rows, K=\allowbreak{}1, simple stacking은 필수 대조다. LoCalPFN/\allowbreak{}BoostPFN의 과거 수치는 v1 backbone이므로, wrapper 기여를 주장할 때는 v3 위의 동등 구현이나 backbone factor를 별도로 둔다. 입력 정보와 메모리뿐 아니라 전처리·캐시·config ensemble 수도 맞춘다.
+
+현재 outer split은 per-scenario chrono다. 내부 scenario 층화는 그 outer train 안에서만 수행해야 한다. 단일 전역 시점까지의 라벨만 가능한 배포를 주장하려면 global-time forward split이 별도로 필요하다. 실제 배포에서 과거에 관측 가능한 timestamp/\allowbreak{}session 집계 정보를 추가할 수 있다면 충돌을 푸는 새 정보원이 될 수 있지만, attack 일정으로 만든 scenario 정답이나 미래 집계를 feature로 쓰는 방식은 허용하지 않는다.
+
+\textbf{12. 제안의 이론적 범위와 이번 작업의 결론}
+
+확실히 말할 수 있는 것은 네 가지다. \textbf{(i)} 제한된 context에서 rare mode가 사라질 확률을 계산하고 피복을 설계할 수 있다. \textbf{(ii)} frozen action의 최적 선택은 상대적 조건부 기대손실 비교다. \textbf{(iii)} label oracle의 이득에는 관측 정보로 실현할 수 없는 몫이 있다. \textbf{(iv)} marginal calibration과 선택된 교정의 위험 보장은 다르다.
+
+아직 검증해야 할 것은 해당 표현·context recipe·학습기가 CIC2018에서 실제로 이 조건을 얼마나 근사하는가다. 따라서 “routing이 안 된다”에서 멈추는 대신, \textbf{목표 연결 제거  \ensuremath{\rightarrow}  verifier 정보 보강  \ensuremath{\rightarrow}  결정 손익 학습  \ensuremath{\rightarrow}  그 결정을 지지하는 context  \ensuremath{\rightarrow}  호출 비용 최적화}의 순서로 원인을 직접 겨냥한다. 모델의 다음 기여 후보는 context나 두 gate의 존재가 아니라, \textbf{context가 제공한 증거를 학습 가능한 tail 교정으로 바꾸는 일관된 의사결정 구조}다.
+
+재현: \texttt{python d\allowbreak{}ocs/\allowbreak{}\allowbreak{}rese\allowbreak{}arch/\allowbreak{}\allowbreak{}202\allowbreak{}60909/\allowbreak{}\allowbreak{}au\allowbreak{}dit\_\allowbreak{}\allowbreak{}exis\allowbreak{}ting\_\allowbreak{}\allowbreak{}run\allowbreak{}s.\allowbreak{}py}. 논문 보충표는 CSV와 XLSX로 제공한다. 조회한 서지 메타데이터는 제목·버전·최초 제출·갱신일을 보존한다. 새 학습 결과나 oracle upper bound의 새 실측은 이번 산출물에 포함되어 있지 않다.
+
+
+
+\section{추가 분석과 수치 검토}
+RACE-PFN · 2026-09-09 · EXP38 /\allowbreak{} EXP39
+
+2026-09-10 설명 보완: 이번에 실행한 것은 기존 context·global·expert bank를 고정한 scorer/\allowbreak{}verifier 비교 다. 세부 패턴의 context 지원 보강과 새 expert 구성은 아직 실행하지 않았다. 아래 단계 번호는 모델 내 위치이며, 6조건을 차례로 연결한 하나의 모델을 뜻하지 않는다. 각 조건은 별도로 평가했다.
+
+이전 표에서 혼동을 만든 expert 전체 강제 적용의 큰 훼손 수 는 최종 모델의 훼손 수가 아니다. 실제 적용 결과는 §3-A, 무조건 적용 진단은 §3-B, 어디서 교정 후보가 사라졌는지는 §4-A에서 각각 확인한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25000\linewidth-2\tabcolsep\relax}}
+\toprule
+단계 & 현재(EXP31) & 변경(EXP38·39) & 근거·이번 실험에서 확인할 점 \\ \midrule
+\endfirsthead
+단계 & 현재(EXP31) & 변경(EXP38·39) & 근거·이번 실험에서 확인할 점 \\ \midrule
+\endhead
+{}① Context 내 세부 패턴 & Class/\allowbreak{}scenario 피복 보완을 수행했지만 내부 feature mode까지 최소 지원을 보장하지 않음. & 이번에는 행을 바꾸지 않음. C0·anchor·expert block의 class×scenario 포함 수를 저장. Mode별 지원·고유 벡터 피복 개선은 다음 실험. & 먼저 동일 context에서 라우팅 효과를 분리. 모든 세부 클래스가 부족하다고 단정하지 않음. \\
+{}② Global 기준선 & C0 추첨·TabPFN config 변동이 개입층 비교에 섞일 수 있음. & C0 행 ID·seed 42·n\_\allowbreak{}estimators=\allowbreak{}4를 고정 해 한 번 복원하고 모든 조건이 동일 예측 cache를 사용. & 저장된 fitted 모델이 없으므로 재복원 오차를 별도 기록. 원본 global과 새 기준선의 차이를 라우팅 효과로 세지 않음. \\
+{}③ Residual  \ensuremath{\rightarrow}  expert context & Shared anchor +\allowbreak{} residual block으로 취약 구간 전문화. & 기존 bank 3개를 고정. 다음 구성 변경은 anchor +\allowbreak{} residual 취약 구간의 support +\allowbreak{} 혼동 contrast 이며, tail·중간·큰 클래스 모두 대상. & Global residual은 취약 구간과 지원 사례를 고르는 핵심 정보로 유지. 이번에는 context 구성을 동시에 바꾸지 않아 scorer/\allowbreak{}verifier와 원인을 분리. \\
+{}④ Scorer 학습 정답 & 임시 OOF verifier의 수락 b를 NLL gain에 곱해 scorer sign 정답을 만듦. 거절한 후보는 negative로 학습. & decision\_\allowbreak{}both\_\allowbreak{}raw 는 b를 곱하지 않고 모든 route pair의 expert\_\allowbreak{}correct − global\_\allowbreak{}correct 를 직접 학습. 기존 의존성을 유지한 control을 함께 둠. & Verifier의 놓침이 scorer의 정답으로 전달되는 경로를 분리. 모든 expert 실행은 원래도 수행하던 오프라인 학습 절차. \\
+{}⑤ Scorer  \ensuremath{\rightarrow}  expert 호출 & 호출 전 feature로 expert별 점수를 예측하고 top-1을 선택. & 이 추론 순서를 유지하고 예상 결정 이득 을 학습. 진단용 dense\_\allowbreak{}decision\_\allowbreak{}raw 만 scorer를 우회하고 전체 expert 출력을 관측. & 예상 점수 계산은 expert 호출과 다름. Dense 진단은 post 정보가 충분할 때의 교정력을 확인하는 비교이며 최종 sparse 모델과 구분. \\
+{}⑥ Verifier 입력 & p0·pk·차이·불확실성·거리·descriptor, z/\allowbreak{}raw 입력 없음. & post\_\allowbreak{}z 는 z만 추가 , post\_\allowbreak{}raw 는 raw46만 추가 . 같은 fitted legacy scorer와 NLL 목표 사용. & 입력 정보 보강만의 효과를 비교. 두 보강을 동시에 적용하지 않음. \\
+{}⑦ Verifier 학습 목표 & Normalized NLL gain의 0.25 분위수 예측. & decision\_\allowbreak{}post\_\allowbreak{}raw 는 raw 입력을 유지하고 결정 손익의 평균 회귀 로 변경. Route의 클래스별 균형 sample weight 적용. & Expert만 정답 +\allowbreak{}1, global만 정답 −1, 나머지 0. 중간 클래스 교정도 보상. 목표와 회귀 방식이 함께 바뀌는 하나의 구성 변경으로 기록. \\
+{}⑧ Calibration  \ensuremath{\rightarrow}  최종 교정 & NLL 순이득 최대화, 기존 오경보·harmful fraction·호출량 제약. & 모든 조건에 Δmacro-F1 최대화 , tail 평균 ΔF1\ensuremath{\geq}0, brute\_\allowbreak{}force/\allowbreak{}ddos/\allowbreak{}dos 각각 ΔF1\ensuremath{\geq}0, benign ΔFPR\ensuremath{\leq}0.0005, 결정 손익 표본\ensuremath{\geq}30 적용. & 학습 손익은 F1과 다르므로 최종 예측의 F1을 직접 계산. 과거 train prior로 confusion matrix를 표준화. 이 공통 평가 변경과 각 arm의 모델 변경을 구분. \\
+{}⑨ 확인 구간·비용 & 기존 calibration을 이용한 임계값 선택. & Route와 겹치는 hash 제외 후 class×scenario 안에서 앞 70\% 선택 /\allowbreak{} 뒤 30\% 확인. 확인 구간의 선택 구간 중복 hash도 제외. 호출 상한은 1.0, harmful fraction은 진단 지표로 전환. & 표본 비중 차이와 시간 전이를 구분. 이번 우선 목표는 교정 성능이며 비용만 줄어든 결과를 개선으로 세지 않음. 전역 달력 절단이 아닌 scenario 내부 시간 분할. \\
+\bottomrule
+\end{longtable}
+\endgroup
+학습 목표 Δk =\allowbreak{} 1[expert 정답] − 1[global 정답] . 학습은 모든 pair의 관측 결과를 이용한 지도학습이다. 실제 추론은 global  \ensuremath{\rightarrow}  scorer의 예상 점수  \ensuremath{\rightarrow}  선택 expert만 실행  \ensuremath{\rightarrow}  verifier 채택/\allowbreak{}거절 순서를 유지한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.48611\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.51389\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 실행값 \\ \midrule
+\endfirsthead
+항목 & 실행값 \\ \midrule
+\endhead
+{}기준 run & 20260904\_\allowbreak{}010654\_\allowbreak{}nfv3\_\allowbreak{}cic2018\_\allowbreak{}exp31\_\allowbreak{}c0alloc \\
+{}새 run & 20260909\_\allowbreak{}160742\_\allowbreak{}1059961\_\allowbreak{}nfv3\_\allowbreak{}cic2018\_\allowbreak{}exp39\_\allowbreak{}decision\_\allowbreak{}routing \\
+{}C0 /\allowbreak{} anchor /\allowbreak{} expert block & 100,000 /\allowbreak{} 12,761 /\allowbreak{} 15,861·186,000·290행 \\
+{}모델 설정 & TabPFN-3, seed 42, n\_\allowbreak{}estimators=\allowbreak{}4, 고정된 3개 expert \\
+{}Global 재복원 & 원본 macro 0.762302  \ensuremath{\rightarrow}  재복원 0.762086; 예측 라벨 2,447행 차이. 모든 새 조건은 재복원 결과를 공동 사용 \\
+{}Route /\allowbreak{} calibration 선택 /\allowbreak{} 확인 /\allowbreak{} test & 391,486 /\allowbreak{} 81,472 /\allowbreak{} 33,213 /\allowbreak{} 4,023,114행 \\
+{}Calibration 선택의 benign /\allowbreak{} web & 22,325 /\allowbreak{} 100행; 확인 구간 9,353 /\allowbreak{} 41행 \\
+{}공통 XGBoost 학습기 예산 & 300 trees, depth 6, learning rate 0.05, CPU 16 threads \\
+{}결정 모델 가중 & Route 클래스별 N /\allowbreak{} (C × N\_\allowbreak{}c) sample weight \\
+{}실행 시간 & Cache 32.38분 +\allowbreak{} EXP39 98.5초. Cache 조회 시간을 실제 sparse PFN 추론 지연으로 해석하지 않음 \\
+{}평가 범위 & 단일 seed, 기존에 반복 사용한 development holdout. 새로운 untouched test 검증이 아님 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23489\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21291\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23489\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.31731\linewidth-2\tabcolsep\relax}}
+\toprule
+비교군 & Scorer & Verifier 입력·목표 & 변경 비교 \\ \midrule
+\endfirsthead
+비교군 & Scorer & Verifier 입력·목표 & 변경 비교 \\ \midrule
+\endhead
+{}legacy & OOF b×NLL sign & 기존 입력 /\allowbreak{} NLL 분위수 & 공통 프로토콜 대조 \\
+{}post\_\allowbreak{}z & 같은 legacy scorer & 기존+\allowbreak{}z /\allowbreak{} NLL 분위수 & legacy 대비 입력만 \\
+{}post\_\allowbreak{}raw & 같은 legacy scorer & 기존+\allowbreak{}raw46 /\allowbreak{} NLL 분위수 & legacy 대비 입력만 \\
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 같은 legacy scorer & 기존+\allowbreak{}raw46 /\allowbreak{} 결정 손익 평균 & post\_\allowbreak{}raw 대비 verifier 목표·회귀 방식 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 결정 손익 평균 & 같은 decision verifier & decision\_\allowbreak{}post\_\allowbreak{}raw 대비 scorer 감독 신호 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & 우회·전체 expert 관측 & 같은 decision verifier & 사후 정보에 기반한 진단 \\
+\bottomrule
+\end{longtable}
+\endgroup
+교정은 global 오답  \ensuremath{\rightarrow}  최종 정답 , 훼손은 global 정답  \ensuremath{\rightarrow}  최종 오답 인 행 수다. 한 행에서 두 모델 모두 오답인 상태로 라벨만 바뀌면 어느 쪽에도 포함하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23958\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16146\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15365\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15365\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & Macro-F1 & Tail F1 & Benign FPR & 교정 /\allowbreak{} 훼손 행 & 해석 \\ \midrule
+\endfirsthead
+방법 & Macro-F1 & Tail F1 & Benign FPR & 교정 /\allowbreak{} 훼손 행 & 해석 \\ \midrule
+\endhead
+{}global & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & 기준선 \\
+{}legacy & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}post\_\allowbreak{}z & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}post\_\allowbreak{}raw & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & 0.762086 & 0.548877 & 0.1523\% & 0 /\allowbreak{} 0 & global 유지 \\
+\bottomrule
+\end{longtable}
+\endgroup
+“개입 0”은 calibration에서 임계값 쌍을 고를 때 모든 후보가 탈락해, test에 들어가기 전에 “항상 global 사용” 정책을 선택했다는 뜻이다. Code의 global\_\allowbreak{}fallback 은 pre/\allowbreak{}post 임계값을 None 으로 저장하고 global 예측을 그대로 반환한다. Test 각 행에서 verifier가 판단한 끝에 전부 거절했다는 뜻이 아니다.
+
+따라서 이 표로 확인한 최종 성과는 Δmacro-F1=\allowbreak{}0, Δtail-F1=\allowbreak{}0, 교정=\allowbreak{}0, 훼손=\allowbreak{}0 이다. 성능 개선 성공으로 볼 수 없다. 비교용 cache를 만들 때는 모든 expert를 이미 실행했으므로 이 결과를 실측 계산비용 절감으로도 주장하지 않는다.
+
+아래는 scorer·verifier를 우회한 별도 계산이다. expert1\_\allowbreak{}always 는 test 전체 4,023,114행을 expert 1의 정답 여부와 관계없이 그 expert의 예측으로 바꾼다. 반대로 oracle은 실제 정답을 보고 맞힐 수 있는 expert를 선택한다. §3-A의 모델 처리 결과에 이어서 적용한 단계가 아니다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20513\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13462\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13462\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14744\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19872\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17949\linewidth-2\tabcolsep\relax}}
+\toprule
+진단 & Macro-F1 & Tail F1 & Benign FPR & 교정 /\allowbreak{} 훼손 행 & 계산 방법 \\ \midrule
+\endfirsthead
+진단 & Macro-F1 & Tail F1 & Benign FPR & 교정 /\allowbreak{} 훼손 행 & 계산 방법 \\ \midrule
+\endhead
+{}correctness\_\allowbreak{}oracle & 0.849159 & 0.748924 & 0.0693\% & 30,663 /\allowbreak{} 0 & 정답을 사용하는 진단 \\
+{}expert1\_\allowbreak{}always & 0.631228 & 0.362831 & 53.4832\% & 27,673 /\allowbreak{} 1,869,000 & 단일 expert 전체 적용 \\
+{}expert2\_\allowbreak{}always & 0.694409 & 0.409213 & 0.1343\% & 2,951 /\allowbreak{} 35,400 & 단일 expert 전체 적용 \\
+{}expert3\_\allowbreak{}always & 0.651426 & 0.367657 & 38.5245\% & 24,524 /\allowbreak{} 1,344,307 & 단일 expert 전체 적용 \\
+\bottomrule
+\end{longtable}
+\endgroup
+즉 1,869,000건 훼손은 expert 1을 전 행에 강제 적용했을 때 의 결과다. 이 expert가 일부 global 오류를 고칠 수 있더라도, 다른 영역에서 global의 정답을 대량으로 망가뜨린다. 그래서 expert를 단독 대체 모델로 쓸 수 없고, 도움이 되는 구간을 선별해야 한다. Correctness oracle의 30,663건은 현재 bank가 제공하는 교정 가능 사례 수이며, 학습된 라우터가 전부 회수할 수 있다는 보장은 없다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18108\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16081\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22162\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24189\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19459\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & Test 표본 수 & Global F1 =\allowbreak{} 6조건 F1 & Correctness oracle F1 & Oracle 교정 가능 행 \\ \midrule
+\endfirsthead
+클래스 & Test 표본 수 & Global F1 =\allowbreak{} 6조건 F1 & Correctness oracle F1 & Oracle 교정 가능 행 \\ \midrule
+\endhead
+{}benign & 3,502,926 & 0.994950 & 0.999301 & 2,907 \\
+{}ddos & 264,872 & 0.995782 & 0.999994 & 2,214 \\
+{}brute\_\allowbreak{}force & 115,040 & 0.915874 & 0.915874 & 0 \\
+{}dos & 60,594 & 0.781366 & 0.782174 & 64 \\
+{}bot & 41,542 & 0.998421 & 0.998529 & 5 \\
+{}infiltration & 37,631 & 0.400205 & 0.970450 & 25,423 \\
+{}web\_\allowbreak{}attacks & 509 & 0.248007 & 0.277793 & 50 \\
+\bottomrule
+\end{longtable}
+\endgroup
+현재 bank의 oracle 교정 30,663행 중 infiltration이 25,423행이다. Brute force는 교정 가능한 expert 출력이 0행 이고 dos도 64행이다. 이 두 클래스는 라우팅만 바꾸어 해결할 수 있는 폭이 작으므로, 다음 context 실험에서 해당 residual 취약 구간의 support·contrast를 보강해야 한다. Oracle 격차 전체를 학습 가능한 라우팅 이득으로 간주하지 않는다.
+
+2026-09-10에 저장된 예측을 다시 집계했다. 재학습이나 새 정책의 test 실행은 하지 않았다. Calibration 선택 구간은 81,472행이며 global 오답 6,814행 중 6,025행은 bank의 어떤 expert가 정답 이다.
+
+다음 표는 pre 임계값을 잠시 우회하고 scorer가 1위로 고른 expert를 조사한 것이다. “Verifier 양수”는 그 후보에 post > 0 만 적용한 진단이며, calibration이 최종 채택한 정책이 아니다. Dense 행은 scorer 대신 모든 expert의 post 정보를 사용하므로 별도 진단이다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.19174\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13211\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19633\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27431\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 1위 후보가 교정 가능한 행 /\allowbreak{} 6,025 & 후보 회수율 & Verifier 양수 중 교정 /\allowbreak{} 훼손 & 이 비교에서 확인한 점 \\ \midrule
+\endfirsthead
+조건 & 1위 후보가 교정 가능한 행 /\allowbreak{} 6,025 & 후보 회수율 & Verifier 양수 중 교정 /\allowbreak{} 훼손 & 이 비교에서 확인한 점 \\ \midrule
+\endhead
+{}legacy & 5,286 & 87.7\% & 0 /\allowbreak{} 0 & Scorer가 맞는 후보를 상당수 골랐지만 NLL verifier의 양수 영역에 교정 사례가 없음 \\
+{}post\_\allowbreak{}z & 5,286 & 87.7\% & 0 /\allowbreak{} 0 & z 추가만으로 이 현상을 해결하지 못함 \\
+{}post\_\allowbreak{}raw & 5,286 & 87.7\% & 0 /\allowbreak{} 0 & raw 추가만으로 이 현상을 해결하지 못함 \\
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 5,286 & 87.7\% & 2,250 /\allowbreak{} 1,590 & 기존 scorer를 유지하고 verifier를 결정 손익으로 바꾸면 교정 후보가 통과하지만 훼손도 통과 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 2,793 & 46.4\% & 2,022 /\allowbreak{} 1,205 & 새 scorer는 후보 단계에서 더 많은 교정 기회를 잃음. Scorer 개선이 확인된 것이 아님 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & 3,029 & 50.3\% & 2,821 /\allowbreak{} 2,211 & 모든 post 정보를 보아도 현재 verifier 점수만으로 교정/\allowbreak{}훼손 구분이 충분하지 않음 \\
+\bottomrule
+\end{longtable}
+\endgroup
+이 관찰을 test 전체로 일반화하지 않는다. 같은 post\_\allowbreak{}raw 의 post > 0 진단은 calibration 선택에서는 교정/\allowbreak{}훼손 0/\allowbreak{}0이지만, 저장된 test 예측에서는 2,238/\allowbreak{}177이다. 이는 선택 구간에서 관측한 교정 양상이 그대로 반복되지 않았음 을 보여 주며 calibration의 시간·scenario·오류 패턴 대표성을 점검할 이유다. 이 사후 수치로 임계값을 새로 선택하지 않았고, 원래 test 최종 정책은 계속 global 유지다.
+
+다음 수치는 calibration 선택 구간에서 기존 격자의 최고 macro 후보 이며 채택된 정책이나 test 개선 수치가 아니다. ΔF1은 과거 train prior로 표준화한 confusion matrix에서 계산했다. 교정/\allowbreak{}훼손은 원래 calibration 표본의 행 수다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16402\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14550\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11310\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11310\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13624\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10847\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21958\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 양의 macro 후보 /\allowbreak{} 전체 & 최고 Δmacro & 해당 Δtail & 해당 Δbenign FPR & 교정 /\allowbreak{} 훼손 & 선택되지 않은 이유 \\ \midrule
+\endfirsthead
+조건 & 양의 macro 후보 /\allowbreak{} 전체 & 최고 Δmacro & 해당 Δtail & 해당 Δbenign FPR & 교정 /\allowbreak{} 훼손 & 선택되지 않은 이유 \\ \midrule
+\endhead
+{}legacy & 0 /\allowbreak{} 52 & +\allowbreak{}0.000000 & +\allowbreak{}0.000000 & +\allowbreak{}0.0000\%p & 0 /\allowbreak{} 0 & 교정 표본 부족·일부 tail 하락 \\
+{}post\_\allowbreak{}z & 0 /\allowbreak{} 52 & +\allowbreak{}0.000000 & +\allowbreak{}0.000000 & +\allowbreak{}0.0000\%p & 0 /\allowbreak{} 0 & 교정 표본 부족·일부 tail 하락 \\
+{}post\_\allowbreak{}raw & 0 /\allowbreak{} 52 & +\allowbreak{}0.000000 & +\allowbreak{}0.000000 & +\allowbreak{}0.0000\%p & 0 /\allowbreak{} 0 & 교정 표본 부족(라벨 변경 0) \\
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 50 /\allowbreak{} 65 & +\allowbreak{}0.018208 & +\allowbreak{}0.042495 & +\allowbreak{}0.1254\%p & 764 /\allowbreak{} 28 & benign FPR 상한 초과 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 65 /\allowbreak{} 65 & +\allowbreak{}0.018270 & +\allowbreak{}0.042661 & +\allowbreak{}0.1478\%p & 780 /\allowbreak{} 33 & benign FPR 상한 초과 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & 4 /\allowbreak{} 18 & +\allowbreak{}0.016003 & +\allowbreak{}0.037473 & +\allowbreak{}0.2060\%p & 764 /\allowbreak{} 46 & benign FPR·일부 중간 클래스 제약 또는 표본 부족 \\
+\bottomrule
+\end{longtable}
+\endgroup
+§4-A의 후보에 pre/\allowbreak{}post 임계값을 함께 적용하면 위 후보들로 좁혀진다. 같은 raw 입력에서 결정 손익 목표 로 바꾸면 최고 macro 후보에 infiltration 교정 764행과 benign 훼손 28행이 남는다. Scorer까지 바꾸면 교정 780행(infiltration 779·dos 1)과 benign 훼손 33행이다. 이것은 calibration에서 관측한 목표·회귀·가중 방식 변경의 효과이며, 최종 test 향상으로 주장할 수 없다.
+
+기존 격자는 전체 행 점수의 99\% 분위수까지만 생성했다. decision\_\allowbreak{}both\_\allowbreak{}raw 의 post 임계값 최댓값은 0.611627 이지만, 라벨이 바뀌는 후보의 post 점수 95\% 분위수는 0.910811 이다. Pre 점수 역시 변경 후보 상위 구간이 충분히 포함되지 않았다. 후보가 적은 교정 문제에서 전체 행의 분위수만 사용하면 필요한 세밀한 선택 범위가 빠질 수 있다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17767\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17767\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16824\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16352\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19182\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12107\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 추가 격자의 pre /\allowbreak{} post 후보 & Calibration Δmacro & Calibration Δtail & Calibration Δbenign FPR & 교정 /\allowbreak{} 훼손 \\ \midrule
+\endfirsthead
+조건 & 추가 격자의 pre /\allowbreak{} post 후보 & Calibration Δmacro & Calibration Δtail & Calibration Δbenign FPR & 교정 /\allowbreak{} 훼손 \\ \midrule
+\endhead
+{}decision\_\allowbreak{}post\_\allowbreak{}raw & 0.968356 /\allowbreak{} 0.870510 & +\allowbreak{}0.008035 & +\allowbreak{}0.018750 & +\allowbreak{}0.0493\%p & 310 /\allowbreak{} 11 \\
+{}decision\_\allowbreak{}both\_\allowbreak{}raw & 0.926194 /\allowbreak{} 0.611627 & +\allowbreak{}0.009718 & +\allowbreak{}0.022659 & +\allowbreak{}0.0493\%p & 376 /\allowbreak{} 11 \\
+{}dense\_\allowbreak{}decision\_\allowbreak{}raw & -inf /\allowbreak{} 0.929575 & +\allowbreak{}0.005550 & +\allowbreak{}0.012926 & +\allowbreak{}0.0269\%p & 215 /\allowbreak{} 6 \\
+\bottomrule
+\end{longtable}
+\endgroup
+이 결과는 제약을 완화하지 않고도 탐색 격자를 수정할 근거 다. 새 모델의 검증된 성능으로 보고하지 않는다. 특히 11행 후보는 상한 근처이므로 다음 독립 확인 구간에서 안정성을 확인해야 한다. §4-A에서 확인한 구간별 차이도 있어, 격자만 보완하면 test 성능이 나아진다는 결론은 아직 없다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20278\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26574\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26574\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26574\linewidth-2\tabcolsep\relax}}
+\toprule
+부분 & 현재 & 다음 변경 & 근거·검증 \\ \midrule
+\endfirsthead
+부분 & 현재 & 다음 변경 & 근거·검증 \\ \midrule
+\endhead
+{}임계값 격자 & 전체 행 분위수로 높은 교정 점수 구간 누락 & 라벨 변경 후보의 점수 분위수·경계값을 추가하고 같은 위험 상한 유지 & Calibration에서 유효 후보 확인. 별도 frozen 후속 실험으로 선택한 뒤 확인 구간에 적용; 기존 test 결과와 구분 \\
+{}Scorer/\allowbreak{}verifier & 기존 scorer 후보 회수율 87.7\%, 새 scorer 46.4\%; 결정 verifier는 교정과 훼손을 함께 통과 & 우선 기존 scorer +\allowbreak{} 결정 verifier에서 격자만 보완해 확인. 새 scorer는 개선된 것으로 채택하지 않고 감독 신호·손실·가중치의 영향을 따로 비교 & 최종 0뿐 아니라 후보 회수율·verifier 교정 생존율·훼손 통과량을 함께 보고 \\
+{}Calibration 대표성 & 같은 양수 gate에서도 선택 구간과 test의 교정 양상이 다름 & 선택·확인 구간의 class×scenario와 global 오류 유형을 비교하고, 선택된 정책의 다음 구간 교정/\allowbreak{}훼손을 확인 & Prior 가중만으로 class 내부의 시간·오류 패턴 차이까지 해결된 것으로 간주하지 않음 \\
+{}중간 클래스 expert context & Brute oracle 교정 0, dos 64행 & 모든 클래스의 residual 취약 구간에서 지원 사례와 혼동 negative를 구성 & 해당 클래스에 교정 가능한 expert 출력이 늘어나는지 같은 예산에서 먼저 확인 \\
+{}Context 피복 & 기존 행 고정 및 class×scenario 수만 감사 & 관측 가능한 mode별 지원·고유 벡터 수를 점검한 뒤 부족한 구간 보강 & 세부 클래스 결손이 이미 입증된 것으로 쓰지 않음; 같은 크기·비중·config 대조 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.33696\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.66304\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 반영 \\ \midrule
+\endfirsthead
+항목 & 반영 \\ \midrule
+\endhead
+{}원본 문헌조사 & tabpfn\_\allowbreak{}papers\_\allowbreak{}survey.xlsx : HINT(9/\allowbreak{}7), LoGIC(9/\allowbreak{}5), Xiaomi-TabLDM(v1 9/\allowbreak{}3·v2 9/\allowbreak{}4) 추가. 총 102편, Ch.2 38편 \\
+{}설계 근거 & 상세 조사 , 학습·추론·지표 설명 \\
+{}구현 & EXP38 , EXP39 \\
+{}완료 결과 & summary.csv , 클래스별 결과 , 선택 임계값 \\
+{}사후 진단 & 진단 코드 , calibration 격자 감사 \\
+{}검증 & 테스트 6개 통과 : 손익 라벨, weighted F1, benign·중간 클래스 제약, 시간·hash 분리, 합성 end-to-end \\
+{}환경 & Python 3.13.12, torch 2.11.0+\allowbreak{}cu130, XGBoost 3.2.0, sklearn 1.8.0, RTX 4090 24GB \\
+{}초기 실행 수정 & pandas read-only 배열의 in-place 정규화를 새 배열 연산으로 변경. 실패 로그는 보존하고 \_\allowbreak{}v2 cache로 정상 완료 \\
+\bottomrule
+\end{longtable}
+\endgroup
+큰 cache·학습 모델·행별 예측은 로컬에 보관하며 Git에는 코드·설정·표·보고서를 반영한다. 새 context 구성과 보완 격자의 확인/\allowbreak{}test 실험은 아직 실행하지 않았다.
+
+\subsection*{8. 9/\allowbreak{}10 보완 — 신규 논문의 성능 비교군 포함 판단}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.32667\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.42000\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 이번 판단 & 우리 모델과의 관계·비교 범위 \\ \midrule
+\endfirsthead
+방법 & 이번 판단 & 우리 모델과의 관계·비교 범위 \\ \midrule
+\endhead
+{}Xiaomi-TabLDM & 주요 성능 비교군에 포함 & 공식 분류 코드·checkpoint가 있어 실행 비교가 가능하다. 프리프린트라는 이유로 제외하지 않는다. 내부 FFN MoE와 우리 context별 PFN expert는 학습·선택 단위가 다르지만, 조건부 expert 사용의 관련 연구로도 다룬다. 공식 코드 , 논문 \\
+{}HINT & 조건부 호출 방식 비교군에 포함 & kNN confidence  \ensuremath{\rightarrow}  검색 context를 넣은 TabPFN 호출이 우리 gate/\allowbreak{}context 주장과 가깝다. Streaming 원문과 fixed-split adaptation을 구분하고, test 라벨로 memory를 갱신하지 않는 비교부터 수행한다. 원문 \\
+{}LoGIC & 관련 연구 포함, 현재 주 성능표에서는 제외 & 그래프 node 분류의 구조 검색·unlabeled halo가 핵심이다. NetFlow에 feature/\allowbreak{}coverage 부분만 이식하면 LoGIC-inspired adaptation으로 표시한다. 원문 \\
+\bottomrule
+\end{longtable}
+\endgroup
+MoE라는 공통점만으로 우리의 독창성을 주장할 수 없다. Xiaomi는 사전학습된 Transformer 내부 표현의 expert 선택, 우리는 frozen PFN의 context별 출력 선택과 교정을 다룬다. 우리의 기여는 같은 global 위에서 실제 교정이 늘어나는 결과로 입증해야 하며, 이번 최종 ΔF1=\allowbreak{}0으로는 아직 그 성능 기여를 입증하지 못했다.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

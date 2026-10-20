@@ -1,0 +1,35 @@
+{
+  "observed_at": "2026-10-13T08:22:15.798810+00:00",
+  "state": "interrupted",
+  "reason": "Host reboot; NVIDIA module absent for current kernel",
+  "previous_kernel": "7.0.0-31-generic",
+  "current_kernel": "7.0.0-38-generic",
+  "current_boot_local": "2026-10-13T17:04:07+09:00",
+  "last_previous_boot_log_local": "2026-10-13T16:43:09+09:00",
+  "reboot_trigger": "unknown; no cause established from inspected logs",
+  "controller_and_worker_alive": false,
+  "gpu_pci_visible": "NVIDIA RTX 4090",
+  "nvidia_module_current_kernel": "not installed",
+  "nvidia_module_old_kernel": "580.173.02",
+  "completed_markers": 35,
+  "valid_completed_stages": 34,
+  "invalid_completed_stages": [
+    {
+      "stage": "jobs/toniot_natural_tabpfn/stage_2",
+      "error": "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
+    }
+  ],
+  "incomplete_stage": "jobs/toniot_natural_tabpfn/stage_3",
+  "valid_stage_checks": [
+    "metrics JSON parses and matches COMPLETE SHA256",
+    "prediction/probability shapes",
+    "all probabilities finite and normalized",
+    "all predicted classes match argmax",
+    "ID arrays load"
+  ],
+  "repair_package": "linux-modules-nvidia-580-open-7.0.0-38-generic",
+  "repair_simulation": "16 upgraded, 2 newly installed, 0 removed; driver would change 580.173.02 to 580.178.04",
+  "repair_executed": false,
+  "repair_blocker": "sudo requires local user password",
+  "resume_plan": "Preserve original attempts. Replay full ToN natural TabPFN worker to retain cold-initial/warm-update cost accounting, then run ToN natural XGB. Do not resume by skipping empty COMPLETE marker; record actual kernel/driver at restart and qualify costs if environment changes."
+}

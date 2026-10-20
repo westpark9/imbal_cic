@@ -1,0 +1,36 @@
+{
+  "seed": 43,
+  "threads": 8,
+  "batch": 8192,
+  "prepare_batch": 4096,
+  "experts": 4,
+  "epochs": 10,
+  "checkpoint": "/home/user/Desktop/imbalcic/tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+  "source": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp77/20261015_230535_initialft10_finalfull_s43_2eb2237d",
+  "protocol": "exp78.1",
+  "methods": [
+    "xgb",
+    "pfn_pretrained",
+    "pfn_ft_accumulate"
+  ],
+  "datasets": [
+    "cic2018",
+    "toniot"
+  ],
+  "evaluation": "final_full_test",
+  "initial_finetuning": true,
+  "html_publication": false,
+  "dist_methods": [],
+  "new_budgets": [
+    100,
+    50,
+    20,
+    10
+  ],
+  "seed_repetitions": 1,
+  "initial_data_unchanged": true,
+  "initial_checkpoint_reused": true,
+  "budget_axis": "newly introduced attack examples per class; initial 1000 fixed",
+  "displayed_cost": "sum of stages after initial: context selection + construction + fit; excludes initial preparation and all inference",
+  "new_per_class": 50
+}

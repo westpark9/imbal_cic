@@ -1,0 +1,30 @@
+{
+  "seed": 43,
+  "threads": 8,
+  "batch": 8192,
+  "prepare_batch": 4096,
+  "experts": 4,
+  "epochs": 2,
+  "checkpoint": "/home/user/Desktop/imbalcic/tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+  "source": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp76/20261015_212937_context1000_new100_s43_1c62d14c",
+  "protocol": "exp77.1",
+  "methods": [
+    "xgb",
+    "pfn_pretrained",
+    "pfn_ft_accumulate",
+    "pfn_ft_fifo",
+    "pfn_ft_similar",
+    "pfn_ft_random",
+    "pfn_ft_fixed",
+    "pfn_ft_repeated",
+    "ours",
+    "boostpfn"
+  ],
+  "datasets": [
+    "cic2018",
+    "toniot"
+  ],
+  "evaluation": "final_full_test",
+  "initial_finetuning": true,
+  "html_publication": false
+}

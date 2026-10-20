@@ -1,0 +1,804 @@
+% !TeX root = 20260831.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-31}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-31 · 0831 계획 — 원인 /\allowbreak{} 수정 /\allowbreak{} 평가지표}
+\label{report:20260831_0831}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+exp23(regime 생성)  \ensuremath{\rightarrow}  exp23c·d(anchor)  \ensuremath{\rightarrow}  exp24a·b(pruning) 이후의 계획. 숫자는 전부 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}} record run 직독(eval 4,023,114행 공통). 기준 run: \texttt{20260827\allowbreak{}\_\allowbreak{}\allowbreak{}174858}(24b-off), \texttt{20260826\allowbreak{}\_\allowbreak{}\allowbreak{}183417}(XGB 동일 run).
+
+
+\medskip\hrule\medskip
+\textbf{결론 먼저 (E-0.5로 측정 완료, §0.1).} −0.055 격차는 정확히 둘로 갈린다. \textbf{−0.0265는 정보예산} — XGB를 C0와 같은 1M행으로 제한하면 SSH recall이 0이 되고 brute F1이 0.7246으로 global·RACE와 \textbf{똑같아진다}. 즉 brute 결손의 method 열세는 \textbf{0}이고 전부 우리 분할 결함이다( \ensuremath{\rightarrow}  exp27). \textbf{−0.0305는 같은 행에서도 남는 실질 격차}이고 그 전부가 ddos(+\allowbreak{}0.094)·dos(+\allowbreak{}0.065)·infiltration(+\allowbreak{}0.041) — §1 원인 B·C가 막고 있는 바로 그 세 클래스다 ( \ensuremath{\rightarrow}  exp26). 두 실험이 격차를 빈틈없이 분할한다. 단 \textbf{exp27의 이득을 method 성과로 제시하면 안 된다}: 같은 run의 \texttt{oracle\_\allowbreak{}\allowbreak{}r\allowbreak{}andom\_\allowbreak{}\allowbreak{}ba\allowbreak{}nk}가 brute recall 0.9998로 이미 고치고 있다.
+
+
+\medskip\hrule\medskip
+\subsection{0. 완료된 실험 (2026-09-01)}
+\subsubsection{0.1 E-0.5 정보예산 진단 — 격차가 둘로 갈린다 [완료]}
+\texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}bud\allowbreak{}get\_\allowbreak{}\allowbreak{}diag\allowbreak{}.\allowbreak{}py}. 동일 XGB 하이퍼파라미터, 동일 eval 4,023,114행, 학습 행 범위만 변경:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14286\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12143\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12857\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14286\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12143\linewidth-2\tabcolsep\relax}}
+\toprule
+budget & train rows & macro & tail & brute F1 & \textbf{ssh recall} & fit \\ \midrule
+\endfirsthead
+budget & train rows & macro & tail & brute F1 & \textbf{ssh recall} & fit \\ \midrule
+\endhead
+{}full & 12,069,313 & \textbf{0.7548} & 0.5331 & 0.9159 & \textbf{0.9995} & 506 s \\
+{}ctxpool (D\_\allowbreak{}global) & 6,034,654 & 0.7246 & 0.5257 & 0.7246 & \textbf{0.0} & 328 s \\
+{}\textbf{c0} (PFN이 보는 바로 그 1M행) & 1,000,000 & \textbf{0.7283} & 0.5341 & \textbf{0.7246} & \textbf{0.0} & 84 s \\
+\bottomrule
+\end{longtable}
+\endgroup
+\texttt{full}이 0.754831로 기존 바를 정확히 재현했으므로 스크립트는 파이프라인과 일치한다.
+
+\textbf{정보예산을 맞춘 상태(xgb\_\allowbreak{}c0)의 per-class 비교:}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.19048\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16369\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14583\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20833\linewidth-2\tabcolsep\relax}}
+\toprule
+class & xgb\_\allowbreak{}full & \textbf{xgb\_\allowbreak{}c0} & global & RACE & \textbf{xgb\_\allowbreak{}c0 − RACE} \\ \midrule
+\endfirsthead
+class & xgb\_\allowbreak{}full & \textbf{xgb\_\allowbreak{}c0} & global & RACE & \textbf{xgb\_\allowbreak{}c0 − RACE} \\ \midrule
+\endhead
+{}brute\_\allowbreak{}force & 0.9159 & 0.7246 & 0.7246 & 0.7246 & \textbf{0.0000} \\
+{}ddos & 0.9921 & 0.9997 & 0.9047 & 0.9054 & \textbf{+\allowbreak{}0.0943} \\
+{}dos & 0.7822 & 0.7820 & 0.5237 & 0.7175 & +\allowbreak{}0.0645 \\
+{}infiltration & 0.4291 & 0.4336 & 0.3928 & 0.3928 & +\allowbreak{}0.0409 \\
+{}benign & 0.9943 & 0.9897 & 0.9801 & 0.9818 & +\allowbreak{}0.0079 \\
+{}web\_\allowbreak{}attacks & 0.1724 & 0.1711 & 0.1644 & 0.1642 & +\allowbreak{}0.0068 \\
+{}bot & 0.9978 & 0.9976 & 0.9984 & 0.9984 & −0.0008 \\
+{}\textbf{macro} & \textbf{0.7548} & \textbf{0.7283} & 0.6698 & 0.6978 & \textbf{+\allowbreak{}0.0305} \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace \textbf{−0.0265 =\allowbreak{} 정보예산} (full  \ensuremath{\rightarrow}  c0). C0와 같은 1M행으로 제한하면 \textbf{SSH recall 정확히 0}, brute F1 \textbf{0.724554} =\allowbreak{} global·RACE의 0.7246과 동일. \textbf{brute의 method 열세는 0이다.}
+
+
+\par\noindent \textbullet\enspace \textbf{−0.0305 =\allowbreak{} 같은 행에서도 남는 격차}, 전부 ddos·dos·infiltration — §1 원인 B·C가 막는 세 클래스.
+
+
+\textbf{이 표를 IID guardrail의 기준선으로 쓴다.} 가이드 §21이 XGB에 전체 pool을 주라 했으므로 \texttt{full}이 공식 바이고, \texttt{c0}는 정보예산을 통제한 보조 열이다.
+
+\subsubsection{0.2 SSH 라벨 예산 곡선 — \textbf{50행이면 회복되고 포화한다} [완료]}
+\texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}bud\allowbreak{}get\_\allowbreak{}\allowbreak{}diag\allowbreak{}.\allowbreak{}py -\allowbreak{}-\allowbreak{}bu\allowbreak{}dgets c0\allowbreak{},\allowbreak{}c0+\allowbreak{}\allowbreak{}ssh5\allowbreak{}0,\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}}. C0(1M) +\allowbreak{} D\_\allowbreak{}expert에서 뽑은 ssh\_\allowbreak{}bruteforce N행으로 XGB 재학습, 동일 eval:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15617\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15617\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13075\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13075\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13923\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15617\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13075\linewidth-2\tabcolsep\relax}}
+\toprule
+budget & train rows & macro & tail & brute F1 & \textbf{ssh recall} & ddos F1 \\ \midrule
+\endfirsthead
+budget & train rows & macro & tail & brute F1 & \textbf{ssh recall} & ddos F1 \\ \midrule
+\endhead
+{}c0 & 1,000,000 & 0.7283 & 0.5341 & 0.7246 & \textbf{0.0} & 0.99973 \\
+{}\textbf{c0+\allowbreak{}ssh50} & 1,000,050 & \textbf{0.7565} & \textbf{0.5343} & \textbf{0.9157} & \textbf{0.9984} & 0.99974 \\
+{}c0+\allowbreak{}ssh200 & 1,000,200 & 0.7559 & 0.5332 & 0.9154 & 0.9968 & 0.99974 \\
+{}c0+\allowbreak{}ssh1000 & 1,001,000 & 0.7541 & 0.5289 & 0.9159 & 0.9995 & 0.99955 \\
+{}c0+\allowbreak{}ssh5000 & 1,005,000 & 0.7535 & 0.5292 & 0.9159 & 0.9950 & 0.99500 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{읽는 법}
+
+\par\noindent \textbullet\enspace \textbf{50행이면 끝난다.} brute F1 0.7246  \ensuremath{\rightarrow}  0.9157(+\allowbreak{}0.191), macro +\allowbreak{}0.028. 가이드 §17의 라벨 예산 격자 B \ensuremath{\in} \{0,50,200,1000\} 중 \textbf{가장 작은 값}이다.
+
+
+\par\noindent \textbullet\enspace \textbf{그 이상은 이득이 없고 미세하게 나빠진다}(macro 0.7565  \ensuremath{\rightarrow}  0.7535, tail 0.5343  \ensuremath{\rightarrow}  0.5292, ddos 0.99974  \ensuremath{\rightarrow}  0.99500). 여기서는 행을 \emph{추가}만 했는데도 그렇다. §17은 \textbf{고정 메모리}를 요구하므로 실제 refresh는 자리를 비워야 하고, 그러면 손해가 더 커진다.  \ensuremath{\rightarrow}  refresh 설계는 "많이 넣기"가 아니라 \textbf{"정확히 무엇을 50행 넣을 것인가"} 문제다.
+
+
+\par\noindent \textbullet\enspace \textbf{c0+\allowbreak{}ssh50의 macro 0.7565는 full XGB 바 0.7548을 넘는다} — 1,000,050행이 12,069,313행을 이긴다.
+
+
+\textbf{축 B에 대한 함의 (좋은 소식이자 나쁜 소식)}
+
+\par\noindent \textbullet\enspace 좋은 소식: 지금 split 그대로도 refresh가 \textbf{원리적으로 작동한다}. B=\allowbreak{}50에서 한 클래스가 통째로 회복된다. TabPFN은 in-context라 XGB보다 sample-efficient하므로(0813: 13행으로 f1 0.560, XGB는 0) 이 50행은 \textbf{느슨한 상한}이다.
+
+
+\par\noindent \textbullet\enspace 나쁜 소식: 이 실험이 곧 arm(iv)("B행을 C0에 붙이기만 한 global, experts·scorer·verifier 없음")의 대리이고, \textbf{그게 이미 이긴다.} 따라서 exp31의 사전 등록 예측은 "\textbf{일을 하는 것은 context 패치이지 RACE 기계가 아니다}"여야 하며, RACE가 주장할 수 있는 것은 정확도 우위가 아니라 (a) 재학습 없이 context 편집만으로 같은 회복을 한다는 \textbf{비용}, (b) 고정 메모리에서 무엇을 넣고 뺄지 고르는 \textbf{선택 규칙}뿐이다. 이 둘 중 하나도 arm(iv)를 못 이기면 축 B를 버린다(§2.3).
+
+
+\par\noindent \textbullet\enspace 주의: 이건 XGB 대리 실험이다. TabPFN의 in-context 거동은 다를 수 있고, 그 확인이 exp31이다.
+
+
+\subsubsection{0.3 E-0 offline battery — 10개 record run 소급 [완료]}
+\texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}off\allowbreak{}line\_\allowbreak{}\allowbreak{}eva\allowbreak{}l.\allowbreak{}py}  \ensuremath{\rightarrow}  각 run에 \texttt{9a\_\allowbreak{}\allowbreak{}selec\allowbreak{}tive}·\texttt{9b\_\allowbreak{}\allowbreak{}inter\allowbreak{}vention}·\texttt{9c\_\allowbreak{}\allowbreak{}cost}· \texttt{9d\_\allowbreak{}\allowbreak{}bank\_\allowbreak{}\allowbreak{}utility}, 횡단 \texttt{scripts/\allowbreak{}\allowbreak{}results/\allowbreak{}\allowbreak{}9e\_\allowbreak{}\allowbreak{}front\allowbreak{}ier.\allowbreak{}csv}.
+
+\par\noindent \textbullet\enspace \textbf{실측 compute 배수가 전 run 2.027\textasciitilde{}2.044.} 보고돼 온 "호출 1.04\textasciitilde{}1.16회"는 scorer 특징 계산 비용을 뺀 값이다. 효율 축은 2.04를 쓴다.
+
+
+\par\noindent \textbullet\enspace risk–coverage: 시스템이 모든 coverage에서 global 우위(cov 1.0 err .0374 vs .0405).
+
+
+\par\noindent \textbullet\enspace 조건부: 제안 행 global 0.8651  \ensuremath{\rightarrow}  시스템 0.8851, 채택 행 0.0012  \ensuremath{\rightarrow}  0.9991 (§3 축 A의 3종 세트 규칙과 함께만 인용).
+
+
+\subsubsection{0.4 E-1 sidecar [완료]}
+\texttt{data/\allowbreak{}\allowbreak{}nfv\allowbreak{}3\_\allowbreak{}\allowbreak{}cic201\allowbreak{}8\_\allowbreak{}\allowbreak{}row\_\allowbreak{}\allowbreak{}me\allowbreak{}ta.\allowbreak{}npz} (row\_\allowbreak{}id/\allowbreak{}ts/\allowbreak{}scenario/\allowbreak{}label/\allowbreak{}split\_\allowbreak{}tag). 이후 시간·scenario 분석에서 14.7 GB 피클 재로딩 불필요.
+
+\subsubsection{0.5 exp27 knob 검증 (파이프라인 실행 전) [완료]}
+sidecar만으로 \texttt{scenario\allowbreak{}\_\allowbreak{}\allowbreak{}stratif\allowbreak{}ied\_\allowbreak{}\allowbreak{}part\allowbreak{}ition} 확인:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.18140\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20465\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18140\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18140\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25116\linewidth-2\tabcolsep\relax}}
+\toprule
+pool & 크기 & brute 총 & ftp & \textbf{ssh} \\ \midrule
+\endfirsthead
+pool & 크기 & brute 총 & ftp & \textbf{ssh} \\ \midrule
+\endhead
+{}context & 6,034,654 & 172,558 & 116,016 & \textbf{56,542} (기존 \textbf{0}) \\
+{}expert & 3,017,324 & 86,279 & 58,008 & 28,271 \\
+{}route & 3,017,335 & 86,279 & 58,008 & 28,271 \\
+\bottomrule
+\end{longtable}
+\endgroup
+풀 크기·클래스별 개수가 기존 chrono 분할과 \textbf{완전히 동일}하고 바뀐 것은 \emph{어느 행이냐}뿐 — 메모리·클래스 균형·예산이 고정된 순수 one-knob이다.
+
+
+\medskip\hrule\medskip
+\subsubsection{0.6 E-2 재현성 측정 — \textbf{동일 config에서 판정 부호가 뒤집힌다} [완료 · 중대]}
+\texttt{exp25\_\allowbreak{}\allowbreak{}ra\allowbreak{}cepfn\_\allowbreak{}\allowbreak{}du\allowbreak{}mp}(24b-off와 동작 동일한 zero-knob fork)를 같은 박스·같은 seed로 반복:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20022\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12446\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12446\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16234\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12446\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12446\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13961\linewidth-2\tabcolsep\relax}}
+\toprule
+run & system & global & \textbf{paired delta} & K 선택 & harmful & precision \\ \midrule
+\endfirsthead
+run & system & global & \textbf{paired delta} & K 선택 & harmful & precision \\ \midrule
+\endhead
+{}24b-off (8/\allowbreak{}27 기록) & 0.6978 & 0.6698 & \textbf{+\allowbreak{}0.0280} & 5 & 4 & 0.9997 \\
+{}run1 \texttt{0901\_\allowbreak{}\allowbreak{}122\allowbreak{}758} & 0.6510 & 0.6663 & \textbf{−0.0153} & \textbf{6} & \textbf{1,132} & 0.565 \\
+{}run2 \texttt{0901\_\allowbreak{}\allowbreak{}141\allowbreak{}326} & 0.6807 & 0.6675 & \textbf{+\allowbreak{}0.0132} & 5 & 284 & 0.982 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace \textbf{paired delta의 SD \ensuremath{\approx} 0.022} — "champion +\allowbreak{}0.028"이 0과 구분되지 않는다.
+
+
+\par\noindent \textbullet\enspace 잡음의 경로: 추론 비결정성  \ensuremath{\rightarrow}  residual 변동  \ensuremath{\rightarrow}  \textbf{K 선택 자체가 5 \ensuremath{\leftrightarrow} 6}  \ensuremath{\rightarrow}  bank·verifier가 구조적으로 다른 물건이 됨. run 간 global은 0.6663\textasciitilde{}0.6698로 비교적 안정인데 \textbf{system이 0.651\textasciitilde{}0.698로 흔들린다} — 잡음 증폭기는 global이 아니라 파이프라인이다.
+
+
+\par\noindent \textbullet\enspace \textbf{harmful 4행이라는 안전성 숫자도 재현이 안 된다}(4  \ensuremath{\rightarrow}  1,132). §0.10의 Gate 2 판정과 축 A의 수치 인용은 결정성 확보 후 재측정 값으로 교체해야 한다.
+
+
+\par\noindent \textbullet\enspace run3(\texttt{-\allowbreak{}-\allowbreak{}determ\allowbreak{}inistic}, fp32)는 \textbf{4090에서 OOM}(21.2+\allowbreak{}1.9 GiB > 23.5). fp32 결정성은 A100(40 GB) 전용. 대안으로 \texttt{exp25b\_\allowbreak{}\allowbreak{}r\allowbreak{}acepfn\_\allowbreak{}\allowbreak{}d\allowbreak{}etlite}(결정성 커널 +\allowbreak{} bf16 유지)를 동일 커맨드 2연속으로 큐에 걸었다 — 두 run이 일치하면 이후 전 실험의 기본으로 채택.
+
+
+\textbf{공식 입장 변경}: 결정성(또는 global posterior 캐시)이 확보되기 전의 모든 knob 비교는 해석 불가. exp26 기록 run(진행 중, 비결정)은 \textbf{구조적 결과만} 읽는다(inf·ddos 채택이 0에서 열리는가 — 0 vs 수천은 대역 밖).
+
+\subsubsection{0.7 15-클래스(scenario) 학습 제안 — 부정적 판정 [완료]}
+\texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}sce\allowbreak{}nario\_\allowbreak{}\allowbreak{}la\allowbreak{}bel\_\allowbreak{}\allowbreak{}diag\allowbreak{}.\allowbreak{}py}. 같은 행·같은 run에서 XGB를 family(7클래스) vs scenario(15클래스)+\allowbreak{}family 합산으로 비교:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.50388\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24806\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24806\linewidth-2\tabcolsep\relax}}
+\toprule
+method & macro & tail \\ \midrule
+\endfirsthead
+method & macro & tail \\ \midrule
+\endhead
+{}\textbf{xgb\_\allowbreak{}family} & \textbf{0.7548} & 0.5331 \\
+{}xgb\_\allowbreak{}fine\_\allowbreak{}soft (확률 합산) & 0.7391 & 0.5316 \\
+{}xgb\_\allowbreak{}fine\_\allowbreak{}hard (argmax 후 매핑) & 0.7236 & 0.4952 \\
+\bottomrule
+\end{longtable}
+\endgroup
+라벨을 scenario 단위로 쪼개면 \textbf{−0.016 손해}다. soft 합산은 family 내부 혼동을 공짜로 만들어 주는데도 그렇다  \ensuremath{\rightarrow}  병합 family 학습이 경계에 더 유리. \textbf{exp29(fine-label)는 성능 목적으로 폐기}, scenario granularity는 진단용(\texttt{fine\_\allowbreak{}\allowbreak{}con\allowbreak{}fusion.\allowbreak{}c\allowbreak{}sv})으로만 유지. 단서: XGB 상한 테스트다. PFN의 in-context 거동은 다를 수 있으나 우선순위는 낮춘다.
+
+\subsubsection{0.8 C0 구멍 전수조사 +\allowbreak{} hulk·sql 라벨 곡선 — "50행 회복"은 SSH 특유 [완료]}
+sidecar 전수조사: D\_\allowbreak{}global(C0 풀)에 \textbf{0행}인 scenario는 셋 — ssh\_\allowbreak{}bruteforce, \textbf{dos\_\allowbreak{}attacks\_\allowbreak{}hulk}(test 20,016행), sql\_\allowbreak{}injection(test 88행). 역으로 goldeneye·slowloris·loic\_\allowbreak{}http·loic\_\allowbreak{}udp는 \textbf{D\_\allowbreak{}expert/\allowbreak{}route에 0행}(expert·scorer·verifier가 학습에서 못 봄). exp27의 층화가 여섯 구멍을 전부 고친다.
+
+그런데 SSH와 달리 \textbf{hulk·sql은 라벨 주입으로 회복되지 않는다} (\texttt{scripts/\allowbreak{}\allowbreak{}results/\allowbreak{}\allowbreak{}budget\_\allowbreak{}\allowbreak{}d\allowbreak{}iag\_\allowbreak{}\allowbreak{}hole\allowbreak{}s}):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.37963\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.38889\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23148\linewidth-2\tabcolsep\relax}}
+\toprule
+budget & macro & vs c0 \\ \midrule
+\endfirsthead
+budget & macro & vs c0 \\ \midrule
+\endhead
+{}c0 & 0.7283 & — \\
+{}c0+\allowbreak{}hulk:50 /\allowbreak{} 200 /\allowbreak{} 1000 & 0.7274 /\allowbreak{} 0.7276 /\allowbreak{} 0.7256 & \textbf{평평} \\
+{}c0+\allowbreak{}sql:50 /\allowbreak{} 117 & 0.7276 /\allowbreak{} 0.7268 & \textbf{평평} \\
+\bottomrule
+\end{longtable}
+\endgroup
+ \ensuremath{\rightarrow}  §0.2의 "50행이면 클래스 회복"은 \textbf{SSH 특유 현상}이지 일반 법칙이 아니다. exp31 사전 등록에 그대로 반영: label-budget 회복은 "빠진 mode가 feature 공간에서 분리 가능할 때"만 성립한다(SSH ○ /\allowbreak{} hulk·sql [제외] — hulk는 slowhttptest·brute 충돌대에 있음).
+
+\subsubsection{0.9 박스 간 앵커 (L2 /\allowbreak{} A100)}
+L2 앵커 \texttt{0901\_\allowbreak{}\allowbreak{}033\allowbreak{}336}(exp24b, A100): system 0.7064 /\allowbreak{} global 0.6768 /\allowbreak{} delta +\allowbreak{}0.0296 /\allowbreak{} XGB \textbf{0.7548308…}(16자리 일치 — XGB는 결정적). global이 로컬 대역(0.6461\textasciitilde{}0.6734) 위 0.6768 — 하드웨어 간 차이가 존재하나, §0.6의 박스 \textbf{내} 분산이 이미 더 크다.
+
+\subsubsection{0.11 exp27 결과 — 원인 A 완전 수리, global이 matched-budget XGB와 동률 [완료 · L2]}
+run \texttt{20260901\allowbreak{}\_\allowbreak{}\allowbreak{}063105}(A100, val-side fix 포함, 비결정). scenario 층화 분할의 효과:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29713\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21516\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18238\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30533\linewidth-2\tabcolsep\relax}}
+\toprule
+ & 기존(24b-off) & \textbf{exp27} & 기준 \\ \midrule
+\endfirsthead
+ & 기존(24b-off) & \textbf{exp27} & 기준 \\ \midrule
+\endhead
+{}global macro & 0.6698 & \textbf{0.7277} & xgb\_\allowbreak{}c0 =\allowbreak{} 0.7283 \\
+{}\textbf{brute\_\allowbreak{}force} (global) & 0.7246 & \textbf{0.9159} & XGB full =\allowbreak{} \textbf{0.9159 (동일)} \\
+{}dos (global) & 0.5237 & \textbf{0.7812} & XGB 0.7822 \\
+{}ddos (global) & 0.9047 & 0.8685 & XGB 0.9921 \\
+{}system − global & +\allowbreak{}0.0280 & \textbf{+\allowbreak{}0.0026} & (잡음 대역 안) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace \textbf{원인 A 수리 확인}: brute가 XGB와 소수점까지 동률(충돌 천장 공유). E-4 사전 등록 기준 통과.
+
+
+\par\noindent \textbullet\enspace \textbf{더 큰 발견}: context 피복만 고치면 \textbf{frozen PFN이 같은 정보예산의 XGB와 사실상 동률}(0.7277 vs 0.7283)이다. dos도 global 수준에서 +\allowbreak{}0.26 회복 — 예전에 expert가 하던 일(dos 교정)을 이제 context가 그냥 한다.
+
+
+\par\noindent \textbullet\enspace \textbf{그 대가로 expert 층의 기여가 +\allowbreak{}0.0026으로 소멸}(잡음 대역 안). 남은 headroom은 oracle 0.8482 − global 0.7277 =\allowbreak{} 0.12, 주로 infiltration(0.391 \ensuremath{\rightarrow} oracle 0.968)과 web.
+
+
+\par\noindent \textbullet\enspace 부작용: ddos가 0.9047 \ensuremath{\rightarrow} 0.8685로 하락(층화가 C0의 ddos 슬롯을 다른 scenario에 내줌).
+
+
+\par\noindent \textbullet\enspace full XGB와의 격차는 −0.0245로 축소. 남은 것은 정보예산(1M vs 12M) +\allowbreak{} inf·web·ddos.
+
+
+\subsubsection{0.12 exp28 결과 — \textbf{등메모리 Gate 1: 실패 확정} [완료 · L2]}
+run \texttt{20260901\allowbreak{}\_\allowbreak{}\allowbreak{}071409}(A100, 기존 chrono 분할 위, expert별 등메모리 강제·2f로 감사됨):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.39151\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.60849\linewidth-2\tabcolsep\relax}}
+\toprule
+bank & oracle macro \\ \midrule
+\endfirsthead
+bank & oracle macro \\ \midrule
+\endhead
+{}\textbf{proximity} & \textbf{0.8857} \\
+{}random & 0.8453 \\
+{}\textbf{residual(dense)} & \textbf{0.8300} \\
+{}regime\_\allowbreak{}random & 0.8300 (residual과 완전 동일 — selector 비활성 4/\allowbreak{}5 확인) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{등메모리에서 residual bank가 random·proximity 둘 다에게 진다.} §24 Gate 1 실패가 측정 결함이 아니라 실제였다. §2.3의 전환 기준 발동: \textbf{"residual-conditioned context construction의 우위" 주장은 폐기}하고, 서사를 'conditional escalation on a covered-context frozen PFN'으로 재정의한다. (단서: 이 run은 기존 분할 위다. exp27 분할 +\allowbreak{} 등메모리 결합 검증이 남아 있고, web oracle은 w\_\allowbreak{}bal 오염으로 참조 불가.)
+
+\textbf{전략 함의(0.11+\allowbreak{}0.12 종합)}: 성능 서사의 중심이 "expert bank"에서 **"context 구성 +\allowbreak{} 조건부 개입의 안전성"**으로 이동한다. 다음 결합 run(exp29 =\allowbreak{} 층화 분할 +\allowbreak{} normgain verifier +\allowbreak{} 등메모리 대조, 결정성 모드)이 새 앵커가 된다.
+
+\subsubsection{0.13 exp26 결과 — 단위 수정: ddos 봉쇄 해제 [확인], infiltration은 예측 실패 잔존 [완료 · L1]}
+run \texttt{20260901\allowbreak{}\_\allowbreak{}\allowbreak{}162007}(4090, 비결정  \ensuremath{\rightarrow}  구조적 결과만 읽음). 사전 등록 대비:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.34524\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.43810\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21667\linewidth-2\tabcolsep\relax}}
+\toprule
+예측 & 결과 & 판정 \\ \midrule
+\endfirsthead
+예측 & 결과 & 판정 \\ \midrule
+\endhead
+{}ddos 자격 발생, 채택 > 0 & 채택 \textbf{0  \ensuremath{\rightarrow}  6,602}, F1 0.9028 \ensuremath{\rightarrow} 0.9175 & [확인] \\
+{}benign 안 열림 & 제안 2,037,438 중 채택 \textbf{289} & [확인] \\
+{}harmful \ensuremath{\leq} 200 & \textbf{56} (benign 50) & [확인] \\
+{}benign FPR 증분 \ensuremath{\leq} 0.0005 & +\allowbreak{}0.000015 & [확인] \\
+{}infiltration 채택 > 0 & \textbf{42행만} (제안 35,193) & △ \\
+{}macro \ensuremath{\geq} 0.73 & 0.6730 (global 0.6676, 대역 안) & [제외] \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{판독}: 절대 문턱(단위 필터)은 수리됐다 — ddos가 처음으로 열렸다. 그러나 infiltration은 자격이 생겨도 verifier가 이득을 예측하지 못해 42행만 통과  \ensuremath{\rightarrow}  \textbf{원인 C의 후반부(예측 실패)가 독립적으로 실재}함이 확인됐다. h\_\allowbreak{}post feature 보강 또는 exp26b(sign)가 후속 후보이나, 우선순위는 exp29 결합 앵커 이후로.
+
+\subsubsection{0.14 가이드 §20/\allowbreak{}§24 대비 현황 (보고용)}
+"가이드대로 실험했는가"에 대한 정직한 답: \textbf{§20의 6개 중 2.5개를 돌렸고, 그중 가장 앞 관문인 Gate 1이 대조군 설정 오류로 판정 불가였다.} 아래가 그 근거표다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15865\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30769\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22596\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30769\linewidth-2\tabcolsep\relax}}
+\toprule
+가이드 & 항목 & 상태 & 근거 \\ \midrule
+\endfirsthead
+가이드 & 항목 & 상태 & 근거 \\ \midrule
+\endhead
+{}§20.1 & expert feasibility & \textbf{판정 불가} & 대조 bank가 항상 186,000행, residual은 min(regime,186,000)  \ensuremath{\rightarrow}  930,000 vs 228,638 =\allowbreak{} \textbf{4.07배 위반}. exp28에서 재측정 \\
+{}§20.2 & IID guardrail & \textbf{통과} & benign FPR 0.004139 vs global 0.004138(불변), ECE 0.0079 vs 0.0091, balanced acc 0.6941 vs 0.6647, macro-AUPRC 0.6661 vs 0.6428 — 넷 다 global 이상. §20.2는 XGB를 이기라고 요구하지 않는다 \\
+{}§20.3 & controlled long-tail (IF 10/\allowbreak{}50/\allowbreak{}100/\allowbreak{}500) & \textbf{미실시} & — \\
+{}§20.4 & test prior shift & \textbf{완료·가설 기각} & 0828 \texttt{8a\_\allowbreak{}\allowbreak{}prior\allowbreak{}\_\allowbreak{}\allowbreak{}shift}. known-prior 보정 시 XGB 압승. RACE의 이득 +\allowbreak{}0.028은 4개 mix 전부에서 유지(prior-강건)라는 것만 남음 \\
+{}§20.5 & authentic temporal drift & \textbf{미실시 +\allowbreak{} 현 split에서 계산 불가} & 클래스별 시간 절단이라 대부분 window에 benign 0행 \\
+{}§20.6 & efficiency & \textbf{부분} & 호출률·wasted call 있음. latency p50/\allowbreak{}p95/\allowbreak{}p99는 exp25부터. 보고돼 온 "1.16회"는 \textbf{실측 2.04배}로 정정 \\
+{}§21 & baselines & \textbf{부분} & static: XGB full/\allowbreak{}1M-anchored/\allowbreak{}sqrt-weighted ○, CatBoost·LightGBM [제외]. PFN: global ○, random-context ○(bank), DistPFN·LoCalPFN·MixturePFN·Drift-Resilient [제외]. routing: nearest-centroid ○, dense selector ○, oracle ○, hard K+\allowbreak{}1·mean-gain [제외] \\
+{}§22 & routing 지표 & \textbf{거의 완료} & 6a\textasciitilde{}6f +\allowbreak{} 오늘 추가한 9a\textasciitilde{}9d. 빠진 것: \textbf{매칭 노출 null}(제안 행 중 같은 수를 무작위 채택) \\
+{}§23 & 통계·재현성 & \textbf{미실시} & 전 run seed 42 단일. 그리고 §1 원인 E에서 \textbf{잡음 대역 0.027}이 최근 판정 크기보다 크다는 게 확인됨 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{§24 게이트 판정}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.31481\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34259\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34259\linewidth-2\tabcolsep\relax}}
+\toprule
+Gate & 기준 & 판정 \\ \midrule
+\endfirsthead
+Gate & 기준 & 판정 \\ \midrule
+\endhead
+{}1. Expert complementarity & residual oracle > random·proximity & \textbf{판정 불가}(등메모리 위반)  \ensuremath{\rightarrow}  exp28 \\
+{}2. Routing feasibility & oracle 회수 /\allowbreak{} helpful≫harmful /\allowbreak{} 제안률 과다 아님 /\allowbreak{} wasted call이 비용 지배 안 함 & \textbf{부분 실패} — 회수 0.1918(경계), helpful 12,710 vs harmful 4 [확인], 활성 0.1576 [확인], \textbf{wasted call 0.9799 [제외]} \\
+{}3. Long-tail·temporal robustness & — & \textbf{미실시}(Gate 1·2 미통과 상태) \\
+{}4. Temporal refresh & — & \textbf{미실시}(전역 재분할 선행 필요) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{요약 한 줄}: 가이드는 Gate 1  \ensuremath{\rightarrow}  2  \ensuremath{\rightarrow}  3  \ensuremath{\rightarrow}  4 순서를 요구하는데, 실제로는 \textbf{Gate 1을 유효하게 재지 못한 채 Gate 2·3의 기계(scorer·verifier·pruning)를 먼저 만들어 돌렸다.} 지난 며칠의 성과는 새 성능 숫자가 아니라 \textbf{그 사실과, 판정을 막고 있던 네 가지 측정 결함을 특정한 것}이다 (등메모리 위반 /\allowbreak{} 잡음 대역 0.027 /\allowbreak{} verifier 단위 오류 /\allowbreak{} C0의 scenario 피복 결여). exp26·27·28과 E-2가 정확히 그 넷을 하나씩 되돌린다.
+
+
+\medskip\hrule\medskip
+\subsection{1. 클래스별 성능이 안 좋은 원인}
+\textbf{격차의 위치부터.} exp23 run, per-class F1:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29401\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17430\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17430\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.35739\linewidth-2\tabcolsep\relax}}
+\toprule
+ & XGB & RACE & Δ \\ \midrule
+\endfirsthead
+ & XGB & RACE & Δ \\ \midrule
+\endhead
+{}brute\_\allowbreak{}force & 0.9159 & 0.7246 & \textbf{−0.191} \\
+{}ddos & 0.9921 & 0.8951 & \textbf{−0.097} \\
+{}dos & 0.7822 & 0.6978 & −0.084 \\
+{}benign /\allowbreak{} bot /\allowbreak{} inf /\allowbreak{} web &  &  & −0.013 /\allowbreak{} +\allowbreak{}0.001 /\allowbreak{} −0.009 /\allowbreak{} +\allowbreak{}0.010 \\
+{}macro & 0.7548 & 0.7001 & −0.055 \\
+{}\textbf{tail\_\allowbreak{}avg}(bot·inf·web) & 0.5331 & \textbf{0.5337} & \textbf{+\allowbreak{}0.001} \\
+\bottomrule
+\end{longtable}
+\endgroup
+선언한 tail에서는 이미 동률이다. 격차는 brute·ddos 두 클래스에서 온다. (넘어야 할 최강 XGB는 1M anchored-context의 \textbf{0.7605}.)
+
+\subsubsection{원인 A — brute: C0에 SSH가 0행 (우리 split의 결함, drift 아님)}
+\texttt{brute\_\allowbreak{}\allowbreak{}fo\allowbreak{}rce} =\allowbreak{} ftp(train 232,032) +\allowbreak{} ssh(train 113,084)이고 SSH는 전부 FTP보다 뒤인데, context/\allowbreak{}expert/\allowbreak{}route 하위 분할이 \textbf{클래스 내부 시간순}이다:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.36275\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24510\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39216\linewidth-2\tabcolsep\relax}}
+\toprule
+하위 split & brute 배정 & 구성 \\ \midrule
+\endfirsthead
+하위 split & brute 배정 & 구성 \\ \midrule
+\endhead
+{}D\_\allowbreak{}global(C0·anchor) & 172,558 & \textbf{전부 FTP} \\
+{}D\_\allowbreak{}expert & 86,279 & FTP 59,474 +\allowbreak{} SSH 26,805 \\
+{}D\_\allowbreak{}route & 86,279 & 전부 SSH \\
+{}D\_\allowbreak{}tune & 46,015 & \textbf{전부 FTP} \\
+\bottomrule
+\end{longtable}
+\endgroup
+ \ensuremath{\rightarrow}  (i) C0에 SSH가 없어 global이 test SSH 37,696행 전량 오답(recall 0.6723 =\allowbreak{} 정확히 FTP 비율), (ii) D\_\allowbreak{}tune에 SSH가 없어 SSH regime(coverage 0.5212, 후보 중 최고)이 min-support로 삭제. \textbf{\texttt{oracle\_\allowbreak{}\allowbreak{}r\allowbreak{}andom\_\allowbreak{}\allowbreak{}ba\allowbreak{}nk}는 brute recall 0.9998} — D\_\allowbreak{}expert에서 무작위로 뽑은 블록이면 SSH가 들어가므로 그냥 고쳐진다. residual bank만 못 고친다. 즉 method 문제가 아니라 버그이고, 고쳐서 macro가 +\allowbreak{}0.027 올라도 \textbf{residual specialization의 성과로 제시하면 안 된다.}
+
+\subsubsection{원인 B — ddos·benign: 채택 문턱이 사실상 클래스 필터}
+채택 조건 \texttt{q̂ > q\_\allowbreak{}\allowbreak{}c\allowbreak{}orr =\allowbreak{}\allowbreak{} 21\allowbreak{}.\allowbreak{}145}의 단위가 \textbf{w\_\allowbreak{}bal 가중 CE}다. γ=\allowbreak{}1이라 w\_\allowbreak{}c =\allowbreak{} N/\allowbreak{}(7·n\_\allowbreak{}c)이므로 expert가 완벽해도 \texttt{w\_\allowbreak{}\allowbreak{}c · NL\allowbreak{}L\_\allowbreak{}\allowbreak{}global\allowbreak{} > 21.\allowbreak{}14\allowbreak{}5}인 행만 자격이 있다:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23821\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19104\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22877\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34198\linewidth-2\tabcolsep\relax}}
+\toprule
+class & w\_\allowbreak{}bal & p(정답)이 이하여야 & 오답 중 자격 \\ \midrule
+\endfirsthead
+class & w\_\allowbreak{}bal & p(정답)이 이하여야 & 오답 중 자격 \\ \midrule
+\endhead
+{}infiltration & 15.27 & 0.250 & \textbf{98.98\%} (25,219/\allowbreak{}25,480) \\
+{}dos & 9.49 & 0.108 & 34.9\% (13,646/\allowbreak{}39,098) \\
+{}brute & 5.00 & 0.0145 & 100\% (expert 없음) \\
+{}\textbf{ddos} & 2.17 & 5.9e-05 & \textbf{0\%} (0/\allowbreak{}45,886) \\
+{}\textbf{benign} & 0.164 & 1e-56 & \textbf{0\%} (0/\allowbreak{}14,496) \\
+\bottomrule
+\end{longtable}
+\endgroup
+ddos는 45,886행이 틀렸고 \texttt{dense\_\allowbreak{}\allowbreak{}or\allowbreak{}acle}이 F1 0.905  \ensuremath{\rightarrow}  \textbf{0.998}로 고칠 수 있는데(=\allowbreak{} macro +\allowbreak{}0.0133) 손실 단위 이득이 문턱의 1/\allowbreak{}10이라 \textbf{완벽한 verifier로도 한 행도 못 넣는다.} \textbf{target/\allowbreak{}metric 불일치}: 파이프라인은 w\_\allowbreak{}bal 가중 CE를 최적화하고 논문은 macro-F1을 보고한다.
+
+\subsubsection{원인 C — infiltration: verifier가 이득을 예측하지 못함}
+자격 행이 오답의 99\%(25,219행)이고 제안도 18,142행 받았는데 \textbf{채택 0}이다.
+
+\par\noindent \textbullet\enspace \texttt{4b}: verifier 예측  \ensuremath{\leftrightarrow}  실제 gain 상관 \textbf{0.05\textasciitilde{}0.15}(하나는 −0.073). 사실상 무상관.
+
+
+\par\noindent \textbullet\enspace 출력이 expert-상수가 아니라 \textbf{class-상수}: e4·e5의 클래스 간 g\_\allowbreak{}lower 확산 \textbf{0.00}. infiltration의 g\_\allowbreak{}lower \textbf{최댓값 −14.63}  \ensuremath{\rightarrow}  τ\_\allowbreak{}post \ensuremath{\geq} 0인 어떤 문턱으로도 통과 불가.
+
+
+\par\noindent \textbullet\enspace \texttt{4c}: τ\_\allowbreak{}pre를 ρ=\allowbreak{}0.35  \ensuremath{\rightarrow}  1.0으로 완전히 열어도 채택 \textbf{+\allowbreak{}191행(+\allowbreak{}1.7\%)}.  \ensuremath{\rightarrow}  \textbf{병목은 제안 관문이 아니라 post-call verifier다}(status 문서의 진단은 수정 필요).
+
+
+원인은 exp24b가 scorer에서 이미 고친 병과 같다 — verifier는 여전히 6자릿수 스케일의 raw gain 위에서 quantile 회귀를 한다. \textbf{grouping으로는 못 고친다}(e5 내부에서 benign과 inf가 같은 값).
+
+\subsubsection{원인 D — dos는 이미 천장}
+자격 행 13,646개 중 12,405개 채택 =\allowbreak{} \textbf{허용치의 91\%}. 더 짜낼 것이 없다.
+
+\subsubsection{원인 E — 판정 자체의 신뢰도 문제 (셋)}
+\par\noindent \textbullet\enspace \textbf{잡음 0.027}: knob과 무관한 global macro가 8 run에서 0.6461\textasciitilde{}0.6734(전 run \texttt{prior\_\allowbreak{}\allowbreak{}T=\allowbreak{}\allowbreak{}1.\allowbreak{}25}, \texttt{beta=\allowbreak{}\allowbreak{}0}으로 동일하므로 prior 탓 아님  \ensuremath{\rightarrow}  추론 비결정성). 최근 판정 크기(exp23c +\allowbreak{}0.003, exp23d −0.005, 24b \ensuremath{\leftrightarrow} 24b-off +\allowbreak{}0.015)가 \textbf{전부 이 대역 안}이다. 균일하지도 않다 — exp24a에선 global infiltration이 0.393  \ensuremath{\rightarrow}  \textbf{0.205}로 반토막. 행 집합이 sha256까지 같아도 residual이 \textbf{99.93\% 행에서 다르고}, 그 결과 작은 regime 구성이 바뀐다(\texttt{[…,\allowbreak{}8707,\allowbreak{} 523,\allowbreak{} 14\allowbreak{}0]} vs \texttt{[…,\allowbreak{}3852,\allowbreak{} 130,\allowbreak{} 9]\allowbreak{}}).
+
+
+\par\noindent \textbullet\enspace \textbf{Gate 1 판정 불가}: residual 블록 합 228,638 vs random·proximity 5×186,000 =\allowbreak{} 930,000 (\textbf{4.07배}). \texttt{exp24b:1\allowbreak{}560-\allowbreak{}1600\allowbreak{}}에서 대조군만 항상 186,000을 쓴다. run마다 왜곡 크기가 달라 순위가 뒤집힌다(exp22c는 residual 우위, 24b-off는 proximity 0.9217 > 0.8294로 열위).
+
+
+\par\noindent \textbullet\enspace \textbf{oracle 상한이 부풀려져 있다}: eval 4.02M 중 distinct 2.10M(중복 48\%). brute FP가 \textbf{21,110행 =\allowbreak{} \texttt{dos\_\allowbreak{}\allowbreak{}slow\allowbreak{}httptest\allowbreak{}} test 행 수와 정확히 일치}하고 oracle을 뺀 모든 모델에서 동일하다(알려진 라벨 충돌). 그런데 \texttt{dense\_\allowbreak{}\allowbreak{}or\allowbreak{}acle}만 brute precision 1.0인데, 이는 label-informed oracle이 **정답을 보고 expert를 배정해 충돌을 "해결"**하기 때문 — 배포에선 불가능하다.
+
+
+\subsubsection{부수 관찰 (수정 대상)}
+\par\noindent \textbullet\enspace 호출의 \textbf{98.0\%가 낭비}(제안 634,016 /\allowbreak{} 채택 12,732), 그중 benign 제안이 523,476. 그런데 \texttt{lambda\_\allowbreak{}\allowbreak{}c\allowbreak{}ost =\allowbreak{}\allowbreak{} 0}으로 비용 항이 꺼져 있다.
+
+
+\par\noindent \textbullet\enspace "호출 1.158회"는 과소 보고. 실측 추론 배수 \textbf{2.044×}((735.7+\allowbreak{}756.8+\allowbreak{}11.2)/\allowbreak{}735.7), run 전체 5,721 s.
+
+
+\par\noindent \textbullet\enspace 최종 test 미동결(4.02M을 24회 이상 봄), XGB가 exp24 계열 run에 없음(\texttt{-\allowbreak{}-\allowbreak{}skip-\allowbreak{}x\allowbreak{}gboost}), XGB 예측 확률 미저장  \ensuremath{\rightarrow}  새 지표에서 비교 불가.
+
+
+
+\medskip\hrule\medskip
+\subsection{2. 수정 계획}
+\subsubsection{2.1 코드 (원칙: \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}common.\allowbreak{}p\allowbreak{}y} 불변, fork-only, 한 run 한 knob)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.32778\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.67222\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 내용 \\ \midrule
+\endfirsthead
+항목 & 내용 \\ \midrule
+\endhead
+{}\textbf{재현성} & \texttt{-\allowbreak{}-\allowbreak{}reuse-\allowbreak{}context-\allowbreak{}rows} +\allowbreak{} \textbf{\texttt{-\allowbreak{}-\allowbreak{}reuse-\allowbreak{}global-\allowbreak{}p\allowbreak{}robs}}(행 고정만으론 부족, 원인 E-1). global 재추론 324 s도 절약 \\
+{}\textbf{계측 결손} & \texttt{probs\_\allowbreak{}\allowbreak{}xg\allowbreak{}boost.\allowbreak{}np\allowbreak{}z}, 보정 전 \texttt{q̂}, expert 호출 wall-clock·latency p50/\allowbreak{}p95/\allowbreak{}p99 저장 \\
+{}\textbf{오프라인 분석} & \texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}off\allowbreak{}line\_\allowbreak{}\allowbreak{}eva\allowbreak{}l.\allowbreak{}py} — 기존 npz만으로 9개 run 소급. 산출: \texttt{9a\_\allowbreak{}\allowbreak{}selec\allowbreak{}tive}(risk–coverage/\allowbreak{}AURC), \texttt{9b\_\allowbreak{}\allowbreak{}inter\allowbreak{}vention}(transition +\allowbreak{} CI, 조건부 정확도), \texttt{9c\_\allowbreak{}\allowbreak{}cost}(호출 회계), \texttt{9d\_\allowbreak{}\allowbreak{}bank\_\allowbreak{}\allowbreak{}utility}, \texttt{9e\_\allowbreak{}\allowbreak{}front\allowbreak{}ier}(run 횡단), \textbf{unique-hash oracle 재계산} \\
+{}\textbf{sidecar} & \texttt{scripts/\allowbreak{}\allowbreak{}make\_\allowbreak{}\allowbreak{}row\allowbreak{}\_\allowbreak{}\allowbreak{}meta.\allowbreak{}py\allowbreak{}} — 14.7 GB pkl 1회 로드로 \texttt{row\_\allowbreak{}\allowbreak{}id/\allowbreak{}\allowbreak{}t\allowbreak{}s/\allowbreak{}\allowbreak{}scenar\allowbreak{}io/\allowbreak{}\allowbreak{}label\allowbreak{}/\allowbreak{}\allowbreak{}split} 저장 \\
+{}\textbf{공용 모듈} & 새 파일 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}ace\_\allowbreak{}\allowbreak{}eval\allowbreak{}.\allowbreak{}py}(기존 모듈 수정 금지) \\
+{}\textbf{전역 재분할} & \texttt{scripts/\allowbreak{}\allowbreak{}preproce\allowbreak{}ss\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}global\_\allowbreak{}\allowbreak{}c\allowbreak{}hrono.\allowbreak{}py\allowbreak{}} — 전역 시간축 W1..W4 +\allowbreak{} \textbf{untouched final block}. 현재 split은 클래스별 시간 절단이라 대부분 창에 benign이 0행  \ensuremath{\rightarrow}  window 평가 자체가 불가능 \\
+\bottomrule
+\end{longtable}
+\endgroup
+새 실험 스크립트(전부 exp24b/\allowbreak{}최고 구성 fork):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.27903\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.38015\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.34082\linewidth-2\tabcolsep\relax}}
+\toprule
+스크립트 & one knob & 수정 지점 \\ \midrule
+\endfirsthead
+스크립트 & one knob & 수정 지점 \\ \midrule
+\endhead
+{}\texttt{exp25\_\allowbreak{}\allowbreak{}du\allowbreak{}mp} & knob 없음(계측만) & 1706–1749 \\
+{}\textbf{\texttt{exp26\_\allowbreak{}\allowbreak{}no\allowbreak{}rmgain}} & verifier target을 **G/\allowbreak{}w\_\allowbreak{}bal(ΔNLL 단위)**로 (단위 수정) & 1194–1236, 1273–1351 \\
+{}\texttt{exp26b\_\allowbreak{}\allowbreak{}s\allowbreak{}ignverif\allowbreak{}ier} & 부호 분류 P(G>0) — 추정기 비교, exp26 부족 시에만 & 1194–1236, 1273–1351, 1353–1418 \\
+{}\textbf{\texttt{exp27\_\allowbreak{}\allowbreak{}ct\allowbreak{}xcover}} & pool 분할을 scenario 층화로 & 651–712, 830–834 \\
+{}\texttt{exp28\_\allowbreak{}\allowbreak{}eq\allowbreak{}ualmem} & 대조 bank 블록을 expert별 등크기로 & 1560–1600 \\
+{}\textasciitilde{}\textasciitilde{}\texttt{exp29\_\allowbreak{}\allowbreak{}k1\allowbreak{}}\textasciitilde{}\textasciitilde{} & \textbf{스크립트 불필요} — \texttt{exp25 -\allowbreak{}-\allowbreak{}k-\allowbreak{}candid\allowbreak{}ates 1}(감사 통과) & — \\
+{}\textasciitilde{}\textasciitilde{}\texttt{exp30\_\allowbreak{}\allowbreak{}co\allowbreak{}st}\textasciitilde{}\textasciitilde{} & \textbf{스크립트 불필요} — \texttt{exp25 -\allowbreak{}-\allowbreak{}lambda-\allowbreak{}c\allowbreak{}ost <λ>}(감사 통과) & — \\
+{}\texttt{exp31\_\allowbreak{}\allowbreak{}re\allowbreak{}fresh} & window별 label budget B \ensuremath{\in} \{0,50,200,1000\} +\allowbreak{} 4-arm & 신규(E-8 이후) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{감사 주의 두 가지} (fork를 안 만드는 대신 반드시 기록):
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}k-\allowbreak{}cand\allowbreak{}idates 1\allowbreak{}}은 \textbf{"기존 최고 expert 하나"가 아니라 전체 풀 위에 새로 만든 단일 expert}다(diversity\_\allowbreak{}select가 1.98M행에서 186,000행을 새로 뽑는다). §1.5의 "단일 expert가 oracle의 91.5\% 회수"는 \textbf{run이 아니라 \texttt{route\_\allowbreak{}\allowbreak{}ga\allowbreak{}in.\allowbreak{}npz} 오프라인 재분석}으로 답할 질문이다. 섞어 인용하지 말 것. (부수 효과: K=\allowbreak{}1이면 대조 bank가 자동으로 등메모리가 된다.)
+
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}lambda\allowbreak{}-\allowbreak{}cost}는 살아 있지만 \textbf{dense oracle과 대조 bank의 손실에도 λ·c가 더해진다.} λ 스윕에서 \texttt{dense\_\allowbreak{}\allowbreak{}or\allowbreak{}acle}·\texttt{oracle\_\allowbreak{}\allowbreak{}*\allowbreak{}\_\allowbreak{}\allowbreak{}bank}·\texttt{oracle\_\allowbreak{}\allowbreak{}u\allowbreak{}tility\_\allowbreak{}\allowbreak{}r\allowbreak{}ecovery}는 λ에 따라 움직이므로 \textbf{비교에서 빼거나} \texttt{route\_\allowbreak{}\allowbreak{}ga\allowbreak{}in.\allowbreak{}npz}로 λ=\allowbreak{}0에서 재계산해야 한다. 스윕은 제안 \emph{비율}이 아니라 \textbf{제안 \emph{구성}} 스윕으로 보고한다.
+
+
+\textbf{exp26 설계 주의(검증에서 정정)}: \texttt{b\_\allowbreak{}\allowbreak{}OOF}는 sign(G)가 아니라 \emph{적합된} 분위수 모델의 부호이고 w\_\allowbreak{}bal[y]는 feature에 없으므로, OOF 적합까지 정규화하면 b\_\allowbreak{}OOF가 이동한다. b\_\allowbreak{}OOF는 scorer 타깃에 들어가므로(λ=\allowbreak{}0에서 사실상 유일한 입력) 제안 관문이 함께 움직여 "문턱이 클래스 필터이길 그만뒀다"와 "scorer가 다른 행을 제안한다"를 구분할 수 없게 된다.  \ensuremath{\rightarrow}  \textbf{OOF 적합은 raw로 고정}해 knob을 post-call verifier에 가뒀다. 가이드 §15에 충실한 판본은 별도 run exp26b.
+
+\textbf{exp28에서 드러난 것}: \texttt{diversit\allowbreak{}y\_\allowbreak{}\allowbreak{}select\allowbreak{}}는 regime 크기 \ensuremath{\leq} 블록 예산이면 \texttt{arange(n\allowbreak{})}을 그대로 반환한다. 기준 run에서 regime 5개 중 \textbf{4개가 그 경우}(15,468 /\allowbreak{} 20,718 /\allowbreak{} 6,322 /\allowbreak{} 130 \ensuremath{\leq} 186,000) 이므로 \textbf{§11.2의 diversity-aware coreset은 expert 5개 중 4개에서 아무 일도 하지 않는다.} exp28은 그 경우 refit을 건너뛰고 \texttt{2f\_\allowbreak{}\allowbreak{}bank\_\allowbreak{}\allowbreak{}block\_\allowbreak{}\allowbreak{}si\allowbreak{}zes.\allowbreak{}csv}의 \texttt{identica\allowbreak{}l\_\allowbreak{}\allowbreak{}to\_\allowbreak{}\allowbreak{}res\allowbreak{}idual}· \texttt{selector\allowbreak{}\_\allowbreak{}\allowbreak{}active} 열에 기록한다.
+
+\textbf{삭제}: \texttt{exp\_\allowbreak{}\allowbreak{}grou\allowbreak{}pcal}(q\_\allowbreak{}corr를 expert별로) — 원인 C에서 출력이 class-상수임이 확인돼 grouping으로 복원 불가. min-support fallback도 verifier 수리 \textbf{이후로} 미룸(SSH expert를 살려도 brute의 g\_\allowbreak{}lower 상한이 −18.43이라 채택 0).
+
+\subsubsection{2.2 각 실험을 왜 하는가}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14851\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24179\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12612\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24179\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24179\linewidth-2\tabcolsep\relax}}
+\toprule
+\# & 실험 & 자원 & \textbf{무엇을 확인/\allowbreak{}반증하려는가} & 사전 등록 기준 \\ \midrule
+\endfirsthead
+\# & 실험 & 자원 & \textbf{무엇을 확인/\allowbreak{}반증하려는가} & 사전 등록 기준 \\ \midrule
+\endhead
+{}\textasciitilde{}\textasciitilde{}E-0\textasciitilde{}\textasciitilde{} \textbf{완료 §0.3} & offline battery(10 run 소급) +\allowbreak{} \texttt{4c} 재해석 & CPU & 새 평가축이 \textbf{정보량이 있는가}. 9개 run의 예측이 이미 있으므로 GPU 0으로 축을 먼저 검증하고, 구분 못 하는 축은 논문에서 뺀다 & config 간 차이가 잡음 대역 밖 \\
+{}\textasciitilde{}\textasciitilde{}E-0.5\textasciitilde{}\textasciitilde{} \textbf{완료 §0.1} & \textbf{XGB 정보예산 진단} & CPU 15분 & \textbf{"우리가 정말 지고 있는가."} XGB는 train pool 전체(SSH 113,084행 포함)를 보고 global PFN의 C0는 시간상 앞 50\%만 본다. XGB를 C0와 같은 행 범위로만 학습시켰을 때 macro가 얼마나 떨어지는지 =\allowbreak{} 격차 중 \textbf{정보예산 몫}의 크기 & XGB(제한) macro를 기록 \\
+{}\textasciitilde{}\textasciitilde{}E-1\textasciitilde{}\textasciitilde{} \textbf{완료 §0.4} & row-meta sidecar & CPU & 원인 A를 그림으로 확정하고, 이후 모든 시간·scenario 분석에서 14.7 GB 재로딩을 없앰 & — \\
+{}\textasciitilde{}\textasciitilde{}E-2\textasciitilde{}\textasciitilde{} \textbf{완료 §0.7} & \texttt{exp25\_\allowbreak{}\allowbreak{}du\allowbreak{}mp} ×2 +\allowbreak{} det(fp32 OOM  \ensuremath{\rightarrow}  exp25b det-lite 큐) & GPU & \textbf{모든 후속 비교의 단위 확보.} 오차 막대 없이는 exp23c(+\allowbreak{}0.003)·exp23d(−0.005) 같은 판정이 해석 불가. 동시에 \texttt{torch.\allowbreak{}us\allowbreak{}e\_\allowbreak{}\allowbreak{}determ\allowbreak{}inistic\_\allowbreak{}\allowbreak{}algorith\allowbreak{}ms} /\allowbreak{} fp32 추론으로 0.027 대역이 접히는지 시험 — 접히면 캐시 없이도 재현성 확보 & paired delta SD 확보; 결정성 옵션으로 대역 < 0.005면 채택 \\
+{}\textbf{E-3} & \textbf{\texttt{exp26\_\allowbreak{}\allowbreak{}no\allowbreak{}rmgain}} & GPU & \textbf{원인 B·C를 동시에 공격}(아래 2.3). 회수 가능 상한의 25\%(inf)가 0\% 실현이고, ddos는 아예 자격 배제 상태 & inf 채택 > 0, macro \ensuremath{\geq} 0.73(대역 밖), benign FPR 증분 \ensuremath{\leq} 0.0005, harmful \ensuremath{\leq} 200 \\
+{}\textbf{E-4} & \textbf{\texttt{exp27\_\allowbreak{}\allowbreak{}ct\allowbreak{}xcover}} & GPU & \textbf{원인 A.} pool 분할이 클래스내 시간순이라 C0가 늦게 등장한 scenario를 구조적으로 못 본다. scenario-피복 분할로 바꾸면 회복되는지. 가이드 §6·§21이 요구하는 조건이기도 함 & brute recall 0.672  \ensuremath{\rightarrow}  \ensuremath{\geq} 0.95 \\
+{}E-5 & \texttt{exp28\_\allowbreak{}\allowbreak{}eq\allowbreak{}ualmem} & GPU & \textbf{논문 기여 1번의 생사.} 지금은 대조군만 186,000행을 써서(4.07배) Gate 1을 어느 방향으로도 인용할 수 없다 & 등메모리에서 residual oracle > proximity·random \\
+{}E-6 & \texttt{exp25 -\allowbreak{}-\allowbreak{}k-\allowbreak{}candid\allowbreak{}ates 1} & GPU & \textbf{bank가 필요하긴 한가.} 단일 expert가 oracle utility의 91.5\%를 회수한다. K=\allowbreak{}5가 사는 값이 \textasciitilde{}9\%면 서사를 'conditional escalation'으로 단순화 & K=\allowbreak{}5 대비 차이가 대역 안 \\
+{}E-7 & \texttt{exp25 -\allowbreak{}-\allowbreak{}lambda-\allowbreak{}c\allowbreak{}ost} 스윕 & GPU ×3 & wasted call 98\%를 \textbf{부채에서 곡선으로} 전환. §20.6이 요구하는 지표인데 λ=\allowbreak{}0이라 한 번도 최적화한 적이 없음 & wasted \ensuremath{\leq} 0.5, macro 손실 < 0.01 \\
+{}E-8 & 전역 재분할 & CPU 1일 & 시간 축 평가의 \textbf{선행 조건}(현 split은 창마다 benign이 0행) +\allowbreak{} 최종 test 동결 & 창별 클래스 존재표 \\
+{}E-9 & \texttt{exp31\_\allowbreak{}\allowbreak{}re\allowbreak{}fresh} 4-arm & GPU 하룻밤 & 차별화 축. \textbf{단 E-4 이후에만 의미가 있다} — 안 그러면 "우리 버그를 회복"하는 실험이 된다 & arm(iv) "B행을 C0에 붙인 global"을 이길 것 \\
+{}E-10 & ton\_\allowbreak{}iot·bot\_\allowbreak{}iot +\allowbreak{} 최종 5 seed & GPU 하룻밤 & 단일 데이터셋·단일 seed 결과가 아님을 보임 & 방향 일치 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{2.3 exp26 — 사후 휴리스틱이 아니려면 무엇을 고쳐야 하는가}
+\textbf{먼저 지적을 받아들인다.} "\texttt{G > 0}으로 바꾸자"는 제안은 g\_\allowbreak{}lower 표를 \textbf{보고 나서} 나왔다. 그대로 두면 "infiltration이 막혀 있으니 막은 규칙을 바꾼다"는 결과 주도 선택이고, §2.1에서 스스로 금지한 것과 같은 종류다. 그래서 knob을 다시 정의한다.
+
+\textbf{정당한 것과 아닌 것의 경계}
+
+\par\noindent \textbullet\enspace \textbf{정당}: \emph{단위 오류}를 고치는 것. 현재 규칙 \texttt{q̂ > 21.\allowbreak{}145}는 클래스마다 w\_\allowbreak{}c가 0.164\textasciitilde{}1132.8로 \textbf{4자릿수 다른 양}에 \textbf{하나의 절대 문턱}을 적용한다. 이건 결과와 무관하게 그 자체로 틀렸다. 차원이 다른 값을 같은 자로 재고 있다.
+
+
+\par\noindent \textbullet\enspace \textbf{부당}: 문턱값이나 목표를 \emph{어느 클래스가 열리는지 보고} 고르는 것. \texttt{G > 0}의 \texttt{0}에는 아무 근거가 없다 — G =\allowbreak{} +\allowbreak{}0.001인 행도 자격을 얻는다. 그리고 부호만 쓰면 가이드 §14의 보수적 하한(안전 장치)이 통째로 사라진다.
+
+
+\textbf{따라서 exp26의 one knob을 "목표의 단위"로 바꾼다} (결정이론은 그대로):
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+현재    target  G_ik = L_i0 − L_ik            # w_bal 가중 CE, 스케일 6자릿수
+        model   XGBRegressor(reg:quantileerror, α=0.25)  →  q̂
+        accept  q̂ − q_corr > τ_post,  q_corr = 21.145 (스칼라)
+
+exp26   target  G_ik / w_bal(y_i)             # ΔNLL 단위 — w_c가 나눠져 사라짐
+        model   동일 (quantile α=0.25)
+        calib   동일 절차 (D_cal에서 one-sided correction)
+        accept  동일 (하한 > τ_post),  τ_post는 기존 제약 그리드로 선택
+
+\end{Verbatim}
+\par\noindent \textbullet\enspace \textbf{B가 풀리는 이유(구성상)}: 문턱이 더 이상 w\_\allowbreak{}c에 비례하지 않는다. 클래스 필터가 \textbf{정의에 의해} 사라지므로, 어느 클래스가 열리는지를 보고 고른 게 아니다.
+
+
+\par\noindent \textbullet\enspace \textbf{C도 같이 완화된다}: 목표 스케일이 6자릿수  \ensuremath{\rightarrow}  2자릿수로 압축되어 pinball loss가 스케일이 아니라 판별에 맞춰진다. r \ensuremath{\approx} 0.1이 개선되는지가 직접 검증 대상이다.
+
+
+\par\noindent \textbullet\enspace \textbf{안전 장치 보존}: 하한·보정·제약 그리드가 그대로다. 가이드 §14의 구조를 유지한다.
+
+
+\textbf{exp26b(별도 run) =\allowbreak{} 부호 분류} 는 \emph{추정기 비교}로 강등한다. 같은 결정 (\texttt{P(G>0) >\allowbreak{} τ})에 대한 다른 추정기이고, scorer에서 이미 검증된 처방이라는 근거는 있지만 단위 수정만큼 원리적이지는 않다. exp26이 부족할 때만 돈다.
+
+\textbf{사후 선택이 아님을 증명하는 방법 — run 전에 아래를 등록한다.} 단위 수정이 맞다면 \textbf{모든} 클래스에 대해 방향이 예측 가능해야 하고, 하나라도 어긋나면 가설이 틀린 것이다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25117\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.41315\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33568\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & run 전 예측 & 어긋나면 \\ \midrule
+\endfirsthead
+클래스 & run 전 예측 & 어긋나면 \\ \midrule
+\endhead
+{}ddos & 자격 0\%  \ensuremath{\rightarrow}  자격 발생, 채택 > 0 & 단위가 원인이 아니었음 \\
+{}infiltration & 채택 0  \ensuremath{\rightarrow}  > 0 & 원인 C가 단위가 아니라 feature 문제 \\
+{}\textbf{benign} & \textbf{여전히 거의 채택 안 됨} & 문턱만 낮춘 것 =\allowbreak{} 실패 \\
+{}dos & 이미 91\% 소진  \ensuremath{\rightarrow}  큰 변화 없음 & 기존 dos 이득이 우연이었음 \\
+{}brute & 여전히 0 (expert 부재) & 다른 설명 필요 \\
+{}harmful & \ensuremath{\leq} 200, benign FPR 증분 \ensuremath{\leq} 0.0005 & 안전 장치 무효 \\
+\bottomrule
+\end{longtable}
+\endgroup
+특히 \textbf{benign은 열리면 안 된다}는 조건이 이 실험을 반증 가능하게 만든다. 부호 분류(exp26b)는 benign 제안 523,476행을 함께 열 위험이 크고, 그래서 exp26 다음이다.
+
+\subsubsection{2.4 exp27의 성격 — split 변경이 맞고, 트레이드오프가 있다}
+현재 pool 분할(context 50\% /\allowbreak{} expert 25\% /\allowbreak{} route 25\%)이 \textbf{클래스 내부 시간순}이라 C0의 brute는 전부 FTP다(§1 원인 A). C0 안에서 아무리 잘 뽑아도 SSH는 D\_\allowbreak{}expert·D\_\allowbreak{}route에만 있으므로, \textbf{추출 방식이 아니라 분할 자체를 바꿔야 한다}: 같은 50/\allowbreak{}25/\allowbreak{}25를 유지하되 \textbf{scenario 층화}로. held-out 성질(D\_\allowbreak{}expert가 C0에 없음)은 그대로 보존된다.
+
+대가: "context가 test보다 시간상 앞선다"는 성질을 잃는다. 두 갈래 중 선택해야 한다.
+
+\par\noindent \textbullet\enspace \textbf{(i) 공정 IID 우선} — 가이드 §21이 "XGB를 PFN context 크기로 제한하지 말라"고 한 것의 대칭: XGB가 pool 전체를 보는 만큼 C0도 pool 전체를 대표해야 한다. \textbf{E-0.5가 이 선택의 근거를 준다.}
+
+
+\par\noindent \textbullet\enspace \textbf{(ii) 시간 서사 우선} — 현 chrono 분할을 "늦게 등장한 공격은 context에 없다"는 배포 조건으로 두고 refresh(E-9)로 푼다. 단 이 경우 IID 표에서 XGB와의 brute 격차를 \textbf{method 열세로 보고하면 안 된다}(정보예산 차이). 지금은 (i)로 진행하고 (ii)는 E-8의 전역 재분할에서 별도 축으로 다룬다.
+
+
+\subsubsection{2.5 병렬 실행 계획 (GitHub 분산)}
+\texttt{.\allowbreak{}gitigno\allowbreak{}re} 확인 결과 \textbf{CSV는 추적되고 \texttt{*.\allowbreak{}npz}·PNG·\texttt{data/\allowbreak{}\allowbreak{}}·ckpt는 제외}된다. 즉 각 박스가 run을 돌리고 \textbf{작은 CSV만 push}하면 결과가 합쳐진다. 대용량은 로컬 유지.
+
+\textbf{철칙 — 비교는 같은 박스 안에서.} 원인 E-1의 추론 비결정성은 하드웨어가 다르면 더 커진다. 따라서 \textbf{머리를 맞대고 비교할 두 config는 반드시 같은 박스에서 돈다.} 각 박스는 자기 \textbf{로컬 앵커}(24b-off 재현 run) 1회를 먼저 돌리고, 그 박스 안의 delta만 인용한다. 박스 간에는 \textbf{(system − global) paired delta}만 비교한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17430\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18838\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39261\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24472\linewidth-2\tabcolsep\relax}}
+\toprule
+레인 & 자원 & 순서 & 비고 \\ \midrule
+\endfirsthead
+레인 & 자원 & 순서 & 비고 \\ \midrule
+\endhead
+{}L0 & CPU 아무거나 & E-0  \ensuremath{\rightarrow}  E-0.5  \ensuremath{\rightarrow}  E-1  \ensuremath{\rightarrow}  E-8 코딩 & GPU 불필요. 가장 먼저 시작 \\
+{}L1 & GPU box A & 앵커  \ensuremath{\rightarrow}  E-2(반복 3 +\allowbreak{} 결정성 시험)  \ensuremath{\rightarrow}  \textbf{E-3(exp26)}  \ensuremath{\rightarrow}  exp26b & 재현성·verifier 라인 \\
+{}L2 & GPU box B & 앵커  \ensuremath{\rightarrow}  \textbf{E-4(exp27)}  \ensuremath{\rightarrow}  E-5(exp28) & context·Gate 1 라인 \\
+{}L3 & GPU box C & 앵커  \ensuremath{\rightarrow}  E-6(exp29 K=\allowbreak{}1)  \ensuremath{\rightarrow}  E-7(exp30 λ) & 구조·비용 라인 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 각 박스 요구사항: \texttt{data/\allowbreak{}\allowbreak{}nfv\allowbreak{}3\_\allowbreak{}\allowbreak{}energy\allowbreak{}\_\allowbreak{}\allowbreak{}suite\_\allowbreak{}\allowbreak{}u\allowbreak{}ncapped\_\allowbreak{}\allowbreak{}scenario\allowbreak{}s.\allowbreak{}pkl}(14.7 GB) +\allowbreak{} TabPFN ckpt +\allowbreak{} \textbf{VRAM 24 GB}(peak 19.47 GB). 부족하면 \texttt{*\_\allowbreak{}\allowbreak{}capped\allowbreak{}} 타깃으로 스모크만.
+
+
+\par\noindent \textbullet\enspace 브랜치: 레인별 \texttt{exp/\allowbreak{}\allowbreak{}L1-\allowbreak{}v\allowbreak{}erifier}, \texttt{exp/\allowbreak{}\allowbreak{}L2-\allowbreak{}c\allowbreak{}ontext}, \texttt{exp/\allowbreak{}\allowbreak{}L3-\allowbreak{}s\allowbreak{}tructure\allowbreak{}}. 스크립트는 fork-only라 충돌 지점이 없고, 결과 CSV는 run 디렉터리가 타임스탬프라 자동으로 안 겹친다.
+
+
+\par\noindent \textbullet\enspace \texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}off\allowbreak{}line\_\allowbreak{}\allowbreak{}eva\allowbreak{}l.\allowbreak{}py}는 \textbf{각 박스에서 로컬 npz에 대해 실행}하고 산출 CSV만 커밋한다 (npz는 gitignore).
+
+
+\par\noindent \textbullet\enspace 합류 조건: L1의 E-2가 끝나 \textbf{잡음 대역이 나오기 전까지 어떤 레인의 결과도 "개선"으로 확정하지 않는다.} 그 전까지는 전부 "기록만".
+
+
+\subsubsection{2.6 실행 명령 (레인별, 순서대로)}
+전제: 모든 박스에서 \texttt{cd <repo\allowbreak{}>} 후 \texttt{git pull\allowbreak{}}. 리포는 \texttt{https:/\allowbreak{}\allowbreak{}/\allowbreak{}\allowbreak{}github.\allowbreak{}c\allowbreak{}om/\allowbreak{}\allowbreak{}westp\allowbreak{}ark9/\allowbreak{}\allowbreak{}imb\allowbreak{}al\_\allowbreak{}\allowbreak{}cic.\allowbreak{}g\allowbreak{}it}, 작업 디렉터리 이름은 \texttt{imbalcic\allowbreak{}}. \texttt{data/\allowbreak{}\allowbreak{}}·\texttt{*.\allowbreak{}npz}·\texttt{*.\allowbreak{}ckpt}·PNG는 gitignore이므로 \textbf{각 박스에 14.7 GB 피클과 ckpt가 로컬로 있어야 한다}. 결과 중 \textbf{CSV만 push}한다.
+
+\textbf{L0 — CPU (스크립트 작성 완료, 지금 실행 가능)}
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+# E-0  기존 9개 run에 새 평가축 소급 (GPU 0)
+python scripts/race_offline_eval.py --runs "tabpfn/results/*_nfv3_cic2018_exp*"
+
+# E-0.5 + E-1  정보예산 진단 + row-meta sidecar (CPU, ~40분, RAM 40GB 여유 필요)
+python scripts/race_budget_diag.py     --run-dir tabpfn/results/20260827_174858_nfv3_cic2018_exp24b_signscorer
+
+# 결과 공유
+git add scripts/results tabpfn/results/*/9*.csv manuscript/report/0831.md
+git commit -m "E-0/E-0.5: offline eval battery + information-budget diagnostic"
+git push
+
+\end{Verbatim}
+\textbf{L1 — GPU box A (verifier 라인)}
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+git checkout -b exp/L1-verifier
+
+# 로컬 앵커: 이 박스의 기준점. --skip-xgboost 를 더 이상 쓰지 않는다(같은 run 안에 XGB)
+python tabpfn/nfv3_v3_exp24b_racepfn_signscorer.py     --target-dataset cic2018 --prune-mode off --dense-eval
+
+# E-2  계측 fork + 동일 config 반복 2회 + 결정성 시험 (스크립트 작성 필요)
+python tabpfn/nfv3_v3_exp25_racepfn_dump.py --target-dataset cic2018     --prune-mode off --dense-eval --dump-level full
+python tabpfn/nfv3_v3_exp25_racepfn_dump.py --target-dataset cic2018     --prune-mode off --dense-eval --dump-level full          # 반복 2
+python tabpfn/nfv3_v3_exp25_racepfn_dump.py --target-dataset cic2018     --prune-mode off --dense-eval --dump-level full --deterministic  # fp32/결정성
+
+# E-3  단위 수정 verifier (스크립트 작성 필요)
+python tabpfn/nfv3_v3_exp26_racepfn_normgain.py --target-dataset cic2018     --prune-mode off --dense-eval --verifier-target normgain
+
+# 각 run 후
+python scripts/race_offline_eval.py --runs "tabpfn/results/<새_run_dir>"
+git add tabpfn/results/<새_run_dir>/*.csv && git commit -m "L1 <run>" && git push -u origin exp/L1-verifier
+
+\end{Verbatim}
+\textbf{L2 — GPU box B (context·Gate 1 라인)}
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+git checkout -b exp/L2-context
+python tabpfn/nfv3_v3_exp24b_racepfn_signscorer.py     --target-dataset cic2018 --prune-mode off --dense-eval        # 로컬 앵커
+
+# E-4  scenario 층화 분할 (스크립트 작성 필요)
+python tabpfn/nfv3_v3_exp27_racepfn_ctxcover.py --target-dataset cic2018     --prune-mode off --dense-eval --pool-partition scenario_stratified
+
+# E-5  등메모리 Gate 1 (스크립트 작성 필요)
+python tabpfn/nfv3_v3_exp28_racepfn_equalmem.py --target-dataset cic2018     --prune-mode off --dense-eval --feas-match-memory per_expert     --feasibility-banks random,proximity,regime_random
+
+\end{Verbatim}
+\textbf{L3 — GPU box C (구조·비용 라인)}
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+git checkout -b exp/L3-structure
+# 로컬 앵커 (exp25 = exp24b --prune-mode off와 동작 동일 + 계측)
+python tabpfn/nfv3_v3_exp25_racepfn_dump.py --target-dataset cic2018 \
+    --prune-mode off --dense-eval --dump-level full
+
+# E-6  K=1 — 새 스크립트가 아니라 exp25의 플래그 값
+python tabpfn/nfv3_v3_exp25_racepfn_dump.py --target-dataset cic2018 \
+    --prune-mode off --dense-eval --dump-level full --k-candidates 1
+
+# E-7  λ 스윕 (한 run 한 λ). 21.145 = q_corr — scorer 바닥과 verifier 채택 바가 같아지는 값
+for L in 0.1 1.0 21.145; do
+  python tabpfn/nfv3_v3_exp25_racepfn_dump.py --target-dataset cic2018 \
+      --prune-mode off --dense-eval --dump-level full --lambda-cost $L
+done
+
+\end{Verbatim}
+\textbf{스모크 먼저.} 어느 레인이든 새 스크립트는 record run 전에 capped 타깃으로 1회:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+python tabpfn/nfv3_v3_expNN_....py --target-dataset cic2018_capped --dense-eval
+
+\end{Verbatim}
+\textbf{작성 상태}: \texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}off\allowbreak{}line\_\allowbreak{}\allowbreak{}eva\allowbreak{}l.\allowbreak{}py}, \texttt{scripts/\allowbreak{}\allowbreak{}race\_\allowbreak{}\allowbreak{}bud\allowbreak{}get\_\allowbreak{}\allowbreak{}diag\allowbreak{}.\allowbreak{}py} =\allowbreak{} \textbf{완료}. \texttt{exp25}\textasciitilde{}\texttt{exp31} =\allowbreak{} 미작성(각각 exp24b fork +\allowbreak{} 표의 one knob).
+
+\subsubsection{2.3 중단·전환}
+\par\noindent \textbullet\enspace E-5에서 등메모리 residual oracle \ensuremath{\leq} proximity  \ensuremath{\rightarrow}  "우위" 주장 폐기, \textbf{"같은 oracle을 1/\allowbreak{}4 메모리로"} 효율 주장으로 재정의(228,638 vs 930,000).
+
+
+\par\noindent \textbullet\enspace E-6에서 K=\allowbreak{}1 \ensuremath{\approx} K=\allowbreak{}5  \ensuremath{\rightarrow}  'expert bank' 버리고 **'conditional escalation on a frozen PFN'**으로 축소.
+
+
+\par\noindent \textbullet\enspace E-9에서 arm(iv)를 못 이기면 축 B 폐기.
+
+
+\par\noindent \textbullet\enspace 전부 실패 시 \textbf{진단 논문}으로 전환. 재료는 이미 확보: verifier 무상관·class-상수 /\allowbreak{} 관문을 열어도 +\allowbreak{}1.7\% /\allowbreak{} 단일 expert가 oracle 91.5\% 회수 /\allowbreak{} 검증 없는 라우팅 붕괴(0.52·0.46) /\allowbreak{} 최대 결손을 무작위 블록이 고침 /\allowbreak{} label-informed oracle의 충돌 해결 아티팩트 /\allowbreak{} 추론 비결정성.
+
+
+
+\medskip\hrule\medskip
+\subsection{3. 클래스별 성능 외의 평가지표}
+\textbf{전제 — metric shopping이 아닌 이유.} 가이드 §20.2가 \textbf{지기 전에} "RACE가 모든 IID setting에서 XGBoost를 이길 필요는 없다, 다만 general 성능과 benign safety를 훼손하면 안 된다"고 선언해 뒀다. 조건 셋: ① IID 표를 \textbf{지는 숫자까지 그대로} 1번 표로 유지, ② XGB를 \textbf{같은 run}에서 계산, ③ 각 축의 문턱을 run 전에 등록.
+
+\subsubsection{축 A (1차) — 조건부 개입의 안전성과 운용점}
+주장: \emph{"frozen FM 위에 되돌릴 수 없는 손해 없이 조건부 교정층을 얹고, 운용점을 보정으로 통제한다."}
+
+\par\noindent \textbullet\enspace 지표: 클래스별 4-way transition(§22) +\allowbreak{} harmful rate +\allowbreak{} Clopper–Pearson CI, override precision, benign FPR 증분, net correction/\allowbreak{}1M, ECE.
+
+
+\par\noindent \textbullet\enspace 현재: helpful 12,710 /\allowbreak{} harmful 4  \ensuremath{\rightarrow}  precision 0.9997, benign FPR 0.004139 vs 0.004138(불변), ECE 0.0079 vs 0.0091, balanced acc 0.6941 vs 0.6647.
+
+
+\par\noindent \textbullet\enspace \textbf{대조군이 결정적}: 같은 bank에서 verifier만 빼면 \texttt{top1\_\allowbreak{}\allowbreak{}nov\allowbreak{}erify} 0.5199, \texttt{nearest\_\allowbreak{}\allowbreak{}centroid\allowbreak{}} 0.4572 — \textbf{검증 없는 라우팅은 −0.18\textasciitilde{}−0.24로 붕괴}한다. XGB가 아니라 라우팅/\allowbreak{}MoE 문헌과 겨루는 명제.
+
+
+\par\noindent \textbullet\enspace \textbf{harm–gain 프론티어}(핵심 그림): exp22c 0.7428/\allowbreak{}harmful 8,524/\allowbreak{}1.60회  \ensuremath{\leftrightarrow}  24b-off 0.6978/\allowbreak{}harmful 4/\allowbreak{}1.16회. 같은 시스템의 운용점 선택 문제로 제시.
+
+
+\par\noindent \textbullet\enspace 정직성 가드: "채택 행에서 global 0.0012  \ensuremath{\rightarrow}  시스템 0.9991"은 gain으로 선택된 부분집합이므로 \textbf{단독 인용 금지}, (채택 수, 비율, harmful CI) 3종 세트로만. harmful 4는 τ 그리드 전 구간에서 0\textasciitilde{}1이므로 \textbf{판별력이 아니라 운용점의 성질}임을 명시.
+
+
+\subsubsection{축 B (1차) — context 갱신/\allowbreak{}보강}
+원래 "authentic temporal drift 회복"으로 세우려 했으나 \textbf{원인 A가 근거를 무너뜨렸다}(사건이 train pool 안에 있고 XGB가 recall 0.9998로, 무작위 블록도 푼다). 살아남는 형태 둘:
+
+\par\noindent \textbullet\enspace \textbf{context coverage}(즉시): "1M context를 클래스내 시간순이 아니라 scenario-피복으로 뽑으면 무엇이 회복되는가". 가이드 §6이 이미 요구하던 것. 대조: chrono C0 /\allowbreak{} random C0 /\allowbreak{} stratified C0.
+
+
+\par\noindent \textbullet\enspace \textbf{§17 prequential refresh}(전역 재분할 후): 같은 공개 행으로 4 arm — (i) B=\allowbreak{}0, (ii) XGB warm-start, (iii) XGB 전체 재학습, (iv) \textbf{experts·scorer·verifier 없이 B행을 C0에 붙인 global}. (iv)가 가장 싸고 가장 치명적인 대조군.
+
+
+\par\noindent \textbullet\enspace 지표: window별 macro/\allowbreak{}tail, \textbf{라벨당 회복량}, 적응 wall-clock, forgetting.
+
+
+\subsubsection{보조 축 (표는 만들되 단독 주장 금지)}
+\par\noindent \textbullet\enspace \textbf{선택적 예측}: \texttt{g\_\allowbreak{}\allowbreak{}lower} 기반 risk–coverage +\allowbreak{} AURC. 오늘 offline 확인 — 시스템이 모든 coverage에서 global 우위(cov 1.0 err 0.0374 vs 0.0405). \textbf{y축은 balanced/\allowbreak{}cost-weighted risk} (macro-F1은 coverage에 비단조 — cov 0.95에서 0.649로 하락).
+
+
+\par\noindent \textbullet\enspace \textbf{비용(§20.6)}: 호출률·wasted call·latency p50/\allowbreak{}p95/\allowbreak{}p99·peak GPU. 실측 배수 **2.044×**로 적고, "XGB보다 싸다"는 주장은 하지 않는다(비교 대상은 dense all-expert).
+
+
+\par\noindent \textbullet\enspace \textbf{regime 단위 평가}: 활성률 15.76\%의 개입이 클래스 평균에서 희석되는 것을 드러내는 진단용.
+
+
+\par\noindent \textbullet\enspace \textbf{unique-hash view}: 중복 48\%를 제외한 재계산을 oracle·per-class 표에 병기(원인 E-3).
+
+
+\subsubsection{축별 baseline 공정성 (어기면 전부 무효)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.32778\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.67222\linewidth-2\tabcolsep\relax}}
+\toprule
+축 & 요건 \\ \midrule
+\endfirsthead
+축 & 요건 \\ \midrule
+\endhead
+{}A & XGB는 개입 대상이 아님  \ensuremath{\rightarrow}  비교는 다른 라우팅 정책(no-verify, nearest-centroid, dense oracle). 매칭된 채택 수의 random-null 필수 \\
+{}B & 같은 B행으로 XGB warm-start·전체 재학습 \textbf{둘 다}, 같은 wall-clock에서 \\
+{}선택적 예측 & XGB에 D\_\allowbreak{}cal temperature scaling +\allowbreak{} 동일 confidence 정의 \\
+{}비용 & global PFN 자신의 비용 포함, 호출 수를 wall-clock 배수로 환산 금지 \\
+{}전 축 & \texttt{8a}가 보여주듯 known-prior 보정을 주면 XGB가 압승 — 그 표를 숨기지 않는다 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{항상 같이 보고할 표}
+① IID guardrail(per-class +\allowbreak{} macro/\allowbreak{}tail/\allowbreak{}balanced acc/\allowbreak{}AUPRC/\allowbreak{}benign FPR/\allowbreak{}ECE, XGB 3종·global·oracle 동일 run) ② intervention(transition+\allowbreak{}CI, 프론티어, no-verify 대조) ③ cost ④ selective ⑤ temporal ⑥ 재현성(최종 구성만 5 seed +\allowbreak{} scenario/\allowbreak{}day paired block bootstrap, 모든 표에 E-2 대역 병기)
+
+
+\medskip\hrule\medskip
+\subsection{4. 문서 부채}
+논문 본문은 결과 확보 후 재개(현 \texttt{main.\allowbreak{}tex\allowbreak{}}는 TAILGUARD 껍데기, abstract·결론 TBD, 결과 표 0개). 다만 \textbf{인용 문헌 수집은 병행} — selective prediction/\allowbreak{}AURC, prequential, 통계검정, OSCR이 \texttt{referenc\allowbreak{}e/\allowbreak{}\allowbreak{}papers\allowbreak{}/\allowbreak{}\allowbreak{}} 43편에 커버리지 0이고, \texttt{main.\allowbreak{}tex\allowbreak{}:502}의 OSCR 정의엔 미확인 경고 주석이 남아 있다.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

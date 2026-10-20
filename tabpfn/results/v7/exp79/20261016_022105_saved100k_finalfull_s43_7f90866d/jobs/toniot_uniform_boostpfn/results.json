@@ -1,0 +1,325 @@
+{
+  "dataset": "toniot",
+  "case": "uniform",
+  "method": "boostpfn",
+  "seed": 43,
+  "evaluation": "final_full_test",
+  "test_order": "original",
+  "batch": 8192,
+  "test_rows": 2271723,
+  "training_rows": 100000,
+  "final_stage": 5,
+  "source_model_dir": "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_uniform_boostpfn/stage_5",
+  "source_fit_metrics": {
+    "method": "boostpfn",
+    "dataset": "toniot",
+    "update_seconds": 62.63319660999696,
+    "cost_repetitions": [],
+    "update_median_seconds": 62.50058087999059,
+    "train_rows": 100000,
+    "validation_rows": 8605,
+    "class_names": [
+      "benign",
+      "scanning",
+      "dos",
+      "injection",
+      "ddos",
+      "password",
+      "xss",
+      "ransomware",
+      "backdoor",
+      "mitm"
+    ],
+    "train_class_counts": [
+      75000,
+      2856,
+      2856,
+      2856,
+      2856,
+      2856,
+      2856,
+      2151,
+      2857,
+      2856
+    ],
+    "phases": [
+      {
+        "phase": "model_load",
+        "seconds": 0.0005423809925559908,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 62.50003849899804,
+        "complete": true
+      },
+      {
+        "phase": "predict",
+        "seconds": 0.4364430660061771,
+        "complete": true
+      }
+    ],
+    "peak_gpu_gib": 0.609375,
+    "stage": 5,
+    "case": "uniform",
+    "input_prepare_seconds": 0.13261573000636417,
+    "train_ids_sha256": "84ba83ed6706311d3562c04ca3e0619c473a5fee24c8d90cb71a821243120382",
+    "validation_ids_sha256": "295e580b8e970f6f13b91f668e6b4fff1cfd6b81abd0dee9e4e2b4b70226a5e2",
+    "validation_available_rows": 8605,
+    "validation_used_rows": 0,
+    "global_class_indices": [
+      1,
+      8,
+      3,
+      4,
+      2,
+      6,
+      9,
+      7,
+      0,
+      5
+    ]
+  },
+  "source_hashes": {
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_uniform_boostpfn/stage_5/fit_metrics.json": "29e8d44268a0103301b6a187f363cdc9e727218b281055a78bf56cd0a0b587ac",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_uniform_boostpfn/stage_5/train_ids.npy": "dd1d6610311c3940bfd5768ed0aa4c519d0f419d2d3ddbb74c2a1d0bdeabf4c8",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_uniform_boostpfn/stage_5/boost_state.npz": "7c29d1a888e339f665770d5f4b6f8d59a20e083a2b2c4694c7e1fb5fd2d09a00",
+    "tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt": "517c40ca21e0e1b1fa6629ded4b0412ffb7b2e577eb6cb96e5be5c487fadfb03"
+  },
+  "metrics": {
+    "rows": 2271723,
+    "confusion": [
+      [
+        39902,
+        112,
+        0,
+        4,
+        0,
+        4,
+        0,
+        0,
+        2,
+        6
+      ],
+      [
+        51,
+        1254592,
+        2318,
+        2575,
+        7487,
+        38200,
+        47068,
+        7758,
+        135,
+        114118
+      ],
+      [
+        0,
+        10096,
+        89369,
+        1069,
+        724,
+        66,
+        165,
+        20,
+        1,
+        1828
+      ],
+      [
+        0,
+        141,
+        8,
+        21495,
+        7,
+        138,
+        0,
+        1,
+        0,
+        668
+      ],
+      [
+        0,
+        2313,
+        388,
+        79,
+        63948,
+        95,
+        333,
+        1,
+        115,
+        1619
+      ],
+      [
+        0,
+        103,
+        2,
+        37,
+        13,
+        979,
+        0,
+        0,
+        0,
+        27
+      ],
+      [
+        0,
+        3048,
+        984,
+        5,
+        844,
+        46,
+        200758,
+        0,
+        0,
+        5266
+      ],
+      [
+        0,
+        39,
+        8,
+        0,
+        0,
+        0,
+        0,
+        660,
+        2,
+        0
+      ],
+      [
+        3,
+        4791,
+        53,
+        0,
+        18,
+        5,
+        7,
+        9,
+        1083,
+        60
+      ],
+      [
+        0,
+        32065,
+        1619,
+        880,
+        17425,
+        1083,
+        3139,
+        1740,
+        41,
+        285862
+      ]
+    ],
+    "macro_f1": 0.6576836346606203,
+    "benign_false_positive_rate": 0.14902645455273072,
+    "attack_to_benign": 52708,
+    "wrong_attack_family": 40657,
+    "attack_detection_recall": 0.9339019163026807,
+    "classes": [
+      {
+        "name": "backdoor",
+        "support": 40030,
+        "precision": 0.9986485133647012,
+        "recall": 0.996802398201349,
+        "f1": 0.997724601805316,
+        "TP": 39902,
+        "FP": 54,
+        "FN": 128
+      },
+      {
+        "name": "benign",
+        "support": 1474302,
+        "precision": 0.9596817868890078,
+        "recall": 0.8509735454472693,
+        "f1": 0.9020643499681119,
+        "TP": 1254592,
+        "FP": 52708,
+        "FN": 219710
+      },
+      {
+        "name": "ddos",
+        "support": 103338,
+        "precision": 0.9432183980833571,
+        "recall": 0.864822233834601,
+        "f1": 0.9023206974713132,
+        "TP": 89369,
+        "FP": 5380,
+        "FN": 13969
+      },
+      {
+        "name": "dos",
+        "support": 22458,
+        "precision": 0.8221771725826194,
+        "recall": 0.9571199572535399,
+        "f1": 0.8845315007612855,
+        "TP": 21495,
+        "FP": 4649,
+        "FN": 963
+      },
+      {
+        "name": "injection",
+        "support": 68891,
+        "precision": 0.7068733004664736,
+        "recall": 0.928248973015343,
+        "f1": 0.8025753496865529,
+        "TP": 63948,
+        "FP": 26518,
+        "FN": 4943
+      },
+      {
+        "name": "mitm",
+        "support": 1161,
+        "precision": 0.024103801457553673,
+        "recall": 0.843238587424634,
+        "f1": 0.04686789381717213,
+        "TP": 979,
+        "FP": 39637,
+        "FN": 182
+      },
+      {
+        "name": "password",
+        "support": 210951,
+        "precision": 0.7983377738895295,
+        "recall": 0.9516807220634176,
+        "f1": 0.8682910161951988,
+        "TP": 200758,
+        "FP": 50712,
+        "FN": 10193
+      },
+      {
+        "name": "ransomware",
+        "support": 709,
+        "precision": 0.06477573854156443,
+        "recall": 0.9308885754583921,
+        "f1": 0.1211231418608919,
+        "TP": 660,
+        "FP": 9529,
+        "FN": 49
+      },
+      {
+        "name": "scanning",
+        "support": 6029,
+        "precision": 0.78535170413343,
+        "recall": 0.17963177973129874,
+        "f1": 0.2923866090712743,
+        "TP": 1083,
+        "FP": 296,
+        "FN": 4946
+      },
+      {
+        "name": "xss",
+        "support": 343854,
+        "precision": 0.6981541272035442,
+        "recall": 0.8313470251909241,
+        "f1": 0.7589511859690857,
+        "TP": 285862,
+        "FP": 123592,
+        "FN": 57992
+      }
+    ]
+  },
+  "predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp79/20261016_022105_saved100k_finalfull_s43_7f90866d/jobs/toniot_uniform_boostpfn/predictions.npy",
+  "serving_seconds": 329.3497922824463,
+  "training_rerun": false,
+  "restoration_mismatches": 0
+}

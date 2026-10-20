@@ -1,0 +1,173 @@
+{
+  "update_seconds": 7.876656770997215,
+  "phases": [
+    {
+      "phase": "global_construct",
+      "seconds": 0.0013682339922524989
+    },
+    {
+      "phase": "global_fit",
+      "seconds": 1.3717186839930946
+    },
+    {
+      "phase": "global_embedding",
+      "seconds": 0.544597435000469
+    },
+    {
+      "phase": "embedding_pca",
+      "seconds": 0.02016886199999135
+    },
+    {
+      "phase": "temperature_predictions",
+      "seconds": 0.10121293499832973
+    },
+    {
+      "phase": "residual_predictions",
+      "seconds": 0.2824451390042668
+    },
+    {
+      "phase": "residual_embedding",
+      "seconds": 0.2956672959990101
+    },
+    {
+      "phase": "residual_clustering",
+      "seconds": 0.02083136599685531
+    },
+    {
+      "phase": "global_route",
+      "seconds": 0.29298910999204963
+    },
+    {
+      "phase": "embedding_route",
+      "seconds": 0.2979586730070878
+    },
+    {
+      "phase": "global_cal",
+      "seconds": 0.1236680959991645
+    },
+    {
+      "phase": "embedding_cal",
+      "seconds": 0.12566245000925846
+    },
+    {
+      "phase": "expert1_construct",
+      "seconds": 6.914499681442976e-05
+    },
+    {
+      "phase": "expert1_fit",
+      "seconds": 0.7299999050010229
+    },
+    {
+      "phase": "expert1_route",
+      "seconds": 0.2765835239988519
+    },
+    {
+      "phase": "expert1_cal",
+      "seconds": 0.1201091289985925
+    },
+    {
+      "phase": "expert2_construct",
+      "seconds": 5.1466995500959456e-05
+    },
+    {
+      "phase": "expert2_fit",
+      "seconds": 0.5536665899999207
+    },
+    {
+      "phase": "expert2_route",
+      "seconds": 0.24804514700372238
+    },
+    {
+      "phase": "expert2_cal",
+      "seconds": 0.10423335400992073
+    },
+    {
+      "phase": "expert3_construct",
+      "seconds": 5.1741008064709604e-05
+    },
+    {
+      "phase": "expert3_fit",
+      "seconds": 0.5345810290018562
+    },
+    {
+      "phase": "expert3_route",
+      "seconds": 0.23993171600159258
+    },
+    {
+      "phase": "expert3_cal",
+      "seconds": 0.10025478299940005
+    },
+    {
+      "phase": "expert4_construct",
+      "seconds": 5.193000833969563e-05
+    },
+    {
+      "phase": "expert4_fit",
+      "seconds": 0.5292110989976209
+    },
+    {
+      "phase": "expert4_route",
+      "seconds": 0.2393788850022247
+    },
+    {
+      "phase": "expert4_cal",
+      "seconds": 0.10004924399254378
+    },
+    {
+      "phase": "affinity_indices",
+      "seconds": 0.00045212199620436877
+    },
+    {
+      "phase": "S1V0_fit",
+      "seconds": 0.47539413199410774
+    },
+    {
+      "phase": "threshold_selection",
+      "seconds": 0.02914226100256201
+    }
+  ],
+  "train_rows": 18212,
+  "validation_rows": 3000,
+  "global_rows": 9106,
+  "experts": 4,
+  "context_recipe": "common anchor + residual cluster block (all cluster rows below original 186000 cap)",
+  "policy": "EXP62 S1V0; original features, targets and threshold constraints",
+  "class_names": [
+    "benign",
+    "scanning",
+    "dos"
+  ],
+  "protocol_adaptations": [
+    "100k training budget plus separate validation; causal feature-group-disjoint role allocation",
+    "all disjoint D_cal selects thresholds; no chronological cal-confirm split",
+    "tail constraint neutral until original tail classes appear"
+  ],
+  "selection": {
+    "tau_pre": null,
+    "tau_post": null,
+    "delta_macro_f1": 0.0,
+    "delta_tail_f1": 0.0,
+    "delta_benign_fpr": 0.0,
+    "accepted": 0,
+    "changed": 0,
+    "helpful": 0,
+    "harmful": 0,
+    "feasible": true,
+    "proposal_rate": 0.0,
+    "reason": "global_fallback"
+  },
+  "stage": 0,
+  "dataset": "toniot",
+  "case": "uniform",
+  "method": "ours",
+  "input_prepare_seconds": 0.11711128799652215,
+  "train_ids_sha256": "eb260dfb7a3dbc868eb6fbd7d090f83d573751e3c98d04fe169f9b2a3238beb4",
+  "validation_ids_sha256": "38d84768aaabc311e34516955c3eb3ef6dcbe1b6f06c5eb91196038a33fb5d87",
+  "validation_available_rows": 3000,
+  "validation_used_rows": 3000,
+  "global_class_indices": [
+    1,
+    8,
+    3
+  ]
+}

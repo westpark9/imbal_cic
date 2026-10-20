@@ -1,0 +1,3085 @@
+{
+  "source_deck": "docs/slides/kor/1002_labmeeting_ko_draft.pptx",
+  "source_deck_sha256": "922ed2a9f0114bbff25fe0de552f4f5c654cc0915d45d70c898b2a6b588b2c8f",
+  "output": "docs/slides/kor/1015_labmeeting_ko.pptx",
+  "slides": [
+    {
+      "page": 1,
+      "title": "TabPFN v3의 작동과 IDS context 갱신",
+      "section": "랩미팅",
+      "band": "",
+      "notes": ""
+    },
+    {
+      "page": 2,
+      "title": "0. 연구 관점 · 고정된 F1 경쟁에서 변화에 대응하는 IDS로",
+      "section": "00 연구 방향",
+      "band": "새 사례 반영 품질·사용 데이터·갱신 비용으로 모델의 유용성 평가",
+      "notes": "User item 0 precedes the TabPFN explanation. Network changes are the operational motivation, not a new cross-dataset experiment or an established robustness result. ICD Introduction motivates pretraining and transfer in tabular prediction; its §4 tuned-XGB comparison is historical benchmark evidence, not a universal conclusion about v3. https://arxiv.org/pdf/2402.06971"
+    },
+    {
+      "page": 3,
+      "title": "TabPFN · 표 데이터의 예측 규칙을 사전학습한 모델",
+      "section": "01 작동 원리",
+      "band": "라벨 사례를 context로 제공하고, 정답이 없는 query의 확률 예측",
+      "notes": "PFN = Prior-data Fitted Network. Context is labelled task data, not a natural-language prompt. PriorLabs TabPFN-3 report §2; local architecture and classifier implementation. https://arxiv.org/pdf/2605.13986"
+    },
+    {
+      "page": 4,
+      "title": "Context와 query · 모델에 전달되는 두 종류의 행",
+      "section": "01 작동 원리",
+      "band": "Context에는 라벨 포함 · query의 정답은 평가에만 사용",
+      "notes": "Illustrative schema, no fabricated performance values. Context rows and held-out query rows remain distinct. Classification output labels are those represented by the fitted context."
+    },
+    {
+      "page": 5,
+      "title": "현재 실험의 TabPFN v3 설정",
+      "section": "01 작동 원리",
+      "band": "1014 실행과 동일한 checkpoint·추론 설정을 기준으로 설명",
+      "notes": "Actual saved checkpoint config inspected with torch.load. Parameters counted and hashed in docs/research/20261015/tabpfn_fit_mechanism_check.json. Version 8.2.0 is the installed library, not the model generation. Local checkpoint: tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt. Model report Appendix C; support ceilings are not measured IDS performance."
+    },
+    {
+      "page": 6,
+      "title": "v3 구조 · 열의 분포에서 행 단위 표현으로",
+      "section": "01 작동 원리",
+      "band": "열의 정보를 먼저 통합한 뒤 행 사이의 관계를 추론",
+      "notes": "Redrawn from local architectures/tabpfn_v3.py TabPFNV3 docstring and forward path, with report Figure 5 as architecture cross-check. Local checkpoint: feature_group_size=3, dist_embed_num_blocks=3, feat_agg_num_blocks=3, feat_agg_num_cls_tokens=4. https://arxiv.org/pdf/2605.13986#page=6"
+    },
+    {
+      "page": 7,
+      "title": "v3 구조 · context 관계와 클래스 확률의 계산",
+      "section": "01 작동 원리",
+      "band": "새 클래스의 라벨 사례를 context에 넣어 출력 클래스에 반영",
+      "notes": "Local ICLTransformerBlock uses train-only keys; ManyClassDecoder uses train representations and one-hot labels. Report §§2.1–2.2, Figure 5. The actual checkpoint has max_num_classes=160; this is a checkpoint constraint even though decoder weights are independent of class count. No unlabeled novel-class naming is implied."
+    },
+    {
+      "page": 8,
+      "title": "fit과 predict · context 캐시의 생성과 재사용",
+      "section": "01 작동 원리",
+      "band": "가중치가 고정되어도 context 준비와 query 계산 비용 발생",
+      "notes": "1014: scripts/v7/exp72/replay_models.py fit_stage calls TabPFNClassifier.fit, using get_model in exp71_bounded_updates.py. fit_with_cache builds context-dependent state and predict reuses it. Actual parameter SHA-256 unchanged after 1000→1020 fit: see mechanism check. The current library does not incrementally append 20 rows to the old cached state in this experiment. Report §2.4.2 distinguishes cache build vs cached predict."
+    },
+    {
+      "page": 9,
+      "title": "데이터 적응의 세 방식과 학습 대상",
+      "section": "02 미세조정",
+      "band": "Context 갱신과 가중치 fine-tuning은 서로 다른 적응 연산",
+      "notes": "TabPFNClassifier versus FinetunedTabPFNClassifier in installed official 8.2.0 source. ICD optimizes input context features through a frozen model, as Ma et al. 2024. 1014 ordinary PFN used row 1; EXP75 used context-feature optimization; EXP74 trained external classification heads and is not the user-referenced experiment."
+    },
+    {
+      "page": 10,
+      "title": "v3 가중치 fine-tuning · 학습 절차",
+      "section": "02 미세조정",
+      "band": "Query 정답의 손실로 θ 갱신 · 미세조정 이후에도 context를 사용",
+      "notes": "The v3 report describes architecture and variants but is not a detailed task-specific fine-tuning tutorial. Procedure here is grounded in the installed official finetuning/finetuned_base.py and finetuned_classifier.py. Cross entropy over query labels; AdamW; explicit independent validation; final inference classifier fits X_, y_. https://github.com/PriorLabs/TabPFN/blob/main/src/tabpfn/finetuning/finetuned_classifier.py"
+    },
+    {
+      "page": 11,
+      "title": "가중치 fine-tuning의 실제 설정 항목",
+      "section": "02 미세조정",
+      "band": "",
+      "notes": "Illustrative configuration only, not a new quality result. Pin checkpoint with extra_classifier_kwargs[model_path]. Use epochs=10, learning_rate=1e-5, context+query=1024, query ratio=.2, one estimator as an initial engineering smoke configuration, not a tuned best setting. Validation supplied separately; no test tuning. Official repository recommends high-memory GPU for its 50k example, so batch/context size must be validated on this 24GB GPU."
+    },
+    {
+      "page": 12,
+      "title": "신규 사례만 사용하는 갱신의 의미",
+      "section": "02 미세조정",
+      "band": "이번 a·b·c 비교의 중심은 context에 어떤 사례를 유지하는지",
+      "notes": "User clarified 1000 and 20 were examples, not required sample counts. Ordinary classifier supports a newly represented class through labels in context. A naive FinetunedTabPFNClassifier.fit on a single new class is not equivalent to old-context-plus-new-class training: its train/context label space and validation differ. New-query-only gradients with old context retained need a separate controlled training loop and old-class retention validation; not silently substituted into this experiment."
+    },
+    {
+      "page": 13,
+      "title": "갱신 비용 · 새 모델을 사용할 수 있는 시점까지",
+      "section": "03 연구 방향",
+      "band": "가중치 최적화의 유무와 전체 갱신·추론 비용을 분리",
+      "notes": "Update includes selection/similarity/preprocessing/context cache or model fitting. Initial load distinguished. Serving includes actual input gathering/preprocessing/inference. Hardware and estimator/batch settings fixed within experiment; no speed comparison across incompatible workloads. Use initial + sum updates + serving(Q), not fit time alone. No monetary or energy measurement is claimed."
+    },
+    {
+      "page": 14,
+      "title": "평가 시나리오 · 라벨된 공격 클래스의 순차 도입",
+      "section": "04 실험 설계",
+      "band": "등장 전 공격 라벨 미사용 · 방법별 동일 평가 행 사용",
+      "notes": "STAGES inherited from exp69; 1014 EXP72 test partition shares full clean test rows. Sequence describes class availability, not raw timestamp replay or network drift. Order is introduction order, not class-support sort, because these are timeline cells. Updated experiment evaluates instant-ready versions and measures update cost separately."
+    },
+    {
+      "page": 15,
+      "title": "1014 결과 · 누적 10만 사례의 품질과 갱신 비용",
+      "section": "05 기존 근거",
+      "band": "전체 context 재구성 비용을 줄이기 위한 소규모 context 비교",
+      "notes": "Exact EXP72 source tabpfn/results/v7/exp72/20261014_134735_replay_100k_xgb_tabpfn_s43_de8b4a78/results.json. Aggregate ideal replay over all original test rows, seed 43. Update is stage 1 onward, excludes initial build. Natural/uniform refer to attack-label training allocation, not test balancing. No new experiment or v3 parameter fine-tuning is represented by this table."
+    },
+    {
+      "page": 16,
+      "title": "추가 비교 · 누적·고정 버퍼·갱신 없음",
+      "section": "04 실험 설계",
+      "band": "",
+      "notes": "User examples shown explicitly as examples. Experimental defaults are initial 1000, 100 per new class. Policies all receive same released data, but fixed deliberately does not use later labels; information actually consumed is reported. b protects >=1 row per existing class. Not an incremental KV-cache implementation."
+    },
+    {
+      "page": 17,
+      "title": "고정 버퍼의 삭제 기준",
+      "section": "04 실험 설계",
+      "band": "",
+      "notes": "FIFO denotes oldest acquisition, not measured semantic obsolescence. Similarity uses old-context StandardScaler and distance to new labelled train cases, never test. All three rules retain at least one example of each old class. Same-stage ties use seeded acquisition order. Nearest-row removal may damage discrimination: hypothesis only."
+    },
+    {
+      "page": 18,
+      "title": "EXP76 · 첫 소규모 context 비교 설정",
+      "section": "04 실험 설계",
+      "band": "",
+      "notes": "Full protocol docs/research/20261015/exp76_protocol.md. 100 per new class is an investigator setting, not a user-imposed value. 8192 batches differ from 1014; direct timing comparison is not valid. No cross-network transfer claim. New results are exploratory, same previously examined fixed test, single seed."
+    },
+    {
+      "page": 19,
+      "title": "CIC2018 · 소규모 context의 품질과 비용",
+      "section": "06 추가 결과",
+      "band": "",
+      "notes": "Source tabpfn/results/v7/exp76/20261015_212937_context1000_new100_s43_1c62d14c/results.json. All test rows, one seed, instant-ready replay. New label budget and prediction batch differ from 1014. Missing rows mean unfinished, never fabricated. Classwise metrics and support are in the experiment artifacts."
+    },
+    {
+      "page": 20,
+      "title": "CIC2018 · 클래스별 구분 성능과 버퍼 정책",
+      "section": "06 추가 결과",
+      "band": "",
+      "notes": "Same full test population as preceding aggregate table. Classes sorted by evaluated support descending. Values are class F1 percentages; support is actual evaluation support, not training budget. All three buffer policies shown, without choosing a test-best policy."
+    },
+    {
+      "page": 21,
+      "title": "ToN · 소규모 context의 품질과 비용",
+      "section": "06 추가 결과",
+      "band": "",
+      "notes": "Source tabpfn/results/v7/exp76/20261015_212937_context1000_new100_s43_1c62d14c/results.json. All test rows, one seed, instant-ready replay. New label budget and prediction batch differ from 1014. Missing rows mean unfinished, never fabricated. Classwise metrics and support are in the experiment artifacts."
+    },
+    {
+      "page": 22,
+      "title": "ToN · 클래스별 구분 성능과 버퍼 정책",
+      "section": "06 추가 결과",
+      "band": "",
+      "notes": "Same full test population as preceding aggregate table. Classes sorted by evaluated support descending. Values are class F1 percentages; support is actual evaluation support, not training budget. All three buffer policies shown, without choosing a test-best policy."
+    },
+    {
+      "page": 23,
+      "title": "채택 판단 · 품질을 유지하는 작은 context와 낮은 갱신 비용",
+      "section": "07 후속 판단",
+      "band": "",
+      "notes": "Do not claim statistical equivalence without a predeclared margin and repeated data/seeds. Update latency and raw throughput have different meanings. New class F1 and old class errors/FPR must be inspected before choosing a policy; do not select a final model solely from this test ranking. Manuscript changes are proposals only under user steering."
+    },
+    {
+      "page": 24,
+      "title": "부록 · v3 원문의 전체 구조",
+      "section": "부록",
+      "band": "",
+      "notes": "Original Figure 5 from TabPFN-3 Technical Report, PDF page 6. Cropped only to figure bounds using native PPTX picture crop; no diagram content altered. https://arxiv.org/pdf/2605.13986#page=6"
+    },
+    {
+      "page": 25,
+      "title": "부록 · v3 fine-tuning 코드 예시",
+      "section": "부록",
+      "band": "",
+      "notes": "Illustrative official API usage, not a reported experiment. Adapt context/query size to GPU and label counts. Verify validation disjointness before use. Model checkpoint is explicitly pinned. This snippet intentionally does not fit only a single newly arriving class. https://github.com/PriorLabs/TabPFN/blob/main/src/tabpfn/finetuning/finetuned_classifier.py"
+    }
+  ],
+  "text_boxes": [
+    {
+      "page": 1,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "TabPFN v3의 작동과 IDS context 갱신",
+      "font_size": 28
+    },
+    {
+      "page": 1,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "랩미팅",
+      "font_size": 10
+    },
+    {
+      "page": 1,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "1",
+      "font_size": 10
+    },
+    {
+      "page": 1,
+      "x": 0.68,
+      "y": 1.65,
+      "w": 11.7,
+      "h": 1.4,
+      "text": "사전학습 모델의 활용과\n적은 사례로 새 공격을 반영하는 방식",
+      "font_size": 36
+    },
+    {
+      "page": 1,
+      "x": 0.7,
+      "y": 3.55,
+      "w": 11.8,
+      "h": 1.1,
+      "text": "TabPFN과 v3 작동 원리 · 가중치 fine-tuning\n누적 context · 고정 버퍼 · 갱신 없는 추론",
+      "font_size": 23
+    },
+    {
+      "page": 1,
+      "x": 0.7,
+      "y": 5.55,
+      "w": 10,
+      "h": 0.5,
+      "text": "랩미팅   2026년 10월 15일",
+      "font_size": 19
+    },
+    {
+      "page": 2,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "0. 연구 관점 · 고정된 F1 경쟁에서 변화에 대응하는 IDS로",
+      "font_size": 28
+    },
+    {
+      "page": 2,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "새 사례 반영 품질·사용 데이터·갱신 비용으로 모델의 유용성 평가",
+      "font_size": 13
+    },
+    {
+      "page": 2,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "00 연구 방향",
+      "font_size": 10
+    },
+    {
+      "page": 2,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "2",
+      "font_size": 10
+    },
+    {
+      "page": 2,
+      "x": 0.7,
+      "y": 1.5,
+      "w": 2.25,
+      "h": 0.5,
+      "text": "기존 관점",
+      "font_size": 23
+    },
+    {
+      "page": 2,
+      "x": 3.15,
+      "y": 1.5,
+      "w": 9.4,
+      "h": 1.28,
+      "text": "고정된 공격 클래스의 closed-set F1 향상에 집중\nICD의 정적 벤치마크에서도 tuned XGB의 강세\n수치 경쟁에서 실제 갱신 능력의 평가로 전환 필요",
+      "font_size": 21
+    },
+    {
+      "page": 2,
+      "x": 0.7,
+      "y": 3.0,
+      "w": 2.25,
+      "h": 0.5,
+      "text": "운영의 요구",
+      "font_size": 23
+    },
+    {
+      "page": 2,
+      "x": 3.15,
+      "y": 3.0,
+      "w": 9.4,
+      "h": 1.28,
+      "text": "네트워크 환경·공격 양상이 바뀌는 상황\n기존 분포에서 높은 F1만으로 갱신 후 탐지 능력 설명 곤란",
+      "font_size": 21
+    },
+    {
+      "page": 2,
+      "x": 0.7,
+      "y": 4.5,
+      "w": 2.25,
+      "h": 0.5,
+      "text": "연구의 전환",
+      "font_size": 23
+    },
+    {
+      "page": 2,
+      "x": 3.15,
+      "y": 4.5,
+      "w": 9.4,
+      "h": 1.28,
+      "text": "TabPFN을 기본 모델로 채택하고 새 사례를 context로 반영\n적은 라벨과 낮은 갱신 비용에서 필요한 탐지 품질 확보",
+      "font_size": 21
+    },
+    {
+      "page": 2,
+      "x": 0.64,
+      "y": 6.57,
+      "w": 12,
+      "h": 0.3,
+      "text": "Ma et al., In-Context Data Distillation with TabPFN, ICLR 2024 ME-FoMo Workshop",
+      "font_size": 11
+    },
+    {
+      "page": 3,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "TabPFN · 표 데이터의 예측 규칙을 사전학습한 모델",
+      "font_size": 28
+    },
+    {
+      "page": 3,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "라벨 사례를 context로 제공하고, 정답이 없는 query의 확률 예측",
+      "font_size": 13
+    },
+    {
+      "page": 3,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "01 작동 원리",
+      "font_size": 10
+    },
+    {
+      "page": 3,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "3",
+      "font_size": 10
+    },
+    {
+      "page": 3,
+      "x": 0.78,
+      "y": 1.8800000000000001,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "사전학습",
+      "font_size": 20
+    },
+    {
+      "page": 3,
+      "x": 0.79,
+      "y": 2.6,
+      "w": 3.41,
+      "h": 1.55,
+      "text": "다양한 합성 표 데이터\n일부 라벨을 가린 예측 과제\n공통 가중치 θ 학습",
+      "font_size": 17
+    },
+    {
+      "page": 3,
+      "x": 4.39,
+      "y": 2.8499999999999996,
+      "w": 0.35,
+      "h": 0.4,
+      "text": "→",
+      "font_size": 23
+    },
+    {
+      "page": 3,
+      "x": 4.930000000000001,
+      "y": 1.8800000000000001,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "새 IDS 데이터",
+      "font_size": 20
+    },
+    {
+      "page": 3,
+      "x": 4.94,
+      "y": 2.6,
+      "w": 3.41,
+      "h": 1.55,
+      "text": "알려진 특징 Xc와 라벨 yc\n예측 대상의 특징 xq\n정답 yq는 입력에서 제외",
+      "font_size": 17
+    },
+    {
+      "page": 3,
+      "x": 8.54,
+      "y": 2.8499999999999996,
+      "w": 0.35,
+      "h": 0.4,
+      "text": "→",
+      "font_size": 23
+    },
+    {
+      "page": 3,
+      "x": 9.08,
+      "y": 1.8800000000000001,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "In-context learning",
+      "font_size": 20
+    },
+    {
+      "page": 3,
+      "x": 9.09,
+      "y": 2.6,
+      "w": 3.41,
+      "h": 1.55,
+      "text": "사례의 관계를 이용한 추론\n현재 데이터에 따른 예측\n기본 동작에서 θ 고정",
+      "font_size": 17
+    },
+    {
+      "page": 3,
+      "x": 0.85,
+      "y": 5.02,
+      "w": 11.6,
+      "h": 0.7,
+      "text": "pθ(yq | xq, Xc, yc)",
+      "font_size": 28
+    },
+    {
+      "page": 3,
+      "x": 0.64,
+      "y": 6.57,
+      "w": 12,
+      "h": 0.3,
+      "text": "Prior Labs, TabPFN-3: Technical Report, 2026 · §2",
+      "font_size": 11
+    },
+    {
+      "page": 4,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "Context와 query · 모델에 전달되는 두 종류의 행",
+      "font_size": 28
+    },
+    {
+      "page": 4,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "Context에는 라벨 포함 · query의 정답은 평가에만 사용",
+      "font_size": 13
+    },
+    {
+      "page": 4,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "01 작동 원리",
+      "font_size": 10
+    },
+    {
+      "page": 4,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "4",
+      "font_size": 10
+    },
+    {
+      "page": 4,
+      "x": 0.8,
+      "y": 5.35,
+      "w": 11.7,
+      "h": 0.75,
+      "text": "같은 query도 context의 구성·규모에 따라 예측 변화\n라벨 없는 query를 추가하는 것과 라벨된 context를 추가하는 것의 구분",
+      "font_size": 21
+    },
+    {
+      "page": 5,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "현재 실험의 TabPFN v3 설정",
+      "font_size": 28
+    },
+    {
+      "page": 5,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "1014 실행과 동일한 checkpoint·추론 설정을 기준으로 설명",
+      "font_size": 13
+    },
+    {
+      "page": 5,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "01 작동 원리",
+      "font_size": 10
+    },
+    {
+      "page": 5,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "5",
+      "font_size": 10
+    },
+    {
+      "page": 5,
+      "x": 0.64,
+      "y": 6.57,
+      "w": 12,
+      "h": 0.3,
+      "text": "실제 checkpoint config와 실행 코드 확인 · v3 원문 Appendix C와 대조",
+      "font_size": 11
+    },
+    {
+      "page": 6,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "v3 구조 · 열의 분포에서 행 단위 표현으로",
+      "font_size": 28
+    },
+    {
+      "page": 6,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "열의 정보를 먼저 통합한 뒤 행 사이의 관계를 추론",
+      "font_size": 13
+    },
+    {
+      "page": 6,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "01 작동 원리",
+      "font_size": 10
+    },
+    {
+      "page": 6,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "6",
+      "font_size": 10
+    },
+    {
+      "page": 6,
+      "x": 0.65,
+      "y": 6.72,
+      "w": 4.55,
+      "h": 0.2,
+      "text": "TabPFN-3 · Figure 5 · 원문 PDF 6쪽",
+      "font_size": 10
+    },
+    {
+      "page": 6,
+      "x": 5.62,
+      "y": 1.37,
+      "w": 7.05,
+      "h": 0.43,
+      "text": "① 입력 표현 · Feature grouping & cell embedding",
+      "font_size": 21
+    },
+    {
+      "page": 6,
+      "x": 5.64,
+      "y": 1.87,
+      "w": 7.0,
+      "h": 1.05,
+      "text": "특징 3개와 결측 표시를 묶어 128차원 표현으로 변환\nContext 행에 알려진 라벨의 embedding 추가\nQuery에는 정답 라벨을 넣지 않고 특징만 제공",
+      "font_size": 18
+    },
+    {
+      "page": 6,
+      "x": 5.62,
+      "y": 3.1,
+      "w": 7.05,
+      "h": 0.43,
+      "text": "② 열별 분포 · Feature embedding",
+      "font_size": 21
+    },
+    {
+      "page": 6,
+      "x": 5.64,
+      "y": 3.6,
+      "w": 7.0,
+      "h": 1.05,
+      "text": "특징 하나의 값들을 128개 inducing point로 요약\n분포를 요약하는 학습된 보조 표현과 attention 수행\n3개 block을 통해 현재 context의 분포 정보 반영",
+      "font_size": 18
+    },
+    {
+      "page": 6,
+      "x": 5.62,
+      "y": 4.84,
+      "w": 7.05,
+      "h": 0.43,
+      "text": "③ 행별 통합 · Feature aggregation",
+      "font_size": 21
+    },
+    {
+      "page": 6,
+      "x": 5.64,
+      "y": 5.34,
+      "w": 7.0,
+      "h": 1.05,
+      "text": "한 행 안의 특징들이 attention으로 정보 교환\n행을 요약하는 CLS token 4개에 특징 관계 통합\n4 × 128차원을 이어 행별 512차원 표현 생성",
+      "font_size": 18
+    },
+    {
+      "page": 7,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "v3 구조 · context 관계와 클래스 확률의 계산",
+      "font_size": 28
+    },
+    {
+      "page": 7,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "새 클래스의 라벨 사례를 context에 넣어 출력 클래스에 반영",
+      "font_size": 13
+    },
+    {
+      "page": 7,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "01 작동 원리",
+      "font_size": 10
+    },
+    {
+      "page": 7,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "7",
+      "font_size": 10
+    },
+    {
+      "page": 7,
+      "x": 0.65,
+      "y": 6.72,
+      "w": 4.55,
+      "h": 0.2,
+      "text": "TabPFN-3 · Figure 5 · 원문 PDF 6쪽",
+      "font_size": 10
+    },
+    {
+      "page": 7,
+      "x": 5.62,
+      "y": 1.5,
+      "w": 7.05,
+      "h": 0.43,
+      "text": "④ 사례 사이의 추론 · In-context learning",
+      "font_size": 21
+    },
+    {
+      "page": 7,
+      "x": 5.64,
+      "y": 2.0,
+      "w": 7.0,
+      "h": 1.45,
+      "text": "Context의 행 표현에 라벨 표현을 추가\nContext ↔ context 관계와 query → context 참조\n24개 block에서 조건부 예측에 필요한 표현 계산\nQuery끼리의 정답 공유나 가중치 최적화 없음",
+      "font_size": 18
+    },
+    {
+      "page": 7,
+      "x": 5.62,
+      "y": 3.65,
+      "w": 7.05,
+      "h": 0.43,
+      "text": "⑤ 라벨별 확률 · Many-class decoder",
+      "font_size": 21
+    },
+    {
+      "page": 7,
+      "x": 5.64,
+      "y": 4.15,
+      "w": 7.0,
+      "h": 1.45,
+      "text": "Query 표현과 context 표현의 관련도를 attention으로 계산\n각 context 라벨의 one-hot 벡터를 관련도에 따라 가중합\n같은 클래스의 근거를 모아 클래스별 확률 산출\n새 클래스 사례 추가 시 출력 라벨에 포함",
+      "font_size": 18
+    },
+    {
+      "page": 7,
+      "x": 5.65,
+      "y": 5.88,
+      "w": 7.02,
+      "h": 0.65,
+      "text": "현재 checkpoint의 클래스 상한 160개\n신규 라벨이 없는 context에서 새 공격 이름의 출력 불가",
+      "font_size": 17
+    },
+    {
+      "page": 8,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "fit과 predict · context 캐시의 생성과 재사용",
+      "font_size": 28
+    },
+    {
+      "page": 8,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "가중치가 고정되어도 context 준비와 query 계산 비용 발생",
+      "font_size": 13
+    },
+    {
+      "page": 8,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "01 작동 원리",
+      "font_size": 10
+    },
+    {
+      "page": 8,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "8",
+      "font_size": 10
+    },
+    {
+      "page": 8,
+      "x": 0.78,
+      "y": 1.78,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "fit(Xc, yc)",
+      "font_size": 20
+    },
+    {
+      "page": 8,
+      "x": 0.79,
+      "y": 2.5,
+      "w": 3.41,
+      "h": 2.05,
+      "text": "전처리와 라벨 대응 구성\nContext 측 표현·KV 계산\n추론용 상태와 캐시 저장",
+      "font_size": 17
+    },
+    {
+      "page": 8,
+      "x": 4.39,
+      "y": 3.0,
+      "w": 0.35,
+      "h": 0.4,
+      "text": "→",
+      "font_size": 23
+    },
+    {
+      "page": 8,
+      "x": 4.930000000000001,
+      "y": 1.78,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "predict(Xq)",
+      "font_size": 20
+    },
+    {
+      "page": 8,
+      "x": 4.94,
+      "y": 2.5,
+      "w": 3.41,
+      "h": 2.05,
+      "text": "Query 전처리\n저장된 context 상태 참조\n확률 계산·앙상블 결합",
+      "font_size": 17
+    },
+    {
+      "page": 8,
+      "x": 8.54,
+      "y": 3.0,
+      "w": 0.35,
+      "h": 0.4,
+      "text": "→",
+      "font_size": 23
+    },
+    {
+      "page": 8,
+      "x": 9.08,
+      "y": 1.78,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "새 context의 fit",
+      "font_size": 20
+    },
+    {
+      "page": 8,
+      "x": 9.09,
+      "y": 2.5,
+      "w": 3.41,
+      "h": 2.05,
+      "text": "변경된 사례로 상태 재구성\n1014는 누적 전체 재처리\n기존 사전학습 가중치 유지",
+      "font_size": 17
+    },
+    {
+      "page": 8,
+      "x": 0.85,
+      "y": 5.2,
+      "w": 11.6,
+      "h": 0.8,
+      "text": "실제 확인: 1,000개 → 1,020개 fit 후\n53,153,144개 파라미터의 SHA-256 동일",
+      "font_size": 23
+    },
+    {
+      "page": 9,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "데이터 적응의 세 방식과 학습 대상",
+      "font_size": 28
+    },
+    {
+      "page": 9,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "Context 갱신과 가중치 fine-tuning은 서로 다른 적응 연산",
+      "font_size": 13
+    },
+    {
+      "page": 9,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "02 미세조정",
+      "font_size": 10
+    },
+    {
+      "page": 9,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "9",
+      "font_size": 10
+    },
+    {
+      "page": 9,
+      "x": 0.8,
+      "y": 5.7,
+      "w": 11.8,
+      "h": 0.65,
+      "text": "1014 단일 TabPFN: 첫 번째 방식 · LoCalPFN: 별도의 미세조정 비교군",
+      "font_size": 21
+    },
+    {
+      "page": 10,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "v3 가중치 fine-tuning · 학습 절차",
+      "font_size": 28
+    },
+    {
+      "page": 10,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "Query 정답의 손실로 θ 갱신 · 미세조정 이후에도 context를 사용",
+      "font_size": 13
+    },
+    {
+      "page": 10,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "02 미세조정",
+      "font_size": 10
+    },
+    {
+      "page": 10,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "10",
+      "font_size": 10
+    },
+    {
+      "page": 10,
+      "x": 0.65,
+      "y": 6.72,
+      "w": 4.55,
+      "h": 0.2,
+      "text": "TabPFN-3 · Figure 5 · 원문 PDF 6쪽",
+      "font_size": 10
+    },
+    {
+      "page": 10,
+      "x": 5.62,
+      "y": 1.35,
+      "w": 7.05,
+      "h": 0.43,
+      "text": "① 학습용 context/query 과제 구성",
+      "font_size": 21
+    },
+    {
+      "page": 10,
+      "x": 5.64,
+      "y": 1.85,
+      "w": 7.0,
+      "h": 1.05,
+      "text": "Train을 context와 query로 분할, 예시 비율 80% / 20%\nForward 입력: context 특징·라벨 + query 특징\nQuery의 정답은 숨겼다가 loss 계산에만 사용",
+      "font_size": 18
+    },
+    {
+      "page": 10,
+      "x": 5.62,
+      "y": 3.1,
+      "w": 7.05,
+      "h": 0.43,
+      "text": "② Query loss의 역전파와 가중치 갱신",
+      "font_size": 21
+    },
+    {
+      "page": 10,
+      "x": 5.64,
+      "y": 3.6,
+      "w": 7.0,
+      "h": 1.05,
+      "text": "L = −Σq log pθ(yq | xq, context)\n출력부터 decoder·ICL·embedding의 θ로 gradient 전파\nloss.backward()와 AdamW.step()으로 θ 갱신",
+      "font_size": 18
+    },
+    {
+      "page": 10,
+      "x": 5.62,
+      "y": 4.85,
+      "w": 7.05,
+      "h": 0.43,
+      "text": "③ Validation 선택과 갱신된 모델의 추론",
+      "font_size": 21
+    },
+    {
+      "page": 10,
+      "x": 5.64,
+      "y": 5.35,
+      "w": 7.0,
+      "h": 1.05,
+      "text": "별도 validation의 log loss 등으로 checkpoint 선택\n갱신된 θ에 라벨 context를 다시 제공한 뒤 추론\n새 query에는 정답 미제공 · test는 최종 평가에만 사용",
+      "font_size": 18
+    },
+    {
+      "page": 10,
+      "x": 5.65,
+      "y": 6.55,
+      "w": 7.02,
+      "h": 0.27,
+      "text": "붉은 선: 모델 파라미터로의 역전파 · 공식 fine-tuning 구현 기준",
+      "font_size": 11
+    },
+    {
+      "page": 11,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "가중치 fine-tuning의 실제 설정 항목",
+      "font_size": 28
+    },
+    {
+      "page": 11,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "02 미세조정",
+      "font_size": 10
+    },
+    {
+      "page": 11,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "11",
+      "font_size": 10
+    },
+    {
+      "page": 12,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "신규 사례만 사용하는 갱신의 의미",
+      "font_size": 28
+    },
+    {
+      "page": 12,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "이번 a·b·c 비교의 중심은 context에 어떤 사례를 유지하는지",
+      "font_size": 13
+    },
+    {
+      "page": 12,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "02 미세조정",
+      "font_size": 10
+    },
+    {
+      "page": 12,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "12",
+      "font_size": 10
+    },
+    {
+      "page": 12,
+      "x": 0.81,
+      "y": 1.73,
+      "w": 5.4799999999999995,
+      "h": 0.42,
+      "text": "Context 갱신",
+      "font_size": 20
+    },
+    {
+      "page": 12,
+      "x": 0.8200000000000001,
+      "y": 2.45,
+      "w": 5.46,
+      "h": 2.95,
+      "text": "신규 라벨 사례를 context에 추가\n기존 사례를 누적하거나 일부 교체\n기존 모델 파라미터의 재학습 없음\n추가·삭제 이후 캐시 재구성 비용 측정",
+      "font_size": 21
+    },
+    {
+      "page": 12,
+      "x": 7.01,
+      "y": 1.73,
+      "w": 5.4799999999999995,
+      "h": 0.42,
+      "text": "신규 사례 중심의 가중치 학습",
+      "font_size": 20
+    },
+    {
+      "page": 12,
+      "x": 7.02,
+      "y": 2.45,
+      "w": 5.46,
+      "h": 2.95,
+      "text": "신규 query에 대한 손실로 θ 갱신\n기존 클래스 context의 보존 필요\n기존·신규 클래스의 별도 유지 평가\n기본 fit과 구분한 추가 학습 설계",
+      "font_size": 21
+    },
+    {
+      "page": 12,
+      "x": 0.8,
+      "y": 5.9,
+      "w": 11.7,
+      "h": 0.5,
+      "text": "1,000개와 20개는 정책을 설명하기 위한 예시",
+      "font_size": 20
+    },
+    {
+      "page": 13,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "갱신 비용 · 새 모델을 사용할 수 있는 시점까지",
+      "font_size": 28
+    },
+    {
+      "page": 13,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "가중치 최적화의 유무와 전체 갱신·추론 비용을 분리",
+      "font_size": 13
+    },
+    {
+      "page": 13,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "03 연구 방향",
+      "font_size": 10
+    },
+    {
+      "page": 13,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "13",
+      "font_size": 10
+    },
+    {
+      "page": 13,
+      "x": 0.8,
+      "y": 5.64,
+      "w": 11.8,
+      "h": 0.65,
+      "text": "총 연산 시간 = 초기 구축 + 후속 갱신 합계 + 평가한 Q개 행의 추론",
+      "font_size": 22
+    },
+    {
+      "page": 14,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "평가 시나리오 · 라벨된 공격 클래스의 순차 도입",
+      "font_size": 28
+    },
+    {
+      "page": 14,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "등장 전 공격 라벨 미사용 · 방법별 동일 평가 행 사용",
+      "font_size": 13
+    },
+    {
+      "page": 14,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "04 실험 설계",
+      "font_size": 10
+    },
+    {
+      "page": 14,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "14",
+      "font_size": 10
+    },
+    {
+      "page": 14,
+      "x": 0.62,
+      "y": 1.04,
+      "w": 12.05,
+      "h": 0.4,
+      "text": "클래스 도입 순서 기준 · 실제 수집 시각의 재생과 구분",
+      "font_size": 14
+    },
+    {
+      "page": 14,
+      "x": 0.85,
+      "y": 5.1,
+      "w": 11.6,
+      "h": 1.1,
+      "text": "라벨 공급 → context 또는 모델 갱신 → 별도 test 평가\n신규 공격의 구분 · 기존 공격의 탐지 · 정상 오탐 · 비용",
+      "font_size": 23
+    },
+    {
+      "page": 15,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "1014 결과 · 누적 10만 사례의 품질과 갱신 비용",
+      "font_size": 28
+    },
+    {
+      "page": 15,
+      "x": 0.62,
+      "y": 7.07,
+      "w": 9.1,
+      "h": 0.31,
+      "text": "전체 context 재구성 비용을 줄이기 위한 소규모 context 비교",
+      "font_size": 13
+    },
+    {
+      "page": 15,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "05 기존 근거",
+      "font_size": 10
+    },
+    {
+      "page": 15,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "15",
+      "font_size": 10
+    },
+    {
+      "page": 15,
+      "x": 0.62,
+      "y": 1.04,
+      "w": 12.05,
+      "h": 0.4,
+      "text": "전체 test 순차 재생 · 지연 없음 · seed 43 · 초기 구축 제외 후속 갱신 합계",
+      "font_size": 14
+    },
+    {
+      "page": 15,
+      "x": 0.8,
+      "y": 5.85,
+      "w": 11.8,
+      "h": 0.55,
+      "text": "개선 방향: context 사용량·교체 정책을 제어하며 품질과 비용을 함께 측정",
+      "font_size": 21
+    },
+    {
+      "page": 16,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "추가 비교 · 누적·고정 버퍼·갱신 없음",
+      "font_size": 28
+    },
+    {
+      "page": 16,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "04 실험 설계",
+      "font_size": 10
+    },
+    {
+      "page": 16,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "16",
+      "font_size": 10
+    },
+    {
+      "page": 16,
+      "x": 0.62,
+      "y": 1.04,
+      "w": 12.05,
+      "h": 0.4,
+      "text": "정책 설명용 예시: 기존 1,000개 · 신규 라벨 20개",
+      "font_size": 14
+    },
+    {
+      "page": 16,
+      "x": 0.85,
+      "y": 5.55,
+      "w": 11.7,
+      "h": 0.7,
+      "text": "XGB·다른 비교 모델은 누적 사례로 재학습·재구성\n이번 추가 실행에서 LoCalPFN 제외",
+      "font_size": 22
+    },
+    {
+      "page": 17,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "고정 버퍼의 삭제 기준",
+      "font_size": 28
+    },
+    {
+      "page": 17,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "04 실험 설계",
+      "font_size": 10
+    },
+    {
+      "page": 17,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "17",
+      "font_size": 10
+    },
+    {
+      "page": 17,
+      "x": 0.78,
+      "y": 1.78,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "확보 순서 · FIFO",
+      "font_size": 20
+    },
+    {
+      "page": 17,
+      "x": 0.79,
+      "y": 2.5,
+      "w": 3.41,
+      "h": 2.5999999999999996,
+      "text": "가장 먼저 확보한 사례부터 삭제\n실제 노후화의 대리 기준\n동일 구간 동률 순서 고정",
+      "font_size": 17
+    },
+    {
+      "page": 17,
+      "x": 4.39,
+      "y": 3.2749999999999995,
+      "w": 0.35,
+      "h": 0.4,
+      "text": "→",
+      "font_size": 23
+    },
+    {
+      "page": 17,
+      "x": 4.930000000000001,
+      "y": 1.78,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "신규와 유사",
+      "font_size": 20
+    },
+    {
+      "page": 17,
+      "x": 4.94,
+      "y": 2.5,
+      "w": 3.41,
+      "h": 2.5999999999999996,
+      "text": "기존 context로 표준화\n신규 사례와 가까운 기존 사례 삭제\n중복 근거 감소 가설",
+      "font_size": 17
+    },
+    {
+      "page": 17,
+      "x": 8.54,
+      "y": 3.2749999999999995,
+      "w": 0.35,
+      "h": 0.4,
+      "text": "→",
+      "font_size": 23
+    },
+    {
+      "page": 17,
+      "x": 9.08,
+      "y": 1.78,
+      "w": 3.43,
+      "h": 0.42,
+      "text": "무작위",
+      "font_size": 20
+    },
+    {
+      "page": 17,
+      "x": 9.09,
+      "y": 2.5,
+      "w": 3.41,
+      "h": 2.5999999999999996,
+      "text": "Seed로 재현 가능한 삭제\n단순 정책의 비교 기준\n삭제 후 기존 클래스 유지 확인",
+      "font_size": 17
+    },
+    {
+      "page": 17,
+      "x": 0.8,
+      "y": 5.8,
+      "w": 11.8,
+      "h": 0.55,
+      "text": "공통 조건: 버퍼 크기 고정 · 신규 사례 수 일치 · 기존 클래스 최소 사례 보존",
+      "font_size": 20
+    },
+    {
+      "page": 18,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "EXP76 · 첫 소규모 context 비교 설정",
+      "font_size": 28
+    },
+    {
+      "page": 18,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "04 실험 설계",
+      "font_size": 10
+    },
+    {
+      "page": 18,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "18",
+      "font_size": 10
+    },
+    {
+      "page": 19,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "CIC2018 · 소규모 context의 품질과 비용",
+      "font_size": 28
+    },
+    {
+      "page": 19,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "06 추가 결과",
+      "font_size": 10
+    },
+    {
+      "page": 19,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "19",
+      "font_size": 10
+    },
+    {
+      "page": 19,
+      "x": 0.62,
+      "y": 1.04,
+      "w": 12.05,
+      "h": 0.4,
+      "text": "EXP76 · 전체 test · 초기 구축 제외 후속 갱신 · FPR 분모는 실제 Benign",
+      "font_size": 14
+    },
+    {
+      "page": 19,
+      "x": 0.8,
+      "y": 6.25,
+      "w": 11.6,
+      "h": 0.38,
+      "text": "라벨 예산과 배치 크기가 다른 1014 수치와 직접적인 개선량 비교 제외",
+      "font_size": 16
+    },
+    {
+      "page": 20,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "CIC2018 · 클래스별 구분 성능과 버퍼 정책",
+      "font_size": 28
+    },
+    {
+      "page": 20,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "06 추가 결과",
+      "font_size": 10
+    },
+    {
+      "page": 20,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "20",
+      "font_size": 10
+    },
+    {
+      "page": 20,
+      "x": 0.62,
+      "y": 1.04,
+      "w": 12.05,
+      "h": 0.4,
+      "text": "전체 test의 클래스별 F1 (%) · 평가 표본 수 내림차순 · seed 43",
+      "font_size": 14
+    },
+    {
+      "page": 20,
+      "x": 0.8,
+      "y": 6.5,
+      "w": 11.8,
+      "h": 0.28,
+      "text": "공격별 precision·recall과 혼동행렬은 연결된 실험 결과에 보존",
+      "font_size": 14
+    },
+    {
+      "page": 21,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "ToN · 소규모 context의 품질과 비용",
+      "font_size": 28
+    },
+    {
+      "page": 21,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "06 추가 결과",
+      "font_size": 10
+    },
+    {
+      "page": 21,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "21",
+      "font_size": 10
+    },
+    {
+      "page": 21,
+      "x": 0.62,
+      "y": 1.04,
+      "w": 12.05,
+      "h": 0.4,
+      "text": "EXP76 · 전체 test · 초기 구축 제외 후속 갱신 · FPR 분모는 실제 Benign",
+      "font_size": 14
+    },
+    {
+      "page": 21,
+      "x": 0.8,
+      "y": 6.25,
+      "w": 11.6,
+      "h": 0.38,
+      "text": "라벨 예산과 배치 크기가 다른 1014 수치와 직접적인 개선량 비교 제외",
+      "font_size": 16
+    },
+    {
+      "page": 22,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "ToN · 클래스별 구분 성능과 버퍼 정책",
+      "font_size": 28
+    },
+    {
+      "page": 22,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "06 추가 결과",
+      "font_size": 10
+    },
+    {
+      "page": 22,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "22",
+      "font_size": 10
+    },
+    {
+      "page": 22,
+      "x": 0.62,
+      "y": 1.04,
+      "w": 12.05,
+      "h": 0.4,
+      "text": "전체 test의 클래스별 F1 (%) · 평가 표본 수 내림차순 · seed 43",
+      "font_size": 14
+    },
+    {
+      "page": 22,
+      "x": 0.8,
+      "y": 6.5,
+      "w": 11.8,
+      "h": 0.28,
+      "text": "공격별 precision·recall과 혼동행렬은 연결된 실험 결과에 보존",
+      "font_size": 14
+    },
+    {
+      "page": 23,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "채택 판단 · 품질을 유지하는 작은 context와 낮은 갱신 비용",
+      "font_size": 28
+    },
+    {
+      "page": 23,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "07 후속 판단",
+      "font_size": 10
+    },
+    {
+      "page": 23,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "23",
+      "font_size": 10
+    },
+    {
+      "page": 23,
+      "x": 0.81,
+      "y": 1.78,
+      "w": 5.4799999999999995,
+      "h": 0.42,
+      "text": "현재 관찰과 대응",
+      "font_size": 20
+    },
+    {
+      "page": 23,
+      "x": 0.8200000000000001,
+      "y": 2.5,
+      "w": 5.46,
+      "h": 2.8499999999999996,
+      "text": "소규모 PFN의 갱신 준비 비용 절감\n반복 추론 비용의 별도 경량화 필요\n유사도 삭제의 정상 오탐 증가 확인\n정상·기존 클래스 보존 규칙 보강",
+      "font_size": 21
+    },
+    {
+      "page": 23,
+      "x": 7.01,
+      "y": 1.78,
+      "w": 5.4799999999999995,
+      "h": 0.42,
+      "text": "후속 비교",
+      "font_size": 20
+    },
+    {
+      "page": 23,
+      "x": 7.02,
+      "y": 2.5,
+      "w": 5.46,
+      "h": 2.8499999999999996,
+      "text": "동일 라벨에서 context 규모만 변경\nEstimator 수·캐시 위치별 품질과 비용\n공격별 precision·recall과 정상 오탐\n조건·seed 확장 이후 최종 방법 판단",
+      "font_size": 21
+    },
+    {
+      "page": 24,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "부록 · v3 원문의 전체 구조",
+      "font_size": 28
+    },
+    {
+      "page": 24,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "부록",
+      "font_size": 10
+    },
+    {
+      "page": 24,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "24",
+      "font_size": 10
+    },
+    {
+      "page": 24,
+      "x": 6.25,
+      "y": 1.65,
+      "w": 6.05,
+      "h": 4.8,
+      "text": "Feature grouping & cell embedding\n열별 분포 embedding\n행별 feature aggregation\nICL transformer\nMany-class decoder\n\n원문 Figure 5 · PDF 6쪽\n세부 hyperparameter는 Appendix C",
+      "font_size": 22
+    },
+    {
+      "page": 25,
+      "x": 0.6,
+      "y": 0.32,
+      "w": 12.1,
+      "h": 0.65,
+      "text": "부록 · v3 fine-tuning 코드 예시",
+      "font_size": 28
+    },
+    {
+      "page": 25,
+      "x": 10.05,
+      "y": 7.09,
+      "w": 2.35,
+      "h": 0.24,
+      "text": "부록",
+      "font_size": 10
+    },
+    {
+      "page": 25,
+      "x": 12.55,
+      "y": 7.08,
+      "w": 0.32,
+      "h": 0.25,
+      "text": "25",
+      "font_size": 10
+    },
+    {
+      "page": 25,
+      "x": 0.85,
+      "y": 1.44,
+      "w": 11.6,
+      "h": 4.98,
+      "text": "from tabpfn.finetuning import FinetunedTabPFNClassifier\n\nft = FinetunedTabPFNClassifier(\n    device=\"cuda\", epochs=10, learning_rate=1e-5,\n    n_finetune_ctx_plus_query_samples=1024,\n    finetune_ctx_query_split_ratio=0.2,\n    n_estimators_finetune=1,\n    n_estimators_validation=1,\n    n_estimators_final_inference=1,\n    eval_metric=\"log_loss\", random_state=43,\n    extra_classifier_kwargs={\"model_path\": checkpoint_path},\n)\nft.fit(X_train, y_train, X_val=X_val, y_val=y_val)\np = ft.predict_proba(X_test)",
+      "font_size": 16
+    },
+    {
+      "page": 25,
+      "x": 0.64,
+      "y": 6.57,
+      "w": 12,
+      "h": 0.3,
+      "text": "학습 설정 예시 · 이번 context 정책 실험의 실행 코드와 구분",
+      "font_size": 11
+    }
+  ],
+  "numeric_cells": [
+    {
+      "page": 15,
+      "row": 1,
+      "column": 2,
+      "text": "76.80",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 1,
+      "column": 3,
+      "text": "77.72",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 1,
+      "column": 4,
+      "text": "4.17",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 1,
+      "column": 5,
+      "text": "44.30",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 2,
+      "column": 2,
+      "text": "77.03",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 2,
+      "column": 3,
+      "text": "81.35",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 2,
+      "column": 4,
+      "text": "5.09",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 2,
+      "column": 5,
+      "text": "41.00",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 3,
+      "column": 2,
+      "text": "79.37",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 3,
+      "column": 3,
+      "text": "73.66",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 3,
+      "column": 4,
+      "text": "11.09",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 3,
+      "column": 5,
+      "text": "50.45",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 4,
+      "column": 2,
+      "text": "74.51",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 4,
+      "column": 3,
+      "text": "73.00",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 4,
+      "column": 4,
+      "text": "12.31",
+      "right_aligned": true
+    },
+    {
+      "page": 15,
+      "row": 4,
+      "column": 5,
+      "text": "48.56",
+      "right_aligned": true
+    },
+    {
+      "page": 16,
+      "row": 1,
+      "column": 2,
+      "text": "1,020",
+      "right_aligned": true
+    },
+    {
+      "page": 16,
+      "row": 2,
+      "column": 2,
+      "text": "1,000",
+      "right_aligned": true
+    },
+    {
+      "page": 16,
+      "row": 3,
+      "column": 2,
+      "text": "1,000",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 1,
+      "column": 1,
+      "text": "73.62",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 1,
+      "column": 2,
+      "text": "1.619",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 1,
+      "column": 3,
+      "text": "2.62",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 1,
+      "column": 4,
+      "text": "0.41",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 2,
+      "column": 1,
+      "text": "74.64",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 2,
+      "column": 2,
+      "text": "0.673",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 2,
+      "column": 3,
+      "text": "1.28",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 2,
+      "column": 4,
+      "text": "32.32",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 3,
+      "column": 1,
+      "text": "73.16",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 3,
+      "column": 2,
+      "text": "1.119",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 3,
+      "column": 3,
+      "text": "1.28",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 3,
+      "column": 4,
+      "text": "32.04",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 4,
+      "column": 1,
+      "text": "72.13",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 4,
+      "column": 2,
+      "text": "2.972",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 4,
+      "column": 3,
+      "text": "1.27",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 4,
+      "column": 4,
+      "text": "31.96",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 5,
+      "column": 1,
+      "text": "73.47",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 5,
+      "column": 2,
+      "text": "0.924",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 5,
+      "column": 3,
+      "text": "1.24",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 5,
+      "column": 4,
+      "text": "32.17",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 6,
+      "column": 1,
+      "text": "41.94",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 6,
+      "column": 2,
+      "text": "0.001",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 6,
+      "column": 3,
+      "text": "0.00",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 6,
+      "column": 4,
+      "text": "32.04",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 7,
+      "column": 1,
+      "text": "71.82",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 7,
+      "column": 2,
+      "text": "2.084",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 7,
+      "column": 3,
+      "text": "2.54",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 7,
+      "column": 4,
+      "text": "143.00",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 8,
+      "column": 1,
+      "text": "76.71",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 8,
+      "column": 2,
+      "text": "0.215",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 8,
+      "column": 3,
+      "text": "1.28",
+      "right_aligned": true
+    },
+    {
+      "page": 19,
+      "row": 8,
+      "column": 4,
+      "text": "32.36",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 1,
+      "column": 1,
+      "text": "2,652,203",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 1,
+      "column": 2,
+      "text": "99.00",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 1,
+      "column": 3,
+      "text": "99.50",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 1,
+      "column": 4,
+      "text": "99.27",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 1,
+      "column": 5,
+      "text": "98.36",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 1,
+      "column": 6,
+      "text": "99.36",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 2,
+      "column": 1,
+      "text": "262,680",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 2,
+      "column": 2,
+      "text": "99.70",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 2,
+      "column": 3,
+      "text": "99.71",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 2,
+      "column": 4,
+      "text": "99.71",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 2,
+      "column": 5,
+      "text": "97.96",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 2,
+      "column": 6,
+      "text": "99.71",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 3,
+      "column": 1,
+      "text": "41,542",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 3,
+      "column": 2,
+      "text": "97.01",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 3,
+      "column": 3,
+      "text": "99.15",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 3,
+      "column": 4,
+      "text": "99.11",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 3,
+      "column": 5,
+      "text": "99.10",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 3,
+      "column": 6,
+      "text": "99.04",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 4,
+      "column": 1,
+      "text": "39,483",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 4,
+      "column": 2,
+      "text": "99.03",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 4,
+      "column": 3,
+      "text": "99.15",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 4,
+      "column": 4,
+      "text": "99.14",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 4,
+      "column": 5,
+      "text": "99.34",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 4,
+      "column": 6,
+      "text": "99.07",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 5,
+      "column": 1,
+      "text": "37,696",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 5,
+      "column": 2,
+      "text": "99.98",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 5,
+      "column": 3,
+      "text": "99.97",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 5,
+      "column": 4,
+      "text": "99.97",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 5,
+      "column": 5,
+      "text": "99.98",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 5,
+      "column": 6,
+      "text": "99.97",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 6,
+      "column": 1,
+      "text": "8,742",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 6,
+      "column": 2,
+      "text": "11.59",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 6,
+      "column": 3,
+      "text": "22.80",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 6,
+      "column": 4,
+      "text": "13.24",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 6,
+      "column": 5,
+      "text": "9.10",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 6,
+      "column": 6,
+      "text": "15.41",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 7,
+      "column": 1,
+      "text": "127",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 7,
+      "column": 2,
+      "text": "9.00",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 7,
+      "column": 3,
+      "text": "2.22",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 7,
+      "column": 4,
+      "text": "1.70",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 7,
+      "column": 5,
+      "text": "1.07",
+      "right_aligned": true
+    },
+    {
+      "page": 20,
+      "row": 7,
+      "column": 6,
+      "text": "1.71",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 1,
+      "column": 1,
+      "text": "65.22",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 1,
+      "column": 2,
+      "text": "11.252",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 1,
+      "column": 3,
+      "text": "5.66",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 1,
+      "column": 4,
+      "text": "0.62",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 2,
+      "column": 1,
+      "text": "64.88",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 2,
+      "column": 2,
+      "text": "11.617",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 2,
+      "column": 3,
+      "text": "1.61",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 2,
+      "column": 4,
+      "text": "33.37",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 3,
+      "column": 1,
+      "text": "65.94",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 3,
+      "column": 2,
+      "text": "12.052",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 3,
+      "column": 3,
+      "text": "1.62",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 3,
+      "column": 4,
+      "text": "32.51",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 4,
+      "column": 1,
+      "text": "59.91",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 4,
+      "column": 2,
+      "text": "17.703",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 4,
+      "column": 3,
+      "text": "1.76",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 4,
+      "column": 4,
+      "text": "32.52",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 5,
+      "column": 1,
+      "text": "65.62",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 5,
+      "column": 2,
+      "text": "11.965",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 5,
+      "column": 3,
+      "text": "1.59",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 5,
+      "column": 4,
+      "text": "32.50",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 6,
+      "column": 1,
+      "text": "14.02",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 6,
+      "column": 2,
+      "text": "3.564",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 6,
+      "column": 3,
+      "text": "0.00",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 6,
+      "column": 4,
+      "text": "32.06",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 7,
+      "column": 1,
+      "text": "60.70",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 7,
+      "column": 2,
+      "text": "14.419",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 7,
+      "column": 3,
+      "text": "3.91",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 7,
+      "column": 4,
+      "text": "143.64",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 8,
+      "column": 1,
+      "text": "68.01",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 8,
+      "column": 2,
+      "text": "11.068",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 8,
+      "column": 3,
+      "text": "1.61",
+      "right_aligned": true
+    },
+    {
+      "page": 21,
+      "row": 8,
+      "column": 4,
+      "text": "33.41",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 1,
+      "column": 1,
+      "text": "1,474,302",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 1,
+      "column": 2,
+      "text": "93.21",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 1,
+      "column": 3,
+      "text": "93.51",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 1,
+      "column": 4,
+      "text": "93.20",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 1,
+      "column": 5,
+      "text": "90.07",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 1,
+      "column": 6,
+      "text": "93.31",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 2,
+      "column": 1,
+      "text": "343,854",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 2,
+      "column": 2,
+      "text": "87.74",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 2,
+      "column": 3,
+      "text": "88.00",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 2,
+      "column": 4,
+      "text": "88.88",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 2,
+      "column": 5,
+      "text": "83.07",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 2,
+      "column": 6,
+      "text": "89.93",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 3,
+      "column": 1,
+      "text": "210,951",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 3,
+      "column": 2,
+      "text": "89.90",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 3,
+      "column": 3,
+      "text": "90.02",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 3,
+      "column": 4,
+      "text": "90.27",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 3,
+      "column": 5,
+      "text": "79.81",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 3,
+      "column": 6,
+      "text": "89.94",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 4,
+      "column": 1,
+      "text": "103,338",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 4,
+      "column": 2,
+      "text": "92.67",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 4,
+      "column": 3,
+      "text": "93.44",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 4,
+      "column": 4,
+      "text": "93.70",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 4,
+      "column": 5,
+      "text": "84.35",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 4,
+      "column": 6,
+      "text": "93.17",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 5,
+      "column": 1,
+      "text": "68,891",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 5,
+      "column": 2,
+      "text": "71.88",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 5,
+      "column": 3,
+      "text": "71.26",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 5,
+      "column": 4,
+      "text": "69.32",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 5,
+      "column": 5,
+      "text": "58.08",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 5,
+      "column": 6,
+      "text": "70.90",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 6,
+      "column": 1,
+      "text": "40,030",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 6,
+      "column": 2,
+      "text": "99.02",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 6,
+      "column": 3,
+      "text": "99.90",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 6,
+      "column": 4,
+      "text": "99.43",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 6,
+      "column": 5,
+      "text": "98.70",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 6,
+      "column": 6,
+      "text": "99.89",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 7,
+      "column": 1,
+      "text": "22,458",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 7,
+      "column": 2,
+      "text": "63.57",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 7,
+      "column": 3,
+      "text": "62.43",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 7,
+      "column": 4,
+      "text": "68.19",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 7,
+      "column": 5,
+      "text": "77.89",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 7,
+      "column": 6,
+      "text": "72.31",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 8,
+      "column": 1,
+      "text": "6,029",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 8,
+      "column": 2,
+      "text": "12.32",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 8,
+      "column": 3,
+      "text": "31.22",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 8,
+      "column": 4,
+      "text": "40.26",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 8,
+      "column": 5,
+      "text": "21.07",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 8,
+      "column": 6,
+      "text": "26.97",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 9,
+      "column": 1,
+      "text": "1,161",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 9,
+      "column": 2,
+      "text": "13.10",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 9,
+      "column": 3,
+      "text": "13.03",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 9,
+      "column": 4,
+      "text": "9.66",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 9,
+      "column": 5,
+      "text": "2.46",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 9,
+      "column": 6,
+      "text": "12.72",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 10,
+      "column": 1,
+      "text": "709",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 10,
+      "column": 2,
+      "text": "28.78",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 10,
+      "column": 3,
+      "text": "6.01",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 10,
+      "column": 4,
+      "text": "6.47",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 10,
+      "column": 5,
+      "text": "3.66",
+      "right_aligned": true
+    },
+    {
+      "page": 22,
+      "row": 10,
+      "column": 6,
+      "text": "7.01",
+      "right_aligned": true
+    }
+  ],
+  "historical_source": "tabpfn/results/v7/exp72/20261014_134735_replay_100k_xgb_tabpfn_s43_de8b4a78/results.json",
+  "new_source": "tabpfn/results/v7/exp76/20261015_212937_context1000_new100_s43_1c62d14c/results.json",
+  "new_state": "complete",
+  "primary_v3_source": "https://arxiv.org/pdf/2605.13986",
+  "finetuning_source": "https://github.com/PriorLabs/TabPFN/blob/main/src/tabpfn/finetuning/finetuned_classifier.py",
+  "manuscript_status": "proposal only; manuscript and Overleaf unchanged",
+  "intentional_overlaps": [
+    "card backgrounds under headings/body",
+    "table cells",
+    "footer backgrounds under footer text"
+  ]
+}

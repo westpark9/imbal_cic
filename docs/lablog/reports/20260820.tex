@@ -1,0 +1,760 @@
+% !TeX root = 20260820.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-20}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-20 · 0820 — EXP4: Tail-Anchored Context Bagging (TACB) 사전 등록 +\allowbreak{} 캠페인 시작}
+\label{report:20260820_0820}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+새 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp4\_\allowbreak{}\allowbreak{}tail\allowbreak{}\_\allowbreak{}\allowbreak{}anchore\allowbreak{}d\_\allowbreak{}\allowbreak{}baggin\allowbreak{}g.\allowbreak{}py} (frozen 코드 무수정, \texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}common}을 import-only로 재사용). 이 문서는 \textbf{결과가 나오기 전에} 쓰는 사전 등록이다: anchor 정의, 컨트롤 목록, run ladder, 숫자 성공 기준을 먼저 고정한다.
+
+\subsection{0. 논문 서사와 이 실험이 공격하는 숫자}
+주장 흐름: XGBoost는 전체 분류는 강하지만 tail 클래스에서 (1) class imbalance, (2) temporal domain shift에 취약하다  \ensuremath{\rightarrow}  context 구성을 tail-친화적으로 설계한 TabPFN 앙상블(TACB)이 이를 얼마나 견디는지 측정한다.
+
+공격하는 frontier 숫자 (CLAUDE.md): TabPFN 트랙의 "정직한 프로토콜에서 XGB에 4/\allowbreak{}4 패배" (0818). 구체적으로 exp1(1M 비례 context)의 cic2018 tail: web\_\allowbreak{}attacks XGB 0.162 /\allowbreak{} TabPFN 0.161 — 둘 다 죽어 있는 상태.
+
+\par\noindent \textbullet\enspace open-set/\allowbreak{}unseen 축은 이번 캠페인에서 \textbf{제외} (사용자 확정, 2026-08-20). estimator 간 OOD 게이트 없음 — 확률 평균만 (F7/\allowbreak{}F9 회피가 설계 의도).
+
+
+\par\noindent \textbullet\enspace 평가 축: ① imbalance 강건성 (context 예산 스윕, Fig 1), ② temporal drift 강건성 (\texttt{-\allowbreak{}-\allowbreak{}eval-\allowbreak{}s\allowbreak{}plit val\allowbreak{}} 근미래 vs test 원미래, Fig 2).
+
+
+\subsection{1. Anchor 정의 (F8 경계선 — 사전 등록)}
+\par\noindent \textbullet\enspace pool count \ensuremath{\leq} \texttt{-\allowbreak{}-\allowbreak{}anchor\allowbreak{}-\allowbreak{}thresho\allowbreak{}ld} (\textbf{5,000})인 클래스는 모든 estimator context에 \textbf{자연 pool의 100\%} 포함. 복제·오버샘플·합성 없음 (한 context 내 중복 0).
+
+
+\par\noindent \textbullet\enspace head 클래스는 남은 예산을 \textbf{자연 비례}(largest-remainder)로 채우고 context 간 disjoint 분할. \texttt{-\allowbreak{}-\allowbreak{}contex\allowbreak{}t-\allowbreak{}floor}는 이번 캠페인에서 0 (anchor만 사용).
+
+
+\par\noindent \textbullet\enspace k=\allowbreak{}1M에서 anchor 질량: cic2018 =\allowbreak{} web\_\allowbreak{}attacks 1,522 rows =\allowbreak{} \textbf{0.15\%} of context.
+
+
+\par\noindent \textbullet\enspace s41(F8, 완전 class-balanced 샘플링이 양 다리 다 짐)과의 구분: head 분포 불변, tail은 자기 자연량 상한. 이것은 rebalancing이 아니라 "샘플링이 tail을 지우지 않게 하는" few-shot context 구성이다. threshold 5,000은 pool 통계만 사용 — val prediction에 fit되는 것 없음 (F3 회피).
+
+
+\par\noindent \textbullet\enspace k=\allowbreak{}100k 같은 소예산 anchored 점에서는 tail share가 1.5\%+\allowbreak{}로 오름  \ensuremath{\rightarrow}  Fig 1에서 stress test로만 라벨, 제안 config는 k=\allowbreak{}1M.
+
+
+\subsection{2. 컨트롤 (재실행 없음, args.json으로 one-knob 증명)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.50000\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.50000\linewidth-2\tabcolsep\relax}}
+\toprule
+역할 & run dir \\ \midrule
+\endfirsthead
+역할 & run dir \\ \midrule
+\endhead
+{}1M 비례 context, XGB+\allowbreak{}TabPFN, uncapped test & \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260818\_\allowbreak{}\allowbreak{}042459\_\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}exp1\allowbreak{}\_\allowbreak{}\allowbreak{}1m} (+\allowbreak{} botiot 053139 /\allowbreak{} toniot 071152 /\allowbreak{} cic2017 030904) \\
+{}full-pool 무가중 XGB, uncapped test & \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260818\_\allowbreak{}\allowbreak{}11*\_\allowbreak{}\allowbreak{}exp2\allowbreak{}\_\allowbreak{}\allowbreak{}fullxgb\allowbreak{}} \\
+\bottomrule
+\end{longtable}
+\endgroup
+Wave 0 수치 확정 (기록된 run에서 직접 읽음, uncapped test):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24384\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14795\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16164\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24384\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20274\linewidth-2\tabcolsep\relax}}
+\toprule
+method & macro & tail\_\allowbreak{}avg & web\_\allowbreak{}attacks F1 (P/\allowbreak{}R) & infiltration F1 \\ \midrule
+\endfirsthead
+method & macro & tail\_\allowbreak{}avg & web\_\allowbreak{}attacks F1 (P/\allowbreak{}R) & infiltration F1 \\ \midrule
+\endhead
+{}exp1 XGB (1M prop) & 0.7568 & 0.5367 & 0.1621 & 0.4502 \\
+{}exp1 TabPFN (1M prop) & 0.7518 & 0.5261 & 0.1615 & 0.4185 \\
+{}exp2 XGB (full 12M) & 0.7548 & 0.5331 & \textbf{0.1724} (0.105/\allowbreak{}0.479) & 0.4291 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{관찰 (사전 등록에 추가)}: full pool(web\_\allowbreak{}attacks 1,522 rows)조차 F1 0.172에서 정체 — \textbf{precision-limited} (P 0.105). test에 benign 3.5M vs web\_\allowbreak{}attacks 509라, benign 오분류율이 0.05\%만 돼도 FP \textasciitilde{}1,750개로 precision이 붕괴하는 base-rate 문제. 따라서 anchor가 recall만 올리고 precision을 더 망칠 수 있음(mitm에서 관찰된 메커니즘과 동일). R1a 판정은 F1과 함께 \textbf{P/\allowbreak{}R 분해}를 필수로 본다. bp 컬럼은 이 방향(균등 prior 보정)이라 악화 예상 — 측정으로 확인.
+
+\subsection{3. Run ladder (cic2018 먼저 — 사용자 확정. one knob per run)}
+공통: \texttt{-\allowbreak{}-\allowbreak{}seed 4\allowbreak{}2 -\allowbreak{}-\allowbreak{}test\allowbreak{}-\allowbreak{}cap-\allowbreak{}per\allowbreak{}-\allowbreak{}class 0\allowbreak{}} (정직한 프로토콜, 0818). GPU 필요 run은 로컬 GPU 복구 후 (현재 driver mismatch로 CUDA 불가).
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.19397\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.28879\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22845\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.28879\linewidth-2\tabcolsep\relax}}
+\toprule
+run & 명령 (핵심 args) & vs (knob) & 질문 \\ \midrule
+\endfirsthead
+run & 명령 (핵심 args) & vs (knob) & 질문 \\ \midrule
+\endhead
+{}\textbf{R2a} & \texttt{-\allowbreak{}-\allowbreak{}contex\allowbreak{}t-\allowbreak{}size -\allowbreak{}1 -\allowbreak{}-\allowbreak{}n-\allowbreak{}co\allowbreak{}ntexts 1\allowbreak{} -\allowbreak{}-\allowbreak{}skip-\allowbreak{}tabpfn} & exp2 (가중치만) & 정직한 XGB bar: sqrt 가중 full-pool. \textbf{CPU 가능, GPU 복구 전 실행} \\
+{}\textbf{R1a} & \texttt{-\allowbreak{}-\allowbreak{}n-\allowbreak{}cont\allowbreak{}exts 1 -\allowbreak{}-\allowbreak{}context\allowbreak{}-\allowbreak{}size 10\allowbreak{}00000 -\allowbreak{}-\allowbreak{}anchor-\allowbreak{}t\allowbreak{}hreshold\allowbreak{} 5000} & exp1 (샘플러만) & 구성만으로 tail이 사는가 (web\_\allowbreak{}attacks 126 \ensuremath{\rightarrow} 1,522 rows). XGB+\allowbreak{}XGB\_\allowbreak{}sqrt 같은 union으로 in-run  \ensuremath{\rightarrow}  model-agnostic 여부 즉답 \\
+{}\textbf{R3c} & \texttt{-\allowbreak{}-\allowbreak{}n-\allowbreak{}cont\allowbreak{}exts 4 -\allowbreak{}-\allowbreak{}context\allowbreak{}-\allowbreak{}size 10\allowbreak{}00000 -\allowbreak{}-\allowbreak{}anchor-\allowbreak{}t\allowbreak{}hreshold\allowbreak{} 0 -\allowbreak{}-\allowbreak{}ign\allowbreak{}ore-\allowbreak{}pret\allowbreak{}raining-\allowbreak{}limits} & exp1 (E만) & E-only 컨트롤 (비례 bagging) \\
+{}\textbf{R3a} & \texttt{-\allowbreak{}-\allowbreak{}n-\allowbreak{}cont\allowbreak{}exts 4 -\allowbreak{}-\allowbreak{}context\allowbreak{}-\allowbreak{}size 10\allowbreak{}00000 -\allowbreak{}-\allowbreak{}anchor-\allowbreak{}t\allowbreak{}hreshold\allowbreak{} 5000 -\allowbreak{}-\allowbreak{}ignore-\allowbreak{}p\allowbreak{}retraini\allowbreak{}ng-\allowbreak{}limit\allowbreak{}s} & R3c (anchor만) /\allowbreak{} R1a (E만) & 헤드라인. \{prop,anchor\}×\{E=\allowbreak{}1,4\} factorial 완성 \\
+{}\textbf{S-p/\allowbreak{}a 100k, 300k} & \texttt{-\allowbreak{}-\allowbreak{}contex\allowbreak{}t-\allowbreak{}size \{\allowbreak{}100000,\allowbreak{}3\allowbreak{}00000\}\allowbreak{}} × threshold \{0,5000\} & 예산 스윕 & Fig 1: 0813의 표본효율(13 rows: XGB 0 vs TabPFN 0.56)을 uncapped로 재확립 \\
+{}\textbf{W5} & 위 승자 config +\allowbreak{} \texttt{-\allowbreak{}-\allowbreak{}eval-\allowbreak{}s\allowbreak{}plit val\allowbreak{}} & predict-only & Fig 2: 근미래 vs 원미래 열화 (XGB 대비) \\
+\bottomrule
+\end{longtable}
+\endgroup
+balance\_\allowbreak{}probabilities는 \textbf{run이 아니라 컬럼}: 모든 run이 평균 확률을 덤프하고 \texttt{tabpfn\_\allowbreak{}\allowbreak{}t\allowbreak{}acb\_\allowbreak{}\allowbreak{}bp}를 post-hoc으로 계산한다 (스모크에서 실제 bp fit과 동치 검증 완료 — classifier.py:1623-1630에서 bp는 estimator 평균 후 마지막 단계라 정확히 재현됨).
+
+판정 규칙 (사전 등록):
+
+\par\noindent \textbullet\enspace R1a에서 \textbf{floored XGB가 이미 bar에 도달}하면  \ensuremath{\rightarrow}  효과는 model-agnostic. 서사 피벗: "per-class floor가 기여, TabPFN의 남은 주장은 저예산 영역(Fig 1 왼쪽)".
+
+
+\par\noindent \textbullet\enspace R1a에서 TabPFN이 XGB보다 \textbf{+\allowbreak{}0.05 이상 더} 얻으면  \ensuremath{\rightarrow}  R3 진행.
+
+
+\par\noindent \textbullet\enspace 둘 다 안 움직이면 (precision \textasciitilde{}0.10 정체)  \ensuremath{\rightarrow}  tail은 구성이 아니라 shift/\allowbreak{}overlap 한계  \ensuremath{\rightarrow}  Wave 4 소예산 스윕(표본효율 fallback)과 W5(shift 축)가 본론.
+
+
+\subsection{4. 성공 기준 (숫자, 사전 등록 — R2a 후 bar 1회 갱신 외 불변)}
+현재 bar (uncapped full-pool 무가중 XGB): web\_\allowbreak{}attacks \textbf{0.172}. R2a의 xgboost\_\allowbreak{}sqrt가 이를 갱신하면 그 값이 bar.
+
+\par\noindent \textbullet\enspace \textbf{승리}: web\_\allowbreak{}attacks F1 \ensuremath{\geq} bar +\allowbreak{} 0.05, AND macro \ensuremath{\geq} exp1 XGB − 0.010 (\ensuremath{\geq} 0.7468), AND benign F1 \ensuremath{\geq} exp1 XGB − 0.005 (\ensuremath{\geq} 0.990), AND 비-tail 클래스 손실 \ensuremath{\leq} 0.02.
+
+
+\par\noindent \textbullet\enspace \textbf{shift 기준} (W5): tail의 val \ensuremath{\rightarrow} test 열화가 같은 조건 XGB 열화의 \ensuremath{\leq} 절반.
+
+
+\par\noindent \textbullet\enspace \textbf{Fallback A} (model-agnostic): floored XGB가 TACB ±0.03 이내  \ensuremath{\rightarrow}  기여는 context floor. 지지 조건: k=\allowbreak{}100k에서 비례-TabPFN \ensuremath{\geq} 비례-XGB +\allowbreak{} 0.10 (표본효율 주장).
+
+
+\par\noindent \textbullet\enspace \textbf{Fallback B} (clean negative): 아무것도 bar를 못 넘음  \ensuremath{\rightarrow}  "기존 TabPFN tail 우위는 test-cap 아티팩트; 정직한 프로토콜에서는 weighted XGB +\allowbreak{} floor가 bar"라는 측정 결과.
+
+
+제외 목록 (어떤 결과가 나와도 tail 주장에 사용 금지, 0819 §3): cic2018 slowhttptest/\allowbreak{}ftp-bruteforce (단일 벡터 mislabel), ton\_\allowbreak{}iot scanning (97\% benign 충돌), ton\_\allowbreak{}iot backdoor (203k rows, tail 아님), bot\_\allowbreak{}iot theft (purity 0.2446 =\allowbreak{} 천장), cic2017 전체 (val-discard 결함 +\allowbreak{} tail test n\ensuremath{\leq}8), heartbleed (test n=\allowbreak{}3).
+
+\subsection{5. 구현 노트 (검증 기록)}
+\par\noindent \textbullet\enspace 훅: TabPFN 8.2.0 \texttt{inferenc\allowbreak{}e\_\allowbreak{}\allowbreak{}config\allowbreak{}=\allowbreak{}\allowbreak{}\{\allowbreak{}"SUBSA\allowbreak{}MPLE\_\allowbreak{}\allowbreak{}SAM\allowbreak{}PLES": [\allowbreak{}arr,\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}]\allowbreak{}\}\allowbreak{}} — estimator별 positional 인덱스가 전처리 전 그대로 적용 (transform.py:66-68; dispatch ensemble.py:525-543, len(list)=\allowbreak{}=\allowbreak{}n\_\allowbreak{}estimators이면 identity). \texttt{auto\_\allowbreak{}\allowbreak{}sca\allowbreak{}le\_\allowbreak{}\allowbreak{}n\_\allowbreak{}\allowbreak{}est\allowbreak{}imators=\allowbreak{}\allowbreak{}False} 필수. fit()에는 context들의 \textbf{union}만 전달 (1M guard는 union에 적용).
+
+
+\par\noindent \textbullet\enspace \texttt{-\allowbreak{}-\allowbreak{}n-\allowbreak{}cont\allowbreak{}exts}(E)와 \texttt{-\allowbreak{}-\allowbreak{}n-\allowbreak{}esti\allowbreak{}mators}(총원, E의 배수) 분리 — context마다 n\_\allowbreak{}estimators/\allowbreak{}E개의 전처리 variant. exp1과의 one-knob 체인용.
+
+
+\par\noindent \textbullet\enspace \texttt{save\_\allowbreak{}\allowbreak{}fit\allowbreak{}ted\_\allowbreak{}\allowbreak{}tabp\allowbreak{}fn\_\allowbreak{}\allowbreak{}model\allowbreak{}}은 list-form SUBSAMPLE\_\allowbreak{}SAMPLES를 JSON 직렬화 못함 (ndarray TypeError, 확인)  \ensuremath{\rightarrow}  TabPFN fit 체크포인트 없음. resume 지점은 예측 확률 npy (fit은 결정적, \texttt{\{\allowbreak{}tag\}\allowbreak{}\_\allowbreak{}\allowbreak{}co\allowbreak{}ntexts.\allowbreak{}n\allowbreak{}pz}로 context 결정성 검증).
+
+
+\par\noindent \textbullet\enspace 시드 밴드: context builder는 seed+\allowbreak{}950+\allowbreak{}class\_\allowbreak{}id (기존 +\allowbreak{}500+\allowbreak{}i/\allowbreak{}+\allowbreak{}800/\allowbreak{}+\allowbreak{}850/\allowbreak{}+\allowbreak{}900과 비충돌).
+
+
+\par\noindent \textbullet\enspace CPU 스모크 (cic2018\_\allowbreak{}capped, k=\allowbreak{}2000, E=\allowbreak{}2, web\_\allowbreak{}attacks anchor) 전부 통과: 결정성(바이트 동일), resume 동일, bp post-hoc =\allowbreak{}=\allowbreak{} bp fit, E=\allowbreak{}1 vs E=\allowbreak{}2 확률 상이, 가드 4종 SystemExit, --eval-split val 동작, composition CSV =\allowbreak{}=\allowbreak{} bincount.
+
+
+\par\noindent \textbullet\enspace 이 머신 CUDA 불가 (Error 804 driver mismatch)  \ensuremath{\rightarrow}  GPU run은 드라이버 복구 후. RAM 125GB — full-pool XGB(R2a)는 CPU로 즉시 가능.
+
+
+\subsection{5b. 스크립트 적대 리뷰 (17-agent workflow, GPU 지출 전) — 12건 확정, 전부 수정 반영}
+Major 4건 (수정 완료):
+
+\par\noindent \textbullet\enspace \textbf{context×전처리기 교락}: TabPFN은 전처리 variant를 estimator 슬롯에 블록 배정 (ensemble.py:1063-1067)하는데 context 리스트도 블록 반복이면 context가 특정 variant에 고정됨  \ensuremath{\rightarrow}  \textbf{인터리브 배정으로 수정} (context e가 슬롯 \{e, e+\allowbreak{}E, …\} 차지). E=\allowbreak{}=\allowbreak{}n\_\allowbreak{}estimators면 context당 1 variant는 불가피 — R3a/\allowbreak{}R3c가 같은 구조라 anchor knob 비교는 유효 (docstring에 명시).
+
+
+\par\noindent \textbullet\enspace \textbf{auto-E 커버리지 미달}: pool-비율 추정이 floor 복제/\allowbreak{}반올림 유실을 무시  \ensuremath{\rightarrow}  \textbf{E =\allowbreak{} max ceil(pool\_\allowbreak{}c /\allowbreak{} t\_\allowbreak{}c)} (실제 타깃 기반)로 수정 +\allowbreak{} 커버리지 부족 시 경고 출력.
+
+
+\par\noindent \textbullet\enspace \textbf{exp1 링크의 숨은 2번째 knob}: 클래스별 카운트는 같아도 행 실현이 다름 (+\allowbreak{}850 draw vs +\allowbreak{}950 permutation)  \ensuremath{\rightarrow}  docstring에 명시 +\allowbreak{} \textbf{R0 브릿지 run} (\texttt{-\allowbreak{}-\allowbreak{}max-\allowbreak{}tr\allowbreak{}ain-\allowbreak{}samp\allowbreak{}les 1000\allowbreak{}000 -\allowbreak{}-\allowbreak{}co\allowbreak{}ntext-\allowbreak{}si\allowbreak{}ze -\allowbreak{}1} =\allowbreak{} exp1의 context를 그대로 재구성) 추가.
+
+
+\par\noindent \textbullet\enspace \textbf{XGB 하이퍼파라미터가 resume 키에 없음}  \ensuremath{\rightarrow}  XGB 체크포인트에 7개 파라미터 시그니처 추가.
+
+
+Minor: largest-remainder \ensuremath{\geq}1 bump의 예산 초과 walk-back(+\allowbreak{}assert), resume tag에 data/\allowbreak{}ckpt 경로 해시 추가, contexts.npz에 global row id 저장·대조, \textbf{\texttt{tabpfn\_\allowbreak{}\allowbreak{}t\allowbreak{}acb\_\allowbreak{}\allowbreak{}bpct\allowbreak{}x} 컬럼 추가} (bp는 union prior로 나누는데 anchored 클래스는 per-context prior가 \textasciitilde{}E배 큼 — context prior 버전을 공짜 컬럼으로), E>1에서 union-XGB의 anchor 희석(\textasciitilde{}E배) 명시.
+
+수정 후 스모크 재통과: 결정성/\allowbreak{}resume/\allowbreak{}bp동치/\allowbreak{}E-민감도/\allowbreak{}가드/\allowbreak{}auto-E 전량 커버리지 전부 OK.
+
+\subsection{6. 결과}
+\subsubsection{R2a — full-pool XGB bar (cic2018, uncapped, CPU, 2026-08-20)}
+run: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260820\_\allowbreak{}\allowbreak{}114150\_\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}exp4\allowbreak{}\_\allowbreak{}\allowbreak{}tailbag\allowbreak{}} (fit 518s/\allowbreak{}482s)
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.31073\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33616\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.35311\linewidth-2\tabcolsep\relax}}
+\toprule
+class & xgboost F1 (P/\allowbreak{}R) & xgboost\_\allowbreak{}sqrt F1 (P/\allowbreak{}R) \\ \midrule
+\endfirsthead
+class & xgboost F1 (P/\allowbreak{}R) & xgboost\_\allowbreak{}sqrt F1 (P/\allowbreak{}R) \\ \midrule
+\endhead
+{}web\_\allowbreak{}attacks & 0.1724 (0.105/\allowbreak{}0.479) & \textbf{0.2427} (0.142/\allowbreak{}0.843) \\
+{}infiltration & 0.4291 (0.632/\allowbreak{}0.325) & 0.2404 (0.181/\allowbreak{}0.360) \\
+{}benign & 0.9943 & 0.9869 \\
+{}macro /\allowbreak{} tail\_\allowbreak{}avg & \textbf{0.7548} /\allowbreak{} 0.5331 & 0.7373 /\allowbreak{} 0.4938 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace 무가중 컬럼이 exp2 기록(20260818\_\allowbreak{}111317)을 소수점 4자리까지 재현  \ensuremath{\rightarrow}  exp4 XGB 경로 검증.
+
+
+\par\noindent \textbullet\enspace \textbf{sqrt 가중은 cic2018에서 net 손해}: web\_\allowbreak{}attacks recall 0.48 \ensuremath{\rightarrow} 0.84로 오르지만 infiltration precision 붕괴(0.63 \ensuremath{\rightarrow} 0.18), macro −0.018. bot\_\allowbreak{}iot의 +\allowbreak{}0.199(0819)와 정반대 — 가중 효과는 데이터셋 의존적.
+
+
+\par\noindent \textbullet\enspace \textbf{bar 갱신 (사전 등록된 1회 갱신, 2026-08-20)}: per-class bar web\_\allowbreak{}attacks =\allowbreak{} \textbf{0.2427} (xgboost\_\allowbreak{}sqrt)  \ensuremath{\rightarrow}  TACB 승리 기준 \textbf{\ensuremath{\geq} 0.293}. macro/\allowbreak{}benign 기준은 무가중 XGB (0.7548 /\allowbreak{} 0.9943) 유지.
+
+
+\subsubsection{R2c — 1M anchored-context XGB (cic2018, uncapped, CPU, 2026-08-20)}
+run: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260820\_\allowbreak{}\allowbreak{}115223\_\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}exp4\allowbreak{}\_\allowbreak{}\allowbreak{}tailbag\allowbreak{}} context: web\_\allowbreak{}attacks anchor 1,522 rows (0.15\%), head 비례 disjoint — R1a와 동일 union.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22500\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24265\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25441\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27794\linewidth-2\tabcolsep\relax}}
+\toprule
+class & xgboost F1 (P/\allowbreak{}R) & xgboost\_\allowbreak{}sqrt F1 (P/\allowbreak{}R) & 참조 (exp1 prop /\allowbreak{} full-pool) \\ \midrule
+\endfirsthead
+class & xgboost F1 (P/\allowbreak{}R) & xgboost\_\allowbreak{}sqrt F1 (P/\allowbreak{}R) & 참조 (exp1 prop /\allowbreak{} full-pool) \\ \midrule
+\endhead
+{}web\_\allowbreak{}attacks & 0.1987 (0.119/\allowbreak{}0.593) & 0.2282 (0.132/\allowbreak{}0.864) & 0.1621 /\allowbreak{} 0.1724 \\
+{}infiltration & 0.4395 & 0.2448 & 0.4502 /\allowbreak{} 0.4291 \\
+{}macro /\allowbreak{} tail\_\allowbreak{}avg & \textbf{0.7605} /\allowbreak{} 0.5453 & 0.7366 /\allowbreak{} 0.4903 & 0.7568 /\allowbreak{} 0.7548 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{판정 (사전 등록 규칙 적용):}
+
+\par\noindent \textbullet\enspace anchored XGB(무가중 0.1987, sqrt 0.2282) 모두 \textbf{bar 0.2427 미달}  \ensuremath{\rightarrow}  "XGB가 floor만으로 bar 도달  \ensuremath{\rightarrow}  model-agnostic 피벗" 분기는 \textbf{기각}. anchor는 XGB에 +\allowbreak{}0.037만 줌 (precision 0.105 \ensuremath{\rightarrow} 0.119 정체가 원인 — base-rate 문제).
+
+
+\par\noindent \textbullet\enspace 부수 발견: \textbf{1M anchored context XGB macro 0.7605 > full-pool 12M XGB 0.7548}. context 구성만으로 1/\allowbreak{}12 데이터가 full pool을 이김 (model-agnostic한 구성 가치의 증거, 단 web\_\allowbreak{}attacks 자체는 여전히 낮음).
+
+
+\par\noindent \textbullet\enspace R1a 진행 조건: TACB(TabPFN) web\_\allowbreak{}attacks가 같은 context에서 XGB(0.1987)보다 +\allowbreak{}0.05 이상, 즉 \textbf{\ensuremath{\geq} 0.25}면 R3 진행. 승리 기준은 \ensuremath{\geq} 0.293 (bar+\allowbreak{}0.05).
+
+
+\par\noindent \textbullet\enspace XGB 체크포인트가 R1a와 tag 공유  \ensuremath{\rightarrow}  R1a GPU run에서 XGB 두 컬럼 resume, TabPFN만 계산.
+
+
+\subsection{7. GPU 복구 후 실행 기록 (2026-08-20 12시대, 결과 나오기 전 기록)}
+재부팅으로 driver 복구: 580.173.02 /\allowbreak{} CUDA 13.0, torch 2.11.0+\allowbreak{}cu130, RTX 4090 24GB.
+
+\textbf{1차 발사 (12:17, fit\_\allowbreak{}preprocessors 기본값)  \ensuremath{\rightarrow}  R0/\allowbreak{}R1a 둘 다 TabPFN predict에서 CUDA OOM.}
+
+\par\noindent \textbullet\enspace 원인: exp4 기본 \texttt{fit\_\allowbreak{}\allowbreak{}mode\allowbreak{}=\allowbreak{}\allowbreak{}fit\_\allowbreak{}\allowbreak{}pre\allowbreak{}processo\allowbreak{}rs}는 test 청킹이 없는 경로라 4.02M test를 한 forward로 실체화. 내부 자동 청킹(\texttt{TABPFN\_\allowbreak{}\allowbreak{}M\allowbreak{}AX\_\allowbreak{}\allowbreak{}BATCH\allowbreak{}ED\_\allowbreak{}\allowbreak{}TEST\_\allowbreak{}\allowbreak{}ROWS}=\allowbreak{}32768, inference.py:1190-1218)은 \textbf{fit\_\allowbreak{}with\_\allowbreak{}cache 전용}.
+
+
+\par\noindent \textbullet\enspace exp1이 이 4090에서 1M ctx × 4.02M test를 완주(predict 5,290s)할 수 있었던 이유가 바로 이것 (exp1은 cache mode). nfv3\_\allowbreak{}v3\_\allowbreak{}common의 예측 공식(\texttt{n\_\allowbreak{}\allowbreak{}test\_\allowbreak{}\allowbreak{}b\allowbreak{}atch × 1\allowbreak{}2,\allowbreak{}343B})은 청킹 도입 전 측정치라 cache mode에서 과대 예측 (exp1 timings의 predicted 58.88 GiB에도 실제 완주). fit\_\allowbreak{}preprocessors 경로에는 공식이 여전히 유효  \ensuremath{\rightarrow}  이번 OOM.
+
+
+\par\noindent \textbullet\enspace 1차 크래시 run은 results/\allowbreak{}에 dir을 남기지 않음 (record 오염 없음).
+
+
+\textbf{발견: TabPFN-3의 fit\_\allowbreak{}with\_\allowbreak{}cache는 KV cache를 기본 int8 양자화} (inference.py:860, \texttt{kv\_\allowbreak{}\allowbreak{}cache\allowbreak{}\_\allowbreak{}\allowbreak{}precisi\allowbreak{}on} 기본 None  \ensuremath{\rightarrow}  int8 resolve). 두 fit\_\allowbreak{}mode는 \textbf{다른 모델이다}: capped 스모크(k=\allowbreak{}2000, E=\allowbreak{}2, 동일 contexts.npz 확인)에서 두 모드의 확률 max|diff| 0.486, mean 0.030, argmax 일치율 79.0\%. exp1 기록(web\_\allowbreak{}attacks 0.1615)은 int8-cache 모델의 숫자.
+
+\textbf{GPU 검증 배터리 (본 run 전, 전부 통과):}
+
+\par\noindent \textbullet\enspace cache mode 결정성: fresh resume dir 재실행  \ensuremath{\rightarrow}  probs npy md5 동일.
+
+
+\par\noindent \textbullet\enspace SUBSAMPLE\_\allowbreak{}SAMPLES 훅 × cache mode: 토이 체크(E=\allowbreak{}2, 800/\allowbreak{}1,200행 인덱스)에서 estimator별 KV 캐시 row 차원이 각자 context 크기와 정확히 일치 (800/\allowbreak{}1,200; int8 KV +\allowbreak{} fp16 보조 텐서 확인)  \ensuremath{\rightarrow}  훅이 캐시 빌드에 상속됨. E>1 설계 유효.
+
+
+\par\noindent \textbullet\enspace 컨텍스트 빌더는 fit\_\allowbreak{}mode 무관: 두 모드의 contexts.npz 동일.
+
+
+\textbf{결정 (사전 등록 — R0/\allowbreak{}R1a 결과 보기 전): 캠페인 전체를 \texttt{-\allowbreak{}-\allowbreak{}fit-\allowbreak{}mo\allowbreak{}de fit\_\allowbreak{}\allowbreak{}w\allowbreak{}ith\_\allowbreak{}\allowbreak{}cach\allowbreak{}e}로 진행.} 근거: (a) exp1 부모가 cache mode  \ensuremath{\rightarrow}  R0 브릿지는 같은 경로여야 exp1 기록과 직접 재현 대조가 됨. (b) 이 카드에서 fit\_\allowbreak{}preprocessors는 250k 배치 필요  \ensuremath{\rightarrow}  context 재인코딩 17×4회 \ensuremath{\approx} run당 \textasciitilde{}7h; cache mode는 \textasciitilde{}1.9h. (c) 스크립트 무수정, 인자만 추가 — Args 덤프에 기록. 부작용: fm 태그 차이로 R1a의 XGB가 R2c 체크포인트를 재사용하지 못하고 재학습 (동일 데이터/\allowbreak{}시드/\allowbreak{}파라미터라 동일 결과 기대; 판정은 어차피 in-run 비교).
+
+\textbf{12:32 R0(cache)  \ensuremath{\rightarrow}  R1a(cache) 순차 재발사  \ensuremath{\rightarrow}  R0 다시 predict OOM (2차, \textasciitilde{}13:00).}
+
+\par\noindent \textbullet\enspace cache mode도 단일 4M 호출은 죽는다: 22.77 GiB까지 상승 후 72 MiB 할당 실패. 내부 32k 청킹은 transformer 활성화만 묶고, \textbf{full-call 규모 할당}(X\_\allowbreak{}test 텐서, GPU 전처리 중간물, 출력 GPU concat — inference.py:1134/\allowbreak{}1200-1218)은 호출 크기에 비례해 그대로 쌓인다.
+
+
+\par\noindent \textbullet\enspace \textbf{정정: "exp1이 이 4090에서 완주했다"는 §7 위 추론은 오류.} cache mode 4M 단일 호출이 로컬에서 불가함이 실측됐으므로 exp1(0818)은 Colab(80GB급)에서 돈 것으로 추정 정정. common.py의 cache-mode 공식(440k 단일 호출 실측 16.55 GiB)은 유효했고, 그 공식대로 4M 호출은 애초에 불가였다.
+
+
+\par\noindent \textbullet\enspace \textbf{수정: cache mode +\allowbreak{} script 배치.} \texttt{-\allowbreak{}-\allowbreak{}test-\allowbreak{}b\allowbreak{}atch-\allowbreak{}siz\allowbreak{}e 500000\allowbreak{}} (공식 예측 peak 12.63 +\allowbreak{} 5.75 \ensuremath{\approx} 17.2 GiB < 20.5; 실측 anchor point 440k=\allowbreak{}16.55와 정합). 9배치, 배치당 KV 재전송(4 est × \textasciitilde{}11.5 GiB) 오버헤드 \textasciitilde{}15분 추가 예상.
+
+
+\par\noindent \textbullet\enspace R0의 XGB ckpt(fm 태그)는 생존  \ensuremath{\rightarrow}  resume; TabPFN fit(\textasciitilde{}20분)만 재계산.
+
+
+\textbf{13:04 R0(cache, tb=\allowbreak{}500k)  \ensuremath{\rightarrow}  R1a(동일) 3차 발사.} 다음: R0로 브릿지 검증(exp1 TabPFN web\_\allowbreak{}attacks 0.1615 /\allowbreak{} macro 0.7518 근방 재현 여부 — 단 exp1은 Colab, R0는 로컬 4090이라 하드웨어 차이는 남는 knob)  \ensuremath{\rightarrow}  R1a 게이트 판정 (TabPFN \ensuremath{\geq} 0.25  \ensuremath{\rightarrow}  R3 진행; \ensuremath{\geq} 0.293 승리).
+
+\subsection{8. EXP5 사전 등록 — Energy-weighted View-MoE (2026-08-20, 결과 전 고정)}
+사용자 방향 확정: "s44의 XGB expert를 TabPFN으로, closed-set으로, tail을 살리는 context 분배를 파보자." 구조는 s44의 직계이되 기록된 함정을 피하도록 재설계:
+
+\par\noindent \textbullet\enspace \textbf{View =\allowbreak{} 클래스 절단이 아니라 분포 기울임.} view v의 클래스 예산 \ensuremath{\propto} pool\_\allowbreak{}c\textasciicircum{}α, pool\_\allowbreak{}c 상한(오버샘플 없음), largest-remainder +\allowbreak{} waterfill. α \ensuremath{\in} \{1.0(natural/\allowbreak{}head), 0.5(sqrt/\allowbreak{}중간), 0.0(balanced/\allowbreak{}tail-max)\}. 모든 view가 전체 클래스를 포함  \ensuremath{\rightarrow}  (a) 선택 실수가 "불가능한 예측"이 되지 않음, (b) 클래스 수 동일로 energy 비교 가능(s01/\allowbreak{}s20 padding 함정 회피). 행은 클래스별 공유 permutation (seed+\allowbreak{}950+\allowbreak{}class\_\allowbreak{}id, exp4와 같은 밴드)의 prefix  \ensuremath{\rightarrow}  view 간 차이는 per-class 개수뿐.
+
+
+\par\noindent \textbullet\enspace \textbf{선택 =\allowbreak{} threshold 없는 softmax 가중} (실패 모드 \#2 회피): view별 E\_\allowbreak{}v(x) =\allowbreak{} −T·logsumexp(logits\_\allowbreak{}v(x)/\allowbreak{}T) (T=\allowbreak{}1, estimator 평균), w\_\allowbreak{}v =\allowbreak{} softmax(−E\_\allowbreak{}v/\allowbreak{}τ). τ \ensuremath{\rightarrow} \ensuremath{\infty} =\allowbreak{} 단순 평균(bagging), τ \ensuremath{\rightarrow} 0 =\allowbreak{} argmin(s44식 hard 선택) — \textbf{한 run이 연속체 전체를 post-hoc 컬럼으로 담는다} (τ \ensuremath{\in} \{0.25, 1, 4\} +\allowbreak{} argmin +\allowbreak{} avg). TTA 없음 (s23).
+
+
+\par\noindent \textbullet\enspace \textbf{TabPFN logits}: \texttt{\_\allowbreak{}\allowbreak{}raw\_\allowbreak{}\allowbreak{}pre\allowbreak{}dict(X,\allowbreak{} \allowbreak{}return\_\allowbreak{}\allowbreak{}r\allowbreak{}aw\_\allowbreak{}\allowbreak{}logit\allowbreak{}s=\allowbreak{}\allowbreak{}True)}  \ensuremath{\rightarrow}  (m, n, C) 원시 logit (un-permuted, 온도/\allowbreak{}평균 전; classifier.py:1337/\allowbreak{}1632). 후처리는 \texttt{logits\_\allowbreak{}\allowbreak{}t\allowbreak{}o\_\allowbreak{}\allowbreak{}probab\allowbreak{}ilities}로 공식 경로 재현 (스모크에서 predict\_\allowbreak{}proba와 동치 검증).
+
+
+\par\noindent \textbullet\enspace \textbf{XGB 미러 컨트롤}: 같은 view 행으로 view별 XGB(무가중)도 학습, margin에서 같은 energy/\allowbreak{}선택 컬럼  \ensuremath{\rightarrow}  "선택이 되면 그것은 ICL 덕인가"를 in-run으로 판정 (s44 직접 비교).
+
+
+\par\noindent \textbullet\enspace \textbf{스코프}: cic2018, closed-set만 (unseen/\allowbreak{}OOD 축 없음 — 사용자 확정), uncapped test.
+
+
+\textbf{D1 (진단 run, m=\allowbreak{}1/\allowbreak{}view):}
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+python tabpfn/nfv3_v3_exp5_energy_view_moe.py --target-dataset cic2018 \
+  --context-size 1000000 --view-alphas 1.0,0.5,0.0 --n-estimators 1 \
+  --test-cap-per-class 0 --fit-mode fit_with_cache --test-batch-size 500000
+
+\end{Verbatim}
+예상 비용: fit 3×\textasciitilde{}310s +\allowbreak{} predict 3×\textasciitilde{}1,400s \ensuremath{\approx} 1.5h. R1a 종료 후 투입.
+
+\textbf{판정 (사전 등록):}
+
+\par\noindent \textbullet\enspace \textbf{선택 정당화 게이트}: soft(최적 τ) 또는 argmin이 (i) viewavg 대비 web\_\allowbreak{}attacks F1 +\allowbreak{}0.03 이상 AND macro 손실 \ensuremath{\leq} 0.01, (ii) best single view도 상회 — 둘 다 만족해야 "선택이 평균을 이긴다". 만족 시 D2 (m=\allowbreak{}4, 승리 기준 0.293 적용).
+
+
+\par\noindent \textbullet\enspace \textbf{s23-아날로그 진단}: 행별로 argmin-E view가 "그 행을 맞히는 view"인 비율 vs uniform 1/\allowbreak{}3 vs oracle-view(행별 최선 view) — energy의 view-식별력을 직접 측정. 식별력 \ensuremath{\approx} 우연이면 ICL에서도 선택 불가로 기록하고 라인 종료 (s23/\allowbreak{}s25 계보 완성).
+
+
+\par\noindent \textbullet\enspace \textbf{model-agnostic 분기}: XGB 미러에서 같은 이득이 나면 기여는 view 구성이지 TabPFN이 아님.
+
+
+\par\noindent \textbullet\enspace tail 판정은 web\_\allowbreak{}attacks 중심 (제외 목록 0819 §3 준수), P/\allowbreak{}R 분해 필수.
+
+
+신규 파일: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp5\_\allowbreak{}\allowbreak{}ener\allowbreak{}gy\_\allowbreak{}\allowbreak{}view\_\allowbreak{}\allowbreak{}moe.\allowbreak{}py} (exp4에서 fork, core import-only).
+
+\textbf{§8a. D1 전 수정 (2026-08-20 오후, 스모크 발견 — 결과 전 개정)}
+
+\par\noindent \textbullet\enspace CPU 스모크 배터리 15/\allowbreak{}15 통과: 가드 5종, 라이브러리 동치(단일 호출 vs predict\_\allowbreak{}proba max|diff| 2.98e-08; XGB softmax(margin) vs predict\_\allowbreak{}proba 5.96e-08), 선택 산술 항등식 (τ \ensuremath{\rightarrow} \ensuremath{\infty}=\allowbreak{}평균, τ \ensuremath{\rightarrow} 0=\allowbreak{}argmin), 결정성 byte-동일(18 npz), resume 동치, post-hoc 재현. 부수 실측: \textbf{배치 분할 자체가 bf16 확률 노이즈 \textasciitilde{}4e-4를 만든다} (logits는 1e-7 불변) — exp4의 배치 predict에도 동일하게 존재하는 고유 특성.
+
+
+\par\noindent \textbullet\enspace \textbf{발견: TabPFN-v3 raw logit은 이미 log-softmax 정규화되어 있다.} 스모크 덤프 실측: logits mean −7.5 /\allowbreak{} std 3.9인데 \textbf{logsumexp =\allowbreak{} +\allowbreak{}0.00025 ± 0.00007} (전 view 동일). 즉 T=\allowbreak{}1 logsumexp energy는 TabPFN 백본에서 \textbf{구조적으로 퇴화} (잔차는 수치 노이즈 스케일). XGB margin energy는 정상 (−3.9 등, view별 분리).
+
+
+\par\noindent \textbullet\enspace \textbf{selector 개정 (모두 같은 덤프에서 계산, run 설계 불변):} view-선택 스코어를 3종으로 일반화 — \texttt{energy}(−T·logsumexp; XGB의 주 스코어, TabPFN에선 퇴화 대조군), \texttt{nmaxp}(−max\_\allowbreak{}c logit; \textbf{TabPFN의 주 스코어}, log-prob에서 −max log-prob =\allowbreak{} MSP 계열), \texttt{nmargin}(−(top1−top2)). 각 스코어에 argmin +\allowbreak{} softmax(−s/\allowbreak{}τ) 컬럼. 판정 게이트 1은 \textbf{백본별 주 스코어}(TabPFN=\allowbreak{}nmaxp, XGB=\allowbreak{}energy)에 적용하고 나머지는 보고만 (다중비교 정직성). 진단 테이블도 selector별로 확장.
+
+
+\textbf{§8b. 스크립트 적대 리뷰 (14-agent workflow, GPU 지출 전) — 확정 10건/\allowbreak{}반박 0건, 전부 반영}
+
+Major 3건 (실질 2개 이슈): ① \texttt{-\allowbreak{}-\allowbreak{}energy\allowbreak{}-\allowbreak{}T}가 prediction tag에 없어 T 변경 시 낡은 energy를 조용히 resume  \ensuremath{\rightarrow}  tag에 \texttt{\_\allowbreak{}\allowbreak{}eT\{\allowbreak{}T\}\allowbreak{}} 추가 +\allowbreak{} npz에 T 저장 +\allowbreak{} 로드 시 불일치 SystemExit. ② docstring의 "a100 view =\allowbreak{}=\allowbreak{} exp1/\allowbreak{}R0 실현" 주장은 \textbf{거짓} — per-class counts만 일치하고 행 실현은 다름 (exp1/\allowbreak{}R0: seed+\allowbreak{}850 rng.choice over 1M pre-cap; exp5: seed+\allowbreak{}950 permutation prefix over full pool — exp4 §5b \#3과 같은 숨은 knob). R0는 counts-일치 참조로만 사용, 깨끗한 비교는 within-run 컬럼 간으로 정정.
+
+Minor: atag 0.01 해상도 충돌 가드; fit-tag docstring 수정(TabPFN fit은 체크포인트 없음); \textbf{게이트 1 판정 컬럼을 사전 지정} — τ 4-way 사후 선택은 test-set 튜닝이므로 판정은 \texttt{\{\allowbreak{}backbon\allowbreak{}e\}\allowbreak{}\_\allowbreak{}\allowbreak{}\{\allowbreak{}주스코어\allowbreak{}\}\allowbreak{}\_\allowbreak{}\allowbreak{}amin} (순수 선택 =\allowbreak{} s44-아날로그 질문) 하나로 고정, soft τ 컬럼은 보고·Fig 전용; 기본값을 등록 프로토콜에 정렬 (tc=\allowbreak{}0, fit\_\allowbreak{}with\_\allowbreak{}cache, tb=\allowbreak{}500k — 기본값 실행이 문서화된 OOM을 재현하던 문제); exp4의 context-결정성 체크포인트 복원 (view.npz 검증, resume된 logits의 전제 보증).
+
+수정 반영 후 스모크 배터리 전량 재통과 (가드 6종 +\allowbreak{} 라이브러리 동치 +\allowbreak{} 선택 항등식 +\allowbreak{} 스모크 완주 +\allowbreak{} 결정성 byte-동일 +\allowbreak{} resume 동치/\allowbreak{}태그 히트 +\allowbreak{} view-결정성 검증 +\allowbreak{} post-hoc 산술 재현). \textbf{EXP5는 GPU 투입 준비 완료.}
+
+\textbf{우선순위 변경 (사용자, 14:2x)}: R0 3차를 predict 1/\allowbreak{}9에서 중단하고 \textbf{D1을 먼저} 투입 (14:2x 발사, D1  \ensuremath{\rightarrow}  R0  \ensuremath{\rightarrow}  R1a 체인). R0의 TabPFN fit(\textasciitilde{}22분)은 체크포인트가 없어 재개 시 재계산; XGB ckpt는 fm 태그로 생존. R0 predict가 batch 1까지 OOM 없이 진행됐으므로 tb=\allowbreak{}500k 구성의 실전 검증 자체는 이미 확보됨.
+
+해석 주의 (기록): \textbf{XGB margin에는 view별 학습 prior의 절편이 실려} cross-view energy 비교가 competence가 아니라 prior-일치를 잴 수 있음 — XGB 미러의 pick\_\allowbreak{}share 해석 시 유의 (benign행 \ensuremath{\rightarrow} natural view, attack행 \ensuremath{\rightarrow} balanced view 선택은 prior 메커니즘 만으로도 발생 가능). TabPFN의 log-prob 기반 nmaxp에도 context prior가 반영되므로 같은 주의가 약하게 적용됨.
+
+\subsubsection{§8c. D1 결과 (run: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260820\_\allowbreak{}\allowbreak{}155551\_\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}cic2\allowbreak{}018\_\allowbreak{}\allowbreak{}exp5\allowbreak{}\_\allowbreak{}\allowbreak{}viewmoe\allowbreak{}}, 14:25–15:55)}
+핵심 컬럼 (web\_\allowbreak{}attacks F1 (P/\allowbreak{}R) /\allowbreak{} macro /\allowbreak{} benign):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29953\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30425\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.23821\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15802\linewidth-2\tabcolsep\relax}}
+\toprule
+column & web F1 (P/\allowbreak{}R) & macro & benign \\ \midrule
+\endfirsthead
+column & web F1 (P/\allowbreak{}R) & macro & benign \\ \midrule
+\endhead
+{}tabpfn\_\allowbreak{}va100 (natural) & 0.1601 (0.098/\allowbreak{}0.442) & 0.7012 & 0.9918 \\
+{}tabpfn\_\allowbreak{}va050 (sqrt) & 0.1448 (0.249/\allowbreak{}0.102) & 0.7388 & 0.9914 \\
+{}\textbf{tabpfn\_\allowbreak{}va000 (balanced)} & \textbf{0.2038} (0.121/\allowbreak{}0.660) & 0.7047 & 0.9640 \\
+{}tabpfn\_\allowbreak{}viewavg & 0.1714 (0.104/\allowbreak{}0.479) & 0.7510 & 0.9917 \\
+{}\textbf{tabpfn\_\allowbreak{}nmaxp\_\allowbreak{}amin (판정)} & \textbf{0.1632} (0.100/\allowbreak{}0.452) & 0.7499 & 0.9917 \\
+{}xgb\_\allowbreak{}va100 /\allowbreak{} \textbf{xgb\_\allowbreak{}va050} /\allowbreak{} va000 & 0.1645 /\allowbreak{} \textbf{0.2295} (0.136/\allowbreak{}0.729) /\allowbreak{} 0.1280 & 0.7551 /\allowbreak{} 0.7368 /\allowbreak{} 0.7041 & — \\
+{}xgb\_\allowbreak{}viewavg /\allowbreak{} xgb\_\allowbreak{}energy\_\allowbreak{}amin (판정) & 0.1879 /\allowbreak{} 0.1681 & 0.7321 /\allowbreak{} 0.7556 & — \\
+{}참조: exp1 TabPFN /\allowbreak{} bar (R2a sqrt) & 0.1615 /\allowbreak{} \textbf{0.2427} & 0.7518 /\allowbreak{} 0.7373 & — \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{게이트 판정 (사전 등록 기준 그대로):}
+
+\par\noindent \textbullet\enspace \textbf{게이트 1 실패 (명확).} 판정 컬럼 tabpfn\_\allowbreak{}nmaxp\_\allowbreak{}amin(0.1632)은 viewavg(0.1714) 대비 \textbf{−0.008} (기준 +\allowbreak{}0.03), best single view(va000 0.2038)에도 미달. XGB 미러도 같은 순서 (amin 0.1681 < viewavg 0.1879 < va050 0.2295). \textbf{선택은 평균을 못 이기고, 평균은 최선 단일 view를 못 이긴다.} D2 취소.
+
+
+\par\noindent \textbullet\enspace \textbf{게이트 2 실패 — s23 패턴의 ICL 재현.} 진단 표: web\_\allowbreak{}attacks 행에서 argmin\_\allowbreak{}correct(0.452) < avg(0.479) < oracle(0.664); 선택자는 web 행의 51.9\%에서 \textbf{틀린 view(a100, recall 0.442)를 고르고} 최선 view(a000, 0.660)는 45.8\%만. 전역 pick\_\allowbreak{}share가 a100에 71\% 쏠림 — head-view의 confidence가 어디서나 이긴다. XGB energy도 동일 (web: argmin 0.485 < avg 0.548 << oracle 0.811; benign 행의 99.9\%가 a100  \ensuremath{\rightarrow}  prior-지배, §8b 예고 그대로). \textbf{oracle 여유는 크지만(0.66/\allowbreak{}0.81) confidence-계열 스코어로는 도달 불가} — "expert 품질은 멀쩡, 선택이 병목"(s23)이 view-MoE +\allowbreak{} ICL에서도 성립. 사전 등록대로 이 라인 종료.
+
+
+\par\noindent \textbullet\enspace \textbf{게이트 3: 효과는 model-agnostic.} 선택 실패도, 기울임 이득도 양 백본 공통.
+
+
+\textbf{건설적 부수 발견 (TACB 사다리로 환류):}
+
+\par\noindent \textbullet\enspace \textbf{view 기울임 자체는 실질 효과}: TabPFN va000 web 0.2038 =\allowbreak{} 정직 프로토콜에서 이 프로젝트 TabPFN 최고 기록 (exp1 0.1615 대비 +\allowbreak{}0.042; R2c anchored XGB 0.1987도 상회). 단 balanced head의 대가로 macro 0.7047 (튜플 기준 미달).
+
+
+\par\noindent \textbullet\enspace \textbf{xgb\_\allowbreak{}va050 0.2295}: 무가중 XGB가 sqrt-기울인 1M context만으로 √가중 full-pool bar(0.2427)의 95\%에 도달 (macro도 0.7368 vs 0.7373 동급) — \textbf{context 기울임 \ensuremath{\approx} loss 가중의 효과를 1/\allowbreak{}12 데이터로 재현}. 구성 가치의 추가 증거 (R2c의 +\allowbreak{}0.037보다 큼).
+
+
+\par\noindent \textbullet\enspace viewavg\_\allowbreak{}bpv는 예고대로 참사 (web P 0.0075) — base-rate 메커니즘 확인.
+
+
+\par\noindent \textbullet\enspace tabpfn\_\allowbreak{}energy\_\allowbreak{}amin(퇴화 스코어)의 web 0.1920은 노이즈-argmin이 우연히 a000 쪽으로 쏠린 부산물 (macro 0.7054 붕괴 동반) — 사용 금지, 기록만.
+
+
+\par\noindent \textbullet\enspace \textbf{(추가 발견, 전 클래스 표에서) infiltration 앙상블 시너지}: TabPFN viewavg 0.4501이 단일 view 전부(va100 0.0968 /\allowbreak{} va050 0.3766 /\allowbreak{} va000 0.1297)를 상회  \ensuremath{\rightarrow}  tabpfn\_\allowbreak{}viewavg는 macro 0.7510(\ensuremath{\approx}exp1 0.7518) 유지하며 \textbf{tail\_\allowbreak{}avg 0.5400 =\allowbreak{} exp1 TabPFN(0.5261)+\allowbreak{}0.014, exp1 XGB(0.5367)도 상회}. XGB는 반대(viewavg가 infiltration 0.2521로 손해) — TabPFN 특이 시너지. 게이트1 실패는 selector 불민감 (3종 전부 평균 미달) 확인.
+
+
+\par\noindent \textbullet\enspace 판정 무결성 노트: web\_\allowbreak{}attacks 중심은 사전 등록(pool\ensuremath{\leq}5,000 few-shot은 web뿐); tail\_\allowbreak{}avg(\{bot, infiltration, web\})와 전 클래스 표는 run dir +\allowbreak{} 리포트에 공개.
+
+
+\textbf{다음}: D2 취소. R0(브릿지) \ensuremath{\rightarrow} R1a(anchored)가 체인에서 진행 중 — R1a는 "natural head +\allowbreak{} web 전량(0.15\%)"이라 va000(balanced head +\allowbreak{} web 0.15\%)과 정확히 head-구성 축으로만 다름  \ensuremath{\rightarrow}  macro를 지키며 web을 얼마나 살리는지가 남은 질문.
+
+\subsubsection{§8d. D1-post 분석 +\allowbreak{} E2 사전 등록 (2026-08-20 저녁)}
+\textbf{D1 덤프에서 GPU 없이 얻은 두 사실:}
+
+\par\noindent \textbullet\enspace \textbf{혼합비 \ensuremath{\approx} prior (실증).} a000의 확률에 prior 비율만 곱해 a050의 prior로 정렬하면 실제 a050과 argmax 99.24\% 일치 — 같은 증거(web 전량)를 가진 view들의 차이는 사실상 전부 암묵적 prior다. 따라서 \textbf{혼합비 연속체는 post-hoc 부분 prior 보정 p̂\_\allowbreak{}c/\allowbreak{}π\_\allowbreak{}c\textasciicircum{}γ (γ: 0=\allowbreak{}원본, 1=\allowbreak{}bp)으로 재실행 없이 스윕 가능}.
+
+
+\par\noindent \textbullet\enspace \textbf{γ 스윕 (test 진단 곡선 — 숫자는 아직 결과가 아님, 아래 경고):}
+
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16913\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11166\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18637\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13465\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13465\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12315\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14039\linewidth-2\tabcolsep\relax}}
+\toprule
+variant & γ & web F1 (P/\allowbreak{}R) & macro & tail & benign & tuple \\ \midrule
+\endfirsthead
+variant & γ & web F1 (P/\allowbreak{}R) & macro & tail & benign & tuple \\ \midrule
+\endhead
+{}tabpfn viewavg-pc & 0.2 & 0.2325 (0.137/\allowbreak{}0.778) & \textbf{0.7597} & \textbf{0.5593} & 0.9918 & \textbf{PASS} \\
+{}tabpfn viewavg-pc & 0.3 & \textbf{0.2353} (0.136/\allowbreak{}0.866) & 0.7595 & 0.5582 & 0.9918 & \textbf{PASS} \\
+{}tabpfn viewavg-pc & 0.4 & 0.2189 & 0.7534 & 0.5427 & 0.9915 & PASS \\
+{}tabpfn viewavg-pc & 0.5 & 0.1024 & 0.7192 & — & — & ---- \\
+{}xgb viewavg-pc & 0.2–0.3 & 0.2364–0.2382 & 0.733–0.736 & 0.484–0.489 & \ensuremath{\leq}0.987 & ---- (전 γ) \\
+{}참조: bar (R2a) & — & 0.2427 & 0.7373 & 0.4938 & 0.9869 & ---- (macro) \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{핵심 관찰}: TabPFN viewavg +\allowbreak{} γ\ensuremath{\in}[0.2,0.4]는 web을 bar −0.007까지 끌어올리며 \textbf{macro 0.760 /\allowbreak{} tail 0.559 /\allowbreak{} benign 0.992를 동시에 유지} — 캠페인 기록 중 유일한 tuple-PASS 영역이고, XGB 미러는 web은 비슷하게 오르나 tuple을 전 γ에서 실패 (\textbf{TabPFN-특이}: infiltration 시너지 +\allowbreak{} benign 강건성의 결합). γ=\allowbreak{}0.5(√ 규칙)는 절벽 밖  \ensuremath{\rightarrow}  고정 규칙으로는 안 되고 γ 선택 절차가 필요.
+
+\textbf{[주의] 정직성 경고}: 위 γ는 test에서 스윕한 것 — 이 표는 "곡선이 존재한다"는 진단이지 달성 숫자가 아니다. 확정 숫자는 아래 E2로만 주장한다.
+
+\textbf{E2 사전 등록 (val-선택 프로토콜, 결과 보기 전 고정):}
+
+\par\noindent \textbullet\enspace run: exp5 D1과 동일 config +\allowbreak{} \texttt{-\allowbreak{}-\allowbreak{}eval-\allowbreak{}s\allowbreak{}plit val\allowbreak{}} (3 view 재fit +\allowbreak{} 근미래 val predict, \textasciitilde{}1.5h GPU).
+
+
+\par\noindent \textbullet\enspace 선택 규칙: \textbf{val에서} tuple 다리(macro \ensuremath{\geq} exp1−0.010, benign \ensuremath{\geq} 0.990을 val 기준으로 동일 적용) 만족하는 γ \ensuremath{\in} \{0.05..0.45, 0.05 간격\} 중 web F1 최대인 γ*를 선택.
+
+
+\par\noindent \textbullet\enspace 확정 숫자: γ*를 기존 \textbf{test 덤프에 적용}한 값 하나만 보고 (test 재관찰 없음).
+
+
+\par\noindent \textbullet\enspace 부산물: 같은 두 run이 W5(근미래 vs 원미래 열화) 축을 공짜로 제공 — tail의 val \ensuremath{\rightarrow} test 열화를 XGB 미러와 비교.
+
+
+\par\noindent \textbullet\enspace 판정: E2 확정 web F1이 bar(0.2427) 이상이면 "무가중·구성+\allowbreak{}보정만으로 √가중 full-pool bar 도달"을 주장. 미달이어도 tuple-PASS면 pareto 개선으로 기록.
+
+
+\subsection{9. EXP6 사전 등록 — Context Recipe Lab (2026-08-20 저녁, 결과 전 고정)}
+사용자 방향 (D1 review 후): "선택 신호(TTA/\allowbreak{}confidence/\allowbreak{}proximity) 전부 제외, OOD 제외. \textbf{Expert 구성(증거)을 여러 조합으로 실험해 낮은 클래스들을 올려라. expert는 1M을 꽉 채우지 말고 경량화해서 빨리 돌려라.}"
+
+설계 원리: D1이 증명한 "혼합비 \ensuremath{\approx} prior (γ-등가)"에 따라, 혼합비만 다른 expert는 가치가 없다. EXP6의 레시피들은 \textbf{증거 자체}를 바꾼다 — hard negative(경계 표본), 혼동쌍, 표적 클래스 집중 — 그리고 각 증거-변화에는 원노브 컨트롤을 쌍으로 둔다.
+
+\textbf{공통}: k=\allowbreak{}50,000 /\allowbreak{} m=\allowbreak{}1 /\allowbreak{} cache mode /\allowbreak{} tb=\allowbreak{}500k /\allowbreak{} seed 42 /\allowbreak{} label-space 불변 (전 클래스 \ensuremath{\geq}1행, 복제 0) /\allowbreak{} 신규 스크립트 \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp6\_\allowbreak{}\allowbreak{}cont\allowbreak{}ext\_\allowbreak{}\allowbreak{}reci\allowbreak{}pes.\allowbreak{}py} (exp5 fork, 검증된 predict/\allowbreak{}덤프 기계 재사용) /\allowbreak{} run당 TabPFN +\allowbreak{} XGB 미러.
+
+\textbf{Round 1 레시피 (5종, 대상 클래스 명시):}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17445\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.33379\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19093\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30082\linewidth-2\tabcolsep\relax}}
+\toprule
+recipe & 구성 (k=\allowbreak{}50k) & 대상 & 원노브 상대 \\ \midrule
+\endfirsthead
+recipe & 구성 (k=\allowbreak{}50k) & 대상 & 원노브 상대 \\ \midrule
+\endhead
+{}\texttt{bal50k} & α=\allowbreak{}0 powerlaw (소형화 컨트롤) & 전반 & D1 va000 (k만 1M \ensuremath{\rightarrow} 50k) \\
+{}\texttt{web\_\allowbreak{}\allowbreak{}hn} & web 1,522 전량 +\allowbreak{} \textbf{benign hard-neg 20k} (web-kNN, pool-only) +\allowbreak{} benign 랜덤 8k +\allowbreak{} 잔여 비례 & web & \texttt{web\_\allowbreak{}\allowbreak{}ctrl\allowbreak{}} \\
+{}\texttt{web\_\allowbreak{}\allowbreak{}ctrl\allowbreak{}} & 동일 구성에서 hard-neg 20k  \ensuremath{\rightarrow}  benign 랜덤 20k & web & \texttt{web\_\allowbreak{}\allowbreak{}hn} (hn 효과 분리) \\
+{}\texttt{inf\_\allowbreak{}\allowbreak{}hn} & infiltration 20k +\allowbreak{} benign hard-neg 15k (inf-kNN, seed 5k) +\allowbreak{} benign 5k +\allowbreak{} 잔여 비례 & infiltration & bal50k \\
+{}\texttt{dos\_\allowbreak{}\allowbreak{}pair\allowbreak{}} & dos 17.5k +\allowbreak{} ddos 17.5k (혼동쌍) +\allowbreak{} benign 10k +\allowbreak{} 잔여 비례 & dos·ddos & bal50k \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace hard-negative 채굴: \textbf{pool-only, 모델-프리} — pool 통계로 z-정규화한 feature 공간에서 표적 클래스 행들에 대한 benign 행의 최소거리 top-N. 결정성 메커니즘 (리뷰 후 정정, 2026-08-20): seed 행 =\allowbreak{} 표적 클래스 공유 permutation(seed+\allowbreak{}950+\allowbreak{}cid)의 prefix, 후보 순서/\allowbreak{}동률 처리 =\allowbreak{} benign permutation 순서 +\allowbreak{} stable argsort — 별도 seed band 없음. val/\allowbreak{}test 불사용 (F3-safe). fit tag에 실현 context의 sha1 해시 포함 (드리프트 시 체크포인트 자동 무효화). \texttt{recent}(시간 후반 슬라이스 regime expert)는 timestamps 검증 후 Round 2.
+
+
+\par\noindent \textbullet\enspace 평가: 각 레시피는 test와 val 두 번 predict (fit은 결정적 재계산). 조합 분석은 덤프에서 오프라인 — \textbf{조합·γ 선택은 val에서, 확정은 test 1회 적용} (E2 프로토콜 확장).
+
+
+\par\noindent \textbullet\enspace \textbf{판정 (사전 등록)}: base =\allowbreak{} D1 3-view 평균+\allowbreak{}γ(val선택). 레시피가 자리를 얻는 조건 =\allowbreak{} base에 추가한 4-expert 평균+\allowbreak{}γ(val선택)가 \textbf{확정 test에서} 대상 클래스 F1을 web +\allowbreak{}0.05 /\allowbreak{} infiltration +\allowbreak{}0.05 /\allowbreak{} dos +\allowbreak{}0.03 이상 올리고 tuple(macro \ensuremath{\geq} 0.7468, benign \ensuremath{\geq} 0.990) 유지. hard-negative 효과 판정 =\allowbreak{} web\_\allowbreak{}hn vs web\_\allowbreak{}ctrl 확정치 차이.
+
+
+\par\noindent \textbullet\enspace 실패 기록 조건: web\_\allowbreak{}hn − web\_\allowbreak{}ctrl \ensuremath{\approx} 0이면 "경계 증거 무효"로 기록; bal50k가 va000와 tuple-동급이면 "k 축소 무손실" (경량화 정당화)로 기록.
+
+
+\subsubsection{§9a. Round 1 test 단독 판정 (17:36–17:47 완료, γ는 test-진단 스윕 — 확정은 val 절차)}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.30952\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25238\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.43810\linewidth-2\tabcolsep\relax}}
+\toprule
+recipe & 대상 & 판정 (best-γ 작동점) \\ \midrule
+\endfirsthead
+recipe & 대상 & 판정 (best-γ 작동점) \\ \midrule
+\endhead
+{}bal50k & 컨트롤 & \textbf{"k 축소 무손실" 기각}: web 0.066/\allowbreak{}macro 0.651 (va000: 0.204/\allowbreak{}0.705). benign \textasciitilde{}8k로 기근  \ensuremath{\rightarrow}  benign F1 0.757 붕괴 \\
+{}web\_\allowbreak{}hn vs web\_\allowbreak{}ctrl & web & \textbf{hard negative는 해로움} (전 γ, 양 백본): TabPFN 0.109 vs 0.185, XGB 0.210 vs \textbf{0.239}. "경계 증거" 가설 기각 \\
+{}web\_\allowbreak{}ctrl & web & \textbf{스타}: xgb\_\allowbreak{}web\_\allowbreak{}ctrl web 0.2392(γ−0.25)/\allowbreak{}0.2351(γ0), macro 0.757-0.759, benign 0.995 — \textbf{50k 행으로 bar −0.0035} \\
+{}inf\_\allowbreak{}hn & infiltration & \textbf{참패}: inf F1 \textasciitilde{}0.05 (P 0.02), γ 전 구간 회복 불가 — benign 겹침 영역이 통째로 infiltration화 \\
+{}dos\_\allowbreak{}pair & dos·ddos & 반반: \textbf{TabPFN ddos 갭 해소} (0.9965, D1 0.94-0.96  \ensuremath{\rightarrow}  XGB 0.9992 근접) /\allowbreak{} dos는 0.606으로 손상 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{Round 1 교훈 (반복 확인됨)}: tail을 무겁게 만든 소형 context는 prior 인플레이션으로 실패하고, \textbf{benign이 지배하되 tail 자연 전량을 품은 구성}(web\_\allowbreak{}ctrl 패턴)이 이긴다. tail-부풀린 context의 γ 보정 방향은 음수 (D1의 benign-무거운 view와 반대) — 조합 랩 γ 범위 [−1, +\allowbreak{}0.5]로 확장. Round 2 후보: \texttt{inf\_\allowbreak{}\allowbreak{}ctrl\allowbreak{}}(inf 다량 +\allowbreak{} benign 지배), \texttt{ddos\_\allowbreak{}\allowbreak{}lig\allowbreak{}ht}(ddos 소량 농축 — dos\_\allowbreak{}pair의 ddos 이득만 분리).
+
+다음: val 5종 (진행 중, \textasciitilde{}18:55)  \ensuremath{\rightarrow}  \textbf{E2}(exp5 3-view val run, \textasciitilde{}1.2h — D1 view들의 val 덤프 =\allowbreak{} 조합 랩의 base 필수 재료)  \ensuremath{\rightarrow}  오프라인 조합 랩 (val 선택  \ensuremath{\rightarrow}  test 1회 확정).
+
+\subsubsection{§9b. E2 +\allowbreak{} 조합 랩 최종 판정 (조합 랩 CSV: \texttt{results/\allowbreak{}\allowbreak{}exp6\_\allowbreak{}\allowbreak{}com\allowbreak{}bination\allowbreak{}\_\allowbreak{}\allowbreak{}lab.\allowbreak{}csv\allowbreak{}})}
+\textbf{E2 판정 — γ는 시간 이동을 전이하지 못한다 (실패 모드 \#2의 정량 실측).} val(근미래, web 507행 — 표본 부족 아님)에서 base 3-view 평균의 γ 곡선은 \textbf{단조 감소}(γ=\allowbreak{}0: web 0.2595  \ensuremath{\rightarrow}  γ=\allowbreak{}0.2: 0.1666)인 반면 test(원미래)는 γ\ensuremath{\approx}0.25에서 정점(0.235). 최적 보정 방향이 두 미래 슬라이스에서 정반대  \ensuremath{\rightarrow}  val-선택은 γ=\allowbreak{}0을 고르고, \textbf{정직한 확정치는 base 3-view 평균(무보정): web 0.1714 /\allowbreak{} macro 0.7510 /\allowbreak{} benign 0.9917 /\allowbreak{} tail\_\allowbreak{}avg 0.5400}. §8d의 0.235는 "oracle-γ 곡선의 존재 증명"으로 강등 — 전이 메커니즘 없이는 달성 불가로 기록. (역설적 부산물: 무보정 평균은 val 0.2595  \ensuremath{\rightarrow}  test 0.1714로 열화 — 이 val \ensuremath{\rightarrow} test 열화 측정 자체가 W5 드리프트 축의 직접 증거.)
+
+\textbf{조합 게이트 — 전부 실패.} base+\allowbreak{}레시피(하나씩, val-선택 γ, test 확정): web 최고 0.1847(하이브리드 web\_\allowbreak{}ctrl, 게이트 0.2214 미달), infiltration 최고 0.4489(base 0.4501보다도 낮음), dos 최고 0.7831(게이트 0.8116 미달). Round 1 레시피는 등록 기준상 앙상블 자리 없음. 유일한 일관 개선은 ddos (base 0.9481  \ensuremath{\rightarrow}  dos\_\allowbreak{}pair류 0.9665–0.9718, 게이트 비대상).
+
+\textbf{살아남은 정직한 숫자 — \texttt{xgb\_\allowbreak{}\allowbreak{}web\_\allowbreak{}\allowbreak{}ctrl} 단독 (선택 파라미터 0개):} γ=\allowbreak{}0 기본값에서 \textbf{web 0.2351 (P 0.135/\allowbreak{}R 0.929) /\allowbreak{} macro 0.7368 /\allowbreak{} benign 0.9876} — √가중 full-pool bar(0.2427) 대비 −0.0076, macro 동급, \textbf{5만 행(전체 0.4\%)·무가중}. 사후 선택이 전혀 없는 기본 작동점이므로 이 수치는 그대로 주장 가능.
+
+\textbf{오늘의 종합}: (1) 선택-MoE 종료(D1), (2) γ-보정 전이 실패(E2), (3) Round 1 레시피 조합 기여 없음 — 세 개의 clean negative +\allowbreak{} 구성 효율(web\_\allowbreak{}ctrl 패턴)·앙상블 시너지(infiltration)·혼동쌍(ddos)의 양성 발견. 남은 유망 축: R1a(TACB TabPFN 본실험, 승리 패턴과 동방향), Round 2 레시피(inf\_\allowbreak{}ctrl/\allowbreak{}ddos\_\allowbreak{}light), m>1 앙상블.
+
+\subsection{10. EXP7 사전 등록 — TabPFN energy-score OOD (스코프 변경: OOD 축 재개방)}
+\textbf{스코프 변경 (사용자 지시)}: closed-set 한정을 해제하고 s43/\allowbreak{}s44의 unseen 프로토콜로 복귀. \textbf{목적: TabPFN으로 energy-score OOD가 되는지 확인.} 근거가 되는 새 사실: TabPFN-v3 출력은 log-softmax라 출력-energy는 퇴화하지만(§8a), 헤드가 어텐션형 디코더라 \textbf{softmax 직전 원시 점수(scores\_\allowbreak{}BHMN, tabpfn\_\allowbreak{}v3.py:586)가 존재} — hook으로 추출 가능(라이브러리 무수정). \texttt{get\_\allowbreak{}\allowbreak{}embe\allowbreak{}ddings} 공식 API도 미사용 자원.
+
+\textbf{프로토콜 (s43/\allowbreak{}s44 그대로):}
+
+\par\noindent \textbullet\enspace \textbf{ID} =\allowbreak{} cic2018에서 unseen 클래스를 제외한 클래스들 (context도 이들로만 구성).
+
+
+\par\noindent \textbullet\enspace \textbf{OOD(평가)} =\allowbreak{} cic2018에서 선택한 unseen 클래스의 test-구간 행. 1차: \texttt{-\allowbreak{}-\allowbreak{}unseen\allowbreak{} bot} (CLAUDE.md 표준 예시). 후속: infiltration, web\_\allowbreak{}attacks.
+
+
+\par\noindent \textbullet\enspace \textbf{aux OOD(보조)} =\allowbreak{} bot\_\allowbreak{}iot/\allowbreak{}ton\_\allowbreak{}iot/\allowbreak{}unsw에서 cic2018 family와 이름이 안 겹치는 공격 클래스만 (0819 §3 오염 family 제외: ton\_\allowbreak{}iot scanning, bot\_\allowbreak{}iot theft). 용도는 \textbf{평가가 아니라 보조} — tau 캘리브레이션 및 별도 role 행으로 보고.
+
+
+\par\noindent \textbullet\enspace 컨텍스트: 자연 비례 1M (unseen 제외 6클래스), m=\allowbreak{}1 (m=\allowbreak{}4는 후속), cache mode +\allowbreak{} 500k 배치, seed 42.
+
+
+\textbf{스코어 (한 fit에서 전부 캡처):}
+
+\par\noindent \textbullet\enspace \textbf{헤드 energy} (headline): softmax 직전 scores\_\allowbreak{}BHMN에서 −logsumexp — hook 캡처.
+
+
+\par\noindent \textbullet\enspace max log-prob /\allowbreak{} entropy (확률 기반 대조군).
+
+
+\par\noindent \textbullet\enspace embedding kNN 거리 (\texttt{get\_\allowbreak{}\allowbreak{}embe\allowbreak{}ddings}, ID-context 행 대비).
+
+
+\par\noindent \textbullet\enspace \textbf{변형 B (TabPFN-native outlier exposure)}: aux OOD 행을 context에 \textbf{"other" 8번째 클래스로 라벨해 포함} — P(other)가 threshold 없는 unknown 스코어. 학습이 필요한 기존 OE를 ICL로 대체하는, 이 모델에서만 가능한 구조.
+
+
+\textbf{산출물: 기존 3a/\allowbreak{}3b/\allowbreak{}3c 형식 그대로} (단일 stage이므로 pre/\allowbreak{}post 열은 단일): 3a =\allowbreak{} 스코어×role(unseen/\allowbreak{}aux/\allowbreak{}ID-val) AUROC·AUPR·FPR95 표, 3b =\allowbreak{} ID-val 분위수 tau와 tau에서의 id\_\allowbreak{}retain/\allowbreak{}ood\_\allowbreak{}detect ("accept if score \ensuremath{\geq} tau" 규약, 부호 정렬 주의 — 기존 스크립트 간 sign 상이 경고 준수), 3c =\allowbreak{} 스코어별 ID vs unseen vs aux 히스토그램 2×2 +\allowbreak{} tau 선.
+
+\textbf{판정 (사전 등록)}: 헤드 energy의 unseen AUROC를 s37의 global MLP energy 기록 \textbf{0.954}와 대조. \ensuremath{\geq}0.90이면 "TabPFN energy OOD 성립"으로 기록하고 expert별 (클래스군 context) 버전으로 확장; \ensuremath{\leq}0.7이면 head-score도 OOD 신호가 아님으로 종결하고 embedding/\allowbreak{}변형 B 결과만 남김. 신규 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp7\_\allowbreak{}\allowbreak{}tabp\allowbreak{}fn\_\allowbreak{}\allowbreak{}energ\allowbreak{}y\_\allowbreak{}\allowbreak{}ood.\allowbreak{}py\allowbreak{}}.
+
+\subsubsection{§10a. EXP7 결과 (run \texttt{20260820\allowbreak{}\_\allowbreak{}\allowbreak{}230418\_\allowbreak{}\allowbreak{}…\_\allowbreak{}\allowbreak{}exp7\_\allowbreak{}\allowbreak{}o\allowbreak{}od\_\allowbreak{}\allowbreak{}unsee\allowbreak{}n\_\allowbreak{}\allowbreak{}bot}, ctx 500k, m=\allowbreak{}1)}
+\textbf{판정: 성립 (캠페인 첫 강한 양성).} unseen=\allowbreak{}bot, ID-val 100k vs unseen 41.5k:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25658\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.29167\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18640\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26535\linewidth-2\tabcolsep\relax}}
+\toprule
+score & unseen AUROC & FPR95 & tau(q0.05)에서 검출율 \\ \midrule
+\endfirsthead
+score & unseen AUROC & FPR95 & tau(q0.05)에서 검출율 \\ \midrule
+\endhead
+{}\textbf{maxsim} & \textbf{0.9839} & 0.090 & 0.910 \\
+{}entropy /\allowbreak{} nmaxp & 0.958 & 0.115 & — \\
+{}\textbf{energy\_\allowbreak{}head} & \textbf{0.9443} (기준 0.90 통과) & 0.162 & 0.838 \\
+{}knn\_\allowbreak{}dist & 0.884 & — & — \\
+{}p\_\allowbreak{}other (변형 B) & 0.390 & 1.0 & — \\
+\bottomrule
+\end{longtable}
+\endgroup
+\par\noindent \textbullet\enspace \textbf{maxsim(softmax-직전 최대 retrieval 유사도)이 s37 MLP energy(0.954)를 상회} — "지지 표본이 context에 있는가"가 이 헤드의 정통 OOD 정의.
+
+
+\par\noindent \textbullet\enspace sanity: id\_\allowbreak{}val vs id\_\allowbreak{}test AUROC \ensuremath{\approx} 0.50 전 스코어 (드리프트 아티팩트 아님).
+
+
+\par\noindent \textbullet\enspace aux(타 데이터셋 공격)는 0.73–0.91로 unseen보다 어려움 — 환경 지문으로 쉽게 풀리는 게 아니라는 정직성 체크.
+
+
+\par\noindent \textbullet\enspace \textbf{변형 B는 unknown-검출기가 아니라 aux-검출기} (aux 0.9927 /\allowbreak{} unseen 0.390) — outlier exposure가 "본 이질성"만 배우는 고전적 한계의 ICL 재현. 기록.
+
+
+\par\noindent \textbullet\enspace 1차 발사(ctx 1M)는 디코더 q/\allowbreak{}k 호출의 device 불일치로 크래시  \ensuremath{\rightarrow}  수정 후 사용자 지시로 ctx 500k 재발사·완주. 디코더 모듈 실물 확보 확인 ("decoder module: FOUND").
+
+
+\subsubsection{§10b. EXP8 — per-expert 확장 (사전 등록, 사용자 지시: 기존 taxonomy 구조 그대로)}
+\texttt{configs/\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}exp\allowbreak{}erts.\allowbreak{}jso\allowbreak{}n}의 cic2018 그룹 (flood=\allowbreak{}\{ddos,dos\}, brute\_\allowbreak{}force, tail=\allowbreak{}\{bot,infiltration,web\_\allowbreak{}attacks\}) +\allowbreak{} benign expert. expert별 context =\allowbreak{} 소유 family 행만 (unseen은 전 context에서 제외, 자연 비례, cap 200k). 단일-family expert는 fit의 2-클래스 요건을 \textbf{반대편 filler}(공격 expert \ensuremath{\rightarrow} benign, benign expert \ensuremath{\rightarrow} 기지 공격 혼합, 실제 라벨)로 채우되 \textbf{retrieval 기준은 소유 행만} 사용. 스코어 =\allowbreak{} maxsim·energy\_\allowbreak{}head. role =\allowbreak{} id\_\allowbreak{}val(소유 val) /\allowbreak{} non\_\allowbreak{}owned\_\allowbreak{}known\_\allowbreak{}attack /\allowbreak{} unseen /\allowbreak{} benign /\allowbreak{} aux — 예전 3a 어휘 그대로, 산출물 3a/\allowbreak{}3b/\allowbreak{}3c (단일 stage). \textbf{스윕: unseen \ensuremath{\in} \{bot, infiltration, web\_\allowbreak{}attacks, brute\_\allowbreak{}force, ddos, dos\} 6 runs.} 판정 관심: ① 소유자 게이트가 unseen을 얼마나 거르나, ② \textbf{비-소유 기지 공격}을 거르나 (s23이 죽었던 지점 — 이번엔 confidence가 아니라 retrieval 지지도로), ③ benign과의 분리. 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp8\_\allowbreak{}\allowbreak{}expe\allowbreak{}rt\_\allowbreak{}\allowbreak{}famil\allowbreak{}y\_\allowbreak{}\allowbreak{}ood.\allowbreak{}py\allowbreak{}}.
+
+\subsubsection{§10c. EXP8 결과 (6-run 스윕 완료, 집계 \texttt{results/\allowbreak{}\allowbreak{}exp8\_\allowbreak{}\allowbreak{}swe\allowbreak{}ep\_\allowbreak{}\allowbreak{}3a\_\allowbreak{}\allowbreak{}al\allowbreak{}l.\allowbreak{}csv})}
+운영 기록: 3-병렬은 GPU OOM(피크 \textasciitilde{}10GB/\allowbreak{}run 실측), 2-병렬로 완주. maxsim AUROC 기준.
+
+\textbf{unseen 검출 (expert별, 행=\allowbreak{}unseen family):}
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20526\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17895\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17018\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18772\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25789\linewidth-2\tabcolsep\relax}}
+\toprule
+unseen & flood 게이트 & tail 게이트 & benign 게이트 & tau(ID95\%) 최고 검출율 \\ \midrule
+\endfirsthead
+unseen & flood 게이트 & tail 게이트 & benign 게이트 & tau(ID95\%) 최고 검출율 \\ \midrule
+\endhead
+{}bot & \textbf{1.000} & 0.992 & 0.771 & \textbf{1.000} \\
+{}infiltration & \textbf{1.000} & 0.996 & 0.502 & \textbf{1.000} \\
+{}web\_\allowbreak{}attacks & \textbf{0.998} & 0.921 & 0.825 & \textbf{0.992} \\
+{}brute\_\allowbreak{}force & 0.665 & 0.849 & 0.461 & 0.326 \\
+{}ddos & \textbf{0.000(역전)} & 0.666 & 0.529 & 0.024 \\
+{}dos & 0.029(역전) & 0.818 & 0.782 & 0.105 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\textbf{판정 (3분할):}
+
+\par\noindent \textbullet\enspace \textbf{양성 — taxonomy-간 unseen은 게이트가 성립.} tail-계열(bot/\allowbreak{}inf/\allowbreak{}web)이 unseen일 때 flood·tail expert의 retrieval 게이트가 AUROC 0.92–1.00, tau(ID 95\% 유지)에서 검출 75–100\%. 학습·fine-tune 없이 s44 시대의 게이트를 넘는 수준. \textbf{비-소유 기지 공격 거부도 tail expert 평균 0.848 (min 0.739)} — s23의 "소유자 식별 불가"가 retrieval 지지도에서는 부분적으로 뒤집힘.
+
+
+\par\noindent \textbullet\enspace \textbf{구조적 한계 — taxonomy-내 unseen은 원리적으로 못 잡는다.} ddos가 unseen이면 남은 dos-context flood expert가 ddos를 자기 것보다 더 강하게 retrieval(AUROC 0.000 =\allowbreak{} 완전 역전) — 닮음을 재는 신호의 본질적 귀결. within-family novelty는 이 게이트의 밖.
+
+
+\par\noindent \textbullet\enspace \textbf{병목 — benign 분리 0.63–0.74.} attack expert의 benign 거부(min 0.634)와 benign expert의 공격 거부(0.676)가 약한 고리 — s25의 benign 게이트 약점과 같은 지점. closed-set 분류 개선으로 이으려면 이 다리부터.
+
+
+\par\noindent \textbullet\enspace brute\_\allowbreak{}force expert는 전 역할 역전(자기 val 유사도 2.06 vs benign 10.9) — train/\allowbreak{}val-구간 trafic이 상이한 0819 제외-family 병리의 게이트 재현. 판정 제외.
+
+
+\textbf{다음 후보}: (a) benign 분리 개선 (benign context 계층화/\allowbreak{}다양화), (b) 게이트를 s44식 resolution에 묶은 full-system closed-set 평가 (기대치: benign 병목 때문에 게이트 단독 성립 \ensuremath{\neq} 분류 개선), (c) within-family novelty는 스코프 밖으로 명시.
+
+\subsubsection{§10d. EXP9 사전 등록 — energy score fine-tuning (aux OOD, 예전 pre/\allowbreak{}post 형식)}
+사용자 정정 두 가지를 반영: ① \textbf{energy =\allowbreak{} energy\_\allowbreak{}head} (softmax-직전 유사도의 −logsumexp — TabPFN에서 예전 공식이 성립하는 자리)로 확정, 용어 통일. ② fine-tuning 대상은 backbone이 아니라 \textbf{frozen 모델의 로짓/\allowbreak{}유사도로부터 계산되는 energy score 자체} — 예전 파이프라인의 pre/\allowbreak{}post 구조 그대로.
+
+\par\noindent \textbullet\enspace expert별 소형 score head: 입력 =\allowbreak{} 헤드별 logsumexp/\allowbreak{}max 유사도 +\allowbreak{} 출력 확률 max/\allowbreak{}entropy  \ensuremath{\rightarrow}  스칼라. \textbf{양성 =\allowbreak{} 소유 family의 train-슬라이스 held-out 행}(context 제외분; val 불사용 — F3 회피, 자기-retrieval 오염 회피), \textbf{음성 =\allowbreak{} aux OOD의 학습-절반}(평가-절반과 분리).
+
+
+\par\noindent \textbullet\enspace 산출물: 예전 3a 컬럼(pre\_\allowbreak{}/\allowbreak{}post\_\allowbreak{} auroc·fpr95·detect), 3b(tau pre/\allowbreak{}post), 3c \texttt{\_\allowbreak{}\allowbreak{}pretrai\allowbreak{}ned} /\allowbreak{} \texttt{\_\allowbreak{}\allowbreak{}finetun\allowbreak{}ed} 두 장. 스윕: unseen 6-family, exp8 구성 재사용.
+
+
+\par\noindent \textbullet\enspace \textbf{판정 질문 (사전 등록)}: post가 aux에서만 좋아지는가, unseen까지 좋아지는가. 변형 B(aux 0.993/\allowbreak{}unseen 0.390)와 s31–37("energy fine-tuning이 OOD 악화/\allowbreak{}반전")의 재대면 — post\_\allowbreak{}unseen \ensuremath{\geq} pre\_\allowbreak{}unseen이면 OE-일반화 성립, 반대면 aux-과적합으로 기록. 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp9\_\allowbreak{}\allowbreak{}ener\allowbreak{}gy\_\allowbreak{}\allowbreak{}score\allowbreak{}\_\allowbreak{}\allowbreak{}finetun\allowbreak{}e.\allowbreak{}py}.
+
+
+\subsubsection{§10e. EXP9 결과 (unseen=\allowbreak{}brute\_\allowbreak{}force 단독, run \texttt{20260821\allowbreak{}\_\allowbreak{}\allowbreak{}012414})}
+\textbf{판정: OE-일반화 성립 — post가 unseen에서 가장 크게 개선.} tail expert unseen 0.570 \ensuremath{\rightarrow} \textbf{0.984} (tau 검출 0.7\% \ensuremath{\rightarrow} 100\%), benign expert 0.591 \ensuremath{\rightarrow} \textbf{0.997} (0\% \ensuremath{\rightarrow} 100\%), tail 비-소유 0.450 \ensuremath{\rightarrow} 0.802, flood unseen 0.682 \ensuremath{\rightarrow} 0.858 (단 tau-작동점 불변). 변형 B(in-context OE, unseen 0.39 실패)와의 대비: \textbf{학습을 score 층에 두면 일반화한다.} s31–37("backbone energy fine-tuning은 OOD 악화")과도 대비되는 결과. 단서: brute\_\allowbreak{}force는 pre가 나빴던 병리 family라 개선 폭이 큰 케이스 — 일반성은 잔여 5-family(특히 taxonomy-내 unseen ddos/\allowbreak{}dos)로 확인 필요. tail expert의 benign 분리(0.611)는 여전한 병목. 스모크 배터리 13/\allowbreak{}13 (score-head 결정성 포함).
+
+\subsection{11. HCE 설계 +\allowbreak{} EXP10 사전 등록 (closed-set 분류, unseen 제외 — 사용자 방향)}
+사용자 확인 사항: ① TabPFN이 무겁지만 학습 불필요라 기존 backbone 대체 가능성 확인, ② \textbf{taxonomy-disjoint expert의 "분류 성능"은 미측정} — 이것부터 측정, ③ global +\allowbreak{} disjoint experts 구조에서 배정 방법 구체화 (TTA 부활 포함, unseen은 다음 단계).
+
+\textbf{HCE (Hierarchical Context Experts)} — 구조도는 통합 보고서 §8:
+
+\par\noindent \textbullet\enspace 배정 =\allowbreak{} 선택이 아니라 \textbf{체인룰 인수분해}: p(c|x) =\allowbreak{} p(g(c)|x) · p\_\allowbreak{}expert(c|x, g). p(g|x)는 별도 라우터 없이 global expert의 그룹-내 확률 합산. 선택 단계가 없어 D1의 선택-실패와 실패 모드 \#1을 구조적으로 회피; EXP6의 prior 침수는 "부풀린 prior가 그룹 조건부 안에만 존재"하므로 봉쇄 (web은 tail-그룹 안에서 0.64\%).
+
+
+\par\noindent \textbullet\enspace 보정층(측정 후 채택, 원노브 순차): ownership score head(exp9식)로 p(g|x) 재보정; \textbf{TTA는 그룹-불확실 행 한정 보조 특징으로 재시험} (s23과 다른 스코프: 선택이 아니라 보정 입력, 후보 행만이라 비용 무시 가능); hard routing은 대조군.
+
+
+\textbf{EXP10 결과 (완료)}: 체인룰 인수분해 \ensuremath{\approx} global (web +\allowbreak{}0.007, dos ±0.000, val-선택도 λ=\allowbreak{}0 선택)  \ensuremath{\rightarrow}  \textbf{기각}. 대신 oracle 배정 컬럼이 상한 확정: \textbf{macro 0.964, infiltration 0.994, dos 1.000, web 0.754} — expert 조건부는 이미 충분, 승부는 배정(특히 benign 경계). 부가 분석: global의 이진 benign/\allowbreak{}attack 경계는 web 46\%/\allowbreak{}inf 5\%만 통과(@FPR 0.1\%)로 부족하나, 강화-context 판별(web\_\allowbreak{}ctrl)은 web 93\%@0.087\% — 통합 구조 v3 (disjoint expert 게이트 겨루기 +\allowbreak{} 검증된 덮어쓰기, 보고서 §8 그림)의 근거.
+
+\subsection{12. EXP11 사전 등록 — expert activation 측정 (사용자 그룹 재편, closed-set)}
+사용자 제안 구조: expert =\allowbreak{} \textbf{benign(이진: benign/\allowbreak{}attack 판정) · flood(ddos,dos) · bf\_\allowbreak{}bot(brute\_\allowbreak{}force,bot) · tail(infiltration,web\_\allowbreak{}attacks)} — 주의: 기존 nfv3\_\allowbreak{}experts.json과 다른 재편 (bot이 brute와 묶이고 tail은 어려운 두 클래스만). x 입력 시 각 expert가 소유(OOD) 판단  \ensuremath{\rightarrow}  \textbf{누가 activate되는지}부터 측정.
+
+\par\noindent \textbullet\enspace 게이트 =\allowbreak{} exp9의 fine-tuned score head (양성 =\allowbreak{} 소유 train-holdout, \textbf{음성 =\allowbreak{} 공통 aux} — 공통 음성 기준이라 expert 간 점수가 "aux 대비 log-odds"로 비교 가능; s01의 교차-expert 비교 함정 대응). 보조 컬럼: 자기 ID-분포 백분위 보정 argmax.
+
+
+\par\noindent \textbullet\enspace benign expert context =\allowbreak{} benign 자연 cap +\allowbreak{} 공격 혼합 filler(실라벨) — 이진 판정자. emb 기준은 소유(benign) 행만. 타 expert는 소유 클래스 자연 cap 200k.
+
+
+\par\noindent \textbullet\enspace \textbf{판정 산출물}: activation 혼동행렬 (진짜 그룹 × argmax-게이트 expert), 클래스별 activation 정확도 (특히 web·inf 행에서 tail 발화율 /\allowbreak{} benign 행에서 benign 발화율), 승자-차점 margin 분포 (v3의 δ 재료). unseen 없음.
+
+
+\par\noindent \textbullet\enspace 성공 기대치 (사전): oracle 상한 회수의 선행 지표 — benign 행의 benign-발화율이 FP 예산을 결정 (0.999+\allowbreak{} 필요), web/\allowbreak{}inf 행의 tail-발화율이 recall 상한. brute\_\allowbreak{}force 행은 기록된 병리(train/\allowbreak{}val 상이)로 낮게 나올 것 예상 — 기록. 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp11\_\allowbreak{}\allowbreak{}exp\allowbreak{}ert\_\allowbreak{}\allowbreak{}acti\allowbreak{}vation.\allowbreak{}p\allowbreak{}y}.
+
+
+\subsubsection{§12a. EXP11 결과 (run \texttt{20260821\allowbreak{}\_\allowbreak{}\allowbreak{}040136})}
+\textbf{activation은 그룹의 기하적 분리도에 정확히 비례.} bf\_\allowbreak{}bot 0.999 /\allowbreak{} ddos 0.983으로 기계적·볼륨형 그룹은 완벽, \textbf{benign \ensuremath{\leftrightarrow} tail 양방향 누수}가 전부: benign 행의 45.9\%가 tail 발화(환산 FP 161만 — 사용 불가), inf/\allowbreak{}web 행의 27/\allowbreak{}20\%가 benign 발화. dos는 34.7\%가 bf\_\allowbreak{}bot으로 (부차). \textbf{δ 스윕으로 못 자름}: benign 오발화를 실용 수준으로 줄이는 δ=\allowbreak{}5–6에서 web 유지 0.40 \ensuremath{\rightarrow} 0.004 — gap 분포가 넓게 겹침 (박빙 문제 아님  \ensuremath{\rightarrow}  현 상태에서 TTA 무용, 사용자 보류 결정 재료로 보고). \textbf{원인 특정}: 게이트 음성이 aux뿐이라 benign을 '아님' 예시로 배운 적 없음 +\allowbreak{} benign 게이트의 retrieval 기준인 benign 집합이 워낙 잡다해 스텔스형(inf/\allowbreak{}web)과 실제로 닮음. 분류에서 web/\allowbreak{}inf를 죽이던 benign \ensuremath{\leftrightarrow} 스텔스 경계와 같은 경계.
+
+\subsubsection{§12b. EXP11b 사전 등록 (원노브: 혼합 음성)}
+게이트 음성 =\allowbreak{} \textbf{기존 aux +\allowbreak{} 반대편 train-holdout} (attack expert들 \ensuremath{\leftarrow} benign holdout; benign expert \ensuremath{\leftarrow} 공격 expert들의 holdout). aux 유지 이유: unseen 일반화 성질(exp9) 보존. 전 재료 train-슬라이스 (F3-safe). 나머지 파이프라인 exp11과 동일 — activation 표의 원노브 대비. 판정 관심: benign 행 benign-발화율 0.541 \ensuremath{\rightarrow} 0.99+\allowbreak{} 가능 여부, inf/\allowbreak{}web의 tail-발화율 유지/\allowbreak{}개선 여부. 후속 원노브: 강화-margin 특징. 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp11b\_\allowbreak{}\allowbreak{}ac\allowbreak{}tivation\allowbreak{}\_\allowbreak{}\allowbreak{}negativ\allowbreak{}es.\allowbreak{}py}.
+
+\subsubsection{§12b-결과 (run \texttt{20260821\allowbreak{}\_\allowbreak{}\allowbreak{}044136} — dir명이 exp11\_\allowbreak{}activation으로 나온 것이 11b run)}
+원노브 대비: \textbf{benign 0.541 \ensuremath{\rightarrow} 0.849 (+\allowbreak{}0.31), web 유지(0.682), ddos 0.997 — 그러나 infiltration 0.726 \ensuremath{\rightarrow} 0.526 (−0.20)}. benign 음성은 경계를 가른 게 아니라 트레이드오프 곡선 위에서 옮김: benign을 닮은 inf가 함께 잘림. \textbf{web은 버팀 =\allowbreak{} web \ensuremath{\leftrightarrow} benign에 판별 경계 실재(web\_\allowbreak{}ctrl 93\% 실증과 정합); inf \ensuremath{\leftrightarrow} benign은 현 특징(retrieval 유사도)에서 사실상 겹침}. benign 오발화 15\%(53만 행)로 hard 덮어쓰기 여전히 불가. dos \ensuremath{\rightarrow} bf\_\allowbreak{}bot 34.7\% 지속 (11b 스코프 밖, 예측대로). 다음 원노브 11c =\allowbreak{} 강화-margin 특징.
+
+\subsubsection{§12c. EXP12 사전 등록 — full-system 분류 평가 (11b 게이트 그대로)}
+사용자 질문("분류까지 시키면 클래스별 퍼포는?")의 측정. 파이프라인: 전 행 게이트 겨루기(11b 구성)  \ensuremath{\rightarrow}  승자 activate  \ensuremath{\rightarrow}  benign 승=\allowbreak{}benign 라벨 /\allowbreak{} attack 승=\allowbreak{}그 expert의 TabPFN이 소유 클래스 내 판정. 비교열: 기록된 global(D1 va100 재사용, y 검증). \textbf{사전 예상 (결과 전 기록): benign \ensuremath{\rightarrow} tail 15\% 누수(\textasciitilde{}53만 행)가 tail 조건부에서 inf/\allowbreak{}web으로 갈라지며 두 클래스 정밀도를 침수  \ensuremath{\rightarrow}  global 미달 예상.} 목적: 누수의 분류-비용 정량 위치 확인 +\allowbreak{} 11c 개선분의 baseline. 전량 test 평가(4.02M), 2-pass (게이트 전량  \ensuremath{\rightarrow}  승자 행만 조건부). 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp12\_\allowbreak{}\allowbreak{}sys\allowbreak{}tem\_\allowbreak{}\allowbreak{}eval\allowbreak{}.\allowbreak{}py}.
+
+\subsubsection{§12d. 원본 energy\_\allowbreak{}ood 비율 확인 +\allowbreak{} EXP11c 사전 등록 (사용자 가설 검증)}
+\textbf{사용자 가설(음성이 양성 대비 과대) 확인 결과}: 우리 게이트의 양성:음성 =\allowbreak{} flood/\allowbreak{}bf\_\allowbreak{}bot 1:2, tail·benign 1:4 (expert 간 상이!) +\allowbreak{} tail 양성 내 web 304행(2\%). 전체-평균 BCE라 이 비율이 로짓 상수 오프셋(\textasciitilde{}log비율)으로 박혀 \textbf{expert 간 겨루기 편향} (관측 margin p10 0.2–0.5와 같은 자릿수). \textbf{원본 energy\_\allowbreak{}ood(wetliu, Liu 2020) 확인}: ID 배치 128 vs aux 배치 256 =\allowbreak{} 노출 1:2이지만, margin 손실이 \textbf{부분별 평균}(ID-부분 mean +\allowbreak{} aux-부분 mean, 각 0.1 가중)이라 \textbf{비율이 손실 가중에 안 새는 구조} — 1:1을 맞춘 게 아니라 비율-불변으로 설계돼 있었음.
+
+\textbf{EXP11c (원노브, 사용자 수정 반영 — 가중치가 아니라 샘플링으로)}: 미니배치 SGD에서 극소 클래스(web 304행)는 가중치 방식이 분산 폭발(배치에 web 부재 스텝 다수)  \ensuremath{\rightarrow}  \textbf{원문 그대로 배치 샘플링}으로: 매 스텝 배치를 양성:음성 =\allowbreak{} \textbf{1:2}(원문 128:256 비율)로 구성, 양성은 클래스-균등 복원추출(web 반복 등장 — 샘플러 수준 한정, context 복제 금지 원칙과 무관), 손실 =\allowbreak{} 부분별 평균의 합(비율-불변, 원문의 ID-mean+\allowbreak{}aux-mean 구조). 판정: activation 표 원노브 대비 (특히 web \ensuremath{\rightarrow} benign 20\% 누수·expert 간 박빙 편향). GPU는 exp12 종료 후 투입. 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp11c\_\allowbreak{}\allowbreak{}ba\allowbreak{}lanced\_\allowbreak{}\allowbreak{}h\allowbreak{}ead.\allowbreak{}py}. 단일-family 그룹(brute\_\allowbreak{}force, benign)의 조건부는 자명(≡1)이므로 \textbf{expert는 다중-family 그룹 둘만} — flood(ddos+\allowbreak{}dos, 자연 비례 cap 250k)와 tail(bot+\allowbreak{}inf+\allowbreak{}web \textbf{전량} 239k, web 비중 0.64\%). global(자연 1M, D1 va100과 동일 구성) 포함 3 fit, test·val 양쪽 predict  \ensuremath{\rightarrow}  확률 덤프  \ensuremath{\rightarrow}  오프라인 컬럼: global /\allowbreak{} 인수분해 /\allowbreak{} λ-블렌드(λ 하나만 val 선택 \ensuremath{\rightarrow} test 1회 확정) /\allowbreak{} \textbf{oracle 배정(진짜 그룹; 상한)} /\allowbreak{} hard routing(대조군). brute\_\allowbreak{}force·benign 확률은 전 컬럼에서 global 경로 그대로 (brute는 전 모델 0.9159 천장 — 개선 대상 아님). 판정: 기존 튜플, 특히 web과 dos \ensuremath{\leftrightarrow} ddos. 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp10\_\allowbreak{}\allowbreak{}hce\allowbreak{}\_\allowbreak{}\allowbreak{}classif\allowbreak{}ication.\allowbreak{}py} (신규).
+
+\subsubsection{§12e. EXP11c 결과 (run \texttt{20260821\allowbreak{}\_\allowbreak{}\allowbreak{}054359} — dir명 exp11\_\allowbreak{}activation, 11c run) +\allowbreak{} 판별력 분석}
+1:2 배치 샘플링 +\allowbreak{} 양성 클래스-균등의 효과 (correct\_\allowbreak{}activation, raw): benign 0.849 \ensuremath{\rightarrow} \textbf{0.9585}, web 0.682 \ensuremath{\rightarrow} \textbf{0.8841}, inf 0.727 \ensuremath{\rightarrow} \textbf{0.3364}, dos 0.6438 (누수 dos \ensuremath{\rightarrow} bf\_\allowbreak{}bot 0.347 불변), ddos 0.9964, bot 0.9970, brute 0.9998.
+
+\textbf{inf 하락의 정체 (판별력 분석)}: exp11의 inf 0.727은 미보정 benign 게이트가 낮게 깔린 헐거운 작동점에서 얻은 공짜 recall이었음. 게이트 특징 공간에서 쌍별 분리력(AUROC): web \ensuremath{\leftrightarrow} benign은 클래스-균등 샘플링으로 \textbf{0.972}까지 오르지만 inf \ensuremath{\leftrightarrow} benign은 \textbf{\textasciitilde{}0.81 천장} — 학습 knob이 아니라 특징(retrieval 유사도 통계)의 한계. 판정: 11c 채택 (benign·web 게이트 목표 달성), inf는 특징-수준 문제로 재분류.
+
+\subsubsection{§12f. EXP12b 결과 (run \texttt{20260821\allowbreak{}\_\allowbreak{}\allowbreak{}060221}, 11b 게이트 full-system; exp12 \ensuremath{\rightarrow} 12b 개명)}
+시스템(게이트 argmax \ensuremath{\rightarrow} 조건부) vs global(D1 va100 재사용), test 4.02M, F1: web \textbf{0.1799 vs 0.1601 (+\allowbreak{}0.020)}, ddos \textbf{0.9988 vs 0.9627 (+\allowbreak{}0.036)}, benign \textbf{0.9230 vs 0.9918 (−0.069)} \ensuremath{\leftarrow} 사전 예상 적중: benign recall 0.862 (48.4만 행이 tail로 발화, 조건부에서 inf로 흡수  \ensuremath{\rightarrow}  inf precision 0.037). inf 0.0680 vs 0.0968, dos 0.7802 vs 0.7827, macro 0.6941 vs 0.7012. 판정: 구조는 web·ddos에서 이득을 만들지만 11b 게이트의 benign 누수가 비용을 지배 — 12c(11c 게이트)의 존재 이유. 사용자 지시로 보고서에는 미게재.
+
+\subsubsection{§12g. EXP11d — 대칭 음성 (사전 등록 +\allowbreak{} 결과, run \texttt{20260821\allowbreak{}\_\allowbreak{}\allowbreak{}065113})}
+사용자 설계 원노브: 모든 공격 expert의 음성을 benign expert와 대칭으로 — aux(외부) +\allowbreak{} benign +\allowbreak{} \textbf{비소유 내부 공격} (그룹-균등 샘플링). 예상: dos \ensuremath{\rightarrow} bf\_\allowbreak{}bot 누수 해소, inf \ensuremath{\rightarrow} benign은 불명. 스크립트 \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp11d\_\allowbreak{}\allowbreak{}sy\allowbreak{}mmetric\_\allowbreak{}\allowbreak{}negative\allowbreak{}s.\allowbreak{}py}.
+
+\textbf{결과 (11c 대비)}: web 0.884 \ensuremath{\rightarrow} \textbf{0.9155 (+\allowbreak{}0.031, 보너스 — web \ensuremath{\rightarrow} flood 누수 0.079 \ensuremath{\rightarrow} 0.026)}, benign 0.9588 유지, inf 0.336 \ensuremath{\rightarrow} 0.351, ddos 0.994. \textbf{dos \ensuremath{\rightarrow} bf\_\allowbreak{}bot =\allowbreak{} 0.3472 — exp11/\allowbreak{}11b/\allowbreak{}11c/\allowbreak{}11d 4연속 소수점 동일 불변.} bf\_\allowbreak{}bot 게이트가 dos를 음성으로 명시 학습해도 같은 34.7\%가 그대로 샘  \ensuremath{\rightarrow}  게이트 무죄. 그 dos 행들이 retrieval 기하에서 진짜로 bf\_\allowbreak{}bot context에 더 가깝다는 뜻 — dos 하위 시나리오/\allowbreak{}시간 블록 가설 (brute\_\allowbreak{}force train/\allowbreak{}test 창 상이 병리의 dos판 의심). 다음 진단은 suite의 attack\_\allowbreak{}scenarios로 누수 34.7\%의 시나리오 조성 확인 (게이트 학습 아님, 데이터 분석). 게이트 최종 상태: benign 0.96 · web 0.92 · head 0.99+\allowbreak{} /\allowbreak{} inf 0.35(특징 한계) · dos 0.64(데이터 하위집단). 음성 구성 축은 이것으로 종결.
+
+\subsubsection{§12h. EXP12c 사전 등록 (11c 게이트 full-system, 진행 중)}
+12b의 원노브 대응: 게이트만 11c(1:2 +\allowbreak{} 클래스-균등)로 교체, 나머지 12b 동일. 스크립트 \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp12c\_\allowbreak{}\allowbreak{}sy\allowbreak{}stem\_\allowbreak{}\allowbreak{}eva\allowbreak{}l.\allowbreak{}py}. 기대: benign 발화 0.849 \ensuremath{\rightarrow} 0.959가 benign \ensuremath{\rightarrow} tail 흡수(48.4만 행)를 줄여 benign F1 회복, inf precision 침수 완화. web은 게이트 0.884 기준(11d 0.916은 미반영 — 원노브 유지). 판정 튜플 동일.
+
+\subsubsection{§12h-결과. EXP12c (run \texttt{20260821\allowbreak{}\_\allowbreak{}\allowbreak{}070437}, 11c 게이트 full-system, test 4.02M)}
+F1 (system vs global): benign \textbf{0.9741} vs 0.9918 (12b 0.9230에서 +\allowbreak{}0.051 회복, 잔여 −0.018), inf \textbf{0.1178} vs 0.0968 (\textbf{global 상회}, recall 0.291 vs 0.051), web \textbf{0.0647} vs 0.1601 (\textbf{붕괴} — 12b 0.1799에서 역전 하락), ddos 0.9939 vs 0.9627, dos 0.7805 vs 0.7827, macro \textbf{0.6919} vs 0.7012.
+
+\textbf{web 붕괴의 해부 (4a 흐름)}: benign \ensuremath{\rightarrow} tail 누수 48.4만 \ensuremath{\rightarrow} \textbf{14.8만 행}으로 줄었지만, tail 조건부에는 benign 출구가 없어 그 14.8만이 전량 inf/\allowbreak{}web으로 강제 환전 — 이 중 \textasciitilde{}1.15만 행이 web에 꽂혀 precision 0.104 \ensuremath{\rightarrow} 0.034 (web 지지 509행, TP 401). \textbf{불균형 산수}: benign:web =\allowbreak{} 6882:1이라 web precision 0.5가 되려면 benign \ensuremath{\rightarrow} web FP < 400행 =\allowbreak{} benign \ensuremath{\rightarrow} tail 누수 <0.15\%가 필요한데 현재 4.2\% — 게이트가 0.849 \ensuremath{\rightarrow} 0.958로 크게 좋아져도 요구 사양은 두 자릿수 더 아래. SRC\_\allowbreak{}HISTORY 실패양식 \#1(라우팅 오류가 불균형을 증폭)의 정량판.
+
+\textbf{dos 교차 확인}: dos \ensuremath{\rightarrow} bf\_\allowbreak{}bot 2.11만 행(34.8\%)이 brute/\allowbreak{}bot로 환전돼 recall 0.641 — 그런데 \textbf{global도 recall 0.643으로 같은 행들을 잃음}. 게이트와 global이 동일 하위집단에서 동시에 실패  \ensuremath{\rightarrow}  dos 하위 시나리오 가설 2차 확증 (진단: suite attack\_\allowbreak{}scenarios 조성 분석 대기).
+
+\textbf{판정}: 11c 게이트는 benign 회복·inf 개선을 샀지만 web으로 비용이 이동, macro는 여전히 global 미달. 병목은 게이트 정확도가 아니라 \textbf{조건부에 반환(reject) 출구가 없는 구조} — 다음 원노브 후보: 공격 expert 조건부 context에 benign 포함(누수 14.8만의 패자부활), 사용자 승인 대기.
+
+\subsubsection{§12i. dos \ensuremath{\rightarrow} bf\_\allowbreak{}bot 진단 결과 — 수수께끼 종결 (mislabel 확정, 분석 스크립트 scratchpad/\allowbreak{}dos\_\allowbreak{}leak\_\allowbreak{}diag.py)}
+12c 덤프의 eval 행을 시간순 분할 재구성으로 정렬(y 완전 일치 검증) 후 시나리오 분해: \textbf{누수 21,110행 =\allowbreak{} \texttt{dos\_\allowbreak{}\allowbreak{}atta\allowbreak{}cks\_\allowbreak{}\allowbreak{}slow\allowbreak{}httptest\allowbreak{}} test 행 전체 (leak\_\allowbreak{}rate 1.0000), 다른 dos 시나리오는 전부 0.} global TabPFN도 같은 21,110행 전원을 brute\_\allowbreak{}force로 판정 (게이트와 100\% 일치, kept 행은 정상적으로 dos). 4실험 소수점 불변의 이유 =\allowbreak{} 시나리오 하나가 블록으로 움직였기 때문.
+
+\textbf{0819 §3 기록과 정확히 일치}: \texttt{dos\_\allowbreak{}\allowbreak{}atta\allowbreak{}cks-\allowbreak{}slow\allowbreak{}httptest\allowbreak{}} 105,550행은 distinct 46-dim vector \textbf{1개}로 붕괴하며 그 vector는 \texttt{ftp-\allowbreak{}brut\allowbreak{}eforce}와 동일(TCP port 21) — NF-CICIDS2018-v3의 mislabel. 즉 게이트/\allowbreak{}모델의 "오류"가 아니라 \textbf{바이트-동일 행에 대한 옳은 판정이 잘못된 라벨에 감점}당한 것. 어떤 특징·게이트로도 원리적으로 분리 불가 (0819의 resolvable\_\allowbreak{}by\_\allowbreak{}argmin\_\allowbreak{}rate 0.0000 그대로).
+
+\textbf{라벨 교정(slowhttptest \ensuremath{\rightarrow} brute\_\allowbreak{}force) 시}: dos F1 system 0.9906 /\allowbreak{} global 0.9933, brute\_\allowbreak{}force precision 양쪽 1.000 (교정 전 0.845도 전부 이 mislabel), macro system 0.7339 vs global 0.7433 (격차 −0.009 불변 — 교정이 양쪽 동일 적용). \textbf{판정: dos·brute 축은 방법 문제 아님, 종결.} 남은 전장은 inf \ensuremath{\leftrightarrow} benign(특징 한계)과 web precision(조건부 반환 출구) 둘뿐.
+
+\subsubsection{§12j. 12c 환전 분해 — 조건부 분류는 무결 (사용자 요청 분석, 덤프 재분석)}
+recall =\allowbreak{} 발화율 × 조건부 정확도로 정확히 인수분해됨. \textbf{옳은 expert 도착 행의 분류 정확도: benign/\allowbreak{}flood/\allowbreak{}bf\_\allowbreak{}bot 1.0000, tail 0.9776} (inf 조건부 0.980, web 조건부 0.918) — 시스템 손실은 100\% 배정 단계, 분류 단계 0. exp10 oracle 상한(macro 0.964)과 정합. \textbf{web 정정}: web 509행 중 437행(86\%) tail 도착, 그중 92\% 정확 분류  \ensuremath{\rightarrow}  recall 0.788 =\allowbreak{} global 0.442의 1.8배(역대 최고). F1 붕괴는 web 행이 아니라 유입 — web 예측 11,887행 중 진짜 web 401, benign 11,142. 보고서 §5에 분해표 +\allowbreak{} 박스 추가.
+
+\subsubsection{§12k. TTA 검토용 margin 해부 +\allowbreak{} benign-반환 오라클 스윕 ([주의] test-스윕 진단, 확정치 아님)}
+\textbf{margin 해부 (12c gate\_\allowbreak{}scores 덤프, GPU 없음)}: 오류 유형별 "승자−진짜expert" 격차 — benign \ensuremath{\rightarrow} tail 14.9만 행은 \textbf{2위가 99.9\% benign expert}, margin 중앙값 0.60 (옳은 행 1-2위 격차 중앙값 2.9 대비 박빙; 42\%가 <0.5). inf \ensuremath{\rightarrow} benign은 중앙값 1.52 (박빙 아님, 5\%만 <0.25). dos 오류는 \textbf{전 행 margin 정확히 0.434} (동일-벡터 블록 — TTA 원리적 불가 재확증). bot/\allowbreak{}web 오류는 소수·대격차.  \ensuremath{\rightarrow}  TTA-류 스무딩이 닿는 영역은 benign \ensuremath{\leftrightarrow} tail 박빙 하나뿐이고, 그 영역은 TTA 없이 margin 규칙으로 도달 가능.
+
+\textbf{benign-반환 오라클 스윕}: tail 승리 행 중 s\_\allowbreak{}tail−s\_\allowbreak{}benign < δ를 benign으로 반환 (오프라인, 조건부 재실행 불필요 — benign은 이진 판정이라 라벨=\allowbreak{}benign). δ=\allowbreak{}2.5 피크: \textbf{macro 0.7347 vs global 0.7012 (+\allowbreak{}0.033)} — benign 0.9927(>global), web 0.1910(>0.1601, P 0.110/\allowbreak{}R 0.735), inf 0.2727(>0.0968), ddos 0.9939 유지. 반환 순도: 13.0만 flip 중 98\% 진짜 benign. \textbf{단 δ=\allowbreak{}2.5 \ensuremath{\rightarrow} 3.0에서 inf 절벽}(진짜 inf의 tail-margin이 2.5\textasciitilde{}3.0 구간에 밀집; 8천 행 추가 flip 시 inf 붕괴 0.27 \ensuremath{\rightarrow} 0.006) — γ-전이 실패(§9b) 전례상 δ의 시간 안정성이 관건.
+
+\textbf{정직 절차 제안 (exp13 후보)}: val 게이트 점수 산출(GPU \textasciitilde{}1-2h)  \ensuremath{\rightarrow}  δ를 val에서 선택 (macro-최적이 아니라 inf-recall 보호 제약 하 보수 선택 권장, 절벽 회피)  \ensuremath{\rightarrow}  test 1회 확정. TTA 자체는 이 상한 안쪽에서만 움직이고 비용 k×featurize(수 시간)라 후순위. 사용자 결정 대기.
+
+\subsubsection{§12l. EXP13 사전 등록 — TTA tie-break activation (사용자 설계, 결과 전 고정)}
+\textbf{사용자 지시}: "exp들끼리 점수 높은 expert가 여럿이면 TTA로 결정 — perturb해서 여러 exp에 대해 가중치를 얻게 하라." §12k의 margin-반환 δ와 달리 \textbf{라벨-의존 임계값 없이} 박빙을 TTA 평균으로 재결정하는 구현.
+
+\textbf{설계 (원노브: 12c +\allowbreak{} TTA 재결정 단계, 나머지 동일)}
+
+\par\noindent \textbullet\enspace 경합 정의: 1·2위가 \{benign, tail\}이고 gap < δ\_\allowbreak{}c=\allowbreak{}2.0 인 행 (\textbf{139만 행}; 도달 가능 오배정의 82\%=\allowbreak{}14.4만 포함). δ\_\allowbreak{}c·pair 선택은 §12k 해부(라벨 사용)에 근거함을 고지 — 단 상수로 고정, 스윕 없음.
+
+
+\par\noindent \textbullet\enspace TTA: 사본 K=\allowbreak{}8 (원본 1 +\allowbreak{} perturb 7), x' =\allowbreak{} x +\allowbreak{} ε, ε\textasciitilde{}N(0,(α·σ\_\allowbreak{}f)²), α=\allowbreak{}0.1, σ\_\allowbreak{}f =\allowbreak{} train 풀 결정적 1M 서브샘플의 per-feature std (라벨-비의존). 같은 사본을 benign·tail 두 expert가 공유(동일 seed 재생성).
+
+
+\par\noindent \textbullet\enspace 재결정: 경합 행의 승자 =\allowbreak{} argmax\{ mean\_\allowbreak{}K score\_\allowbreak{}benign, mean\_\allowbreak{}K score\_\allowbreak{}tail \} (pair 내부만, 점수 평균 =\allowbreak{} 가중의 최단순형). 비경합 행 불변. 원본 사본 점수는 pass-1 재사용.
+
+
+\par\noindent \textbullet\enspace pass 2: 12c 동일 (tail로 유입된 행 포함 재실행).
+
+
+\par\noindent \textbullet\enspace 비용: TTA featurize 139만×7×2 \ensuremath{\approx} pass-1의 1.2배  \ensuremath{\rightarrow}  총 \textasciitilde{}2.5-3h.
+
+
+\textbf{가설}: 노이즈로 뒤집힌 박빙 tail 승리가 TTA 평균에서 benign으로 복귀  \ensuremath{\rightarrow}  benign \ensuremath{\rightarrow} tail 14.8만 중 박빙 구간 회복, web precision 상승. inf \ensuremath{\rightarrow} benign(대격차 다수)과 dos(동일 벡터 — TTA 사본도 동일 분포)는 원리상 못 고침.
+
+\textbf{판정 (결과 전 고정)}: ① 기존 튜플 vs 12c와 global. ② §12k 오라클(δ=\allowbreak{}2.5, macro 0.7347) 대비 — TTA가 오라클에 근접하면 "임계값 없는 반환" 성립, 12c 수준이면 perturbation 평균이 무정보(s23의 TTA 실패 양식 재현)로 기록. ③ 부작용 감시: 옳던 박빙 행(진짜 inf/\allowbreak{}web의 tail 승리)이 benign으로 밀리는 수 — web recall 0.788 유지가 경계선. 스크립트: \texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}e\allowbreak{}xp13\_\allowbreak{}\allowbreak{}tta\allowbreak{}\_\allowbreak{}\allowbreak{}tiebrea\allowbreak{}k.\allowbreak{}py} (12c 복사 +\allowbreak{} TTA 단계).
+
+\subsubsection{§12m. EXP13 결과 (run \texttt{20260821\allowbreak{}\_\allowbreak{}\allowbreak{}102249}, GPU 단독) — TTA tie-break 강한 음성 +\allowbreak{} 메커니즘}
+\textbf{결과 (같은 run 3열)}: system\_\allowbreak{}tta macro \textbf{0.6545} vs system\_\allowbreak{}argmax\_\allowbreak{}pre 0.6935 vs global 0.7012. benign 0.9713 \ensuremath{\rightarrow} \textbf{0.7996 붕괴}. 경합 149.7만 행 중 \textbf{103.7만이 재결정 됐는데 그중 100.5만(96.9\%)이 진짜 benign의 benign \ensuremath{\rightarrow} tail 방향} — 오답 방향 98.4\%. 반대 방향(tail \ensuremath{\rightarrow} benign 1.6만)은 88\%가 진짜 benign으로 순도 높았으나 규모가 안 됨.
+
+\textbf{메커니즘 (양성 아닌 원리적 실패)}: 가우시안 perturb는 행을 밀집 manifold에서 밀어내므로, 조밀한 benign context에 대한 유사도는 빠르게 무너지고 퍼진 tail 게이트 점수는 덜 무너짐  \ensuremath{\rightarrow}  K-사본 평균이 "분산 감소"가 아니라 **조밀 클래스에 불리한 평균 이동(bias)**을 만든다. s23("TTA는 소유 expert를 못 찾는다")의 세 번째 독립 확증이며 이번에 메커니즘까지 특정됨.
+
+\textbf{방향 제한 변형 (덤프 오프라인, 라벨-비의존 규칙 "tail 승리만 재심")}: 반환 1.6만 행(진짜 benign 1.42만)  \ensuremath{\rightarrow}  macro \textbf{0.6926} — benign +\allowbreak{}0.002, inf −0.009로 순효과 없음. \textbf{판정: TTA 축은 전 변형에서 종결.} 박빙 재결정이 필요하면 perturbation이 아니라 val-보정 margin 반환(§12k)이 남은 경로.
+
+\subsubsection{§12n. 부수 발견 — 기록 run 간 재현성 밴드 (pre-check 훅이 잡아냄)}
+\texttt{-\allowbreak{}-\allowbreak{}pre-\allowbreak{}du\allowbreak{}mp-\allowbreak{}npz} 검증: winner 불일치 \textbf{130,228행(3.2\%)}, final\_\allowbreak{}pre 불일치 130,303행. 원인 분해: \textbf{flood/\allowbreak{}bf\_\allowbreak{}bot/\allowbreak{}tail 게이트 점수는 12c와 bit-단위 동일}(exp13 코드의 충실 재현 증명), 차이는 \textbf{benign expert 전 청크}에만 존재(max|Δ| 4.4–7.0). 12c의 benign pass-1은 exp11d와 GPU 동시 실행 구간 — 공유-GPU 수치 경로(autocast/\allowbreak{}커널 선택) 차이가 유력. 영향: 뒤집힌 행은 박빙(12c-gap 중앙값 0.44 vs 전체 2.74), 클래스 F1 최대 ±0.008(inf 0.1178 \ensuremath{\leftrightarrow} 0.1255), macro ±0.0016(0.6919 \ensuremath{\leftrightarrow} 0.6935). \textbf{교훈}: ① 클래스별 ±0.01 이하 델타는 재현성 밴드 내 — 원노브 판정은 이보다 커야 유효. ② 비교 컬럼은 같은 run 내 재계산이 정당(exp13 방식). ③ GPU 병렬은 유지하되 기록-등급 비교가 목적일 땐 단독 실행 고려.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

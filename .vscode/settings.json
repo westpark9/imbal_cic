@@ -1,0 +1,39 @@
+{
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.latex.rootFile.indicator": "\\begin{document}",
+    "latex-workshop.latex.outDir": "%TMPDIR%/%RELATIVE_DIR%/%DOCFILE%",
+    "latex-workshop.latex.auxDir": "%OUTDIR%",
+    "latex-workshop.latex.recipe.default": "project LaTeX",
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "project LaTeX",
+            "tools": ["project-latex"]
+        },
+        {
+            "name": "lablog XeLaTeX",
+            "tools": ["lablog-latex"]
+        }
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "project-latex",
+            "command": "python3",
+            "args": [
+                "%WORKSPACE_FOLDER%/scripts/common/build_latex.py",
+                "%DOC_EXT%",
+                "--outdir=%OUTDIR%"
+            ]
+        },
+        {
+            "name": "lablog-latex",
+            "command": "python3",
+            "args": [
+                "%WORKSPACE_FOLDER%/scripts/common/build_latex.py",
+                "%DOC_EXT%",
+                "--outdir=%OUTDIR%"
+            ]
+        }
+    ],
+    "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.view.pdf.tab.editorGroup": "right"
+}

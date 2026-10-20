@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Merge the three post-audit reports and publish verified EXP62 local results."""
 
+# HTML reporting was retired by the 2026-10-20 documentation reorganization.
+if __name__ == '__main__':
+    raise SystemExit('이 HTML 발행 명령은 폐기되었습니다. 결과를 검토한 뒤 scripts/common/lablog.py의 write_record로 한국어 LaTeX·PDF와 log.md를 갱신하세요. 기존 결과 계산 함수는 이력 참조용입니다.')
+
+
 # Repository layout bootstrap: works in the workspace and portable source snapshots.
 from pathlib import Path as _LayoutPath
 import sys as _layout_sys
@@ -28,7 +33,7 @@ from report_order import support_order, permute, apply_rules
 
 ROOT = repo_root(__file__)
 HTML = ROOT / 'lablog/html_report'
-DOC = ROOT / 'docs/research/20260930'
+DOC = ROOT / 'docs/lablog/evidence/20260930'
 RUN = ROOT / 'tabpfn/results/v4/exp62/20260930_exp62_sv_current_bank_s43'
 DIAG = ROOT / 'tabpfn/results/v4/exp59/20260928_exp59_residual_oracle_s43'
 ID = 'scorer_verifier_target_0928'
@@ -205,7 +210,7 @@ def build(data):
         '<p><b>BoT-IoT의 이전 관찰:</b> 정제 후 Global Macro-F1은 0.3460이었고, 자연 비율 context 재실행에서는 약 0.204였다. 당시 context 변경만으로 DDoS·DoS 구분을 회복하지 못했다는 진단을 보존한다. 두 조건만으로 feature의 구분 정보가 없다고 확정하지 않는다.</p>',
         '<p class="note">09/17·09/18의 조건별 표와 09/28의 A/B 진단은 원본 보관본에 남겼다. 현재 3장은 같은 표본의 expert 직접 평가와 K 비교를 사용한다.</p></details>',
         '<footer><p>데이터 품질과 정제 기준: <button class="link-button" data-report-jump="dataset_quality_0911">0911 데이터 품질 감사</button> · 비교 모델 성능·비용: <button class="link-button" data-report-jump="sota_pfn_comparison">0908 SOTA</button></p>',
-        '<details><summary>결과 출처와 원본 보관 위치</summary><p>K=4 S/V: <code>tabpfn/results/v4/exp62/20260930_exp62_sv_current_bank_s43/</code><br>3장 K 비교·expert 직접 평가: <code>tabpfn/results/v4/exp63/20260930_exp63_k_sweep_s43/</code><br>Oracle·과거 A/B: <code>tabpfn/results/v4/exp59/20260928_exp59_residual_oracle_s43/</code><br>이전 S/V: <code>tabpfn/results/v4/exp56/exp56_label_free_20260922/</code><br>통합 전 HTML: <code>docs/research/20260930/archive/pre_merge_reports/</code><br>3장 변경 전 HTML: <code>docs/research/20260930/archive/pre_exp63_capability/</code></p></details>',
+        '<details><summary>결과 출처와 원본 보관 위치</summary><p>K=4 S/V: <code>tabpfn/results/v4/exp62/20260930_exp62_sv_current_bank_s43/</code><br>3장 K 비교·expert 직접 평가: <code>tabpfn/results/v4/exp63/20260930_exp63_k_sweep_s43/</code><br>Oracle·과거 A/B: <code>tabpfn/results/v4/exp59/20260928_exp59_residual_oracle_s43/</code><br>이전 S/V: <code>tabpfn/results/v4/exp56/exp56_label_free_20260922/</code><br>통합 전 HTML: <code>docs/lablog/evidence/20260930/archive/pre_merge_reports/</code><br>3장 변경 전 HTML: <code>docs/lablog/evidence/20260930/archive/pre_exp63_capability/</code></p></details>',
         '<p>단일 seed 및 기존에 관찰한 test에 대한 예비 결과다. 논문 최종 주장에는 반복 seed와 독립 검증을 추가한다.</p></footer>']
     out.append('<script type="application/json" id="merged-data">'+json.dumps(data,ensure_ascii=False,allow_nan=False).replace('</',r'<\/')+'</script>')
     out.append('<script>'+SWEEP_JS+'</script>')

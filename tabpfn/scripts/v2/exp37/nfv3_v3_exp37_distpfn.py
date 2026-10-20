@@ -132,7 +132,7 @@ def parse_args():
     g.add_argument("--no-distpfn-t", action="store_true",
                    help="Skip the DistPFN-T variant (decision 2026-09-08: excluded from the SOTA comparison; "
                         "the released -T code path cannot execute and the paper-definition version collapses "
-                        "on this data -- lablog/report/0904.md section 7). Earlier runs computed it.")
+                        "on this data -- docs/lablog/reports/20260904.tex section 7). Earlier runs computed it.")
     g.add_argument("--skip-drift-diagnostic", action="store_true")
     c0ctx.add_c0_args(p)
     return p.parse_args()

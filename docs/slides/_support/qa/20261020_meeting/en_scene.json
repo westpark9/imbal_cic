@@ -1,0 +1,1310 @@
+{
+  "scenes": [
+    {
+      "title": "Adapting IDS to newly labelled attacks",
+      "notes": "Problem before dataset. A labelled flow is a tabular network record with an assigned class. Labels are assumed available after investigation; their acquisition is not evaluated here. XGBoost full refitting is the chosen comparator, not a claim that all tree updates require retraining. Class arrival is not a claim of zero-label novelty detection or cross-network robustness.",
+      "items": [
+        {
+          "kind": "text",
+          "x": 0.6,
+          "y": 0.33,
+          "w": 12.1,
+          "h": 0.57,
+          "text": "Adapting IDS to newly labelled attacks",
+          "size": 30,
+          "bold": true,
+          "color": "00306C"
+        },
+        {
+          "kind": "text",
+          "x": 0.62,
+          "y": 1.12,
+          "w": 12.0,
+          "h": 0.52,
+          "text": "IDS · Classifying network flows as benign or attack types",
+          "size": 22,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "box",
+          "x": 0.62,
+          "y": 1.98,
+          "w": 3.65,
+          "h": 1.75,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 0.8200000000000001,
+          "y": 2.15,
+          "w": 3.25,
+          "h": 0.42,
+          "text": "Initial deployment",
+          "size": 22,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 0.8200000000000001,
+          "y": 2.8,
+          "w": 3.26,
+          "h": 0.68,
+          "text": "Labelled benign traffic\nand known attacks",
+          "size": 19,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "arrow",
+          "x": 4.43,
+          "y": 2.7,
+          "w": 0.35,
+          "h": 0.28,
+          "fill": "007BC6"
+        },
+        {
+          "kind": "box",
+          "x": 4.84,
+          "y": 1.98,
+          "w": 3.65,
+          "h": 1.75,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 5.04,
+          "y": 2.15,
+          "w": 3.25,
+          "h": 0.42,
+          "text": "Newly labelled attack",
+          "size": 22,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 5.04,
+          "y": 2.8,
+          "w": 3.26,
+          "h": 0.68,
+          "text": "A small labelled sample\nof a newly observed attack",
+          "size": 19,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "arrow",
+          "x": 8.65,
+          "y": 2.7,
+          "w": 0.35,
+          "h": 0.28,
+          "fill": "007BC6"
+        },
+        {
+          "kind": "box",
+          "x": 9.059999999999999,
+          "y": 1.98,
+          "w": 3.65,
+          "h": 1.75,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 9.259999999999998,
+          "y": 2.15,
+          "w": 3.25,
+          "h": 0.42,
+          "text": "Detector update",
+          "size": 22,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 9.259999999999998,
+          "y": 2.8,
+          "w": 3.26,
+          "h": 0.68,
+          "text": "Recognize the new attack\nand preserve earlier quality",
+          "size": 19,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "text",
+          "x": 0.65,
+          "y": 4.21,
+          "w": 2.05,
+          "h": 0.4,
+          "text": "XGBoost",
+          "size": 23,
+          "bold": true,
+          "color": "20262E"
+        },
+        {
+          "kind": "text",
+          "x": 2.85,
+          "y": 4.21,
+          "w": 9.8,
+          "h": 0.46,
+          "text": "Comparator: refit on all labelled examples available so far",
+          "size": 21,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "text",
+          "x": 0.65,
+          "y": 5.0,
+          "w": 2.05,
+          "h": 0.4,
+          "text": "TabPFN",
+          "size": 23,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 2.85,
+          "y": 5.0,
+          "w": 9.8,
+          "h": 0.46,
+          "text": "Fixed pretrained weights; labelled examples supplied as context",
+          "size": 21,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "box",
+          "x": 0.62,
+          "y": 6.12,
+          "w": 12.05,
+          "h": 0.77,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 0.84,
+          "y": 6.31,
+          "w": 11.6,
+          "h": 0.4,
+          "text": "Comparison · New-attack detection · Retained quality · Update cost",
+          "size": 20,
+          "bold": true,
+          "color": "00306C"
+        }
+      ]
+    },
+    {
+      "title": "TabPFN · Weights, context and query",
+      "notes": "https://arxiv.org/html/2605.13986v1 Sections 1, 2.2, 2.5. Synthetic tasks refer to model pretraining, not the IDS evaluation data. Context is a supplied labelled dataset, not information stored inside fixed pretrained weights. Fine-tuning is optional weight optimization and is not used in the supplied result pages. FT interface: https://github.com/PriorLabs/TabPFN/blob/main/src/tabpfn/finetuning/finetuned_base.py",
+      "items": [
+        {
+          "kind": "text",
+          "x": 0.6,
+          "y": 0.33,
+          "w": 12.1,
+          "h": 0.57,
+          "text": "TabPFN · Weights, context and query",
+          "size": 30,
+          "bold": true,
+          "color": "00306C"
+        },
+        {
+          "kind": "text",
+          "x": 0.62,
+          "y": 1.05,
+          "w": 12.0,
+          "h": 0.4,
+          "text": "Prediction rules pretrained on synthetic tabular tasks · TabPFN-3, arXiv 2026",
+          "size": 19,
+          "bold": false,
+          "color": "617080"
+        },
+        {
+          "kind": "box",
+          "x": 0.62,
+          "y": 1.87,
+          "w": 3.23,
+          "h": 1.0,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 0.82,
+          "y": 2.04,
+          "w": 2.85,
+          "h": 0.35245,
+          "text": "Context",
+          "size": 21,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 0.82,
+          "y": 2.48,
+          "w": 2.85,
+          "h": 0.28531666666666666,
+          "text": "Flow features + labels",
+          "size": 17,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "box",
+          "x": 0.62,
+          "y": 3.13,
+          "w": 3.23,
+          "h": 1.0,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 0.82,
+          "y": 3.3,
+          "w": 2.85,
+          "h": 0.35245,
+          "text": "Query",
+          "size": 21,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 0.82,
+          "y": 3.74,
+          "w": 2.85,
+          "h": 0.28531666666666666,
+          "text": "Flow features to classify",
+          "size": 17,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "arrow",
+          "x": 4.07,
+          "y": 2.37,
+          "w": 0.47,
+          "h": 0.32,
+          "fill": "007BC6"
+        },
+        {
+          "kind": "arrow",
+          "x": 4.07,
+          "y": 3.62,
+          "w": 0.47,
+          "h": 0.32,
+          "fill": "007BC6"
+        },
+        {
+          "kind": "box",
+          "x": 4.8,
+          "y": 2.27,
+          "w": 3.55,
+          "h": 1.46,
+          "fill": "00306C"
+        },
+        {
+          "kind": "text",
+          "x": 5.0,
+          "y": 2.54,
+          "w": 3.15,
+          "h": 0.4363666666666666,
+          "text": "TabPFN",
+          "size": 26,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "kind": "text",
+          "x": 5.0,
+          "y": 3.16,
+          "w": 3.15,
+          "h": 0.3021,
+          "text": "Pretrained weights fixed",
+          "size": 18,
+          "bold": false,
+          "color": "FFFFFF"
+        },
+        {
+          "kind": "arrow",
+          "x": 8.57,
+          "y": 2.93,
+          "w": 0.47,
+          "h": 0.32,
+          "fill": "007BC6"
+        },
+        {
+          "kind": "box",
+          "x": 9.3,
+          "y": 2.27,
+          "w": 3.38,
+          "h": 1.46,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 9.5,
+          "y": 2.57,
+          "w": 2.97,
+          "h": 0.35245,
+          "text": "Class probabilities",
+          "size": 21,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 9.5,
+          "y": 3.17,
+          "w": 2.97,
+          "h": 0.3,
+          "text": "Benign · Attack A · Attack B …",
+          "size": 16,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "text",
+          "x": 0.65,
+          "y": 4.64,
+          "w": 2.63,
+          "h": 0.35,
+          "text": "In-context learning",
+          "size": 20,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 3.45,
+          "y": 4.64,
+          "w": 9.05,
+          "h": 0.36,
+          "text": "Predict the query using its context, with no weight optimization",
+          "size": 19,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "text",
+          "x": 0.65,
+          "y": 5.35,
+          "w": 2.4,
+          "h": 0.35,
+          "text": "Fine-tuning",
+          "size": 20,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 3.45,
+          "y": 5.35,
+          "w": 9.05,
+          "h": 0.6377666666666666,
+          "text": "Split IDS examples into context/query; update weights\nby backpropagating the labelled-query loss",
+          "size": 19,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "box",
+          "x": 0.62,
+          "y": 6.29,
+          "w": 12.05,
+          "h": 0.61,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 0.84,
+          "y": 6.44,
+          "w": 11.61,
+          "h": 0.3188833333333333,
+          "text": "Current comparison · Original pretrained weights, with no IDS fine-tuning",
+          "size": 19,
+          "bold": true,
+          "color": "00306C"
+        }
+      ]
+    },
+    {
+      "title": "v3 architecture · Representing network flows",
+      "notes": "https://arxiv.org/html/2605.13986v1 Figure 5, Section 2.1. Original figure on the left, without a visible caption per user instruction. Steps 1–3 follow cell embedding, column-wise feature embedding, and row-wise feature aggregation. The labelled context is external input; the diagram does not depict IDS weight fine-tuning.",
+      "items": [
+        {
+          "kind": "text",
+          "x": 0.6,
+          "y": 0.33,
+          "w": 12.1,
+          "h": 0.57,
+          "text": "v3 architecture · Representing network flows",
+          "size": 30,
+          "bold": true,
+          "color": "00306C"
+        },
+        {
+          "kind": "image",
+          "x": 0.62,
+          "y": 1.08,
+          "w": 3.95,
+          "h": 5.88,
+          "path": "/home/user/Desktop/imbalcic/docs/slides/_support/qa/kor/1015_labmeeting_qa/v3_architecture_page.png",
+          "crop": [
+            0.2,
+            0.082,
+            0.19,
+            0.285
+          ]
+        },
+        {
+          "kind": "text",
+          "x": 4.98,
+          "y": 1.4,
+          "w": 7.73,
+          "h": 0.45,
+          "text": "1  Encode values · Cell embedding",
+          "size": 22,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 5.33,
+          "y": 2.08,
+          "w": 7.25,
+          "h": 0.87,
+          "text": "Convert each value, such as packet length, into a vector\nInclude an indicator for missing values",
+          "size": 20,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "text",
+          "x": 4.98,
+          "y": 3.1399999999999997,
+          "w": 7.73,
+          "h": 0.45,
+          "text": "2  Summarize columns · Feature embedding",
+          "size": 22,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 5.33,
+          "y": 3.82,
+          "w": 7.25,
+          "h": 0.87,
+          "text": "Summarize each feature across multiple flows\nUse the labels supplied with the context",
+          "size": 20,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "text",
+          "x": 4.98,
+          "y": 4.88,
+          "w": 7.73,
+          "h": 0.45,
+          "text": "3  Combine features · Feature aggregation",
+          "size": 22,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 5.33,
+          "y": 5.56,
+          "w": 7.25,
+          "h": 0.87,
+          "text": "Combine a flow’s features into one representation\nPrepare it for comparison with other flows",
+          "size": 20,
+          "bold": false,
+          "color": "20262E"
+        }
+      ]
+    },
+    {
+      "title": "v3 architecture · Context-based prediction",
+      "notes": "https://arxiv.org/html/2605.13986v1 Sections 2.2 and 2.4.2. The decoder averages one-hot context labels with learned attention weights. Cached prediction can reuse prepared context states; changing context may require recomputation. No claim that a context update is free, or universally faster than XGBoost refitting.",
+      "items": [
+        {
+          "kind": "text",
+          "x": 0.6,
+          "y": 0.33,
+          "w": 12.1,
+          "h": 0.57,
+          "text": "v3 architecture · Context-based prediction",
+          "size": 30,
+          "bold": true,
+          "color": "00306C"
+        },
+        {
+          "kind": "image",
+          "x": 0.62,
+          "y": 1.08,
+          "w": 3.95,
+          "h": 5.88,
+          "path": "/home/user/Desktop/imbalcic/docs/slides/_support/qa/kor/1015_labmeeting_qa/v3_architecture_page.png",
+          "crop": [
+            0.2,
+            0.082,
+            0.19,
+            0.285
+          ]
+        },
+        {
+          "kind": "text",
+          "x": 4.98,
+          "y": 1.36,
+          "w": 7.73,
+          "h": 0.45,
+          "text": "4  Consult examples · In-context learning",
+          "size": 22,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 5.33,
+          "y": 2.03,
+          "w": 7.23,
+          "h": 0.78,
+          "text": "Compare the query with labelled context examples\nWeight their relevance through attention",
+          "size": 20,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "text",
+          "x": 4.98,
+          "y": 3.02,
+          "w": 7.73,
+          "h": 0.45,
+          "text": "5  Predict probabilities · Many-class decoder",
+          "size": 22,
+          "bold": true,
+          "color": "007BC6"
+        },
+        {
+          "kind": "text",
+          "x": 5.33,
+          "y": 3.69,
+          "w": 7.23,
+          "h": 0.78,
+          "text": "Combine context labels with attention weights\nKeep examples of both existing and new classes",
+          "size": 20,
+          "bold": false,
+          "color": "20262E"
+        },
+        {
+          "kind": "box",
+          "x": 4.98,
+          "y": 5.11,
+          "w": 7.7,
+          "h": 1.57,
+          "fill": "F1F5F9"
+        },
+        {
+          "kind": "text",
+          "x": 5.2,
+          "y": 5.31,
+          "w": 7.25,
+          "h": 0.35245,
+          "text": "Context updates also require computation",
+          "size": 21,
+          "bold": true,
+          "color": "00306C"
+        },
+        {
+          "kind": "text",
+          "x": 5.2,
+          "y": 5.96,
+          "w": 7.23,
+          "h": 0.6042,
+          "text": "Preprocessing · Representations · Cache preparation\nMeasure update time separately from weight training",
+          "size": 18,
+          "bold": false,
+          "color": "20262E"
+        }
+      ]
+    }
+  ],
+  "geometry": [
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 0.6,
+      "y": 0.33,
+      "w": 12.1,
+      "h": 0.57,
+      "text": "Adapting IDS to newly labelled attacks",
+      "size": 30,
+      "bold": true,
+      "color": "00306C"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 0.62,
+      "y": 1.12,
+      "w": 12.0,
+      "h": 0.52,
+      "text": "IDS · Classifying network flows as benign or attack types",
+      "size": 22,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 1,
+      "kind": "box",
+      "x": 0.62,
+      "y": 1.98,
+      "w": 3.65,
+      "h": 1.75,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 0.8200000000000001,
+      "y": 2.15,
+      "w": 3.25,
+      "h": 0.42,
+      "text": "Initial deployment",
+      "size": 22,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 0.8200000000000001,
+      "y": 2.8,
+      "w": 3.26,
+      "h": 0.68,
+      "text": "Labelled benign traffic\nand known attacks",
+      "size": 19,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 1,
+      "kind": "arrow",
+      "x": 4.43,
+      "y": 2.7,
+      "w": 0.35,
+      "h": 0.28,
+      "fill": "007BC6"
+    },
+    {
+      "page": 1,
+      "kind": "box",
+      "x": 4.84,
+      "y": 1.98,
+      "w": 3.65,
+      "h": 1.75,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 5.04,
+      "y": 2.15,
+      "w": 3.25,
+      "h": 0.42,
+      "text": "Newly labelled attack",
+      "size": 22,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 5.04,
+      "y": 2.8,
+      "w": 3.26,
+      "h": 0.68,
+      "text": "A small labelled sample\nof a newly observed attack",
+      "size": 19,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 1,
+      "kind": "arrow",
+      "x": 8.65,
+      "y": 2.7,
+      "w": 0.35,
+      "h": 0.28,
+      "fill": "007BC6"
+    },
+    {
+      "page": 1,
+      "kind": "box",
+      "x": 9.059999999999999,
+      "y": 1.98,
+      "w": 3.65,
+      "h": 1.75,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 9.259999999999998,
+      "y": 2.15,
+      "w": 3.25,
+      "h": 0.42,
+      "text": "Detector update",
+      "size": 22,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 9.259999999999998,
+      "y": 2.8,
+      "w": 3.26,
+      "h": 0.68,
+      "text": "Recognize the new attack\nand preserve earlier quality",
+      "size": 19,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 0.65,
+      "y": 4.21,
+      "w": 2.05,
+      "h": 0.4,
+      "text": "XGBoost",
+      "size": 23,
+      "bold": true,
+      "color": "20262E"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 2.85,
+      "y": 4.21,
+      "w": 9.8,
+      "h": 0.46,
+      "text": "Comparator: refit on all labelled examples available so far",
+      "size": 21,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 0.65,
+      "y": 5.0,
+      "w": 2.05,
+      "h": 0.4,
+      "text": "TabPFN",
+      "size": 23,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 2.85,
+      "y": 5.0,
+      "w": 9.8,
+      "h": 0.46,
+      "text": "Fixed pretrained weights; labelled examples supplied as context",
+      "size": 21,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 1,
+      "kind": "box",
+      "x": 0.62,
+      "y": 6.12,
+      "w": 12.05,
+      "h": 0.77,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 1,
+      "kind": "text",
+      "x": 0.84,
+      "y": 6.31,
+      "w": 11.6,
+      "h": 0.4,
+      "text": "Comparison · New-attack detection · Retained quality · Update cost",
+      "size": 20,
+      "bold": true,
+      "color": "00306C"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.6,
+      "y": 0.33,
+      "w": 12.1,
+      "h": 0.57,
+      "text": "TabPFN · Weights, context and query",
+      "size": 30,
+      "bold": true,
+      "color": "00306C"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.62,
+      "y": 1.05,
+      "w": 12.0,
+      "h": 0.4,
+      "text": "Prediction rules pretrained on synthetic tabular tasks · TabPFN-3, arXiv 2026",
+      "size": 19,
+      "bold": false,
+      "color": "617080"
+    },
+    {
+      "page": 2,
+      "kind": "box",
+      "x": 0.62,
+      "y": 1.87,
+      "w": 3.23,
+      "h": 1.0,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.82,
+      "y": 2.04,
+      "w": 2.85,
+      "h": 0.35245,
+      "text": "Context",
+      "size": 21,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.82,
+      "y": 2.48,
+      "w": 2.85,
+      "h": 0.28531666666666666,
+      "text": "Flow features + labels",
+      "size": 17,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 2,
+      "kind": "box",
+      "x": 0.62,
+      "y": 3.13,
+      "w": 3.23,
+      "h": 1.0,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.82,
+      "y": 3.3,
+      "w": 2.85,
+      "h": 0.35245,
+      "text": "Query",
+      "size": 21,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.82,
+      "y": 3.74,
+      "w": 2.85,
+      "h": 0.28531666666666666,
+      "text": "Flow features to classify",
+      "size": 17,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 2,
+      "kind": "arrow",
+      "x": 4.07,
+      "y": 2.37,
+      "w": 0.47,
+      "h": 0.32,
+      "fill": "007BC6"
+    },
+    {
+      "page": 2,
+      "kind": "arrow",
+      "x": 4.07,
+      "y": 3.62,
+      "w": 0.47,
+      "h": 0.32,
+      "fill": "007BC6"
+    },
+    {
+      "page": 2,
+      "kind": "box",
+      "x": 4.8,
+      "y": 2.27,
+      "w": 3.55,
+      "h": 1.46,
+      "fill": "00306C"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 5.0,
+      "y": 2.54,
+      "w": 3.15,
+      "h": 0.4363666666666666,
+      "text": "TabPFN",
+      "size": 26,
+      "bold": true,
+      "color": "FFFFFF"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 5.0,
+      "y": 3.16,
+      "w": 3.15,
+      "h": 0.3021,
+      "text": "Pretrained weights fixed",
+      "size": 18,
+      "bold": false,
+      "color": "FFFFFF"
+    },
+    {
+      "page": 2,
+      "kind": "arrow",
+      "x": 8.57,
+      "y": 2.93,
+      "w": 0.47,
+      "h": 0.32,
+      "fill": "007BC6"
+    },
+    {
+      "page": 2,
+      "kind": "box",
+      "x": 9.3,
+      "y": 2.27,
+      "w": 3.38,
+      "h": 1.46,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 9.5,
+      "y": 2.57,
+      "w": 2.97,
+      "h": 0.35245,
+      "text": "Class probabilities",
+      "size": 21,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 9.5,
+      "y": 3.17,
+      "w": 2.97,
+      "h": 0.3,
+      "text": "Benign · Attack A · Attack B …",
+      "size": 16,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.65,
+      "y": 4.64,
+      "w": 2.63,
+      "h": 0.35,
+      "text": "In-context learning",
+      "size": 20,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 3.45,
+      "y": 4.64,
+      "w": 9.05,
+      "h": 0.36,
+      "text": "Predict the query using its context, with no weight optimization",
+      "size": 19,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.65,
+      "y": 5.35,
+      "w": 2.4,
+      "h": 0.35,
+      "text": "Fine-tuning",
+      "size": 20,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 3.45,
+      "y": 5.35,
+      "w": 9.05,
+      "h": 0.6377666666666666,
+      "text": "Split IDS examples into context/query; update weights\nby backpropagating the labelled-query loss",
+      "size": 19,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 2,
+      "kind": "box",
+      "x": 0.62,
+      "y": 6.29,
+      "w": 12.05,
+      "h": 0.61,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 2,
+      "kind": "text",
+      "x": 0.84,
+      "y": 6.44,
+      "w": 11.61,
+      "h": 0.3188833333333333,
+      "text": "Current comparison · Original pretrained weights, with no IDS fine-tuning",
+      "size": 19,
+      "bold": true,
+      "color": "00306C"
+    },
+    {
+      "page": 3,
+      "kind": "text",
+      "x": 0.6,
+      "y": 0.33,
+      "w": 12.1,
+      "h": 0.57,
+      "text": "v3 architecture · Representing network flows",
+      "size": 30,
+      "bold": true,
+      "color": "00306C"
+    },
+    {
+      "page": 3,
+      "kind": "image",
+      "x": 0.62,
+      "y": 1.08,
+      "w": 3.95,
+      "h": 5.88,
+      "path": "/home/user/Desktop/imbalcic/docs/slides/_support/qa/kor/1015_labmeeting_qa/v3_architecture_page.png",
+      "crop": [
+        0.2,
+        0.082,
+        0.19,
+        0.285
+      ]
+    },
+    {
+      "page": 3,
+      "kind": "text",
+      "x": 4.98,
+      "y": 1.4,
+      "w": 7.73,
+      "h": 0.45,
+      "text": "1  Encode values · Cell embedding",
+      "size": 22,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 3,
+      "kind": "text",
+      "x": 5.33,
+      "y": 2.08,
+      "w": 7.25,
+      "h": 0.87,
+      "text": "Convert each value, such as packet length, into a vector\nInclude an indicator for missing values",
+      "size": 20,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 3,
+      "kind": "text",
+      "x": 4.98,
+      "y": 3.1399999999999997,
+      "w": 7.73,
+      "h": 0.45,
+      "text": "2  Summarize columns · Feature embedding",
+      "size": 22,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 3,
+      "kind": "text",
+      "x": 5.33,
+      "y": 3.82,
+      "w": 7.25,
+      "h": 0.87,
+      "text": "Summarize each feature across multiple flows\nUse the labels supplied with the context",
+      "size": 20,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 3,
+      "kind": "text",
+      "x": 4.98,
+      "y": 4.88,
+      "w": 7.73,
+      "h": 0.45,
+      "text": "3  Combine features · Feature aggregation",
+      "size": 22,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 3,
+      "kind": "text",
+      "x": 5.33,
+      "y": 5.56,
+      "w": 7.25,
+      "h": 0.87,
+      "text": "Combine a flow’s features into one representation\nPrepare it for comparison with other flows",
+      "size": 20,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 4,
+      "kind": "text",
+      "x": 0.6,
+      "y": 0.33,
+      "w": 12.1,
+      "h": 0.57,
+      "text": "v3 architecture · Context-based prediction",
+      "size": 30,
+      "bold": true,
+      "color": "00306C"
+    },
+    {
+      "page": 4,
+      "kind": "image",
+      "x": 0.62,
+      "y": 1.08,
+      "w": 3.95,
+      "h": 5.88,
+      "path": "/home/user/Desktop/imbalcic/docs/slides/_support/qa/kor/1015_labmeeting_qa/v3_architecture_page.png",
+      "crop": [
+        0.2,
+        0.082,
+        0.19,
+        0.285
+      ]
+    },
+    {
+      "page": 4,
+      "kind": "text",
+      "x": 4.98,
+      "y": 1.36,
+      "w": 7.73,
+      "h": 0.45,
+      "text": "4  Consult examples · In-context learning",
+      "size": 22,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 4,
+      "kind": "text",
+      "x": 5.33,
+      "y": 2.03,
+      "w": 7.23,
+      "h": 0.78,
+      "text": "Compare the query with labelled context examples\nWeight their relevance through attention",
+      "size": 20,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 4,
+      "kind": "text",
+      "x": 4.98,
+      "y": 3.02,
+      "w": 7.73,
+      "h": 0.45,
+      "text": "5  Predict probabilities · Many-class decoder",
+      "size": 22,
+      "bold": true,
+      "color": "007BC6"
+    },
+    {
+      "page": 4,
+      "kind": "text",
+      "x": 5.33,
+      "y": 3.69,
+      "w": 7.23,
+      "h": 0.78,
+      "text": "Combine context labels with attention weights\nKeep examples of both existing and new classes",
+      "size": 20,
+      "bold": false,
+      "color": "20262E"
+    },
+    {
+      "page": 4,
+      "kind": "box",
+      "x": 4.98,
+      "y": 5.11,
+      "w": 7.7,
+      "h": 1.57,
+      "fill": "F1F5F9"
+    },
+    {
+      "page": 4,
+      "kind": "text",
+      "x": 5.2,
+      "y": 5.31,
+      "w": 7.25,
+      "h": 0.35245,
+      "text": "Context updates also require computation",
+      "size": 21,
+      "bold": true,
+      "color": "00306C"
+    },
+    {
+      "page": 4,
+      "kind": "text",
+      "x": 5.2,
+      "y": 5.96,
+      "w": 7.23,
+      "h": 0.6042,
+      "text": "Preprocessing · Representations · Cache preparation\nMeasure update time separately from weight training",
+      "size": 18,
+      "bold": false,
+      "color": "20262E"
+    }
+  ],
+  "output": "docs/slides/eng/20261020_Meeting_en"
+}

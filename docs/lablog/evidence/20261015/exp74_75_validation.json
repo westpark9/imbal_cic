@@ -1,0 +1,50 @@
+{
+  "state": "passed",
+  "unit_tests": 9,
+  "gpu_smoke": {
+    "complete": true,
+    "data": "ToN natural final stage, train/validation only",
+    "head_save_load": true,
+    "two_estimator_embeddings": true,
+    "prediction_repeatability": true,
+    "context_gradient_steps": 2,
+    "frozen_backbone": true,
+    "no_test_access": true
+  },
+  "full_context_gradient": {
+    "state": "passed",
+    "checks": [
+      {
+        "dataset": "cic2018",
+        "context_rows": 2048,
+        "queries": 14,
+        "loss": 0.2481883466243744,
+        "gradient_norm": 63.40424728393555,
+        "finite": true,
+        "device": "cpu",
+        "seconds": 10.381965123000555
+      },
+      {
+        "dataset": "toniot",
+        "context_rows": 2048,
+        "queries": 20,
+        "loss": 0.386817991733551,
+        "gradient_norm": 26.52423858642578,
+        "finite": true,
+        "device": "cpu",
+        "seconds": 10.098236176010687
+      }
+    ],
+    "test_access": false,
+    "backbone_frozen": true
+  },
+  "source_sha256": {
+    "scripts/v7/exp74/run_adaptation.py": "2348fd9a7c9999ae5224bc6654ae9bc3903ef41d11ed498668a8b0f979b1e4c1",
+    "scripts/v7/exp74/distribution_heads.py": "7893ce27aaa6c074a7f72c47eae815af46a84c12966ca4bee161ef83f4d28d5d",
+    "scripts/v7/exp74/smoke_adaptation.py": "0181ce17bdb7d492eb0901fd3e16cd6e5ccfe3885db691aba99629ce405695b2",
+    "scripts/v7/exp74/run_sequence.py": "aa18532f60ebc6ebe3916ece87e57eee9db622eaba08efbe3e3cc9da56ef12a5",
+    "scripts/v7/exp75/context_distillation.py": "cfae01ffe1c88882a13db4890054db1b8b380f01493f9c4016d06b7bb3245a60",
+    "scripts/v7/exp75/gradient_preprocessing.py": "afbc7ccea6d385f4f1c4f1c6ff8289c444ad9c786e471d7789fdccc1e39dd247",
+    "scripts/v7/exp75/run_context_adaptation.py": "1b2319ff2ea64eaf5ad63cd0b6c128985068e197e96bf1993cd249efc3bf3d3b"
+  }
+}

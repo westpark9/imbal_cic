@@ -1,0 +1,456 @@
+% !TeX root = 20260929.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-09-29}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{EXP60 — 무작위 /\allowbreak{} 가까운 상대사례 context}
+요청: CIC2018·ToN에 두 상대사례 조건을 실행한다. 실험 실행만 요청되었으므로 HTML은 자동 변경하지 않는다.
+
+\subsection{고정 조건}
+\par\noindent \textbullet\enspace EXP59 seed 43, K=\allowbreak{}4, Global fitted checkpoint, 공통 anchor, D\_\allowbreak{}expert ID, test ID/\allowbreak{}label, PCA와 residual scaling/\allowbreak{}centroid를 재사용한다.
+
+
+\par\noindent \textbullet\enspace EXP59 현재 context와 raw 예측은 기존 기준으로 사용한다. Scorer/\allowbreak{}verifier는 이번 비교에서 새로 학습하지 않는다.
+
+
+\par\noindent \textbullet\enspace Expert가 받는 입력은 원래 feature와 정답이다. Residual은 context 선택에 사용하며 새로운 입력 feature로 붙이지 않는다.
+
+
+\par\noindent \textbullet\enspace 공통 anchor는 클래스별 최대 2,000개 표본이다. 오류만 선택한 것이 아니다. 기존 특화 block도 오류만으로 제한하지 않으며, residual clustering 및 오류 크기·다양성 기준으로 선택되었다.
+
+
+\subsection{추가할 두 조건}
+\par\noindent \textbullet\enspace 기존 특화 block의 80\%를 클래스 구성에 비례해 유지한다(원래 존재한 클래스 최소 1개 유지, 고정 seed). 두 조건이 동일한 core를 사용한다.
+
+
+\par\noindent \textbullet\enspace 나머지 20\%(반올림)의 자리를 상대사례에 배분한다. 각 expert의 전체 context 크기는 EXP59와 동일하다. 이는 단일 preliminary 고정 비율이며 최적값이 아니다.
+
+
+\par\noindent \textbullet\enspace Core에서 중복 feature를 제외하고 클래스별로 나눈 대표 query를 선택한다. 클래스별 query 예산은 균등하게 배분하며 residual 크기에 비례한 고정-seed 추출을 사용한다. 전체 query 목표는 512개(클래스별 올림 때문에 최대 C−1개 초과 가능)다.
+
+
+\par\noindent \textbullet\enspace 후보는 D\_\allowbreak{}expert 전체에서 검색한다. Anchor/\allowbreak{}core와 feature가 같은 후보를 제외하고 동일 feature 후보는 1개로 제한한다. 두 조건의 후보 집합은 같다. Test·validation은 context 선택에 사용하지 않는다.
+
+
+\par\noindent \textbullet\enspace \texttt{counter\_\allowbreak{}\allowbreak{}near}: 학습 때 고정한 z와 Global 확률의 표준화·block 가중치를 사용한다. 각 query와 실제 정답이 다른 후보의 정확한 L2 최근접 이웃을 찾고, query 순환 방식으로 중복 ID 없이 채운다. 같은 residual cluster 소속일 필요는 없다. Global이 맞힌 후보도 허용한다.
+
+
+\par\noindent \textbullet\enspace \texttt{counter\_\allowbreak{}\allowbreak{}random}: near의 각 query–상대 클래스 조합을 유지하되, 같은 후보 집합의 해당 클래스에서 무작위로 비복원 추출한다. 두 조건은 core, anchor, 전체 크기, 클래스별 개수, query–상대 클래스 조합이 같다. 상대사례 ID의 선택 규칙만 바뀐다.
+
+
+\par\noindent \textbullet\enspace 기존 context와 신규 context의 비교에는 80/\allowbreak{}20 재배분 효과가 포함된다. 경계 근처 사례 선택의 효과는 두 신규 조건 간 비교로 판정한다.
+
+
+\subsection{실행·재현}
+\par\noindent \textbullet\enspace 기존 Global의 저장된 fitted state를 복원하며 재학습하지 않는다. 저장된 test 예측·PCA 표현 일부와 복원 결과를 대조해 체크포인트의 동일성을 확인한다. 이 확인은 context 선택이나 튜닝에 사용하지 않는다.
+
+
+\par\noindent \textbullet\enspace 미저장 D\_\allowbreak{}expert Global 확률·embedding만 계산해 캐시한다. 이것은 신규 expert context를 선택하기 위한 train 측 계산이다.
+
+
+\par\noindent \textbullet\enspace 두 조건 × 4 expert × 2 dataset =\allowbreak{} 신규 expert 16개. 동일 estimator 설정과 seed 사용. 기존과 동일한 raw argmax를 채점한다.
+
+
+\par\noindent \textbullet\enspace GPU 충돌을 피하도록 CIC2018 다음 ToN 순차 실행. Model별 완료 파일, 원시 확률, 예측, context ID, 상대사례 pair, 선택 감사, 부분 집계를 보존한다.
+
+
+\subsection{평가}
+\par\noindent \textbullet\enspace A: EXP59와 동일한 정답 residual 영역에서 클래스별 F1·precision·recall·TP/\allowbreak{}FP/\allowbreak{}FN·Global 오류 교정/\allowbreak{}정답 훼손.
+
+
+\par\noindent \textbullet\enspace B: EXP59와 동일한 입력 기반 최근접 배정에서 같은 지표와 실제 \ensuremath{\rightarrow} 예측 혼동 쌍.
+
+
+\par\noindent \textbullet\enspace 전체 test: 각 expert와 두 가지 고정 배정의 Macro-F1·클래스별 성능. A/\allowbreak{}B는 다른 평가 집합이므로 서로 직접 성능 차이로 해석하지 않는다.
+
+
+\par\noindent \textbullet\enspace 주된 판단: 교정 능력을 유지하면서 FP와 정답 훼손을 줄이는가. 클래스별 분포와 실제 TP/\allowbreak{}FP를 함께 읽고, 합계 교정−훼손만으로 모델을 고르지 않는다.
+
+
+\par\noindent \textbullet\enspace 기존 test는 이미 관찰한 development holdout이다. 이 실험은 맹검 최종 검증이나 다중 seed 재현성 근거가 아니다.
+
+
+
+
+\section{2026-09-29 · EXP60 — 상대사례 무작위 /\allowbreak{} 가까운 context}
+\label{report:20260929_exp60_results}
+\recordnote{실행 후 철회한 실험이다. 수치와 원인 분석을 이력으로 보존하며 현재 설계의 채택 근거로 사용하지 않는다.}
+seed 43 · K=\allowbreak{}4 · 공통 anchor와 core, 총크기, 클래스별 개수를 두 신규 조건 간 고정. 기존 context 대비 변화에는 block 80/\allowbreak{}20 재배분도 포함된다. 선택 규칙의 효과는 무작위와 가까운 조건 사이에서 비교한다.
+
+\subsection{cic2018}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.33013\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21474\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22756\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22756\linewidth-2\tabcolsep\relax}}
+\toprule
+평가 & 기존 & 무작위 상대사례 & 가까운 상대사례 \\ \midrule
+\endfirsthead
+평가 & 기존 & 무작위 상대사례 & 가까운 상대사례 \\ \midrule
+\endhead
+{}residual\_\allowbreak{}oracle & 0.8996 & 0.8969 & 0.8608 \\
+{}input\_\allowbreak{}nearest & 0.7613 & 0.7623 & 0.7579 \\
+\bottomrule
+\end{longtable}
+\endgroup
+Global Macro-F1: 0.7824
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16481\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19259\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21111\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21111\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22037\linewidth-2\tabcolsep\relax}}
+\toprule
+Expert & 범위 & 기존 교정 /\allowbreak{} 훼손 & 무작위 교정 /\allowbreak{} 훼손 & 가까운 교정 /\allowbreak{} 훼손 \\ \midrule
+\endfirsthead
+Expert & 범위 & 기존 교정 /\allowbreak{} 훼손 & 무작위 교정 /\allowbreak{} 훼손 & 가까운 교정 /\allowbreak{} 훼손 \\ \midrule
+\endhead
+{}e1 & residual & 6,246 /\allowbreak{} 50 & 6,249 /\allowbreak{} 93 & 4,671 /\allowbreak{} 2,567 \\
+{}e1 & observable & 117 /\allowbreak{} 268 & 9 /\allowbreak{} 16,326 & 2,126 /\allowbreak{} 2,560 \\
+{}e2 & residual & 1,475 /\allowbreak{} 0 & 1,476 /\allowbreak{} 0 & 1,472 /\allowbreak{} 1 \\
+{}e2 & observable & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 0 \\
+{}e3 & residual & 9,598 /\allowbreak{} 0 & 9,277 /\allowbreak{} 4 & 8,041 /\allowbreak{} 73 \\
+{}e3 & observable & 776 /\allowbreak{} 14,119 & 884 /\allowbreak{} 13,243 & 819 /\allowbreak{} 14,079 \\
+{}e4 & residual & 389 /\allowbreak{} 29 & 389 /\allowbreak{} 27 & 389 /\allowbreak{} 29 \\
+{}e4 & observable & 385 /\allowbreak{} 108 & 385 /\allowbreak{} 103 & 385 /\allowbreak{} 109 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{클래스별 차이: 가까운 − 무작위}
+아래는 두 신규 조건의 같은 샘플에서 비교한 결과다. 교정·훼손 합계만으로 채택하지 않고 TP/\allowbreak{}FP와 클래스별 F1을 함께 확인한다.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.10368\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12132\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13309\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10368\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10368\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10368\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16838\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16250\linewidth-2\tabcolsep\relax}}
+\toprule
+Expert & 범위 & 클래스 & 무작위 F1 & 가까운 F1 & ΔF1 & 무작위 TP /\allowbreak{} FP & 가까운 TP /\allowbreak{} FP \\ \midrule
+\endfirsthead
+Expert & 범위 & 클래스 & 무작위 F1 & 가까운 F1 & ΔF1 & 무작위 TP /\allowbreak{} FP & 가까운 TP /\allowbreak{} FP \\ \midrule
+\endhead
+{}e1 & residual & benign & 0.9999 & 0.9992 & -0.0008 & 2,649,932 /\allowbreak{} 168 & 2,645,886 /\allowbreak{} 174 \\
+{}e1 & residual & bot & 0.9953 & 0.9953 & +\allowbreak{}0.0000 & 211 /\allowbreak{} 2 & 211 /\allowbreak{} 2 \\
+{}e1 & residual & brute\_\allowbreak{}force & 0.9997 & 0.9997 & +\allowbreak{}0.0000 & 37,670 /\allowbreak{} 0 & 37,670 /\allowbreak{} 0 \\
+{}e1 & residual & ddos & 0.9996 & 0.9996 & -0.0000 & 194,151 /\allowbreak{} 0 & 194,145 /\allowbreak{} 0 \\
+{}e1 & residual & dos & 1.0000 & 1.0000 & +\allowbreak{}0.0000 & 33,647 /\allowbreak{} 0 & 33,647 /\allowbreak{} 0 \\
+{}e1 & residual & infiltration & 0.8451 & 0.1926 & -0.6526 & 502 /\allowbreak{} 184 & 502 /\allowbreak{} 4,210 \\
+{}e1 & residual & web\_\allowbreak{}attacks & — & — & — & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 20 \\
+{}e1 & observable & benign & 0.9950 & 0.9980 & +\allowbreak{}0.0030 & 2,629,464 /\allowbreak{} 26,200 & 2,627,016 /\allowbreak{} 7,859 \\
+{}e1 & observable & bot & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 0 \\
+{}e1 & observable & brute\_\allowbreak{}force & 0.9997 & 0.9997 & +\allowbreak{}0.0000 & 37,676 /\allowbreak{} 0 & 37,676 /\allowbreak{} 0 \\
+{}e1 & observable & ddos & 0.9598 & 0.9962 & +\allowbreak{}0.0364 & 242,381 /\allowbreak{} 3 & 260,684 /\allowbreak{} 2 \\
+{}e1 & observable & dos & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 0 \\
+{}e1 & observable & infiltration & 0.0028 & 0.0087 & +\allowbreak{}0.0060 & 8 /\allowbreak{} 205 & 36 /\allowbreak{} 2,634 \\
+{}e1 & observable & web\_\allowbreak{}attacks & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 30 \\
+{}e2 & residual & benign & 0.9206 & 0.9191 & -0.0014 & 1,472 /\allowbreak{} 120 & 1,472 /\allowbreak{} 125 \\
+{}e2 & residual & bot & 0.9985 & 0.9985 & -0.0001 & 41,211 /\allowbreak{} 0 & 41,206 /\allowbreak{} 0 \\
+{}e2 & residual & ddos & — & — & — & 0 /\allowbreak{} 2 & 0 /\allowbreak{} 0 \\
+{}e2 & residual & dos & — & — & — & 0 /\allowbreak{} 2 & 0 /\allowbreak{} 2 \\
+{}e2 & residual & infiltration & — & — & — & 0 /\allowbreak{} 130 & 0 /\allowbreak{} 132 \\
+{}e2 & residual & web\_\allowbreak{}attacks & 1.0000 & 1.0000 & +\allowbreak{}0.0000 & 3 /\allowbreak{} 0 & 3 /\allowbreak{} 0 \\
+{}e2 & observable & benign & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 0 \\
+{}e2 & observable & bot & 1.0000 & 1.0000 & +\allowbreak{}0.0000 & 41,417 /\allowbreak{} 4 & 41,417 /\allowbreak{} 4 \\
+{}e3 & residual & benign & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 792 & 0 /\allowbreak{} 2,388 \\
+{}e3 & residual & bot & — & — & — & 0 /\allowbreak{} 3 & 0 /\allowbreak{} 2 \\
+{}e3 & residual & brute\_\allowbreak{}force & 1.0000 & 1.0000 & +\allowbreak{}0.0000 & 6 /\allowbreak{} 0 & 6 /\allowbreak{} 0 \\
+{}e3 & residual & ddos & 0.9999 & 0.9922 & -0.0076 & 68,361 /\allowbreak{} 0 & 67,329 /\allowbreak{} 0 \\
+{}e3 & residual & dos & 0.9760 & 0.9440 & -0.0320 & 5,562 /\allowbreak{} 0 & 5,217 /\allowbreak{} 0 \\
+{}e3 & residual & infiltration & 0.9459 & 0.9563 & +\allowbreak{}0.0104 & 7,341 /\allowbreak{} 20 & 7,477 /\allowbreak{} 0 \\
+{}e3 & residual & web\_\allowbreak{}attacks & 0.3580 & 0.3026 & -0.0554 & 87 /\allowbreak{} 306 & 23 /\allowbreak{} 36 \\
+{}e3 & observable & benign & 0.1350 & 0.0625 & -0.0725 & 1,606 /\allowbreak{} 16 & 716 /\allowbreak{} 29 \\
+{}e3 & observable & ddos & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 1 & 0 /\allowbreak{} 0 \\
+{}e3 & observable & dos & 0.9998 & 0.9999 & +\allowbreak{}0.0000 & 38,871 /\allowbreak{} 12 & 38,862 /\allowbreak{} 2 \\
+{}e3 & observable & infiltration & 0.2291 & 0.2215 & -0.0076 & 3,054 /\allowbreak{} 20,545 & 3,052 /\allowbreak{} 21,447 \\
+{}e3 & observable & web\_\allowbreak{}attacks & — & — & — & 0 /\allowbreak{} 3 & 0 /\allowbreak{} 0 \\
+{}e4 & residual & benign & 0.8992 & 0.8971 & -0.0021 & 477 /\allowbreak{} 107 & 475 /\allowbreak{} 107 \\
+{}e4 & residual & infiltration & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 2 \\
+{}e4 & residual & web\_\allowbreak{}attacks & 0.2286 & 0.2286 & +\allowbreak{}0.0000 & 4 /\allowbreak{} 0 & 4 /\allowbreak{} 0 \\
+{}e4 & observable & benign & 0.6549 & 0.6513 & -0.0036 & 482 /\allowbreak{} 508 & 480 /\allowbreak{} 512 \\
+{}e4 & observable & dos & 0.0123 & 0.0000 & -0.0123 & 2 /\allowbreak{} 0 & 0 /\allowbreak{} 0 \\
+{}e4 & observable & infiltration & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 2 \\
+{}e4 & observable & web\_\allowbreak{}attacks & 0.2206 & 0.1940 & -0.0266 & 15 /\allowbreak{} 0 & 13 /\allowbreak{} 0 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+분석 원본: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260929\_\allowbreak{}\allowbreak{}exp60\_\allowbreak{}\allowbreak{}co\allowbreak{}unterexa\allowbreak{}mples\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}cic201\allowbreak{}8\_\allowbreak{}\allowbreak{}s43}
+
+\subsection{toniot}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.33013\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21474\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22756\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22756\linewidth-2\tabcolsep\relax}}
+\toprule
+평가 & 기존 & 무작위 상대사례 & 가까운 상대사례 \\ \midrule
+\endfirsthead
+평가 & 기존 & 무작위 상대사례 & 가까운 상대사례 \\ \midrule
+\endhead
+{}residual\_\allowbreak{}oracle & 0.7437 & 0.7589 & 0.7418 \\
+{}input\_\allowbreak{}nearest & 0.7191 & 0.7300 & 0.7530 \\
+\bottomrule
+\end{longtable}
+\endgroup
+Global Macro-F1: 0.6796
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15645\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18065\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22097\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22097\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.22097\linewidth-2\tabcolsep\relax}}
+\toprule
+Expert & 범위 & 기존 교정 /\allowbreak{} 훼손 & 무작위 교정 /\allowbreak{} 훼손 & 가까운 교정 /\allowbreak{} 훼손 \\ \midrule
+\endfirsthead
+Expert & 범위 & 기존 교정 /\allowbreak{} 훼손 & 무작위 교정 /\allowbreak{} 훼손 & 가까운 교정 /\allowbreak{} 훼손 \\ \midrule
+\endhead
+{}e1 & residual & 5,468 /\allowbreak{} 4 & 5,375 /\allowbreak{} 5 & 5,474 /\allowbreak{} 5 \\
+{}e1 & observable & 5,225 /\allowbreak{} 1,528 & 5,250 /\allowbreak{} 1,366 & 5,445 /\allowbreak{} 1,315 \\
+{}e2 & residual & 41,984 /\allowbreak{} 75,492 & 41,205 /\allowbreak{} 62,158 & 40,940 /\allowbreak{} 63,943 \\
+{}e2 & observable & 28,636 /\allowbreak{} 31,356 & 28,872 /\allowbreak{} 22,797 & 28,930 /\allowbreak{} 23,141 \\
+{}e3 & residual & 3,274 /\allowbreak{} 16 & 3,264 /\allowbreak{} 26 & 3,078 /\allowbreak{} 14 \\
+{}e3 & observable & 8,262 /\allowbreak{} 55,466 & 5,135 /\allowbreak{} 47,947 & 14,651 /\allowbreak{} 41,037 \\
+{}e4 & residual & 57 /\allowbreak{} 0 & 57 /\allowbreak{} 0 & 57 /\allowbreak{} 0 \\
+{}e4 & observable & 14 /\allowbreak{} 8 & 21 /\allowbreak{} 7 & 46 /\allowbreak{} 9 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{클래스별 차이: 가까운 − 무작위}
+아래는 두 신규 조건의 같은 샘플에서 비교한 결과다. 교정·훼손 합계만으로 채택하지 않고 TP/\allowbreak{}FP와 클래스별 F1을 함께 확인한다.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.10518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12348\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12348\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10518\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.10518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.10518\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16616\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16616\linewidth-2\tabcolsep\relax}}
+\toprule
+Expert & 범위 & 클래스 & 무작위 F1 & 가까운 F1 & ΔF1 & 무작위 TP /\allowbreak{} FP & 가까운 TP /\allowbreak{} FP \\ \midrule
+\endfirsthead
+Expert & 범위 & 클래스 & 무작위 F1 & 가까운 F1 & ΔF1 & 무작위 TP /\allowbreak{} FP & 가까운 TP /\allowbreak{} FP \\ \midrule
+\endhead
+{}e1 & residual & benign & — & — & — & 0 /\allowbreak{} 557 & 0 /\allowbreak{} 446 \\
+{}e1 & residual & ddos & — & — & — & 0 /\allowbreak{} 10 & 0 /\allowbreak{} 24 \\
+{}e1 & residual & dos & — & — & — & 0 /\allowbreak{} 10 & 0 /\allowbreak{} 11 \\
+{}e1 & residual & injection & — & — & — & 0 /\allowbreak{} 2 & 0 /\allowbreak{} 7 \\
+{}e1 & residual & mitm & 0.7432 & 0.7429 & -0.0004 & 55 /\allowbreak{} 21 & 52 /\allowbreak{} 16 \\
+{}e1 & residual & password & — & — & — & 0 /\allowbreak{} 1 & 0 /\allowbreak{} 0 \\
+{}e1 & residual & ransomware & — & — & — & 0 /\allowbreak{} 2 & 0 /\allowbreak{} 0 \\
+{}e1 & residual & scanning & 0.9486 & 0.9577 & +\allowbreak{}0.0092 & 5,440 /\allowbreak{} 1 & 5,542 /\allowbreak{} 2 \\
+{}e1 & residual & xss & — & — & — & 0 /\allowbreak{} 2 & 0 /\allowbreak{} 1 \\
+{}e1 & observable & benign & 0.5059 & 0.5262 & +\allowbreak{}0.0202 & 809 /\allowbreak{} 155 & 829 /\allowbreak{} 88 \\
+{}e1 & observable & ddos & 0.1961 & 0.2985 & +\allowbreak{}0.1024 & 10 /\allowbreak{} 64 & 10 /\allowbreak{} 29 \\
+{}e1 & observable & dos & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 0 \\
+{}e1 & observable & injection & 0.8222 & 0.8358 & +\allowbreak{}0.0137 & 779 /\allowbreak{} 255 & 807 /\allowbreak{} 263 \\
+{}e1 & observable & mitm & 0.0000 & 0.0000 & +\allowbreak{}0.0000 & 0 /\allowbreak{} 43 & 0 /\allowbreak{} 27 \\
+{}e1 & observable & password & 0.1000 & 0.8211 & +\allowbreak{}0.7211 & 3 /\allowbreak{} 3 & 39 /\allowbreak{} 2 \\
+{}e1 & observable & ransomware & 0.0000 & 0.0473 & +\allowbreak{}0.0473 & 0 /\allowbreak{} 152 & 7 /\allowbreak{} 279 \\
+{}e1 & observable & scanning & 0.8969 & 0.9312 & +\allowbreak{}0.0344 & 4,596 /\allowbreak{} 896 & 4,658 /\allowbreak{} 589 \\
+{}e1 & observable & xss & 0.4695 & 0.5940 & +\allowbreak{}0.1246 & 196 /\allowbreak{} 314 & 289 /\allowbreak{} 359 \\
+{}e2 & residual & backdoor & 0.9993 & 0.9985 & -0.0008 & 40,012 /\allowbreak{} 60 & 40,012 /\allowbreak{} 122 \\
+{}e2 & residual & benign & 0.9151 & 0.9141 & -0.0009 & 1,243,838 /\allowbreak{} 1,548 & 1,241,276 /\allowbreak{} 1,303 \\
+{}e2 & residual & ddos & 0.9841 & 0.9831 & -0.0010 & 101,457 /\allowbreak{} 1,815 & 101,214 /\allowbreak{} 1,772 \\
+{}e2 & residual & dos & 0.9875 & 0.9827 & -0.0048 & 20,846 /\allowbreak{} 527 & 20,846 /\allowbreak{} 732 \\
+{}e2 & residual & injection & 0.9475 & 0.9402 & -0.0073 & 64,765 /\allowbreak{} 6,467 & 65,303 /\allowbreak{} 8,137 \\
+{}e2 & residual & mitm & 0.0033 & 0.0033 & +\allowbreak{}0.0001 & 81 /\allowbreak{} 49,267 & 81 /\allowbreak{} 48,413 \\
+{}e2 & residual & password & 0.8922 & 0.8932 & +\allowbreak{}0.0010 & 210,213 /\allowbreak{} 50,219 & 210,463 /\allowbreak{} 49,976 \\
+{}e2 & residual & ransomware & — & — & — & 0 /\allowbreak{} 10,359 & 0 /\allowbreak{} 10,429 \\
+{}e2 & residual & scanning & — & — & — & 0 /\allowbreak{} 1,244 & 0 /\allowbreak{} 4,356 \\
+{}e2 & residual & xss & 0.8569 & 0.8587 & +\allowbreak{}0.0018 & 341,986 /\allowbreak{} 112,405 & 341,953 /\allowbreak{} 110,721 \\
+{}e2 & observable & backdoor & 0.9993 & 0.9989 & -0.0004 & 40,010 /\allowbreak{} 55 & 40,010 /\allowbreak{} 90 \\
+{}e2 & observable & benign & 0.9352 & 0.9348 & -0.0003 & 1,229,043 /\allowbreak{} 1,591 & 1,227,932 /\allowbreak{} 1,276 \\
+{}e2 & observable & ddos & 0.9862 & 0.9859 & -0.0002 & 101,438 /\allowbreak{} 1,813 & 101,202 /\allowbreak{} 1,621 \\
+{}e2 & observable & dos & 0.9895 & 0.9867 & -0.0028 & 20,863 /\allowbreak{} 393 & 20,868 /\allowbreak{} 519 \\
+{}e2 & observable & injection & 0.9489 & 0.9442 & -0.0047 & 65,190 /\allowbreak{} 5,670 & 65,939 /\allowbreak{} 7,192 \\
+{}e2 & observable & mitm & 0.0000 & 0.0012 & +\allowbreak{}0.0012 & 0 /\allowbreak{} 1,456 & 1 /\allowbreak{} 1,637 \\
+{}e2 & observable & password & 0.8921 & 0.8933 & +\allowbreak{}0.0011 & 210,169 /\allowbreak{} 50,196 & 210,422 /\allowbreak{} 49,920 \\
+{}e2 & observable & ransomware & 0.0098 & 0.1796 & +\allowbreak{}0.1698 & 2 /\allowbreak{} 354 & 51 /\allowbreak{} 464 \\
+{}e2 & observable & scanning & 0.5833 & 0.5221 & -0.0611 & 909 /\allowbreak{} 965 & 1,008 /\allowbreak{} 1,610 \\
+{}e2 & observable & xss & 0.8490 & 0.8506 & +\allowbreak{}0.0016 & 315,184 /\allowbreak{} 110,925 & 315,089 /\allowbreak{} 109,375 \\
+{}e3 & residual & backdoor & 0.6452 & 0.5926 & -0.0526 & 10 /\allowbreak{} 3 & 8 /\allowbreak{} 1 \\
+{}e3 & residual & benign & 0.0197 & 0.0000 & -0.0197 & 13 /\allowbreak{} 204 & 0 /\allowbreak{} 222 \\
+{}e3 & residual & ddos & 0.0877 & 0.0871 & -0.0006 & 20 /\allowbreak{} 12 & 20 /\allowbreak{} 15 \\
+{}e3 & residual & dos & 0.9070 & 0.9010 & -0.0059 & 1,526 /\allowbreak{} 227 & 1,375 /\allowbreak{} 65 \\
+{}e3 & residual & injection & 0.9435 & 0.9433 & -0.0002 & 3,154 /\allowbreak{} 117 & 3,151 /\allowbreak{} 115 \\
+{}e3 & residual & mitm & 0.5912 & 0.5840 & -0.0072 & 1,002 /\allowbreak{} 1,380 & 998 /\allowbreak{} 1,412 \\
+{}e3 & residual & password & 0.0819 & 0.0132 & -0.0687 & 7 /\allowbreak{} 27 & 1 /\allowbreak{} 14 \\
+{}e3 & residual & ransomware & — & — & — & 0 /\allowbreak{} 1 & 0 /\allowbreak{} 0 \\
+{}e3 & residual & scanning & — & — & — & 0 /\allowbreak{} 32 & 0 /\allowbreak{} 33 \\
+{}e3 & residual & xss & 0.0385 & 0.0347 & -0.0038 & 3 /\allowbreak{} 66 & 8 /\allowbreak{} 366 \\
+{}e3 & observable & backdoor & 0.1481 & 0.2034 & +\allowbreak{}0.0552 & 8 /\allowbreak{} 82 & 6 /\allowbreak{} 35 \\
+{}e3 & observable & benign & 0.2207 & 0.2479 & +\allowbreak{}0.0273 & 7,771 /\allowbreak{} 55 & 8,873 /\allowbreak{} 89 \\
+{}e3 & observable & ddos & 0.0163 & 0.0184 & +\allowbreak{}0.0021 & 7 /\allowbreak{} 27 & 8 /\allowbreak{} 37 \\
+{}e3 & observable & dos & 0.1918 & 0.7754 & +\allowbreak{}0.5836 & 1,475 /\allowbreak{} 12,364 & 1,350 /\allowbreak{} 589 \\
+{}e3 & observable & injection & 0.5722 & 0.5569 & -0.0153 & 1,351 /\allowbreak{} 1,882 & 1,336 /\allowbreak{} 1,973 \\
+{}e3 & observable & mitm & 0.0382 & 0.0419 & +\allowbreak{}0.0037 & 1,141 /\allowbreak{} 57,406 & 1,135 /\allowbreak{} 51,884 \\
+{}e3 & observable & password & 0.0513 & 0.0524 & +\allowbreak{}0.0011 & 6 /\allowbreak{} 119 & 6 /\allowbreak{} 114 \\
+{}e3 & observable & ransomware & — & — & — & 0 /\allowbreak{} 327 & 0 /\allowbreak{} 274 \\
+{}e3 & observable & scanning & 0.2222 & 0.4167 & +\allowbreak{}0.1944 & 8 /\allowbreak{} 36 & 10 /\allowbreak{} 10 \\
+{}e3 & observable & xss & 0.5606 & 0.9615 & +\allowbreak{}0.4009 & 10,651 /\allowbreak{} 202 & 26,120 /\allowbreak{} 1,069 \\
+{}e4 & residual & ransomware & 0.9979 & 0.9979 & +\allowbreak{}0.0000 & 706 /\allowbreak{} 0 & 706 /\allowbreak{} 0 \\
+{}e4 & residual & scanning & — & — & — & 0 /\allowbreak{} 3 & 0 /\allowbreak{} 3 \\
+{}e4 & observable & backdoor & — & — & — & 0 /\allowbreak{} 0 & 0 /\allowbreak{} 9 \\
+{}e4 & observable & benign & 0.3321 & 0.3327 & +\allowbreak{}0.0006 & 2,318 /\allowbreak{} 0 & 2,323 /\allowbreak{} 0 \\
+{}e4 & observable & ddos & 0.0000 & 0.0235 & +\allowbreak{}0.0235 & 0 /\allowbreak{} 2 & 17 /\allowbreak{} 1,410 \\
+{}e4 & observable & mitm & — & — & — & 0 /\allowbreak{} 5 & 0 /\allowbreak{} 7 \\
+{}e4 & observable & ransomware & 0.1217 & 0.1408 & +\allowbreak{}0.0191 & 646 /\allowbreak{} 9,327 & 646 /\allowbreak{} 7,884 \\
+{}e4 & observable & scanning & 0.0000 & 0.2222 & +\allowbreak{}0.2222 & 0 /\allowbreak{} 6 & 1 /\allowbreak{} 7 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\end{landscape}
+분석 원본: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260929\_\allowbreak{}\allowbreak{}exp60\_\allowbreak{}\allowbreak{}co\allowbreak{}unterexa\allowbreak{}mples\_\allowbreak{}\allowbreak{}s4\allowbreak{}3/\allowbreak{}\allowbreak{}toniot\allowbreak{}\_\allowbreak{}\allowbreak{}s43}
+
+
+
+\section{정제 데이터 SOTA 및 비용 비교: A100 실행}
+이번 우선순위는 CIC2018·ToN의 모순 제거 데이터에서 XGBoost, BoostPFN, LoCalPFN, DistPFN을 측정하는 것이다. EXP60의 무작위/\allowbreak{}가까운 상대사례 결과는 모델 개선의 근거와 발표 본문에서 제외한다. 원시 결과는 재현 기록으로 보존한다. 이 실행은 HTML을 자동 편집하지 않는다.
+
+\subsection{실행}
+저장소에서 최신 코드를 받은 뒤, \textbf{원본 PKL과 v3 checkpoint의 실제 경로}를 지정한다. 두 파일은 Git에 포함되지 않는다. 이전 EXP57 환경과 정제 split을 재사용할 수 있다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+git pull --ff-only origin main
+
+# 처음 한 번. 기존에 이 경로로 만든 EXP57 환경이면 그대로 확장한다.
+python scripts/setup_exp61_env.py --prefix /workspace/envs/exp57 --gpu 0
+
+/workspace/envs/exp57/bin/python scripts/run_exp61_sota.py \
+  --data /workspace/data/nfv3_energy_suite_uncapped_scenarios.pkl \
+  --model-path /workspace/models/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt \
+  --datasets cic2018 toniot \
+  --gpu 0 --cpu-threads 8 \
+  --root /workspace/results/exp61_sota_clean_s43 \
+  --detach
+
+\end{Verbatim}
+\texttt{/\allowbreak{}\allowbreak{}workspa\allowbreak{}ce}는 예시다. 환경·결과는 서버의 영구 마운트 경로를 사용한다. 이미 다른 경로의 EXP57 환경을 만들었다면 그 prefix로 setup하고 해당 \texttt{bin/\allowbreak{}\allowbreak{}pyth\allowbreak{}on}을 사용한다. 원본 PKL과 v3 checkpoint가 저장소의 \texttt{data/\allowbreak{}\allowbreak{}}, \texttt{tabpfn/\allowbreak{}\allowbreak{}}에 있다면 각각 그 경로를 지정한다. 원본 데이터의 SHA-256과 v3 checkpoint의 SHA-256이 기준과 다르면 실행 전에 중단한다.
+
+Setup은 드라이버에 맞는 CUDA PyTorch를 고정한 기존 EXP57 설치기를 재사용하고, FAISS·TensorBoard·자원 계측 의존성을 추가한다. BoostPFN·LoCalPFN의 v1 checkpoint는 공식 파일을 받아 해시 검증한다. 기존 환경에 의존성을 추가할 때 CUDA torch가 교체되지 않도록 constraint를 적용한다.
+
+정제 split이 없는 외부 서버에서도 원본 PKL로 자동 생성한다. \textbf{정제 후 재분할하지 않으며}, Git에 고정된 train/\allowbreak{}validation/\allowbreak{}test ID의 SHA-256과 일치해야 진행한다. 기존 정제 경로를 지정하려면 \texttt{-\allowbreak{}-\allowbreak{}clean-\allowbreak{}root /\allowbreak{}\allowbreak{}pa\allowbreak{}th/\allowbreak{}\allowbreak{}to/\allowbreak{}\allowbreak{}de\allowbreak{}rived}를 추가한다. 기본 경로는 저장소의 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}e\allowbreak{}xp57\_\allowbreak{}\allowbreak{}cle\allowbreak{}an\_\allowbreak{}\allowbreak{}split\allowbreak{}s}다.
+
+기본값은 단일 seed 43, 단일 GPU 순차 실행이다. \texttt{-\allowbreak{}-\allowbreak{}datase\allowbreak{}ts cic20\allowbreak{}18} 또는 \texttt{-\allowbreak{}-\allowbreak{}method\allowbreak{}s localp\allowbreak{}fn}으로 작업을 나눌 수도 있지만 각각 다른 \texttt{-\allowbreak{}-\allowbreak{}root}를 사용한다. A100의 VRAM만으로 속도 향상 배수를 가정하지 않는다. CPU의 정확한 kNN 검색도 LoCalPFN 시간에 포함된다.
+
+\subsection{비교 조건}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24225\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.37016\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.38760\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 학습/\allowbreak{}검색에 제공하는 행 & 설정 \\ \midrule
+\endfirsthead
+방법 & 학습/\allowbreak{}검색에 제공하는 행 & 설정 \\ \midrule
+\endhead
+{}Global TabPFN & 기존 seed 43 Global의 동일 100,000개 ID & v3 checkpoint, 4 estimators, fit\_\allowbreak{}with\_\allowbreak{}cache \\
+{}XGBoost & 같은 100,000개 ID & CUDA hist, 300 trees, depth 8, lr 0.05 \\
+{}BoostPFN & 같은 100,000개 ID & vendored v1, V2, CE/\allowbreak{}exphadamard, 50 rounds × 500개 context, 내부 ensemble 1 \\
+{}LoCalPFN & 같은 100,000개 ID를 retrieval/\allowbreak{}FT 풀로 사용 & v1 fine-tuning 포함, context 1,000, 21 epochs × 30 steps, validation AUC로 checkpoint 선택 \\
+{}DistPFN & 위 Global의 posterior 및 context prior & 전체 unlabeled test posterior 평균으로 prior 보정, DistPFN-T 제외 \\
+{}XGBoost full & 정제된 train 전체 & 동일 XGBoost 설정, 전체 데이터 학습 기준선 \\
+\bottomrule
+\end{longtable}
+\endgroup
+같은 100k 행을 쓰는 표는 \textbf{context 예산을 맞춘 비교}다. 모든 PFN에 전체 train을 사용한 결과가 아니다. 제안 시스템은 expert·route 라벨도 사용하므로 이 표만으로 전체 시스템의 정보 예산이 같다고 주장하지 않는다. XGBoost full의 train 수와 비용을 별도로 제시하고, 향후 제안 모델과 비교할 때 접근 라벨 수·expert context·route 학습비도 함께 명시한다.
+
+기존 Global context ID는 작은 압축 파일로 Git에 포함했다. 임의로 다시 샘플링하지 않는다. Global은 A100에서 재실행하므로 GPU/\allowbreak{}라이브러리/\allowbreak{}배치 차이에 따른 수치 차이는 생길 수 있다. 4090의 과거 시간을 A100 표에 혼합하지 않는다.
+
+Test는 클래스별 cap이나 중복 제거 추론 없이 전 행 평가한다. CIC2018 \textbf{3,042,473행}, ToN \textbf{2,271,723행}이다. LoCalPFN의 validation만 클래스당 최대 5,000행으로 고정하며 test로 checkpoint를 선택하지 않는다. 실제 validation ID도 결과에 저장한다. 이 test는 이미 관찰한 development holdout이며 새 독립 평가 데이터는 아니다.
+
+\subsection{Cost에 포함되는 항목}
+\par\noindent \textbullet\enspace 모델별 fit 시간, 전체 test 추론 시간, rows/\allowbreak{}s와 1,000행 환산 시간. 환산 시간은 배치 처리량 기준이며 단건 온라인 latency가 아니다.
+
+
+\par\noindent \textbullet\enspace LoCalPFN fit 시간에는 validation과 checkpoint 선택이 포함된다. validation 시간을 따로 기록하지만 fit에 다시 더하지 않는다. 최종 추론에는 kNN 검색과 index 구성도 포함된다.
+
+
+\par\noindent \textbullet\enspace DistPFN은 prior 보정 시간만으로 비교하지 않는다. Global fit·추론 비용까지 포함한 값과 보정 추가 시간을 모두 저장한다. 두 행이 한 번의 backbone 계산을 공유함을 명시한다.
+
+
+\par\noindent \textbullet\enspace BoostPFN의 원본 \texttt{predict\_\allowbreak{}\allowbreak{}proba(X)\allowbreak{}}는 X에 대한 추론 없이 캐시된 test logits를 합친다. 비용 계측에서는 원본 fit에 빈 test를 넘겨 학습을 완료한 뒤, 저장된 sampled context·계수로 실제 test 추론을 수행한다. 클래스 누락 시 logit 0 처리도 동일하다. 작은 GPU 입력으로 원본 결합 실행과 sample ID·계수·확률 일치를 검증한다.
+
+
+\par\noindent \textbullet\enspace 최대 GPU 메모리: 1초 간격 \texttt{nvidia-\allowbreak{}s\allowbreak{}mi}의 해당 프로세스 사용량 및 PyTorch allocator peak를 함께 기록한다. 전자는 샘플 사이의 짧은 peak를 놓칠 수 있고, 후자는 XGBoost의 CUDA 할당을 포함하지 않는다.
+
+
+\par\noindent \textbullet\enspace 최대 RAM: 로딩을 포함한 전체 peak와 모델 단계의 샘플링 peak를 구분한다. \texttt{resource\allowbreak{}\_\allowbreak{}\allowbreak{}samples\allowbreak{}.\allowbreak{}csv}에서 단계별 사용량을 확인할 수 있다.
+
+
+\par\noindent \textbullet\enspace PKL 로딩·정제·전처리 시간을 별도 기록한다. 실험 전체 wall time은 성공/\allowbreak{}실패한 attempt 기록과 controller의 경과 시간에서 확인한다.
+
+
+모든 비용은 같은 하드웨어에서 GPU 작업을 겹치지 않고 측정한다. 다른 작업을 동시에 띄운 측정은 독립 실행과 구분해야 한다. 앞으로 제안 모델 비용에도 Global 준비, residual/\allowbreak{}군집/\allowbreak{}context 구성, expert 준비, S/\allowbreak{}V 학습 및 실제 호출·채택에 따른 test 추론을 같은 기준으로 포함한다.
+
+\subsection{진행 확인과 재개}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+cat /workspace/results/exp61_sota_clean_s43/status.json
+tail -F /workspace/results/exp61_sota_clean_s43/controller.log
+
+\end{Verbatim}
+\texttt{status.\allowbreak{}j\allowbreak{}son}에는 현재 작업, worker PID, 완료/\allowbreak{}실패 목록, 마지막 진행 정보가 있다. 각 작업의 \texttt{attempt\_\allowbreak{}\allowbreak{}1.\allowbreak{}log}, \texttt{progress\allowbreak{}.\allowbreak{}json}과 \texttt{resource\allowbreak{}\_\allowbreak{}\allowbreak{}samples\allowbreak{}.\allowbreak{}csv}도 갱신된다. 한 작업이 실패해도 다음 작업은 진행하고, 최종 상태에 실패를 남긴다. 원본 코드·설정·checkpoint 해시·패키지와 GPU 정보는 실행 폴더에 저장된다.
+
+같은 명령과 같은 \texttt{-\allowbreak{}-\allowbreak{}root}로 재개하면 완료 작업을 건너뛴다. LoCalPFN은 완료된 fine-tuning checkpoint와 50,000행 단위 추론 결과를 재사용한다. 학습 도중 중단되어 FIT\_\allowbreak{}COMPLETE가 없으면 fine-tuning부터 다시 시작한다. 다른 설정으로 바꾸려면 새 root를 사용한다. 실행 폴더는 코드 스냅샷을 사용하므로 재개 중 Git 변경으로 구현이 바뀌지 않는다.
+
+\texttt{-\allowbreak{}-\allowbreak{}prepar\allowbreak{}e-\allowbreak{}only}는 입력 검증 전용 root에 사용한다. 학습은 별도 root로 시작한다. \texttt{-\allowbreak{}-\allowbreak{}synthe\allowbreak{}tic-\allowbreak{}smok\allowbreak{}e}는 작은 생성 데이터에서 구현 실행만 확인하며, 그 결과를 IDS 성능표에 쓰지 않는다.
+
+\subsection{결과 회수}
+\par\noindent \textbullet\enspace \texttt{summary.\allowbreak{}csv}: 성능과 비용, 기본 설정은 데이터당 Global 포함 6행.
+
+
+\par\noindent \textbullet\enspace \texttt{class\_\allowbreak{}\allowbreak{}me\allowbreak{}trics.\allowbreak{}cs\allowbreak{}v}: 클래스별 P/\allowbreak{}R/\allowbreak{}F1, TP/\allowbreak{}FP/\allowbreak{}FN과 support.
+
+
+\par\noindent \textbullet\enspace 각 작업의 \texttt{evaluati\allowbreak{}on\_\allowbreak{}\allowbreak{}ident\allowbreak{}ity.\allowbreak{}npz}, 예측·확률, 학습 checkpoint/\allowbreak{}boost 상태, 비용 원시 로그.
+
+
+\par\noindent \textbullet\enspace \texttt{environm\allowbreak{}ent.\allowbreak{}json\allowbreak{}}, \texttt{request.\allowbreak{}json}, \texttt{source\_\allowbreak{}\allowbreak{}s\allowbreak{}ha256.\allowbreak{}js\allowbreak{}on}, \texttt{source/\allowbreak{}\allowbreak{}}: 재현 정보.
+
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+tar -czf /workspace/results/exp61_sota_clean_s43.tar.gz \
+  -C /workspace/results exp61_sota_clean_s43
+
+\end{Verbatim}
+결과 폴더 전체를 가져오면 기존 Global·expert 결과와 ID를 대조하고, 성능–시간–메모리 비교표를 작성할 수 있다. 초반 작업의 실제 속도와 LoCalPFN의 validation/\allowbreak{}test 진행률을 본 뒤 완료 ETA를 갱신한다.
+
+
+
+\section{EXP61 로컬 실행 (2026-09-29)}
+사용자 요청에 따라 외부 A100 실행 대신 로컬 RTX 4090에서 seed 43으로 실행한다. 모순 제거 split, Global C0 100,000개 학습 ID, 전체 test 평가 기준은 \texttt{exp61\_\allowbreak{}\allowbreak{}a1\allowbreak{}00\_\allowbreak{}\allowbreak{}run.\allowbreak{}m\allowbreak{}d}와 같다. XGB full-train도 별도 비교한다. LoCalPFN은 fine-tuning을 포함한다.
+
+결과: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0260929\_\allowbreak{}\allowbreak{}exp61\_\allowbreak{}\allowbreak{}so\allowbreak{}ta\_\allowbreak{}\allowbreak{}local\allowbreak{}\_\allowbreak{}\allowbreak{}s43/\allowbreak{}\allowbreak{}}
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+python scripts/run_exp61_sota.py \
+  --data /home/user/Desktop/imbal_cic/data/nfv3_energy_suite_uncapped_scenarios.pkl \
+  --model-path /home/user/Desktop/imbal_cic/tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt \
+  --clean-root /home/user/Desktop/imbal_cic/data/derived \
+  --root tabpfn/results/20260929_exp61_sota_local_s43 \
+  --methods xgb xgb_full distpfn boostpfn localpfn \
+  --cpu-threads 6 --max-parallel 2 \
+  --pfn-batch 32768 --boost-batch 8192 --local-batch 256 --detach
+
+\end{Verbatim}
+독립 worker 2개가 GPU를 공유한다. CIC2018 LoCalPFN을 먼저 시작하고 다른 lane에서 XGB, DistPFN, BoostPFN, ToN LoCalPFN을 진행한다. GPU 메모리 부족으로 실패한 작업은 나머지 병렬 작업이 끝난 후 단독 재시도한다. LoCalPFN 최종 추론은 약 50,000행마다 저장되어 재개 가능하다. 실행은 소스 스냅샷을 사용하며 터미널 종료 후에도 지속된다.
+
+추론 batch 조정은 GPU 메모리를 위한 실행 설정이다. 모델의 학습 context 크기, seed, 반복 수, 평가 행 수를 줄이지 않는다. 각 모델의 성능과 학습·validation·추론 시간, 프로세스별 GPU/\allowbreak{}RAM 사용량을 기록한다. 병렬 실행 시간에는 자원 경합이 포함되므로 단독 실행 latency로 인용하면 안 된다. 결과 JSON/\allowbreak{}CSV에 \texttt{executio\allowbreak{}n\_\allowbreak{}\allowbreak{}mode=\allowbreak{}\allowbreak{}c\allowbreak{}oncurren\allowbreak{}t\_\allowbreak{}\allowbreak{}shared\allowbreak{}\_\allowbreak{}\allowbreak{}gpu}와 \texttt{max\_\allowbreak{}\allowbreak{}para\allowbreak{}llel=\allowbreak{}\allowbreak{}2}를 표시한다.
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+cat tabpfn/results/20260929_exp61_sota_local_s43/status.json
+tail -n 20 tabpfn/results/20260929_exp61_sota_local_s43/controller.log
+cat tabpfn/results/20260929_exp61_sota_local_s43/cic2018_localpfn/validation_progress.json
+
+\end{Verbatim}
+\texttt{status.\allowbreak{}j\allowbreak{}son}에 현재 worker PID, 완료·대기·실패 작업이 갱신된다. 완료 모델은 \texttt{summary.\allowbreak{}csv}와 \texttt{class\_\allowbreak{}\allowbreak{}me\allowbreak{}trics.\allowbreak{}cs\allowbreak{}v}에 순차 반영된다. 실제 test 행 수는 CIC2018 3,042,473, ToN 2,271,723이다.
+
+검증: 병렬 scheduler의 합성 데이터 XGB·DistPFN 4개 작업 완료, CPU protocol 검사 2개 통과. 이전에 검증한 BoostPFN 원본 예측 동등성과 LoCalPFN query-label 불변성은 변경하지 않았다. 이 실행 요청으로 HTML은 수정하지 않는다.
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

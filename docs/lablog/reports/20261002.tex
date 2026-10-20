@@ -1,0 +1,693 @@
+% !TeX root = 20261002.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-10-02}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+신규 공격의 라벨이 확보됐을 때 기존 탐지를 유지하면서 반영하는 것을 연구 질문으로 정리했다. EXP64–68의 탐색·철회 상태와 승인된 EXP69–70 순차 도입을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{EXP69 · 공격 클래스 출현에 따른 XGBoost 재학습과 TabPFN context 확장}
+2026-10-02, seed 43 단일 시드. 사용자가 승인한 \textbf{클래스 최초 출현 순서}를 보존한다. 전체 타임스탬프를 재생하는 온라인 실험이나 네트워크 환경 변화 실험으로 해석하지 않는다.
+
+\subsection{연구 질문}
+기존에 없던 공격 종류가 도입될 때, 동일한 소수 라벨 사례를 받은 TabPFN이 backbone 재학습 없이 공격을 구분하는가? 같은 누적 사례로 전체 재학습한 XGBoost와 신규 공격 성능, 기존 공격 유지, Benign 오탐, 갱신·추론 비용을 비교한다. TabPFN 우위를 미리 전제하지 않는다. 이 실험은 Global 수준의 시스템 선택 근거이며 expert/\allowbreak{}S/\allowbreak{}V 기여를 검증하지 않는다.
+
+\subsection{도입 순서}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.21042\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.40417\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.38542\linewidth-2\tabcolsep\relax}}
+\toprule
+단계 & CIC2018 & ToN \\ \midrule
+\endfirsthead
+단계 & CIC2018 & ToN \\ \midrule
+\endhead
+{}초기 & Benign +\allowbreak{} Brute force(2/\allowbreak{}14) +\allowbreak{} DoS(2/\allowbreak{}15–16) & Benign +\allowbreak{} Scanning(4/\allowbreak{}23) +\allowbreak{} DoS(4/\allowbreak{}24) \\
+{}1 & DDoS(2/\allowbreak{}20–21) & Injection +\allowbreak{} DDoS(4/\allowbreak{}25) \\
+{}2 & Web attack(2/\allowbreak{}22) & Password(4/\allowbreak{}26) \\
+{}3 & Infiltration(2/\allowbreak{}28) & XSS(4/\allowbreak{}27) \\
+{}4 & Bot(3/\allowbreak{}2) & Ransomware +\allowbreak{} Backdoor(4/\allowbreak{}28) \\
+{}5 & — & MitM(4/\allowbreak{}29) \\
+\bottomrule
+\end{longtable}
+\endgroup
+날짜는 CIC2018 2018년, ToN 2019년, UTC. 실제 사용 중인 NF-v3 원본 suite의 클래스별 최초 timestamp를 준비 단계에서 다시 계산하고 순서를 검증한다. 같은 날의 클래스는 묶어서 도입한다. 초기 단계는 정상+\allowbreak{}기존 공격 둘을 보유한 운영 시작점을 뜻한다.
+
+\subsection{라벨과 평가 데이터}
+\par\noindent \textbullet\enspace 기존 모순 제거 clean train/\allowbreak{}val/\allowbreak{}test row ID를 그대로 사용. Test는 이전 연구에서 이미 관찰한 개발 holdout이며 새로운 미관찰 최종 평가셋은 아니다.
+
+
+\par\noindent \textbullet\enspace 초기 context: Benign 10,000행, 초기 공격 각각 2,000행, 총 14,000행. 이전 C0 100k 및 Global/\allowbreak{}Expert/\allowbreak{}Route 풀을 재사용하지 않고 clean train에서 새로 추출한다. 이는 첫 실행의 고정 규모이며 최적 규모로 주장하지 않는다.
+
+
+\par\noindent \textbullet\enspace 신규 공격별 64개 라벨을 주는 조건을 먼저 실행. 추가로 16·256개 조건을 실행한다. 동일 seed의 클래스별 순열 앞부분을 사용하므로 라벨 집합은 포함 관계이며, 초기 사례는 세 조건에서 동일하다.
+
+
+\par\noindent \textbullet\enspace 사례를 제거하지 않고 누적한다. 최종 context: CIC2018 14,000+\allowbreak{}4n, ToN 14,000+\allowbreak{}7n. 모든 도입 공격이 자연적으로 희소한 것은 아니다. 신규 공격의 \textbf{관측 라벨 예산}을 제한한 실험이다.
+
+
+\par\noindent \textbullet\enspace 두 방법이 매 단계 정확히 같은 train/\allowbreak{}test IDs를 사용하는지 SHA 및 배열 digest로 검증한다. 미래 클래스의 행은 해당 단계의 fit, preprocessing, context에 포함하지 않는다. Validation을 사용한 하이퍼파라미터 탐색은 이번 실행에서 하지 않는다.
+
+
+\par\noindent \textbullet\enspace 각 단계에서 등장한 클래스에 해당하는 \textbf{전체 기존 test 행}을 평가한다. 클래스별 원래 support를 보존하며 balanced test로 바꾸지 않는다. 전체 시간 인과성을 보장하는 분할은 아니며, 클래스 도입 순서를 보존한 통제 실험이다.
+
+
+\par\noindent \textbullet\enspace Clean split에 남아 있는 동일 라벨·동일 feature의 train/\allowbreak{}test 중복은 유지한다. Context와 같은 vector hash를 가진 test 행 수와 이를 제외한 부가 지표도 저장한다. Hash는 기존 감사 자료이며 충돌 검증은 당시 자료의 한계를 따른다.
+
+
+\subsection{비교와 비용}
+\par\noindent \textbullet\enspace XGBoost: 각 단계 누적 사례로 처음부터 재학습. 300 trees, depth 8, lr .05, subsample/\allowbreak{}colsample .8, CUDA hist. 기존 SOTA 설정 유지. 추가 트리 방식은 이번 비교에 포함하지 않으므로 XGBoost 전체 갱신 전략에 대한 우위로 일반화하지 않는다.
+
+
+\par\noindent \textbullet\enspace TabPFN v3: 기존 프로젝트 checkpoint, ensemble 4, \texttt{fit\_\allowbreak{}\allowbreak{}with\allowbreak{}\_\allowbreak{}\allowbreak{}cache}, \texttt{SUBSAMPL\allowbreak{}E\_\allowbreak{}\allowbreak{}SAMPLE\allowbreak{}S=\allowbreak{}\allowbreak{}None}. Backbone gradient update 없음. 매 단계 누적 context로 전처리와 cache를 재구성하며 그 비용을 \texttt{fit\_\allowbreak{}\allowbreak{}cont\allowbreak{}ext\_\allowbreak{}\allowbreak{}or\_\allowbreak{}\allowbreak{}r\allowbreak{}etrain}에 포함한다. Context 추가 비용을 0으로 두지 않는다.
+
+
+\par\noindent \textbullet\enspace GPU worker는 한 번에 하나씩 실행. 같은 하드웨어에서 갱신 시간, 전체 평가 추론 시간, 배치별 처리량, 프로세스 GPU 메모리·RSS를 기록한다. 첫 checkpoint 적재를 포함하는 cold fit과 이미 모델을 보유한 warm fit을 구분한다. 원격으로 이어 돌리면 GPU별 비용을 구분하고 서로 다른 GPU 간 방법별 시간을 직접 비교하지 않는다.
+
+
+\par\noindent \textbullet\enspace Precision/\allowbreak{}Recall/\allowbreak{}F1, confusion matrix, 신규 클래스 평균 F1, 기존 클래스 평균 F1, 초기 클래스 평균 F1, 실제 Benign 중 공격 예측 비율을 저장한다. 평가 클래스 구성이 달라지므로 단계 간 전체 Macro-F1 상승을 그대로 적응 이득으로 해석하지 않는다.
+
+
+\par\noindent \textbullet\enspace 새로운 클래스 출력이 없던 기존 모델의 recall 0 대비 상승을 우위의 근거로 삼지 않는다. 두 \textbf{갱신 후 모델}을 동일 평가 조건에서 비교한다. 라벨 확보 이전의 미지 공격 탐지는 후속 OOD 실험이다.
+
+
+\subsection{실행·이관·재현}
+\texttt{scripts/\allowbreak{}\allowbreak{}exp69\_\allowbreak{}\allowbreak{}cl\allowbreak{}ass\_\allowbreak{}\allowbreak{}arri\allowbreak{}val.\allowbreak{}py p\allowbreak{}repare -\allowbreak{}-\allowbreak{}out RUN\allowbreak{}}으로 독립적인 numpy 입력을 준비한 뒤 \texttt{run -\allowbreak{}-\allowbreak{}ou\allowbreak{}t RUN}을 실행한다. \texttt{prepared\allowbreak{}.\allowbreak{}json}, 입력 SHA, 모델 checkpoint SHA, 패키지/\allowbreak{}GPU 정보, stage별 sample IDs·확률·지표·비용을 보존한다. 완료 marker가 있는 stage만 건너뛰어 재개한다.
+
+\texttt{RUN/\allowbreak{}\allowbreak{}STOP\allowbreak{}\_\allowbreak{}\allowbreak{}AFTER\_\allowbreak{}\allowbreak{}S\allowbreak{}TAGE} 파일을 만들면 현재 stage를 완료한 뒤 멈춘다. 실행 프로세스가 종료된 것을 확인한 뒤 파일을 제거하고 A100에서 재개할 수 있다. 코드·입력·완료 stage를 함께 이동해야 한다. 실제 명령과 첫 실측 ETA는 실행 기록에 남긴다.
+
+이번 요청에서는 HTML/\allowbreak{}PPT를 수정하지 않는다. 결과는 v7 탐색 근거로 보존하고 검토 후 채택한다.
+
+
+
+\section{EXP70 · 최종 100,000행 context의 클래스 순차 도입}
+2026-10-02 사용자 승인 배분. Seed 43, Global TabPFN v3와 XGBoost 비교. EXP69의 동일 신규 클래스당 16/\allowbreak{}64/\allowbreak{}256행 조건에서 최종 100k 조건으로 규모를 확대한다. Expert/\allowbreak{}S/\allowbreak{}V는 포함하지 않는다.
+
+\subsection{고정 배분과 누적 순서}
+Benign 75,000행, 공격 합계 25,000행. 공격은 가용 수로 제한한 균등 배분이고 부족분을 나머지 공격에 재배분한다. 전체 clean train을 사용하며 이전 Global/\allowbreak{}Expert/\allowbreak{}Route 분할을 적용하지 않는다. 배분 원본: \texttt{tabpfn/\allowbreak{}\allowbreak{}c\allowbreak{}onfigs/\allowbreak{}\allowbreak{}e\allowbreak{}xp70\_\allowbreak{}\allowbreak{}all\allowbreak{}ocation.\allowbreak{}json}.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.20565\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.43145\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18145\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18145\linewidth-2\tabcolsep\relax}}
+\toprule
+CIC2018 단계 & 추가 사례 & 추가 수 & 누적 수 \\ \midrule
+\endfirsthead
+CIC2018 단계 & 추가 사례 & 추가 수 & 누적 수 \\ \midrule
+\endhead
+{}초기 & Benign 75,000 +\allowbreak{} Brute force 4,910 +\allowbreak{} DoS 4,910 & 84,820 & 84,820 \\
+{}1 & DDoS & 4,910 & 89,730 \\
+{}2 & Web attack & 450 & 90,180 \\
+{}3 & Infiltration & 4,910 & 95,090 \\
+{}4 & Bot & 4,910 & 100,000 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.18432\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.44703\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18432\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18432\linewidth-2\tabcolsep\relax}}
+\toprule
+ToN 단계 & 추가 사례 & 추가 수 & 누적 수 \\ \midrule
+\endfirsthead
+ToN 단계 & 추가 사례 & 추가 수 & 누적 수 \\ \midrule
+\endhead
+{}초기 & Benign 75,000 +\allowbreak{} Scanning 2,856 +\allowbreak{} DoS 2,856 & 80,712 & 80,712 \\
+{}1 & Injection 2,856 +\allowbreak{} DDoS 2,856 & 5,712 & 86,424 \\
+{}2 & Password & 2,856 & 89,280 \\
+{}3 & XSS & 2,856 & 92,136 \\
+{}4 & Ransomware 2,151 +\allowbreak{} Backdoor 2,857 & 5,008 & 97,144 \\
+{}5 & MitM & 2,856 & 100,000 \\
+\bottomrule
+\end{longtable}
+\endgroup
+공격 최초 출현 순서는 원본 NF-v3 timestamp에서 검증한 EXP69와 같다. 전체 raw 시간 흐름을 재생하는 실험은 아니다. 이미 도입한 클래스 사례를 유지하고 미래 클래스는 도입 단계 전 fit/\allowbreak{}전처리/\allowbreak{}context에서 제외한다.
+
+\subsection{표본과 평가}
+\par\noindent \textbullet\enspace EXP69에 저장한 클래스별 sample IDs를 유지하고, 부족한 수만 전체 clean train에서 seed 43으로 비복원 추가 추출한다. 따라서 EXP69의 16/\allowbreak{}64/\allowbreak{}256 조건에서 사용한 사례가 모두 포함된다. 최종 클래스별 개수와 실제 train 소속을 검증한다.
+
+
+\par\noindent \textbullet\enspace 두 방법에 매 단계 동일 train/\allowbreak{}test IDs를 제공한다. 기존 clean test에서 등장한 클래스의 전체 행을 평가하며 test를 재샘플링하지 않는다. Test는 이전에 관찰한 개발 holdout이다.
+
+
+\par\noindent \textbullet\enspace Tail은 사용자가 정한 대로 \textbf{고정 test의 클래스별 표본 수}를 기준으로 해석한다. Context 클래스별 수는 별도 기록한다. 임의의 tail threshold나 test 성능에 따른 그룹 선정을 추가하지 않고, 모든 클래스의 고정 test support와 성능을 저장한다.
+
+
+\par\noindent \textbullet\enspace Train/\allowbreak{}validation/\allowbreak{}test row ID 교집합을 검사한다. 기존 split의 동일 라벨 feature 중복은 보존하고, context와 같은 feature hash의 test 행 수 및 이를 제외한 부가 지표를 함께 저장한다.
+
+
+\par\noindent \textbullet\enspace 최종 샘플 수뿐 아니라 Benign 및 공격별 context 구성이 함께 바뀐다. EXP69와의 차이를 특정 한 클래스의 샘플 증가만으로 인과 해석하지 않는다.
+
+
+\subsection{모델과 비용}
+EXP69와 동일 checkpoint 및 설정: TabPFN ensemble 4, \texttt{fit\_\allowbreak{}\allowbreak{}with\allowbreak{}\_\allowbreak{}\allowbreak{}cache}, \texttt{SUBSAMPL\allowbreak{}E\_\allowbreak{}\allowbreak{}SAMPLE\allowbreak{}S=\allowbreak{}\allowbreak{}None}, cache CPU 보관; XGBoost 300 trees, depth 8, learning rate .05, CUDA hist. XGB는 매 단계 전체 누적 사례로 새로 학습하고 TabPFN은 frozen backbone에 누적 context로 전처리/\allowbreak{}cache를 다시 구성한다.
+
+GPU worker는 한 번에 하나씩 실행한다. 단계별 fit/\allowbreak{}갱신 시간, 배치 추론 시간, 전체 test 추론 시간, RSS/\allowbreak{}GPU 메모리를 기록한다. Cold fit과 warm fit을 구분하고, 첫 추론 지연도 저장한다. 같은 고정 평가 집합에서 이전 단계 예측과 비교할 수 있도록 확률·예측·test IDs를 보존한다.
+
+기존 공용 실행기 \texttt{scripts/\allowbreak{}\allowbreak{}exp69\_\allowbreak{}\allowbreak{}cl\allowbreak{}ass\_\allowbreak{}\allowbreak{}arri\allowbreak{}val.\allowbreak{}py}에 명시적 배분 기능을 추가하고, EXP70 폴더에 실행 시점의 코드를 snapshot한다. 이전 EXP69 결과 및 snapshot은 수정하지 않는다. 이 실행에서 \texttt{budget=\allowbreak{}\allowbreak{}1\allowbreak{}00000}은 \textbf{최종 context 합계}이며 신규 클래스당 라벨 수가 아니다. 결과의 \texttt{allocati\allowbreak{}on\_\allowbreak{}\allowbreak{}mode=\allowbreak{}\allowbreak{}fixed\_\allowbreak{}\allowbreak{}fi\allowbreak{}nal\_\allowbreak{}\allowbreak{}bank\allowbreak{}}, \texttt{labels\_\allowbreak{}\allowbreak{}p\allowbreak{}er\_\allowbreak{}\allowbreak{}new\_\allowbreak{}\allowbreak{}c\allowbreak{}lass=\allowbreak{}\allowbreak{}nul\allowbreak{}l}, \texttt{training\allowbreak{}\_\allowbreak{}\allowbreak{}class\_\allowbreak{}\allowbreak{}c\allowbreak{}ounts}로 구분한다.
+
+\subsection{실행과 기록}
+결과: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0261002\_\allowbreak{}\allowbreak{}exp70\_\allowbreak{}\allowbreak{}cl\allowbreak{}ass\_\allowbreak{}\allowbreak{}arri\allowbreak{}val\_\allowbreak{}\allowbreak{}100k\allowbreak{}\_\allowbreak{}\allowbreak{}s43}. 연구 버전 v7에 별도 실행으로 등록. \texttt{status.\allowbreak{}j\allowbreak{}son}, stage별 \texttt{progress\allowbreak{}.\allowbreak{}json}, \texttt{COMPLETE\allowbreak{}.\allowbreak{}json}으로 진행을 확인한다. 단계 완료 후 저장하며 완료된 단계에서 재개할 수 있다. 준비한 입력·배분·코드·checkpoint SHA를 보존한다.
+
+실험 실행 요청에 따라 HTML/\allowbreak{}PPT는 자동 수정하지 않는다. ETA는 최초 실제 GPU 배치 처리량으로 산출하고 실행 기록에 남긴다.
+
+
+
+\section{2026-10-02 · EXP70 완료 결과 · 최종 100,000행의 클래스 순차 도입}
+\label{report:20261002_exp70_results}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+2026-10-02. CIC2018·ToN 모두 완료. Seed 43, 동일 누적 train/\allowbreak{}test IDs, Global TabPFN v3와 XGBoost 비교. 최종 데이터셋별 100,000행(Benign 75,000 +\allowbreak{} 공격 25,000), Expert·S/\allowbreak{}V 제외. 모든 단계의 완료 마커와 두 방법의 train/\allowbreak{}test IDs·클래스별 배분·seed 일치를 확인했다.
+
+\subsection{최종 단계}
+F1·오탐률은 \%, 시간은 초. 갱신은 \texttt{fit\_\allowbreak{}\allowbreak{}cont\allowbreak{}ext\_\allowbreak{}\allowbreak{}or\_\allowbreak{}\allowbreak{}r\allowbreak{}etrain} 경과 시간으로 XGB 재학습, TabPFN 전처리·cache 구성을 뜻한다. 추론은 해당 데이터셋 전체 정제 test 배치의 경과 시간이며 GPU 작업은 순차 실행했다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13506\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13506\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14416\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16234\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13506\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13506\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15325\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 방법 & Macro-F1 & Benign 오탐률 & 학습·구성 & 추론 & Test 수 \\ \midrule
+\endfirsthead
+데이터 & 방법 & Macro-F1 & Benign 오탐률 & 학습·구성 & 추론 & Test 수 \\ \midrule
+\endhead
+{}CIC2018 & XGBoost & 77.59 & 2.10 & 1.98 & 1.44 & 3,042,473 \\
+{}CIC2018 & TabPFN & 78.64 & 0.14 & 16.98 & 522.63 & 3,042,473 \\
+{}ToN & XGBoost & 71.30 & 11.03 & 3.59 & 1.61 & 2,271,723 \\
+{}ToN & TabPFN & 69.51 & 13.33 & 17.15 & 391.50 & 2,271,723 \\
+\bottomrule
+\end{longtable}
+\endgroup
+CIC2018의 최종 F1은 TabPFN이 1.05\%p 높고 ToN은 1.78\%p 낮다. 두 데이터셋 모두 현재 조건의 갱신·추론 시간은 XGB가 짧다. 가중치 재학습이 없다는 구조적 특성만으로 실제 갱신 비용이 낮다고 주장할 수 없다.
+
+\subsection{ToN 신규 공격 도입 직후}
+모든 신규 공격을 test 표본 수 내림차순으로 표시. 공격마다 최초 도입 단계에서 측정한 F1이며 최종 단계 성능과 구별한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.19434\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16604\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16604\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24151\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.23208\linewidth-2\tabcolsep\relax}}
+\toprule
+신규 공격 & 단계 & Test 수 & XGBoost F1 (\%) & TabPFN F1 (\%) \\ \midrule
+\endfirsthead
+신규 공격 & 단계 & Test 수 & XGBoost F1 (\%) & TabPFN F1 (\%) \\ \midrule
+\endhead
+{}XSS & 3 & 343,854 & 87.23 & 82.62 \\
+{}Password & 2 & 210,951 & 88.86 & 88.99 \\
+{}DDoS & 1 & 103,338 & 96.88 & 96.98 \\
+{}Injection & 1 & 68,891 & 68.90 & 72.71 \\
+{}Backdoor & 4 & 40,030 & 99.87 & 99.91 \\
+{}MitM & 5 & 1,161 & 15.26 & 4.66 \\
+{}Ransomware & 4 & 709 & 14.52 & 12.47 \\
+\bottomrule
+\end{longtable}
+\endgroup
+Injection 도입 직후에는 TabPFN 이득이 있으나, XSS·Ransomware·MitM에는 동일한 이득이 없다. 이 비교가 tail 전반의 개선을 입증하지는 않는다.
+
+\subsection{낮은 tail F1의 직접 관찰}
+MitM 도입 시 TabPFN은 실제 MitM 1,161건 중 1,126건을 맞혀 recall 96.99\%지만, 46,010건의 FP로 precision 2.39\%, F1 4.66\%다. FP 중 41,330건(89.83\%)이 Benign이다. XGB는 recall 95.78\%, precision 8.29\%, FP 12,305건(그중 Benign 11,679건)이다. 따라서 이 조건의 MitM F1 병목은 미탐보다 공격으로의 과도한 예측이다.
+
+Ransomware 도입 직후에도 TabPFN recall은 99.58\%지만 precision 6.65\%, FP 9,905건으로 F1 12.47\%다. FP 중 Benign 9,872건이다. 표본 수만 부족하다고 단정할 수 없으며 공격과 정상의 구분을 함께 검증해야 한다.
+
+\subsection{기존 클래스 유지와 전체 Macro-F1 하락의 구별}
+MitM 도입 전후, 같은 기존 test 행에 대한 기존 9개 클래스 Macro-F1을 재계산했다. stage 5 confusion matrix에서 MitM 정답 행만 제외하고 모든 예측 열은 유지해, 기존 사례를 MitM으로 틀리는 경우도 FN에 포함했다. 새 MitM 클래스가 낮은 F1로 평균에 추가된 효과와 기존 분류의 변화를 구분한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14795\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20959\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20959\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21644\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21644\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & 기존 클래스 F1 전 (\%) & 기존 클래스 F1 후 (\%) & Benign 오탐률 전 (\%) & Benign 오탐률 후 (\%) \\ \midrule
+\endfirsthead
+방법 & 기존 클래스 F1 전 (\%) & 기존 클래스 F1 후 (\%) & Benign 오탐률 전 (\%) & Benign 오탐률 후 (\%) \\ \midrule
+\endhead
+{}XGBoost & 77.50 & 77.52 & 10.38 & 11.03 \\
+{}TabPFN & 76.51 & 76.72 & 10.61 & 13.33 \\
+\bottomrule
+\end{longtable}
+\endgroup
+평균 F1은 유지됐지만 Benign 오탐은 늘었다. 전체 Macro-F1 하락을 모두 기존 클래스 망각으로 해석하지 않는다. 클래스별 상쇄 효과를 포함하므로 기존 모든 클래스가 유지됐다는 뜻도 아니다.
+
+\subsection{다음 검증의 초점}
+새 라벨을 context에 넣어 분류하는 과정은 동작했다. 현재 구성에서 시스템 성능·비용의 일관된 우위는 확인되지 않았다. 정상 사례의 다양성과 공격 대비 대표성을 유지한 context 규모·구성 비교로, 신규 공격 recall을 보존하면서 FP와 계산 비용을 줄일 수 있는지 검증한다. 이는 후속 가설이며 이번 실험만으로 특정 context 구성이 원인이라고 단정하지 않는다. 100k 조건은 이전 실험과 크기뿐 아니라 사례 구성·비율도 달라 표본 증가만의 효과로 해석하지 않는다.
+
+\subsection{추적 가능한 출처}
+\par\noindent \textbullet\enspace \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0261002\_\allowbreak{}\allowbreak{}exp70\_\allowbreak{}\allowbreak{}cl\allowbreak{}ass\_\allowbreak{}\allowbreak{}arri\allowbreak{}val\_\allowbreak{}\allowbreak{}100k\allowbreak{}\_\allowbreak{}\allowbreak{}s43/\allowbreak{}\allowbreak{}sum\allowbreak{}mary.\allowbreak{}csv\allowbreak{}}
+
+
+\par\noindent \textbullet\enspace 같은 폴더의 \texttt{class\_\allowbreak{}\allowbreak{}me\allowbreak{}trics.\allowbreak{}cs\allowbreak{}v}, \texttt{jobs/\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}s\allowbreak{}tage\_\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}m\allowbreak{}etrics.\allowbreak{}j\allowbreak{}son}, \texttt{COMPLETE\allowbreak{}.\allowbreak{}json}
+
+
+\par\noindent \textbullet\enspace 발표 수치 snapshot: \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}kor/\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}ope\allowbreak{}rational\allowbreak{}\_\allowbreak{}\allowbreak{}qa/\allowbreak{}\allowbreak{}resu\allowbreak{}lt\_\allowbreak{}\allowbreak{}snaps\allowbreak{}hot.\allowbreak{}json\allowbreak{}}
+
+
+\par\noindent \textbullet\enspace 발표 갱신: 한국어 10장, 3장 CIC2018·4장 ToN. 영어·HTML 유지
+
+
+단일 seed, 기존 개발 holdout에서 얻은 결과다. Context와 동일 feature vector가 있는 test 행을 제외한 부가 평가도 최종 순위는 같다(CIC XGB 76.83\%, TabPFN 77.91\%; ToN 69.37\%, 67.93\%).
+
+
+
+\section{2026-10-01~02 · EXP64--69의 탐색·미채택 기록 보충}
+\recordnote{기존 논문용 LaTeX에서 미채택 자료로 분리했던 실험도 연구 흐름에서 누락하지 않도록 수합했다. 아래 원 결과의 수치는 이번 작업에서 독립 재평가하지 않았다. 무효 실행·부분 표본·사용자 의도와 다른 시나리오를 구별한다.}
+EXP64는 정상 사례 선택의 다양성, EXP65는 희소 공격 합성과 실제 사례 반복, EXP66은 대조학습 표현, EXP67은 고정 PFN을 통한 context 특징 최적화를 탐색했다. 부분 표본에서는 정상 다수 클래스의 오탐 수가 달라져 희소 클래스 정밀도가 전체 test보다 높아질 수 있다. 서로 다른 평가 범위의 절대 점수를 직접 비교하지 않는다.
+\subsection{EXP64}
+\sourcepath{tabpfn/results/v5/exp64/20261001_174526_4085339_toniot_exp64_benign_diversity_s43/results.json}
+toniot, seed 43, 평가 147,899개, 부분 표본; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.35417\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.36979\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27604\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}random & 83.03 & 탐색·미채택 \\
+{}kcenter & 81.48 & 탐색·미채택 \\
+{}time & 83.43 & 탐색·미채택 \\
+{}inv\_\allowbreak{}density & 81.34 & 탐색·미채택 \\
+{}hard & 82.03 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{EXP65}
+\sourcepath{tabpfn/results/v5/exp65/20261001_174728_4086382_cic2018_exp65_lito_lite_web_attacks_s43/results.json}
+cic2018, seed 43, 평가 108,869개, 부분 표본; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.41026\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.25641\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}arms/\allowbreak{}c0 & 82.14 & 탐색·미채택 \\
+{}arms/\allowbreak{}c0+\allowbreak{}dup & 84.59 & 탐색·미채택 \\
+{}arms/\allowbreak{}c0+\allowbreak{}syn & 82.55 & 탐색·미채택 \\
+{}arms/\allowbreak{}c0+\allowbreak{}syn\_\allowbreak{}noauth & 82.50 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\sourcepath{tabpfn/results/v5/exp65/20261001_182602_4095429_cic2018_exp65_lito_lite_web_attacks_s43/results.json}
+cic2018, seed 43, 평가 3,042,473개, 전체 test; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.34409\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.37634\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.27957\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}arms/\allowbreak{}c0+\allowbreak{}dup & 79.97 & 탐색·미채택 \\
+{}arms/\allowbreak{}c0+\allowbreak{}syn & 76.80 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{EXP66}
+\sourcepath{tabpfn/results/v5/exp66/20261001_174526_4085340_toniot_exp66_supcon_s43/results.json}
+toniot, seed 43, 평가 147,899개, 부분 표본; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.40741\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}raw & 83.61 & 탐색·미채택 \\
+{}raw+\allowbreak{}emb & 82.71 & 탐색·미채택 \\
+{}emb & 83.57 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{EXP67}
+\sourcepath{tabpfn/results/v5/exp67/20261001_181859_4092618_toniot_exp67_prompt_tuned_s43/results.json}
+toniot, seed 43, 평가 147,899개, 부분 표본; 무효: NaN gradient 기록.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.25641\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.33333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.41026\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}init & 91.17 & 무효: NaN gradient 기록 \\
+{}tuned & 91.48 & 무효: NaN gradient 기록 \\
+{}c0\_\allowbreak{}ref & 82.58 & 무효: NaN gradient 기록 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\sourcepath{tabpfn/results/v5/exp67/20261001_182706_4096331_toniot_exp67_prompt_tuned_s43/results.json}
+toniot, seed 43, 평가 2,271,723개, 전체 test; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.40741\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}init & 64.49 & 탐색·미채택 \\
+{}tuned & 67.20 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\sourcepath{tabpfn/results/v5/exp67/20261001_184332_4100935_toniot_exp67_prompt_tuned_s43/results.json}
+toniot, seed 43, 평가 2,271,723개, 전체 test; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.40741\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}init & 64.49 & 탐색·미채택 \\
+{}tuned & 71.00 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\sourcepath{tabpfn/results/v5/exp67/20261001_185937_4104555_toniot_exp67_prompt_tuned_s44/results.json}
+toniot, seed 44, 평가 2,271,723개, 전체 test; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.40741\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}init & 65.85 & 탐색·미채택 \\
+{}tuned & 74.55 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\sourcepath{tabpfn/results/v5/exp67/20261001_190757_4106755_cic2018_exp67_prompt_tuned_s43/results.json}
+cic2018, seed 43, 평가 3,042,473개, 전체 test; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.40741\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}init & 66.77 & 탐색·미채택 \\
+{}tuned & 78.29 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\sourcepath{tabpfn/results/v5/exp67/20261001_191422_4108285_toniot_exp67_prompt_tuned_s43/results.json}
+toniot, seed 43, 평가 2,271,723개, 전체 test; 탐색·미채택.
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.40741\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29630\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endfirsthead
+조건 & Macro-F1 (\%) & 비고 \\ \midrule
+\endhead
+{}init & 62.48 & 탐색·미채택 \\
+{}tuned & 71.93 & 탐색·미채택 \\
+\bottomrule
+\end{longtable}
+\endgroup
+EXP67의 초기 무효 실행은 후속 실행과 분리했다. 최적화 효과를 검증하려면 동일 초기 context와 전처리, estimator 수, 학습·검증 분할을 유지한 대조가 필요하며, 이후 EXP75가 이 구분을 포함한다. EXP65의 합성 효과도 단순한 클래스 비율 증가나 실제 사례 반복과 분리해 판단한다.
+\subsection{EXP68: 사용자 의도와 다른 시나리오로 미채택}
+같은 구간에서 클래스별 라벨을 확보하고 나머지를 평가한 조건이다. 엄격한 시간순 적응 성능을 입증한 결과로 채택하지 않는다. 아래는 완료된 원 결과의 구간별 기록이며, 전체 클래스 고정 Macro-F1이 아니라 그 구간에 존재하는 클래스의 Macro-F1이다.
+\sourcepath{tabpfn/results/v5/exp68/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43/results.json}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.16667\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16667\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16667\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16667\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16667\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16667\linewidth-2\tabcolsep\relax}}
+\toprule
+구간 & 평가 수 & PFN 고정 & PFN 갱신 & XGB 고정 & XGB 재학습 \\ \midrule
+\endfirsthead
+구간 & 평가 수 & PFN 고정 & PFN 갱신 & XGB 고정 & XGB 재학습 \\ \midrule
+\endhead
+{}1 & 408,908 & 79.29 & 79.64 & 79.00 & 79.86 \\
+{}2 & 408,910 & 97.24 & 97.58 & 97.63 & 97.64 \\
+{}3 & 408,909 & 86.77 & 86.76 & 87.44 & 87.40 \\
+{}4 & 408,909 & 90.60 & 94.15 & 96.07 & 96.13 \\
+{}5 & 408,908 & 56.28 & 55.40 & 60.50 & 60.96 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{EXP69: 클래스 도입 시점의 같은 누적 라벨 비교}
+등록 주석 일부는 실행 당시의 ``진행 중 문구를 남기고 있으나 원 결과 폴더에는 완료 마커와 단계별 CSV가 있다. 여기서는 CSV의 마지막 단계를 추출했으며 등록부의 근거 채택 상태를 변경하지 않았다. 새 라벨을 얻기 전 OOD 탐지가 아니라, 라벨을 얻은 후 기존·신규 클래스 분류를 비교한다. 아래 시간은 마지막 단계의 fit이며 후속 갱신 전체 합계가 아니다.
+\sourcepath{tabpfn/results/v7/exp69/20261002_exp69_class_arrival_s43/summary.csv}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15179\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13393\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16071\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 신규 예산 & 방법 & context 수 & Test 수 & F1 (\%) & 최종 fit (초) \\ \midrule
+\endfirsthead
+데이터 & 신규 예산 & 방법 & context 수 & Test 수 & F1 (\%) & 최종 fit (초) \\ \midrule
+\endhead
+{}CIC2018 & 16 & tabpfn & 14,064 & 3,042,473 & 73.73 & 1.036 \\
+{}CIC2018 & 16 & xgb & 14,064 & 3,042,473 & 70.38 & 0.912 \\
+{}CIC2018 & 64 & tabpfn & 14,256 & 3,042,473 & 76.00 & 1.049 \\
+{}CIC2018 & 64 & xgb & 14,256 & 3,042,473 & 71.86 & 1.146 \\
+{}CIC2018 & 256 & tabpfn & 15,024 & 3,042,473 & 76.84 & 1.157 \\
+{}CIC2018 & 256 & xgb & 15,024 & 3,042,473 & 75.29 & 1.367 \\
+{}ToN & 16 & tabpfn & 14,112 & 2,271,723 & 59.36 & 1.060 \\
+{}ToN & 16 & xgb & 14,112 & 2,271,723 & 61.46 & 1.725 \\
+{}ToN & 64 & tabpfn & 14,448 & 2,271,723 & 63.27 & 1.127 \\
+{}ToN & 64 & xgb & 14,448 & 2,271,723 & 68.75 & 2.056 \\
+{}ToN & 256 & tabpfn & 15,792 & 2,271,723 & 69.62 & 1.200 \\
+{}ToN & 256 & xgb & 15,792 & 2,271,723 & 69.85 & 2.433 \\
+\bottomrule
+\end{longtable}
+\endgroup
+동일 라벨 예산에서 품질과 갱신 비용을 함께 비교하는 방향으로 EXP70 이후를 진행했다. 상세 클래스별 결과는 같은 실행의 \path{class_metrics.csv}, 설정은 \path{protocol.md}에 보존되어 있다.
+
+
+\section{EXP69 실행 기록}
+\par\noindent \textbullet\enspace 결과 폴더: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0261002\_\allowbreak{}\allowbreak{}exp69\_\allowbreak{}\allowbreak{}cl\allowbreak{}ass\_\allowbreak{}\allowbreak{}arri\allowbreak{}val\_\allowbreak{}\allowbreak{}s43}
+
+
+\par\noindent \textbullet\enspace 버전: v7 \texttt{class\_\allowbreak{}\allowbreak{}in\allowbreak{}crementa\allowbreak{}l\_\allowbreak{}\allowbreak{}arriva\allowbreak{}l}, seed 43
+
+
+\par\noindent \textbullet\enspace 설계: exp69\_\allowbreak{}protocol.md
+
+
+\par\noindent \textbullet\enspace 실행 snapshot: 결과 폴더의 \texttt{source/\allowbreak{}\allowbreak{}s\allowbreak{}cripts/\allowbreak{}\allowbreak{}e\allowbreak{}xp69\_\allowbreak{}\allowbreak{}cla\allowbreak{}ss\_\allowbreak{}\allowbreak{}arriv\allowbreak{}al.\allowbreak{}py}, \texttt{exp61\_\allowbreak{}\allowbreak{}ut\allowbreak{}ils.\allowbreak{}py}
+
+
+\par\noindent \textbullet\enspace 입력 준비 완료: 2026-10-02 03:04:39 KST. 원본 SHA가 clean split 출처와 일치. 준비 28.3초.
+
+
+\par\noindent \textbullet\enspace 원본 최초 출현 순서 재검증 완료. 준비한 train/\allowbreak{}test ID 교집합 0건. 모델 출력 class ID 재매핑, 미래 클래스 제외, 예산 포함관계, Benign 오탐 정의에 대한 unit test 4개 통과.
+
+
+\par\noindent \textbullet\enspace 초기 GPU 실측: RTX4090, CIC2018 14,000행 context, 4 estimators. Fit 1.46초, 초기 test 2,729,382행. 1,245,184행 처리 시 평균 약 19,482행/\allowbreak{}초. GPU 메모리 약 1.6GB.
+
+
+\par\noindent \textbullet\enspace 잠정 ETA(03:05 KST 기준): 신규 공격당 64개 조건, CIC2018+\allowbreak{}ToN+\allowbreak{}두 방법 25–40분. 16·256개 조건 포함 전체 60–90분. CIC 첫 단계에서 외삽했으므로 ToN/\allowbreak{}클래스 수/\allowbreak{}CPU 전처리에 따라 달라진다.
+
+
+\par\noindent \textbullet\enspace 갱신 비용에 fit뿐 아니라 첫 추론의 지연도 함께 확인해야 한다. 저장된 \texttt{batch\_\allowbreak{}\allowbreak{}ti\allowbreak{}mes}에 첫 배치 및 이후 배치 시간이 있어 지연 초기화와 정상 처리량을 구분할 수 있다. 전체 학습+\allowbreak{}추론 비용은 둘 모두 포함한다.
+
+
+\subsection{진행 확인}
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+cat tabpfn/results/20261002_exp69_class_arrival_s43/status.json
+tail -f tabpfn/results/20261002_exp69_class_arrival_s43/controller.log
+tail -f tabpfn/results/20261002_exp69_class_arrival_s43/logs/cic2018_tabpfn_n64.log
+
+\end{Verbatim}
+Stage별 \texttt{progress\allowbreak{}.\allowbreak{}json}이 완료 행 수와 ETA를 갱신한다. 각 stage 완료 후 \texttt{COMPLETE\allowbreak{}.\allowbreak{}json}·확률·지표·비용을 남긴다. 데이터셋/\allowbreak{}방법의 전체 trajectory를 완료할 때 \texttt{summary.\allowbreak{}csv}와 \texttt{class\_\allowbreak{}\allowbreak{}me\allowbreak{}trics.\allowbreak{}cs\allowbreak{}v}를 합친다. 종료 시 전체 \texttt{COMPLETE\allowbreak{}.\allowbreak{}json}이 생긴다. GPU idle만으로 종료를 판정하지 말고 상태와 로그를 확인한다.
+
+\subsection{A100 실행}
+현재는 로컬 실행을 유지한다. 원격 계정에 업로드하거나 Git push하지 않았다. A100으로 바꾸기로 하면 동일 입력을 재사용할 수 있다. 서버에 checkpoint가 있으므로 원본 14.7GB pickle을 다시 읽을 필요는 없다.
+
+\par\noindent \textbullet\enspace 결과 폴더의 \texttt{source/\allowbreak{}\allowbreak{}}, \texttt{data/\allowbreak{}\allowbreak{}}, \texttt{prepared\allowbreak{}.\allowbreak{}json}, \texttt{protocol\allowbreak{}.\allowbreak{}md}를 서버의 새 실행 폴더로 복사한다. \texttt{data/\allowbreak{}\allowbreak{}}에는 모델 학습에 사용하는 공통 사례와 전체 test가 모두 포함된다.
+
+
+\par\noindent \textbullet\enspace 비용을 동일 GPU에서 비교하려면 A100 전용 폴더에서 두 방법을 함께 다시 실행한다. 로컬 완료 결과는 보존한다. 단계 결과를 일부 이어받을 경우 \texttt{identity\allowbreak{}.\allowbreak{}json}의 GPU 정보로 비용을 구분해야 한다.
+
+
+\par\noindent \textbullet\enspace 로컬 package versions: Python 3.13, torch 2.11.0, tabpfn 8.2.0, xgboost 3.2.0, numpy 2.4.4, scikit-learn 1.8.0. 서버의 지원 CUDA 환경과 checkpoint 호환성을 먼저 확인한다. 준비된 입력 SHA와 checkpoint SHA를 실행 시 검증한다.
+
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+# A100: 아래 두 경로를 해당 서버 경로로 지정
+EXP69_RUN=/path/to/20261002_exp69_class_arrival_s43_a100
+EXP69_CHECKPOINT=/path/to/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt
+python "$EXP69_RUN/source/scripts/exp69_class_arrival.py" run \
+  --out "$EXP69_RUN" --checkpoint "$EXP69_CHECKPOINT" \
+  --seed 43 --budgets 64 16 256 --gpu 0 --threads 8 --batch 32768
+
+\end{Verbatim}
+로컬을 멈출 때는 \texttt{RUN/\allowbreak{}\allowbreak{}STOP\allowbreak{}\_\allowbreak{}\allowbreak{}AFTER\_\allowbreak{}\allowbreak{}S\allowbreak{}TAGE}를 만들면 진행 중인 stage 완료 후 멈춘다. 프로세스 종료를 확인하고 재개할 때 이 파일만 제거한다. 실행 중인 프로세스와 동일 폴더에서 두 번째 controller를 동시에 실행하지 않는다.
+
+
+
+\section{EXP70 실행 기록}
+2026-10-02 KST. 결과: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}2\allowbreak{}0261002\_\allowbreak{}\allowbreak{}exp70\_\allowbreak{}\allowbreak{}cl\allowbreak{}ass\_\allowbreak{}\allowbreak{}arri\allowbreak{}val\_\allowbreak{}\allowbreak{}100k\allowbreak{}\_\allowbreak{}\allowbreak{}s43}.
+
+\par\noindent \textbullet\enspace Seed 43, 최종 각 100,000행, 승인된 클래스별 배분과 출현 순서. 설계.
+
+
+\par\noindent \textbullet\enspace 두 데이터 모두 입력 준비 완료. 기존 EXP69 bank의 15,024/\allowbreak{}15,792행을 전부 포함해 증설했으며, 각 100,000개의 고유 row ID와 train/\allowbreak{}test 분리를 검증했다. 기존 test IDs 유지.
+
+
+\par\noindent \textbullet\enspace 단계별 합계, 미래 클래스 제외, 기존 사례 유지, class ID 재매핑, precision/\allowbreak{}Benign 오탐 정의에 대한 unit test 5개 통과.
+
+
+\par\noindent \textbullet\enspace 04:44경 CIC2018 TabPFN 실제 GPU 추론 시작. 초기 context 84,820행, fit 13.45초. 04:45 기준 360,448행 처리, 평균 6,659행/\allowbreak{}초. RTX4090 사용률 100\%, 관찰 시 GPU 메모리 약 2.8GB.
+
+
+\par\noindent \textbullet\enspace 초기 실측으로 추정한 잔여시간: 전체 약 75–100분, 완료 예상 06:00–06:25 KST. CIC2018 두 모델 결과는 약 05:25–05:40 KST 예상. 초기 단계 처리량을 이후 context 크기로 보정한 잠정치이며 ToN/\allowbreak{}후속 단계 실측에 따라 달라질 수 있다.
+
+
+\par\noindent \textbullet\enspace 비용 측정을 위해 GPU 작업은 순차 실행. 순서: CIC2018 TabPFN  \ensuremath{\rightarrow}  CIC2018 XGB  \ensuremath{\rightarrow}  ToN TabPFN  \ensuremath{\rightarrow}  ToN XGB. 프로세스는 터미널과 독립적으로 실행한다.
+
+
+진행 확인:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+cat tabpfn/results/20261002_exp70_class_arrival_100k_s43/status.json
+tail -f tabpfn/results/20261002_exp70_class_arrival_100k_s43/logs/cic2018_tabpfn_n100000.log
+
+\end{Verbatim}
+코드 snapshot과 명령/\allowbreak{}PID는 \texttt{source/\allowbreak{}\allowbreak{}}, \texttt{launch.\allowbreak{}j\allowbreak{}son}. 실제 상태는 \texttt{status.\allowbreak{}j\allowbreak{}son}, 각 단계 처리량은 \texttt{jobs/\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}p\allowbreak{}rogress.\allowbreak{}json} 또는 \texttt{jobs/\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}s\allowbreak{}tage\_\allowbreak{}\allowbreak{}*/\allowbreak{}\allowbreak{}p\allowbreak{}rogress.\allowbreak{}json}. 초기 실측과 검증은 \texttt{initial\_\allowbreak{}\allowbreak{}eta.\allowbreak{}json\allowbreak{}}, \texttt{startup\_\allowbreak{}\allowbreak{}validati\allowbreak{}on.\allowbreak{}json}. 완료 stage는 \texttt{COMPLETE\allowbreak{}.\allowbreak{}json}·지표·확률·비용을 저장한다. 이전 EXP69 결과와 snapshot은 변경하지 않았다. HTML/\allowbreak{}PPT는 수정하지 않았다.
+
+
+
+\section{최신 확정 · 새로운 공격 사례를 탐지기에 반영하는 방식}
+2026-10-02 후속 사용자 확인. 중심 질문은 **새로운 공격의 라벨 사례가 확보됐을 때, TabPFN은 context 확장만으로 XGBoost 재학습보다 효과적으로 새로운 공격을 분류할 수 있는가?**이다. 새 공격 반영·기존 탐지 유지·갱신과 추론 비용으로 시스템의 유용성을 검증한다. 평균 F1 순위는 이 목적을 대신하지 않는다.
+
+\par\noindent \textbullet\enspace Tail은 고정 test의 희소 클래스를 기준으로 설명하며, context에 배정한 학습 표본 수와 구분한다.
+
+
+\par\noindent \textbullet\enspace EXP69는 완료했다. 이후 사용자가 최종 누적 100k(Benign 75k +\allowbreak{} 공격 25k)와 동일 누적 사례 비교를 승인해 EXP70을 실행했다. 원본 클래스 최초 출현 순서를 보존하며 단계별 배분과 비용 조건은 \texttt{exp70\_\allowbreak{}\allowbreak{}pr\allowbreak{}otocol.\allowbreak{}m\allowbreak{}d} 및 실행 폴더의 \texttt{protocol\allowbreak{}.\allowbreak{}md}를 따른다.
+
+
+\par\noindent \textbullet\enspace 정적 SOTA 성능 현황은 기존 EXP61과 EXP63 K=\allowbreak{}4를 사용한다. EXP70은 Global 갱신 방식 비교이므로 expert·S/\allowbreak{}V 포함 완전판 결과로 인용하지 않는다. 새 공격 갱신 효용과 현재 정적 성적을 분리한다.
+
+
+\par\noindent \textbullet\enspace EXP70은 CIC2018·ToN 모두 완료했다. 한국어 발표는 부록 없는 10장으로, 간단한 운영 배경  \ensuremath{\rightarrow}  순차 도입 설계와 두 데이터셋 결과  \ensuremath{\rightarrow}  데이터 검토  \ensuremath{\rightarrow}  현재 모델의 정적 성능·비용  \ensuremath{\rightarrow}  시스템 관점의 후속 판단 순서다. 결과 해석은 \texttt{exp70\_\allowbreak{}\allowbreak{}re\allowbreak{}sults.\allowbreak{}md\allowbreak{}}, 상세한 구성은 \texttt{.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}sl\allowbreak{}ides/\allowbreak{}\allowbreak{}kor\allowbreak{}/\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}la\allowbreak{}bmeeting\allowbreak{}\_\allowbreak{}\allowbreak{}plan.\allowbreak{}md\allowbreak{}}, 현재 생성기는 \texttt{.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}sl\allowbreak{}ides/\allowbreak{}\allowbreak{}rev\allowbreak{}ise\_\allowbreak{}\allowbreak{}1002\allowbreak{}\_\allowbreak{}\allowbreak{}ko\_\allowbreak{}\allowbreak{}oper\allowbreak{}ational.\allowbreak{}py}를 따른다.
+
+
+\par\noindent \textbullet\enspace OOD·라벨 없는 미지 공격 탐지는 후속 확장이며, 새 공격의 라벨 사례를 확보한 후 갱신하는 현재 실험과 구별한다. 실제 수집 시간의 완전한 재현이나 네트워크 환경 변화에 대한 강건성을 현재 실험으로 주장하지 않는다.
+
+
+아래 r06 및 초기 후속 메모는 연구 방향의 변화를 보존한 기록이다. 최신 확정 및 EXP70과 상충하는 목적·미정 조건·실행 상태는 당시의 초안으로 읽는다. 실행 완료 여부와 논문 근거 채택 여부는 구분한다.
+
+
+\medskip\hrule\medskip
+\subsection{r06 · 희소 라벨 공격 탐지를 위한 context 설계}
+갱신: 2026-10-02. 사용자 피드백 및 후속 답변을 반영한 연구 방향. \textbf{이 문서 작성으로 새 실험을 실행하지 않았다.}
+
+후속 확정(같은 날): 사용자가 신규 라벨의 뜻을 \textbf{기존에 없던 공격 종류의 도입}으로 명확히 했고, 실제 클래스 최초 출현 순서를 보존한 실행을 승인했다. 따라서 아래의 초기 시나리오 개념안과 미정 사항 중 이와 상충하는 부분은 역사적 초안이다. 현재 실행은 EXP69 protocol을 따른다. 초기 정상+\allowbreak{}기존 공격  \ensuremath{\rightarrow}  신규 공격 사례 추가를 반복하며, 동일 누적 라벨에서 XGBoost 전체 재학습과 TabPFN context 확장을 비교한다. EXP69는 실행 중이며 결과 우위는 아직 판단하지 않았다.
+
+\subsection{목적과 주장}
+목적은 전체 Macro-F1을 계속 높이는 것이 아니라 \textbf{라벨 사례가 적은 공격을 Benign 및 다른 공격과 더 잘 구분하는 것}이다. TabPFN이 처리할 수 있는 제한된 context에 어떤 공통·전문 사례를 담아야 이 목적에 도움이 되는지가 연구 질문이다. 기존 탐지 성능과 Benign 오탐을 함께 확인한다.
+
+TabPFN은 사전학습된 backbone이 라벨 context를 조건으로 추론한다는 점에서 후보가 된다. 사례 구성을 바꿀 때 backbone 재학습이 필요 없다는 구조적 특성과, 실제 성능·운영 비용에서 이득이 있다는 주장은 구분한다. XGBoost 대비 소수 라벨 성능과 총비용 우위는 아직 입증하지 않았다. XGBoost는 강한 비교 기준이며 전체 재학습 외에 추가 학습도 가능하다.
+
+\par\noindent \textbullet\enspace TabPFN 공식 구현: 현재 repo의 새 기본 모델과 달리, 이 프로젝트 실험은 저장된 v3 설정을 유지
+
+
+\par\noindent \textbullet\enspace XGBoost 추가 학습 예제
+
+
+\subsection{사용자 확인으로 확정된 범위}
+\par\noindent \textbullet\enspace \texttt{OOM}은 \texttt{OOD}: 학습 분포 밖 데이터·새 공격을 의미
+
+
+\par\noindent \textbullet\enspace 실제 수집 timestamp를 그대로 재현하는 것은 필수 아님
+
+
+\par\noindent \textbullet\enspace 소수 라벨 확보 전후의 적응 성능 비교도 필수 목적이 아님
+
+
+\par\noindent \textbullet\enspace 순차 공격 도입은 \textbf{평가 시나리오의 축}. Context를 온라인으로 갱신할지는 별도 선택
+
+
+\par\noindent \textbullet\enspace 학습 라벨이 적은 공격과 학습에서 전혀 보지 못한 공격을 구분
+
+
+\par\noindent \textbullet\enspace 기존 Claude 실행의 시나리오(EXP68)는 사용자가 의도한 설계로 채택하지 않음
+
+
+\subsection{시나리오 개념안과 아직 정하지 않은 것}
+Benign과 일부 공격이 섞인 배경에서 공격을 순차적으로 도입하고, 혼합 비율이 달라질 때 각 공격의 탐지 성능을 관찰한다. 이는 자연 수집 시간을 재현했다고 주장하는 실험이 아니라 통제된 도입 시나리오로 구성할 수 있다. 나중에 평가에 등장한 공격도 초기 학습에는 소수의 라벨 사례가 있을 수 있다. 이 경우 단순히 나중에 등장했다는 이유로 OOD로 부르지 않는다.
+
+아직 정하지 않은 사항: 대상 희소 공격의 정의·라벨 수, 초기 학습 데이터, 도입 순서와 구간, 혼합 비율, Global/\allowbreak{}expert/\allowbreak{}S/\allowbreak{}V의 고정·갱신 여부, context 전체 예산. \texttt{5구간}, \texttt{첫 10\%}, \texttt{클래스당 50라\allowbreak{}벨} 등 기존 구현의 수치를 이번 설계에 자동 상속하지 않는다.
+
+현재 모델과 context를 고정하면 같은 표본의 개별 예측은 평가 순서를 바꿔도 동일하다. 따라서 단순 재정렬만으로 시간 적응 성능을 주장할 수 없다. 순차 시나리오에서는 구간별 공격 등장·혼합 변화에 따른 탐지와 오탐을 보는 목적을 명시한다. 적응 자체를 평가하려면 별도의 갱신 규칙을 정의해야 한다.
+
+온라인 갱신을 나중에 추가하는 경우에만 예측  \ensuremath{\rightarrow}  라벨 확보  \ensuremath{\rightarrow}  이후 표본에 갱신 적용의 인과 순서를 엄수한다. 자연 시간 흐름을 주장한다면 초기 학습·검증에도 미래 시점 행이 없어야 한다.
+
+\subsection{주장에 필요한 근거}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.26241\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36879\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36879\linewidth-2\tabcolsep\relax}}
+\toprule
+질문 & 통제할 조건 & 볼 결과 \\ \midrule
+\endfirsthead
+질문 & 통제할 조건 & 볼 결과 \\ \midrule
+\endhead
+{}희소 공격을 더 잘 구분하는가? & 동일한 보유 라벨, 동일 평가 표본, 학습 단계에서 정한 희소 클래스 & 공격별 Precision/\allowbreak{}Recall/\allowbreak{}F1, Benign 오탐, 기존 공격 성능 \\
+{}Context 구성이 기여하는가? & 전체 context 크기, 추가 학습 데이터, backbone·추론 설정 & Global/\allowbreak{}단순 구성/\allowbreak{}제안 구성의 차이 \\
+{}Expert와 S/\allowbreak{}V가 필요한가? & 유용한 구성을 validation에서 정한 뒤 같은 조건으로 비교 & 요소 제거 시 성능·교정·훼손·호출 변화 \\
+{}비용 면의 선택 근거가 있는가? & 같은 하드웨어와 라벨 정보, 캐시·병렬 조건 명시 & 구성·학습·적재·추론 비용과 메모리 \\
+{}OOD까지 확장되는가? & 학습에 없는 공격 또는 별도의 분포 변화 & 미지 인지와 라벨 후 적응을 별도 평가 \\
+\bottomrule
+\end{longtable}
+\endgroup
+혼합 비율·출현 클래스가 달라지면 Precision/\allowbreak{}F1/\allowbreak{}Macro-F1도 달라진다. 각 구간의 support와 prevalence를 함께 보고하고, 구간 간 Macro-F1을 그대로 성능 상승으로 해석하지 않는다. Benign 오탐률은 \texttt{실제 Benig\allowbreak{}n 중 공격으로\allowbreak{} 예측한 비율}이다.
+
+\subsection{현재 결과의 역할}
+EXP61·63은 정제 데이터에서 수행한 단일 seed 43의 탐색 근거다. 대표 K=\allowbreak{}4는 기존 대표 설정을 유지하며 test 최고 K로 치환하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.45128\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.28974\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25897\linewidth-2\tabcolsep\relax}}
+\toprule
+구성 & CIC2018 Macro-F1 & ToN Macro-F1 \\ \midrule
+\endfirsthead
+구성 & CIC2018 Macro-F1 & ToN Macro-F1 \\ \midrule
+\endhead
+{}XGBoost, 같은 C0 100k & 0.7821 & 0.6983 \\
+{}Global TabPFN & 0.7824 & 0.6796 \\
+{}Anchor +\allowbreak{} residual expert, K=\allowbreak{}4, S/\allowbreak{}V 포함 & 0.7824 & 0.7617 \\
+\bottomrule
+\end{longtable}
+\endgroup
+ToN K=\allowbreak{}4의 Scanning F1은 0.0394 \ensuremath{\rightarrow} 0.8587. CIC2018은 선택된 정책의 expert 호출 0건. ToN 호출률 100\%는 \textbf{정책상 호출률}이며 출력 채택률은 1.23\%. 저장된 예측에 적용한 정책 수치로 실제 조건부 추론 시간을 대체하지 않는다. 제안 구성은 Expert/\allowbreak{}Route 풀의 추가 라벨 정보를 사용하므로 위 표로 같은 100k 예산 우위를 주장하지 않는다.
+
+이 결과는 residual 기반 context가 일부 공격에 유효할 수 있음을 보여준다. 모든 희소 공격의 개선, 특정 혼동의 인과적 원인, 시간 적응의 효과는 입증하지 않는다. 최근접 거리만으로 분류 불가능·라벨 모순·분포 변화의 원인을 확정하지 않는다.
+
+\subsection{보존하되 이번 주장에 자동 채택하지 않은 결과}
+EXP64–67은 기존 Claude의 별도 탐색 실행으로 보존한다. 방법 충실성·부분집합 평가·정보량·최적화 비용이 서로 달라 단일 승패표로 정리하지 않는다. EXP68은 사용자가 의도한 시나리오가 아니므로 현재 발표 근거에서 제외한다. 기존 출력 파일은 수정하지 않았다.
+
+EXP68 코드 검토 메모: 같은 구간에서 정답 클래스별로 라벨 사례를 선택한 뒤 그 구간의 나머지를 평가한다. 따라서 엄격한 도착 순서 기반 예측을 입증하지 못한다. \texttt{benign\_\allowbreak{}\allowbreak{}f\allowbreak{}pr}는 실제로 공격을 Benign으로 예측한 비율이어서 Benign 오탐률로 인용하지 않는다. 원본 기록의 이름을 바꾸지 않고 제외 근거를 남긴다.
+
+\subsection{후속 접근의 위치}
+Benign 다양화 /\allowbreak{} tail 합성 /\allowbreak{} 표현 학습 /\allowbreak{} context 최적화는 각각 다른 정보 부족을 겨냥한 가설이다. 소수 라벨이라는 목적과 동일 context 예산에서 도움이 되는지 비교한다. 합성은 같은 수의 실제 사례·단순 복제, 표현·context 최적화는 별도 학습 데이터와 비용까지 대조한다.
+
+\subsection{산출물}
+\par\noindent \textbullet\enspace 한국어 발표: \texttt{docs/\allowbreak{}\allowbreak{}sli\allowbreak{}des/\allowbreak{}\allowbreak{}kor/\allowbreak{}\allowbreak{}1002\_\allowbreak{}\allowbreak{}lab\allowbreak{}meeting\_\allowbreak{}\allowbreak{}ko\_\allowbreak{}\allowbreak{}draft\allowbreak{}.\allowbreak{}pptx}, \texttt{.\allowbreak{}pdf} (본문 10장 +\allowbreak{} 부록 4장)
+
+
+\par\noindent \textbullet\enspace LaTeX: \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}0930.\allowbreak{}tex\allowbreak{}}, \texttt{.\allowbreak{}pdf}; 본문과 자동 생성 표 분리
+
+
+\par\noindent \textbullet\enspace 연구 버전: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}V\allowbreak{}ERSIONS.\allowbreak{}json}, \texttt{INDEX.\allowbreak{}md\allowbreak{}}, \texttt{versions\allowbreak{}/\allowbreak{}\allowbreak{}}
+
+
+\par\noindent \textbullet\enspace 실행 자동 기록: \texttt{scripts/\allowbreak{}\allowbreak{}results\_\allowbreak{}\allowbreak{}versions\allowbreak{}.\allowbreak{}py} 및 \texttt{experime\allowbreak{}nt\_\allowbreak{}\allowbreak{}versi\allowbreak{}oning.\allowbreak{}md\allowbreak{}}
+
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

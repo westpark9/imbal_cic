@@ -1,0 +1,290 @@
+% !TeX root = 20260819.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+
+\begin{document}
+
+\reporttitle{2026-08-19}{실험 결과 및 설계 기록}
+
+\section*{목적과 이 보고서의 범위}
+
+이 날짜의 실험 설정, 관찰 결과, 원인에 대한 해석과 후속 판단을 함께 정리한다. 다른 날짜의 평가 방식이나 표본 수가 다른 점수를 직접 합치지 않으며, 실행 완료와 논문 근거 채택을 구별한다.
+
+\recordnote{수합·문서 개편: 2026-10-20. 실행 날짜는 각 절과 원시 실행 목록을 따른다. 아래의 과거 계획·진행 상태는 당시 기록이며, 현재 채택 상태와 최종 결과는 후속 실험을 함께 확인한다.}
+
+\section{2026-08-19 · 0819 — XGB baseline 재정의 +\allowbreak{} s44 open-set 실패의 실제 원인}
+\label{report:20260819_0819}
+\recordnote{이 절은 당시 설정의 결과다. 평가 방식 변경·정정·후속 비교는 뒤에 명시한 실험과 구별한다.}
+세션 목표 두 개:
+
+\par\noindent \textbullet\enspace tabpfn track의 XGB baseline과 \texttt{results/\allowbreak{}\allowbreak{}}의 s44 XGB baseline이 왜 그렇게 다른가, 어느 쪽이 baseline인가
+
+
+\par\noindent \textbullet\enspace OOD가 안 되고 ton\_\allowbreak{}iot tail은 잘 되는 패턴에서 무엇을 고쳐야 하는가
+
+
+측정 스크립트는 전부 scratchpad에 있고 repo는 건드리지 않았다 (\texttt{/\allowbreak{}\allowbreak{}tmp/\allowbreak{}\allowbreak{}cla\allowbreak{}ude-\allowbreak{}1000\allowbreak{}/\allowbreak{}\allowbreak{}-\allowbreak{}home-\allowbreak{}u\allowbreak{}ser-\allowbreak{}Desk\allowbreak{}top-\allowbreak{}imba\allowbreak{}lcic/\allowbreak{}\allowbreak{}201\allowbreak{}5b0d7-\allowbreak{}7c\allowbreak{}6d-\allowbreak{}4f62-\allowbreak{}bdd7-\allowbreak{}9de\allowbreak{}0eeb8350\allowbreak{}9/\allowbreak{}\allowbreak{}scratc\allowbreak{}hpad/\allowbreak{}\allowbreak{}}): \texttt{overlap\_\allowbreak{}\allowbreak{}probe.\allowbreak{}py\allowbreak{}}(M1/\allowbreak{}M2/\allowbreak{}M3), \texttt{xgb\_\allowbreak{}\allowbreak{}ladd\allowbreak{}er.\allowbreak{}py}, \texttt{openset\_\allowbreak{}\allowbreak{}baseline\allowbreak{}.\allowbreak{}py}, \texttt{nv\_\allowbreak{}\allowbreak{}verif\allowbreak{}y.\allowbreak{}py}.
+
+
+\medskip\hrule\medskip
+\subsection{1. 두 XGB는 같은 문제를 푸는 분류기가 아니다}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.24691\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.36420\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.38889\linewidth-2\tabcolsep\relax}}
+\toprule
+ & track A (\texttt{s43}/\allowbreak{}\texttt{s44}) & track B (\texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}c\allowbreak{}ommon.\allowbreak{}py\allowbreak{}}) \\ \midrule
+\endfirsthead
+ & track A (\texttt{s43}/\allowbreak{}\texttt{s44}) & track B (\texttt{tabpfn/\allowbreak{}\allowbreak{}n\allowbreak{}fv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}c\allowbreak{}ommon.\allowbreak{}py\allowbreak{}}) \\ \midrule
+\endhead
+{}benign & label space에서 삭제 (\texttt{s44:1237\allowbreak{}-\allowbreak{}1239}) & 보통 class \\
+{}unseen class & train·test 양쪽에서 제거 & 없음 (\texttt{-\allowbreak{}-\allowbreak{}unseen\allowbreak{}} 자체가 없음) \\
+{}sample weight & \texttt{sqrt(N/\allowbreak{}\allowbreak{}(\allowbreak{}K·n\_\allowbreak{}\allowbreak{}c))} (\texttt{s44:577}) & 없음 (\texttt{nfv3\_\allowbreak{}\allowbreak{}v3\_\allowbreak{}\allowbreak{}common.\allowbreak{}p\allowbreak{}y:637}) \\
+{}train cap & 2M \textbf{비층화} random (\texttt{s44:1301\allowbreak{}}) & 1M 또는 uncapped \\
+\bottomrule
+\end{longtable}
+\endgroup
+hyperparameter·feature·split code는 byte-identical (300 trees /\allowbreak{} depth 8 /\allowbreak{} lr 0.05 /\allowbreak{} sub 0.8 /\allowbreak{} col 0.8 /\allowbreak{} seed 42, 46 feat, 같은 pkl).
+
+\subsubsection{결정적 사례}
+\textbf{ton\_\allowbreak{}iot \texttt{scanning\allowbreak{}}}: track A \texttt{xgb\_\allowbreak{}\allowbreak{}f1 =\allowbreak{}\allowbreak{} 0.\allowbreak{}9992} vs track B \texttt{0.\allowbreak{}0009}. 같은 class, 같은 split. 차이는 benign이 label space에 있느냐 하나뿐이다. \texttt{scanning\allowbreak{}} 행의 **97.13\%**가 benign 행과 byte-identical이므로(\texttt{probe\_\allowbreak{}\allowbreak{}m1\allowbreak{}\_\allowbreak{}\allowbreak{}exact\_\allowbreak{}\allowbreak{}c\allowbreak{}ollision\allowbreak{}.\allowbreak{}csv}) benign이 있으면 전부 benign으로 간다. benign을 지우면 나머지 attack과는 자명하게 갈린다.
+
+benign 항은 13개 config 전부에서 부호가 바뀌지 않는 유일한 항이고 median \textbf{+\allowbreak{}0.1012}. dataset별로는 cic2018 +\allowbreak{}0.1014, ton\_\allowbreak{}iot +\allowbreak{}0.1499, \textbf{bot\_\allowbreak{}iot 정확히 0.0000}. bot\_\allowbreak{}iot의 gap은 전부 unseen 제거 항이다 — \texttt{-\allowbreak{}-\allowbreak{}unseen\allowbreak{} dos}에서 잔차 +\allowbreak{}0.3325 중 \texttt{ddos} (0.0311 \ensuremath{\rightarrow} 0.9932)가 96.5\%. dos:ddos =\allowbreak{} 1.12:1이므로 imbalance가 아니라 \textbf{label collision}.
+
+\subsubsection{s44 baseline은 스스로 0.20을 버리고 있다}
+\texttt{xgb\_\allowbreak{}\allowbreak{}ladd\allowbreak{}er.\allowbreak{}csv}, bot\_\allowbreak{}iot \texttt{-\allowbreak{}-\allowbreak{}unseen\allowbreak{} ddos}, 고정 test set, 한 번에 knob 하나:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.23590\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13722\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11748\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11748\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11748\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12406\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15038\linewidth-2\tabcolsep\relax}}
+\toprule
+rung & rows & classes & sqrt w & macro & theft F1 & theft recall \\ \midrule
+\endfirsthead
+rung & rows & classes & sqrt w & macro & theft F1 & theft recall \\ \midrule
+\endhead
+{}S0 track B (5-class) & 10,160,284 & 5 & [제외] & 0.5731 & 0.388 &  \\
+{}S1 −benign & 10,129,091 & 4 & [제외] & 0.5115 & 0.389 &  \\
+{}S2 −unseen & 5,838,562 & 3 & [제외] & 0.7840 & 0.389 & 0.2415 \\
+{}S3 +\allowbreak{}sqrt weight & 5,838,562 & 3 & [확인] & \textbf{0.9830} & \textbf{0.986} & 0.9907 \\
+{}S4 +\allowbreak{}2M cap =\allowbreak{} \textbf{기록된 baseline} & 2,000,000 & 3 & [확인] & 0.7836 & 0.389 & 0.2415 \\
+\bottomrule
+\end{longtable}
+\endgroup
+S4가 기록된 \texttt{0.\allowbreak{}783848\allowbreak{}32896388\allowbreak{}32}(\texttt{results/\allowbreak{}\allowbreak{}20260804\allowbreak{}\_\allowbreak{}\allowbreak{}121642\_\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}/\allowbreak{}\allowbreak{}4a})를 소수 3자리까지 재현한다.
+
+\textbf{즉 \texttt{-\allowbreak{}-\allowbreak{}max\_\allowbreak{}\allowbreak{}gl\allowbreak{}obal\_\allowbreak{}\allowbreak{}tra\allowbreak{}in 20000\allowbreak{}00}이 0.1994를 깎고, sqrt weight가 직전에 0.1990을 벌어준다. 기록된 0.78385는 두 knob가 우연히 상쇄된 지점이고 논문은 둘 중 어느 것도 논하지 않는다.} \texttt{subset\_\allowbreak{}\allowbreak{}i\allowbreak{}ndices}(\texttt{exp\_\allowbreak{}\allowbreak{}util\allowbreak{}s.\allowbreak{}py:141\allowbreak{}-\allowbreak{}147})는 pooled index 위 균일 random draw라 stratification이 0이다. theft train 969행  \ensuremath{\rightarrow}  \textasciitilde{}332행이 되고 sqrt weight로도 복구가 안 된다. 같은 파일에 \texttt{cap\_\allowbreak{}\allowbreak{}by\_\allowbreak{}\allowbreak{}f\allowbreak{}amily}(\texttt{s44:389})가 있고 val/\allowbreak{}test/\allowbreak{}target-OOD에는 쓰이는데 global XGB train pool에만 안 쓰인다.
+
+ \ensuremath{\rightarrow}  bot\_\allowbreak{}iot/\allowbreak{}ddos의 진짜 XGBoost bar는 \textbf{0.983}이고, expert pipeline(0.637)의 격차는 −0.147이 아니라 \textbf{−0.346}이다.
+
+\subsubsection{판정}
+\textbf{둘 다 그대로는 baseline으로 부적절하다.}
+
+\par\noindent \textbullet\enspace track B: \texttt{-\allowbreak{}-\allowbreak{}unseen\allowbreak{}} 개념이 없어 open-set 프로토콜과 무관
+
+
+\par\noindent \textbullet\enspace track A: 같은 run/\allowbreak{}split/\allowbreak{}seed는 맞지만 attack-only closed-set이고, unseen·benign leg에 XGB 숫자가 \textbf{존재한 적이 없다} (\texttt{s44:2597\allowbreak{}-\allowbreak{}2604}는 \texttt{known\_\allowbreak{}\allowbreak{}at\allowbreak{}tack} scope, \texttt{6a/\allowbreak{}\allowbreak{}6b}에 XGB 대응물 없음)
+
+
+\par\noindent \textbullet\enspace 그리고 track A의 숫자는 \texttt{-\allowbreak{}-\allowbreak{}unseen\allowbreak{}} 하나로 \textbf{0.2989 \textasciitilde{} 0.9714}를 오간다. 수식어 없이 "the XGBoost baseline"이라 부를 수 없다.
+
+
+
+\medskip\hrule\medskip
+\subsection{2. "ton\_\allowbreak{}iot tail을 잘한다"는 test cap artifact다}
+같은 fitted model, \texttt{test\_\allowbreak{}\allowbreak{}cap\allowbreak{}\_\allowbreak{}\allowbreak{}per\_\allowbreak{}\allowbreak{}cla\allowbreak{}ss}만 다른 one-knob 쌍 (\texttt{20260817\allowbreak{}\_\allowbreak{}\allowbreak{}163506} vs \texttt{20260818\allowbreak{}\_\allowbreak{}\allowbreak{}113117}) — per-class recall이 16자리까지 동일:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20417\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17292\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21458\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21458\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19375\linewidth-2\tabcolsep\relax}}
+\toprule
+class & support & recall (동일) & F1 @cap100k & F1 @cap없음 \\ \midrule
+\endfirsthead
+class & support & recall (동일) & F1 @cap100k & F1 @cap없음 \\ \midrule
+\endhead
+{}mitm & 1,204 & 0.7309 & 0.746 & \textbf{0.162} \\
+{}ransomware & 795 & 0.9409 & 0.819 & \textbf{0.150} \\
+{}backdoor & 40,678 & 0.9984 & 0.999 & 0.998 \\
+{}\textbf{tail\_\allowbreak{}avg} &  &  & \textbf{0.782} & \textbf{0.156} \\
+\bottomrule
+\end{longtable}
+\endgroup
+per-row FPR은 0.16\%뿐인데 그게 mitm support의 7.3배, ransomware의 10.6배다. \textbf{tail은 recall 문제가 아니라 precision 문제이고, cap이 FP pool을 줄여 없앤 것뿐이다.}
+
+가설을 실제로 지지하는 class는 \texttt{backdoor\allowbreak{}} 하나(purity 0.9992, F1 0.998 uncapped)인데 203,384행으로 tail이 아니다(\texttt{dos} 203,456과 동급). tail이라 부르는 건 \texttt{s44:112-\allowbreak{}117}뿐이다.
+
+그리고 그 숫자는 pipeline이 아니라 baseline XGB의 것이다 — expert F1은 \texttt{mitm} 12/\allowbreak{}12 run에서 0.0000, \texttt{ransomwa\allowbreak{}re} 11/\allowbreak{}12에서 0.0000. \texttt{tail\_\allowbreak{}\allowbreak{}mac\allowbreak{}ro\_\allowbreak{}\allowbreak{}f1\_\allowbreak{}\allowbreak{}ex\allowbreak{}pert =\allowbreak{}\allowbreak{} 0\allowbreak{}.\allowbreak{}3328} =\allowbreak{} (0.9985+\allowbreak{}0+\allowbreak{}0)/\allowbreak{}3 =\allowbreak{} \textbf{backdoor 혼자}.
+
+
+\medskip\hrule\medskip
+\subsection{3. overlap이 known leg를 설명한다 (단서 있음)}
+\texttt{overlap\_\allowbreak{}\allowbreak{}probe.\allowbreak{}py\allowbreak{}}. byte-identical feature row가 다른 label을 갖는 비율: cic2018 \textbf{26.7\%}, bot\_\allowbreak{}iot \textbf{6.1\%}, ton\_\allowbreak{}iot \textbf{60.7\%}.
+
+22개 class에서 \texttt{corr(1-\allowbreak{}N\allowbreak{}N label \allowbreak{}purity,\allowbreak{} \allowbreak{}XGB per-\allowbreak{}class F1\allowbreak{}) =\allowbreak{}\allowbreak{} +\allowbreak{}\allowbreak{}0.\allowbreak{}9\allowbreak{}01}, \texttt{corr(log\allowbreak{} support\allowbreak{},\allowbreak{} F1) =\allowbreak{}\allowbreak{} \allowbreak{}+\allowbreak{}\allowbreak{}0.\allowbreak{}035}. \textbf{support는 설명력이 없다.} XGBoost는 1-NN ceiling에서 median 0.108 이내 — 이미 이 표현의 Bayes floor 근처다 (bot\_\allowbreak{}iot theft: XGB recall 0.2415 vs purity 0.2446, headroom +\allowbreak{}0.003).
+
+[주의] \textbf{단서}: test 행이 train 행과 byte-identical인 비율이 ton\_\allowbreak{}iot scanning 0.974, cse2018 bot 0.955, ton\_\allowbreak{}iot ddos 0.964다. test의 85\textasciitilde{}97\%가 train에 그대로 있는 곳에서 1-NN purity는 manifold 기하가 아니라 \textbf{동일 레코드 간 label 충돌}을 재고 있고, 높은 F1은 memorization일 수 있다. 기하 해석이 온전한 건 bot\_\allowbreak{}iot \texttt{ddos}(중복률 5.6e-06) 하나.
+
+\subsubsection{dataset 결함 (cic2018)}
+\texttt{dos\_\allowbreak{}\allowbreak{}atta\allowbreak{}cks-\allowbreak{}slow\allowbreak{}httptest\allowbreak{}} 105,550행  \ensuremath{\rightarrow}  \textbf{distinct 46-dim vector 1개}. \texttt{ftp-\allowbreak{}brut\allowbreak{}eforce} 386,720행  \ensuremath{\rightarrow}  \textbf{같은 vector}. raw CSV에서 그 vector는 TCP \textbf{port 21} (\texttt{IN\_\allowbreak{}\allowbreak{}BYTES\allowbreak{}=\allowbreak{}\allowbreak{}60,\allowbreak{} OUT\allowbreak{}\_\allowbreak{}\allowbreak{}BYTES=\allowbreak{}\allowbreak{}4\allowbreak{}0,\allowbreak{} IN/\allowbreak{}\allowbreak{}OU\allowbreak{}T\_\allowbreak{}\allowbreak{}PKTS=\allowbreak{}\allowbreak{}1\allowbreak{},\allowbreak{} TCP\_\allowbreak{}\allowbreak{}FL\allowbreak{}AGS=\allowbreak{}\allowbreak{}22,\allowbreak{} \allowbreak{}FLOW\_\allowbreak{}\allowbreak{}DUR\allowbreak{}ATION=\allowbreak{}\allowbreak{}1}). SlowHTTPTest는 HTTP 공격  \ensuremath{\rightarrow}  \textbf{NF-CICIDS2018-v3의 mislabel}. \texttt{5c}의 \texttt{dos,\allowbreak{}floo\allowbreak{}d,\allowbreak{}brute\_\allowbreak{}\allowbreak{}force,\allowbreak{}21\allowbreak{}110}(dos test의 34.84\%, \texttt{resolvab\allowbreak{}le\_\allowbreak{}\allowbreak{}by\_\allowbreak{}\allowbreak{}ar\allowbreak{}gmin\_\allowbreak{}\allowbreak{}rat\allowbreak{}e=\allowbreak{}\allowbreak{}0.\allowbreak{}0000\allowbreak{}})이 이것이다.
+
+
+\medskip\hrule\medskip
+\subsection{4. unseen leg 실패의 실제 원인 — gate가 아니라 결정 규칙}
+\subsubsection{4.1 \texttt{unseen\_\allowbreak{}\allowbreak{}r\allowbreak{}esolved\_\allowbreak{}\allowbreak{}acc}는 "모든 expert가 거부"와 항등이다}
+26개 run에서 \texttt{unseen\_\allowbreak{}\allowbreak{}r\allowbreak{}esolved\_\allowbreak{}\allowbreak{}acc}와 \texttt{6b}의 \texttt{unseen/\allowbreak{}\allowbreak{}a\allowbreak{}ll\_\allowbreak{}\allowbreak{}out} share의 최대 절대차 =\allowbreak{} \textbf{0.0}. \texttt{resolve\_\allowbreak{}\allowbreak{}predicti\allowbreak{}ons}(\texttt{s44:1099\allowbreak{}-\allowbreak{}1141})에서 \texttt{"unseen"\allowbreak{}}을 낼 수 있는 줄은 \texttt{in\_\allowbreak{}\allowbreak{}count\allowbreak{}s =\allowbreak{}\allowbreak{}=\allowbreak{}\allowbreak{} 0} 하나뿐이다(2,617줄 전체에서 유일).
+
+\subsubsection{4.2 gate 자체는 멀쩡하다}
+\texttt{3b} 84개 (expert, run) 쌍: unseen role AUROC \textbf{median 0.9721}, 자기 tau에서 detect 0.8709. non\_\allowbreak{}owned\_\allowbreak{}known\_\allowbreak{}attack AUROC 0.9967. \textbf{ranking은 이미 좋고 무너지는 곳은 threshold와 집계다.}
+
+\subsubsection{4.3 benign expert가 절반을 먹는다}
+attack expert만의 만장일치 reject: median \textbf{0.3107} /\allowbreak{} mean 0.3547 (\texttt{5b}). benign expert 합류 후 최종: median \textbf{0.1375} /\allowbreak{} mean 0.1751.  \ensuremath{\rightarrow}  비용 mean \textbf{0.1796}.
+
+최악: \texttt{20260803\allowbreak{}\_\allowbreak{}\allowbreak{}112753\_\allowbreak{}\allowbreak{}.\allowbreak{}.\allowbreak{}.\allowbreak{}\_\allowbreak{}\allowbreak{}unse\allowbreak{}en\_\allowbreak{}\allowbreak{}bot\_\allowbreak{}\allowbreak{}n\allowbreak{}oextaux} — 0.98515  \ensuremath{\rightarrow}  \textbf{4.81e-05}. benign expert \texttt{unseen\_\allowbreak{}\allowbreak{}f\allowbreak{}alse\_\allowbreak{}\allowbreak{}in\_\allowbreak{}\allowbreak{}rate =\allowbreak{}\allowbreak{} 0\allowbreak{}.\allowbreak{}99995}, unseen 41,542행 중 \textbf{41,460행이 benign}(\texttt{6a}).
+
+benign expert 27개 run 집계: ID(benign) 유지 0.905, \textbf{known} attack 오수용 0.109, \textbf{unseen} attack 오수용 \textbf{0.417}(max 1.000). 3.8배 차이 — 판별 경계는 negative가 있던 방향만 막는다는 교과서적 실패.
+
+역방향도 이미 깨져 있다: benign 행의 **71.7\%**가 \texttt{argmin} branch로 흘러 accuracy 0.215.
+
+\subsubsection{4.4 pooled quantile이 tail을 죽인다}
+\texttt{4b\_\allowbreak{}\allowbreak{}all.\allowbreak{}c\allowbreak{}sv} 152개 class×config, expert 내 support rank별 \textbf{gate가 삼킨 recall}:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.26293\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24569\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24569\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24569\linewidth-2\tabcolsep\relax}}
+\toprule
+rank & n & median & mean \\ \midrule
+\endfirsthead
+rank & n & median & mean \\ \midrule
+\endhead
+{}1 (head) & 84 & 0.011 & 0.056 \\
+{}2 & 49 & 0.103 & 0.381 \\
+{}\textbf{3} & 19 & \textbf{0.995} & 0.870 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\texttt{xgb\_\allowbreak{}\allowbreak{}reca\allowbreak{}ll>0.\allowbreak{}8} \& \texttt{gated\_\allowbreak{}\allowbreak{}re\allowbreak{}call<0.\allowbreak{}1\allowbreak{}}인 쌍 \textbf{24/\allowbreak{}152}, 전부 \texttt{ransomwa\allowbreak{}re}(12)·\texttt{mitm}(8)· \texttt{web\_\allowbreak{}\allowbreak{}atta\allowbreak{}cks}(4)이고 전부 rank 2\textasciitilde{}3. 이 셋의 1-NN purity는 0.956/\allowbreak{}0.864/\allowbreak{}0.906 — \textbf{overlap 문제가 아니다.} \texttt{threshol\allowbreak{}d =\allowbreak{}\allowbreak{} np.\allowbreak{}q\allowbreak{}uantile(\allowbreak{}val["ene\allowbreak{}rgy"],\allowbreak{} 0\allowbreak{}.\allowbreak{}95)}(\texttt{s44:1529\allowbreak{}-\allowbreak{}1531})가 pooled quantile이라 expert의 head class가 정하는 순수 calibration artifact.
+
+\subsubsection{4.5 multi-class owner expert는 자기 semantic family 안의 novelty를 볼 수 없다}
+\texttt{external\allowbreak{}\_\allowbreak{}\allowbreak{}aux\_\allowbreak{}\allowbreak{}for\allowbreak{}\_\allowbreak{}\allowbreak{}expert}(\texttt{s44:442-\allowbreak{}450})가 \texttt{excluded\allowbreak{}\_\allowbreak{}\allowbreak{}semanti\allowbreak{}cs}를 \texttt{configur\allowbreak{}ed\_\allowbreak{}\allowbreak{}owned\allowbreak{}} (=\allowbreak{} JSON 전체 ownership, \textbf{held-out class 포함})에서 만든다. \texttt{1b\_\allowbreak{}\allowbreak{}exper\allowbreak{}t\_\allowbreak{}\allowbreak{}aux\_\allowbreak{}\allowbreak{}co\allowbreak{}mpositio\allowbreak{}n.\allowbreak{}csv}, bot\_\allowbreak{}iot \texttt{-\allowbreak{}-\allowbreak{}unseen\allowbreak{} ddos}:
+
+
+\begin{Verbatim}[breaklines=true,breakanywhere=true,fontsize=\scriptsize]
+flood | configured_owned=ddos,dos | excluded_semantics=ddos,dos
+  cse_cic_ids2018/ddos  →  EXCLUDED: owned semantic  (available 1,324,350, selected 0)
+  cse_cic_ids2018/dos   →  EXCLUDED: owned semantic  (available   302,966, selected 0)
+
+\end{Verbatim}
+unseen ddos를 거부해야 하는 유일한 expert가 네 데이터셋 어디에서도 flood류 negative를 0행 받는다. 그 expert의 unseen AUROC =\allowbreak{} \textbf{0.5036}(우연).
+
+\texttt{active\_\allowbreak{}\allowbreak{}o\allowbreak{}wned}로 바꾸면 external ddos가 들어오지만 그건 held-out family를 외부 경유로 보여주는 leakage다.  \ensuremath{\rightarrow}  \textbf{버그가 아니라 프로토콜의 대가}이고, semantic family 단위 expert grouping 설계의 구조적 한계다. \texttt{owner\_\allowbreak{}\allowbreak{}ex\allowbreak{}pert\_\allowbreak{}\allowbreak{}ful\allowbreak{}ly\_\allowbreak{}\allowbreak{}remov\allowbreak{}ed=\allowbreak{}\allowbreak{}False\allowbreak{}} 19개 median 0.109 vs 완전 제거 9개 median 0.157.
+
+
+\medskip\hrule\medskip
+\subsection{5. 대안 규칙 측정 — 결정 규칙만 바꿔도 5배}
+\texttt{nv\_\allowbreak{}\allowbreak{}verif\allowbreak{}y.\allowbreak{}py}. \textbf{uncapped suite, test cap 100k, 300 trees, sqrt weight, stratified train cap} — s44와 같은 regime. label space는 known attacks +\allowbreak{} benign(unseen 제거). global XGB 1개 위에 post-hoc score 3종, \textbf{matched operating point}(known+\allowbreak{}benign 유지 95\%)에서 비교:
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13739\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19820\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19144\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17793\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13063\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16441\linewidth-2\tabcolsep\relax}}
+\toprule
+target & unseen & s44 (median aux) & s44 (best aux) & XGB+\allowbreak{}MSP & \textbf{XGB+\allowbreak{}distance} \\ \midrule
+\endfirsthead
+target & unseen & s44 (median aux) & s44 (best aux) & XGB+\allowbreak{}MSP & \textbf{XGB+\allowbreak{}distance} \\ \midrule
+\endhead
+{}cse2018 & bot & 0.0000 & 0.0007 & 0.0006 & \textbf{1.0000} \\
+{}cse2018 & ddos & 0.1876 & 0.2658 & 0.1852 & \textbf{0.9900} \\
+{}cse2018 & ddos+\allowbreak{}dos & 0.1571 & 0.3544 & 0.0386 & \textbf{0.8635} \\
+{}cse2018 & dos & 0.3413 & 0.4493 & 0.0755 & \textbf{0.6516} \\
+{}ton\_\allowbreak{}iot & injection & 0.1690 & 0.2306 & 0.3221 & \textbf{0.8456} \\
+{}ton\_\allowbreak{}iot & password & 0.1596 & 0.2075 & 0.1195 & \textbf{0.7693} \\
+{}ton\_\allowbreak{}iot & injection+\allowbreak{}xss & 0.3170 & 0.3742 & 0.2522 & \textbf{0.7172} \\
+{}ton\_\allowbreak{}iot & xss & 0.2794 & 0.3015 & 0.1230 & \textbf{0.5271} \\
+{}ton\_\allowbreak{}iot & password+\allowbreak{}scanning & 0.0470 & 0.0884 & 0.0800 & \textbf{0.3347} \\
+{}ton\_\allowbreak{}iot & scanning & 0.0051 & 0.0052 & 0.0004 & 0.0192 \\
+{}bot\_\allowbreak{}iot & reconnaissance & 0.3884 & \textbf{0.6393} & 0.0912 & 0.1426 \\
+{}bot\_\allowbreak{}iot & dos & 0.1657 & \textbf{0.3106} & 0.0299 & 0.0090 \\
+{}bot\_\allowbreak{}iot & ddos & 0.0182 & \textbf{0.0186} & 0.0110 & 0.0007 \\
+{}\textbf{median} &  & 0.1657 & 0.2658 & 0.0800 & \textbf{0.6516} \\
+\bottomrule
+\end{longtable}
+\endgroup
+XGB+\allowbreak{}distance가 s44 best를 \textbf{10/\allowbreak{}13}에서 이긴다.
+
+\textbf{그리고 tail을 버려서 사는 게 아니다.} val-calibrated q95, per-class tau 기준: known 유지 sample \textbf{0.953} /\allowbreak{} \textbf{macro 0.921} /\allowbreak{} worst class 0.774, benign 유지 0.781, unseen \ensuremath{\rightarrow} benign 누수 median \textbf{0.013}. 비교: s44의 attack-expert-only 규칙은 macro known 유지 \textbf{0.746}, worst class는 theft 0.81 /\allowbreak{} mitm 0.98 /\allowbreak{} ransomware 0.96 /\allowbreak{} web\_\allowbreak{}attacks 0.99가 거부된다.
+
+\subsubsection{주의 3개}
+\par\noindent \textbullet\enspace \textbf{MSP는 benign이 label space에 들어오면 무너진다} (median 0.080). 세션 초반에 잡았던 "global XGB +\allowbreak{} MSP가 pipeline을 이긴다"는 attack-only label space에서의 결과이고 benign을 넣으면 전이되지 않는다. 값을 하는 건 \textbf{distance}다. bot\_\allowbreak{}iot ddos의 MSP AUROC는 \textbf{0.278}로 chance 미만 — unseen이 known보다 더 확신을 받는다.
+
+
+\par\noindent \textbullet\enspace \textbf{bot\_\allowbreak{}iot 3개 config는 distance 규칙이 완패한다.} 거기서는 s44가 낫다. ddos:dos =\allowbreak{} 1.12:1 near-duplicate이고 uncapped pool이 7.15M/\allowbreak{}8.03M이라 reference set이 공간을 촘촘히 덮어 거리가 안 갈린다. capped suite로 재면 0.61/\allowbreak{}0.69가 나오는데 그건 regime artifact다.
+
+
+\par\noindent \textbullet\enspace \textbf{ton\_\allowbreak{}iot \texttt{scanning\allowbreak{}}은 진짜 irreducible.} 세 방향 독립 확증 — (a) benign과 97.13\% exact collision, (b) raw-kNN open-set AUROC 0.357(chance 미만), (c) benign 포함 모델에서 unseen \ensuremath{\rightarrow} benign 0.972.
+
+
+\subsubsection{기존 "irreducible bucket" 분류는 기각}
+M3 ceiling 기반 8/\allowbreak{}28 bucketing은 성립하지 않는다. bot\_\allowbreak{}iot의 \texttt{median\_\allowbreak{}\allowbreak{}i\allowbreak{}d\_\allowbreak{}\allowbreak{}dist\_\allowbreak{}\allowbreak{}t\allowbreak{}o\_\allowbreak{}\allowbreak{}kept}가 0.015\textasciitilde{}0.182(다른 dataset은 0.000\textasciitilde{}0.003)라 threshold가 엉뚱하게 잡혔고, bucket 8개 중 \textbf{6개에서 실제 성능이 ceiling을 초과}한다(bot\_\allowbreak{}iot dos 0.3106 vs ceiling 0.0006). 살아남는 건 ton\_\allowbreak{}iot scanning 2개 config뿐.
+
+그리고 unseen leg에는 연속 예측변수가 없다(28행 회귀: leak 질량 R²=\allowbreak{}0.045 p=\allowbreak{}0.36, M3 tpr R²=\allowbreak{}0.0008 p=\allowbreak{}0.90, owner\_\allowbreak{}fully\_\allowbreak{}removed R²=\allowbreak{}0.071 p=\allowbreak{}0.17). 같은 기하 안에서의 분산이 기하 사이의 분산보다 크다 — \texttt{bot\_\allowbreak{}\allowbreak{}iot/\allowbreak{}\allowbreak{}reconnai\allowbreak{}ssance}가 aux knob 하나로 0.1375  \ensuremath{\rightarrow}  0.6393. \textbf{따라서 0.1246은 데이터의 성질이 아니라 calibration의 성질이다.}
+
+
+\medskip\hrule\medskip
+\subsection{6. cascade(stage 0 hard filter)는 재제안 금지}
+\texttt{SRC\_\allowbreak{}\allowbreak{}HIST\allowbreak{}ORY.\allowbreak{}md:3\allowbreak{}76-\allowbreak{}396}, \texttt{s25\_\allowbreak{}\allowbreak{}code\allowbreak{}\_\allowbreak{}\allowbreak{}ood\_\allowbreak{}\allowbreak{}v2.\allowbreak{}py}가 정확히 그 구조다. 최종 run 로그:
+
+"Baseline known macro-F1: 0.8695 /\allowbreak{} MoE known macro-F1: 0.1298 /\allowbreak{} Friday OOD detect rate: 0.0000"
+
+
+
+exp0 energy prefilter가 세 평가 set 전부에서 행의 100\%를 통과시켜 open-set 다리가 no-op이 됐다. 삭제된 \texttt{code\_\allowbreak{}\allowbreak{}cas\allowbreak{}cade.\allowbreak{}py}(\texttt{:136})도 같은 계열.
+
+stage-1 후보를 직접 재봐도(cse2018/\allowbreak{}bot, benign-val 누수 5\% 고정):
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.42381\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.28095\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.29524\linewidth-2\tabcolsep\relax}}
+\toprule
+gate & known 통과 & unseen 통과 \\ \midrule
+\endfirsthead
+gate & known 통과 & unseen 통과 \\ \midrule
+\endhead
+{}discriminative XGB & 0.857 & \textbf{0.016} \\
+{}support kNN10 & 0.732 & 0.992 \\
+{}Mahalanobis & 0.117 & 0.000 \\
+{}IsolationForest & 0.112 & 0.000 \\
+\bottomrule
+\end{longtable}
+\endgroup
+판별형은 unseen의 98.4\%를 benign으로 흘리고(=\allowbreak{} 지금 benign expert와 같은 메커니즘), density형은 known attack의 27\textasciitilde{}89\%를 되돌릴 수 없이 삭제한다.
+
+ \ensuremath{\rightarrow}  \textbf{benign은 label space의 class로 넣고 reject region을 하나만 남긴다.} 행을 데이터 흐름에서 제거하지 않으므로 되돌릴 수 있고, benign이 positive codeword를 가지면 all-reject의 preimage가 unseen 하나로 유일해진다.
+
+
+\medskip\hrule\medskip
+\subsection{7. TabPFN}
+\texttt{0818.\allowbreak{}md:\allowbreak{}54} — ToN-IoT에서 데이터를 늘리면 \texttt{ransomwa\allowbreak{}re} 0.385 \ensuremath{\rightarrow} \textbf{0.150}, \texttt{mitm} 0.208 \ensuremath{\rightarrow} \textbf{0.162}로 밀린다. \texttt{0818.\allowbreak{}md:\allowbreak{}63}의 결론: \textbf{"TabPFN 100만 상한은 이 데이터에서 병목이 아니다."} mitm/\allowbreak{}ransomware/\allowbreak{}web\_\allowbreak{}attacks가 F1 0인 이유는 classifier가 아니라 §4.4의 pooled gate quantile이고, theft headroom은 +\allowbreak{}0.003이다.
+
+ \ensuremath{\rightarrow}  \textbf{TabPFN이 headroom을 갖는 지점이 측정상 존재하지 않는다.} 유지한다면 negative control로만, front에는 절대 두지 않는다.
+
+
+\medskip\hrule\medskip
+\subsection{8. 다음 run (한 run =\allowbreak{} knob 1개, seed 42, 첫 줄 \texttt{Args:} 전량 덤프)}
+\textbf{E0 \texttt{src/\allowbreak{}\allowbreak{}s45\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}xgb\allowbreak{}\_\allowbreak{}\allowbreak{}stratca\allowbreak{}p\_\allowbreak{}\allowbreak{}baseli\allowbreak{}ne.\allowbreak{}py}} — knob 1개: \texttt{s44:1301\allowbreak{}}의 \texttt{subset\_\allowbreak{}\allowbreak{}i\allowbreak{}ndices}  \ensuremath{\rightarrow}  \texttt{cap\_\allowbreak{}\allowbreak{}by\_\allowbreak{}\allowbreak{}f\allowbreak{}amily}. 두 baseline을 한 run에서 같이 로깅(random cap =\allowbreak{} s44 호환, per-family cap =\allowbreak{} 정직한 bar). 성공 기준: bot\_\allowbreak{}iot/\allowbreak{}ddos bar 0.7838  \ensuremath{\rightarrow}  \textbf{0.9830 ± 0.01}, theft recall 0.2415  \ensuremath{\rightarrow}  0.9907. sweep의 3승이 몇 승으로 남는지 확인.
+
+\textbf{E1 \texttt{src/\allowbreak{}\allowbreak{}s45\_\allowbreak{}\allowbreak{}nfv3\_\allowbreak{}\allowbreak{}ope\allowbreak{}nset\_\allowbreak{}\allowbreak{}xgb\allowbreak{}\_\allowbreak{}\allowbreak{}baselin\allowbreak{}e.\allowbreak{}py}} — benign을 label space에 넣고 support-distance reject +\allowbreak{} 단일 global quantile. 새 artifact \texttt{4d\_\allowbreak{}\allowbreak{}xgb\_\allowbreak{}\allowbreak{}o\allowbreak{}penset\_\allowbreak{}\allowbreak{}c\allowbreak{}lass\_\allowbreak{}\allowbreak{}prf\allowbreak{}.\allowbreak{}csv}(known∪unseen∪benign). \textbf{operating curve로 보고}하고 단일 점으로 보고하지 않는다. 이미 \texttt{nv\_\allowbreak{}\allowbreak{}verif\allowbreak{}y.\allowbreak{}py}가 프로토타입.
+
+\textbf{E2} — per-class threshold (\texttt{s44:1529\allowbreak{}-\allowbreak{}1531} pooled  \ensuremath{\rightarrow}  per-class). 재학습 불필요에 가깝고 §4.4가 예측하는 이득이 가장 크다(rank-3 recall 0.995 회수).
+
+\textbf{E3} — per-sample score를 \texttt{npz}로 덤프. \texttt{grep -\allowbreak{}cE\allowbreak{} "torch.\allowbreak{}save|np.\allowbreak{}save|np.\allowbreak{}savez|pi\allowbreak{}ckle.\allowbreak{}dum\allowbreak{}p"}가 s44 \textbf{0회} /\allowbreak{} exp\_\allowbreak{}utils \textbf{0회}라서 지금은 28 config × N+\allowbreak{}1 MLP를 돌리고도 규칙 하나 못 바꿔본다. \textbf{여기서부터 rule ablation이 공짜가 된다.}
+
+\textbf{E4 (rule-only, E3 위)} — dglob /\allowbreak{} dcls /\allowbreak{} msp × alpha grid  \ensuremath{\rightarrow}  operating curve. config별 규칙 선택 금지(unseen은 정의상 val에 없다).
+
+\textbf{E5} — expert bank 유지, \texttt{resolve\_\allowbreak{}\allowbreak{}predicti\allowbreak{}ons}만 교체 +\allowbreak{} benign row 제거. \textbf{연구자의 원 질문에 문자 그대로 답하는 run}: expert bank가 규칙과 별개로 기여하는가. 지면 그게 결론이고 논문은 architecture 논문에서 measurement 논문으로 간다.
+
+E0(cap 수정)과 E1(benign as class)을 묶지 말 것 — 같은 다리를 반대 방향으로 민다 (+\allowbreak{}0.20 bot\_\allowbreak{}iot vs −0.10\textasciitilde{}−0.14 ton\_\allowbreak{}iot).
+
+
+
+\section*{출처와 실행 추적}
+
+상세 수치의 원시 실행은 \path{inventory/runs.csv}, 실험별 연결은 \path{inventory/experiments.csv}에서 확인한다. 표·그림의 재현 입력은 \path{evidence/}와 \path{data/}에 둔다. 문서 이동·통합 내역은 \path{configs/experiments/migrations/20261020_documents/manifest.json}에 기록했다.
+
+\end{document}

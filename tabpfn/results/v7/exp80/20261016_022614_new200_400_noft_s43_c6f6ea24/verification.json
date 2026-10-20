@@ -1,0 +1,71 @@
+{
+  "passed": true,
+  "jobs": [
+    {
+      "dataset": "cic2018",
+      "new_per_class": 200,
+      "method": "xgb",
+      "macro_f1": 0.7140030759285325,
+      "predictions_sha256": "27c4c683665f8a90b3b0a41863a71bf8d4c58bc73875c118b81542420048cd0c"
+    },
+    {
+      "dataset": "cic2018",
+      "new_per_class": 200,
+      "method": "pfn_pretrained",
+      "macro_f1": 0.7236453145959345,
+      "predictions_sha256": "fae2fe329c1dd098c7659c024faea8d2f5e1f1390c85e1a348067f2b225482c8"
+    },
+    {
+      "dataset": "cic2018",
+      "new_per_class": 400,
+      "method": "xgb",
+      "macro_f1": 0.7069166015693586,
+      "predictions_sha256": "4a96342a390c0080df2bb4588e49016bea3b0fbffc1360b42f0a8149190c470c"
+    },
+    {
+      "dataset": "cic2018",
+      "new_per_class": 400,
+      "method": "pfn_pretrained",
+      "macro_f1": 0.7129284910044931,
+      "predictions_sha256": "41c7a90c4319ce25202ce27888fc7a6f3ea3fe0a79cd096b8def620074bb93d5"
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 200,
+      "method": "xgb",
+      "macro_f1": 0.6475424360902764,
+      "predictions_sha256": "f90da0ad195b33eac7b1f8be13df361f4db3b3359d00409644ce1304141553c9"
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 200,
+      "method": "pfn_pretrained",
+      "macro_f1": 0.6984071766807749,
+      "predictions_sha256": "caadfcbdae5f6e07b5c6ecc54092b9a9e8ff93bda8658e19d17d51ac544c32fe"
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 400,
+      "method": "xgb",
+      "macro_f1": 0.6736252755056225,
+      "predictions_sha256": "a8c26d63aa10ad2d88948cfc633dc6e0264c32677493f17ac018456ac290aa05"
+    },
+    {
+      "dataset": "toniot",
+      "new_per_class": 400,
+      "method": "pfn_pretrained",
+      "macro_f1": 0.6991828999340371,
+      "predictions_sha256": "c98a3231fe1a94f0f58da6c7aab22f5f2f4d1546031802020f5552a4fda37216"
+    }
+  ],
+  "seed_repetitions": 1,
+  "initial_1000_unchanged": true,
+  "nested_100_200_400": true,
+  "checks": [
+    "independent full-test confusion and F1",
+    "same IDs for both models",
+    "nested expanded budgets",
+    "frozen pretrained weights",
+    "later-stage update cost"
+  ]
+}

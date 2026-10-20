@@ -1,0 +1,631 @@
+{
+  "dataset": "toniot",
+  "case": "natural",
+  "method": "distpfn",
+  "seed": 43,
+  "evaluation": "final_full_test",
+  "test_order": "seed43_mixed",
+  "batch": 8192,
+  "test_rows": 2271723,
+  "training_rows": 100000,
+  "final_stage": 5,
+  "source_model_dir": "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_tabpfn/stage_5",
+  "source_fit_metrics": {
+    "method": "tabpfn",
+    "dataset": "toniot",
+    "update_seconds": 17.142874471988762,
+    "cost_repetitions": [
+      {
+        "construct_seconds": 0.000265815993770957,
+        "fit_seconds": 17.14064317700104,
+        "first_batch_seconds": 0.37972544999502134,
+        "first_batch_rows": 1024,
+        "update_seconds": 17.14090899299481
+      },
+      {
+        "construct_seconds": 0.0005605019978247583,
+        "fit_seconds": 17.051175685002818,
+        "first_batch_seconds": 0.3789047210011631,
+        "first_batch_rows": 1024,
+        "update_seconds": 17.051736187000643
+      },
+      {
+        "construct_seconds": 0.0005673619889421389,
+        "fit_seconds": 17.085485743999016,
+        "first_batch_seconds": 0.37899511799332686,
+        "first_batch_rows": 1024,
+        "update_seconds": 17.086053105987958
+      }
+    ],
+    "update_median_seconds": 17.086053105987958,
+    "train_rows": 100000,
+    "validation_rows": 0,
+    "class_names": [
+      "benign",
+      "scanning",
+      "dos",
+      "injection",
+      "ddos",
+      "password",
+      "xss",
+      "ransomware",
+      "backdoor",
+      "mitm"
+    ],
+    "train_class_counts": [
+      75000,
+      168,
+      644,
+      1899,
+      5785,
+      6009,
+      9308,
+      20,
+      1136,
+      31
+    ],
+    "phases": [
+      {
+        "phase": "construct",
+        "seconds": 0.000265815993770957,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 17.14064317700104,
+        "complete": true
+      },
+      {
+        "phase": "construct",
+        "seconds": 0.0005605019978247583,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 17.051175685002818,
+        "complete": true
+      },
+      {
+        "phase": "construct",
+        "seconds": 0.0005673619889421389,
+        "complete": true
+      },
+      {
+        "phase": "fit",
+        "seconds": 17.085485743999016,
+        "complete": true
+      }
+    ],
+    "peak_gpu_gib": 9.515625,
+    "stage": 5,
+    "case": "natural",
+    "select_seconds": 0.0019654789939522743,
+    "train_ids_sha256": "79553cf98a0159d6f76d100b42c365ff6f3a2f0e7210cc5735fd9608e9ba36af",
+    "global_class_indices": [
+      1,
+      8,
+      3,
+      4,
+      2,
+      6,
+      9,
+      7,
+      0,
+      5
+    ]
+  },
+  "source_hashes": {
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_tabpfn/stage_5/fit_metrics.json": "aba11c9db776b865d8419c047be8d29dd6519b834501a3085f83fce6c7a7b5d3",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_tabpfn/stage_5/train_ids.npy": "20e88ae202e75de1f59ec93a0f5ad82b962aca4fdeaaf49d4cc4903a7c51cffe",
+    "tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_tabpfn/stage_5/model.tabpfn_fit": "db57fb7daff8d59f02770bed4cb35495ec739211ff784f877c24a25ef060d401"
+  },
+  "metrics": {
+    "rows": 2271723,
+    "confusion": [
+      [
+        40012,
+        2,
+        2,
+        0,
+        0,
+        6,
+        0,
+        0,
+        0,
+        8
+      ],
+      [
+        64,
+        1223873,
+        1838,
+        58,
+        4761,
+        51489,
+        51302,
+        4842,
+        0,
+        136075
+      ],
+      [
+        0,
+        1429,
+        100695,
+        134,
+        725,
+        80,
+        16,
+        2,
+        0,
+        257
+      ],
+      [
+        0,
+        90,
+        3,
+        21353,
+        1,
+        830,
+        0,
+        0,
+        0,
+        181
+      ],
+      [
+        0,
+        1208,
+        136,
+        0,
+        66142,
+        201,
+        225,
+        1,
+        0,
+        978
+      ],
+      [
+        0,
+        70,
+        18,
+        0,
+        9,
+        876,
+        182,
+        5,
+        0,
+        1
+      ],
+      [
+        0,
+        102,
+        17,
+        0,
+        91,
+        56,
+        210464,
+        0,
+        0,
+        221
+      ],
+      [
+        0,
+        98,
+        7,
+        0,
+        0,
+        1,
+        5,
+        539,
+        0,
+        59
+      ],
+      [
+        0,
+        5982,
+        17,
+        0,
+        4,
+        15,
+        3,
+        3,
+        0,
+        5
+      ],
+      [
+        0,
+        527,
+        48,
+        0,
+        1264,
+        1844,
+        100,
+        2,
+        0,
+        340069
+      ]
+    ],
+    "macro_f1": 0.6707639378893824,
+    "benign_false_positive_rate": 0.16986275539204315,
+    "attack_to_benign": 9508,
+    "wrong_attack_family": 7763,
+    "attack_detection_recall": 0.9880765618161548,
+    "classes": [
+      {
+        "name": "backdoor",
+        "support": 40030,
+        "precision": 0.9984030342349536,
+        "recall": 0.9995503372470647,
+        "f1": 0.9989763563278656,
+        "TP": 40012,
+        "FP": 64,
+        "FN": 18
+      },
+      {
+        "name": "benign",
+        "support": 1474302,
+        "precision": 0.9922911087490403,
+        "recall": 0.8301372446079569,
+        "f1": 0.9040002097734484,
+        "TP": 1223873,
+        "FP": 9508,
+        "FN": 250429
+      },
+      {
+        "name": "ddos",
+        "support": 103338,
+        "precision": 0.9797044200776408,
+        "recall": 0.9744237357022586,
+        "f1": 0.9770569428339939,
+        "TP": 100695,
+        "FP": 2086,
+        "FN": 2643
+      },
+      {
+        "name": "dos",
+        "support": 22458,
+        "precision": 0.9910884195869111,
+        "recall": 0.9507970433698459,
+        "f1": 0.9705247369497534,
+        "TP": 21353,
+        "FP": 192,
+        "FN": 1105
+      },
+      {
+        "name": "injection",
+        "support": 68891,
+        "precision": 0.9060920311793635,
+        "recall": 0.9600963841430665,
+        "f1": 0.9323128101037438,
+        "TP": 66142,
+        "FP": 6855,
+        "FN": 2749
+      },
+      {
+        "name": "mitm",
+        "support": 1161,
+        "precision": 0.01581284522906964,
+        "recall": 0.7545219638242894,
+        "f1": 0.030976502413409008,
+        "TP": 876,
+        "FP": 54522,
+        "FN": 285
+      },
+      {
+        "name": "password",
+        "support": 210951,
+        "precision": 0.8023881325367809,
+        "recall": 0.9976914070092107,
+        "f1": 0.8894448576644803,
+        "TP": 210464,
+        "FP": 51833,
+        "FN": 487
+      },
+      {
+        "name": "ransomware",
+        "support": 709,
+        "precision": 0.09992584352984799,
+        "recall": 0.7602256699576869,
+        "f1": 0.1766344420776667,
+        "TP": 539,
+        "FP": 4855,
+        "FN": 170
+      },
+      {
+        "name": "scanning",
+        "support": 6029,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "TP": 0,
+        "FP": 0,
+        "FN": 6029
+      },
+      {
+        "name": "xss",
+        "support": 343854,
+        "precision": 0.7116587911788956,
+        "recall": 0.9889924212020218,
+        "f1": 0.8277125207494633,
+        "TP": 340069,
+        "FP": 137785,
+        "FN": 3785
+      }
+    ]
+  },
+  "predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/jobs/large_toniot_natural_tabpfn/dist_predictions.npy",
+  "training_rerun": false,
+  "restoration_mismatches": 0,
+  "scope": "large",
+  "prediction_storage_order": "original",
+  "full_reinference": true,
+  "original_order_prediction_mismatches": 1,
+  "source_model": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp73/20261014_154250_replay_current_sota_100k_s43_b0f8a9dc/jobs/toniot_natural_tabpfn/stage_5/model.tabpfn_fit",
+  "source_model_sha256": "db57fb7daff8d59f02770bed4cb35495ec739211ff784f877c24a25ef060d401",
+  "query_order_sha256": "616e70bb8af3dba232a21060b95892b029227166ca865583a5abbc38a113cb4a",
+  "probability_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/jobs/large_toniot_natural_tabpfn/probabilities.npy",
+  "class_mapping": [
+    1,
+    8,
+    3,
+    4,
+    2,
+    6,
+    9,
+    7,
+    0,
+    5
+  ],
+  "training_prior": [
+    0.75,
+    0.00168,
+    0.00644,
+    0.01899,
+    0.05785,
+    0.06009,
+    0.09308,
+    0.0002,
+    0.01136,
+    0.00031
+  ],
+  "source_result_scope": "EXP79",
+  "initial_finetuning": false,
+  "correction_scope": "current mixed query batch only",
+  "original_group_counterfactual": {
+    "rows": 2271723,
+    "confusion": [
+      [
+        40018,
+        2,
+        0,
+        2,
+        0,
+        8,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        17,
+        1229502,
+        935,
+        2,
+        2657,
+        46948,
+        51875,
+        8889,
+        4,
+        133473
+      ],
+      [
+        0,
+        149,
+        102392,
+        48,
+        700,
+        33,
+        1,
+        0,
+        0,
+        15
+      ],
+      [
+        0,
+        0,
+        5,
+        22451,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        6,
+        25,
+        10,
+        68831,
+        10,
+        1,
+        6,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        61,
+        999,
+        100,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        6,
+        1,
+        210943,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        4,
+        0,
+        0,
+        0,
+        0,
+        2,
+        688,
+        15,
+        0
+      ],
+      [
+        0,
+        2544,
+        0,
+        1,
+        2,
+        1,
+        1,
+        99,
+        3363,
+        18
+      ],
+      [
+        0,
+        10,
+        2,
+        21,
+        63,
+        0,
+        0,
+        0,
+        0,
+        343758
+      ]
+    ],
+    "macro_f1": 0.7487028622099213,
+    "benign_false_positive_rate": 0.16604467741344717,
+    "attack_to_benign": 2717,
+    "wrong_attack_family": 1261,
+    "attack_detection_recall": 0.9965927659291641,
+    "classes": [
+      {
+        "name": "backdoor",
+        "support": 40030,
+        "precision": 0.9995753715498938,
+        "recall": 0.9997002248313764,
+        "f1": 0.9996377942921376,
+        "TP": 40018,
+        "FP": 17,
+        "FN": 12
+      },
+      {
+        "name": "benign",
+        "support": 1474302,
+        "precision": 0.9977950348111821,
+        "recall": 0.8339553225865528,
+        "f1": 0.9085479107681041,
+        "TP": 1229502,
+        "FP": 2717,
+        "FN": 244800
+      },
+      {
+        "name": "ddos",
+        "support": 103338,
+        "precision": 0.9906442593291344,
+        "recall": 0.9908455747159806,
+        "f1": 0.990744906795938,
+        "TP": 102392,
+        "FP": 967,
+        "FN": 946
+      },
+      {
+        "name": "dos",
+        "support": 22458,
+        "precision": 0.9962724650543598,
+        "recall": 0.9996883070620715,
+        "f1": 0.9979774631609362,
+        "TP": 22451,
+        "FP": 84,
+        "FN": 7
+      },
+      {
+        "name": "injection",
+        "support": 68891,
+        "precision": 0.9517297641105058,
+        "recall": 0.9991290589481935,
+        "f1": 0.9748535899669294,
+        "TP": 68831,
+        "FP": 3491,
+        "FN": 60
+      },
+      {
+        "name": "mitm",
+        "support": 1161,
+        "precision": 0.0208125,
+        "recall": 0.8604651162790697,
+        "f1": 0.04064197229511198,
+        "TP": 999,
+        "FP": 47001,
+        "FN": 162
+      },
+      {
+        "name": "password",
+        "support": 210951,
+        "precision": 0.8022995325627655,
+        "recall": 0.999962076501178,
+        "f1": 0.8902915120897116,
+        "TP": 210943,
+        "FP": 51980,
+        "FN": 8
+      },
+      {
+        "name": "ransomware",
+        "support": 709,
+        "precision": 0.07105969840941954,
+        "recall": 0.9703808180535967,
+        "f1": 0.1324222885189106,
+        "TP": 688,
+        "FP": 8994,
+        "FN": 21
+      },
+      {
+        "name": "scanning",
+        "support": 6029,
+        "precision": 0.9940880874963051,
+        "recall": 0.5578039475866644,
+        "f1": 0.7146196345091372,
+        "TP": 3363,
+        "FP": 20,
+        "FN": 2666
+      },
+      {
+        "name": "xss",
+        "support": 343854,
+        "precision": 0.7202665186007774,
+        "recall": 0.9997208117398664,
+        "f1": 0.8372915497022965,
+        "TP": 343758,
+        "FP": 133507,
+        "FN": 96
+      }
+    ]
+  },
+  "original_group_predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34/jobs/large_toniot_natural_tabpfn/dist_original_groups.npy",
+  "base_inference_seconds": 430.93411290092627,
+  "serving_seconds_scope": "Total not measured; base_inference_seconds covers PFN forward only; posterior correction was not separately timed",
+  "inherited_metadata_from_source_result": {
+    "serving_seconds": 429.74181931919884
+  },
+  "note": "Saved model, unchanged training/context; seed43 mixed query evaluation or explicitly audited prediction reuse; update costs retain their original preparation measurements"
+}

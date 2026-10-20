@@ -1,0 +1,162 @@
+{
+  "update_seconds": 2.7888897040393203,
+  "phases": [
+    {
+      "phase": "global_construct",
+      "seconds": 5.282499478198588e-05
+    },
+    {
+      "phase": "global_fit",
+      "seconds": 0.29534570800024085
+    },
+    {
+      "phase": "global_embedding",
+      "seconds": 0.05499905699980445
+    },
+    {
+      "phase": "embedding_pca",
+      "seconds": 0.12158756999997422
+    },
+    {
+      "phase": "temperature_predictions",
+      "seconds": 0.1018202560080681
+    },
+    {
+      "phase": "residual_predictions",
+      "seconds": 0.053329680988099426
+    },
+    {
+      "phase": "residual_embedding",
+      "seconds": 0.05343705500126816
+    },
+    {
+      "phase": "residual_clustering",
+      "seconds": 0.004473434004466981
+    },
+    {
+      "phase": "global_route",
+      "seconds": 0.05421892800950445
+    },
+    {
+      "phase": "embedding_route",
+      "seconds": 0.05472854801337235
+    },
+    {
+      "phase": "global_cal",
+      "seconds": 0.05366626300383359
+    },
+    {
+      "phase": "embedding_cal",
+      "seconds": 0.052713228011270985
+    },
+    {
+      "phase": "expert1_construct",
+      "seconds": 5.2790011977776885e-05
+    },
+    {
+      "phase": "expert1_fit",
+      "seconds": 0.29836482100654393
+    },
+    {
+      "phase": "expert1_route",
+      "seconds": 0.05300743400584906
+    },
+    {
+      "phase": "expert1_cal",
+      "seconds": 0.05307831201935187
+    },
+    {
+      "phase": "expert2_construct",
+      "seconds": 5.246599903330207e-05
+    },
+    {
+      "phase": "expert2_fit",
+      "seconds": 0.3017071539943572
+    },
+    {
+      "phase": "expert2_route",
+      "seconds": 0.05352593900170177
+    },
+    {
+      "phase": "expert2_cal",
+      "seconds": 0.053111649001948535
+    },
+    {
+      "phase": "expert3_construct",
+      "seconds": 5.2996998419985175e-05
+    },
+    {
+      "phase": "expert3_fit",
+      "seconds": 0.3000248729949817
+    },
+    {
+      "phase": "expert3_route",
+      "seconds": 0.05433014698792249
+    },
+    {
+      "phase": "expert3_cal",
+      "seconds": 0.05376000300748274
+    },
+    {
+      "phase": "expert4_construct",
+      "seconds": 5.3460971685126424e-05
+    },
+    {
+      "phase": "expert4_fit",
+      "seconds": 0.3044564400042873
+    },
+    {
+      "phase": "expert4_route",
+      "seconds": 0.05297855500248261
+    },
+    {
+      "phase": "expert4_cal",
+      "seconds": 0.05155853400356136
+    },
+    {
+      "phase": "affinity_indices",
+      "seconds": 0.0003955890133511275
+    },
+    {
+      "phase": "S1V0_fit",
+      "seconds": 0.24243442798615433
+    },
+    {
+      "phase": "threshold_selection",
+      "seconds": 0.015571558993542567
+    }
+  ],
+  "train_rows": 1400,
+  "validation_rows": 262,
+  "global_rows": 575,
+  "experts": 4,
+  "context_recipe": "common anchor + residual cluster block (all cluster rows below original 186000 cap)",
+  "policy": "EXP62 S1V0; original features, targets and threshold constraints",
+  "class_names": [
+    "benign",
+    "ddos",
+    "dos",
+    "injection",
+    "password",
+    "scanning",
+    "xss"
+  ],
+  "protocol_adaptations": [
+    "All five feature-disjoint roles share the same 1000/1400/1700 revealed-label budget; no external validation",
+    "Original pretrained backbone; same EXP62 K=4 anchor/residual S1V0 architecture; no test tuning"
+  ],
+  "selection": {
+    "tau_pre": null,
+    "tau_post": null,
+    "delta_macro_f1": 0.0,
+    "delta_tail_f1": 0.0,
+    "delta_benign_fpr": 0.0,
+    "accepted": 0,
+    "changed": 0,
+    "helpful": 0,
+    "harmful": 0,
+    "feasible": true,
+    "proposal_rate": 0.0,
+    "reason": "global_fallback"
+  }
+}
