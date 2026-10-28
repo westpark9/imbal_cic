@@ -58,4 +58,19 @@ GPU를 선택하려면 최상위 명령에 CUDA\_\allowbreak{}VISIBLE\_\allowbre
 출처: docs/\allowbreak{}lablog/\allowbreak{}evidence/\allowbreak{}20261029/\allowbreak{}exp91\_\allowbreak{}portable\_\allowbreak{}inputs.json 출처: configs/\allowbreak{}experiments/\allowbreak{}exp91\_\allowbreak{}remote\_\allowbreak{}protocol.json 출처: tabpfn/\allowbreak{}results/\allowbreak{}v7/\allowbreak{}exp91/\allowbreak{}20261029\_\allowbreak{}000418\_\allowbreak{}prepare\_\allowbreak{}portable\_\allowbreak{}inputs\_\allowbreak{}n20\_\allowbreak{}s43\_\allowbreak{}1b05a5c5/\allowbreak{}RUN\_\allowbreak{}META.json
 
 
+\subsection{원격 누락 파일 오류 정정과 독립 재현 검증}
+EXP89의 결과 manifest를 직접 읽던 의존성이 원격 입력 생성을 막았다.
+기존 검증은 과거 결과가 있는 작업 폴더에서 수행했으며, Git의 \texttt{data/} 제외 규칙이 결과 경로 안의 data 폴더에도 적용되는 조건을 놓쳤다.
+따라서 기존의 원본만으로 실행 가능하다는 설명은 수정 전 코드에는 정확하지 않았다.
+수정본은 클래스별 train/test 수와 특징 순서, 원본 해시를 Git에 포함되는 \path{configs/experiments/exp91_input_reference.json}에서 읽는다.
+과거 실행 경로는 참조하지 않으며 원본 해시와 분할 검증을 유지한다.
+
+독립 재현 검증은 과거 결과 폴더를 만들지 않은 임시 저장소에 필요한 코드와 새 설정만 복사하고 실제 원본 suite를 연결하여 수행했다.
+CIC2018과 ToN-IoT의 n=20, seed 43, 비라벨 10,000개, 전체 test 입력을 다시 생성했으며 두 NPZ 모두 기존 파일과 바이트 단위 해시가 일치했다.
+추가 회귀 검증은 과거 결과가 없는 작은 임시 저장소에서 두 데이터셋의 n=2와 n=20 생성 및 완료 입력 재사용을 검사했다.
+관련 단위 검증은 총 5개가 통과했으며, 분류 모델의 학습이나 성능 평가는 이번 수정 검증에서 수행하지 않았다.
+원격 장비에서는 git pull 후 기존 prepare\_inputs.py 명령을 다시 실행하면 완료된 입력은 재사용하고 미완료 입력을 생성한다.
+
+\sourcepath{docs/lablog/evidence/20261029/exp91_portability_fix.json}
+\sourcepath{tabpfn/results/v7/exp91/20261029_003042_portable_no_history_regression_bdcecf7c/validation.json}
 \end{document}

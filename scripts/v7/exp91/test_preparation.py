@@ -5,12 +5,56 @@ from pathlib import Path
 import tempfile
 import json
 import types
+import pickle
 import numpy as np
 from prepare_inputs import choose_labels, choose_unlabelled, filename
 from common import row_groups
 
 
 class PreparationTests(unittest.TestCase):
+    def test_full_preparation_without_any_historical_results(self):
+        import prepare_inputs as prep
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root/'configs/experiments').mkdir(parents=True)
+            parts = []
+            for ds in prep.DATASETS.values():
+                for name, count in [('benign', 1500), ('dos', 100)]:
+                    parts.extend([(ds, name)]*count)
+            data_names = np.array([r[0] for r in parts])
+            families = np.array([r[1] for r in parts])
+            suite = dict(X=np.arange(len(parts)*2, dtype='float32').reshape(-1, 2),
+                         dataset_names=data_names, families=families, attack_scenarios=families,
+                         timestamps=np.arange(len(parts)), feature_columns=['PROTOCOL', 'L7_PROTO'])
+            source = root/'suite.pkl'
+            with source.open('wb') as f:
+                pickle.dump(suite, f)
+            source_hash, source_bytes = prep.sha(source), source.stat().st_size
+            reference = dict(source=dict(sha256=source_hash, bytes=source_bytes), datasets={})
+            for ds in prep.DATASETS:
+                reference['datasets'][ds] = dict(class_names=['benign', 'dos'],
+                    train_class_counts={'benign': 900, 'dos': 60}, test_rows=320,
+                    test_class_counts=[300, 20], feature_names=suite['feature_columns'])
+            prep.write(root/'configs/experiments/exp91_input_reference.json', reference)
+            output = root/'inputs'
+            argv = ['prepare_inputs', '--source', str(source), '--output', str(output),
+                    '--budgets', '2', '20', '--unlabelled', '10']
+            self.assertFalse((root/'tabpfn/results').exists())
+            with patch('sys.argv', argv), patch.object(prep, 'ROOT', root), \
+                    patch.object(prep, 'SOURCE_HASH', source_hash), patch.object(prep, 'SOURCE_BYTES', source_bytes):
+                prep.main()
+                first = {p.name: prep.sha(p) for p in output.glob('*.npz')}
+                prep.main()  # completed caches remain reusable without historical files
+                self.assertEqual(first, {p.name: prep.sha(p) for p in output.glob('*.npz')})
+            self.assertEqual(len(first), 4)
+            for ds in prep.DATASETS:
+                with np.load(output/prep.filename(ds, 2, 43, 10)) as small, \
+                        np.load(output/prep.filename(ds, 20, 43, 10)) as large:
+                    self.assertEqual(small['X_l'].shape, (752, 2))
+                    self.assertEqual(large['X_test'].shape, (320, 2))
+                    np.testing.assert_array_equal(small['ids_u'], large['ids_u'])
+                    self.assertTrue(np.isin(small['ids_l'], large['ids_l']).all())
+
     def test_sampling_matches_exp89_and_fixed750_and_is_nested(self):
         names = ['backdoor', 'benign', 'ddos']
         families = np.repeat(names, [50, 1200, 80])

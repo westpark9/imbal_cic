@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build portable EXP91 NPZs from the existing, unfiltered NF-v3 suite.
 
-No host-specific absolute paths or old result arrays are required. The source
+No host-specific absolute paths or historical result files are required. The source
 suite and checkpoint are local assets excluded from Git. Sampling reproduces
 EXP89 attacks and EXP90 fixed750 benign rows; original test overlap is retained
 and explicitly declared as a historical diagnostic, not an independent split.
@@ -33,6 +33,14 @@ CHECKPOINT = ROOT/'tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt'
 SOURCE_HASH = '07bf031ae6fd94380a59f9a199d615aea08c699816991a5d6b07248f5ef7ae61'
 SOURCE_BYTES = 14694741242
 DATASETS = {'cic2018': 'cse_cic_ids2018', 'toniot': 'ton_iot'}
+
+
+def load_reference():
+    path = ROOT/'configs/experiments/exp91_input_reference.json'
+    reference = json.loads(path.read_text())
+    if reference['source'] != {'sha256': SOURCE_HASH, 'bytes': SOURCE_BYTES}:
+        raise ValueError(f'Input reference source identity mismatch: {path}')
+    return reference
 
 
 def stamp():
@@ -118,6 +126,7 @@ def main():
         raise ValueError('Budgets must be 1..20 and unlabelled count must be nonnegative')
     requested = [(d, n, s, args.output/filename(d, n, s, args.unlabelled))
                  for d in args.datasets for s in args.seeds for n in args.budgets]
+    reference = load_reference()
     if args.check:
         print(json.dumps({'source': str(args.source), 'source_exists': args.source.is_file(),
             'checkpoint': str(CHECKPOINT), 'checkpoint_exists': CHECKPOINT.is_file(),
@@ -156,7 +165,6 @@ def main():
         datasets = np.asarray(suite['dataset_names'])
         scenarios = np.asarray(suite['attack_scenarios'])
         timestamps = np.asarray(suite['timestamps'])
-        source_root = ROOT/'tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a/data'
         for dataset in args.datasets:
             pending = [r for r in missing if r[0] == dataset]
             if not pending:
@@ -166,15 +174,18 @@ def main():
             names = sorted(np.unique(families[target]).tolist())
             splits, _ = scenario_chronological_split(target, scenarios, timestamps)
             pool, test = splits['train'], splits['test']
-            prior = json.loads((source_root/dataset/'manifest.json').read_text())
+            prior = reference['datasets'][dataset]
             actual_counts = {name: int(np.sum(families[pool] == name)) for name in names}
-            if (names != prior['class_names'] or len(test) != prior['original_test_rows']
-                    or actual_counts != prior['candidate_counts']['original']):
-                raise ValueError('Rebuilt split does not match the EXP89 inventory')
+            if (names != prior['class_names'] or len(test) != prior['test_rows']
+                    or actual_counts != prior['train_class_counts']
+                    or list(suite['feature_columns']) != prior['feature_names']):
+                raise ValueError('Rebuilt split does not match the Git-tracked EXP91 input reference')
             # Same seed43, label-independent test ordering as EXP89/90.
             test = test[np.random.default_rng(43).permutation(len(test))]
             tx = np.nan_to_num(np.asarray(X[test], dtype=np.float32))
             ty = np.searchsorted(names, families[test]).astype(np.int64)
+            if np.bincount(ty, minlength=len(names)).tolist() != prior['test_class_counts']:
+                raise ValueError('Test class counts differ from the input reference')
             for seed in args.seeds:
                 jobs = [r for r in pending if r[2] == seed]
                 if not jobs:

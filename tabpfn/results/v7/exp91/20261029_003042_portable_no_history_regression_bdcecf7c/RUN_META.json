@@ -1,0 +1,22 @@
+{
+  "schema": 2,
+  "status": "finished",
+  "started": "2026-10-28T15:30:42.269415+00:00",
+  "version": "v7",
+  "experiment": "exp91",
+  "scope": "tabpfn",
+  "command": [
+    "python",
+    "-c",
+    "from pathlib import Path\nimport sys,tempfile,subprocess,shutil,json,hashlib\nroot=Path.cwd(); out=Path(sys.argv[1])\nfiles=['scripts/v7/exp91/prepare_inputs.py','scripts/v7/exp91/common.py','scripts/common/experiment_paths.py','scripts/common/exp_utils.py','configs/experiments/exp91_input_reference.json']\nwith tempfile.TemporaryDirectory(prefix='exp91-no-history-') as folder:\n clean=Path(folder)\n for name in files:\n  dest=clean/name;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(root/name,dest)\n  snap=out/'source'/name;snap.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(root/name,snap)\n (clean/'data').mkdir()\n (clean/'data/nfv3_energy_suite_uncapped_scenarios.pkl').symlink_to((root/'data/nfv3_energy_suite_uncapped_scenarios.pkl').resolve())\n assert not (clean/'tabpfn/results').exists()\n command=[sys.executable,'scripts/v7/exp91/prepare_inputs.py','--budgets','20']\n result=subprocess.run(command,cwd=clean,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)\n (out/'isolated_preparation.log').write_text(result.stdout)\n print(result.stdout,flush=True)\n if result.returncode:raise SystemExit(result.returncode)\n comparisons=[]\n for dataset in ['cic2018','toniot']:\n  name=f'{dataset}_original_fixed750_n20_s43_u10000_full.npz'\n  p=clean/'data/exp91/inputs'/name\n  previous=root/'data/exp91/inputs'/name\n  with p.open('rb') as f:actual=hashlib.file_digest(f,'sha256').hexdigest()\n  with previous.open('rb') as f:expected=hashlib.file_digest(f,'sha256').hexdigest()\n  assert actual==expected,(dataset,actual,expected)\n  md=json.loads(p.with_suffix('.json').read_text())\n  comparisons.append(dict(dataset=dataset,npz_sha256=actual,byte_identical_to_previous=True,test_rows=md['test_rows'],label_counts=md['label_counts']))\n report=dict(passed=True,historical_results_directory_present=False,source_hash_check_bypassed=False,models_trained=False,comparisons=comparisons)\n (out/'validation.json').write_text(json.dumps(report,indent=2)+'\\n')\n print(json.dumps(report,indent=2))\n",
+    "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp91/20261029_003042_portable_no_history_regression_bdcecf7c"
+  ],
+  "cwd": "/home/user/Desktop/imbalcic",
+  "protocol": "configs/experiments/exp91_remote_protocol.json",
+  "git_head": "e6d54e676de5d9f74118ff16445d655a6d7cb38c",
+  "git_status": "M configs/experiments/exp91_remote_protocol.json\n M scripts/v7/exp91/prepare_inputs.py\n M scripts/v7/exp91/test_preparation.py\n?? configs/experiments/exp91_input_reference.json",
+  "git_diff_sha256": "3e1d1624e8e0fb0ca8ca4a2a89a620844add2f18f0bc32cb0bbadad6ce474d25",
+  "input_file_sha256": {},
+  "finished": "2026-10-28T15:32:26.044193+00:00",
+  "returncode": 0
+}

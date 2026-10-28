@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "historical_results_directory_present": false,
+  "source_hash_check_bypassed": false,
+  "models_trained": false,
+  "comparisons": [
+    {
+      "dataset": "cic2018",
+      "npz_sha256": "e47d4c52fd766a81ef8d2f09f5a58cdb06b46e48710a44c5dc6e3f9db983c3dd",
+      "byte_identical_to_previous": true,
+      "test_rows": 4023114,
+      "label_counts": [
+        750,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    {
+      "dataset": "toniot",
+      "npz_sha256": "24cd64db404c30e908fbd4b41d96df6a1e518bdac1611f06e7be12b7c3d4cecb",
+      "byte_identical_to_previous": true,
+      "test_rows": 5504060,
+      "label_counts": [
+        20,
+        750,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+      ]
+    }
+  ],
+  "verified_at": "2026-10-29T00:33:32.330336+09:00",
+  "run": "tabpfn/results/v7/exp91/20261029_003042_portable_no_history_regression_bdcecf7c",
+  "unit_tests_passed": 5,
+  "root_cause": "Historical EXP89 data/manifest.json excluded by the data/ gitignore rule; previous verification used a workspace containing untracked history.",
+  "fix": "Read immutable source, class-count and feature references from tracked configs/experiments/exp91_input_reference.json; no runtime historical-results reads.",
+  "source_sha256": {
+    "scripts/v7/exp91/prepare_inputs.py": "538180254f5033cb87477bd74d7b2ad2b7b6fca51b12e15ab27b64918abe7c50",
+    "scripts/v7/exp91/test_preparation.py": "09e9ec802a3be289701d30d05ce5102ae9380bfdd60a24b2722e346651313358",
+    "configs/experiments/exp91_input_reference.json": "0508cf5fee05e69e725147bf0f944d7daeb9dd79cb358e3698735434e5483b37"
+  }
+}
