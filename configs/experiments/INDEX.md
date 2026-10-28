@@ -423,4 +423,5 @@ EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨
 | exp91 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp91/20261028_194707_two_designs_real_pfn_smoke_1e824bfb` |
 | exp91 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp91/20261028_194827_two_designs_real_pfn_smoke_fixed_probe_00ac57e9` |
 | exp91 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp91/20261028_195409_two_designs_portable_export_smoke_d0ff0379` |
+| exp91 | 2026-10-29 | finished | unreviewed | `tabpfn/results/v7/exp91/20261029_000418_prepare_portable_inputs_n20_s43_1b05a5c5` |
 

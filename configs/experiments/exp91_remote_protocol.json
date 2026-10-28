@@ -1,0 +1,17 @@
+{
+  "research_version": "v7",
+  "experiment_id": "exp91",
+  "protocol_revision": "exp91.remote.1",
+  "authorization": "사용자: 다른 장비에서 git pull 후 야간에 두 설계를 실행; data와 checkpoint는 해당 장비에 이미 존재",
+  "scope": "Portable preparation and execution of both previously proposed classifiers. No automatic claim of superiority or manuscript adoption.",
+  "entrypoint": "scripts/v7/exp91/run_night.py",
+  "prepare": "scripts/v7/exp91/prepare_inputs.py",
+  "source": "data/nfv3_energy_suite_uncapped_scenarios.pkl",
+  "source_sha256": "07bf031ae6fd94380a59f9a199d615aea08c699816991a5d6b07248f5ef7ae61",
+  "input_directory": "data/exp91/inputs",
+  "defaults": {"datasets": ["cic2018", "toniot"], "budgets": [2, 3, 5, 10, 20], "seeds": [43], "normal_labels": 750, "unlabelled_rows": 10000, "estimators": 4, "query_batch": 1024},
+  "sampling": "Rebuild original EXP89 scenario chronological split. Reproduce EXP89 class-specific 20-row draws and nested attack prefixes; reproduce EXP90 fixed750 benign draws. No conflict-label curation. Select U uniformly from train without reading family labels; exclude all n<=20 labeled feature groups within seed, so U stays fixed across n.",
+  "evaluation": "Full original test in seed43 permutation, not a subset. Preserve and audit historical train/U-test exact-feature overlap; these are exploratory results on a previously inspected split, not independent confirmation.",
+  "features": "Existing 46 float32 row-local features and zero filling; PROTOCOL and L7_PROTO at columns 0,1 explicitly categorical for both models. Benign ID read from manifest (CIC2018=0, ToN-IoT=1).",
+  "artifacts": "NPZs and checkpoints stay outside Git; code recreates inputs on each machine. Store hashes, real IDs, budgets, predictions, models, logs and per-condition metrics in the registered run."
+}
