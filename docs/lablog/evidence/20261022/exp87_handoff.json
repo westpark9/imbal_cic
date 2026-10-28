@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-10-22T17:06:13.969212+09:00",
+  "experiment": "v7/exp87",
+  "run_dir": "tabpfn/results/v7/exp87/20261022_154948_attack_saturation_pilot43_then5seeds_417964c7",
+  "manager_pid": 2290620,
+  "authorized": "2026-10-22 사용자: attack-only n>=2 확대, 단일 seed로 수렴 탐색 후 다른 seed 검증",
+  "behavior": "Single seed43 at nested larger budgets until two consecutive 3-point flat windows or available-label cap; automatically validate last3 at seeds44–47; extend all5 if mean plateau fails",
+  "live_status_files": [
+    "RUN_META.json",
+    "progress.json",
+    "results.json",
+    "stdout.log"
+  ],
+  "reports": [
+    "docs/lablog/reports/20261022_exp87.tex",
+    "docs/lablog/log.md"
+  ],
+  "source_protocol": "configs/experiments/exp87_protocol.json",
+  "constraints": [
+    "no benign train or inference",
+    "no FT",
+    "same train rows between XGB and PFN",
+    "same fixed attack test across n",
+    "no changing feature-disjoint subset for convergence",
+    "no slides/main.tex edits"
+  ],
+  "pending_work": "None for the approved200 balanced plus10 class-capped conditions; manuscript/slides not modified.",
+  "validation": "Prepared balanced nested IDs checked for all5 seeds; completed prediction confusion matrices and paired IDs validated by reporter",
+  "fullcurve_run": "tabpfn/results/v7/exp87/20261022_163739_full_learning_curve_five_seeds_c59213f5",
+  "extension_run": "tabpfn/results/v7/exp87/20261022_164549_class_capped_extension_seed43_43f6dd6c",
+  "extension_authorized": "사용자: 제안한 방식으로 추가 실행",
+  "report_revision": "EXP86 layout: full curves annotated with mean F1 and PFN-XGB percentage-point gaps; five-seed main curves and separate seed43 extension",
+  "status": "complete",
+  "validated_conditions": {
+    "balanced_five_seeds": 200,
+    "class_capped_seed43": 10
+  },
+  "report": "docs/lablog/reports/20261022_exp87.tex",
+  "continuity_max_f1_difference_pp": 0.006860655672424887
+}

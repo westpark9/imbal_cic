@@ -1,0 +1,75 @@
+{
+  "updated_at": "2026-10-28T13:31:41.519702+09:00",
+  "user_request": "그림 1,2에 상응하는 클래스별 f1도 2by3으로 만들어줘 위는 XGB 아래는 tabpfn",
+  "report_figures": {
+    "3": "CIC2018; corresponds to Figure 1",
+    "4": "ToN-IoT; corresponds to Figure 2"
+  },
+  "model_rows": [
+    "xgb",
+    "pfn"
+  ],
+  "panels": [
+    {
+      "position": "left",
+      "train_version": "original",
+      "test_version": "original",
+      "benign_training": false,
+      "test_scope": "attack"
+    },
+    {
+      "position": "center",
+      "train_version": "clean",
+      "test_version": "clean",
+      "benign_training": false,
+      "test_scope": "attack"
+    },
+    {
+      "position": "right",
+      "train_version": "clean",
+      "test_version": "clean",
+      "benign_training": true,
+      "test_scope": "all"
+    }
+  ],
+  "metric": "attack class F1, 5-seed mean in percent; shared 0–100 color scale",
+  "class_order": "Descending clean-test class support (center-panel baseline), fixed across all six panels",
+  "validation": {
+    "class_values_checked_against_raw": 450,
+    "seeds_per_cell": [
+      43,
+      44,
+      45,
+      46,
+      47
+    ],
+    "class_averages_match_figures_1_2": 60,
+    "all_existing_numeric_tables_unchanged": true,
+    "figures_1_2_unchanged": true,
+    "visual_review": "Both standalone figures and report page 7 reviewed: 2 rows × 3 columns, model labels and cell values visible, no overlap or clipping."
+  },
+  "numeric_sources_unchanged": {
+    "tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a/analysis/metrics.csv": "a8dce26efb06685d06453855b633ddc501ac352d6322a63931512740643bbee8",
+    "tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a/analysis/per_class.csv": "471644aea53b6377ebf76bee45defef3c8637f59e240d28aab8ed9bb3f7a5281"
+  },
+  "artifacts_sha256": {
+    "scripts/v7/exp89/report_curation.py": "8391ad5e62ddaab633f7e38041bc669a7f5156fc5b36c3486315d6195cc4c477",
+    "docs/lablog/reports/20261027_exp89.tex": "412a3213456a5f46f7f6b2bd1d9a10cd253af3cb75cad0296bbbe335e589ad73",
+    "docs/lablog/reports/20261027_exp89.pdf": "a74073291812d4da88cebc81dbbca625f9649219d76fce1426cbf1ff58fb4f53",
+    "docs/lablog/data/20261027_exp89_class_comparison.csv": "ef3901cc4b32914acdbd68aae306ebcf8d3dba86a64c962960d7f094bb0458fd",
+    "docs/lablog/figures/20261027_exp89_classes_comparison_cic2018.pdf": "c4f4336970396ad917ed9f7a6c3d267231cf8a5e7ac1cb223b70c7eb7aead87a",
+    "docs/lablog/figures/20261027_exp89_classes_comparison_toniot.pdf": "284004c86b9d67b5b06e9802121c98fcd0163a4efe883c51ff49be3ed31a7266"
+  },
+  "compile": {
+    "report": "docs/lablog/reports/20261027_exp89.tex",
+    "pdf_persisted": true,
+    "compiled_pdf_sha256": "a74073291812d4da88cebc81dbbca625f9649219d76fce1426cbf1ff58fb4f53",
+    "missing_glyphs": 0,
+    "overfull_boxes": 0
+  },
+  "structure": {
+    "passed": true,
+    "reports": 50,
+    "issues": []
+  }
+}

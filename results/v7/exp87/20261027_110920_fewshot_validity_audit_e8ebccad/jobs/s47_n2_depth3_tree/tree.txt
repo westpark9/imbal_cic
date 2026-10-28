@@ -1,0 +1,16 @@
+|--- DST_TO_SRC_SECOND_BYTES <= 4.50
+|   |--- MIN_TTL <= 127.50
+|   |   |--- TCP_FLAGS <= 56.50
+|   |   |   |--- class: 3
+|   |   |--- TCP_FLAGS >  56.50
+|   |   |   |--- class: 5
+|   |--- MIN_TTL >  127.50
+|   |   |--- class: 4
+|--- DST_TO_SRC_SECOND_BYTES >  4.50
+|   |--- NUM_PKTS_128_TO_256_BYTES <= 0.50
+|   |   |--- class: 2
+|   |--- NUM_PKTS_128_TO_256_BYTES >  0.50
+|   |   |--- L7_PROTO <= 49.50
+|   |   |   |--- class: 0
+|   |   |--- L7_PROTO >  49.50
+|   |   |   |--- class: 1

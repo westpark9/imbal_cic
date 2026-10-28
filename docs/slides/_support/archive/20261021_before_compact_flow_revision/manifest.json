@@ -1,0 +1,150 @@
+{
+  "date": "2026-10-21",
+  "revision": 3,
+  "source_deck": "docs/slides/kor/20261021_Meeting_ko.pdf (revision 2)",
+  "output": "docs/slides/kor/20261021_Meeting_ko",
+  "main_slides": 13,
+  "appendix_slides": 4,
+  "sources": [
+    {
+      "id": "ids",
+      "authors": "Robin Sommer; Vern Paxson",
+      "title": "Outside the Closed World: On Using Machine Learning for Network Intrusion Detection",
+      "venue": "IEEE Symposium on Security and Privacy",
+      "year": 2010,
+      "url": "https://www.icir.org/robin/papers/oakland10-ml.pdf",
+      "claims": [
+        "Training-data scarcity, variability of network traffic, and error costs",
+        "Operational evaluation must be specific to its setting"
+      ],
+      "scope": "A critique focused on anomaly-based network IDS; not a direct evaluation of XGBoost or TabPFN"
+    },
+    {
+      "id": "cic",
+      "authors": "CSE; Canadian Institute for Cybersecurity, UNB",
+      "title": "CSE-CIC-IDS2018 on AWS",
+      "year": 2018,
+      "url": "https://www.unb.ca/cic/datasets/ids-2018.html",
+      "claims": [
+        "Controlled testbed traffic and scheduled attacks",
+        "Table 2 dates and section 3 flow feature extraction"
+      ],
+      "scope": "Official collection schedule illustrates attack variety; it does not establish real-time performance or the experimental label budgets"
+    },
+    {
+      "id": "ton",
+      "authors": "UNSW Canberra",
+      "title": "The TON_IoT Datasets",
+      "year": null,
+      "url": "https://research.unsw.edu.au/projects/toniot-datasets",
+      "claims": [
+        "Traffic collected in a designed Cyber Range and IoT Lab",
+        "Network data used independently of CIC"
+      ],
+      "scope": "Controlled research testbed, not an untouched production deployment"
+    },
+    {
+      "id": "pfn",
+      "authors": "Léo Grinsztajn et al.",
+      "title": "TabPFN-3: Technical Report",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2605.13986",
+      "claims": [
+        "Synthetic-task pretraining",
+        "In-context prediction with fixed weights",
+        "Many-class decoder over context labels",
+        "Context/cache computation remains necessary"
+      ],
+      "sections": [
+        "2.1",
+        "2.2",
+        "2.4.2",
+        "2.5"
+      ],
+      "scope": "Model mechanism, not evidence of IDS accuracy or low-cost updating in this experiment"
+    }
+  ],
+  "experiment_run": "tabpfn/results/v7/exp85/20261021_142357_matched_xgb_buffers_s43_s44_s45_7b56fee4",
+  "reference_exp84_run": "tabpfn/results/v7/exp84/20261020_160101_small_labels_5_100_buffer_retention_s43_3204a372",
+  "verified_jobs": 288,
+  "new_xgb_jobs": 108,
+  "seeds": [
+    43,
+    44,
+    45
+  ],
+  "no_ids_finetuning": true,
+  "measurements": {
+    "quality": "Final model on entire fixed test",
+    "new_attack_mean": "Arithmetic mean of post-initial class F1 from full-test confusion matrix",
+    "retention": "Final minus initial Macro-F1 on the same initial-class panel; distinct from full-test metrics",
+    "update_cost": "Sum after initial stage; selection/eviction/construction/fit/cache; excludes all inference",
+    "error_bars": "Sample standard deviation (ddof=1) over seeds 43,44,45",
+    "composition_example": "Actual seed 43 rows; not a seed-averaged composition"
+  },
+  "data_sha256": {
+    "docs/lablog/data/exp85_summary.csv": "cee10addd4229f43b015831886b813539a585e2a7160a78bb3ce37e383d1bda6",
+    "docs/lablog/data/exp85_per_class_summary.csv": "ff9d9b0160838ffb01ead8ef2f1b0e043cd992083719591336b29c9781a79ffc",
+    "docs/lablog/data/exp85_values.csv": "aa4ca067d3895310d45cdccd56712b10628ae8588e2e2c34933748aa5e8a4f1d",
+    "tabpfn/results/v7/exp85/20261021_142357_matched_xgb_buffers_s43_s44_s45_7b56fee4/aggregate_validation.json": "b89eb0a3aea711f8e13b62aac47e2081f98523c45c9e2bedf54b53d72350aa87",
+    "configs/experiments/exp85_protocol.json": "359acf48f2124a08a9e1b2cbc1881fa9a7da80a767c2bc9952a26ea00b92b4cb"
+  },
+  "files": {
+    "docs/slides/kor/20261021_Meeting_ko.pptx": "c74714ca8c9ad593313daa0c284409e4b32954e899dbd2362cdcc03326e933ad",
+    "docs/slides/kor/20261021_Meeting_ko.pdf": "836dde2ca27f711cefe063c9c957e122a4a292a5ab7ffb8c476ee256e8e63581"
+  },
+  "feedback_mapping": {
+    "problem_first": [
+      1,
+      2
+    ],
+    "why_TabPFN_and_ICL": [
+      3
+    ],
+    "model_by_retention_controls": [
+      4
+    ],
+    "A_B_origin_and_sampling": [
+      5
+    ],
+    "cumulative_and_buffer_counts": [
+      6
+    ],
+    "acquisition_retention_model_test_pipeline": [
+      7
+    ],
+    "changing_class_proportions": [
+      8
+    ],
+    "overall_quality": [
+      9
+    ],
+    "new_class_quality": [
+      10
+    ],
+    "old_class_retention": [
+      11
+    ],
+    "measured_update_cost": [
+      12
+    ],
+    "unresolved_tail_issue": [
+      13
+    ],
+    "per_class_appendix": [
+      14,
+      15
+    ],
+    "v3_architecture_appendix": [
+      16,
+      17
+    ]
+  },
+  "limitations": [
+    "Three seeds on a fixed, previously inspected train/test split",
+    "Row IDs disjoint; identical feature vectors can remain",
+    "Cost excludes initial preparation and all inference; XGB buffers measured in a separate session on the same hardware",
+    "Retention panel differs from full test; no guarantee for all old classes",
+    "Architecture and charts are embedded images; other slide text/diagrams editable"
+  ]
+}

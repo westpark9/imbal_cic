@@ -1,1912 +1,4352 @@
 {
   "passed": true,
-  "scope": "Count constraints only, not model performance or real-row selection validation",
+  "revision": 3,
+  "model_experiments_executed_by_this_audit": false,
+  "scope": "Real training row selection and buffer feasibility only, not model quality or update timing",
+  "config_sha256": "1dbcc23cbe385e6c9a9ed0a8d835b61a77bbbb644524e3fa841e8cacc33f2e11",
+  "exact_existing_functions": {
+    "subset_plans": "f2fb836701e0a4e874618c246ff9d581c9fbc0d64f6a91434099fd000ec9c729",
+    "replace_context": "059974bc7a0f662d89d2257fe5c5bc42184720cf83b95a8652eec2381135bea1"
+  },
+  "existing_10_20_50_100_plans_identical": true,
+  "all_supplied_new_rows_admitted": true,
+  "train_test_row_ids_disjoint": true,
   "checks": [
     {
       "dataset": "cic2018",
-      "n": 10,
-      "q": 50,
+      "n": 5,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 10,
-          "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1005,
+          "context_counts": {
+            "benign": 746,
+            "bot": 0,
+            "brute_force": 124,
+            "ddos": 5,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "9c19d3bc821c6f3f2ff9e6d86f6007a6bcb4c45e8a998512d3de2b55bccbdd0b"
         },
         {
           "stage": 3,
-          "incoming": 10,
-          "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 560,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "benign": 743,
+            "bot": 0,
+            "brute_force": 122,
+            "ddos": 5,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "01f2f83b8d83eb898e9f9125db8fb3f39610796ddc1952b3b8c45318e217ad27"
         },
         {
           "stage": 4,
-          "incoming": 10,
-          "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1015,
+          "context_counts": {
+            "benign": 740,
+            "bot": 0,
+            "brute_force": 121,
+            "ddos": 5,
+            "dos": 124,
+            "infiltration": 5,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "33b4a5a97c6b95e8c9225e4e179a140dc875562f85423244a13f1ca5dc229c21"
         },
         {
           "stage": 5,
-          "incoming": 10,
-          "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 580,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 737,
+            "bot": 5,
+            "brute_force": 119,
+            "ddos": 5,
+            "dos": 124,
+            "infiltration": 5,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "f5347ff5dde25b74c78f10e2977feda9a669576e7a398df4158d53d3e1d32076"
+        }
+      ]
+    },
+    {
+      "dataset": "cic2018",
+      "n": 5,
+      "policy": "random",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
+          "stage": 2,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1005,
+          "context_counts": {
+            "benign": 745,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 5,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "3383bfa30d47373625435a8b6d4c0527a7eade81de86a54688f42c66e73ee8e0"
+        },
+        {
+          "stage": 3,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "benign": 741,
+            "bot": 0,
+            "brute_force": 124,
+            "ddos": 5,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "98bc69e3be4149a92d887019ce72a64e6be75baf1737ab3b876fd353970d5fe5"
+        },
+        {
+          "stage": 4,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1015,
+          "context_counts": {
+            "benign": 737,
+            "bot": 0,
+            "brute_force": 124,
+            "ddos": 5,
+            "dos": 124,
+            "infiltration": 5,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "61a1ff3fb6bc94e32a28ea20f1e9dab57cb85c63d7caf3f5dbced89f6f6965a7"
+        },
+        {
+          "stage": 5,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 733,
+            "bot": 5,
+            "brute_force": 124,
+            "ddos": 5,
+            "dos": 123,
+            "infiltration": 5,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "e8f31081acb2cc058aaf9d401cb62e1c714e7ef6c9abcfd4f693d54b6c51e130"
+        }
+      ]
+    },
+    {
+      "dataset": "cic2018",
+      "n": 5,
+      "policy": "similar",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
+          "stage": 2,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1005,
+          "context_counts": {
+            "benign": 745,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 5,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "dd7b334406376c19bb900d97c3bf0e3d12b5bcedad0403fdaade211242f56291"
+        },
+        {
+          "stage": 3,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "benign": 740,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 5,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "6ec6a23273da5fb0145e7e1ce2421caa47e55089861903b30fa22120b9a94088"
+        },
+        {
+          "stage": 4,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1015,
+          "context_counts": {
+            "benign": 735,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 5,
+            "dos": 125,
+            "infiltration": 5,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "bd30e3a536706a027733a82e6b42bc52b9487f7ad89708077abefceda7d5e11b"
+        },
+        {
+          "stage": 5,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 732,
+            "bot": 5,
+            "brute_force": 125,
+            "ddos": 3,
+            "dos": 125,
+            "infiltration": 5,
+            "web_attacks": 5
+          },
+          "context_ids_sha256": "1934a9030f76733d8c576d50b8f0fab0d6c3ad73aca5b4ad5319b27df18edc85"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 10,
-      "q": 100,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "benign": 743,
+            "bot": 0,
+            "brute_force": 122,
+            "ddos": 10,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "660aca8560cfbfa5b8a3efebc66e96552fc389cc45bac97701397a678b3fd8d5"
         },
         {
           "stage": 3,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 560,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 737,
+            "bot": 0,
+            "brute_force": 119,
+            "ddos": 10,
+            "dos": 124,
+            "infiltration": 0,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "ba4a705eb507a4d33e735e2140208e14de2830b33e524cc28b32a4fb6767054c"
         },
         {
           "stage": 4,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "benign": 729,
+            "bot": 0,
+            "brute_force": 117,
+            "ddos": 10,
+            "dos": 124,
+            "infiltration": 10,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "19537b2a654f70c9bee502a1a858590564dd47640dcc1ecd707c66ce9fcd0860"
         },
         {
           "stage": 5,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 580,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "benign": 723,
+            "bot": 10,
+            "brute_force": 115,
+            "ddos": 10,
+            "dos": 122,
+            "infiltration": 10,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "dd0ca84a59f1a494c5e2d7d71e98980d7e99ebb48bcb85ce4a5029f71554dd49"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 10,
-      "q": 200,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "benign": 742,
+            "bot": 0,
+            "brute_force": 124,
+            "ddos": 10,
+            "dos": 124,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "365cd9f4421cc48f8fe9ae11956276cf010a34df2546e9e65cda442bfce854da"
         },
         {
           "stage": 3,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 560,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 733,
+            "bot": 0,
+            "brute_force": 123,
+            "ddos": 10,
+            "dos": 124,
+            "infiltration": 0,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "fe220c3065fee122d26de689ef30cf909970a3127b10fca0835130546f868d0d"
         },
         {
           "stage": 4,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "benign": 726,
+            "bot": 0,
+            "brute_force": 120,
+            "ddos": 10,
+            "dos": 124,
+            "infiltration": 10,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "9901bb00c8ff0d01619d046570da84dbd97d331acbf53c73c5855eb1c47ee5c6"
         },
         {
           "stage": 5,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 580,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "benign": 719,
+            "bot": 10,
+            "brute_force": 118,
+            "ddos": 10,
+            "dos": 123,
+            "infiltration": 10,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "3200668a49e971c3a39781dfbf518cc6c10abbc1cab5076bfd76aa4f83cf2bfd"
+        }
+      ]
+    },
+    {
+      "dataset": "cic2018",
+      "n": 10,
+      "policy": "similar",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
+          "stage": 2,
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "benign": 740,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 10,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "5c019cb62405d27a194fae7c473a35100dd06d36a494dac601d2f8f081f4238f"
+        },
+        {
+          "stage": 3,
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 730,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 10,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "c7279248747fb3d1603bd78c1072b3c11086adb39fb9a7dc490955709bc46124"
+        },
+        {
+          "stage": 4,
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "benign": 720,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 10,
+            "dos": 125,
+            "infiltration": 10,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "1769fa9f7c0e0d000bccf8b13d96d2f4cc926713ca0fe3d910923cc8a9be8b1b"
+        },
+        {
+          "stage": 5,
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "benign": 712,
+            "bot": 10,
+            "brute_force": 125,
+            "ddos": 8,
+            "dos": 125,
+            "infiltration": 10,
+            "web_attacks": 10
+          },
+          "context_ids_sha256": "6dfc9fd36f6a2e3ddeafc57eb45eac16cba261424eb0caf5234399ab12be00c7"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 20,
-      "q": 50,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 737,
+            "bot": 0,
+            "brute_force": 119,
+            "ddos": 20,
+            "dos": 124,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "02afd183187686c559752c5209ef07102dfe24695e8ed827c3a76280f96dc1cb"
         },
         {
           "stage": 3,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "benign": 723,
+            "bot": 0,
+            "brute_force": 115,
+            "ddos": 20,
+            "dos": 122,
+            "infiltration": 0,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "569fcf832bfdda06cc8cfcc4e87a32b5caa398654472b72c604095f348c9ebcc"
         },
         {
           "stage": 4,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "benign": 705,
+            "bot": 0,
+            "brute_force": 115,
+            "ddos": 20,
+            "dos": 120,
+            "infiltration": 20,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "89d40d3655aeea406f1697ddf2f62b0fabbab8f68eaf23d2b6dc43184148d277"
         },
         {
           "stage": 5,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1080,
+          "context_counts": {
+            "benign": 691,
+            "bot": 20,
+            "brute_force": 111,
+            "ddos": 20,
+            "dos": 118,
+            "infiltration": 20,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "7e1830e4378639d6baf377ef381273f58ed12ae46e1f95d2f742bd9dd5380562"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 20,
-      "q": 100,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 736,
+            "bot": 0,
+            "brute_force": 122,
+            "ddos": 20,
+            "dos": 122,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "7869701ddaa8d93b9a0867b49c0f40015b2281f61a34430449b5740e331a56de"
         },
         {
           "stage": 3,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "benign": 719,
+            "bot": 0,
+            "brute_force": 121,
+            "ddos": 20,
+            "dos": 120,
+            "infiltration": 0,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "3f22fa6dae2d614be2d7a15fe19955c37eacd6b4ad8f5292e5381b80930b3680"
         },
         {
           "stage": 4,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "benign": 704,
+            "bot": 0,
+            "brute_force": 118,
+            "ddos": 20,
+            "dos": 118,
+            "infiltration": 20,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "b6b60a030999ae9eca0d4954ce6a1c777d8f42e1aa9f3a74051d28d818460c3e"
         },
         {
           "stage": 5,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1080,
+          "context_counts": {
+            "benign": 691,
+            "bot": 20,
+            "brute_force": 116,
+            "ddos": 20,
+            "dos": 113,
+            "infiltration": 20,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "b1da278cf3c3ad04b84607cf2257dafc9a376cb37f63e52707de29c9efe7c31c"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 20,
-      "q": 200,
+      "policy": "similar",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "benign": 730,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 20,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "9df6143db8e8afdcc387fa1c55fdca18572d082e22515ddc0f4bd49027d3992a"
         },
         {
           "stage": 3,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "benign": 710,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 20,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "b969177fc9c081705bb59d8b086018b83c44d8528cb016fa31b00553e00c916d"
         },
         {
           "stage": 4,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "benign": 690,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 20,
+            "dos": 125,
+            "infiltration": 20,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "856f13c6929ec36cf63a3455691c137f9b141eac18d841d2138286f49e183021"
         },
         {
           "stage": 5,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1080,
+          "context_counts": {
+            "benign": 673,
+            "bot": 20,
+            "brute_force": 125,
+            "ddos": 17,
+            "dos": 125,
+            "infiltration": 20,
+            "web_attacks": 20
+          },
+          "context_ids_sha256": "d97a91629beb1f396d26df035aaf2022d8123c8324a5c6e3245e42bc294066b1"
+        }
+      ]
+    },
+    {
+      "dataset": "cic2018",
+      "n": 30,
+      "policy": "fifo",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
+          "stage": 2,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "benign": 729,
+            "bot": 0,
+            "brute_force": 117,
+            "ddos": 30,
+            "dos": 124,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "39f25d92b0a67616c517a48d0992324012c10136ade1ac8c486376d678ba2a29"
+        },
+        {
+          "stage": 3,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "benign": 705,
+            "bot": 0,
+            "brute_force": 115,
+            "ddos": 30,
+            "dos": 120,
+            "infiltration": 0,
+            "web_attacks": 30
+          },
+          "context_ids_sha256": "775d466281891727861d527fe2eedac984a9f83100c55550ebd2e2c25542c869"
+        },
+        {
+          "stage": 4,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1090,
+          "context_counts": {
+            "benign": 684,
+            "bot": 0,
+            "brute_force": 110,
+            "ddos": 30,
+            "dos": 116,
+            "infiltration": 30,
+            "web_attacks": 30
+          },
+          "context_ids_sha256": "af9616ac4e1baea96040226b643cea89c04e5c2ac2c9f4c76643379830c1dbe0"
+        },
+        {
+          "stage": 5,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "benign": 659,
+            "bot": 30,
+            "brute_force": 107,
+            "ddos": 30,
+            "dos": 114,
+            "infiltration": 30,
+            "web_attacks": 30
+          },
+          "context_ids_sha256": "da08b941e642c2475485d2d52f4539e487d87ee30e313ea188dc2b84247f7bb2"
+        }
+      ]
+    },
+    {
+      "dataset": "cic2018",
+      "n": 30,
+      "policy": "random",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
+          "stage": 2,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "benign": 728,
+            "bot": 0,
+            "brute_force": 121,
+            "ddos": 30,
+            "dos": 121,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "c23a5d368233e6b9566bbaff81087c74b860e69f55a5f2eb334e1f0a89db41cd"
+        },
+        {
+          "stage": 3,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "benign": 704,
+            "bot": 0,
+            "brute_force": 118,
+            "ddos": 30,
+            "dos": 118,
+            "infiltration": 0,
+            "web_attacks": 30
+          },
+          "context_ids_sha256": "0d4ec39c64781d63f41b31ab7b4b1de6aea827d01c4d6433b86c488950f63691"
+        },
+        {
+          "stage": 4,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1090,
+          "context_counts": {
+            "benign": 683,
+            "bot": 0,
+            "brute_force": 115,
+            "ddos": 30,
+            "dos": 112,
+            "infiltration": 30,
+            "web_attacks": 30
+          },
+          "context_ids_sha256": "d811fbc38ff615ce2d8c6101815df1a5b4f1991c007b730c703d2a308ec3620a"
+        },
+        {
+          "stage": 5,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "benign": 659,
+            "bot": 30,
+            "brute_force": 112,
+            "ddos": 29,
+            "dos": 111,
+            "infiltration": 30,
+            "web_attacks": 29
+          },
+          "context_ids_sha256": "5782c62f79cf4aa1a83d4dc8d2d0756cc2e68d24a558c54a699f55b4ac41a786"
+        }
+      ]
+    },
+    {
+      "dataset": "cic2018",
+      "n": 30,
+      "policy": "similar",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
+          "stage": 2,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "benign": 720,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 30,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "a131a8f1c185fa8456180921f280cfb9448a70e737249f3097822b518abc05b0"
+        },
+        {
+          "stage": 3,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "benign": 693,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 27,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 30
+          },
+          "context_ids_sha256": "8bbf8c7d9e11f3ae8ac844328568cd6097827808f122739032df612df2c07b22"
+        },
+        {
+          "stage": 4,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1090,
+          "context_counts": {
+            "benign": 663,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 27,
+            "dos": 125,
+            "infiltration": 30,
+            "web_attacks": 30
+          },
+          "context_ids_sha256": "e5a958560760d28d0d0d56c2e6f845b9922e8befa2ca287fb37b0bd50d373415"
+        },
+        {
+          "stage": 5,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "benign": 635,
+            "bot": 30,
+            "brute_force": 125,
+            "ddos": 26,
+            "dos": 125,
+            "infiltration": 30,
+            "web_attacks": 29
+          },
+          "context_ids_sha256": "be162eec0ea238cd4dcd5734336515cabb926dba6f3a2b2c0e2f40c4af17183b"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 50,
-      "q": 50,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1050,
+          "context_counts": {
+            "benign": 714,
+            "bot": 0,
+            "brute_force": 115,
+            "ddos": 50,
+            "dos": 121,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "bee57d84d9a50c6c93b8f1d99b992f737dda28f349b5c8993458718899e8edc2"
         },
         {
           "stage": 3,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "benign": 676,
+            "bot": 0,
+            "brute_force": 108,
+            "ddos": 50,
+            "dos": 116,
+            "infiltration": 0,
+            "web_attacks": 50
+          },
+          "context_ids_sha256": "a519f292d0d058e4784f0ad622b9df10d711238896877deb42e44a8139824bb6"
         },
         {
           "stage": 4,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1150,
+          "context_counts": {
+            "benign": 634,
+            "bot": 0,
+            "brute_force": 104,
+            "ddos": 50,
+            "dos": 112,
+            "infiltration": 50,
+            "web_attacks": 50
+          },
+          "context_ids_sha256": "2e767f132245ce65a00e17bb63329366b7fdc1b4227b2b9f63fd8801ee301bde"
         },
         {
           "stage": 5,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "benign": 593,
+            "bot": 50,
+            "brute_force": 97,
+            "ddos": 50,
+            "dos": 110,
+            "infiltration": 50,
+            "web_attacks": 50
+          },
+          "context_ids_sha256": "a37b26ddf7f2dadf39682c788a65ec86aa7e06a58b301b5761f4471e156e94ea"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 50,
-      "q": 100,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1050,
+          "context_counts": {
+            "benign": 713,
+            "bot": 0,
+            "brute_force": 119,
+            "ddos": 50,
+            "dos": 118,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "f8686cf6be4849cb9dc1ecb2b2e80d7768fd703ad276196e340668bb3d122867"
         },
         {
           "stage": 3,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "benign": 683,
+            "bot": 0,
+            "brute_force": 112,
+            "ddos": 48,
+            "dos": 107,
+            "infiltration": 0,
+            "web_attacks": 50
+          },
+          "context_ids_sha256": "09f94555a2c6babaa0c421378d629d20d6150f30dd522759eb2e88a6e26dbcfc"
         },
         {
           "stage": 4,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1150,
+          "context_counts": {
+            "benign": 645,
+            "bot": 0,
+            "brute_force": 106,
+            "ddos": 48,
+            "dos": 101,
+            "infiltration": 50,
+            "web_attacks": 50
+          },
+          "context_ids_sha256": "27b4f7bee7b929e3d7fa5b97743068a221b4e1efe3a41632457522bd3faa45d3"
         },
         {
           "stage": 5,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "benign": 609,
+            "bot": 50,
+            "brute_force": 103,
+            "ddos": 44,
+            "dos": 97,
+            "infiltration": 49,
+            "web_attacks": 48
+          },
+          "context_ids_sha256": "9899192079a8888b953c944632cda99f8f7a00f8e71f625a9cfccca9ebabce70"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 50,
-      "q": 200,
+      "policy": "similar",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1050,
+          "context_counts": {
+            "benign": 700,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 50,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "ae8bf8cbd0d249fa7f3d977754738804c6165fe62b77be23b28b93186c33bc07"
         },
         {
           "stage": 3,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "benign": 660,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 44,
+            "dos": 121,
+            "infiltration": 0,
+            "web_attacks": 50
+          },
+          "context_ids_sha256": "e140e777b908f4d3063a60e88b99352080be34eb491d44bd3bb93b72fd7b88ee"
         },
         {
           "stage": 4,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1150,
+          "context_counts": {
+            "benign": 610,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 44,
+            "dos": 121,
+            "infiltration": 50,
+            "web_attacks": 50
+          },
+          "context_ids_sha256": "bcd5263c1ecbba3a7bd8a02018226bce8e34f1361d0850d9d82b47b2787de8e5"
         },
         {
           "stage": 5,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "benign": 570,
+            "bot": 50,
+            "brute_force": 125,
+            "ddos": 40,
+            "dos": 121,
+            "infiltration": 48,
+            "web_attacks": 46
+          },
+          "context_ids_sha256": "0286f19ee861bccca8cf5b626a06aab998edd41b09909b753992416de6f08ee9"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 100,
-      "q": 50,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "benign": 676,
+            "bot": 0,
+            "brute_force": 108,
+            "ddos": 100,
+            "dos": 116,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "bf25a5fd6b11c40f541196d64f50850e9dfc882b3623f0f40710466d6b1b1c93"
         },
         {
           "stage": 3,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "benign": 593,
+            "bot": 0,
+            "brute_force": 97,
+            "ddos": 100,
+            "dos": 110,
+            "infiltration": 0,
+            "web_attacks": 100
+          },
+          "context_ids_sha256": "34310031b1ac5a72e9ba0621d9493c93aec3e9da46c8ce4901d1ee0102b75760"
         },
         {
           "stage": 4,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "benign": 524,
+            "bot": 0,
+            "brute_force": 81,
+            "ddos": 100,
+            "dos": 95,
+            "infiltration": 100,
+            "web_attacks": 100
+          },
+          "context_ids_sha256": "011d8742f188ca8439f55f55229f1d656d22d261fd9554adfdd80bb8cc0975b9"
         },
         {
           "stage": 5,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1400,
+          "context_counts": {
+            "benign": 454,
+            "bot": 100,
+            "brute_force": 69,
+            "ddos": 100,
+            "dos": 77,
+            "infiltration": 100,
+            "web_attacks": 100
+          },
+          "context_ids_sha256": "3f29e6a949b8411212ab55311e5fd51819146239f14585ba2259d56dc66d177e"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 100,
-      "q": 100,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "benign": 678,
+            "bot": 0,
+            "brute_force": 113,
+            "ddos": 100,
+            "dos": 109,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "c82ce2e6b89633f513457116afc799a6bf8d92be7f2b165fd46bf7d7f6ca024c"
         },
         {
           "stage": 3,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "benign": 610,
+            "bot": 0,
+            "brute_force": 103,
+            "ddos": 89,
+            "dos": 98,
+            "infiltration": 0,
+            "web_attacks": 100
+          },
+          "context_ids_sha256": "48c1a0ef07469d2e9514f24b342c40a0e9ca63dfb33e9c8ec8c185c3de19bf44"
         },
         {
           "stage": 4,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "benign": 547,
+            "bot": 0,
+            "brute_force": 95,
+            "ddos": 82,
+            "dos": 78,
+            "infiltration": 100,
+            "web_attacks": 98
+          },
+          "context_ids_sha256": "49f34763435df3a3053cb015c82be4a004b14e151569ac53e5fad12919d8afb1"
         },
         {
           "stage": 5,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1400,
+          "context_counts": {
+            "benign": 493,
+            "bot": 100,
+            "brute_force": 81,
+            "ddos": 75,
+            "dos": 68,
+            "infiltration": 95,
+            "web_attacks": 88
+          },
+          "context_ids_sha256": "b007aaf5859ccaf11c20d53bb2f98ab701efcf8019efcff6c3e4eb3363ebfe3a"
         }
       ]
     },
     {
       "dataset": "cic2018",
       "n": 100,
-      "q": 200,
+      "policy": "similar",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "benign": 750,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 0,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "b3256ec0114b9bb891e0bcb5a7288d05fde30370980fda5a841c2f4228ccbb9a"
+        },
+        {
           "stage": 2,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "benign": 650,
+            "bot": 0,
+            "brute_force": 125,
+            "ddos": 100,
+            "dos": 125,
+            "infiltration": 0,
+            "web_attacks": 0
+          },
+          "context_ids_sha256": "0f7a4b0b325960979e6c870803dd8f173c89ffaf13904d8b7848eeb71adb02c3"
         },
         {
           "stage": 3,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "benign": 650,
+            "bot": 0,
+            "brute_force": 31,
+            "ddos": 100,
+            "dos": 119,
+            "infiltration": 0,
+            "web_attacks": 100
+          },
+          "context_ids_sha256": "9e20cb3b80cc4c400a0002b9ce1260cde1a5c3b432695ecb836ef23cdae7c4d9"
         },
         {
           "stage": 4,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "benign": 550,
+            "bot": 0,
+            "brute_force": 31,
+            "ddos": 100,
+            "dos": 119,
+            "infiltration": 100,
+            "web_attacks": 100
+          },
+          "context_ids_sha256": "c2143d177050c33414db63b590eacdddd3efeb81d4e34c52c7aeaf7fdf146e32"
         },
         {
           "stage": 5,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1400,
+          "context_counts": {
+            "benign": 527,
+            "bot": 100,
+            "brute_force": 31,
+            "ddos": 36,
+            "dos": 119,
+            "infiltration": 98,
+            "web_attacks": 89
+          },
+          "context_ids_sha256": "df06208743edb3d906395b03d1530f6560fc48d8753e3d39d71076674f549945"
         }
       ]
     },
     {
-      "dataset": "cic2018",
-      "n": 200,
-      "q": 50,
+      "dataset": "toniot",
+      "n": 5,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 743,
+            "ddos": 5,
+            "dos": 125,
+            "injection": 5,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 122,
+            "xss": 0
+          },
+          "context_ids_sha256": "73cddb4a2b36b20a371736a9fa14433861d9b7b788f85fd9c2a31589ba4ded3c"
         },
         {
           "stage": 3,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1015,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 740,
+            "ddos": 5,
+            "dos": 124,
+            "injection": 5,
+            "mitm": 0,
+            "password": 5,
+            "ransomware": 0,
+            "scanning": 121,
+            "xss": 0
+          },
+          "context_ids_sha256": "3e9b5c4cc285bed318a9b3a34aef5aabc8018aa49714417f8b339b4db302e9e8"
         },
         {
           "stage": 4,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 737,
+            "ddos": 5,
+            "dos": 124,
+            "injection": 5,
+            "mitm": 0,
+            "password": 5,
+            "ransomware": 0,
+            "scanning": 119,
+            "xss": 5
+          },
+          "context_ids_sha256": "89b7bd67fcacd33b62085891509fe2b27662c36f68ae90bb32d850fbdb0cf025"
         },
         {
           "stage": 5,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "backdoor": 5,
+            "benign": 729,
+            "ddos": 5,
+            "dos": 124,
+            "injection": 5,
+            "mitm": 0,
+            "password": 5,
+            "ransomware": 5,
+            "scanning": 117,
+            "xss": 5
+          },
+          "context_ids_sha256": "46f0a440b760c9c598d9027d3978e26c5dac1cd37f41aa9ae012050e37c3250b"
+        },
+        {
+          "stage": 6,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1035,
+          "context_counts": {
+            "backdoor": 5,
+            "benign": 727,
+            "ddos": 5,
+            "dos": 123,
+            "injection": 5,
+            "mitm": 5,
+            "password": 5,
+            "ransomware": 5,
+            "scanning": 115,
+            "xss": 5
+          },
+          "context_ids_sha256": "9197ebb5eba27de0abd385ed5bb876df0a1ab9e10fea1e69876595605e238b6d"
         }
       ]
     },
     {
-      "dataset": "cic2018",
-      "n": 200,
-      "q": 100,
+      "dataset": "toniot",
+      "n": 5,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 742,
+            "ddos": 5,
+            "dos": 124,
+            "injection": 5,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 124,
+            "xss": 0
+          },
+          "context_ids_sha256": "dcb06af37368cd667bc6e2e7262b9b5c7fd2472f0bb2dde0866b7ab631695301"
         },
         {
           "stage": 3,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1015,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 738,
+            "ddos": 5,
+            "dos": 124,
+            "injection": 5,
+            "mitm": 0,
+            "password": 5,
+            "ransomware": 0,
+            "scanning": 123,
+            "xss": 0
+          },
+          "context_ids_sha256": "dbb2bd0c55bf2e62f354504b9ec99c513f9290a6a6a7cc2ae6a4043860d9263a"
         },
         {
           "stage": 4,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 734,
+            "ddos": 5,
+            "dos": 123,
+            "injection": 5,
+            "mitm": 0,
+            "password": 5,
+            "ransomware": 0,
+            "scanning": 123,
+            "xss": 5
+          },
+          "context_ids_sha256": "976f5a8c560ce312e7264f6221a6e1a7ea3a53c55c0caeaeeee5b4280e0cf272"
         },
         {
           "stage": 5,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "backdoor": 5,
+            "benign": 727,
+            "ddos": 5,
+            "dos": 121,
+            "injection": 5,
+            "mitm": 0,
+            "password": 5,
+            "ransomware": 5,
+            "scanning": 122,
+            "xss": 5
+          },
+          "context_ids_sha256": "e3a091c09b46c49772821964c2104ee5265a2538752bfca9a609390b5f29cf9c"
+        },
+        {
+          "stage": 6,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1035,
+          "context_counts": {
+            "backdoor": 5,
+            "benign": 724,
+            "ddos": 5,
+            "dos": 120,
+            "injection": 5,
+            "mitm": 5,
+            "password": 5,
+            "ransomware": 5,
+            "scanning": 121,
+            "xss": 5
+          },
+          "context_ids_sha256": "44477de9886bf0235b50b0ed5e905de7033ca5afa66387ede2bab71af55fbb06"
         }
       ]
     },
     {
-      "dataset": "cic2018",
-      "n": 200,
-      "q": 200,
+      "dataset": "toniot",
+      "n": 5,
+      "policy": "similar",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 200,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1010,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 740,
+            "ddos": 5,
+            "dos": 125,
+            "injection": 5,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "86e610181409cec4c8742984fe80b9f840084ca0e1239e2ce8a1937a1c27a8fe"
         },
         {
           "stage": 3,
-          "incoming": 200,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1015,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 739,
+            "ddos": 5,
+            "dos": 125,
+            "injection": 4,
+            "mitm": 0,
+            "password": 5,
+            "ransomware": 0,
+            "scanning": 122,
+            "xss": 0
+          },
+          "context_ids_sha256": "f7f93328caa1b2053a613e4e3d28d1cd08f73e0d273d81ce174aac8f64beb95b"
         },
         {
           "stage": 4,
-          "incoming": 200,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 739,
+            "ddos": 5,
+            "dos": 125,
+            "injection": 3,
+            "mitm": 0,
+            "password": 4,
+            "ransomware": 0,
+            "scanning": 119,
+            "xss": 5
+          },
+          "context_ids_sha256": "c83b4135caf256ddf41fb28cc8831a4f5663d920b667573ce4d6ba2211c42a99"
         },
         {
           "stage": 5,
-          "incoming": 200,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "cic2018",
-      "n": 400,
-      "q": 50,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 10,
+          "admitted": 10,
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "backdoor": 5,
+            "benign": 729,
+            "ddos": 5,
+            "dos": 125,
+            "injection": 3,
+            "mitm": 0,
+            "password": 4,
+            "ransomware": 5,
+            "scanning": 119,
+            "xss": 5
+          },
+          "context_ids_sha256": "6528ba3f65fd30f6429d5bfeab5780643eb0533edf7f088db8938a10dde33778"
         },
         {
-          "stage": 3,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "cic2018",
-      "n": 400,
-      "q": 100,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
-        },
-        {
-          "stage": 3,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "cic2018",
-      "n": 400,
-      "q": 200,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
-        },
-        {
-          "stage": 3,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 575,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "stage": 6,
+          "supplied": 5,
+          "admitted": 5,
+          "rejected": 0,
+          "removed": 5,
+          "context_rows": 1000,
+          "cumulative_rows": 1035,
+          "context_counts": {
+            "backdoor": 5,
+            "benign": 726,
+            "ddos": 5,
+            "dos": 123,
+            "injection": 3,
+            "mitm": 5,
+            "password": 4,
+            "ransomware": 5,
+            "scanning": 119,
+            "xss": 5
+          },
+          "context_ids_sha256": "93b84588a06ca4f8b19f64adb0bcfb67573cab32474757c5181c299ebc5e1867"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 10,
-      "q": 50,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            10,
-            10
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 737,
+            "ddos": 10,
+            "dos": 124,
+            "injection": 10,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 119,
+            "xss": 0
+          },
+          "context_ids_sha256": "05b7464e8614603af38cc15aa73eca8ffb235c7d84ecd37ca3d243616bbc5375"
         },
         {
           "stage": 3,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 729,
+            "ddos": 10,
+            "dos": 124,
+            "injection": 10,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 0,
+            "scanning": 117,
+            "xss": 0
+          },
+          "context_ids_sha256": "72dd4439663770652a567201fb46e02518c2d2e00c071a8f38a8b727f7fcc5bf"
         },
         {
           "stage": 4,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 580,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 723,
+            "ddos": 10,
+            "dos": 122,
+            "injection": 10,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 0,
+            "scanning": 115,
+            "xss": 10
+          },
+          "context_ids_sha256": "7cfb046c7bd476822fb1fb30e48bd1976ff68160672956e200a79658e4a7be28"
         },
         {
           "stage": 5,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            10,
-            10
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 10,
+            "benign": 705,
+            "ddos": 10,
+            "dos": 120,
+            "injection": 10,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 10,
+            "scanning": 115,
+            "xss": 10
+          },
+          "context_ids_sha256": "1b9a38ac5b16ca439299fe678dde2aff96fe8eec9540eae2131c0d7bdeeab3aa"
         },
         {
           "stage": 6,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1070,
+          "context_counts": {
+            "backdoor": 10,
+            "benign": 698,
+            "ddos": 10,
+            "dos": 119,
+            "injection": 10,
+            "mitm": 10,
+            "password": 10,
+            "ransomware": 10,
+            "scanning": 113,
+            "xss": 10
+          },
+          "context_ids_sha256": "8eb0d9c61d996470b16dbe43235627bdcd16c65dda603700921c09b871fe7d93"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 10,
-      "q": 100,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            10,
-            10
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 736,
+            "ddos": 10,
+            "dos": 122,
+            "injection": 10,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 122,
+            "xss": 0
+          },
+          "context_ids_sha256": "a2e93a0ff96e1628c7686e51855b5101dfbbdcbd20e74a023dee865f59aa1478"
         },
         {
           "stage": 3,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 727,
+            "ddos": 10,
+            "dos": 121,
+            "injection": 10,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 0,
+            "scanning": 122,
+            "xss": 0
+          },
+          "context_ids_sha256": "154d91cd8249976c13d1b8ebb57aea89e24fb2947d0e00f66cda6826f3c98296"
         },
         {
           "stage": 4,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 580,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 720,
+            "ddos": 10,
+            "dos": 121,
+            "injection": 10,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 0,
+            "scanning": 119,
+            "xss": 10
+          },
+          "context_ids_sha256": "5ea331489a0a18840ae73cbb6aad929cc2e0d463072f005110f27194119ad565"
         },
         {
           "stage": 5,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            10,
-            10
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 10,
+            "benign": 703,
+            "ddos": 10,
+            "dos": 118,
+            "injection": 10,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 10,
+            "scanning": 119,
+            "xss": 10
+          },
+          "context_ids_sha256": "c6e7062cdf439d5116bcdfb0ea34268382eb07010183c04233ef1abbcb31e200"
         },
         {
           "stage": 6,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1070,
+          "context_counts": {
+            "backdoor": 10,
+            "benign": 695,
+            "ddos": 10,
+            "dos": 117,
+            "injection": 10,
+            "mitm": 10,
+            "password": 10,
+            "ransomware": 10,
+            "scanning": 118,
+            "xss": 10
+          },
+          "context_ids_sha256": "b1f5d7fa0d53473b64fa2a8de2408019d1c04c6e19231dd6ef0141234fcb2abd"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 10,
-      "q": 200,
+      "policy": "similar",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            10,
-            10
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1020,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 740,
+            "ddos": 10,
+            "dos": 115,
+            "injection": 10,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "643d43eefda1cd94db6012aaea70eff3fb0607326aa656333cfcc31b13e49c89"
         },
         {
           "stage": 3,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 570,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1030,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 737,
+            "ddos": 10,
+            "dos": 115,
+            "injection": 9,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 0,
+            "scanning": 119,
+            "xss": 0
+          },
+          "context_ids_sha256": "9bc92408e99b35a19cd028b9d79a1e4ed34519bed46a4e226ee546ffe67eb8c3"
         },
         {
           "stage": 4,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 580,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 732,
+            "ddos": 10,
+            "dos": 115,
+            "injection": 9,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 0,
+            "scanning": 114,
+            "xss": 10
+          },
+          "context_ids_sha256": "1796d1422493c0e1b93b12daa2ae4cdc924e0e924a22f805f02b2469d784ea8c"
         },
         {
           "stage": 5,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            10,
-            10
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 10,
+            "benign": 716,
+            "ddos": 10,
+            "dos": 115,
+            "injection": 9,
+            "mitm": 0,
+            "password": 10,
+            "ransomware": 10,
+            "scanning": 110,
+            "xss": 10
+          },
+          "context_ids_sha256": "5c8a5b774be9496ab86ecd30a529041b5950bd507ac2eb341fa8962f828c346a"
         },
         {
           "stage": 6,
-          "incoming": 10,
+          "supplied": 10,
           "admitted": 10,
-          "per_new_class": [
-            10
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 10,
+          "context_rows": 1000,
+          "cumulative_rows": 1070,
+          "context_counts": {
+            "backdoor": 10,
+            "benign": 708,
+            "ddos": 10,
+            "dos": 113,
+            "injection": 9,
+            "mitm": 10,
+            "password": 10,
+            "ransomware": 10,
+            "scanning": 110,
+            "xss": 10
+          },
+          "context_ids_sha256": "7a5248847d54559ffb903cfe3e87246df7cc0df6dcc024e609e7612a0dffb89b"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 20,
-      "q": 50,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 40,
+          "supplied": 40,
           "admitted": 40,
-          "per_new_class": [
-            20,
-            20
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 40,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 723,
+            "ddos": 20,
+            "dos": 122,
+            "injection": 20,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 115,
+            "xss": 0
+          },
+          "context_ids_sha256": "4704123de5e3a6f8e17399c2a82586bf47a8efdfbd2ac2f92c0e404dae8d66d0"
         },
         {
           "stage": 3,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 705,
+            "ddos": 20,
+            "dos": 120,
+            "injection": 20,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 0,
+            "scanning": 115,
+            "xss": 0
+          },
+          "context_ids_sha256": "c7dd4b4a217fa1c215b3ee8e205aaca2185708e7ae19b772df4bba8672369b2d"
         },
         {
           "stage": 4,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1080,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 691,
+            "ddos": 20,
+            "dos": 118,
+            "injection": 20,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 0,
+            "scanning": 111,
+            "xss": 20
+          },
+          "context_ids_sha256": "19acf685668cb78c1233a6dda96b3e22626dc7967d28cc179543f292b428d00a"
         },
         {
           "stage": 5,
-          "incoming": 40,
+          "supplied": 40,
           "admitted": 40,
-          "per_new_class": [
-            20,
-            20
-          ],
-          "protected_old_total": 630,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 40,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "backdoor": 20,
+            "benign": 659,
+            "ddos": 20,
+            "dos": 114,
+            "injection": 20,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 20,
+            "scanning": 107,
+            "xss": 20
+          },
+          "context_ids_sha256": "49e3a70febf7317fd558cdbd0a89767126165db32f283b932de8ae916f66c880"
         },
         {
           "stage": 6,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 670,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1140,
+          "context_counts": {
+            "backdoor": 20,
+            "benign": 642,
+            "ddos": 20,
+            "dos": 112,
+            "injection": 20,
+            "mitm": 20,
+            "password": 20,
+            "ransomware": 20,
+            "scanning": 106,
+            "xss": 20
+          },
+          "context_ids_sha256": "f3ed3e59d66f88dd847004b4cc71e084a6301bef15140a927cedb30c4f6ff6dc"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 20,
-      "q": 100,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 40,
+          "supplied": 40,
           "admitted": 40,
-          "per_new_class": [
-            20,
-            20
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 40,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 719,
+            "ddos": 20,
+            "dos": 121,
+            "injection": 20,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 120,
+            "xss": 0
+          },
+          "context_ids_sha256": "29ac146fad0b73adfde3655b556fb375bc7fd82a469410db136b22fb44c8d037"
         },
         {
           "stage": 3,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 702,
+            "ddos": 20,
+            "dos": 118,
+            "injection": 20,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 0,
+            "scanning": 120,
+            "xss": 0
+          },
+          "context_ids_sha256": "1609b0fa104e5c955c2e8e2ed143d2284b8777ca406c4700aacb711931cfc9d5"
         },
         {
           "stage": 4,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1080,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 688,
+            "ddos": 20,
+            "dos": 114,
+            "injection": 20,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 0,
+            "scanning": 118,
+            "xss": 20
+          },
+          "context_ids_sha256": "db9ee7c4931ea3deca7db6a7fbde9dfefe622732c59a556237d8700108c77264"
         },
         {
           "stage": 5,
-          "incoming": 40,
+          "supplied": 40,
           "admitted": 40,
-          "per_new_class": [
-            20,
-            20
-          ],
-          "protected_old_total": 630,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 40,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "backdoor": 20,
+            "benign": 661,
+            "ddos": 19,
+            "dos": 110,
+            "injection": 19,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 20,
+            "scanning": 111,
+            "xss": 20
+          },
+          "context_ids_sha256": "8005cc466c6c9e96dabb108f6c52bee6c4b26410bd193c43bdc40a9f24e42225"
         },
         {
           "stage": 6,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 670,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1140,
+          "context_counts": {
+            "backdoor": 20,
+            "benign": 646,
+            "ddos": 19,
+            "dos": 109,
+            "injection": 19,
+            "mitm": 20,
+            "password": 18,
+            "ransomware": 20,
+            "scanning": 109,
+            "xss": 20
+          },
+          "context_ids_sha256": "921962936e25d744f23202573982661abdf34b21956a68246244357b53b667af"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 20,
-      "q": 200,
+      "policy": "similar",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 40,
+          "supplied": 40,
           "admitted": 40,
-          "per_new_class": [
-            20,
-            20
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 40,
+          "context_rows": 1000,
+          "cumulative_rows": 1040,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 732,
+            "ddos": 20,
+            "dos": 113,
+            "injection": 20,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 115,
+            "xss": 0
+          },
+          "context_ids_sha256": "bca3bfcf0d4372e46b1bb9ba4491b2883c4821fc19d49f1881cf0c14f3b8ca6d"
         },
         {
           "stage": 3,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 590,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 727,
+            "ddos": 20,
+            "dos": 113,
+            "injection": 17,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 0,
+            "scanning": 103,
+            "xss": 0
+          },
+          "context_ids_sha256": "ceefa9b0ed80ed58e42b89bdbcc541008cbe7c68e5846a1f7e53c81c7a816a83"
         },
         {
           "stage": 4,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 610,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1080,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 718,
+            "ddos": 20,
+            "dos": 113,
+            "injection": 16,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 0,
+            "scanning": 93,
+            "xss": 20
+          },
+          "context_ids_sha256": "2c6b74b32498292787d3b4e5a57b43ec8fd4f885136b1e308f66e6779316760f"
         },
         {
           "stage": 5,
-          "incoming": 40,
+          "supplied": 40,
           "admitted": 40,
-          "per_new_class": [
-            20,
-            20
-          ],
-          "protected_old_total": 630,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 40,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "backdoor": 20,
+            "benign": 686,
+            "ddos": 19,
+            "dos": 113,
+            "injection": 16,
+            "mitm": 0,
+            "password": 20,
+            "ransomware": 20,
+            "scanning": 86,
+            "xss": 20
+          },
+          "context_ids_sha256": "2e35889734ad2aaa59de7e8f1c97bb2927b75fb34b0ff92a2d906180ceb8c6aa"
         },
         {
           "stage": 6,
-          "incoming": 20,
+          "supplied": 20,
           "admitted": 20,
-          "per_new_class": [
-            20
-          ],
-          "protected_old_total": 670,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 20,
+          "context_rows": 1000,
+          "cumulative_rows": 1140,
+          "context_counts": {
+            "backdoor": 20,
+            "benign": 669,
+            "ddos": 19,
+            "dos": 113,
+            "injection": 14,
+            "mitm": 20,
+            "password": 20,
+            "ransomware": 20,
+            "scanning": 85,
+            "xss": 20
+          },
+          "context_ids_sha256": "daae3157b314dc8bb5b0d58cef29c5c2a7bf848d6bfabb8be4d4165d9f8d1171"
+        }
+      ]
+    },
+    {
+      "dataset": "toniot",
+      "n": 30,
+      "policy": "fifo",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
+          "stage": 2,
+          "supplied": 60,
+          "admitted": 60,
+          "rejected": 0,
+          "removed": 60,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 705,
+            "ddos": 30,
+            "dos": 120,
+            "injection": 30,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 115,
+            "xss": 0
+          },
+          "context_ids_sha256": "42f2eaac0f3b16adb7693a52db482452138ef53940652c8c6b851ee1525bd183"
+        },
+        {
+          "stage": 3,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1090,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 684,
+            "ddos": 30,
+            "dos": 116,
+            "injection": 30,
+            "mitm": 0,
+            "password": 30,
+            "ransomware": 0,
+            "scanning": 110,
+            "xss": 0
+          },
+          "context_ids_sha256": "e020dd441de0cd2f1608eae2f4efaa2d0a53cba528c925092a686f9155d058bf"
+        },
+        {
+          "stage": 4,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 659,
+            "ddos": 30,
+            "dos": 114,
+            "injection": 30,
+            "mitm": 0,
+            "password": 30,
+            "ransomware": 0,
+            "scanning": 107,
+            "xss": 30
+          },
+          "context_ids_sha256": "2035d02c83148b78b5925150b45f7882bc8ee025defad4f23ba055ddd462b6e8"
+        },
+        {
+          "stage": 5,
+          "supplied": 60,
+          "admitted": 60,
+          "rejected": 0,
+          "removed": 60,
+          "context_rows": 1000,
+          "cumulative_rows": 1180,
+          "context_counts": {
+            "backdoor": 30,
+            "benign": 608,
+            "ddos": 30,
+            "dos": 111,
+            "injection": 30,
+            "mitm": 0,
+            "password": 30,
+            "ransomware": 30,
+            "scanning": 101,
+            "xss": 30
+          },
+          "context_ids_sha256": "ef927f2769ab52dfc1896a31b25e38d92cf80f67fbfacca5e8a0bd6115097d00"
+        },
+        {
+          "stage": 6,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1210,
+          "context_counts": {
+            "backdoor": 30,
+            "benign": 587,
+            "ddos": 30,
+            "dos": 110,
+            "injection": 30,
+            "mitm": 30,
+            "password": 30,
+            "ransomware": 30,
+            "scanning": 93,
+            "xss": 30
+          },
+          "context_ids_sha256": "e959bf1559e4401add97c980c3d93d074741aad5db61148765b41e222a0ba58d"
+        }
+      ]
+    },
+    {
+      "dataset": "toniot",
+      "n": 30,
+      "policy": "random",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
+          "stage": 2,
+          "supplied": 60,
+          "admitted": 60,
+          "rejected": 0,
+          "removed": 60,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 704,
+            "ddos": 30,
+            "dos": 117,
+            "injection": 30,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 119,
+            "xss": 0
+          },
+          "context_ids_sha256": "d1a2b3942c8c70e7cd6cfe740b234a977fef6661ae77c06a18ddf54f7a6e0481"
+        },
+        {
+          "stage": 3,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1090,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 681,
+            "ddos": 30,
+            "dos": 114,
+            "injection": 29,
+            "mitm": 0,
+            "password": 30,
+            "ransomware": 0,
+            "scanning": 116,
+            "xss": 0
+          },
+          "context_ids_sha256": "2b7df351be62bf0108aa6bb0211947fe497bad62c0ff4693392925c55dc57392"
+        },
+        {
+          "stage": 4,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 661,
+            "ddos": 30,
+            "dos": 112,
+            "injection": 29,
+            "mitm": 0,
+            "password": 30,
+            "ransomware": 0,
+            "scanning": 108,
+            "xss": 30
+          },
+          "context_ids_sha256": "ab0f9def6bd20ce56561b9bec112447188b2aeace1aa4b0992e4581ca99156d0"
+        },
+        {
+          "stage": 5,
+          "supplied": 60,
+          "admitted": 60,
+          "rejected": 0,
+          "removed": 60,
+          "context_rows": 1000,
+          "cumulative_rows": 1180,
+          "context_counts": {
+            "backdoor": 30,
+            "benign": 620,
+            "ddos": 29,
+            "dos": 104,
+            "injection": 29,
+            "mitm": 0,
+            "password": 29,
+            "ransomware": 30,
+            "scanning": 100,
+            "xss": 29
+          },
+          "context_ids_sha256": "fc8241bbcbbb7ee2e055e9553b9574fa468f3e6bb3f719cae9e80f33eb6135cc"
+        },
+        {
+          "stage": 6,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1210,
+          "context_counts": {
+            "backdoor": 30,
+            "benign": 601,
+            "ddos": 28,
+            "dos": 103,
+            "injection": 27,
+            "mitm": 30,
+            "password": 29,
+            "ransomware": 30,
+            "scanning": 95,
+            "xss": 27
+          },
+          "context_ids_sha256": "9adba4dfb6f019a79638ec5787ab8861159012cba38378806108c8aba9f0bef3"
+        }
+      ]
+    },
+    {
+      "dataset": "toniot",
+      "n": 30,
+      "policy": "similar",
+      "stages": [
+        {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
+          "stage": 2,
+          "supplied": 60,
+          "admitted": 60,
+          "rejected": 0,
+          "removed": 60,
+          "context_rows": 1000,
+          "cumulative_rows": 1060,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 719,
+            "ddos": 30,
+            "dos": 113,
+            "injection": 30,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 108,
+            "xss": 0
+          },
+          "context_ids_sha256": "e5004048d5d181bc3fedc14b20c01d13eacfc6303031006bd3264841176ad21c"
+        },
+        {
+          "stage": 3,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1090,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 714,
+            "ddos": 30,
+            "dos": 113,
+            "injection": 24,
+            "mitm": 0,
+            "password": 30,
+            "ransomware": 0,
+            "scanning": 89,
+            "xss": 0
+          },
+          "context_ids_sha256": "093aba1f679515dc1c3d3f29e5bcc2481eebd37c990a6bcedc015db4c4c46548"
+        },
+        {
+          "stage": 4,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1120,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 703,
+            "ddos": 28,
+            "dos": 113,
+            "injection": 22,
+            "mitm": 0,
+            "password": 30,
+            "ransomware": 0,
+            "scanning": 74,
+            "xss": 30
+          },
+          "context_ids_sha256": "e4742cabb5067d32f143b8ca135b698662d1188fff054876e5a9972a5f596e93"
+        },
+        {
+          "stage": 5,
+          "supplied": 60,
+          "admitted": 60,
+          "rejected": 0,
+          "removed": 60,
+          "context_rows": 1000,
+          "cumulative_rows": 1180,
+          "context_counts": {
+            "backdoor": 30,
+            "benign": 652,
+            "ddos": 26,
+            "dos": 113,
+            "injection": 22,
+            "mitm": 0,
+            "password": 30,
+            "ransomware": 30,
+            "scanning": 67,
+            "xss": 30
+          },
+          "context_ids_sha256": "af53a42c7300c7ba6d4395f9a377714c5e2d7028db864ff3c976951f3b75f509"
+        },
+        {
+          "stage": 6,
+          "supplied": 30,
+          "admitted": 30,
+          "rejected": 0,
+          "removed": 30,
+          "context_rows": 1000,
+          "cumulative_rows": 1210,
+          "context_counts": {
+            "backdoor": 30,
+            "benign": 626,
+            "ddos": 26,
+            "dos": 113,
+            "injection": 20,
+            "mitm": 30,
+            "password": 30,
+            "ransomware": 30,
+            "scanning": 65,
+            "xss": 30
+          },
+          "context_ids_sha256": "6336f8745192a690d681df8c787546fc0cfd66b9eef681e560dd86ac6117bdc9"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 50,
-      "q": 50,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            25,
-            25
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 676,
+            "ddos": 50,
+            "dos": 116,
+            "injection": 50,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 108,
+            "xss": 0
+          },
+          "context_ids_sha256": "da633888b16e6d155afc4f027f7013a902c65236a6e2e788ff2f269dfee86d89"
         },
         {
           "stage": 3,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1150,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 634,
+            "ddos": 50,
+            "dos": 112,
+            "injection": 50,
+            "mitm": 0,
+            "password": 50,
+            "ransomware": 0,
+            "scanning": 104,
+            "xss": 0
+          },
+          "context_ids_sha256": "6b46af1d4a5369e5d0d9f9efe5ead7793e4d28bb00c288a205d3b40e8483fcb8"
         },
         {
           "stage": 4,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 593,
+            "ddos": 50,
+            "dos": 110,
+            "injection": 50,
+            "mitm": 0,
+            "password": 50,
+            "ransomware": 0,
+            "scanning": 97,
+            "xss": 50
+          },
+          "context_ids_sha256": "9e420dfa2652bee7034e5a46e535b6a585cd5ce72e9d41efa62a64b9bab3899c"
         },
         {
           "stage": 5,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            25,
-            25
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "backdoor": 50,
+            "benign": 524,
+            "ddos": 50,
+            "dos": 95,
+            "injection": 50,
+            "mitm": 0,
+            "password": 50,
+            "ransomware": 50,
+            "scanning": 81,
+            "xss": 50
+          },
+          "context_ids_sha256": "8f52481bdde88eac1fc2fe79628c274162df0b6a6792ad2738f7bec5a9a89333"
         },
         {
           "stage": 6,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1350,
+          "context_counts": {
+            "backdoor": 50,
+            "benign": 493,
+            "ddos": 50,
+            "dos": 82,
+            "injection": 50,
+            "mitm": 50,
+            "password": 50,
+            "ransomware": 50,
+            "scanning": 75,
+            "xss": 50
+          },
+          "context_ids_sha256": "b669b5b3ccc4c615be641f83214565aaa78bae8505f6bbbf92021c503e9e4a96"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 50,
-      "q": 100,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 678,
+            "ddos": 50,
+            "dos": 109,
+            "injection": 50,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 113,
+            "xss": 0
+          },
+          "context_ids_sha256": "f91d435f46920c6ed22fee861a4000a2a468084e1da3f65d27d503b8cd0cf6a2"
         },
         {
           "stage": 3,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1150,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 650,
+            "ddos": 48,
+            "dos": 102,
+            "injection": 43,
+            "mitm": 0,
+            "password": 50,
+            "ransomware": 0,
+            "scanning": 107,
+            "xss": 0
+          },
+          "context_ids_sha256": "0251604e7d01c1ca07bb355b8d3259235fbef61daebbbf2204189977ffe64dca"
         },
         {
           "stage": 4,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 613,
+            "ddos": 48,
+            "dos": 94,
+            "injection": 43,
+            "mitm": 0,
+            "password": 50,
+            "ransomware": 0,
+            "scanning": 102,
+            "xss": 50
+          },
+          "context_ids_sha256": "dd6fd5851a7510130ab2d3c72d3ff3d17a761acbbdf4b018cacae4ce326a5b4a"
         },
         {
           "stage": 5,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "backdoor": 50,
+            "benign": 545,
+            "ddos": 42,
+            "dos": 86,
+            "injection": 40,
+            "mitm": 0,
+            "password": 46,
+            "ransomware": 50,
+            "scanning": 92,
+            "xss": 49
+          },
+          "context_ids_sha256": "9116c4e708a53fbbed6349432e807a79b876ebd1a4dd4b55c32e1c0bb630deaa"
         },
         {
           "stage": 6,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1350,
+          "context_counts": {
+            "backdoor": 49,
+            "benign": 517,
+            "ddos": 39,
+            "dos": 81,
+            "injection": 38,
+            "mitm": 50,
+            "password": 45,
+            "ransomware": 48,
+            "scanning": 86,
+            "xss": 47
+          },
+          "context_ids_sha256": "df339b5d2ee16829bbb02d5e89f29cbcc138a43783102b74c983d1b5ef931a2f"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 50,
-      "q": 200,
+      "policy": "similar",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1100,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 685,
+            "ddos": 50,
+            "dos": 113,
+            "injection": 50,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 102,
+            "xss": 0
+          },
+          "context_ids_sha256": "72af73a7302c16b31a335c4f09983b0330e00fc8a29ba514330f574ccf2d3319"
         },
         {
           "stage": 3,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1150,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 677,
+            "ddos": 50,
+            "dos": 113,
+            "injection": 34,
+            "mitm": 0,
+            "password": 50,
+            "ransomware": 0,
+            "scanning": 76,
+            "xss": 0
+          },
+          "context_ids_sha256": "f74c7030250d15fdb2796bae35fd28bc4cdc2a2cd2dd8bc6c9d8bde2f5ae04a4"
         },
         {
           "stage": 4,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 665,
+            "ddos": 43,
+            "dos": 113,
+            "injection": 28,
+            "mitm": 0,
+            "password": 43,
+            "ransomware": 0,
+            "scanning": 58,
+            "xss": 50
+          },
+          "context_ids_sha256": "7073ad102b4770ec84302eb08f95185cb4971969e19af94e65828d91b52229af"
         },
         {
           "stage": 5,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "backdoor": 50,
+            "benign": 573,
+            "ddos": 42,
+            "dos": 113,
+            "injection": 28,
+            "mitm": 0,
+            "password": 43,
+            "ransomware": 50,
+            "scanning": 51,
+            "xss": 50
+          },
+          "context_ids_sha256": "1c79b8315770f502b9ad148095537bbc32cc3607d5a7b8d1685003de0c4b74c3"
         },
         {
           "stage": 6,
-          "incoming": 50,
+          "supplied": 50,
           "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 50,
+          "context_rows": 1000,
+          "cumulative_rows": 1350,
+          "context_counts": {
+            "backdoor": 50,
+            "benign": 530,
+            "ddos": 42,
+            "dos": 112,
+            "injection": 26,
+            "mitm": 50,
+            "password": 43,
+            "ransomware": 50,
+            "scanning": 47,
+            "xss": 50
+          },
+          "context_ids_sha256": "b91199d88263a96b653f50381cd8ace6b2497bc549a51f77d72d82487c907de5"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 100,
-      "q": 50,
+      "policy": "fifo",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            25,
-            25
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 200,
+          "admitted": 200,
+          "rejected": 0,
+          "removed": 200,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 593,
+            "ddos": 100,
+            "dos": 110,
+            "injection": 100,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 97,
+            "xss": 0
+          },
+          "context_ids_sha256": "40aa9509d740d382c7b7da7e4e08a0b028c2a4648c04dbd8d1e060bd8b801b5d"
         },
         {
           "stage": 3,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 524,
+            "ddos": 100,
+            "dos": 95,
+            "injection": 100,
+            "mitm": 0,
+            "password": 100,
+            "ransomware": 0,
+            "scanning": 81,
+            "xss": 0
+          },
+          "context_ids_sha256": "6d1209dde525bacea205852859cd62fdb3feb48ffc9d02a285c98cde8aaad2ed"
         },
         {
           "stage": 4,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1400,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 454,
+            "ddos": 100,
+            "dos": 77,
+            "injection": 100,
+            "mitm": 0,
+            "password": 100,
+            "ransomware": 0,
+            "scanning": 69,
+            "xss": 100
+          },
+          "context_ids_sha256": "4ec30589aefc40a886f2abb1022e3e469f43f6b90ee7a061f0dcb89606053f9b"
         },
         {
           "stage": 5,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            25,
-            25
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
+          "supplied": 200,
+          "admitted": 200,
+          "rejected": 0,
+          "removed": 200,
+          "context_rows": 1000,
+          "cumulative_rows": 1600,
+          "context_counts": {
+            "backdoor": 100,
+            "benign": 300,
+            "ddos": 100,
+            "dos": 62,
+            "injection": 100,
+            "mitm": 0,
+            "password": 100,
+            "ransomware": 100,
+            "scanning": 38,
+            "xss": 100
+          },
+          "context_ids_sha256": "cc3a89405310cbd24df0cc47ddded4d8207093395f4c3a436c0c6d5590eba890"
         },
         {
           "stage": 6,
-          "incoming": 100,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
+          "supplied": 100,
+          "admitted": 100,
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1700,
+          "context_counts": {
+            "backdoor": 100,
+            "benign": 224,
+            "ddos": 100,
+            "dos": 45,
+            "injection": 100,
+            "mitm": 100,
+            "password": 100,
+            "ransomware": 100,
+            "scanning": 31,
+            "xss": 100
+          },
+          "context_ids_sha256": "494dd3ba3c11f95d79bcafa43b866e7b7d27fbbd7167223dc29c84614a99387e"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 100,
-      "q": 100,
+      "policy": "random",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "supplied": 200,
+          "admitted": 200,
+          "rejected": 0,
+          "removed": 200,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 599,
+            "ddos": 100,
+            "dos": 98,
+            "injection": 100,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 103,
+            "xss": 0
+          },
+          "context_ids_sha256": "fa73e84e422c84ebf9df40efd6fb25124c176c8180a2d25c35c606a4e45c83fb"
         },
         {
           "stage": 3,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 546,
+            "ddos": 89,
+            "dos": 84,
+            "injection": 90,
+            "mitm": 0,
+            "password": 100,
+            "ransomware": 0,
+            "scanning": 91,
+            "xss": 0
+          },
+          "context_ids_sha256": "ac387e6a857b8fdebe13e1cdaf17bc59645f8f5be417d6bd091e1b79d8aa8dc5"
         },
         {
           "stage": 4,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1400,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 490,
+            "ddos": 82,
+            "dos": 74,
+            "injection": 75,
+            "mitm": 0,
+            "password": 98,
+            "ransomware": 0,
+            "scanning": 81,
+            "xss": 100
+          },
+          "context_ids_sha256": "ec80e9b41dccbef7e71b6f12a3d1fc758ad1abff883675467e3744244a57dbde"
         },
         {
           "stage": 5,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
+          "supplied": 200,
+          "admitted": 200,
+          "rejected": 0,
+          "removed": 200,
+          "context_rows": 1000,
+          "cumulative_rows": 1600,
+          "context_counts": {
+            "backdoor": 100,
+            "benign": 393,
+            "ddos": 67,
+            "dos": 60,
+            "injection": 57,
+            "mitm": 0,
+            "password": 77,
+            "ransomware": 100,
+            "scanning": 63,
+            "xss": 83
+          },
+          "context_ids_sha256": "d039f7d45fb74a083613bde34b528eeb8757c28c70bef33af04ed451e91d6807"
         },
         {
           "stage": 6,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1700,
+          "context_counts": {
+            "backdoor": 90,
+            "benign": 351,
+            "ddos": 57,
+            "dos": 56,
+            "injection": 50,
+            "mitm": 100,
+            "password": 72,
+            "ransomware": 93,
+            "scanning": 56,
+            "xss": 75
+          },
+          "context_ids_sha256": "04037cc12b3de4933b8ad3c79002edcadb7d6a8977fed098ecb9594c912f3e10"
         }
       ]
     },
     {
       "dataset": "toniot",
       "n": 100,
-      "q": 200,
+      "policy": "similar",
       "stages": [
         {
+          "stage": 1,
+          "supplied": 1000,
+          "admitted": 1000,
+          "rejected": 0,
+          "removed": 0,
+          "context_rows": 1000,
+          "cumulative_rows": 1000,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 750,
+            "ddos": 0,
+            "dos": 125,
+            "injection": 0,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 125,
+            "xss": 0
+          },
+          "context_ids_sha256": "2d047232326fcc870fa878e0923520504ef5fe51497e0d1525d76b13d9ca95bb"
+        },
+        {
           "stage": 2,
-          "incoming": 200,
+          "supplied": 200,
           "admitted": 200,
-          "per_new_class": [
-            100,
-            100
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 200,
+          "context_rows": 1000,
+          "cumulative_rows": 1200,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 598,
+            "ddos": 100,
+            "dos": 113,
+            "injection": 100,
+            "mitm": 0,
+            "password": 0,
+            "ransomware": 0,
+            "scanning": 89,
+            "xss": 0
+          },
+          "context_ids_sha256": "37d0f79ff4ae6ea6b678b8321e3c1d00f0ab1c5f715be896d3f3ce1d86af0418"
         },
         {
           "stage": 3,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1300,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 582,
+            "ddos": 78,
+            "dos": 113,
+            "injection": 71,
+            "mitm": 0,
+            "password": 100,
+            "ransomware": 0,
+            "scanning": 56,
+            "xss": 0
+          },
+          "context_ids_sha256": "27cf1dd203f4017da4acc044222efc84307589cba7eae3dbbaffab86d4169836"
         },
         {
           "stage": 4,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1400,
+          "context_counts": {
+            "backdoor": 0,
+            "benign": 574,
+            "ddos": 76,
+            "dos": 113,
+            "injection": 47,
+            "mitm": 0,
+            "password": 36,
+            "ransomware": 0,
+            "scanning": 54,
+            "xss": 100
+          },
+          "context_ids_sha256": "2512c37430198dfa3af82b7c61a1cc1ec4b2177831cd02506004832c9f9ef0e7"
         },
         {
           "stage": 5,
-          "incoming": 200,
+          "supplied": 200,
           "admitted": 200,
-          "per_new_class": [
-            100,
-            100
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 200,
+          "context_rows": 1000,
+          "cumulative_rows": 1600,
+          "context_counts": {
+            "backdoor": 100,
+            "benign": 394,
+            "ddos": 73,
+            "dos": 113,
+            "injection": 46,
+            "mitm": 0,
+            "password": 36,
+            "ransomware": 100,
+            "scanning": 44,
+            "xss": 94
+          },
+          "context_ids_sha256": "e4dcdb99053a5394157af9b269ef5fb47c254e14e28afdad4225024decb42604"
         },
         {
           "stage": 6,
-          "incoming": 100,
+          "supplied": 100,
           "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "toniot",
-      "n": 200,
-      "q": 50,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            25,
-            25
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
-        },
-        {
-          "stage": 3,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            25,
-            25
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
-        },
-        {
-          "stage": 6,
-          "incoming": 200,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "toniot",
-      "n": 200,
-      "q": 100,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
-        },
-        {
-          "stage": 3,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
-        },
-        {
-          "stage": 6,
-          "incoming": 200,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "toniot",
-      "n": 200,
-      "q": 200,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            100,
-            100
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
-        },
-        {
-          "stage": 3,
-          "incoming": 200,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 200,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            100,
-            100
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
-        },
-        {
-          "stage": 6,
-          "incoming": 200,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "toniot",
-      "n": 400,
-      "q": 50,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 800,
-          "admitted": 50,
-          "per_new_class": [
-            25,
-            25
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
-        },
-        {
-          "stage": 3,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 800,
-          "admitted": 50,
-          "per_new_class": [
-            25,
-            25
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
-        },
-        {
-          "stage": 6,
-          "incoming": 400,
-          "admitted": 50,
-          "per_new_class": [
-            50
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "toniot",
-      "n": 400,
-      "q": 100,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 800,
-          "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
-        },
-        {
-          "stage": 3,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 800,
-          "admitted": 100,
-          "per_new_class": [
-            50,
-            50
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
-        },
-        {
-          "stage": 6,
-          "incoming": 400,
-          "admitted": 100,
-          "per_new_class": [
-            100
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
-        }
-      ]
-    },
-    {
-      "dataset": "toniot",
-      "n": 400,
-      "q": 200,
-      "stages": [
-        {
-          "stage": 2,
-          "incoming": 800,
-          "admitted": 200,
-          "per_new_class": [
-            100,
-            100
-          ],
-          "protected_old_total": 550,
-          "context_rows": 1000
-        },
-        {
-          "stage": 3,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 600,
-          "context_rows": 1000
-        },
-        {
-          "stage": 4,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 625,
-          "context_rows": 1000
-        },
-        {
-          "stage": 5,
-          "incoming": 800,
-          "admitted": 200,
-          "per_new_class": [
-            100,
-            100
-          ],
-          "protected_old_total": 650,
-          "context_rows": 1000
-        },
-        {
-          "stage": 6,
-          "incoming": 400,
-          "admitted": 200,
-          "per_new_class": [
-            200
-          ],
-          "protected_old_total": 700,
-          "context_rows": 1000
+          "rejected": 0,
+          "removed": 100,
+          "context_rows": 1000,
+          "cumulative_rows": 1700,
+          "context_counts": {
+            "backdoor": 95,
+            "benign": 373,
+            "ddos": 49,
+            "dos": 112,
+            "injection": 39,
+            "mitm": 100,
+            "password": 36,
+            "ransomware": 90,
+            "scanning": 36,
+            "xss": 70
+          },
+          "context_ids_sha256": "094fc5fa3f224ff84a44d8f103c8664d1964a29050b1a0d0bd04b656348f131b"
         }
       ]
     }

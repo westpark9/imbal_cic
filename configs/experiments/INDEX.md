@@ -386,6 +386,8 @@ EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨
 
 | Experiment | Date | Status | Evidence | Run |
 |---|---|---|---|---|
+| exp87 | 2026-10-27 | finished | unreviewed | `results/v7/exp87/20261027_110920_fewshot_validity_audit_e8ebccad` |
+| exp87 | 2026-10-27 | finished | unreviewed | `results/v7/exp87/20261027_111156_original_test_population_audit_1a65ae21` |
 | exp69 | 2026-10-02 | complete | exploratory | `tabpfn/results/v7/exp69/20261002_exp69_class_arrival_s43` |
 | exp70 | 2026-10-02 | complete | exploratory | `tabpfn/results/v7/exp70/20261002_exp70_class_arrival_100k_s43` |
 | exp71 | 2026-10-13 | complete | exploratory | `tabpfn/results/v7/exp71/20261013_140543_bounded_uniform_natural_s43_731a4a80` |
@@ -405,4 +407,20 @@ EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨
 | exp81 | 2026-10-16 | finished | exploratory | `tabpfn/results/v7/exp81/20261016_025421_mixed_query_final_s43_b6ba1d34` |
 | exp82 | 2026-10-16 | finished | exploratory | `tabpfn/results/v7/exp82/20261016_063510_ton_proposed_rebuild_audit_s43_0ce11484` |
 | exp83 | 2026-10-16 | complete | exploratory | `tabpfn/results/v7/exp83/20261016_120553_context_buffer_10_400_noft_s43_7c25cb5d` |
+| exp84 | 2026-10-20 | finished | unreviewed | `tabpfn/results/v7/exp84/20261020_160101_small_labels_5_100_buffer_retention_s43_3204a372` |
+| exp84 | 2026-10-21 | finished | unreviewed | `tabpfn/results/v7/exp84/20261021_111613_small_labels_buffer_s44_s45_29cd3f40` |
+| exp85 | 2026-10-21 | finished | unreviewed | `tabpfn/results/v7/exp85/20261021_142357_matched_xgb_buffers_s43_s44_s45_7b56fee4` |
+| exp86 | 2026-10-21 | finished | unreviewed | `tabpfn/results/v7/exp86/20261021_232457_attack_fewshot_s43_47_0a849540` |
+| exp87 | 2026-10-22 | finished | unreviewed | `tabpfn/results/v7/exp87/20261022_154948_attack_saturation_pilot43_then5seeds_417964c7` |
+| exp87 | 2026-10-22 | finished | unreviewed | `tabpfn/results/v7/exp87/20261022_163739_full_learning_curve_five_seeds_c59213f5` |
+| exp87 | 2026-10-22 | finished | unreviewed | `tabpfn/results/v7/exp87/20261022_164549_class_capped_extension_seed43_43f6dd6c` |
+| exp88 | 2026-10-27 | failed | not_adopted | `tabpfn/results/v7/exp88/20261027_121953_sampling_diversity_2_5_10_20_five_seeds_bb195c2e` |
+| exp88 | 2026-10-27 | complete | exploratory | `tabpfn/results/v7/exp88/20261027_122102_sampling_diversity_weighted_lloyd_five_seeds_8b952b20` |
+| exp89 | 2026-10-27 | finished | unreviewed | `tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a` |
+| exp90 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp90/20261028_003407_shared_experts_smoke_82170add` |
+| exp90 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp90/20261028_003926_shared_experts_smoke_fixed_e61da6c3` |
+| exp90 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp90/20261028_004124_shared_context_experts_overnight_227bdd85` |
+| exp91 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp91/20261028_194707_two_designs_real_pfn_smoke_1e824bfb` |
+| exp91 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp91/20261028_194827_two_designs_real_pfn_smoke_fixed_probe_00ac57e9` |
+| exp91 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp91/20261028_195409_two_designs_portable_export_smoke_d0ff0379` |
 

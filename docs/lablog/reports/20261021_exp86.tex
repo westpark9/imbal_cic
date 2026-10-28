@@ -1,0 +1,200 @@
+% !TeX root = 20261021_exp86.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\begin{document}
+\reporttitle{2026-10-21}{EXP86 · 극소수 공격 사례의 TabPFN·XGB 분류 비교}
+\subsection{목적과 실행 상태}
+연구 버전 v7의 EXP86은 갱신·버퍼 삭제 이전의 소수 공격 분류 능력을 확인한다. 실행 시작일은 20261021, 현재 기록 시각은 2026-10-22T09:21:28.454808+\allowbreak{}09:00다. 상태는 complete, 완료 조건은 100/\allowbreak{}100이다. 실행 경로는 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp86/\allowbreak{}\allowbreak{}20261021\allowbreak{}\_\allowbreak{}\allowbreak{}232457\_\allowbreak{}\allowbreak{}attack\_\allowbreak{}\allowbreak{}f\allowbreak{}ewshot\_\allowbreak{}\allowbreak{}s\allowbreak{}43\_\allowbreak{}\allowbreak{}47\_\allowbreak{}\allowbreak{}0a\allowbreak{}849540}이다.
+
+\subsection{공통 설정과 평가 의미}
+CIC2018과 ToN-IoT를 독립적으로 평가하며 공격당 1·2·5·10·20행, seed 43–47을 사용한다. 모든 공격 클래스에서 같은 수를 뽑고 정상 학습 사례는 0개다. 전체 정제 train에서 클래스당 20개를 추출한 뒤 앞 n개를 사용하므로 표본 집합이 중첩된다. 초기 1000행이나 기존 IDS fine-tuning 결과는 사용하지 않는다.
+
+같은 seed·n의 XGB와 PFN은 동일한 행 ID를 사용한다. PFN은 기존 v3 checkpoint, 4 estimators, fit\_\allowbreak{}with\_\allowbreak{}cache, CPU cache이며 가중치를 학습하지 않는다. XGB는 300 trees, depth 8, learning rate 0.05, subsample/\allowbreak{}colsample 0.8, min\_\allowbreak{}child\_\allowbreak{}weight 1, CUDA hist의 기존 설정을 고정한다. 극소 표본에서 이 설정으로 split이 불가능한지 실제 split 수를 기록한다. 이 문제가 나타나면 해당 n의 결과를 최적화된 XGB 대비 우위로 주장하지 않는다.
+
+Phase A는 고정 test 중 공격만의 Macro-F1·클래스별 F1/\allowbreak{}recall이다. Phase B는 같은 모델과 예측을 정상 포함 모집단에서 집계하며 정상으로부터 발생한 공격 클래스 false positive가 포함된다. 정상 출력 클래스가 없어 정상 recall 0 및 정상 FPR 100\%는 구조적으로 결정된다. 따라서 B는 실제 정상 탐지 능력의 증거가 아니다.
+
+시험 순서는 seed 43의 라벨과 무관한 혼합 순서, batch 8192로 고정한다. 두 phase는 같은 query 배치에서 얻은 예측을 사용하므로 B의 영향은 평가 모집단 변경이며 query 구성 변경의 인과 효과가 아니다. 기존 특징은 행별 zero fill과 고정 clipping을 사용하고 모델의 데이터 의존 전처리는 제공된 소수 행에서만 적합한다. 기존 정제 과정과 이미 검토한 고정 test의 영향을 포함하므로 탐색적 결과로 해석한다.
+
+준비시간은 매 조건의 새 모델 생성과 XGB fit 또는 PFN cache 준비를 포함한다. 순차 후속 갱신 비용은 측정하지 않았으며 추론과 파일 저장·검증은 준비시간에서 제외한다. 추론시간은 정상 포함 전체 test를 처리한 시간이다. 같은 장비라도 첫 조건의 라이브러리 초기화 등 cold-start 영향은 별도로 해석한다.
+
+\subsection{실제 제공·평가 표본 수}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13406\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13406\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30072\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13406\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14855\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14855\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 공격 클래스 & 학습/\allowbreak{}context 행 수 (n=\allowbreak{}1/\allowbreak{}2/\allowbreak{}5/\allowbreak{}10/\allowbreak{}20) & 공격 test & 정상 test & 전체 test \\ \midrule
+\endfirsthead
+데이터 & 공격 클래스 & 학습/\allowbreak{}context 행 수 (n=\allowbreak{}1/\allowbreak{}2/\allowbreak{}5/\allowbreak{}10/\allowbreak{}20) & 공격 test & 정상 test & 전체 test \\ \midrule
+\endhead
+{}cic2018 & 6 & 6/\allowbreak{}12/\allowbreak{}30/\allowbreak{}60/\allowbreak{}120 & 390,270 & 2,652,203 & 3,042,473 \\
+{}toniot & 9 & 9/\allowbreak{}18/\allowbreak{}45/\allowbreak{}90/\allowbreak{}180 & 797,421 & 1,474,302 & 2,271,723 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{Attack-only Macro-F1 (\%)}
+\reportfigure{figures/exp86_quality.pdf}{Attack-only Macro-F1 (\%); mean ± sample SD, incomplete cells use available seeds}
+
+
+\subsection{Attack-class F1, benign included (\%)}
+\reportfigure{figures/exp86_phase_b.pdf}{Attack-class F1, benign included (\%); mean ± sample SD, incomplete cells use available seeds}
+
+
+\subsection{Feature-disjoint attack Macro-F1 (\%)}
+\reportfigure{figures/exp86_feature_disjoint.pdf}{Feature-disjoint attack Macro-F1 (\%); mean ± sample SD, incomplete cells use available seeds}
+
+
+\subsection{비용}
+\reportfigure{figures/exp86_cost.pdf}{초기 준비와 전체 추론을 분리한 비용}
+
+
+\subsection{수치 요약}
+평균과 표본 표준편차(ddof=\allowbreak{}1)는 고정 분할에서 선택 표본·모델 seed를 바꾼 반복이다. 신뢰구간이나 통계적 동등성을 뜻하지 않는다. 부분 완료에서는 완료 seed 수를 함께 표시하며 서로 다른 반복 수의 곡선을 확정 비교하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12612\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12612\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12612\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12612\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17299\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15737\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16518\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & n & 모델 & 반복 수 & 공격 F1 (\%) & 준비 (초) & 추론 (초) \\ \midrule
+\endfirsthead
+데이터 & n & 모델 & 반복 수 & 공격 F1 (\%) & 준비 (초) & 추론 (초) \\ \midrule
+\endhead
+{}cic2018 & 1 & pfn & 5 & 41.55 ± 5.27 & 0.37 ± 0.18 & 80.16 ± 2.66 \\
+{}cic2018 & 1 & xgb & 5 & 0.74 ± 1.27 & 0.30 ± 0.22 & 0.88 ± 0.01 \\
+{}cic2018 & 2 & pfn & 5 & 66.34 ± 10.44 & 0.29 ± 0.00 & 84.04 ± 4.29 \\
+{}cic2018 & 2 & xgb & 5 & 63.24 ± 6.32 & 0.23 ± 0.00 & 0.91 ± 0.00 \\
+{}cic2018 & 5 & pfn & 5 & 74.78 ± 4.29 & 0.31 ± 0.00 & 88.54 ± 0.07 \\
+{}cic2018 & 5 & xgb & 5 & 72.24 ± 4.66 & 0.26 ± 0.00 & 0.97 ± 0.01 \\
+{}cic2018 & 10 & pfn & 5 & 80.58 ± 0.73 & 0.31 ± 0.00 & 91.32 ± 0.10 \\
+{}cic2018 & 10 & xgb & 5 & 80.37 ± 1.91 & 0.29 ± 0.00 & 1.02 ± 0.01 \\
+{}cic2018 & 20 & pfn & 5 & 80.59 ± 1.64 & 0.31 ± 0.00 & 94.20 ± 0.22 \\
+{}cic2018 & 20 & xgb & 5 & 80.43 ± 0.97 & 0.35 ± 0.01 & 1.07 ± 0.01 \\
+{}toniot & 1 & pfn & 5 & 36.00 ± 5.86 & 0.29 ± 0.01 & 63.06 ± 0.96 \\
+{}toniot & 1 & xgb & 5 & 0.72 ± 0.95 & 0.30 ± 0.00 & 0.81 ± 0.00 \\
+{}toniot & 2 & pfn & 5 & 45.77 ± 6.05 & 0.29 ± 0.00 & 63.93 ± 1.13 \\
+{}toniot & 2 & xgb & 5 & 45.03 ± 3.27 & 0.35 ± 0.00 & 0.87 ± 0.01 \\
+{}toniot & 5 & pfn & 5 & 58.75 ± 3.67 & 0.31 ± 0.01 & 66.58 ± 0.05 \\
+{}toniot & 5 & xgb & 5 & 52.29 ± 5.62 & 0.41 ± 0.01 & 0.96 ± 0.02 \\
+{}toniot & 10 & pfn & 5 & 60.46 ± 3.78 & 0.30 ± 0.00 & 69.72 ± 0.31 \\
+{}toniot & 10 & xgb & 5 & 57.88 ± 5.08 & 0.51 ± 0.02 & 1.03 ± 0.02 \\
+{}toniot & 20 & pfn & 5 & 69.13 ± 4.49 & 0.31 ± 0.00 & 71.62 ± 0.71 \\
+{}toniot & 20 & xgb & 5 & 64.74 ± 2.18 & 0.65 ± 0.01 & 1.13 ± 0.01 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{클래스별 결과}
+\reportfigure{figures/exp86_per_class.pdf}{공격 test 표본 수 내림차순; 클래스별 F1 평균}
+
+
+\subsection{근거에 따른 해석과 후속 실험}
+cic2018에서 현재 집계한 n은 [1, 2, 5, 10, 20]이다. 동일한 seed·n의 PFN−XGB 차이는 exp86\_\allowbreak{}paired.csv에, 클래스별 수치는 exp86\_\allowbreak{}per\_\allowbreak{}class.csv에 보존한다.
+
+n=\allowbreak{}1의 대응 PFN−XGB 차이는 40.81 pp, 완료된 대응 반복은 5회다.
+
+n=\allowbreak{}20의 대응 PFN−XGB 차이는 0.16 pp, 완료된 대응 반복은 5회다.
+
+cic2018 XGB n=\allowbreak{}5: 공격 Macro-F1 평균 72.24\% (완료 5 seeds). 클래스별 F1이 낮은 3종은 web\_\allowbreak{}attacks 1.89\%, infiltration 48.46\%, dos 89.99\%다. 평균 상승과 약한 클래스의 개선 여부를 분리해 본다.
+
+cic2018 XGB n=\allowbreak{}20: 공격 Macro-F1 평균 80.43\% (완료 5 seeds). 클래스별 F1이 낮은 3종은 web\_\allowbreak{}attacks 8.95\%, infiltration 79.19\%, dos 96.66\%다. 평균 상승과 약한 클래스의 개선 여부를 분리해 본다.
+
+cic2018 PFN n=\allowbreak{}5: 공격 Macro-F1 평균 74.78\% (완료 5 seeds). 클래스별 F1이 낮은 3종은 web\_\allowbreak{}attacks 3.55\%, infiltration 57.04\%, dos 91.60\%다. 평균 상승과 약한 클래스의 개선 여부를 분리해 본다.
+
+cic2018 PFN n=\allowbreak{}20: 공격 Macro-F1 평균 80.59\% (완료 5 seeds). 클래스별 F1이 낮은 3종은 web\_\allowbreak{}attacks 10.61\%, infiltration 77.74\%, dos 96.15\%다. 평균 상승과 약한 클래스의 개선 여부를 분리해 본다.
+
+toniot에서 현재 집계한 n은 [1, 2, 5, 10, 20]이다. 동일한 seed·n의 PFN−XGB 차이는 exp86\_\allowbreak{}paired.csv에, 클래스별 수치는 exp86\_\allowbreak{}per\_\allowbreak{}class.csv에 보존한다.
+
+n=\allowbreak{}1의 대응 PFN−XGB 차이는 35.28 pp, 완료된 대응 반복은 5회다.
+
+n=\allowbreak{}20의 대응 PFN−XGB 차이는 4.39 pp, 완료된 대응 반복은 5회다.
+
+toniot XGB n=\allowbreak{}5: 공격 Macro-F1 평균 52.29\% (완료 5 seeds). 클래스별 F1이 낮은 3종은 ransomware 14.21\%, mitm 16.47\%, scanning 35.51\%다. 평균 상승과 약한 클래스의 개선 여부를 분리해 본다.
+
+toniot XGB n=\allowbreak{}20: 공격 Macro-F1 평균 64.74\% (완료 5 seeds). 클래스별 F1이 낮은 3종은 mitm 8.97\%, ransomware 34.67\%, scanning 40.29\%다. 평균 상승과 약한 클래스의 개선 여부를 분리해 본다.
+
+toniot PFN n=\allowbreak{}5: 공격 Macro-F1 평균 58.75\% (완료 5 seeds). 클래스별 F1이 낮은 3종은 mitm 18.81\%, ransomware 33.42\%, injection 41.49\%다. 평균 상승과 약한 클래스의 개선 여부를 분리해 본다.
+
+toniot PFN n=\allowbreak{}20: 공격 Macro-F1 평균 69.13\% (완료 5 seeds). 클래스별 F1이 낮은 3종은 mitm 16.59\%, ransomware 42.82\%, scanning 51.61\%다. 평균 상승과 약한 클래스의 개선 여부를 분리해 본다.
+
+\subsection{정상 포함 시 오분류 유입 (n=\allowbreak{}20)}
+이 표는 정상 query가 어느 공격으로 분류되는지를 나타낸다. 모든 모델이 정상 출력 라벨을 가지지 않으므로 비율 합은 100\%이며, 정상 탐지 능력의 순위로 해석하지 않는다. 정상에서 유입된 false positive 때문에 Phase B의 공격 precision/\allowbreak{}F1은 Phase A와 달라진다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.16481\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16481\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21111\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.28519\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.17407\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 모델 & 공격 클래스 & 정상 중 해당 공격으로 분류 (\%) & 완료 seeds \\ \midrule
+\endfirsthead
+데이터 & 모델 & 공격 클래스 & 정상 중 해당 공격으로 분류 (\%) & 완료 seeds \\ \midrule
+\endhead
+{}cic2018 & xgb & ddos & 0.25 & 5 \\
+{}cic2018 & xgb & bot & 3.95 & 5 \\
+{}cic2018 & xgb & dos & 4.94 & 5 \\
+{}cic2018 & xgb & brute\_\allowbreak{}force & 0.08 & 5 \\
+{}cic2018 & xgb & infiltration & 77.32 & 5 \\
+{}cic2018 & xgb & web\_\allowbreak{}attacks & 13.46 & 5 \\
+{}cic2018 & pfn & ddos & 0.12 & 5 \\
+{}cic2018 & pfn & bot & 1.39 & 5 \\
+{}cic2018 & pfn & dos & 8.43 & 5 \\
+{}cic2018 & pfn & brute\_\allowbreak{}force & 0.00 & 5 \\
+{}cic2018 & pfn & infiltration & 77.76 & 5 \\
+{}cic2018 & pfn & web\_\allowbreak{}attacks & 12.29 & 5 \\
+{}toniot & xgb & xss & 19.22 & 5 \\
+{}toniot & xgb & password & 3.90 & 5 \\
+{}toniot & xgb & ddos & 27.31 & 5 \\
+{}toniot & xgb & injection & 5.39 & 5 \\
+{}toniot & xgb & backdoor & 2.80 & 5 \\
+{}toniot & xgb & dos & 7.93 & 5 \\
+{}toniot & xgb & scanning & 6.18 & 5 \\
+{}toniot & xgb & mitm & 14.90 & 5 \\
+{}toniot & xgb & ransomware & 12.35 & 5 \\
+{}toniot & pfn & xss & 10.31 & 5 \\
+{}toniot & pfn & password & 5.01 & 5 \\
+{}toniot & pfn & ddos & 36.94 & 5 \\
+{}toniot & pfn & injection & 5.19 & 5 \\
+{}toniot & pfn & backdoor & 0.56 & 5 \\
+{}toniot & pfn & dos & 5.47 & 5 \\
+{}toniot & pfn & scanning & 7.81 & 5 \\
+{}toniot & pfn & mitm & 14.61 & 5 \\
+{}toniot & pfn & ransomware & 14.09 & 5 \\
+\bottomrule
+\end{longtable}
+\endgroup
+행 순서는 각 데이터의 고정 공격 test 표본 수 내림차순이다. 위 비율의 분모는 해당 데이터의 정상 test 수다.
+
+XGB의 실제 split 수가 0인 조건이 10개 발견되었다. 극소 표본에서 min\_\allowbreak{}child\_\allowbreak{}weight와 subsampling의 제약이 영향을 줄 수 있으므로, 해당 점수는 고정된 기존 XGB 설정의 결과다. 다음 비교에서는 작은 표본에 적합한 min\_\allowbreak{}child\_\allowbreak{}weight/\allowbreak{}subsample 설정을 사전에 정한 대조군으로 추가해 모델 차이와 설정 제약을 분리해야 한다. 이 대조군은 이번 승인된 100조건에 자동 추가하지 않는다.
+
+\subsection{완료 후 해석 보완 · 2026-10-22}
+이 해석은 100조건 완료 후 2026-10-22에 수행한 분석이다. 실행 시작일은 2026-10-21이며 새 모델 실행을 추가하지 않았다. 아래 수치는 각 seed의 지표를 계산한 뒤 평균한 값이므로, 혼동행렬을 seed 간 먼저 합쳐 계산한 지표와 다를 수 있다.
+
+CIC2018에서는 n=\allowbreak{}10과 20에서 두 모델의 평균 공격 Macro-F1이 약 80\%로 비슷했다. ToN에서는 n=\allowbreak{}5와 20에서 PFN의 대응 seed별 점수가 XGB보다 모두 높았다. 다만 이는 고정 분할과 고정 모델 설정의 5회 결과이며 통계적 동등성이나 다른 환경에서의 우위를 뜻하지 않는다.
+
+낮은 클래스 F1을 단순히 그 공격을 찾지 못한 것으로 해석하면 안 된다. 동일한 공격별 n개 학습은 균형 context를 만들지만, 공격 test의 실제 클래스 수는 불균형하다. 실제 공격의 누락과 다른 클래스에서 유입된 오분류를 precision·recall로 나눠 확인한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15556\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19524\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.24286\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21905\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18730\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 클래스 & PFN precision (\%) & PFN recall (\%) & PFN F1 (\%) \\ \midrule
+\endfirsthead
+데이터 & 클래스 & PFN precision (\%) & PFN recall (\%) & PFN F1 (\%) \\ \midrule
+\endhead
+{}cic2018 & web\_\allowbreak{}attacks & 5.78 & 73.39 & 10.61 \\
+{}toniot & mitm & 10.86 & 83.14 & 16.59 \\
+{}toniot & ransomware & 27.88 & 94.19 & 42.82 \\
+\bottomrule
+\end{longtable}
+\endgroup
+표는 n=\allowbreak{}20, 공격만 평가한 Phase A, 5 seeds 평균이다. 이 클래스들은 recall보다 precision이 훨씬 낮아 다른 공격을 해당 희귀 공격으로 판단하는 false positive가 중요한 병목이다. 표본 선택·특징 중첩·클래스 prior의 영향은 가능한 설명이며, 이번 실험만으로 그 원인을 확정하지 않는다.
+
+후속 순서는 극소 표본에서의 XGB 분할 제약 대조  \ensuremath{\rightarrow}  정상 라벨을 제공하는 조건에서 공격 recall과 정상 FPR의 관계 확인  \ensuremath{\rightarrow}  동일 라벨·보존 예산으로 누적/\allowbreak{}버퍼 적응 비교가 적절하다. 새 모델이나 앙상블을 설계하기 전, 낮은 F1이 누락·오분류 유입·선택 seed 변동 중 어디서 발생하는지 확인한다. 보정·임계값을 검토할 때는 독립 개발 자료와 그 라벨 비용을 명시한다.
+
+현재 비용은 초기 모델 생성·fit/\allowbreak{}cache 준비와 전체 test 추론을 분리한 값이다. 이 극소 context에서는 준비 비용이 작지만 PFN의 전체 test 추론은 XGB보다 오래 걸렸다. 따라서 이번 비용을 순차 갱신 실험의 재측정 또는 서비스 전체 비용 절감으로 해석하지 않는다.
+
+PFN의 공격 분류가 유지되는 조건은 정상·기존 공격을 함께 둔 순차 context 갱신으로 연결한다. 처음부터 약한 클래스는 무작위 대 대표성·다양성 선택 및 특징 구분 가능성을 먼저 검토한다. 두 모델 모두 잘하는 경우에는 동일 품질에서의 비용과 보존 사례 수를 확인한다. 이는 후속 제안이며 새 실험 실행이나 모델 수정은 아직 수행하지 않았다.
+
+특징이 정확히 같은 학습 사례가 있는 test 행을 제외한 진단은 n·seed에 따라 평가 모집단이 달라진다. 따라서 전체 고정 test 결과를 대체하거나 그 곡선의 변화만으로 인과관계를 주장하지 않는다. feature hash는 기존 정제 파이프라인의 값이며 근접 중복·동일 세션 누수까지 제거했다는 의미는 아니다.
+
+\subsection{재현 근거}
+설정·환경·데이터 ID·query 순서·예측·혼동행렬·비용·소스 사본은 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp86/\allowbreak{}\allowbreak{}20261021\allowbreak{}\_\allowbreak{}\allowbreak{}232457\_\allowbreak{}\allowbreak{}attack\_\allowbreak{}\allowbreak{}f\allowbreak{}ewshot\_\allowbreak{}\allowbreak{}s\allowbreak{}43\_\allowbreak{}\allowbreak{}47\_\allowbreak{}\allowbreak{}0a\allowbreak{}849540}에 있다. 원고와 슬라이드에는 결과를 자동 채택하지 않는다.
+
+
+\end{document}

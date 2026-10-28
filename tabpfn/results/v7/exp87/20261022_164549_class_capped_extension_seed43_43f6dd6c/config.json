@@ -1,0 +1,154 @@
+{
+  "protocol": "exp87.3",
+  "checkpoint": "/home/user/Desktop/imbalcic/tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+  "threads": 8,
+  "batch": 8192,
+  "report_date": "20261022",
+  "started_at": "2026-10-22T16:45:49.938394+09:00",
+  "design": {
+    "status": "authorized_for_execution",
+    "research_version": "v7",
+    "experiment_id": "exp87",
+    "authorization": "2026-10-22 사용자: benign 제외, 2개부터 사례 수를 늘려 수렴을 단일 seed로 탐색한 후 다른 seed로 검증",
+    "source_run": "tabpfn/results/v7/exp86/20261021_232457_attack_fewshot_s43_47_0a849540",
+    "datasets": [
+      "cic2018",
+      "toniot"
+    ],
+    "pilot_seed": 43,
+    "validation_seeds": [
+      44,
+      45,
+      46,
+      47
+    ],
+    "budgets": {
+      "cic2018": [
+        2,
+        5,
+        10,
+        20,
+        40,
+        80,
+        160,
+        320,
+        450
+      ],
+      "toniot": [
+        2,
+        5,
+        10,
+        20,
+        40,
+        80,
+        160,
+        320,
+        640,
+        1280,
+        2151
+      ]
+    },
+    "balanced_cap": "Minimum full-clean-train attack-class count; CIC web_attacks=450, ToN ransomware=2151; no duplication or unequal class caps",
+    "sampling": "Keep each EXP86 seed's first 20 rows per attack, append uniformly sampled rows without replacement from the remaining same-class train pool; nested and paired between models",
+    "models": "Unchanged XGB300/depth8/lr.05/subsample.8/colsample.8/min_child_weight1 and frozen TabPFN-v3/4 estimators/fit_with_cache/CPU cache/no subsampling",
+    "evaluation": "Only the original fixed attack test rows; CIC390270 and ToN797421; no benign train or inference; no FT",
+    "query_order": "Filter the original seed43 mixed query order down to attack rows; batch8192; rerun pilot 2/5/10/20 to use the same attack-only execution protocol at every n",
+    "anchor": "At n20 compare attack-only predictions against saved EXP86 attack predictions; report batch-composition sensitivity if any",
+    "plateau": {
+      "tolerance_f1": 0.01,
+      "window": 3,
+      "minimum_n": 80,
+      "pilot": "Both models have max-min F1 <=1 percentage point over last3 budgets; require that condition at two consecutive budgets, including one larger confirmation budget",
+      "validation": "Run seeds44-47 at the last3 pilot budgets; reuse seed43. Check each model's five-seed mean range <=1pp, disclose per-seed ranges and paired gaps. If mean plateau fails, evaluate the next grid budget at all5 seeds and check the latest3 again, until confirmed or available-label cap",
+      "cap": "If the available-label cap is reached, say label cap reached; never label it converged merely because execution ends",
+      "between_model_gap": "Report |PFN-XGB|<=1pp separately; descriptive closeness is not statistical equivalence"
+    },
+    "selection_caveat": "Exploratory learning curves on an already-inspected fixed test; extra seeds verify sampling/model variability, not an untouched test or external generalization",
+    "cost": "Fresh construct+fit/cache preparation and attack-test inference separately; not sequential update",
+    "feature_disjoint": "No changing feature-disjoint test used for stopping or main curves; exact overlap counts may be recorded as diagnostics",
+    "report": "Automatically regenerate Korean standalone LaTeX, figures, CSVs and log; temporary PDF compile; retain predictions, IDs, code and decisions",
+    "slides_or_manuscript_edit": false
+  },
+  "allocation": "available_cap",
+  "source_run": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp87/20261022_154948_attack_saturation_pilot43_then5seeds_417964c7",
+  "report_base": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp87/20261022_163739_full_learning_curve_five_seeds_c59213f5",
+  "extension_plan": {
+    "status": "authorized_for_execution",
+    "reason": "Balanced learning curves reached the rarest-class pool size before a clear plateau",
+    "sampling": "Keep all nested existing rows; sample additional distinct train rows; per-class min(target_n, available_class_rows); same fixed attack test and matched models",
+    "pilot_seed": 43,
+    "conditions": {
+      "cic2018": [
+        {
+          "target_n": 800,
+          "class_counts": {
+            "bot": 800,
+            "brute_force": 800,
+            "ddos": 800,
+            "dos": 800,
+            "infiltration": 800,
+            "web_attacks": 450
+          },
+          "total_rows": 4450
+        },
+        {
+          "target_n": 1600,
+          "class_counts": {
+            "bot": 1600,
+            "brute_force": 1600,
+            "ddos": 1600,
+            "dos": 1600,
+            "infiltration": 1600,
+            "web_attacks": 450
+          },
+          "total_rows": 8450
+        },
+        {
+          "target_n": 3200,
+          "class_counts": {
+            "bot": 3200,
+            "brute_force": 3200,
+            "ddos": 3200,
+            "dos": 3200,
+            "infiltration": 3200,
+            "web_attacks": 450
+          },
+          "total_rows": 16450
+        }
+      ],
+      "toniot": [
+        {
+          "target_n": 3200,
+          "class_counts": {
+            "backdoor": 3200,
+            "ddos": 3200,
+            "dos": 3200,
+            "injection": 3200,
+            "mitm": 3200,
+            "password": 3200,
+            "ransomware": 2151,
+            "scanning": 3200,
+            "xss": 3200
+          },
+          "total_rows": 27751
+        },
+        {
+          "target_n": 6400,
+          "class_counts": {
+            "backdoor": 6400,
+            "ddos": 6400,
+            "dos": 6400,
+            "injection": 6400,
+            "mitm": 3285,
+            "password": 6400,
+            "ransomware": 2151,
+            "scanning": 6400,
+            "xss": 6400
+          },
+          "total_rows": 50236
+        }
+      ]
+    },
+    "authorization": "2026-10-22 사용자 응답: 제안한 방식으로 추가 실행"
+  }
+}

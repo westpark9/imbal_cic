@@ -1,0 +1,41 @@
+{
+  "status": "authorized_for_execution",
+  "research_version": "v7",
+  "experiment_id": "exp86",
+  "authorization": "2026-10-21 사용자: 그래. 야간작업 시작해라.",
+  "datasets": [
+    "cic2018",
+    "toniot"
+  ],
+  "budgets": [
+    1,
+    2,
+    5,
+    10,
+    20
+  ],
+  "seeds": [
+    43,
+    44,
+    45,
+    46,
+    47
+  ],
+  "methods": [
+    "xgb",
+    "pfn"
+  ],
+  "expected_jobs": 100,
+  "benign_train_rows": 0,
+  "initial_context_reused": false,
+  "finetuning": false,
+  "sampling": "Full conflict-filtered train pool, balanced per attack, nested within seed; matched row IDs between models",
+  "evaluation": "Complete fixed test, shared seed43 query order and batch8192; phase A attack-only subset and phase B all rows from same predictions",
+  "phase_b": "No benign output: benign FPR100% by construction, diagnostic only",
+  "cost": "Fresh model construction+fit/cache, separate full inference; not incremental update",
+  "xgb": "300 trees/depth8/lr.05/subsample.8/colsample.8/min_child_weight1; audit zero-split degeneracy; no HPO",
+  "pfn": "Existing v3 checkpoint, 4 estimators, fit_with_cache, CPU cache, no context subsampling",
+  "report": "Korean standalone LaTeX+log, temp PDF validation, automatic completion/failure report",
+  "future_experiments": "Proposal only after evidence; not automatically run",
+  "slides_or_manuscript_edit": false
+}

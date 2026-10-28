@@ -1,0 +1,89 @@
+극소수 공격 사례의 분류 가능성과 모델 차이
+공격 클래스만 평가 · 정상 제외 · 클래스별 같은 n개 학습 · 고정 attack test · 5 seeds
+
+
+
+
+ CIC2018 n=5 +2.55%p             ToN-IoT n=5 +6.46%p
+ n=10 +0.21%p                    n=10 +2.58%p
+ 공격 종류를 구분하는 성능은 형성 · 모델 격차는 데이터와 n에 따라 축소·역전
+TabPFN 우위는 일부 극소 구간에서 관찰 · 표본 수 전반에서 일관된 우위는 미확인                01 선행 실험   1
+CIC2018 · 평균 점수가 가리는 공격별 난이도
+                                                       n=10의 TabPFN F1
+                                                       DDoS 99.6
+                                                       Bot 99.4
+                                                       Brute force 100.0
+                                                       어려운 공격
+                                                       Infiltration 84.3
+                                                       Web attacks 4.3
+                                                       PFN−XGB
+                                                       +3.8%p / −3.1%p
+
+쉬운 공격은 10개 이내에도 높은 F1 · Web attacks는 두 모델 모두 해결하지 못함                     01 선행 실험   2
+ToN-IoT · 소수 사례의 효과도 공격마다 다름
+                                                n=10의 TabPFN F1
+                                                Backdoor 96.2
+                                                DoS 87.2
+                                                XSS 85.6
+                                                어려운 공격
+                                                Scanning 46.4
+                                                Ransomware 28.6
+                                                MITM 6.7
+                                                PFN−XGB
+                                                +12.0 / +6.3 / +1.6%p
+
+일부 공격은 TabPFN 이득 · MITM 등은 두 모델의 절대 성능이 계속 낮음                    01 선행 실험   3
+LotBoNC · 원본 트래픽에서 평가 조건을 만드는 과정
+LotBoNC: Novel Botnet Traffic Classification under Long-tailed Distributions · ASIA CCS 2026
+ 각 벤치마크에서 독립 적용
+          실제 트래픽                                      입력 전처리                                   평가 집합 구성
+  IoT-23 / ISCX-Bot / CTU-13                PCAP → flow → burst / token                   같은 출처 안에서 사례·라벨 분리
+ 실험자가 조절한 부분 라벨 공개 대상과 클래스별 표본 수
+                     라벨 집합 L                                                      비라벨 집합 U
+                   알려진 공격만 포함                                                 알려진 공격 + 새로운 공격
+                  클래스별 같은 수의 사례                                             불균형 구성 · 정답은 학습에서 비공개
+
+  구성 예시 · 파랑·청록 = known / 주황 = novel               Known / novel 총량 비 γ = 1, 5, 10
+  블록 수는 설명용 예시 · 실제 표본 수와 별개
+참고점 같은 출처에서 known·novel과 라벨 공개 범위를 명시 · 스트림 재현과 구분                                                    02 관련 연구   4
+LotBoNC · 임시 정답과 클래스 표현의 반복 갱신
+                                                       1 E-step · batch 전체의 임시 정답
+                                                         높은 예측 확률을 우선하되
+                                                         클래스별 총량을 추정 prior에 맞춤
+                                                       2 M-step · 클래스 대표 표현 갱신
+                                                         Prototype(클래스 중심)·prior(빈도) 갱신
+                                                         이전 값과 새 값을 이동평균으로 결합
+  원문 Figure 4 · 임시 정답 배정과 표현 학습의 반복
+                                                       3 표현이 좋아지도록 가중치 학습
+   E-step의 배정 기준                                         대조 손실 + prototype 손실
+   예측과 맞는 배정 + 추정 클래스 비율 유지                              Encoder 가중치 θ 갱신 후 반복
+   예시 10개 사례 · prior 0.6 : 0.3 : 0.1
+
+참고점 라벨 없는 novel·긴 꼬리 학습 방식 · 우리 감독 분류 모델로 직접 채택하지 않음                               02 관련 연구   5
+데이터 스트림 · 예측 순서와 context 비용의 분리
+Rethinking Tabular Foundation Models On Data Streams · arXiv 2026
+       새 사례 도착                        먼저 예측                            정답 도착           그다음 갱신
+          x_t                      현재 memory 사용                       d개 사례 뒤         Memory M 변경
+                                                                    1 메모리 정책과 backbone을 분리
+                                                                      같은 모델에서 FIFO와 선택 정책 비교
+                                                                      단순 FIFO도 강한 기준선
+  매번 context 재계산 / 저장된 표현 재사용                                       2 행 교체와 context encoding 구분
+                                                                      갱신 빈도를 줄여도 예측마다 재계산하면
+  기본 조건 메모리 1,000행 · 즉시 라벨                                            큰 비용은 계속 발생
+  실제 stream 5개 + 합성 drift stream 4개
+
+평가 설계에 직접 참고 예측 → 라벨 확보 → 갱신 · 메모리와 처리 비용 분리                                                02 관련 연구   6
+ICD · 모델 대신 context의 특징값 학습
+In-Context Data Distillation with TabPFN · ICLR ME-FoMo Workshop 2024
+                                                                  1 작은 합성 context 준비
+                                                                        클래스별 같은 수의 라벨 고정
+                                                                        특징값은 최적화 가능한 변수
+                                                                  2 실제 train 사례를 query로 예측
+  왼쪽 모델 학습을 포함한 증류 / 오른쪽 context 직접 최적화                                 현재 합성 context + 고정 TabPFN
+                                                                        실제 정답과의 오차 계산
+    고정하는 것 모델 가중치 θ, context 라벨 y                                 3 오차로 context 특징값 수정
+    바꾸는 것 context의 특징값 X                                                Gradient를 입력 X까지 전달
+                                                                        가중치 θ를 바꾸지 않고 반복
+    X ← X − α · ∂Loss/∂X
+후속 방법 후보 큰 라벨 이력을 작은 context로 압축 · 극소 라벨 성능 근거와 구분                                              02 관련 연구   7
+

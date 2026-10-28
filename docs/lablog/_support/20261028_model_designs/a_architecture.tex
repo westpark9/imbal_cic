@@ -1,0 +1,42 @@
+\documentclass[tikz,border=7pt]{standalone}
+\usepackage{fontspec,kotex,amsmath}
+\setmainfont{DejaVu Sans}
+\setmainhangulfont{Noto Sans CJK KR}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+\definecolor{blue}{HTML}{245B8A}
+\definecolor{orange}{HTML}{AD5A17}
+\definecolor{green}{HTML}{287255}
+\tikzset{
+  box/.style={draw=blue,fill=blue!6,rounded corners=3pt,align=center,
+    text width=4.1cm,minimum height=1.1cm,inner sep=6pt,font=\small},
+  train/.style={box,draw=orange,fill=orange!8},
+  deploy/.style={box,draw=green,fill=green!8},
+  note/.style={align=center,font=\footnotesize,text=black!80},
+  arr/.style={-{Stealth[length=2.4mm]},line width=.8pt,draw=black!70},
+  upd/.style={arr,dashed,draw=orange},
+  label/.style={font=\scriptsize,fill=white,inner sep=2pt}}
+\begin{document}
+\begin{tikzpicture}
+
+\node[box] (l) at (0,0) {참라벨 집합 $L$\\공격당 $n$개 + 정상};
+\node[box] (u) at (7.1,0) {비라벨 학습 집합 $U$\\정답은 모델에 제공하지 않음};
+\node[box] (t) at (0,-2) {TabPFN 교사\\가중치 고정 / context는 $L$\\$p^T(y\mid x,L)$};
+\node[train] (e) at (7.1,-2) {수치형 flow encoder $f_\theta$\\마스킹 복원 + 참라벨 준비\\표현 $z$와 클래스 대표점 $\mu$};
+\node[train,text width=7.2cm] (q) at (3.55,-4.1) {교사 확률 + 대표점 거리로 soft label $Q$ 배정\\비균등 클래스 비율은 약한 제약으로 사용\\불확실한 배정은 학습 기여를 낮춤};
+\node[train,text width=7.2cm] (s) at (3.55,-6.1) {학생 encoder 학습 + 대표점 갱신\\참라벨 손실 + soft label 손실 + 복원 손실\\참라벨은 유지 / 교사로 역전파하지 않음};
+\node[deploy,text width=10cm] (d) at (3.55,-8.1) {배포: 새 flow $x$ $\longrightarrow$ 학습한 $f_\theta(x)$
+  $\longrightarrow$ 대표점 분류 $p^S(y\mid x)$\\TabPFN과 복원 decoder는 배포 경로에서 제외};
+\draw[arr] (l)--(t);
+\draw[arr] (u)--(e);
+\draw[arr] (u.west)--(3.6,0)--(3.6,-1.2)--(t.north east);
+\draw[arr] (l.north)--(0,.9)--node[label,above]{학생의 참라벨 학습}(9.8,.9)--(9.8,-1.2)--(e.north east);
+\draw[arr] (t.south)--(t.south|-q.north);
+\draw[arr] (e.south)--(e.south|-q.north);
+\draw[arr] (q)--(s);
+\draw[upd] (s.east)--(10.1,-6.1)--(10.1,-2)--(e.east);
+\node[note,rotate=90] at (10.4,-4.1) {표현·대표점 반복 갱신};
+\draw[arr] (s)--(d);
+\node[note] at (3.55,-9.35) {파랑: 고정 교사·입력 \quad 주황: 학습/갱신 \quad 초록: 최종 추론\\실선: 정보 전달 \quad 점선: 학생 상태 갱신};
+
+\end{tikzpicture}
+\end{document}

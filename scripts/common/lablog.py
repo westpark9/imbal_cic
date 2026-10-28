@@ -7,6 +7,11 @@ from experiment_paths import repo_root
 from lablog_format import convert_md,esc
 ROOT=repo_root(); OUT=ROOT/'docs/lablog'
 
+def persistent_pdfs():
+    """Reports explicitly requested by the user as permanent PDF exports."""
+    manifest=OUT/'_support/persistent_pdfs.json'
+    return {OUT/name for name in json.loads(manifest.read_text())} if manifest.exists() else set()
+
 def write_record(destination,text,*,summary=None,compile_pdf=True):
     """메모리상 Markdown을 변환한다. Markdown 상세 파일은 생성하지 않는다.
     날짜·실험 ID·해석은 호출자가 제공하며 현재 시각이나 성공 여부를 추정하지 않는다.
@@ -55,8 +60,10 @@ def build_report(path):
         missing=[s for s in log.splitlines() if 'Missing character:' in s]
         if missing:raise RuntimeError(f'{path.name}: 누락된 글자: '+'\n'.join(missing[:20]))
         pdf=Path(directory)/path.with_suffix('.pdf').name
+        persist=path.with_suffix('.pdf') in persistent_pdfs()
+        if persist:shutil.copy2(pdf,path.with_suffix('.pdf'))
         return dict(report=str(path.relative_to(ROOT) if path.is_relative_to(ROOT) else path),
-                    pdf_persisted=False,compiled_pdf_sha256=hashlib.sha256(pdf.read_bytes()).hexdigest(),missing_glyphs=0,
+                    pdf_persisted=persist,compiled_pdf_sha256=hashlib.sha256(pdf.read_bytes()).hexdigest(),missing_glyphs=0,
                     overfull_boxes=log.count('Overfull \\hbox'))
 
 def check():
@@ -83,7 +90,8 @@ def check():
     for p in reports:
         s=p.read_text()
         if r'\begin{document}' not in s or r'\end{document}' not in s:issues.append('독립 문서 아님: '+p.name)
-        if p.with_suffix('.pdf').exists():issues.append('상시 보관하지 않는 보고서 PDF: '+p.with_suffix('.pdf').name)
+        if p.with_suffix('.pdf').exists() and p.with_suffix('.pdf') not in persistent_pdfs():
+            issues.append('상시 보관하지 않는 보고서 PDF: '+p.with_suffix('.pdf').name)
         for ref in re.findall(r'\\(?:input|includegraphics(?:\[[^]]*\])?|reportfigure)\{([^}]+)\}',s):
             if not (OUT/ref).exists():issues.append(p.name+'의 연결 없음: '+ref)
     return dict(passed=not issues,reports=len(reports),issues=issues)

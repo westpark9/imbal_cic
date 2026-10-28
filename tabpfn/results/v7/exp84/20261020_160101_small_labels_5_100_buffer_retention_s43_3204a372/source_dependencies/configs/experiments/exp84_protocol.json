@@ -1,0 +1,196 @@
+{
+  "status": "authorized_for_execution",
+  "date": "2026-10-20",
+  "revision": 3,
+  "research_version": "v7",
+  "experiment_id": "exp84",
+  "authorization": "2026-10-20 user requested execution with 100 added to 5/10/20/30/50; leave slides unchanged; seed 43 once",
+  "question": "With few newly labelled attack examples, compare cumulative XGB retraining against frozen TabPFN with cumulative or 1000-row contexts",
+  "correction": "Reduce the supplied per-class sample counts themselves; admit every supplied row. Remove admission caps, class quotas, selection experiments, and the ICD pilot.",
+  "historical_100_rationale": "Presentation example among explored budgets; not a statistical median, optimum, empirical minimum, or operationally justified quota",
+  "datasets": [
+    "cic2018",
+    "toniot"
+  ],
+  "cross_dataset_mixing": false,
+  "seed": 43,
+  "seed_repetitions": 1,
+  "initial_rows": 1000,
+  "initial_counts": [
+    750,
+    125,
+    125
+  ],
+  "available_labels_per_new_class": [
+    5,
+    10,
+    20,
+    30,
+    50,
+    100
+  ],
+  "budget_rationale": "User-approved sweep 5/10/20/30/50/100. At n=100 the largest ToN stage admits 200 rows (20% of B=1000); no incoming row is rejected.",
+  "persistent_context_capacity": 1000,
+  "admission": {
+    "rule": "Admit ALL supplied new rows at every stage, exactly k_t*n; no cap or rejection",
+    "rejected_rows": 0
+  },
+  "class_retention": {
+    "minimum_per_old_class": 1,
+    "source": "Unchanged EXP83 deletion rule; no new 500/25 quota or balancing",
+    "affects_new_admission": false
+  },
+  "eviction": {
+    "fifo": "Unchanged EXP83: oldest acquisition order, retain the original within-stage ordering; skip only the last remaining row of a class",
+    "random": "Unchanged EXP83: seed 43 + zero-based stage_index * 1009 permutation of the old context; skip only last class rows",
+    "similar": "Unchanged EXP83: minimum Euclidean distance to any incoming row after StandardScaler fitted on OLD context only; stable tie order; skip only last class rows",
+    "common": "Delete exactly as many OLD rows as arrive, then append every incoming row. Never retrieve evicted rows."
+  },
+  "sampling": "Use EXP78 subset_plans nested per-class permutation of EXP77 new100 incoming IDs, same seed and original row ordering. Initial IDs unchanged; 10/20/50 must match saved EXP78 IDs. All methods get exactly the same incoming rows.",
+  "main_methods": [
+    "xgb_cumulative",
+    "pfn_cumulative",
+    "pfn_fifo",
+    "pfn_random",
+    "pfn_similar"
+  ],
+  "main_condition_counts": {
+    "datasets": 2,
+    "budgets": 6,
+    "methods": 5,
+    "total": 60,
+    "pfn_buffer": 36,
+    "pfn_cumulative": 12,
+    "xgb_cumulative": 12
+  },
+  "extra_controls": [],
+  "icd_experiment_included": false,
+  "stages": {
+    "cic2018": [
+      [
+        "benign",
+        "brute_force",
+        "dos"
+      ],
+      [
+        "ddos"
+      ],
+      [
+        "web_attacks"
+      ],
+      [
+        "infiltration"
+      ],
+      [
+        "bot"
+      ]
+    ],
+    "toniot": [
+      [
+        "benign",
+        "scanning",
+        "dos"
+      ],
+      [
+        "injection",
+        "ddos"
+      ],
+      [
+        "password"
+      ],
+      [
+        "xss"
+      ],
+      [
+        "ransomware",
+        "backdoor"
+      ],
+      [
+        "mitm"
+      ]
+    ]
+  },
+  "model": {
+    "checkpoint": "same recorded TabPFN v3 checkpoint as EXP83",
+    "estimators": 4,
+    "fit_mode": "fit_with_cache",
+    "cache_device": "cpu",
+    "context_subsampling": false,
+    "initial_ft": false,
+    "later_ft": false,
+    "weight_digest_check": true
+  },
+  "evaluation": {
+    "main": "Final state on complete fixed held-out test, identical mixed order and query batch 8192",
+    "stage_panel": "Seed-43 sample of up to 2000 fixed-test rows per class; fixed ID list and fixed label-independent query order across all stages; labels used only for sampling and metrics",
+    "panel_queries": "The same fixed panel may include future-class query features; no query labels enter fitting, context selection, preprocessing or admission; unknown-class detection is not scored",
+    "stage_known_metrics": "Confusion matrix for rows of currently introduced classes, with label-set mapping explicit",
+    "paired_old_retention": "For update t, compare model states t-1 and t on exactly the same fixed panel rows from classes known before t; use the same old-class evaluation population for both scores",
+    "joint_false_positives": "Also report per-class precision/F1 from the full currently-known population, including newly introduced classes; old-only F1 does not include new-to-old false positives",
+    "new_metrics": "Per-class recall/F1 for just-introduced and all post-initial attack classes; full currently-known population supplies false positives",
+    "diagnostics": [
+      "benign FPR",
+      "per-class context counts",
+      "incoming and deleted counts",
+      "peak memory",
+      "fixed original-class panel score through all stages"
+    ],
+    "interpretation": "Single-seed exploratory evidence; previous test inspection disclosed; no statistical equivalence or minimum-label guarantee",
+    "stage_panel_role": "Offline post-hoc evaluation of saved stage models, not a causal temporal replay"
+  },
+  "cost": {
+    "primary": "GPU-synchronized wall time for context assembly/eviction + model construction + preprocessing + cumulative XGB fit or PFN cache preparation, summed after initial stage",
+    "secondary": [
+      "initial preparation",
+      "per-stage update time",
+      "time per component",
+      "final full-test inference",
+      "stage-panel inference",
+      "total elapsed",
+      "peak GPU/host memory"
+    ],
+    "exclusions_from_primary": [
+      "all inference",
+      "checkpoint writing",
+      "validation checks",
+      "report generation"
+    ],
+    "measurement": "Sequential GPU runs, identical hardware and settings, same 4-estimator PFN, no concurrent experiment workers; single seed; log warm-up policy",
+    "cache_note": "Every new row is admitted. Replacing even a few rows may rebuild the entire 1000-row context cache; fixed capacity does not imply incremental or free updates.",
+    "historical": "Old prediction scores may be an explicitly labelled reference; do not combine old and new timing to claim a speedup"
+  },
+  "sources": {
+    "base_plans": "tabpfn/results/v7/exp77/20261015_230535_initialft10_finalfull_s43_2eb2237d/data",
+    "overlap_plans": "tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487",
+    "old_protocol": "configs/experiments/exp83_protocol.json",
+    "sampling_implementation": "scripts/v7/exp78/noft_dist_budget.py:subset_plans",
+    "deletion_implementation": "scripts/v7/exp76/run_context_policies.py:replace_context"
+  },
+  "icd_reference": {
+    "paper": "https://arxiv.org/html/2402.06971",
+    "basis": "Paper Section 3 objective, Figure 2 gradient flow, Section 4 optimization settings",
+    "author_implementation": "No author-released ICD code verified in this review; do not claim use of official code",
+    "local_implementation": "scripts/v7/exp75/context_distillation.py",
+    "provenance": "Local v3 adaptation of the paper idea, not author code or a verified faithful reproduction",
+    "discussion": "Optimizing context features requires gradient computation and addresses compression, not the present question of how few actual new labelled rows suffice. Reference only; no pilot in this design."
+  },
+  "planned_outputs": [
+    "final full-test overall and new-attack mean per-class F1 versus n",
+    "paired old-class changes on fixed panel",
+    "post-initial update seconds versus n",
+    "per-class metrics and context counts as supporting tables"
+  ],
+  "removed_outputs": [
+    "deterministic replacement-ratio plot",
+    "admission-cap ablations",
+    "class-quota ablations",
+    "matched-buffer XGB",
+    "ICD pilot"
+  ],
+  "execution": "Fresh updates and final full-test predictions for all 60 conditions in one environment; no timing or prediction reuse. Save paired stage-panel metrics and automatically write Korean LaTeX/log at completion or failure.",
+  "protocol": "exp84.1",
+  "version": "v7",
+  "experiment": "exp84",
+  "slides_publication": false,
+  "overleaf_publication": false
+}

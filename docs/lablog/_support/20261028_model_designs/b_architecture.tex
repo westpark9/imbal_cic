@@ -1,0 +1,44 @@
+\documentclass[tikz,border=7pt]{standalone}
+\usepackage{fontspec,kotex,amsmath}
+\setmainfont{DejaVu Sans}
+\setmainhangulfont{Noto Sans CJK KR}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+\definecolor{blue}{HTML}{245B8A}
+\definecolor{orange}{HTML}{AD5A17}
+\definecolor{green}{HTML}{287255}
+\tikzset{
+  box/.style={draw=blue,fill=blue!6,rounded corners=3pt,align=center,
+    text width=4.1cm,minimum height=1.1cm,inner sep=6pt,font=\small},
+  train/.style={box,draw=orange,fill=orange!8},
+  deploy/.style={box,draw=green,fill=green!8},
+  note/.style={align=center,font=\footnotesize,text=black!80},
+  arr/.style={-{Stealth[length=2.4mm]},line width=.8pt,draw=black!70},
+  upd/.style={arr,dashed,draw=orange},
+  label/.style={font=\scriptsize,fill=white,inner sep=2pt}}
+\begin{document}
+\begin{tikzpicture}
+
+\node[box,text width=3.5cm] (l) at (0,0) {참라벨 전체 $L$\\Global이 모두 사용};
+\node[box,text width=3.5cm] (g) at (4.9,0) {Global TabPFN\\가중치 고정};
+\node[box,text width=3.5cm] (s0) at (9.8,0) {전체 클래스 점수\\$s^{(0)}=\log p_G$};
+\node[box,text width=3.5cm] (x) at (0,-2.1) {새 query $x$\\정답 라벨 사용 없음};
+\node[box,text width=3.5cm] (e1) at (4.9,-2.1) {쌍 전문가 1\\예: 정상 / Infiltration\\$L$의 두 클래스만\\이진 context로 사용};
+\node[train,text width=3.5cm] (c1) at (9.8,-2.1) {쌍 1의 점수차만 보정\\$s_a\!\leftarrow s_a+\delta/2$\\$s_b\!\leftarrow s_b-\delta/2$};
+\node[box,text width=3.5cm] (e2) at (4.9,-4.4) {쌍 전문가 2\\이전 보정 뒤 남은 혼동\\$L$의 두 클래스만\\이진 context로 사용};
+\node[train,text width=3.5cm] (c2) at (9.8,-4.4) {쌍 2의 점수차 보정\\순서·계수·상한은\\평가 전에 고정};
+\node[deploy,text width=8.4cm] (out) at (7.35,-6.5) {최종 softmax $\longrightarrow$ 최종 클래스\\다른 logit 직접 수정 없음\\정규화 확률과 다른 클래스 예측은 바뀔 수 있음};
+\draw[arr] (l)--(g);
+\draw[arr] (g)--(s0);
+\draw[arr] (x.north)|-(g.south west);
+\draw[arr] (x)--(e1);
+\draw[arr] (x.south)--(0,-4.4)--(e2.west);
+\draw[arr] (e1)--node[label,above]{$t_{ab}$}(c1);
+\draw[arr] (e2)--(c2);
+\draw[arr] (s0)--(c1);
+\draw[arr] (c1)--(c2);
+\draw[arr] (c2.south)--(c2.south|-out.north);
+\node[note,text width=4.0cm] at (.2,-6.3) {Global·전문가의\\TabPFN 가중치는 모두 고정\\학습/선택 대상: 쌍, 순서, 보정 계수};
+\node[note,text width=12.5cm] at (5,-8) {그림의 클래스 쌍은 설명 예시이며 test에서 미리 선택하지 않음.\\초기안은 선택된 전문가를 모두 호출하므로 호출 비용 절감은 별도 검증 대상.};
+
+\end{tikzpicture}
+\end{document}

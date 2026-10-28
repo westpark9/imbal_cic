@@ -1,0 +1,81 @@
+{
+  "updated_at": "2026-10-28T11:42:03.793495+09:00",
+  "user_request": "데이터셋별 1×3, 기존 실험 가운데; 직접 라벨 제거; 모델별 R/B 색과 긴 실선·점선 범례; EXP89 PDF 상시 보관",
+  "supersedes": "exp89_plot_legibility.json의 직접 라벨 그래프를 보고서에서 교체함. 기존 실험 수치는 보존함.",
+  "panels": [
+    {
+      "position": "left",
+      "train_version": "original",
+      "test_version": "original",
+      "benign_training": false,
+      "test_scope": "attack"
+    },
+    {
+      "position": "center",
+      "train_version": "clean",
+      "test_version": "clean",
+      "benign_training": false,
+      "test_scope": "attack"
+    },
+    {
+      "position": "right",
+      "train_version": "clean",
+      "test_version": "clean",
+      "benign_training": true,
+      "test_scope": "all"
+    }
+  ],
+  "metric": "attack_macro_f1; percent; mean and sample standard deviation",
+  "styles": {
+    "TabPFN": {
+      "color": "#C62828",
+      "line": "solid",
+      "marker": "circle"
+    },
+    "XGB": {
+      "color": "#2166AC",
+      "line": "dashed",
+      "marker": "square"
+    },
+    "legend_handlelength": 6,
+    "legend_numpoints": 1
+  },
+  "validation": {
+    "plotted_rows": 60,
+    "seeds_per_point": [
+      43,
+      44,
+      45,
+      46,
+      47
+    ],
+    "values_independently_checked": true,
+    "all_existing_tables_unchanged": true,
+    "figure_visual_review": "Both figures and report pages 3–4 reviewed; no clipped labels or overlaps; long dashes visible on both sides of the legend marker.",
+    "pdf_render_warnings": 0
+  },
+  "numeric_sources_unchanged": {
+    "tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a/analysis/metrics.csv": "a8dce26efb06685d06453855b633ddc501ac352d6322a63931512740643bbee8",
+    "tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a/analysis/per_class.csv": "471644aea53b6377ebf76bee45defef3c8637f59e240d28aab8ed9bb3f7a5281"
+  },
+  "artifacts_sha256": {
+    "scripts/v7/exp89/report_curation.py": "1a23338442e64de844b4a5f231fb538fe3cc09e8f19e7d878c9f50812f76cc17",
+    "docs/lablog/reports/20261027_exp89.tex": "4e33139d124cccba7878ee6880b9e596cbdd6e04098df79de49e49622df66eca",
+    "docs/lablog/reports/20261027_exp89.pdf": "ce5614b788c7f9bdff2ba62d04d223a70f38b9cb71b1dfba3dcbf1caa53d4c2f",
+    "docs/lablog/data/20261027_exp89_comparison_curves.csv": "b08bbac2143481c2bce187cdbecc2e148e3ece3452207311bb4de50ce6617fc8",
+    "docs/lablog/figures/20261027_exp89_comparison_cic2018.pdf": "a27b654939b1cd615fb1aef69a25fad1d3b26d8bd5c6aec3f415f7b4f23c2ccc",
+    "docs/lablog/figures/20261027_exp89_comparison_toniot.pdf": "80b9a672185ee27db34e11f3610917d7feba8e67f8b93b0b947f217b9670aeb0"
+  },
+  "compile": {
+    "report": "docs/lablog/reports/20261027_exp89.tex",
+    "pdf_persisted": true,
+    "compiled_pdf_sha256": "ce5614b788c7f9bdff2ba62d04d223a70f38b9cb71b1dfba3dcbf1caa53d4c2f",
+    "missing_glyphs": 0,
+    "overfull_boxes": 0
+  },
+  "structure": {
+    "passed": true,
+    "reports": 50,
+    "issues": []
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "dataset": "cic2018",
+  "arm": "row_random",
+  "seed": 44,
+  "n": 5,
+  "method": "xgb",
+  "context_rows": 30,
+  "class_names": [
+    "benign",
+    "bot",
+    "brute_force",
+    "ddos",
+    "dos",
+    "infiltration",
+    "web_attacks"
+  ],
+  "train_ids_sha256": "69090ee9c4a8ab9fddd21b6e8a6414d828c1ad95f3ae731457e02cd4b5333164",
+  "train_class_counts": [
+    0,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5
+  ],
+  "test_rows": 390270,
+  "metrics": {
+    "rows": 390270,
+    "confusion": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        41109,
+        0,
+        243,
+        0,
+        190,
+        0
+      ],
+      [
+        0,
+        0,
+        37676,
+        0,
+        0,
+        20,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        247436,
+        13764,
+        0,
+        1480
+      ],
+      [
+        0,
+        0,
+        0,
+        4,
+        34033,
+        398,
+        5048
+      ],
+      [
+        0,
+        158,
+        2,
+        40,
+        914,
+        6230,
+        1398
+      ],
+      [
+        0,
+        0,
+        29,
+        0,
+        27,
+        2,
+        69
+      ]
+    ],
+    "macro_f1": 0.7583214980905625,
+    "benign_false_positive_rate": null,
+    "attack_to_benign": 0,
+    "wrong_attack_family": 23717,
+    "attack_detection_recall": 1.0,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 0,
+        "precision": 0.0,
+        "recall": null,
+        "f1": null,
+        "TP": 0,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "name": "bot",
+        "support": 41542,
+        "precision": 0.9961712748685391,
+        "recall": 0.9895768138269703,
+        "f1": 0.9928630945911676,
+        "TP": 41109,
+        "FP": 158,
+        "FN": 433
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 0.9991778714827486,
+        "recall": 0.9994694397283531,
+        "f1": 0.9993236343381563,
+        "TP": 37676,
+        "FP": 31,
+        "FN": 20
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 0.9988414479075419,
+        "recall": 0.9419674128216842,
+        "f1": 0.9695711036181214,
+        "TP": 247436,
+        "FP": 287,
+        "FN": 15244
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 0.6982847059789077,
+        "recall": 0.86196590937872,
+        "f1": 0.7715396560909534,
+        "TP": 34033,
+        "FP": 14705,
+        "FN": 5450
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.9108187134502924,
+        "recall": 0.712651567147106,
+        "f1": 0.7996406109613656,
+        "TP": 6230,
+        "FP": 610,
+        "FN": 2512
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 0.008630393996247656,
+        "recall": 0.5433070866141733,
+        "f1": 0.01699088894360995,
+        "TP": 69,
+        "FP": 7926,
+        "FN": 58
+      }
+    ]
+  },
+  "preparation_seconds": 0.26375226001255214,
+  "construct_seconds": 3.276299685239792e-05,
+  "fit_seconds": 0.26371949701569974,
+  "inference_seconds": 0.13468435732647777,
+  "peak_gpu_gib": 0.0089111328125,
+  "weights_sha256": null,
+  "finetuning": false,
+  "training_unique_feature_rows": 29,
+  "exact_feature_overlap_attack_rows": 7425,
+  "independent_confusion_check": true,
+  "predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp88/20261027_122102_sampling_diversity_weighted_lloyd_five_seeds_8b952b20/jobs/cic2018_row_random_s44_n5_xgb/predictions.npy",
+  "query_order_sha256": "330b78d6c07a0f342362024245132376076798532dec0b39f7dc2da3f354f179",
+  "completed_at": "2026-10-27T12:25:39.028914+09:00"
+}

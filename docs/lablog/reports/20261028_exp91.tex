@@ -1,0 +1,51 @@
+% !TeX root = 20261028_exp91.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\begin{document}
+\reporttitle{2026-10-28}{EXP91: 두 TabPFN 설계안의 코드 구현과 동작 검증}
+\section{목적과 실제 수행 범위}
+Tabular Prior-data Fitted Network (TabPFN) 기반 두 모델의 학습·추론·모델 저장 및 복원 경로가 설계대로 동작하는지 검증한다. 사용자 요청은 BETA·CURE를 기존 모델 설계 보고서에 추가하고 1·2안 코드를 작성하는 것이었다. 승인된 연구 버전 v7을 유지하여 EXP91 구현 검증으로 등록했다. 이 실행은 Intrusion Detection System (IDS; 침입 탐지 시스템)의 CIC2018·ToN-IoT 성능 실험이나 문헌 모델과의 비교 결과가 아니다.
+
+설계·문헌·수식·11개 그림은 \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}repo\allowbreak{}rts/\allowbreak{}\allowbreak{}2026\allowbreak{}1028\_\allowbreak{}\allowbreak{}mod\allowbreak{}el\_\allowbreak{}\allowbreak{}desig\allowbreak{}ns.\allowbreak{}tex}에 정리했다. 본 문서는 실제 실행 상태와 실패 수정 근거를 별도로 기록한다. 코드 진입점은 \texttt{scripts/\allowbreak{}\allowbreak{}v7/\allowbreak{}\allowbreak{}exp91\allowbreak{}/\allowbreak{}\allowbreak{}run\_\allowbreak{}\allowbreak{}des\allowbreak{}igns.\allowbreak{}py}, 설정은 \texttt{configs/\allowbreak{}\allowbreak{}experime\allowbreak{}nts/\allowbreak{}\allowbreak{}exp9\allowbreak{}1\_\allowbreak{}\allowbreak{}protoc\allowbreak{}ol.\allowbreak{}json}이다.
+
+\section{자료·환경·고정 설정}
+합성자료는 seed 43으로 만든 3개 클래스다. 각 클래스 참라벨 6개로 총 18개, 비라벨 학습 36개, test 24개이며 모두 6차원 연속 특징이다. 행 ID와 동일 특징 벡터 group이 세 집합 사이에서 겹치지 않는지 확인했다. 비라벨 정답은 모델에 제공하지 않고 test 정답은 예측 후 채점에만 사용했다.
+
+실제 TabPFN-v3 checkpoint와 NVIDIA RTX 4090을 사용했다. smoke는 estimator 1개, 학생 은닉 32·표현 16차원, 준비 1 epoch와 교대 갱신 1회·학습 1 epoch, 2안 최대 전문가 1개·2-fold로 줄였다. 이는 기본 학습 예산보다 작은 기능 검증용 설정이다. Python·패키지 버전과 checkpoint hash는 각 실행의 config.json에 기록했다.
+
+\section{검증 결과}
+단위 검증 10개가 모두 통과했다. 검사에는 soft 배정 목적함수의 일차 최적조건, 비균등 prior 반영, 수치·범주·결측 전처리, 참라벨/\allowbreak{}비라벨 특징 중복 거부, 동일 특징 group의 Out-of-fold (OOF) 분리, n=\allowbreak{}2의 정확한 Global fallback, 두 logit 보정의 상한·다른 logit 불변, 전문가 채택 경로, 학생의 가중치 갱신과 저장 복원이 포함됐다. 테스트용 분류기는 알고리즘 경로를 의도적으로 만들기 위한 대역이며 분류 성능의 근거로 쓰지 않는다.
+
+실제 PFN 검증에서는 1안 encoder의 가중치 hash가 바뀌었고 교사 가중치는 유지됐다. 2안은 쌍 [1,2] 전문가 하나를 실제로 채택하여 Global과 전문가 결합 경로를 실행했다. 모든 PFN의 가중치 불변을 확인했으며 같은 8개 query batch에서 저장·복원 전후 최대 확률 차이는 두 모델 모두 0이었다. 학생은 교사와 복원 decoder 없이 배포할 수 있고, 2안은 native PFN fit state와 구조 JSON을 저장했다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.31373\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.29412\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.39216\linewidth-2\tabcolsep\relax}}
+\toprule
+항목 & 확인 결과 & 해석 범위 \\ \midrule
+\endfirsthead
+항목 & 확인 결과 & 해석 범위 \\ \midrule
+\endhead
+{}단위 검증 & 10/\allowbreak{}10 통과 & 수식·정보 경계·예외 경로 \\
+{}1안 실제 PFN 학습·추론 & 완료, 학생 가중치 갱신 & 합성자료 파이프라인 \\
+{}2안 실제 전문가 채택 & 1개 채택 & 순차 보정 경로가 실제 실행됨 \\
+{}PFN 가중치 & 변경 없음 & context/\allowbreak{}cache 준비와 가중치 학습 구분 \\
+{}같은 batch의 저장/\allowbreak{}복원 & 두 모델 확률 차이 0 & 모델 export 정상 \\
+{}IDS 정확도·비용 우위 & 미검증 & 전체 데이터 실험 필요 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\section{초기 실패와 수정}
+첫 실행 \texttt{20261028\allowbreak{}\_\allowbreak{}\allowbreak{}194707\_\allowbreak{}\allowbreak{}two\_\allowbreak{}\allowbreak{}desi\allowbreak{}gns\_\allowbreak{}\allowbreak{}real\allowbreak{}\_\allowbreak{}\allowbreak{}pfn\_\allowbreak{}\allowbreak{}smo\allowbreak{}ke\_\allowbreak{}\allowbreak{}1e824\allowbreak{}bfb}는 모델 예측까지 수행했지만 2안의 저장·복원 검사에서 실패했다. 전체 24행 예측의 앞 8행과 복원 후 8행 batch를 비교했으며 최대 확률 차이가 약 0.000313이었다. 같은 모델에서도 query batch 크기가 달라질 때 발생한 차이와 저장 오류를 구분하지 못한 검사 조건이었다. 허용 오차를 확대하지 않고 저장 전후 모두 같은 8행 batch를 사용하도록 고쳤으며, batch 크기에 따른 차이는 별도 진단으로 보존했다.
+
+수정 실행 \texttt{20261028\allowbreak{}\_\allowbreak{}\allowbreak{}194827\_\allowbreak{}\allowbreak{}two\_\allowbreak{}\allowbreak{}desi\allowbreak{}gns\_\allowbreak{}\allowbreak{}real\allowbreak{}\_\allowbreak{}\allowbreak{}pfn\_\allowbreak{}\allowbreak{}smo\allowbreak{}ke\_\allowbreak{}\allowbreak{}fixed\allowbreak{}\_\allowbreak{}\allowbreak{}probe\_\allowbreak{}\allowbreak{}0\allowbreak{}0ac57e9}는 완료됐다. 이어 CLI에서 만든 학생 export를 package API에서도 읽을 수 있도록 전처리기의 Python 객체 대신 기본 상태 딕셔너리를 저장하도록 바꿨다. 최종 실행 \texttt{20261028\allowbreak{}\_\allowbreak{}\allowbreak{}195409\_\allowbreak{}\allowbreak{}two\_\allowbreak{}\allowbreak{}desi\allowbreak{}gns\_\allowbreak{}\allowbreak{}port\allowbreak{}able\_\allowbreak{}\allowbreak{}exp\allowbreak{}ort\_\allowbreak{}\allowbreak{}smok\allowbreak{}e\_\allowbreak{}\allowbreak{}d0ff03\allowbreak{}79}에서 동일 검증을 완료했고 독립 package import로 두 모델을 불러와 예측했다. 이전 실패·중간 성공의 소스 snapshot과 실행 기록은 보존했다.
+
+\section{실행과 후속 검증}
+일반 실행은 NPZ의 X\_\allowbreak{}l·y\_\allowbreak{}l·X\_\allowbreak{}u·X\_\allowbreak{}test를 받으며 y\_\allowbreak{}test와 행 ID는 선택 항목이다. 범주형 열은 --categorical-columns로 지정하고 학생·쌍 설정은 --config JSON의 student와 pair 항목으로 조정한다. 실제 실험은 등록 실행을 통해 입력 hash·라벨 수·비라벨 수·코드 snapshot·예측·모델·비용을 함께 저장한다. 실행 명령과 기본값은 모델 설계 보고서의 구현 절에 정리했다.
+
+두 코드의 다음 검증은 동일 라벨과 비라벨 접근 예산에서 단독 PFN·단순 증류·대표점 대조·단순 쌍 전문가 및 문헌 방법과 비교하는 것이다. 특히 n=\allowbreak{}2에서 2안의 보정이 꺼지는 비율, 학생의 희귀 공격 pseudo-label 소실, 정상 오탐과 공격별 precision·recall을 확인한다. 합성자료의 F1과 수초 단위 실행 시간을 IDS 우위나 실제 서비스 비용으로 해석하지 않는다. BETA·CURE 자체의 재현은 이번 구현에 포함되지 않았다.
+
+출처: \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}evid\allowbreak{}ence/\allowbreak{}\allowbreak{}202\allowbreak{}61028/\allowbreak{}\allowbreak{}ex\allowbreak{}p91\_\allowbreak{}\allowbreak{}vali\allowbreak{}dation.\allowbreak{}j\allowbreak{}son} 출처: \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}evid\allowbreak{}ence/\allowbreak{}\allowbreak{}202\allowbreak{}61028/\allowbreak{}\allowbreak{}ex\allowbreak{}p91\_\allowbreak{}\allowbreak{}unit\allowbreak{}\_\allowbreak{}\allowbreak{}tests.\allowbreak{}l\allowbreak{}og} 출처: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp91/\allowbreak{}\allowbreak{}20261028\allowbreak{}\_\allowbreak{}\allowbreak{}195409\_\allowbreak{}\allowbreak{}two\_\allowbreak{}\allowbreak{}desi\allowbreak{}gns\_\allowbreak{}\allowbreak{}port\allowbreak{}able\_\allowbreak{}\allowbreak{}exp\allowbreak{}ort\_\allowbreak{}\allowbreak{}smok\allowbreak{}e\_\allowbreak{}\allowbreak{}d0ff03\allowbreak{}79/\allowbreak{}\allowbreak{}confi\allowbreak{}g.\allowbreak{}json} 출처: \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp91/\allowbreak{}\allowbreak{}20261028\allowbreak{}\_\allowbreak{}\allowbreak{}195409\_\allowbreak{}\allowbreak{}two\_\allowbreak{}\allowbreak{}desi\allowbreak{}gns\_\allowbreak{}\allowbreak{}port\allowbreak{}able\_\allowbreak{}\allowbreak{}exp\allowbreak{}ort\_\allowbreak{}\allowbreak{}smok\allowbreak{}e\_\allowbreak{}\allowbreak{}d0ff03\allowbreak{}79/\allowbreak{}\allowbreak{}summa\allowbreak{}ry.\allowbreak{}json}
+
+
+\end{document}

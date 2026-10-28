@@ -1,0 +1,270 @@
+{
+  "created_at": "2026-10-28T19:18:42+09:00",
+  "document": {
+    "path": "docs/lablog/reports/20261028_model_designs.tex",
+    "sha256": "c63215148e5f803b9eda2bd0a24b6b4d7d3d6899e615505e19a7163f404a3f10",
+    "bytes": 55757
+  },
+  "status": "prototypes_implemented_synthetic_validation_only_ids_performance_not_evaluated",
+  "research_version_unchanged": "v7",
+  "new_experiment_id": "exp91",
+  "experiment_executed_at": {
+    "first_start": "2026-10-28T10:47:07.465305+00:00",
+    "current_run_finish": "2026-10-28T10:54:20.284579+00:00",
+    "timezone": "UTC"
+  },
+  "sources": [
+    {
+      "name": "LotBoNC",
+      "url": "https://doi.org/10.1145/3779208.3785276",
+      "scope_used": "§§4–5: payload encoder; iterative nonuniform assignment and prototype/encoder updates",
+      "accessed_on": "2026-10-28",
+      "local_copy": {
+        "path": "docs/lablog/evidence/20261015/lotbonc.pdf",
+        "sha256": "7c8fdf82d27557ebab2199920955da56c77bc02112cc2136d37ded4373cf2a85",
+        "bytes": 1751342
+      }
+    },
+    {
+      "name": "TabDPT",
+      "url": "https://arxiv.org/html/2410.18164v3",
+      "scope_used": "§§3,4.6: real-table self-supervised pretraining; separate semi-supervised few-shot condition",
+      "accessed_on": "2026-10-28",
+      "local_copy": {
+        "path": "docs/lablog/evidence/references/20261028/tabdpt_2410.18164.pdf",
+        "sha256": "f336b271ffe3df26319bbba823d7f74ba30594a7b97e7247b2eedab58e0ffb47",
+        "bytes": 864580
+      }
+    },
+    {
+      "name": "LoCalPFN",
+      "url": "https://arxiv.org/abs/2406.05207",
+      "scope_used": "retrieval AND backbone fine-tuning; retrieval-only is a distinct baseline",
+      "accessed_on": "2026-10-28",
+      "local_copy": {
+        "path": "docs/lablog/evidence/references/20261021/localpfn_neurips2024.pdf",
+        "sha256": "8d15fa6019cfc4f32a7295dc8d57a0691e77a614ff7a4b88cd2286f2db31b875",
+        "bytes": 846433
+      }
+    },
+    {
+      "name": "BoostPFN",
+      "url": "https://proceedings.mlr.press/v258/wang25d.html",
+      "scope_used": "residual-driven sequential PFN context learners",
+      "accessed_on": "2026-10-28",
+      "local_copy": {
+        "path": "docs/lablog/evidence/references/20261021/boostpfn_2503.01256.pdf",
+        "sha256": "dc204b153f9b043d1316aeb7c48bf17c2100a403479cdf43481893d23c4a977d",
+        "bytes": 2889168
+      }
+    },
+    {
+      "name": "DistPFN",
+      "url": "https://arxiv.org/html/2605.04363",
+      "scope_used": "posterior adjustment; batch-mean implementation checked separately",
+      "accessed_on": "2026-10-28",
+      "local_copy": {
+        "path": "docs/lablog/evidence/references/20261021/distpfn_2605.04363.pdf",
+        "sha256": "6ed295fbdcc9209bccf0900598fc81f60a87d4a66c614c92f3ec4b97aad8205c",
+        "bytes": 1283589
+      }
+    },
+    {
+      "name": "DistPFN official code",
+      "url": "https://github.com/seunghan96/DistPFN",
+      "scope_used": "README: mean query posterior divided by context prior; ICML 2026 acceptance claim",
+      "accessed_on": "2026-10-28"
+    },
+    {
+      "name": "TabPFN name",
+      "url": "https://www.nature.com/articles/s41586-024-08328-6",
+      "scope_used": "official full name: Tabular Prior-data Fitted Network",
+      "accessed_on": "2026-10-28"
+    },
+    {
+      "name": "BETA",
+      "url": "https://arxiv.org/abs/2502.02527",
+      "scope_used": "Frozen PFN with gradient-trained input encoder, BatchEnsemble and bootstrap support-context averaging; Figure 3",
+      "accessed_on": "2026-10-28",
+      "local_copy": {
+        "path": "docs/lablog/evidence/references/20261028/beta_2502.02527.pdf",
+        "sha256": "88974d10aa15c4de353cab98c11163e4070f945c37cf4a5849f817784aea79d3",
+        "bytes": 3503962
+      }
+    },
+    {
+      "name": "CURE",
+      "url": "https://arxiv.org/abs/2606.18677",
+      "scope_used": "Bounded capacity with changing short/long context banks, uncertainty admission and redundancy eviction; test-then-train labels; Figure 1; FMSD@ICML2026 workshop spotlight oral",
+      "accessed_on": "2026-10-28",
+      "local_copy": {
+        "path": "docs/lablog/evidence/references/20261028/cure_2606.18677.pdf",
+        "sha256": "b3e6e0c3ceaa0fcb4aab1bc878c0a120da555ecc39d93cb739325ca3bb9db2a4",
+        "bytes": 1432373
+      }
+    },
+    {
+      "name": "BETA official proceedings",
+      "url": "https://proceedings.mlr.press/v267/liu25cn.html",
+      "scope_used": "ICML2025 main conference venue and published paper",
+      "accessed_on": "2026-10-28"
+    },
+    {
+      "name": "BETA official code",
+      "url": "https://github.com/LAMDA-Tabular/BETA",
+      "scope_used": "Official implementation reference; not reproduced in EXP91",
+      "accessed_on": "2026-10-28"
+    }
+  ],
+  "local_context_sources": [
+    {
+      "path": "docs/lablog/data/20261027_exp89_class_comparison.csv",
+      "sha256": "ef3901cc4b32914acdbd68aae306ebcf8d3dba86a64c962960d7f094bb0458fd",
+      "bytes": 45901
+    },
+    {
+      "path": "docs/lablog/reports/20261027_exp89.tex",
+      "sha256": "412a3213456a5f46f7f6b2bd1d9a10cd253af3cb75cad0296bbbe335e589ad73",
+      "bytes": 39496
+    },
+    {
+      "path": "docs/lablog/reports/20261028_exp90.tex",
+      "sha256": "bdce8883d31d4602688a3e83964341974990b5eb9918636021cd7b2481b27ae0",
+      "bytes": 56635
+    },
+    {
+      "path": "docs/latex/main.tex",
+      "sha256": "e3409ffa8656ddc850681301d3a4e463046a08bcb041bc121c98881fd6343fbb",
+      "bytes": 47400
+    }
+  ],
+  "figure_generator": {
+    "path": "docs/lablog/_support/20261028_model_designs/build_figures.py",
+    "sha256": "90f926c65fb0a5790c32d1bdaabacf1d76b35168a0b8ad68ba325f1e275fce24",
+    "bytes": 8498
+  },
+  "figures": [
+    {
+      "path": "docs/lablog/figures/20261028_design_a_architecture.pdf",
+      "sha256": "114999b84ac543eb53b5301c347566da8bc02695156845a6da942badee47c491",
+      "bytes": 32274
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_a_flow.pdf",
+      "sha256": "f6cfeb5731eb1bc70f39df0950507cc47831ed4df28eafdcdf3bcdc64e72f449",
+      "bytes": 28772
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_b_architecture.pdf",
+      "sha256": "082e9c326b85969132b40902bf5a01f6e48c12619bede214252613eed9893075",
+      "bytes": 34497
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_b_flow.pdf",
+      "sha256": "be93528cd4615f7eb2920dc029ca9593860250fe9fe1ea8604ffdd218976d348",
+      "bytes": 28341
+    }
+  ],
+  "empirical_values_checked": {
+    "exp89_cic2018_tabpfn_n20_five_seeds": {
+      "infiltration_clean_attack": 77.74434166727566,
+      "infiltration_clean_full": 1.172919258455936,
+      "dos_clean_attack": 96.14989182422924,
+      "dos_clean_full": 57.498120864447785,
+      "unit": "F1 percent",
+      "caveat": "training benign inclusion AND evaluation population both change"
+    },
+    "exp90_normal750_full_test_three_seed_mean": {
+      "toniot_n20_PFN4": 47.72,
+      "toniot_n20_PFN16": 50.13,
+      "toniot_n20_Bank_mean": 51.18,
+      "cic2018_n5_PFN4": 64.77,
+      "cic2018_n5_PFN16": 68.04,
+      "cic2018_n5_Bank_mean": 64.79,
+      "unit": "attack Macro-F1 percent"
+    }
+  },
+  "validation": {
+    "report": "docs/lablog/reports/20261028_model_designs.tex",
+    "pdf_persisted": false,
+    "compiled_pdf_sha256": "482025d7a75878635f758a75c10fccf7d74d0b146b579acafc04a6f9f1d30d8a",
+    "missing_glyphs": 0,
+    "overfull_boxes": 0,
+    "pages": 15,
+    "undefined_citations": false,
+    "font_warnings": [
+      "LaTeX Font Warning: Font shape `TU/NotoSerifCJKKR(0)/m/it' undefined",
+      "LaTeX Font Warning: Some font shapes were not available, defaults substituted."
+    ],
+    "structure_check": {
+      "passed": true,
+      "reports": 52,
+      "issues": []
+    },
+    "visual_review": "Four proposal diagrams and seven source excerpts reviewed; full 15-page contact sheet and source-comparison table at full page resolution reviewed. No clipping observed. Synthetic implementation verification is recorded separately.",
+    "paragraphs": "Korean prose sentence-end check: <=6 per paragraph; list items treated independently.",
+    "report_pdf_retention": "temporary compilation only; only input figure PDFs persist",
+    "proposed_diagram_count": 4,
+    "source_figure_count": 7
+  },
+  "updated_at": "2026-10-28T20:09:18.315899+09:00",
+  "sota_figure_manifest": {
+    "path": "docs/lablog/evidence/references/20261028/design_sota_figure_sources.json",
+    "sha256": "3f1b5fbcd3e4f9ee8cdb294188dd0383f0571a79d9f4a5993aec28c6d224b114",
+    "bytes": 3897
+  },
+  "sota_figure_generator": {
+    "path": "docs/lablog/_support/20261028_model_designs/build_sota_assets.py",
+    "sha256": "399acb4ba2afc65f20ebbc322f05d48d89aa8d65d5fbd9dbfa6c690fee021468",
+    "bytes": 6428
+  },
+  "sota_table": {
+    "path": "docs/lablog/_support/20261028_model_designs/sota_table.tex",
+    "sha256": "f0eb5e0cc479cc5f9a8daf1a6f1ea9e7590cb6999c17939f8e58ce34e91dfbdd",
+    "bytes": 4496
+  },
+  "source_figure_excerpts": [
+    {
+      "path": "docs/lablog/figures/20261028_design_sota/lotbonc.pdf",
+      "sha256": "e7303a2a8e5986aa6c02072f2bdc50680fea2b64dab689e16764ffa55e3eb8c6",
+      "bytes": 498818
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_sota/local.pdf",
+      "sha256": "5cdfd341d69b78c1a65a24eef601ba0be4aceb30fb3f6c160e94f00b801ce8d2",
+      "bytes": 117713
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_sota/boost.pdf",
+      "sha256": "489475ea49c8a23453a704d28b2a12b506386b4d6ad2819e1aa8410560466e71",
+      "bytes": 331584
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_sota/dist.pdf",
+      "sha256": "498df6b3140cd3ab09bb97829364c3ebd2d7c98b273897123ccdc3ee8477b12f",
+      "bytes": 257002
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_sota/beta.pdf",
+      "sha256": "ad1b3cc7485ec5e3454b969d1b105d1e36efc90fff1f5f4f8e27e23dfd1e32c3",
+      "bytes": 1117448
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_sota/cure.pdf",
+      "sha256": "6f9ee8942de153b997edc25c167a33ffbfe10edd90f9e4a787248c5acc204597",
+      "bytes": 317193
+    },
+    {
+      "path": "docs/lablog/figures/20261028_design_sota/tabdpt.pdf",
+      "sha256": "aaf295e82786cb4b3aa676e912139a87f3490c3063e293fa472d6a3747fe1e0e",
+      "bytes": 167078
+    }
+  ],
+  "implementation_validation": {
+    "path": "docs/lablog/evidence/20261028/exp91_validation.json",
+    "sha256": "56ea5493d614d0095439e0a0ce886cda1c5d3a50bc7f3fdb83a3485fcc500c25",
+    "bytes": 6420
+  },
+  "current_validation_run": "tabpfn/results/v7/exp91/20261028_195409_two_designs_portable_export_smoke_d0ff0379",
+  "performance_evidence": "No CIC2018/ToN-IoT run or IDS superiority claim from EXP91; existing EXP89/90 observations remain separately attributed."
+}

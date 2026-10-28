@@ -1,18 +1,20 @@
 {
-  "status": "design_only_not_executed",
+  "status": "authorized_for_execution",
   "date": "2026-10-20",
+  "revision": 3,
   "research_version": "v7",
-  "experiment_id": null,
-  "seed": 43,
-  "seed_repetitions": 1,
-  "authorization": "User requested a redesigned experiment and non-experimental slide revisions; model runs are not started in this turn",
-  "question": "At a fixed context capacity, separate newly available labels from admitted rows and measure new-class adaptation, paired old-class retention, and update cost",
+  "experiment_id": "exp84",
+  "authorization": "2026-10-20 user requested execution with 100 added to 5/10/20/30/50; leave slides unchanged; seed 43 once",
+  "question": "With few newly labelled attack examples, compare cumulative XGB retraining against frozen TabPFN with cumulative or 1000-row contexts",
+  "correction": "Reduce the supplied per-class sample counts themselves; admit every supplied row. Remove admission caps, class quotas, selection experiments, and the ICD pilot.",
   "historical_100_rationale": "Presentation example among explored budgets; not a statistical median, optimum, empirical minimum, or operationally justified quota",
   "datasets": [
     "cic2018",
     "toniot"
   ],
   "cross_dataset_mixing": false,
+  "seed": 43,
+  "seed_repetitions": 1,
   "initial_rows": 1000,
   "initial_counts": [
     750,
@@ -20,69 +22,93 @@
     125
   ],
   "available_labels_per_new_class": [
+    5,
     10,
     20,
+    30,
     50,
-    100,
-    200,
-    400
+    100
   ],
+  "budget_rationale": "User-approved sweep 5/10/20/30/50/100. At n=100 the largest ToN stage admits 200 rows (20% of B=1000); no incoming row is rejected.",
   "persistent_context_capacity": 1000,
   "admission": {
-    "main_max_rows_per_stage": 100,
-    "main_max_fraction": 0.1,
-    "sensitivity_max_rows_per_stage": [
-      50,
-      200
-    ],
-    "rationale": "Engineering limits of 5%, 10%, 20% replacement per update, not optimized or selected from test scores",
-    "effective_total": "min(total incoming rows, max_rows_per_stage, B - sum(old class protected floors))",
-    "allocation": "Equal quotas across classes introduced at the same stage; largest remainder with stable class-ID tie breaking; respect per-class availability; at least one per new class",
-    "selection": "Per-new-class greedy farthest-first selection after scaling by initial 1000 rows only; first point nearest candidate centroid; ties by saved train row ID; all methods receive identical admitted IDs",
-    "rejected_rows": "Count in available-label budget and selection time; discard after this update; never retrieve rejected or evicted rows later",
-    "storage": "1000 is persistent context capacity, not a bound on temporary candidate storage or total GPU memory; log transient candidate rows and peak memory"
+    "rule": "Admit ALL supplied new rows at every stage, exactly k_t*n; no cap or rejection",
+    "rejected_rows": 0
   },
-  "protection": {
-    "benign_minimum": 500,
-    "old_attack_minimum": 25,
-    "actual_floor": "min(nominal minimum, number of that class ever admitted); initial benign has 750; old attack floors apply before eviction",
-    "rationale": "Hypothesized support protection against depletion; these are engineering constraints rather than proven optimal counts",
-    "sensitivity": "At n=400, compare protected random eviction with cap-only random eviction (one old example per class)"
+  "class_retention": {
+    "minimum_per_old_class": 1,
+    "source": "Unchanged EXP83 deletion rule; no new 500/25 quota or balancing",
+    "affects_new_admission": false
   },
   "eviction": {
-    "fifo": "Oldest acquisition stage first; within-stage ties use a saved seed-43 random ordering independent of class/file ordering; skip protected rows",
-    "random": "Stage-seeded random order over current old context; skip rows that would violate floors",
-    "similar": "Old rows ranked by minimum Euclidean distance to admitted new rows under initial-only scaling; skip protected rows; record cross-label eviction diagnostics"
+    "fifo": "Unchanged EXP83: oldest acquisition order, retain the original within-stage ordering; skip only the last remaining row of a class",
+    "random": "Unchanged EXP83: seed 43 + zero-based stage_index * 1009 permutation of the old context; skip only last class rows",
+    "similar": "Unchanged EXP83: minimum Euclidean distance to any incoming row after StandardScaler fitted on OLD context only; stable tie order; skip only last class rows",
+    "common": "Delete exactly as many OLD rows as arrive, then append every incoming row. Never retrieve evicted rows."
   },
+  "sampling": "Use EXP78 subset_plans nested per-class permutation of EXP77 new100 incoming IDs, same seed and original row ordering. Initial IDs unchanged; 10/20/50 must match saved EXP78 IDs. All methods get exactly the same incoming rows.",
   "main_methods": [
     "xgb_cumulative",
     "pfn_cumulative",
-    "pfn_capped_protected_fifo",
-    "pfn_capped_protected_random",
-    "pfn_capped_protected_similar"
+    "pfn_fifo",
+    "pfn_random",
+    "pfn_similar"
   ],
-  "matched_context_control": "XGB refit on the exact pfn_capped_protected_random context at each stage; reported separately from cumulative XGB",
   "main_condition_counts": {
+    "datasets": 2,
+    "budgets": 6,
+    "methods": 5,
+    "total": 60,
     "pfn_buffer": 36,
     "pfn_cumulative": 12,
-    "xgb_cumulative": 12,
-    "xgb_matched_buffer": 12
+    "xgb_cumulative": 12
   },
-  "sensitivity": {
-    "new_per_class": 400,
-    "eviction": "random",
-    "datasets": [
-      "cic2018",
-      "toniot"
+  "extra_controls": [],
+  "icd_experiment_included": false,
+  "stages": {
+    "cic2018": [
+      [
+        "benign",
+        "brute_force",
+        "dos"
+      ],
+      [
+        "ddos"
+      ],
+      [
+        "web_attacks"
+      ],
+      [
+        "infiltration"
+      ],
+      [
+        "bot"
+      ]
     ],
-    "extra_configurations_per_dataset": [
-      "q50 protection on",
-      "q200 protection on",
-      "q100 protection off except one-per-old-class",
-      "q100 protection on with random admission"
-    ],
-    "extra_pfn_conditions": 8,
-    "selection": "Conditions fixed before execution; do not choose a method using final test outcomes"
+    "toniot": [
+      [
+        "benign",
+        "scanning",
+        "dos"
+      ],
+      [
+        "injection",
+        "ddos"
+      ],
+      [
+        "password"
+      ],
+      [
+        "xss"
+      ],
+      [
+        "ransomware",
+        "backdoor"
+      ],
+      [
+        "mitm"
+      ]
+    ]
   },
   "model": {
     "checkpoint": "same recorded TabPFN v3 checkpoint as EXP83",
@@ -104,9 +130,8 @@
     "new_metrics": "Per-class recall/F1 for just-introduced and all post-initial attack classes; full currently-known population supplies false positives",
     "diagnostics": [
       "benign FPR",
-      "per-class context count at every stage",
-      "admitted/evicted/protected counts",
-      "real replacement fraction",
+      "per-class context counts",
+      "incoming and deleted counts",
       "peak memory",
       "fixed original-class panel score through all stages"
     ],
@@ -114,7 +139,7 @@
     "stage_panel_role": "Offline post-hoc evaluation of saved stage models, not a causal temporal replay"
   },
   "cost": {
-    "primary": "GPU-synchronized wall time for admission + eviction + model construction + preprocessing + fit/cache preparation, summed after initial stage",
+    "primary": "GPU-synchronized wall time for context assembly/eviction + model construction + preprocessing + cumulative XGB fit or PFN cache preparation, summed after initial stage",
     "secondary": [
       "initial preparation",
       "per-stage update time",
@@ -131,88 +156,36 @@
       "report generation"
     ],
     "measurement": "Sequential GPU runs, identical hardware and settings, same 4-estimator PFN, no concurrent experiment workers; single seed; log warm-up policy",
-    "cache_note": "Even a small admission count may rebuild the entire 1000-row context cache. The cap controls turnover; fixed B bounds context size. Neither implies an incremental cache update.",
+    "cache_note": "Every new row is admitted. Replacing even a few rows may rebuild the entire 1000-row context cache; fixed capacity does not imply incremental or free updates.",
     "historical": "Old prediction scores may be an explicitly labelled reference; do not combine old and new timing to claim a speedup"
   },
-  "preflight": [
-    "No cross-dataset mixing",
-    "Train and test row IDs disjoint",
-    "Nested available sets reuse EXP77/78/80 IDs",
-    "No future-label, rejected-row or evicted-row reuse",
-    "Capacity exactly 1000 after every update",
-    "Admission and all protection constraints feasible",
-    "Same admitted IDs across PFN policies",
-    "Same matched-buffer IDs for PFN and XGB",
-    "All seen labels covered",
-    "Frozen PFN weights verified"
-  ],
-  "output": "Save source snapshots, ID plans, contexts, class counts, predictions, confusion matrices, component times and provenance; write Korean detailed LaTeX/PDF and one-line log",
-  "excluded": [
-    "IDS weight fine-tuning",
-    "LoCalPFN",
-    "seed repetitions",
-    "main.tex editing",
-    "new numerical claims in slides"
-  ],
-  "icd_reference": {
-    "title": "In-Context Data Distillation with TabPFN",
-    "authors": [
-      "Junwei Ma",
-      "Valentin Thomas",
-      "Guangwei Yu",
-      "Anthony Caterini"
-    ],
-    "url": "https://arxiv.org/abs/2402.06971",
-    "venue": "ICLR 2024 ME-FoMo workshop",
-    "venue_source": "https://valthom.github.io/",
-    "mechanism": "Frozen model weights; gradient optimization of distilled context features; fixed context labels",
-    "paper_configuration": "1000 class-balanced distilled points, Adam lr 0.01, validation-AUC early stopping on static OpenML tasks",
-    "scope_gap": "Original TabPFN and static full-training-data access; neither incremental class arrival nor bounded retention of raw history established",
-    "existing_local_work": [
-      "scripts/v7/exp75/context_distillation.py",
-      "scripts/v7/exp75/gradient_preprocessing.py",
-      "docs/lablog/reports/20261015.tex"
-    ],
-    "exp75_distinction": "V3 adaptation already exists: at most 2048 context rows, one estimator, 100k cumulative train, separate validation, stage-pooled replay; not the proposed small-label final-state test"
+  "sources": {
+    "base_plans": "tabpfn/results/v7/exp77/20261015_230535_initialft10_finalfull_s43_2eb2237d/data",
+    "overlap_plans": "tabpfn/results/v7/exp78/20261016_005435_noft_dist_new100_50_20_10_s43_52588487",
+    "old_protocol": "configs/experiments/exp83_protocol.json",
+    "sampling_implementation": "scripts/v7/exp78/noft_dist_budget.py:subset_plans",
+    "deletion_implementation": "scripts/v7/exp76/run_context_policies.py:replace_context"
   },
-  "icd_pilot": {
-    "status": "planned_secondary_branch_not_executed",
-    "datasets": [
-      "cic2018",
-      "toniot"
-    ],
-    "new_per_class": [
-      10,
-      400
-    ],
-    "seed": 43,
-    "optimization_runs": 4,
-    "purpose": "Measure whether learning context features improves compression beyond the same initialized context, and at what update cost",
-    "data_access": "All cumulative released raw training rows may be revisited for the objective; explicitly NOT a strict bounded-raw-history policy",
-    "persistent_context_tokens": 1000,
-    "label_allocation": "As equal as possible across currently seen classes; fixed within each stage; this differs from benign-protected real-row buffers",
-    "initialization": "At each stage, reserve at least half of each class as distinct real query IDs; initialize 1000 class-balanced tokens from the remaining seed IDs, repeating seed rows when necessary; save distinct ID counts and token multiplicities",
-    "carryover": "Reinitialize each stage from currently available real train rows using fixed seed; no claim of warm-start streaming ICD",
-    "objective": "Empirical cross-entropy on withheld real training-query rows from all seen classes; query batch 256 sampled with replacement; no test or additional validation labels",
-    "optimizer": "Adam lr 0.01 on context features only; fixed snapshots at steps 0, 20, 100; report all snapshots, no test-based selection or early stopping",
-    "backbone": "Same v3 checkpoint, one differentiable estimator as existing EXP75; matched untuned control uses exactly the same estimator, preprocessing, initialization, labels and query protocol",
-    "preprocessing": "Initial-1000-only fixed scaler, same transform in all paired states; preserve and verify the local finite-gradient preprocessing fixes, without changing installed package files",
-    "controls": [
-      "step 0 identical initialized context",
-      "step 20 context optimization",
-      "step 100 context optimization"
-    ],
-    "cost": "Initialization + all context-gradient steps + final inference/cache preparation, with initial-stage cost separate; per-stage later update sum; include optimizer peak memory",
-    "strict_comparability": "Judge optimization gain against step 0. Differences against 4-estimator real-row buffers include estimator, preprocessing, label allocation, access and duplicate-token differences.",
-    "synthetic_scope": "Only learned model-input context tokens are synthetic; original IDS train/test observations are not combined across datasets or synthetically generated",
-    "validation": [
-      "context gradients finite and nonzero",
-      "backbone gradients absent and hashes unchanged",
-      "seed/query real IDs disjoint",
-      "exactly 1000 context tokens, unique labelled IDs separately counted",
-      "current classes only",
-      "final complete test and paired old-class panel"
-    ],
-    "extension_boundary": "A truly bounded-history ICD update needs an explicit replay or anchor-memory budget; cumulative-history ICD does not establish that property"
-  }
+  "icd_reference": {
+    "paper": "https://arxiv.org/html/2402.06971",
+    "basis": "Paper Section 3 objective, Figure 2 gradient flow, Section 4 optimization settings",
+    "author_implementation": "No author-released ICD code verified in this review; do not claim use of official code",
+    "local_implementation": "scripts/v7/exp75/context_distillation.py",
+    "provenance": "Local v3 adaptation of the paper idea, not author code or a verified faithful reproduction",
+    "discussion": "Optimizing context features requires gradient computation and addresses compression, not the present question of how few actual new labelled rows suffice. Reference only; no pilot in this design."
+  },
+  "planned_outputs": [
+    "final full-test overall and new-attack mean per-class F1 versus n",
+    "paired old-class changes on fixed panel",
+    "post-initial update seconds versus n",
+    "per-class metrics and context counts as supporting tables"
+  ],
+  "removed_outputs": [
+    "deterministic replacement-ratio plot",
+    "admission-cap ablations",
+    "class-quota ablations",
+    "matched-buffer XGB",
+    "ICD pilot"
+  ],
+  "execution": "Fresh updates and final full-test predictions for all 60 conditions in one environment; no timing or prediction reuse. Save paired stage-panel metrics and automatically write Korean LaTeX/log at completion or failure."
 }

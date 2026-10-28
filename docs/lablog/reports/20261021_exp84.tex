@@ -1,0 +1,274 @@
+% !TeX root = 20261021_exp84.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\begin{document}
+\reporttitle{2026-10-21}{EXP84 · 소수 신규 공격 표본과 1,000개 버퍼: 3 seed 반복}
+\subsection{목적과 현재 상태}
+연구 버전 v7의 EXP84를 seed 43·44·45로 반복하여 표본 선택과 모델 난수에 따른 성능 변동을 확인한다. 사용자는 2026-10-21에 3개 또는 5개 seed 반복을 요청했으며 총 3개로 실행한다. 현재 상태는 \textbf{완료}, 기록 시각은 2026-10-21 13:58:46 KST이다. 새 실행은 120/\allowbreak{}120조건의 예측 저장이 끝났고, 전체 조건 검증을 마친 seed는 [43, 44, 45]이다.
+
+기존 seed 43의 60조건은 2026-10-20 완료 결과를 그대로 참조한다. seed 44·45 각각 60조건을 새로 실행하여 최종 180조건을 구성한다. 기존 seed의 결과·실행 시간·보고서·도표를 덮어쓰지 않는다. 실험 실행 완료와 논문 근거 채택은 구분하며 슬라이드와 영어 원고는 자동 수정하지 않는다.
+
+\subsection{공통 설정과 seed 변경 범위}
+신규 공격당 n=\allowbreak{}5·10·20·30·50·100개를 제공하고 두 벤치마크를 독립적으로 평가한다. 초기 1,000개는 정상 750개와 초기 공격 두 클래스 각각 125개다. CIC 초기 공격은 Brute force·DoS이며 DDoS  \ensuremath{\rightarrow}  Web attacks  \ensuremath{\rightarrow}  Infiltration  \ensuremath{\rightarrow}  Bot 순서로 도입한다. ToN 초기 공격은 Scanning·DoS이며 Injection/\allowbreak{}DDoS  \ensuremath{\rightarrow}  Password  \ensuremath{\rightarrow}  XSS  \ensuremath{\rightarrow}  Ransomware/\allowbreak{}Backdoor  \ensuremath{\rightarrow}  MitM 순서다.
+
+XGB 누적 재학습, TabPFN 누적 context, 1,000개 FIFO·무작위·유사도 버퍼를 비교한다. 누적 최종 사례 수는 CIC 1,000+\allowbreak{}4n, ToN 1,000+\allowbreak{}7n이다. 버퍼는 신규 행을 모두 넣고 같은 수의 기존 행을 삭제한다. 기존 클래스 최소 1개 보존 규칙만 유지하며 별도의 편입 상한이나 클래스 할당량은 두지 않는다. FIFO는 확보 순서이며 실제 네트워크에서의 노후화를 판정하는 규칙은 아니다. 유사도 삭제는 기존 context에 맞춘 표준화와 신규 사례까지의 최소 거리를 사용한다.
+
+seed에 따라 초기 사례, 신규 클래스당 후보 100개, 각 n의 부분표본, 모델 random\_\allowbreak{}state와 무작위 삭제 순서가 달라진다. 같은 seed에서 모든 방법은 같은 초기·신규 사례를 받으며 작은 n의 표본은 큰 n의 부분집합이다. 기존 seed 43의 초기·신규 행 ID와 순서를 완전히 재현하는지 검사하여 반복의 표본 선택 알고리즘이 동일함을 확인한다. 이는 여러 난수 요인이 함께 바뀌는 반복으로, 표본 선택과 모델 내부 난수의 영향을 따로 분해하는 실험은 아니다.
+
+train/\allowbreak{}test 분할과 test의 query 순서 및 고정 진단 패널은 모든 seed에서 동일하다. 학습 자료만 seed별로 달라지므로 test 분할 변동까지 추정하지 않는다. TabPFN v3의 가중치는 고정하며 초기·후속 가중치 fine-tuning은 없다. 4 estimators, fit\_\allowbreak{}with\_\allowbreak{}cache, CPU cache, context subsampling 없음이며 XGB는 CUDA histogram, 300 trees, depth 8, learning rate 0.05, threads 8이다.
+
+\subsection{평가와 집계 정의}
+각 seed의 최종 모델을 CIC 3,042,473개·ToN 2,271,723개 고정 전체 test에 평가한다. query 순서는 seed 43으로 고정하고 batch는 8,192개다. 신규 공격군 평균 F1은 전체 test 혼동행렬에서 초기 이후 도입한 CIC 4개·ToN 7개 클래스의 F1을 같은 가중치로 평균한 값이다. 단계별 예측을 합산하거나 클래스가 등장한 이후 단계 점수를 평균하지 않는다.
+
+기존 클래스 유지는 클래스당 최대 2,000개 고정 패널에서 초기 세 클래스의 최종 F1−초기 F1으로 비교한다. 같은 행과 query 구성을 유지하며 이 지표의 오탐 모집단은 초기 클래스 행으로 한정된다. 전체 test의 클래스별 F1·precision·recall과 정상 오탐률을 별도로 보고 새 클래스와의 혼동도 확인한다. 고정 패널은 미래 클래스 특징을 포함할 수 있는 오프라인 진단이며 query 정답은 모델 학습이나 context 선택에 사용하지 않는다.
+
+갱신 비용은 초기 단계를 제외한 사례 선택/\allowbreak{}삭제·모델 구성·fit/\allowbreak{}cache 준비 시간의 합계다. 초기 준비, 모든 추론, 모델 저장과 검증은 제외하고 별도 수치로 남긴다. GPU 작업은 순차 실행하지만 seed 43과 새 seed는 서로 다른 실행 세션이므로 시간의 표준편차에는 시스템 상태 차이도 포함될 수 있다. 패키지 버전과 pretrained checkpoint의 동일성을 검사한다.
+
+평균과 표준편차는 조건별 seed 결과에서 계산하며 표본 표준편차(ddof=\allowbreak{}1)를 사용한다. 현재 집계에는 60조건 전체 검증을 통과한 3개 seed [43, 44, 45]만 포함한다. 한 seed에서는 표준편차를 0으로 채우지 않는다. XGB 대비 차이는 같은 seed끼리 뺀 뒤 평균·표준편차를 계산한다. 오차막대는 신뢰구간이 아니며 3회 반복만으로 동등성이나 통계적 우위를 확정하지 않는다.
+
+\subsection{도표와 관찰 결과}
+\reportfigure{figures/exp84_multiseed_quality.pdf}{최종 전체 test Macro-F1 (\%)}
+
+
+\reportfigure{figures/exp84_multiseed_new_attacks.pdf}{신규 공격군 평균 F1 (\%)}
+
+
+\reportfigure{figures/exp84_multiseed_retention.pdf}{초기 클래스 고정 패널: 최종−초기 (pp)}
+
+
+\reportfigure{figures/exp84_multiseed_cost.pdf}{초기 이후 갱신 시간 합계 (초)}
+
+
+\reportfigure{figures/exp84_multiseed_false_positive.pdf}{정상 사례의 공격 오탐률 (\%)}
+
+
+\reportfigure{figures/exp84_multiseed_tail.pdf}{seed 43에서 낮은 F1을 보였던 두 공격의 반복 결과; 평균 ± 표본 표준편차}
+
+
+\subsubsection{cic2018 · 모든 신규 표본 수}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.13636\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15909\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17424\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17424\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17424\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18182\linewidth-2\tabcolsep\relax}}
+\toprule
+n & 방법 & 전체 F1 (\%) & 신규 F1 (\%) & 기존 변화 (pp) & 갱신 (초) \\ \midrule
+\endfirsthead
+n & 방법 & 전체 F1 (\%) & 신규 F1 (\%) & 기존 변화 (pp) & 갱신 (초) \\ \midrule
+\endhead
+{}5 & XGB 누적 재학습 & 69.91 ± 1.04 & 47.83 ± 1.77 & 0.17 ± 0.28 & 1.732 ± 0.038 \\
+{}5 & PFN 누적 & 71.17 ± 1.01 & 50.06 ± 1.80 & -0.00 ± 0.01 & 1.232 ± 0.015 \\
+{}5 & PFN FIFO & 71.13 ± 0.91 & 49.97 ± 1.64 & -0.01 ± 0.02 & 1.195 ± 0.022 \\
+{}5 & PFN 무작위 & 71.25 ± 0.93 & 50.10 ± 1.73 & 0.12 ± 0.26 & 1.193 ± 0.019 \\
+{}5 & PFN 유사도 & 71.43 ± 1.72 & 50.55 ± 3.05 & -0.04 ± 0.05 & 1.223 ± 0.059 \\
+{}10 & XGB 누적 재학습 & 71.59 ± 1.58 & 50.83 ± 2.68 & 0.08 ± 0.09 & 1.934 ± 0.039 \\
+{}10 & PFN 누적 & 71.14 ± 0.71 & 49.91 ± 1.29 & 0.01 ± 0.08 & 1.199 ± 0.010 \\
+{}10 & PFN FIFO & 71.17 ± 0.73 & 49.94 ± 1.32 & 0.11 ± 0.25 & 1.227 ± 0.035 \\
+{}10 & PFN 무작위 & 72.17 ± 0.97 & 51.71 ± 1.75 & 0.11 ± 0.26 & 1.209 ± 0.011 \\
+{}10 & PFN 유사도 & 72.87 ± 2.54 & 52.92 ± 4.30 & 0.07 ± 0.23 & 1.210 ± 0.005 \\
+{}20 & XGB 누적 재학습 & 73.16 ± 0.77 & 53.46 ± 1.41 & 0.20 ± 0.21 & 2.184 ± 0.067 \\
+{}20 & PFN 누적 & 72.96 ± 1.27 & 53.00 ± 2.28 & 0.14 ± 0.29 & 1.242 ± 0.058 \\
+{}20 & PFN FIFO & 72.96 ± 1.17 & 53.03 ± 2.10 & 0.09 ± 0.21 & 1.240 ± 0.068 \\
+{}20 & PFN 무작위 & 72.82 ± 0.95 & 52.77 ± 1.73 & 0.13 ± 0.28 & 1.242 ± 0.068 \\
+{}20 & PFN 유사도 & 72.33 ± 2.55 & 52.05 ± 4.44 & 0.01 ± 0.14 & 1.244 ± 0.067 \\
+{}30 & XGB 누적 재학습 & 73.65 ± 1.31 & 54.33 ± 2.24 & 0.21 ± 0.12 & 2.321 ± 0.075 \\
+{}30 & PFN 누적 & 74.04 ± 0.85 & 54.88 ± 1.35 & 0.15 ± 0.31 & 1.244 ± 0.068 \\
+{}30 & PFN FIFO & 73.57 ± 0.95 & 54.09 ± 1.53 & 0.14 ± 0.31 & 1.246 ± 0.068 \\
+{}30 & PFN 무작위 & 73.60 ± 1.44 & 54.32 ± 2.12 & 0.14 ± 0.30 & 1.241 ± 0.066 \\
+{}30 & PFN 유사도 & 72.40 ± 0.37 & 52.21 ± 0.46 & -0.12 ± 0.41 & 1.245 ± 0.065 \\
+{}50 & XGB 누적 재학습 & 71.97 ± 0.69 & 51.96 ± 0.65 & 0.08 ± 0.11 & 2.508 ± 0.060 \\
+{}50 & PFN 누적 & 74.18 ± 1.55 & 55.18 ± 2.67 & 0.11 ± 0.26 & 1.245 ± 0.075 \\
+{}50 & PFN FIFO & 73.02 ± 0.92 & 53.20 ± 1.58 & -0.05 ± 0.08 & 1.258 ± 0.061 \\
+{}50 & PFN 무작위 & 73.07 ± 0.81 & 53.59 ± 1.06 & 0.07 ± 0.29 & 1.248 ± 0.062 \\
+{}50 & PFN 유사도 & 72.14 ± 0.35 & 51.91 ± 0.65 & -0.27 ± 0.02 & 1.264 ± 0.055 \\
+{}100 & XGB 누적 재학습 & 71.99 ± 0.16 & 51.74 ± 0.25 & -0.14 ± 0.17 & 2.736 ± 0.025 \\
+{}100 & PFN 누적 & 73.03 ± 0.09 & 53.23 ± 0.17 & 0.07 ± 0.03 & 1.245 ± 0.067 \\
+{}100 & PFN FIFO & 72.18 ± 0.43 & 51.93 ± 0.71 & -0.10 ± 0.15 & 1.246 ± 0.065 \\
+{}100 & PFN 무작위 & 72.15 ± 0.24 & 51.90 ± 0.28 & -0.00 ± 0.12 & 1.246 ± 0.071 \\
+{}100 & PFN 유사도 & 69.38 ± 0.80 & 49.11 ± 0.22 & -3.02 ± 1.83 & 1.268 ± 0.065 \\
+\bottomrule
+\end{longtable}
+\endgroup
+n=\allowbreak{}100의 PFN 누적−XGB 대응 차이는 전체 F1 1.04 ± 0.07 pp, 신규 공격군 평균 F1 1.49 ± 0.08 pp, 갱신 시간 -1.491 ± 0.091초다. 차이의 부호와 변동을 함께 확인하며 단일 seed 순위만으로 결론짓지 않는다.
+
+n=\allowbreak{}100의 PFN FIFO−XGB 대응 차이는 전체 F1 0.19 ± 0.56 pp, 신규 공격군 평균 F1 0.20 ± 0.96 pp, 갱신 시간 -1.491 ± 0.089초다. 차이의 부호와 변동을 함께 확인하며 단일 seed 순위만으로 결론짓지 않는다.
+
+n=\allowbreak{}100의 PFN 무작위−XGB 대응 차이는 전체 F1 0.16 ± 0.36 pp, 신규 공격군 평균 F1 0.17 ± 0.52 pp, 갱신 시간 -1.491 ± 0.095초다. 차이의 부호와 변동을 함께 확인하며 단일 seed 순위만으로 결론짓지 않는다.
+
+\subsubsection{toniot · 모든 신규 표본 수}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedleft\arraybackslash}p{\dimexpr 0.13480\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15686\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17157\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17157\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18627\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.17892\linewidth-2\tabcolsep\relax}}
+\toprule
+n & 방법 & 전체 F1 (\%) & 신규 F1 (\%) & 기존 변화 (pp) & 갱신 (초) \\ \midrule
+\endfirsthead
+n & 방법 & 전체 F1 (\%) & 신규 F1 (\%) & 기존 변화 (pp) & 갱신 (초) \\ \midrule
+\endhead
+{}5 & XGB 누적 재학습 & 51.26 ± 4.99 & 50.74 ± 6.82 & 0.26 ± 0.60 & 3.854 ± 0.029 \\
+{}5 & PFN 누적 & 53.41 ± 0.74 & 52.25 ± 2.01 & 0.48 ± 0.66 & 1.503 ± 0.007 \\
+{}5 & PFN FIFO & 52.39 ± 2.03 & 51.47 ± 2.90 & -0.03 ± 1.67 & 1.514 ± 0.009 \\
+{}5 & PFN 무작위 & 52.63 ± 2.58 & 50.71 ± 3.44 & 1.08 ± 0.88 & 1.515 ± 0.026 \\
+{}5 & PFN 유사도 & 54.23 ± 0.71 & 53.79 ± 2.45 & 1.30 ± 0.44 & 1.512 ± 0.007 \\
+{}10 & XGB 누적 재학습 & 57.15 ± 2.08 & 58.45 ± 2.19 & 0.02 ± 0.99 & 4.250 ± 0.128 \\
+{}10 & PFN 누적 & 59.37 ± 1.60 & 60.14 ± 1.00 & 0.72 ± 1.48 & 1.561 ± 0.081 \\
+{}10 & PFN FIFO & 59.13 ± 1.81 & 60.03 ± 1.37 & 0.33 ± 2.17 & 1.562 ± 0.082 \\
+{}10 & PFN 무작위 & 59.52 ± 1.84 & 60.21 ± 1.16 & 1.15 ± 2.24 & 1.563 ± 0.079 \\
+{}10 & PFN 유사도 & 58.55 ± 1.33 & 58.10 ± 2.10 & 0.20 ± 1.55 & 1.578 ± 0.071 \\
+{}20 & XGB 누적 재학습 & 59.64 ± 1.64 & 61.62 ± 1.99 & -0.59 ± 0.38 & 4.634 ± 0.108 \\
+{}20 & PFN 누적 & 62.81 ± 3.93 & 63.63 ± 1.90 & 0.57 ± 2.09 & 1.562 ± 0.083 \\
+{}20 & PFN FIFO & 64.50 ± 2.46 & 63.48 ± 1.41 & 0.72 ± 1.38 & 1.577 ± 0.070 \\
+{}20 & PFN 무작위 & 62.01 ± 3.48 & 62.65 ± 1.99 & 1.28 ± 0.86 & 1.561 ± 0.079 \\
+{}20 & PFN 유사도 & 63.34 ± 1.54 & 61.09 ± 1.21 & -1.19 ± 2.45 & 1.590 ± 0.086 \\
+{}30 & XGB 누적 재학습 & 61.30 ± 0.26 & 63.60 ± 0.07 & -0.43 ± 0.44 & 4.911 ± 0.133 \\
+{}30 & PFN 누적 & 64.83 ± 4.88 & 65.57 ± 2.57 & 0.58 ± 1.80 & 1.587 ± 0.079 \\
+{}30 & PFN FIFO & 65.14 ± 4.49 & 65.66 ± 1.92 & -0.31 ± 1.88 & 1.571 ± 0.077 \\
+{}30 & PFN 무작위 & 64.77 ± 3.04 & 65.43 ± 2.36 & 0.98 ± 0.95 & 1.586 ± 0.061 \\
+{}30 & PFN 유사도 & 66.21 ± 1.78 & 62.27 ± 1.92 & -1.95 ± 1.60 & 1.579 ± 0.080 \\
+{}50 & XGB 누적 재학습 & 62.70 ± 1.13 & 65.54 ± 1.51 & -0.31 ± 0.22 & 5.267 ± 0.083 \\
+{}50 & PFN 누적 & 64.31 ± 2.77 & 64.97 ± 1.24 & 1.00 ± 1.75 & 1.573 ± 0.083 \\
+{}50 & PFN FIFO & 65.13 ± 2.96 & 63.92 ± 1.30 & 0.63 ± 5.91 & 1.573 ± 0.085 \\
+{}50 & PFN 무작위 & 65.01 ± 2.35 & 64.48 ± 1.06 & 1.39 ± 1.91 & 1.566 ± 0.080 \\
+{}50 & PFN 유사도 & 67.22 ± 1.71 & 61.91 ± 1.58 & -2.48 ± 5.76 & 1.584 ± 0.081 \\
+{}100 & XGB 누적 재학습 & 67.12 ± 3.54 & 66.89 ± 2.34 & -0.32 ± 0.11 & 5.809 ± 0.115 \\
+{}100 & PFN 누적 & 68.08 ± 3.04 & 65.64 ± 1.12 & 1.81 ± 2.64 & 1.581 ± 0.083 \\
+{}100 & PFN FIFO & 70.10 ± 2.06 & 65.05 ± 0.80 & -3.75 ± 3.29 & 1.575 ± 0.072 \\
+{}100 & PFN 무작위 & 68.55 ± 2.36 & 64.93 ± 0.32 & 1.77 ± 2.29 & 1.565 ± 0.081 \\
+{}100 & PFN 유사도 & 58.66 ± 5.82 & 55.30 ± 7.10 & -18.74 ± 10.06 & 1.719 ± 0.082 \\
+\bottomrule
+\end{longtable}
+\endgroup
+n=\allowbreak{}100의 PFN 누적−XGB 대응 차이는 전체 F1 0.96 ± 4.09 pp, 신규 공격군 평균 F1 -1.25 ± 1.50 pp, 갱신 시간 -4.228 ± 0.109초다. 차이의 부호와 변동을 함께 확인하며 단일 seed 순위만으로 결론짓지 않는다.
+
+n=\allowbreak{}100의 PFN FIFO−XGB 대응 차이는 전체 F1 2.98 ± 5.08 pp, 신규 공격군 평균 F1 -1.84 ± 1.68 pp, 갱신 시간 -4.234 ± 0.118초다. 차이의 부호와 변동을 함께 확인하며 단일 seed 순위만으로 결론짓지 않는다.
+
+n=\allowbreak{}100의 PFN 무작위−XGB 대응 차이는 전체 F1 1.42 ± 2.47 pp, 신규 공격군 평균 F1 -1.96 ± 2.37 pp, 갱신 시간 -4.243 ± 0.113초다. 차이의 부호와 변동을 함께 확인하며 단일 seed 순위만으로 결론짓지 않는다.
+
+\subsection{클래스별 성능과 오탐}
+아래 n=\allowbreak{}5·100의 클래스별 F1은 seed 평균 ± 표본 표준편차이며 각 전체 test 표본 수 내림차순으로 정렬한다. 모든 n의 precision·recall·F1·TP·FP·FN은 클래스별 CSV에 보존한다. 신규 공격군 평균이 양호해도 희소 클래스의 오탐이나 정밀도 저하가 가려질 수 있으므로 클래스별 결과를 함께 본다.
+
+\subsubsection{cic2018 · n=\allowbreak{}5}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11573\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2652203 & 99.33 ± 0.02 & 99.47 ± 0.33 & 99.47 ± 0.33 & 99.69 ± 0.05 & 99.22 ± 0.54 \\
+{}ddos & 262680 & 93.36 ± 4.85 & 95.81 ± 6.72 & 95.81 ± 6.72 & 95.81 ± 6.72 & 94.40 ± 5.88 \\
+{}bot & 41542 & 86.66 ± 4.05 & 98.98 ± 0.21 & 98.92 ± 0.21 & 98.87 ± 0.22 & 98.85 ± 0.24 \\
+{}dos & 39483 & 98.73 ± 0.46 & 98.53 ± 0.82 & 98.60 ± 0.86 & 98.72 ± 0.87 & 98.63 ± 0.71 \\
+{}brute\_\allowbreak{}force & 37696 & 99.98 ± 0.01 & 99.95 ± 0.03 & 99.95 ± 0.02 & 99.95 ± 0.02 & 99.95 ± 0.02 \\
+{}infiltration & 8742 & 4.55 ± 1.51 & 3.45 ± 1.92 & 3.50 ± 2.11 & 4.09 ± 2.02 & 6.34 ± 4.68 \\
+{}web\_\allowbreak{}attacks & 127 & 6.76 ± 6.26 & 1.99 ± 2.63 & 1.66 ± 2.07 & 1.65 ± 2.15 & 2.59 ± 1.92 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{cic2018 · n=\allowbreak{}100}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11573\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14738\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 2652203 & 98.14 ± 0.30 & 99.35 ± 0.29 & 98.98 ± 0.53 & 99.08 ± 0.20 & 92.01 ± 3.50 \\
+{}ddos & 262680 & 99.44 ± 0.23 & 99.90 ± 0.16 & 99.89 ± 0.16 & 99.89 ± 0.16 & 97.68 ± 3.90 \\
+{}bot & 41542 & 97.63 ± 0.78 & 99.24 ± 0.49 & 99.34 ± 0.38 & 99.19 ± 0.50 & 95.15 ± 3.24 \\
+{}dos & 39483 & 98.92 ± 0.35 & 98.96 ± 0.23 & 98.60 ± 0.91 & 98.40 ± 0.77 & 97.23 ± 1.98 \\
+{}brute\_\allowbreak{}force & 37696 & 99.93 ± 0.06 & 99.97 ± 0.00 & 99.97 ± 0.00 & 99.97 ± 0.00 & 99.97 ± 0.00 \\
+{}infiltration & 8742 & 6.14 ± 0.79 & 11.56 ± 2.11 & 6.41 ± 1.11 & 6.66 ± 0.57 & 2.50 ± 1.23 \\
+{}web\_\allowbreak{}attacks & 127 & 3.74 ± 1.98 & 2.21 ± 1.08 & 2.09 ± 1.36 & 1.88 ± 1.07 & 1.10 ± 0.64 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{toniot · n=\allowbreak{}5}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13240\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11411\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1474302 & 88.59 ± 0.68 & 90.66 ± 0.83 & 90.47 ± 0.80 & 90.58 ± 0.72 & 90.86 ± 1.10 \\
+{}xss & 343854 & 53.73 ± 14.73 & 66.43 ± 7.41 & 65.04 ± 8.31 & 63.47 ± 5.13 & 69.37 ± 6.59 \\
+{}password & 210951 & 72.82 ± 7.29 & 76.64 ± 10.22 & 74.81 ± 9.87 & 73.55 ± 8.75 & 70.23 ± 6.04 \\
+{}ddos & 103338 & 61.35 ± 32.49 & 66.13 ± 30.59 & 66.13 ± 31.24 & 65.70 ± 28.83 & 67.72 ± 24.08 \\
+{}injection & 68891 & 50.09 ± 9.31 & 49.01 ± 11.43 & 48.26 ± 11.45 & 46.45 ± 9.32 & 52.05 ± 9.02 \\
+{}backdoor & 40030 & 87.56 ± 5.22 & 95.30 ± 2.49 & 95.93 ± 2.96 & 95.24 ± 2.48 & 97.67 ± 0.50 \\
+{}dos & 22458 & 59.82 ± 7.12 & 60.52 ± 12.04 & 56.23 ± 10.88 & 58.21 ± 10.30 & 57.30 ± 8.30 \\
+{}scanning & 6029 & 9.02 ± 0.85 & 17.16 ± 2.62 & 16.89 ± 3.47 & 22.58 ± 1.69 & 17.65 ± 5.91 \\
+{}mitm & 1161 & 24.26 ± 4.41 & 3.41 ± 0.29 & 3.11 ± 0.25 & 2.90 ± 0.30 & 3.53 ± 0.85 \\
+{}ransomware & 709 & 5.34 ± 5.70 & 8.79 ± 6.76 & 7.03 ± 4.94 & 7.63 ± 5.04 & 15.97 ± 17.79 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{toniot · n=\allowbreak{}100}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13240\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11411\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15070\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endfirsthead
+클래스 & test 수 & XGB & PFN 누적 & FIFO & 무작위 & 유사도 \\ \midrule
+\endhead
+{}benign & 1474302 & 91.98 ± 0.93 & 90.69 ± 1.03 & 89.24 ± 1.35 & 90.81 ± 1.07 & 70.44 ± 11.61 \\
+{}xss & 343854 & 83.77 ± 1.46 & 83.44 ± 1.25 & 84.89 ± 0.32 & 84.28 ± 0.48 & 76.60 ± 3.00 \\
+{}password & 210951 & 89.59 ± 0.85 & 89.83 ± 1.37 & 90.05 ± 0.91 & 90.04 ± 1.63 & 80.09 ± 6.63 \\
+{}ddos & 103338 & 92.01 ± 3.28 & 94.34 ± 0.58 & 94.69 ± 0.45 & 93.18 ± 1.03 & 62.56 ± 28.43 \\
+{}injection & 68891 & 81.94 ± 4.21 & 83.08 ± 2.77 & 80.08 ± 3.94 & 79.62 ± 2.12 & 65.20 ± 11.44 \\
+{}backdoor & 40030 & 99.16 ± 0.53 & 99.46 ± 0.63 & 99.38 ± 0.55 & 99.80 ± 0.07 & 98.10 ± 1.20 \\
+{}dos & 22458 & 73.80 ± 15.02 & 78.96 ± 12.44 & 91.42 ± 2.89 & 84.05 ± 5.03 & 89.95 ± 0.43 \\
+{}scanning & 6029 & 37.24 ± 19.20 & 51.71 ± 30.16 & 65.05 ± 20.62 & 56.11 ± 20.40 & 39.12 ± 12.74 \\
+{}mitm & 1161 & 4.63 ± 2.92 & 3.12 ± 0.61 & 2.17 ± 0.37 & 2.62 ± 0.31 & 0.54 ± 0.22 \\
+{}ransomware & 709 & 17.11 ± 7.29 & 6.19 ± 3.46 & 4.06 ± 1.59 & 4.94 ± 2.52 & 4.02 ± 2.82 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{cic2018 · web\_\allowbreak{}attacks · n=\allowbreak{}100}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17576\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20606\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19091\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24394\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & precision (\%) & recall (\%) & F1 (\%) & FP \\ \midrule
+\endfirsthead
+방법 & precision (\%) & recall (\%) & F1 (\%) & FP \\ \midrule
+\endhead
+{}XGB 누적 재학습 & 1.92 ± 1.04 & 87.66 ± 0.45 & 3.74 ± 1.98 & 6736.33 ± 2887.33 \\
+{}PFN 누적 & 1.12 ± 0.55 & 93.18 ± 1.82 & 2.21 ± 1.08 & 13444.00 ± 9117.94 \\
+{}PFN FIFO & 1.06 ± 0.69 & 92.91 ± 2.08 & 2.09 ± 1.36 & 20200.33 ± 21121.03 \\
+{}PFN 무작위 & 0.95 ± 0.54 & 92.39 ± 2.53 & 1.88 ± 1.07 & 18005.00 ± 15169.08 \\
+{}PFN 유사도 & 0.55 ± 0.32 & 86.61 ± 5.68 & 1.10 ± 0.64 & 27787.00 ± 21833.08 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{toniot · ransomware · n=\allowbreak{}100}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.17463\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.20448\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18955\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18955\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.24179\linewidth-2\tabcolsep\relax}}
+\toprule
+방법 & precision (\%) & recall (\%) & F1 (\%) & FP \\ \midrule
+\endfirsthead
+방법 & precision (\%) & recall (\%) & F1 (\%) & FP \\ \midrule
+\endhead
+{}XGB 누적 재학습 & 9.54 ± 4.55 & 95.86 ± 2.89 & 17.11 ± 7.29 & 7500.67 ± 3319.83 \\
+{}PFN 누적 & 3.22 ± 1.85 & 96.05 ± 1.35 & 6.19 ± 3.46 & 27629.67 ± 19643.83 \\
+{}PFN FIFO & 2.08 ± 0.83 & 95.53 ± 1.82 & 4.06 ± 1.59 & 36629.33 ± 17971.32 \\
+{}PFN 무작위 & 2.55 ± 1.33 & 96.66 ± 1.41 & 4.94 ± 2.52 & 32097.33 ± 17546.02 \\
+{}PFN 유사도 & 2.07 ± 1.46 & 96.10 ± 1.77 & 4.02 ± 2.82 & 66467.67 ± 74513.24 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{해석 범위와 후속 개선 판단}
+반복에서도 누적 PFN이 해당 희소 클래스에 약하다면 삭제만으로 원인을 설명할 수 없다. 동일 seed에서 누적과 버퍼의 클래스별 precision·recall·정상 오탐을 함께 비교하여 삭제의 추가 영향과 PFN 공통 패턴을 구분한다. 버퍼 크기 확대나 보정 방법을 다음 실험으로 선택할 때는 이 구분을 근거로 삼고, 조정 규칙은 별도의 학습/\allowbreak{}검증 자료에서 정한다. 현재 전체 test는 앞선 탐색에서 이미 확인한 자료이며 반복 seed가 독립적인 새 benchmark를 대신하지 않는다.
+
+원본 행 ID는 train/\allowbreak{}test에서 겹치지 않지만 동일 특징 벡터는 남을 수 있다. 원래 프로토콜의 중복 특징 제외 진단을 각 실행에 유지한다. 이번 반복은 알려지지 않은 공격의 라벨 확보 전 탐지나 실제 네트워크 간 전이를 검증하는 실험이 아니다.
+
+\subsection{실행 근거와 인계}
+실행 ID는 \texttt{20261021\allowbreak{}\_\allowbreak{}\allowbreak{}111613\_\allowbreak{}\allowbreak{}small\_\allowbreak{}\allowbreak{}la\allowbreak{}bels\_\allowbreak{}\allowbreak{}buf\allowbreak{}fer\_\allowbreak{}\allowbreak{}s44\_\allowbreak{}\allowbreak{}s45\_\allowbreak{}\allowbreak{}29cd\allowbreak{}3f40}, 경로는 \texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp84/\allowbreak{}\allowbreak{}20261021\allowbreak{}\_\allowbreak{}\allowbreak{}111613\_\allowbreak{}\allowbreak{}small\_\allowbreak{}\allowbreak{}la\allowbreak{}bels\_\allowbreak{}\allowbreak{}buf\allowbreak{}fer\_\allowbreak{}\allowbreak{}s44\_\allowbreak{}\allowbreak{}s45\_\allowbreak{}\allowbreak{}29cd\allowbreak{}3f40}이다. 설정은 \texttt{configs/\allowbreak{}\allowbreak{}experime\allowbreak{}nts/\allowbreak{}\allowbreak{}exp8\allowbreak{}4\_\allowbreak{}\allowbreak{}multis\allowbreak{}eed\_\allowbreak{}\allowbreak{}prot\allowbreak{}ocol.\allowbreak{}jso\allowbreak{}n}, 현재 진행은 실행 폴더의 progress.json과 seed별 progress.json에 남긴다. seed별 전체 test 예측·단계별 모델·context ID·패널 예측과 검증 기록을 보존한다.
+
+집계 수치는 \texttt{docs/\allowbreak{}\allowbreak{}lab\allowbreak{}log/\allowbreak{}\allowbreak{}data\allowbreak{}/\allowbreak{}\allowbreak{}exp84\_\allowbreak{}\allowbreak{}m\allowbreak{}ultiseed\allowbreak{}\_\allowbreak{}\allowbreak{}summary\allowbreak{}.\allowbreak{}csv}, 클래스별 수치는 \texttt{exp84\_\allowbreak{}\allowbreak{}mu\allowbreak{}ltiseed\_\allowbreak{}\allowbreak{}per\_\allowbreak{}\allowbreak{}clas\allowbreak{}s\_\allowbreak{}\allowbreak{}summar\allowbreak{}y.\allowbreak{}csv}, 같은 seed XGB 대비 차이는 \texttt{exp84\_\allowbreak{}\allowbreak{}mu\allowbreak{}ltiseed\_\allowbreak{}\allowbreak{}paired\_\allowbreak{}\allowbreak{}x\allowbreak{}gb\_\allowbreak{}\allowbreak{}summa\allowbreak{}ry.\allowbreak{}csv}다. 전체 검증이 끝난 seed만 집계하며 완료/\allowbreak{}실패 시 이 보고서와 한 줄 로그를 갱신하고 임시 PDF로 컴파일 검증한다.
+
+
+\end{document}

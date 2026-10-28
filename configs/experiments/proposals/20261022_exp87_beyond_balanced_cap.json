@@ -1,0 +1,79 @@
+{
+  "status": "authorized_for_execution",
+  "reason": "Balanced learning curves reached the rarest-class pool size before a clear plateau",
+  "sampling": "Keep all nested existing rows; sample additional distinct train rows; per-class min(target_n, available_class_rows); same fixed attack test and matched models",
+  "pilot_seed": 43,
+  "conditions": {
+    "cic2018": [
+      {
+        "target_n": 800,
+        "class_counts": {
+          "bot": 800,
+          "brute_force": 800,
+          "ddos": 800,
+          "dos": 800,
+          "infiltration": 800,
+          "web_attacks": 450
+        },
+        "total_rows": 4450
+      },
+      {
+        "target_n": 1600,
+        "class_counts": {
+          "bot": 1600,
+          "brute_force": 1600,
+          "ddos": 1600,
+          "dos": 1600,
+          "infiltration": 1600,
+          "web_attacks": 450
+        },
+        "total_rows": 8450
+      },
+      {
+        "target_n": 3200,
+        "class_counts": {
+          "bot": 3200,
+          "brute_force": 3200,
+          "ddos": 3200,
+          "dos": 3200,
+          "infiltration": 3200,
+          "web_attacks": 450
+        },
+        "total_rows": 16450
+      }
+    ],
+    "toniot": [
+      {
+        "target_n": 3200,
+        "class_counts": {
+          "backdoor": 3200,
+          "ddos": 3200,
+          "dos": 3200,
+          "injection": 3200,
+          "mitm": 3200,
+          "password": 3200,
+          "ransomware": 2151,
+          "scanning": 3200,
+          "xss": 3200
+        },
+        "total_rows": 27751
+      },
+      {
+        "target_n": 6400,
+        "class_counts": {
+          "backdoor": 6400,
+          "ddos": 6400,
+          "dos": 6400,
+          "injection": 6400,
+          "mitm": 3285,
+          "password": 6400,
+          "ransomware": 2151,
+          "scanning": 6400,
+          "xss": 6400
+        },
+        "total_rows": 50236
+      }
+    ]
+  },
+  "authorization": "2026-10-22 사용자 응답: 제안한 방식으로 추가 실행"
+}

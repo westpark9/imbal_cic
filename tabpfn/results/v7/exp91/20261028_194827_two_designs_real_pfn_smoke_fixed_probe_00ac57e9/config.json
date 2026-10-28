@@ -1,0 +1,95 @@
+{
+  "started_at": "2026-10-28T19:48:28.396765+09:00",
+  "research_version": "v7",
+  "experiment_id": "exp91",
+  "purpose": "synthetic_implementation_smoke",
+  "input_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp91/20261028_194827_two_designs_real_pfn_smoke_fixed_probe_00ac57e9/input_smoke.npz",
+  "input_sha256": "783e73277ac6e0151bc9de5218e5ffd3bd8005cee0236bb6ad463d7f5a88520c",
+  "checkpoint_sha256": "517c40ca21e0e1b1fa6629ded4b0412ffb7b2e577eb6cb96e5be5c487fadfb03",
+  "label_rows": 18,
+  "label_counts": {
+    "0": 6,
+    "1": 6,
+    "2": 6
+  },
+  "unlabelled_rows": 36,
+  "test_rows": 24,
+  "train_test_feature_group_overlap": 0,
+  "supplied_row_id_keys": [
+    "ids_l",
+    "ids_u",
+    "ids_test"
+  ],
+  "additional_validation_labels": 0,
+  "test_label_access": "Only metrics after both fit and predict; no parameter selection",
+  "student_config": {
+    "hidden": 32,
+    "embedding": 16,
+    "warmup_epochs": 1,
+    "rounds": 1,
+    "epochs_per_round": 1,
+    "batch_size": 24,
+    "predict_batch_size": 1024,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "mask_probability": 0.15,
+    "temperature": 0.2,
+    "teacher_strength": 1.0,
+    "geometry_strength": 1.0,
+    "assignment_entropy": 0.2,
+    "prior_strength": 0.1,
+    "assignment_steps": 100,
+    "unlabelled_strength": 1.0,
+    "reconstruction_strength": 0.2,
+    "confidence_floor": 0.0,
+    "prototype_mix": 0.5,
+    "prior_mix": 0.25,
+    "prior_momentum": 0.9,
+    "prior_max_ratio": 2.0,
+    "minimum_pseudo_mass": 1.0,
+    "seed": 43,
+    "device": "cuda:0",
+    "categorical_columns": []
+  },
+  "pair_config": {
+    "max_experts": 1,
+    "folds": 2,
+    "minimum_groups": 3,
+    "alphas": [
+      0.25,
+      0.5
+    ],
+    "caps": [
+      1.0,
+      2.0
+    ],
+    "minimum_improvement": 1e-06,
+    "allowed_benign_fp_increase": 0,
+    "require_fold_improvement": true,
+    "batch_size": 1024,
+    "seed": 43
+  },
+  "factory": {
+    "checkpoint": "/home/user/Desktop/imbal_cic/tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+    "device": "cuda:0",
+    "n_estimators": 1,
+    "seed": 43,
+    "categorical_columns": []
+  },
+  "source_sha256": {
+    "teacher_student.py": "7cf7b43da2c2cb5f7a52b7c87458f28eca78b0f1208997f39f46153fa18c451d",
+    "test_models.py": "047cd2d224e21cf00aca3d47c836b53f9de07c3801b3a72af8717d1b32dfd773",
+    "common.py": "a13aa9f2fec59036aadcb80524e1802910859e068a5a833e4ef2a9d084cd7931",
+    "run_designs.py": "feedc972cbfccd500515bd3f6a09e79626526af41e244468a73419417241d980",
+    "pair_residual.py": "7c51a147b5eb01ba5b6426d7c943ffc1eb4d3b5ec309d4bb7e8902e0d19c71e5"
+  },
+  "python": "3.13.12 | packaged by Anaconda, Inc. | (main, Feb 24 2026, 16:13:31) [GCC 14.3.0]",
+  "packages": {
+    "torch": "2.11.0",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3",
+    "tabpfn": "8.2.0"
+  }
+}

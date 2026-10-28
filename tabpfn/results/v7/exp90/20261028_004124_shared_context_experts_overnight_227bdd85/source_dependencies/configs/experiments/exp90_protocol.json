@@ -1,0 +1,90 @@
+{
+  "research_version": "v7",
+  "experiment_id": "exp90",
+  "protocol_revision": "exp90.1",
+  "authorization": "2026-10-28 사용자: 야간동안 TabPFN을 이용한 분류 개선 모델 고안, 앙상블/문헌 기반 구조 실험 및 보고서 작성",
+  "source_exp89": "tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a",
+  "datasets": [
+    "cic2018",
+    "toniot"
+  ],
+  "budgets": [
+    2,
+    3,
+    5,
+    10,
+    20
+  ],
+  "seeds": [
+    43,
+    44,
+    45
+  ],
+  "benign_regimes": [
+    "matched",
+    "fixed750"
+  ],
+  "expected_conditions": 60,
+  "full_test": {
+    "benign_regime": "fixed750",
+    "budgets": [
+      5,
+      20
+    ],
+    "expected_conditions": 12
+  },
+  "panel": {
+    "benign_cap": 100000,
+    "attack_class_cap": 20000,
+    "seed": 90043,
+    "weights": "Each class has weight full_test_class_count / sampled_class_count. Panel F1 is an estimate, not exact full-test F1."
+  },
+  "sampling": "Original (not globally conflict-filtered) train and original outer test from EXP89. Exactly the same attack IDs, nested n prefixes, and first n benign IDs as EXP89. fixed750 adds 730 train-only benign IDs to the existing 20; its benign set is constant across n within seed. All methods in a condition share the same unique label budget.",
+  "folds": "Exact float32 feature vectors are groups, including conflicting labels. StratifiedGroupKFold, 2 folds for n=2/3 and 3 for n>=5. No feature group crosses fold boundaries. Missing fold-training classes get probability zero and are audited; no validation rows or labels are added.",
+  "components": [
+    "XGB fixed",
+    "XGB OOF-selected",
+    "PFN full context",
+    "PFN signed-log view",
+    "PFN benign/attack gate",
+    "PFN attack-only specialist",
+    "XGB benign/attack gate",
+    "XGB attack-only specialist",
+    "PFN16 compute-budget reference"
+  ],
+  "xgb_grid": [
+    {
+      "max_depth": 8,
+      "min_child_weight": 1.0
+    },
+    {
+      "max_depth": 3,
+      "min_child_weight": 1.0
+    },
+    {
+      "max_depth": 8,
+      "min_child_weight": 0.1
+    },
+    {
+      "max_depth": 3,
+      "min_child_weight": 0.1
+    }
+  ],
+  "xgb_selection": "Minimum class-balanced OOF negative log likelihood, before any test predictions; fixed grid, 300 trees/lr.05/subsample.8/colsample.8 otherwise unchanged.",
+  "pfn": "Existing frozen TabPFN-v3 checkpoint, 4 estimators (16 only named reference), fit_with_cache, CPU cache, no subsampling and no weight updates. Full-context Global always retains every supplied example.",
+  "views": "Signed log1p on all features except protocol/L7, flags, TTL, ICMP/DNS type and FTP response fields. No new features or whole-pool statistics. This is an experimental view inspired by multi-view inference, not a reproduction of TabFM+.",
+  "hierarchy": "P(benign)=binary gate probability; P(attack family)=P(attack)*attack-only PFN family probability. Compare full PFN hierarchy, PFN gate/XGB attack specialist, and all-XGB hierarchy.",
+  "mixture": "Expert bank [OOF-selected XGB, full PFN, log-view PFN, PFN hierarchy]. Compare fixed means, global simplex weights learned from class-balanced OOF NLL with L2=0.01 toward uniform, and feature-dependent softmax mixture learned from the same OOF predictions with L2=0.1. Gate features are confidence/entropy/margin/benign probability of each expert, disagreement with Global, and Global predicted-class one-hot. Anchored gate averages dynamic mixture with full PFN 50:50. No test inputs or labels enter fitting/selection.",
+  "evaluation": "Freeze all methods and per-condition OOF parameters before panel predictions. Panel for all 60 conditions, exact full original test for the 12 conditions declared here irrespective of panel performance. Full evaluation is a precision expansion of the same inspected split, not independent confirmation. No test-metric-driven candidate selection. No global conflict filtering, test-label renormalization, or true-label query grouping.",
+  "metrics": "Attack Macro-F1 on normal-inclusive population, all-class Macro-F1, benign FPR, attack detection recall, per-class precision/recall/F1, corrections and harms versus full PFN, disagreement and oracle ceiling diagnostic. Same-prediction attack-only sensitivity is secondary. Full test and weighted panels are reported separately.",
+  "cost": "OOF preparation, full model fit/cache, per-component inference, mixture processing, and reference PFN16 inference separately. Ensemble cost includes every required component. No sparse-expert speed claim: every bank component is evaluated for this prototype.",
+  "analysis": "Mean/sample SD and seed-paired differences for three sampling seeds. Test rows and exact-feature collisions are audited; group-disjoint OOF does not make the original outer test feature-disjoint. Tiny positive differences do not establish significance or novelty.",
+  "report": "Korean standalone LaTeX with design, prior failures, literature-to-design mapping, complete numeric tables, plots, negative results, cost, next improvements, and validation. Temporary PDF compile, one-line log; no automatic manuscript/slides changes.",
+  "literature": [
+    "https://arxiv.org/abs/2503.01256",
+    "https://arxiv.org/abs/2406.05207",
+    "https://arxiv.org/abs/2609.37959",
+    "https://arxiv.org/abs/2605.04363"
+  ],
+  "numeric_stability": "Same 1e-9 true-class probability floor for every bank expert during mixture fitting; optimize simplex through softmax logits. This fixes smoke failure when a fold has no class examples."
+}

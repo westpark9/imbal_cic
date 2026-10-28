@@ -1,0 +1,406 @@
+% !TeX root = 20261027_exp89.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\begin{document}
+\reporttitle{2026-10-27}{EXP89: 정상 소수 학습과 충돌 정제의 영향을 분리한 TabPFN·XGB 비교}
+\subsection{목적과 승인 범위}
+정상 학습과 충돌 정제가 극소수 공격 분류 성능에 미치는 영향을 분리하는 것이 본 실험의 목적이다. 사용자 승인에 따라 클래스당 n=\allowbreak{}2·3·5·10·20에서 정제 전후 train, 정상 n개 포함 여부, 두 모델을 교차한다. 평가에는 원래 전체 test를 고정하고 정제 전후 및 정상 포함 여부를 같은 예측의 행 선택으로 구분한다. 본 연구 버전은 v7이며 새로운 연구 버전으로 전환하지 않는다.
+
+실행 시작일은 2026-10-27이고 문서 작성일은 2026-10-27이다. 실험 ID는 EXP89이며 실행 ID는 20261027\_\allowbreak{}144031\_\allowbreak{}curation\_\allowbreak{}benign\_\allowbreak{}n2\_\allowbreak{}3\_\allowbreak{}5\_\allowbreak{}10\_\allowbreak{}20\_\allowbreak{}five\_\allowbreak{}seeds\_\allowbreak{}e1167f0a이다. 데이터 2종, train 버전 2개, 정상 학습 조건 2개, 예산 5개, seed 5개, 모델 2개를 합쳐 400개 조건을 수행한다. 완료 여부는 아래 실행 상태와 검증 기록을 따른다.
+
+\subsection{표본 선택과 모델 설정}
+클래스별 n개는 해당 train pool에서 균등 비복원 추출한 20개의 중첩 prefix다. seed는 43·44·45·46·47이며 같은 조건에서 두 모델에 정확히 같은 행 ID를 제공한다. 정제 후 공격 표본은 EXP86의 기존 선택을 재현하고 n=\allowbreak{}3만 중간 prefix로 추가한다. 정상 포함 조건은 공격 표본을 그대로 두고 정상 n개를 추가하므로 전체 학습 행 수는 CIC2018의 경우 6n에서 7n, ToN-IoT는 9n에서 10n으로 바뀐다.
+
+정제 전후 train의 후보 모집단은 다르므로 같은 seed라도 선택된 행 ID는 달라질 수 있다. 따라서 train 정제 비교는 정제된 후보에서 표본을 뽑는 정책의 차이를 측정하며 특정 행의 삭제 효과만을 고정하는 비교가 아니다. 정상 추가 비교는 같은 공격 표본을 공유하지만 출력 클래스 수와 전체 context 크기도 함께 증가한다. 정상 2\textasciitilde{}20개는 정상의 충분한 다양성을 보장하지 않는다.
+
+정제 전 버전은 기존 source의 46개 특징, family 라벨, 원래 outer split ID를 그대로 사용하고 충돌 행 제거만 적용하지 않은 버전이다. 원래 feature 변환과 행별 고정값 처리도 유지하며 전체 pool로 새로운 scaler나 특징 선택을 학습하지 않는다. 정제 후 버전은 train·validation·test 라벨을 함께 이용했던 기존 충돌 제거 결과를 재현하는 대조군이다. 정제 전 버전을 새 수집환경이나 오류 없는 정답 데이터로 간주하지 않는다.
+
+XGBoost (XGB)는 기존 300 trees, depth 8, learning rate 0.05, subsample/\allowbreak{}colsample 0.8, min\_\allowbreak{}child\_\allowbreak{}weight 1 설정을 유지한다. TabPFN은 기존 v3 체크포인트, 4 estimators, fit\_\allowbreak{}with\_\allowbreak{}cache, CPU cache를 사용하며 context subsampling과 가중치 fine-tuning을 하지 않는다. 매 조건에서 새 모델을 구성하고 동일 seed를 사용한다. 새 하이퍼파라미터 탐색이나 유리한 클래스 선택을 수행하지 않는다.
+
+\subsection{평가 모집단과 지표}
+원래 전체 test의 모든 행에 대해 seed43의 라벨과 무관한 고정 순서와 batch 8,192로 한 번 예측한다. test 행을 표본 추출하거나 중복 제거하지 않는다. 정제 후 test는 원래 test에 포함된 고정 부분집합이며, 공격만 평가는 실제 라벨이 정상인 행만 제외한다. 공격을 정상으로 예측한 경우는 false negative로 남기고 정상 출력 열을 제거하거나 확률을 다시 정규화하지 않는다.
+
+공격 Macro-F1은 공격 클래스별 F1의 단순 평균이며 모든 비교에서 같은 공격 클래스 목록을 사용한다. 정상 포함 평가의 공격 F1에는 정상에서 유입되는 false positive가 포함된다. 전체 클래스 Macro-F1은 정상까지 포함한 별도 지표이며 공격 Macro-F1과 같은 값으로 비교하지 않는다. 정상 false positive rate (FPR)는 실제 정상 중 공격으로 예측된 비율이며, 공격 탐지 recall과 공격 종류 분류 F1을 구분한다.
+
+정상 없이 학습한 모델의 전체 test 결과는 정상 출력 라벨이 없어 정상 FPR 100\%인 구조적 진단이다. 이 조건을 정상 탐지 성능의 주 근거로 사용하지 않는다. 정상 포함 학습 모델의 전체 test 결과와 동일 모델의 공격 부분집합 결과는 같은 예측에서 계산한다. 기존 EXP86/\allowbreak{}87과는 원래 test 복원으로 query 배치 구성이 달라지므로 별도의 연속성 점검을 수행한다.
+
+평균과 표본 표준편차는 같은 고정 split에서 다섯 seed에 걸친 표본·모델 변동이다. 동일 seed끼리 차이를 계산하며 test 정제 비교에서는 동일 모델을 유지한다. 추가 seed는 새로운 수집환경이나 미검토 test에 대한 일반화 검증을 대신하지 않는다. 모델 실행 완료와 논문 근거 채택은 구분한다.
+
+\subsection{실행 상태}
+400개 모델 조건과 1,600개 평가 view의 집계를 완료했고 저장 예측·입력 ID·지표의 독립 검산을 통과했다. 모델 완료일은 2026-10-27이며 검산 시각은 2026-10-27T23:09:53.557466+\allowbreak{}09:00다. 아래 수치는 다섯 seed 평균과 표본 표준편차이며 모델별 우위를 특정 결과만으로 일반화하지 않는다.
+
+\subsection{핵심 관찰}
+CIC2018 XGB의 n=\allowbreak{}20에서 정제 전 train·고정된 정제 전 공격 test를 사용할 때 정상 학습 추가 전후 공격 Macro-F1은 78.13\%  \ensuremath{\rightarrow}  77.66\% (-0.46 percentage point (pp))다. 정제 후 공격만 학습한 모델을 고정하고 test만 정제 전에서 후로 바꿀 때는 62.89\%  \ensuremath{\rightarrow}  80.43\% (+\allowbreak{}17.54 pp)다. 두 변화는 각각 정상 학습 조건과 평가 모집단 선택의 관찰이며 서로 다른 비교다.
+
+CIC2018 TabPFN의 n=\allowbreak{}20에서 정제 전 train·고정된 정제 전 공격 test를 사용할 때 정상 학습 추가 전후 공격 Macro-F1은 78.32\%  \ensuremath{\rightarrow}  76.49\% (-1.83 percentage point (pp))다. 정제 후 공격만 학습한 모델을 고정하고 test만 정제 전에서 후로 바꿀 때는 66.85\%  \ensuremath{\rightarrow}  80.59\% (+\allowbreak{}13.74 pp)다. 두 변화는 각각 정상 학습 조건과 평가 모집단 선택의 관찰이며 서로 다른 비교다.
+
+ToN-IoT XGB의 n=\allowbreak{}20에서 정제 전 train·고정된 정제 전 공격 test를 사용할 때 정상 학습 추가 전후 공격 Macro-F1은 57.70\%  \ensuremath{\rightarrow}  53.43\% (-4.27 percentage point (pp))다. 정제 후 공격만 학습한 모델을 고정하고 test만 정제 전에서 후로 바꿀 때는 47.46\%  \ensuremath{\rightarrow}  64.74\% (+\allowbreak{}17.27 pp)다. 두 변화는 각각 정상 학습 조건과 평가 모집단 선택의 관찰이며 서로 다른 비교다.
+
+ToN-IoT TabPFN의 n=\allowbreak{}20에서 정제 전 train·고정된 정제 전 공격 test를 사용할 때 정상 학습 추가 전후 공격 Macro-F1은 59.04\%  \ensuremath{\rightarrow}  53.87\% (-5.18 percentage point (pp))다. 정제 후 공격만 학습한 모델을 고정하고 test만 정제 전에서 후로 바꿀 때는 54.01\%  \ensuremath{\rightarrow}  69.13\% (+\allowbreak{}15.12 pp)다. 두 변화는 각각 정상 학습 조건과 평가 모집단 선택의 관찰이며 서로 다른 비교다.
+
+\subsection{중단 및 재개 이력}
+마지막 저장 진행 시각은 2026-10-27T20:21:19.923805+\allowbreak{}09:00이며, 재개 전 완료 조건은 291/\allowbreak{}400개다. 사용자 재개 요청에 따라 2026-10-27T20:50:10.473454+\allowbreak{}09:00에 동일 실행 경로에서 이어서 실행했다. 재개 점검 시 운영체제 부팅 시각은 2026-10-27 20:46:30였고 이전 실행 프로세스는 없었다. 정확한 종료 원인은 기록되지 않아 단정하지 않는다. 라이브러리 버전과 실험 코드·설정의 동일성을 확인했고, 완료 예측의 해시를 검증하여 재사용하며 미완료 조건은 처음부터 재실행한다. 중단 상태와 미완료 예측 사본은 실행 폴더의 resumptions 아래에 보존한다.
+
+\subsection{원래 분할의 클래스별 표본 수}
+표본 수는 가용 전체 train pool과 고정 test의 행 수이며 실제 모델 학습 수 n과 구별한다. 정제 전후 분포 표의 클래스는 정제 후 test 표본 수 내림차순으로 정렬한다.
+
+\subsubsection{CIC2018}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.22000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19000\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19000\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 정제 전 train & 정제 후 train & 정제 전 test & 정제 후 test \\ \midrule
+\endfirsthead
+클래스 & 정제 전 train & 정제 후 train & 정제 전 test & 정제 후 test \\ \midrule
+\endhead
+{}benign & 10,508,775 & 7,490,433 & 3,502,926 & 2,652,203 \\
+{}ddos & 794,609 & 789,310 & 264,872 & 262,680 \\
+{}bot & 124,621 & 124,621 & 41,542 & 41,542 \\
+{}dos & 181,779 & 118,449 & 60,594 & 39,483 \\
+{}brute\_\allowbreak{}force & 345,116 & 113,024 & 115,040 & 37,696 \\
+{}infiltration & 112,891 & 30,143 & 37,631 & 8,742 \\
+{}web\_\allowbreak{}attacks & 1,522 & 450 & 509 & 127 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{ToN-IoT}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.20417\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20417\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.20417\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19375\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.19375\linewidth-2\tabcolsep\relax}}
+\toprule
+클래스 & 정제 전 train & 정제 후 train & 정제 전 test & 정제 후 test \\ \midrule
+\endfirsthead
+클래스 & 정제 전 train & 정제 후 train & 정제 전 test & 정제 후 test \\ \midrule
+\endhead
+{}benign & 10,075,328 & 2,017,095 & 3,358,444 & 1,474,302 \\
+{}xss & 1,700,661 & 987,364 & 566,887 & 343,854 \\
+{}password & 956,866 & 637,441 & 318,956 & 210,951 \\
+{}ddos & 2,484,753 & 613,651 & 828,252 & 103,338 \\
+{}injection & 229,066 & 201,447 & 76,356 & 68,891 \\
+{}backdoor & 122,030 & 120,518 & 40,678 & 40,030 \\
+{}dos & 122,073 & 68,286 & 40,692 & 22,458 \\
+{}scanning & 815,386 & 17,881 & 271,796 & 6,029 \\
+{}mitm & 3,607 & 3,285 & 1,204 & 1,161 \\
+{}ransomware & 2,382 & 2,151 & 795 & 709 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{기존 실험을 가운데 둔 데이터셋별 비교}
+각 데이터셋의 학습곡선을 왼쪽 정제 전·정상 미포함, 가운데 정제 후·정상 미포함(기존 실험), 오른쪽 정제 후·정상 포함의 1×3으로 배치한다. 정제 전후 표시는 train과 test 모두에 적용하며 정상 포함 여부도 학습과 평가에 함께 적용한다. 정상 포함 학습의 정상 사례 수는 공격 클래스당 사례 수와 같은 n개다. 모든 패널은 공격 Macro-F1을 같은 0–100\% 축에 표시하며, 정상 포함 패널의 공격 F1에는 정상에서 발생한 false positive도 반영한다.
+
+왼쪽과 가운데의 차이는 train 정제와 평가 모집단 정제가 합쳐진 변화이며, 가운데와 오른쪽의 차이는 정상 학습 추가와 정상 평가 행 추가가 합쳐진 변화다. 따라서 이 그림은 기존 실험을 기준으로 조건 변경의 전체 영향을 보여주며, 각각의 원인 분리는 뒤의 고정 test 표와 대응 차이 표를 따른다. 색은 XGB 파랑·TabPFN 빨강으로 고정하고, 긴 범례 선에서 XGB의 점선·사각 마커와 TabPFN의 실선·원형 마커를 구분한다. 곡선은 5개 seed 평균이며 음영은 표본 표준편차다.
+
+\reportfigure{figures/20261027_exp89_comparison_cic2018.pdf}{CIC2018: 정제 전·정상 미포함 /\allowbreak{} 기존 실험(정제 후·정상 미포함) /\allowbreak{} 정제 후·정상 포함. 같은 모델의 색과 선 표기는 모든 패널에서 동일하다.}
+
+
+\reportfigure{figures/20261027_exp89_comparison_toniot.pdf}{ToN-IoT: 정제 전·정상 미포함 /\allowbreak{} 기존 실험(정제 후·정상 미포함) /\allowbreak{} 정제 후·정상 포함. 같은 모델의 색과 선 표기는 모든 패널에서 동일하다.}
+
+
+
+\subsection{고정된 정제 전 공격 test의 학습곡선}
+정제 전 공격 test 전체를 동일하게 유지해 네 학습 조건을 비교한다. 정상 포함 여부는 각 클래스당 n과 같은 수의 정상 학습 행을 추가하는 조건이다. 아래 표의 값은 공격 Macro-F1(\%)이며 각 셀은 5개 seed 평균 ± 표본 표준편차다.
+
+\subsubsection{CIC2018}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14891\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14071\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14071\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18989\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19809\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18169\linewidth-2\tabcolsep\relax}}
+\toprule
+train 정제 & 정상 학습 & n & XGB F1 (\%) & TabPFN F1 (\%) & PFN−XGB (pp) \\ \midrule
+\endfirsthead
+train 정제 & 정상 학습 & n & XGB F1 (\%) & TabPFN F1 (\%) & PFN−XGB (pp) \\ \midrule
+\endhead
+{}정제 전 & 제외 & 2 & 60.01 ± 6.70 & 65.07 ± 7.10 & 5.06 ± 11.18 \\
+{}정제 전 & 제외 & 3 & 62.98 ± 7.37 & 68.66 ± 8.01 & 5.69 ± 6.93 \\
+{}정제 전 & 제외 & 5 & 67.04 ± 10.11 & 72.17 ± 8.35 & 5.13 ± 6.30 \\
+{}정제 전 & 제외 & 10 & 75.20 ± 2.43 & 76.14 ± 2.01 & 0.94 ± 0.71 \\
+{}정제 전 & 제외 & 20 & 78.13 ± 0.77 & 78.32 ± 0.94 & 0.19 ± 0.63 \\
+{}정제 전 & 포함 & 2 & 58.20 ± 6.34 & 63.37 ± 3.51 & 5.17 ± 9.49 \\
+{}정제 전 & 포함 & 3 & 60.00 ± 7.39 & 67.35 ± 4.81 & 7.36 ± 10.84 \\
+{}정제 전 & 포함 & 5 & 69.67 ± 3.91 & 70.08 ± 7.35 & 0.41 ± 6.88 \\
+{}정제 전 & 포함 & 10 & 73.51 ± 3.34 & 75.05 ± 3.83 & 1.54 ± 4.59 \\
+{}정제 전 & 포함 & 20 & 77.66 ± 3.10 & 76.49 ± 2.93 & -1.17 ± 3.71 \\
+{}정제 후 & 제외 & 2 & 50.52 ± 4.37 & 54.39 ± 7.46 & 3.87 ± 3.38 \\
+{}정제 후 & 제외 & 3 & 55.11 ± 3.75 & 59.28 ± 4.31 & 4.17 ± 4.13 \\
+{}정제 후 & 제외 & 5 & 57.93 ± 4.44 & 61.04 ± 4.30 & 3.11 ± 2.65 \\
+{}정제 후 & 제외 & 10 & 62.91 ± 3.87 & 65.40 ± 1.91 & 2.50 ± 3.58 \\
+{}정제 후 & 제외 & 20 & 62.89 ± 2.95 & 66.85 ± 0.64 & 3.95 ± 3.35 \\
+{}정제 후 & 포함 & 2 & 48.14 ± 2.49 & 53.16 ± 6.66 & 5.03 ± 4.42 \\
+{}정제 후 & 포함 & 3 & 54.60 ± 3.53 & 58.66 ± 6.52 & 4.07 ± 5.26 \\
+{}정제 후 & 포함 & 5 & 56.96 ± 4.30 & 59.18 ± 4.68 & 2.23 ± 2.18 \\
+{}정제 후 & 포함 & 10 & 59.76 ± 3.26 & 59.70 ± 2.42 & -0.06 ± 4.29 \\
+{}정제 후 & 포함 & 20 & 59.70 ± 1.53 & 61.25 ± 1.78 & 1.55 ± 1.38 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{ToN-IoT}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.14891\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.14071\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.14071\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18989\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.19809\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.18169\linewidth-2\tabcolsep\relax}}
+\toprule
+train 정제 & 정상 학습 & n & XGB F1 (\%) & TabPFN F1 (\%) & PFN−XGB (pp) \\ \midrule
+\endfirsthead
+train 정제 & 정상 학습 & n & XGB F1 (\%) & TabPFN F1 (\%) & PFN−XGB (pp) \\ \midrule
+\endhead
+{}정제 전 & 제외 & 2 & 37.27 ± 4.45 & 46.93 ± 8.57 & 9.66 ± 11.26 \\
+{}정제 전 & 제외 & 3 & 41.08 ± 10.13 & 45.61 ± 6.46 & 4.52 ± 6.07 \\
+{}정제 전 & 제외 & 5 & 44.40 ± 9.75 & 48.50 ± 2.75 & 4.10 ± 9.25 \\
+{}정제 전 & 제외 & 10 & 49.94 ± 8.25 & 55.76 ± 6.48 & 5.82 ± 3.57 \\
+{}정제 전 & 제외 & 20 & 57.70 ± 8.79 & 59.04 ± 6.29 & 1.34 ± 3.92 \\
+{}정제 전 & 포함 & 2 & 34.18 ± 3.63 & 45.29 ± 9.92 & 11.11 ± 9.73 \\
+{}정제 전 & 포함 & 3 & 38.24 ± 6.16 & 41.91 ± 8.39 & 3.66 ± 3.09 \\
+{}정제 전 & 포함 & 5 & 42.15 ± 3.62 & 47.41 ± 4.05 & 5.25 ± 4.35 \\
+{}정제 전 & 포함 & 10 & 50.46 ± 4.73 & 53.41 ± 3.54 & 2.95 ± 1.77 \\
+{}정제 전 & 포함 & 20 & 53.43 ± 4.85 & 53.87 ± 4.21 & 0.44 ± 1.89 \\
+{}정제 후 & 제외 & 2 & 37.33 ± 6.25 & 38.43 ± 8.02 & 1.10 ± 5.94 \\
+{}정제 후 & 제외 & 3 & 40.20 ± 1.74 & 42.02 ± 7.77 & 1.83 ± 8.80 \\
+{}정제 후 & 제외 & 5 & 42.23 ± 5.82 & 47.51 ± 5.67 & 5.28 ± 3.65 \\
+{}정제 후 & 제외 & 10 & 51.31 ± 9.76 & 49.20 ± 11.94 & -2.10 ± 8.22 \\
+{}정제 후 & 제외 & 20 & 47.46 ± 5.31 & 54.01 ± 6.35 & 6.54 ± 6.43 \\
+{}정제 후 & 포함 & 2 & 37.03 ± 4.22 & 37.86 ± 5.70 & 0.83 ± 5.76 \\
+{}정제 후 & 포함 & 3 & 40.15 ± 2.00 & 40.78 ± 7.02 & 0.63 ± 6.56 \\
+{}정제 후 & 포함 & 5 & 41.12 ± 4.76 & 47.38 ± 8.49 & 6.26 ± 6.65 \\
+{}정제 후 & 포함 & 10 & 51.29 ± 6.21 & 52.68 ± 6.03 & 1.38 ± 6.43 \\
+{}정제 후 & 포함 & 20 & 52.17 ± 6.17 & 54.88 ± 8.06 & 2.71 ± 5.90 \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+
+\subsection{정상 포함 학습 모델의 전체 test 평가}
+정상 포함 모델의 공격 F1에는 정상에서 유입된 오분류가 반영된다. 아래는 정제 전 전체 test를 사용하며 공격 F1과 전체 클래스 F1을 별도 열로 구분한다. FPR은 낮을수록 정상 오탐이 적고 공격 탐지 recall은 공격을 정상으로 놓치지 않는 비율이다. 공격 종류를 잘못 분류한 경우는 탐지 recall에는 성공으로 남을 수 있으므로 공격 F1을 함께 본다.
+
+\subsubsection{CIC2018}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12622\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11937\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11937\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15362\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15362\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16047\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16732\linewidth-2\tabcolsep\relax}}
+\toprule
+train 정제 & n & 모델 & 공격 F1 (\%) & 전체 F1 (\%) & 정상 FPR (\%) & 탐지 recall (\%) \\ \midrule
+\endfirsthead
+train 정제 & n & 모델 & 공격 F1 (\%) & 전체 F1 (\%) & 정상 FPR (\%) & 탐지 recall (\%) \\ \midrule
+\endhead
+{}정제 전 & 2 & XGB & 27.37 ± 8.99 & 29.00 ± 8.85 & 74.25 ± 15.23 & 96.08 ± 1.77 \\
+{}정제 전 & 2 & TabPFN & 30.78 ± 6.91 & 32.42 ± 6.32 & 72.99 ± 4.75 & 97.13 ± 1.54 \\
+{}정제 전 & 3 & XGB & 30.00 ± 5.15 & 32.15 ± 3.94 & 69.92 ± 11.21 & 95.05 ± 2.74 \\
+{}정제 전 & 3 & TabPFN & 35.43 ± 6.17 & 35.95 ± 5.74 & 74.78 ± 11.80 & 97.42 ± 1.73 \\
+{}정제 전 & 5 & XGB & 36.15 ± 3.81 & 39.18 ± 4.00 & 58.83 ± 11.67 & 95.76 ± 0.85 \\
+{}정제 전 & 5 & TabPFN & 42.01 ± 5.26 & 43.82 ± 4.81 & 61.02 ± 14.17 & 95.50 ± 1.07 \\
+{}정제 전 & 10 & XGB & 42.88 ± 5.80 & 45.05 ± 5.42 & 58.71 ± 5.32 & 96.67 ± 0.36 \\
+{}정제 전 & 10 & TabPFN & 49.91 ± 6.80 & 51.08 ± 6.31 & 58.40 ± 9.12 & 97.08 ± 0.91 \\
+{}정제 전 & 20 & XGB & 50.76 ± 4.57 & 53.47 ± 4.39 & 46.11 ± 4.90 & 96.97 ± 0.31 \\
+{}정제 전 & 20 & TabPFN & 56.45 ± 4.56 & 58.72 ± 4.02 & 42.89 ± 6.35 & 96.88 ± 0.88 \\
+{}정제 후 & 2 & XGB & 23.56 ± 3.20 & 25.16 ± 4.65 & 77.98 ± 10.31 & 91.54 ± 11.07 \\
+{}정제 후 & 2 & TabPFN & 27.79 ± 4.65 & 29.77 ± 5.84 & 72.73 ± 11.90 & 98.41 ± 0.93 \\
+{}정제 후 & 3 & XGB & 28.70 ± 2.31 & 29.64 ± 3.71 & 77.98 ± 8.94 & 98.21 ± 0.16 \\
+{}정제 후 & 3 & TabPFN & 34.75 ± 6.81 & 36.94 ± 6.82 & 64.89 ± 15.90 & 93.49 ± 9.20 \\
+{}정제 후 & 5 & XGB & 33.27 ± 3.46 & 34.70 ± 2.24 & 71.56 ± 9.48 & 93.53 ± 10.32 \\
+{}정제 후 & 5 & TabPFN & 37.75 ± 4.92 & 39.17 ± 4.98 & 67.38 ± 14.32 & 97.20 ± 1.44 \\
+{}정제 후 & 10 & XGB & 41.59 ± 4.22 & 44.58 ± 3.36 & 53.59 ± 8.83 & 92.01 ± 10.01 \\
+{}정제 후 & 10 & TabPFN & 42.64 ± 5.70 & 46.04 ± 3.98 & 49.37 ± 9.91 & 95.75 ± 1.58 \\
+{}정제 후 & 20 & XGB & 44.69 ± 3.05 & 48.90 ± 1.74 & 40.01 ± 8.53 & 91.76 ± 9.78 \\
+{}정제 후 & 20 & TabPFN & 44.75 ± 4.02 & 48.76 ± 3.51 & 42.19 ± 5.95 & 95.58 ± 1.45 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{ToN-IoT}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.12548\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.11873\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.11873\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15251\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15927\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15927\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16602\linewidth-2\tabcolsep\relax}}
+\toprule
+train 정제 & n & 모델 & 공격 F1 (\%) & 전체 F1 (\%) & 정상 FPR (\%) & 탐지 recall (\%) \\ \midrule
+\endfirsthead
+train 정제 & n & 모델 & 공격 F1 (\%) & 전체 F1 (\%) & 정상 FPR (\%) & 탐지 recall (\%) \\ \midrule
+\endhead
+{}정제 전 & 2 & XGB & 26.37 ± 4.64 & 24.62 ± 4.75 & 94.73 ± 7.71 & 90.57 ± 3.27 \\
+{}정제 전 & 2 & TabPFN & 30.61 ± 7.08 & 29.03 ± 7.71 & 91.02 ± 9.96 & 95.63 ± 3.36 \\
+{}정제 전 & 3 & XGB & 29.48 ± 3.70 & 28.72 ± 1.66 & 83.81 ± 24.57 & 89.24 ± 3.55 \\
+{}정제 전 & 3 & TabPFN & 32.19 ± 6.20 & 32.24 ± 5.59 & 76.89 ± 21.41 & 91.93 ± 4.40 \\
+{}정제 전 & 5 & XGB & 33.79 ± 2.57 & 33.10 ± 4.32 & 80.28 ± 23.45 & 87.25 ± 1.43 \\
+{}정제 전 & 5 & TabPFN & 36.38 ± 5.29 & 36.57 ± 7.66 & 68.33 ± 34.24 & 88.75 ± 1.85 \\
+{}정제 전 & 10 & XGB & 37.47 ± 4.43 & 36.41 ± 6.03 & 80.09 ± 23.95 & 87.73 ± 1.71 \\
+{}정제 전 & 10 & TabPFN & 40.09 ± 3.99 & 38.73 ± 5.16 & 80.40 ± 23.66 & 87.95 ± 1.84 \\
+{}정제 전 & 20 & XGB & 40.61 ± 6.18 & 41.84 ± 8.87 & 54.67 ± 33.63 & 88.43 ± 3.53 \\
+{}정제 전 & 20 & TabPFN & 43.68 ± 5.98 & 43.49 ± 7.28 & 66.04 ± 31.60 & 88.28 ± 3.24 \\
+{}정제 후 & 2 & XGB & 28.88 ± 3.02 & 30.56 ± 4.28 & 58.64 ± 37.77 & 78.14 ± 11.70 \\
+{}정제 후 & 2 & TabPFN & 29.53 ± 5.69 & 33.00 ± 8.06 & 41.15 ± 30.47 & 82.25 ± 16.24 \\
+{}정제 후 & 3 & XGB & 30.84 ± 3.42 & 34.52 ± 3.77 & 33.45 ± 28.98 & 68.81 ± 19.98 \\
+{}정제 후 & 3 & TabPFN & 34.00 ± 5.29 & 37.58 ± 6.92 & 35.05 ± 29.31 & 83.36 ± 9.82 \\
+{}정제 후 & 5 & XGB & 32.75 ± 6.22 & 36.39 ± 7.81 & 32.63 ± 31.87 & 75.85 ± 24.87 \\
+{}정제 후 & 5 & TabPFN & 36.20 ± 9.25 & 39.37 ± 10.25 & 32.81 ± 35.72 & 78.81 ± 16.91 \\
+{}정제 후 & 10 & XGB & 41.62 ± 6.01 & 45.64 ± 5.67 & 18.16 ± 2.67 & 70.59 ± 20.61 \\
+{}정제 후 & 10 & TabPFN & 41.19 ± 7.06 & 44.39 ± 7.81 & 28.89 ± 27.45 & 75.46 ± 16.99 \\
+{}정제 후 & 20 & XGB & 42.06 ± 4.68 & 46.28 ± 4.25 & 19.03 ± 0.92 & 82.65 ± 2.93 \\
+{}정제 후 & 20 & TabPFN & 43.91 ± 4.41 & 47.31 ± 3.64 & 28.75 ± 24.53 & 89.83 ± 3.20 \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+
+\subsection{n=\allowbreak{}20의 원인 분리 대조}
+각 차이는 동일 seed를 대응시켜 계산한다. 정상 학습 추가와 train 정제 비교는 정제 전 공격 test를 고정한다. test 정제 비교는 정제 후 train의 같은 모델을 유지하며, 정상 평가 행 추가는 정상 포함 학습 모델의 동일 예측을 사용한다. 차이의 단위는 pp이며 양수는 해당 변경 후 공격 Macro-F1 증가를 뜻한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21959\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.21959\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.26014\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.30068\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & 모델 & 변경 & 대응 차이 (pp) \\ \midrule
+\endfirsthead
+데이터 & 모델 & 변경 & 대응 차이 (pp) \\ \midrule
+\endhead
+{}CIC2018 & XGB & 정상 학습 추가 & -0.46 ± 3.60 \\
+{}CIC2018 & XGB & train 정제 & -17.96 ± 3.79 \\
+{}CIC2018 & XGB & test 정제 & 18.62 ± 2.11 \\
+{}CIC2018 & XGB & 정상 test 추가 & -26.90 ± 5.62 \\
+{}CIC2018 & TabPFN & 정상 학습 추가 & -1.83 ± 2.81 \\
+{}CIC2018 & TabPFN & train 정제 & -15.24 ± 3.97 \\
+{}CIC2018 & TabPFN & test 정제 & 18.56 ± 3.48 \\
+{}CIC2018 & TabPFN & 정상 test 추가 & -20.04 ± 6.85 \\
+{}ToN-IoT & XGB & 정상 학습 추가 & -4.27 ± 6.99 \\
+{}ToN-IoT & XGB & train 정제 & -1.26 ± 8.77 \\
+{}ToN-IoT & XGB & test 정제 & 14.16 ± 4.53 \\
+{}ToN-IoT & XGB & 정상 test 추가 & -12.82 ± 3.02 \\
+{}ToN-IoT & TabPFN & 정상 학습 추가 & -5.18 ± 4.99 \\
+{}ToN-IoT & TabPFN & train 정제 & 1.01 ± 7.39 \\
+{}ToN-IoT & TabPFN & test 정제 & 14.97 ± 7.09 \\
+{}ToN-IoT & TabPFN & 정상 test 추가 & -10.18 ± 2.43 \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+
+\subsection{클래스별 분류와 오분류}
+클래스별 F1 그림은 그림 1·2와 동일한 조건을 2×3으로 배치하며 윗줄은 XGB, 아랫줄은 TabPFN이다. 열은 왼쪽 정제 전·정상 미포함, 가운데 기존 실험(정제 후·정상 미포함), 오른쪽 정제 후·정상 포함 순서다. 각 셀은 n=\allowbreak{}2·3·5·10·20의 5개 seed 평균 F1(\%)이며 모든 패널은 같은 0–100\% 색 범위를 사용한다.
+
+공격 클래스의 순서는 가운데 기준 조건인 정제 후 test의 평가 표본 수 내림차순으로 정하고 세 열에서 동일하게 유지한다. 그림 1·2의 공격 Macro-F1을 구성하는 공격 클래스만 표시하며, 오른쪽 열은 정상 학습과 정상 평가 행을 포함하므로 정상에서 유입된 false positive도 공격 F1에 반영한다. 표시된 클래스별 F1의 반올림 전 평균은 해당 조건의 공격 Macro-F1과 일치한다. 전체 클래스·예산의 precision, recall, TP, FP, FN은 per\_\allowbreak{}class.csv에 보존한다.
+
+\reportfigure{figures/20261027_exp89_classes_comparison_cic2018.pdf}{CIC2018: 그림 1에 대응하는 공격 클래스별 F1(5개 seed 평균, \%). 위 XGB, 아래 TabPFN.}
+
+
+\reportfigure{figures/20261027_exp89_classes_comparison_toniot.pdf}{ToN-IoT: 그림 2에 대응하는 공격 클래스별 F1(5개 seed 평균, \%). 위 XGB, 아래 TabPFN.}
+
+
+
+\subsubsection{BF와 mitm의 n=\allowbreak{}20 정밀도·재현율}
+BF와 mitm의 높은 점수 또는 낮은 F1을 누락과 다른 클래스의 오분류 유입으로 구분한다. 아래는 정제 전 test를 평가하며 같은 학습 모델의 공격만/\allowbreak{}정상 포함 집계를 나란히 제시한다. 정상 포함 집계는 정상 학습 조건에서만 주 비교로 사용한다.
+
+\subsubsection{CIC2018 /\allowbreak{} brute\_\allowbreak{}force}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13700\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12881\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12881\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12881\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18618\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16159\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12881\linewidth-2\tabcolsep\relax}}
+\toprule
+train 정제 & 정상 학습 & 모델 & test & Precision (\%) & Recall (\%) & F1 (\%) \\ \midrule
+\endfirsthead
+train 정제 & 정상 학습 & 모델 & test & Precision (\%) & Recall (\%) & F1 (\%) \\ \midrule
+\endhead
+{}정제 전 & 제외 & XGB & 공격만 & 84.36 & 99.99 & 91.52 \\
+{}정제 전 & 제외 & TabPFN & 공격만 & 84.47 & 99.99 & 91.58 \\
+{}정제 전 & 포함 & XGB & 공격만 & 84.35 & 99.99 & 91.51 \\
+{}정제 전 & 포함 & XGB & 정상 포함 & 83.12 & 99.99 & 90.78 \\
+{}정제 전 & 포함 & TabPFN & 공격만 & 84.48 & 100.00 & 91.58 \\
+{}정제 전 & 포함 & TabPFN & 정상 포함 & 84.40 & 100.00 & 91.54 \\
+{}정제 후 & 제외 & XGB & 공격만 & 99.78 & 32.75 & 49.32 \\
+{}정제 후 & 제외 & TabPFN & 공격만 & 99.97 & 32.77 & 49.36 \\
+{}정제 후 & 포함 & XGB & 공격만 & 99.60 & 32.76 & 49.30 \\
+{}정제 후 & 포함 & XGB & 정상 포함 & 88.74 & 32.76 & 47.79 \\
+{}정제 후 & 포함 & TabPFN & 공격만 & 99.98 & 32.76 & 49.35 \\
+{}정제 후 & 포함 & TabPFN & 정상 포함 & 99.92 & 32.76 & 49.34 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsubsection{ToN-IoT /\allowbreak{} mitm}
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.13700\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12881\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12881\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12881\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.18618\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.16159\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12881\linewidth-2\tabcolsep\relax}}
+\toprule
+train 정제 & 정상 학습 & 모델 & test & Precision (\%) & Recall (\%) & F1 (\%) \\ \midrule
+\endfirsthead
+train 정제 & 정상 학습 & 모델 & test & Precision (\%) & Recall (\%) & F1 (\%) \\ \midrule
+\endhead
+{}정제 전 & 제외 & XGB & 공격만 & 4.58 & 83.97 & 8.29 \\
+{}정제 전 & 제외 & TabPFN & 공격만 & 3.68 & 86.68 & 7.00 \\
+{}정제 전 & 포함 & XGB & 공격만 & 6.37 & 83.36 & 10.82 \\
+{}정제 전 & 포함 & XGB & 정상 포함 & 0.62 & 83.36 & 1.23 \\
+{}정제 전 & 포함 & TabPFN & 공격만 & 3.45 & 88.11 & 6.60 \\
+{}정제 전 & 포함 & TabPFN & 정상 포함 & 0.40 & 88.11 & 0.79 \\
+{}정제 후 & 제외 & XGB & 공격만 & 2.80 & 80.23 & 5.31 \\
+{}정제 후 & 제외 & TabPFN & 공격만 & 1.49 & 83.60 & 2.90 \\
+{}정제 후 & 포함 & XGB & 공격만 & 4.73 & 77.34 & 8.74 \\
+{}정제 후 & 포함 & XGB & 정상 포함 & 0.96 & 77.34 & 1.89 \\
+{}정제 후 & 포함 & TabPFN & 공격만 & 3.41 & 79.02 & 5.89 \\
+{}정제 후 & 포함 & TabPFN & 정상 포함 & 0.44 & 79.02 & 0.88 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{기존 결과 연속성과 구현 검증}
+정제 후 공격 학습 ID는 EXP86과 정확히 일치하며 n=\allowbreak{}3은 그 중첩 표본의 새 측정점이다. 원래 전체 test를 복원해 query 배치 구성이 달라졌으므로 기존 예측을 그대로 재사용하지 않고 모든 조건을 같은 query 규칙으로 실행했다. 아래는 정제 후에 남는 test 행에서 EXP86 예측과의 차이이며 모델별 40조건을 요약한다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.21037\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.21037\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.25915\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.32012\linewidth-2\tabcolsep\relax}}
+\toprule
+모델 & 대조 조건 & 최대 예측 불일치 행 & 최대 F1 절대 차이 (pp) \\ \midrule
+\endfirsthead
+모델 & 대조 조건 & 최대 예측 불일치 행 & 최대 F1 절대 차이 (pp) \\ \midrule
+\endhead
+{}XGB & 40 & 0 & 0.000000 \\
+{}TabPFN & 40 & 83 & 0.001272 \\
+\bottomrule
+\end{longtable}
+\endgroup
+독립 검산은 원본 특징·라벨과 test 전체의 일치, 원래 분할 유지, train/\allowbreak{}test 행 ID 분리, 정상 추가 시 공격 ID 보존, 모델 간 입력 일치, n별 중첩을 확인했다. 저장 예측의 SHA-256과 sklearn 혼동행렬로 400개 조건의 네 평가 view를 다시 계산했다. 공격을 정상으로 분류한 false negative를 제외하지 않았고 모든 클래스의 precision·recall·F1과 TP·FP·FN을 점검했다. TabPFN은 fit 후와 예측 후의 가중치 digest가 기존 체크포인트와 같은지 검사했다.
+
+실제 트리 분할 수가 0인 XGB 조건은 0개다. 해당 목록은 validation.json에 보존하며 이런 조건이 있으면 기존 고정 설정의 제약과 모델 차이를 구분해 해석한다.
+
+\subsection{준비·추론 비용}
+모델 준비는 새 모델 생성과 fit/\allowbreak{}cache 준비를 합한 값이고 가중치 갱신 또는 순차 추가 비용이 아니다. 추론은 원래 전체 test의 모든 행에 대한 비용이다. 정제 후 공격만 평가한 EXP87 비용과 직접 비교하지 않으며 파일 저장·독립 검산·보고서 생성 비용을 추론에 합산하지 않는다. 아래는 n=\allowbreak{}20의 5개 seed 평균이며 단위는 초다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.15333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.16333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15333\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.15333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15333\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.22333\linewidth-2\tabcolsep\relax}}
+\toprule
+데이터 & train 정제 & 정상 학습 & 모델 & 준비 (초) & 전체 test 추론 (초) \\ \midrule
+\endfirsthead
+데이터 & train 정제 & 정상 학습 & 모델 & 준비 (초) & 전체 test 추론 (초) \\ \midrule
+\endhead
+{}CIC2018 & 정제 전 & 제외 & XGB & 0.352 & 1.433 \\
+{}CIC2018 & 정제 전 & 제외 & TabPFN & 0.331 & 124.147 \\
+{}CIC2018 & 정제 전 & 포함 & XGB & 0.480 & 1.691 \\
+{}CIC2018 & 정제 전 & 포함 & TabPFN & 0.340 & 124.698 \\
+{}CIC2018 & 정제 후 & 제외 & XGB & 0.344 & 1.381 \\
+{}CIC2018 & 정제 후 & 제외 & TabPFN & 0.330 & 123.858 \\
+{}CIC2018 & 정제 후 & 포함 & XGB & 0.458 & 1.618 \\
+{}CIC2018 & 정제 후 & 포함 & TabPFN & 0.335 & 124.671 \\
+{}ToN-IoT & 정제 전 & 제외 & XGB & 0.629 & 2.723 \\
+{}ToN-IoT & 정제 전 & 제외 & TabPFN & 0.321 & 169.423 \\
+{}ToN-IoT & 정제 전 & 포함 & XGB & 0.748 & 3.031 \\
+{}ToN-IoT & 정제 전 & 포함 & TabPFN & 0.328 & 168.564 \\
+{}ToN-IoT & 정제 후 & 제외 & XGB & 0.624 & 2.647 \\
+{}ToN-IoT & 정제 후 & 제외 & TabPFN & 0.325 & 172.259 \\
+{}ToN-IoT & 정제 후 & 포함 & XGB & 0.734 & 2.895 \\
+{}ToN-IoT & 정제 후 & 포함 & TabPFN & 0.320 & 171.198 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\subsection{해석 범위와 다음 개선}
+정상 학습의 효과는 동일한 공격 test에서 정상 추가 전후의 대응 차이로 판단한다. 전체 test에서 공격 F1이 달라지면 정상에서 유입된 false positive를 별도로 확인한다. 정상 표본이 2\textasciitilde{}20개인 조건에서 FPR이 높게 남는 경우 정상의 대표성과 정상·공격 판정 기준을 개발 데이터에서 개선하는 후속 대조가 필요하다. 정상 포함 여부의 차이를 정상 데이터가 충분한 운영 조건의 성능으로 일반화하지 않는다.
+
+test 정제에 따른 점수 변화는 같은 모델에서 평가 모집단을 바꾼 결과다. train 정제의 효과는 동일 원래 test에서 비교하므로 평가 행 삭제에 따른 차이와 분리된다. 두 효과가 크더라도 원래 라벨 충돌이 모두 라벨 오류인지 또는 46개 특징의 표현 손실인지는 이 실험만으로 구분되지 않는다. 그 구분에는 원래 flow·세션의 관찰 근거와 라벨 품질 검토가 필요하다.
+
+TabPFN의 이점은 전체 n=\allowbreak{}2·3·5·10·20에서 동일 표본을 받는 XGB와의 대응 차이로 검토한다. 특정 한 예산이나 클래스의 가장 높은 수치만으로 보편적 우위를 주장하지 않는다. 동일 test의 반복 seed는 표본 선택 변동을 확인하며 host·session이 분리된 외부 일반화 검증은 남아 있다. 모델 우위가 조건에 따라 바뀌면 그 조건과 비용을 밝혀 적용 범위를 정하고, 본 실행의 완료만으로 원고의 성능 주장을 채택하지 않는다.
+
+\subsection{재현 자료}
+\texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp89/\allowbreak{}\allowbreak{}20261027\allowbreak{}\_\allowbreak{}\allowbreak{}144031\_\allowbreak{}\allowbreak{}curation\allowbreak{}\_\allowbreak{}\allowbreak{}benign\_\allowbreak{}\allowbreak{}n2\_\allowbreak{}\allowbreak{}3\_\allowbreak{}\allowbreak{}5\_\allowbreak{}\allowbreak{}1\allowbreak{}0\_\allowbreak{}\allowbreak{}20\_\allowbreak{}\allowbreak{}fiv\allowbreak{}e\_\allowbreak{}\allowbreak{}seeds\_\allowbreak{}\allowbreak{}e1167f0a\allowbreak{}}
+
+\texttt{configs/\allowbreak{}\allowbreak{}experime\allowbreak{}nts/\allowbreak{}\allowbreak{}exp8\allowbreak{}9\_\allowbreak{}\allowbreak{}protoc\allowbreak{}ol.\allowbreak{}json}
+
+\texttt{scripts/\allowbreak{}\allowbreak{}v7/\allowbreak{}\allowbreak{}exp89\allowbreak{}/\allowbreak{}\allowbreak{}curatio\allowbreak{}n\_\allowbreak{}\allowbreak{}benign\allowbreak{}.\allowbreak{}py}
+
+\texttt{scripts/\allowbreak{}\allowbreak{}v7/\allowbreak{}\allowbreak{}exp89\allowbreak{}/\allowbreak{}\allowbreak{}analyze\allowbreak{}\_\allowbreak{}\allowbreak{}curatio\allowbreak{}n.\allowbreak{}py}
+
+\texttt{scripts/\allowbreak{}\allowbreak{}v7/\allowbreak{}\allowbreak{}exp89\allowbreak{}/\allowbreak{}\allowbreak{}report\_\allowbreak{}\allowbreak{}curation\allowbreak{}.\allowbreak{}py}
+
+\texttt{tabpfn/\allowbreak{}\allowbreak{}r\allowbreak{}esults/\allowbreak{}\allowbreak{}v\allowbreak{}7/\allowbreak{}\allowbreak{}exp89/\allowbreak{}\allowbreak{}20261027\allowbreak{}\_\allowbreak{}\allowbreak{}144031\_\allowbreak{}\allowbreak{}curation\allowbreak{}\_\allowbreak{}\allowbreak{}benign\_\allowbreak{}\allowbreak{}n2\_\allowbreak{}\allowbreak{}3\_\allowbreak{}\allowbreak{}5\_\allowbreak{}\allowbreak{}1\allowbreak{}0\_\allowbreak{}\allowbreak{}20\_\allowbreak{}\allowbreak{}fiv\allowbreak{}e\_\allowbreak{}\allowbreak{}seeds\_\allowbreak{}\allowbreak{}e1167f0a\allowbreak{}/\allowbreak{}\allowbreak{}analysi\allowbreak{}s}
+
+원시 예측·학습 ID·XGB 모델·체크포인트 해시·환경과 실행 소스는 결과 경로에 보존한다. 수치 CSV와 그림은 lablog의 data·figures에 연결한다. 2026-10-28 사용자 요청에 따라 EXP89 보고서 PDF는 reports 폴더에 상시 보관하고 컴파일 중간 파일만 임시 폴더에 둔다. 영어 원고와 발표자료는 변경하지 않는다.
+
+
+\end{document}

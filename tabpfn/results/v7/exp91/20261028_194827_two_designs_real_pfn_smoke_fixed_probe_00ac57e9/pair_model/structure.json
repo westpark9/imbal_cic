@@ -1,0 +1,199 @@
+{
+  "format": 1,
+  "classes": [
+    0,
+    1,
+    2
+  ],
+  "benign_class": 0,
+  "n_features": 6,
+  "config": {
+    "max_experts": 1,
+    "folds": 2,
+    "minimum_groups": 3,
+    "alphas": [
+      0.25,
+      0.5
+    ],
+    "caps": [
+      1.0,
+      2.0
+    ],
+    "minimum_improvement": 1e-06,
+    "allowed_benign_fp_increase": 0,
+    "require_fold_improvement": true,
+    "batch_size": 1024,
+    "seed": 43
+  },
+  "steps": [
+    {
+      "pair": [
+        1,
+        2
+      ],
+      "class_ids": [
+        1,
+        2
+      ],
+      "alpha": 0.5,
+      "cap": 1.0,
+      "oof_nll_gain_selection_only": 0.015515030459286705,
+      "oof_benign_false_positives": 0,
+      "fold_nll_gains_selection_only": [
+        0.006459930988085172,
+        0.02457012993048835
+      ]
+    }
+  ],
+  "audit": {
+    "label_rows": 18,
+    "label_counts": [
+      6,
+      6,
+      6
+    ],
+    "group_counts": [
+      6,
+      6,
+      6
+    ],
+    "evaluation_labels_used": false,
+    "additional_validation_labels": 0,
+    "unlabelled_pool_used": false,
+    "backbone_hashes": [
+      "152e50ac0356e138425f56f57078d20a088721d641e32cf7321533b12cad7c70"
+    ],
+    "folds": [
+      {
+        "fold": 0,
+        "train_indices": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          10,
+          13,
+          15,
+          17
+        ],
+        "validation_indices": [
+          0,
+          1,
+          5,
+          7,
+          9,
+          11,
+          12,
+          14,
+          16
+        ],
+        "missing_training_classes": []
+      },
+      {
+        "fold": 1,
+        "train_indices": [
+          0,
+          1,
+          5,
+          7,
+          9,
+          11,
+          12,
+          14,
+          16
+        ],
+        "validation_indices": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          10,
+          13,
+          15,
+          17
+        ],
+        "missing_training_classes": []
+      }
+    ],
+    "selection": [
+      {
+        "stage": 0,
+        "pair": [
+          0,
+          2
+        ],
+        "confusion_score": 0.5,
+        "accepted": false
+      },
+      {
+        "stage": 0,
+        "pair": [
+          1,
+          2
+        ],
+        "confusion_score": 0.3333333333333333,
+        "accepted": true
+      }
+    ],
+    "config": {
+      "max_experts": 1,
+      "folds": 2,
+      "minimum_groups": 3,
+      "alphas": [
+        0.25,
+        0.5
+      ],
+      "caps": [
+        1.0,
+        2.0
+      ],
+      "minimum_improvement": 1e-06,
+      "allowed_benign_fp_increase": 0,
+      "require_fold_improvement": true,
+      "batch_size": 1024,
+      "seed": 43
+    },
+    "eligible_pairs": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "oof_results_are_selection_only": true,
+    "selected_steps": [
+      {
+        "pair": [
+          1,
+          2
+        ],
+        "class_ids": [
+          1,
+          2
+        ],
+        "alpha": 0.5,
+        "cap": 1.0,
+        "oof_nll_gain_selection_only": 0.015515030459286705,
+        "oof_benign_false_positives": 0,
+        "fold_nll_gains_selection_only": [
+          0.006459930988085172,
+          0.02457012993048835
+        ]
+      }
+    ],
+    "global_context_rows": 18,
+    "expert_context_rows": [
+      12
+    ],
+    "fit_seconds": 4.580808130005607
+  }
+}

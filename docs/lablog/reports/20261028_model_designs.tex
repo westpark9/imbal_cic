@@ -1,0 +1,372 @@
+% !TeX root = 20261028_model_designs.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\usepackage{tabularx}
+\usepackage{needspace}
+\usepackage{colortbl}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\hypersetup{pdftitle={소수 라벨 공격 분류를 위한 두 TabPFN 기반 모델 설계안}}
+\begin{document}
+\reporttitle{2026-10-28}{소수 라벨 공격 분류를 위한\\두 TabPFN 기반 모델 설계안}
+\recordnote{2026-10-28 개정: BETA·CURE를 추가해 7개 문헌 방법의 대표 그림 비교표를 구성하고, 두 후보의 실행 코드를 v7/EXP91에 작성했다. 단위 검증과 실제 TabPFN checkpoint를 사용한 합성자료의 학습·추론·저장/복원 검증을 수행했다. IDS 데이터에서의 성능 향상·신규성·비용 우위는 아직 검증하지 않았다. 수식과 흐름도는 원문 기제라고 밝힌 부분을 제외하면 자체 후보 구조이며, 연구 버전은 v7을 유지한다.}
+
+\section{핵심 제안: 다른 두 가지 방법으로 분류기를 바꾼다}
+\textbf{1안은 비라벨 트래픽을 이용해 별도 학생 분류기를 학습하고, 2안은 혼동 클래스 쌍의 상대 점수를 순차적으로 수정한다.} 목표는 TabPFN을 선택한 근거를 추가로 쌓는 것보다, 같은 소수 라벨에서 제안 구조가 분류 성능을 개선하는지를 검증하는 데 있다. Intrusion Detection System (IDS; 침입 탐지 시스템)의 정상 오탐과 희귀 공격 누락을 함께 평가한다. 기반 모델은 Tabular Prior-data Fitted Network (TabPFN)이며, 명칭은 원 논문의 표기를 따른다~\cite{tabpfn}. 두 안은 독립 후보이고 처음부터 하나의 큰 모델로 결합하지 않는다.
+
+\begin{table}[H]\centering\small
+\caption{두 설계의 실행상 차이. 추가 정보와 최종 예측기를 구분한다.}
+\begin{tabularx}{\linewidth}{p{.16\linewidth}YY}
+\toprule
+항목 & 1안: 교사--학생·대표점 학습 & 2안: 혼동 쌍 순차 보정\\\midrule
+추가 자원 & 같은 학습 분할의 비라벨 flow 집합 & 기본형은 제공된 참라벨 집합만 사용\\
+TabPFN 역할 & 고정 교사: 비라벨 행의 확률 제공 & 고정 Global과 이진 쌍 전문가\\
+학습하는 것 & 별도 encoder·복원 decoder 가중치; 대표점·추정 비율 갱신 & 혼동 쌍·추가 순서·점수 보정 계수 선택\\
+TabPFN 가중치 & 변경하지 않음 & 변경하지 않음\\
+최종 예측 & 학생 encoder + 대표점 분류기 & Global 점수 + 채택된 쌍별 보정\\
+분류 이점 가설 & 소수 사례 주변에 머무르던 표현을 비라벨 분포로 확장 & 전역 다중분류에서 놓친 특정 경계를 집중 보완\\
+주요 부담 & 비라벨 자료 접근, 학생 학습, 의사라벨 오류 & 극소수 검증 자료, 추가 전문가 호출\\
+우선순위 & 새 모델 구조의 주 후보 & 제한된 라벨만 쓰는 독립 대안\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{1안의 최종 출력은 학생 모델의 출력이다.} TabPFN에 사례를 넣는 단계는 교사의 조건부 예측을 바꾸는 것이며 가중치 학습이 아니다. 실제 역전파는 별도의 수치형 flow encoder와 복원 decoder에 수행한다. 이 점에서 ``TabPFN을 fine-tuning한다''는 설명과 다르며, 학생이 교사보다 좋아지는지는 직접 비교해야 한다.
+
+\textbf{2안의 전문가 추가는 분류 문제와 결합 규칙을 함께 바꾸는 과정이다.} 모든 전문가가 같은 전체 공격 분류를 반복하는 대신, 특정 두 클래스 사이의 판단을 만들고 그 두 클래스의 점수차만 제한적으로 바꾼다. 여기에서도 TabPFN 가중치는 고정되지만, 어떤 쌍을 어떤 순서로 어느 정도 반영할지 선택하는 과정이 모델 적응에 해당한다. 기존 TAILGUARD에 이미 잔차 기반 전문가가 있었으므로 ``오류 전문가를 추가했다''는 사실만으로 새 기여라고 주장하지 않는다.
+
+\subsection{EXP89--90에서 가져올 근거와 넘어가면 안 되는 해석}
+\textbf{정상과 희귀 공격의 혼동은 전체 평균만으로 놓치기 쉬운 설계 대상이다.} EXP89의 CIC2018에서 TabPFN, 공격당 20개, 5개 seed 평균을 보면 정제 후 공격만의 조건에서 정상 포함 조건으로 바뀔 때 Infiltration F1은 77.74\%에서 1.17\%, DoS는 96.15\%에서 57.50\%가 됐다. 이 비교에서는 정상 학습과 평가 범위가 함께 바뀌었으므로, 감소분 전체를 정상 학습 추가의 단독 인과 효과로 해석하지 않는다. 여기서는 정상과 함께 분류할 때 어려운 클래스가 생겼다는 문제 설정의 근거로만 사용한다.
+
+\textbf{EXP90의 단순 결합 결과는 새 구조의 성과를 대신하지 않는다.} 정상 750개·전체 test·3개 seed 평균에서 ToN-IoT의 공격당 20개 조건은 PFN4 47.72\%, PFN16 50.13\%, Bank mean 51.18\%였다. CIC2018의 공격당 5개 조건은 PFN4 64.77\%, PFN16 68.04\%, Bank mean 64.79\%였다. 따라서 제안 구조는 평균 결합과 내부 estimator 수 증가보다 나은 이유를 따로 보여야 하며, EXP90에서 문헌의 다섯 방법을 실제 재현했다고 서술하지 않는다.
+\sourcepath{docs/lablog/data/20261027_exp89_class_comparison.csv}
+\sourcepath{docs/lablog/reports/20261028_exp90.tex}
+
+\section{참고 문헌의 기제와 설계로 옮기는 범위}
+\textbf{문헌에서 가져오는 것은 모델 이름이 아니라 작동 기제다.} 아래 설명은 원 방법의 목적과 입력을 먼저 구분하고, 이번 후보의 대응 관계를 명시한다. 여기서 SOTA는 각 원문 과제에서 비교할 가치가 있는 강한 방법 후보를 뜻하며, 일곱 방법 모두가 현재 IDS 조건에서 최고 성능이라는 뜻은 아니다. 두 설계가 원 방법의 충실한 재현이라는 뜻도 아니다.
+
+\subsection{LotBoNC: 표현·대표점·비균등 의사라벨의 반복 갱신}
+\textbf{LotBoNC는 소수 라벨과 불균형 비라벨 자료를 함께 사용해 표현과 클래스 대표점을 갱신했다.} 원문은 패킷 payload에서 만든 바이트 token을 encoder에 입력하고, 마스킹 예측과 대조 학습으로 표현을 준비했다. 이후 추정한 클래스 비율을 고려한 최적수송 기반 배정으로 비라벨 표본의 soft label을 만들고 encoder·대표점·비율을 반복 갱신했다. 새 공격을 이름 없이 군집으로 발견하는 원래 과제와, 이번의 공격 이름별 $n$개 라벨을 받은 분류 과제는 다르다~\cite{lotbonc}.
+
+\paragraph{Discussion.}
+1안은 비균등 분포를 고려한 배정과 표현 갱신의 연결을 참고한다. 숫자 flow 특징을 쓰는 현재 환경에서는 원래 바이트 encoder를 그대로 쓸 수 없어 별도 수치형 encoder를 둔다. TabPFN 확률을 외부 교사 신호로 추가하고 참라벨로 클래스 이름을 고정하는 것이 후보 설계의 차이다. 이 차이가 유효한지는 교사 없는 대표점 학습과 단순 의사라벨 학습을 모두 넘어서는지로 판단한다.
+
+\subsection{TabDPT: 실제 데이터의 자기지도학습과 비라벨 활용}
+\textbf{TabDPT는 실제 표 데이터의 열 예측 과제와 검색을 결합한 사전학습을 수행했다.} 이는 평가 test를 미리 학습시켜도 된다는 의미가 아니다. 원문의 few-shot 절에는 클래스당 10개 라벨 외에 비라벨 학습 행의 예측을 이용해 context를 보강한 준지도 조건도 있었다. 따라서 해당 결과를 순수한 10-label-only 결과와 구별해야 한다~\cite{tabdpt}.
+
+\paragraph{Discussion.}
+1안은 실제 IDS 학습 분포를 자기지도 방식으로 활용한다는 방향을 참고한다. 다만 TabDPT 규모의 범용 기반 모델을 새로 사전학습하는 것이 아니라, 현재 분류 문제의 학생 encoder를 학습한다. 비라벨 자료를 더 받은 효과와 TabPFN 교사의 효과를 분리하기 위해 같은 비라벨 집합을 사용하는 대조군이 필요하다. TabDPT 자체는 기반 모델 대조이자 준지도 확장 대조로 사용할 수 있다.
+
+\subsection{LoCalPFN·BoostPFN·DistPFN: 경계·잔차·사전확률의 분리}
+\textbf{세 방법은 서로 다른 적응 지점을 다뤘다.} LoCalPFN은 가까운 사례 검색과 실제 가중치 fine-tuning을 결합했으며, 검색만 수행한 TabPFN-kNN과 같지 않았다~\cite{localpfn}. BoostPFN은 잔차에 따라 context 추출을 바꾸고 약한 예측기를 순차적으로 더하는 방식으로 큰 라벨 집합을 활용했다~\cite{boostpfn}. DistPFN은 context의 클래스 비율과 예측 posterior를 이용해 추가 가중치 학습 없이 출력을 보정했다~\cite{distpfn}. 공식 DistPFN 사용 예에서는 query 집합의 평균 예측 확률을 이용하므로 그 비라벨 query 접근도 실험 조건에 포함해야 한다~\cite{distcode}.
+
+\paragraph{Discussion.}
+2안은 LoCalPFN의 지역 경계 관점, BoostPFN의 순차 오류 보완, DistPFN의 context 비율 문제를 각각 참고한다. 그러나 검색 없이 두 클래스만 쓰는 전문가가 LoCalPFN은 아니며, 제안하는 쌍 점수 보정이 원 BoostPFN 알고리즘과 동일하지도 않다. 클래스 비율 보정은 분포 가정이 맞을 때의 후보이고, 지역 검색으로 클래스 내 분포까지 바뀌면 충분하지 않을 수 있다. 따라서 세 방법의 정식 구현과 단순 쌍 전문가를 별도 비교하고, 쌍 선택·점수 수정·순차 갱신 중 무엇이 필요한지 분해해야 한다.
+
+\subsection{BETA: encoder 학습과 bootstrap context 앙상블}
+\textbf{BETA는 입력 표현을 학습하는 앙상블이라는 점에서 기존 탐색보다 직접적인 구조 대조다.} Bagging and Encoder-based Fine-tuning for TabPFN Adaptation (BETA)은 TabPFN을 고정하고 그 앞의 작은 encoder를 학습했다. Batch Ensemble로 여러 표현을 만들고 추론에서는 bootstrap으로 뽑은 support context의 PFN 예측을 평균했다. 가중치를 고정한 PFN을 통과하는 손실로 encoder를 학습하므로 ``PFN이 고정됐다''는 사실이 전체 모델에 학습이 없었다는 의미는 아니다~\cite{beta}.
+
+\textbf{BETA의 정식 게재본은 ICML 2025에서 확인했다.} 사용자가 제시한 arXiv:2502.02527과 함께 공식 PMLR 게재본 및 저자 코드를 연결한다. 대표 그림은 사용자가 지정한 arXiv PDF의 Figure 3을 출처와 함께 인용한다. 원문 입력·backbone 버전·validation 사용량을 맞추지 않은 자체 구현을 원 논문의 재현으로 표시하지 않는다~\cite{beta}.
+
+\paragraph{Discussion.}
+1안과 BETA는 encoder를 학습한다는 공통점이 있지만, BETA는 encoder 뒤의 PFN으로 최종 분류했고 1안은 교사 확률을 받아 학생·대표점만으로 분류한다. 2안은 여러 PFN 결과를 쓴다는 공통점이 있지만, 표현별 평균이 아니라 선택한 클래스 쌍의 현재 점수차를 보정한다. 따라서 BETA, encoder 하나만 사용한 BETA, 단순 bootstrap PFN을 비교해야 표현 학습과 평균 앙상블 이상의 이점이 있는지 판단할 수 있다. 극소수 라벨에서 encoder 학습·설정 선택에 별도 정답을 보태지 않고, 원문 효율 주장을 현재 장치의 비용 우위로 대신하지 않는다.
+
+\subsection{CURE: 고정 용량 안에서 내용을 바꾸는 context 관리}
+\textbf{CURE에서 고정한 것은 context의 용량이며, 저장한 사례의 내용은 계속 바뀌었다.} Context management via Uncertainty-aware admission and Redundancy-aware Eviction (CURE)은 최근 사례를 보존하는 short bank와 오래된 사례를 선택적으로 보존하는 long bank를 사용했다. short bank에서 밀려난 사례는 처음 예측했을 때 기록한 엔트로피가 기준을 넘으면 long bank에 편입됐다. long bank가 넘치면 가장 많은 클래스에서 가까운 두 사례를 찾고 최근 분포의 대표점에서 더 먼 쪽을 제거했다~\cite{cure}.
+
+\textbf{CURE의 평가는 예측 후 정답을 받아 갱신하는 stream 조건이었다.} 원문은 일곱 stream과 여러 기반 모델을 평가했으며 주 backbone은 TabICL-v2였다. 따라서 모든 사례의 정답이 순차 제공되는 조건을 공격당 2--20개 정답만 받는 조건과 동일하게 취급하지 않는다. 게재 상태도 ICML 본학회가 아니라 FMSD@ICML 2026 워크숍의 spotlight oral로 구분한다~\cite{cure}.
+
+\paragraph{Discussion.}
+CURE는 현재 두 분류기보다 EXP84--85에서 다뤘던 고정 용량 버퍼 정책과 가장 직접적으로 대응한다. 후속 비교는 같은 버퍼 크기와 같은 라벨 도착 행을 사용해 FIFO·무작위·유사도 교체와 CURE를 대조하는 방식이 적절하다. 1안의 비라벨 pool을 어떤 기간으로 유지할지 또는 2안의 전문가 context를 언제 갱신할지에 참고할 수 있지만, 현재 기본 구현에는 해당 정책을 섞지 않는다. 불확실한 사례의 편입만을 새로운 기여라고 주장하기 어려워졌으므로, 분류 구조의 추가 이점과 버퍼 정책의 이점을 분리해 평가한다.
+
+\subsection{대표 그림을 포함한 SOTA 구조 비교표}
+\textbf{그림 비교표는 실제로 바뀌는 부분과 최종 분류기를 한 행에서 보여준다.} 문헌 설명과 연결되는 원문 대표 그림을 사용하고, 확대해서 확인할 수 있도록 원문 링크와 PDF 페이지를 표시한다. 각 그림의 crop 좌표·원본 해시는 별도 출처 파일에 남긴다.
+\input{_support/20261028_model_designs/sota_table.tex}
+\sourcepath{docs/lablog/evidence/references/20261028/design_sota_figure_sources.json}
+
+\section{공통 데이터 계약: 라벨 수와 비라벨 수를 별도로 센다}
+\textbf{라벨 예산은 학습·모델 선택에 공개한 모든 정답 수를 뜻한다.} 참라벨 집합을 $L=\{(x_i,y_i)\}$, 비라벨 학습 집합을 $U=\{u_j\}$, 최종 평가 집합을 $T$라 둔다. $n$은 평가 대상 공격 한 클래스에 제공한 실제 정답의 수이며, 정상 수와 기존 공격 수는 별도 설정으로 기록한다. 가용 자료가 $n$보다 적으면 실제 수와 고유 특징 group 수를 표시하고 복제로 라벨 수를 채우지 않는다.
+
+\begin{table}[H]\centering\small
+\caption{정보 접근 규칙. 개발 자료가 추가되면 숨은 라벨 예산으로 처리하지 않는다.}
+\begin{tabularx}{\linewidth}{p{.15\linewidth}YYY}
+\toprule
+자료 & 1안 & 2안 기본형 & 금지하거나 구분할 사용\\\midrule
+$L$ 특징·정답 & 교사 context, 학생 지도학습, 대표점 & Global, 쌍 전문가, 교차검증 선택 & 라벨을 나눠 Global의 제공 정보를 줄이지 않음\\
+$U$ 특징 & 자기지도학습, 교사 예측, soft label & 사용하지 않음 & 정답을 보고 희귀 공격을 더 뽑지 않음\\
+$U$ 정답 & 모델·선택기에 비공개 & 비공개 & 최종 동결 후 진단에만 사용\\
+별도 개발 자료 & 있을 때만 설정·종료 규칙 선택 & 있을 때만 선택 규칙 개발 & 출처·정답 수·대상 공격 포함 여부 공개\\
+$T$ 특징 & 최종 동결 학생의 입력 & 최종 동결 구조의 입력 & 주 실험의 사전학습·대표점·쌍 선택에 사용 금지\\
+$T$ 정답 & 최종 채점만 & 최종 채점만 & epoch·threshold·후보 선택에 사용 금지\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{비라벨 pool은 같은 train 안에서 라벨을 가린 추가 관측 자료다.} $L$과 $U$는 행 ID로 분리하고, 동일 특징 벡터 group을 복제하여 비라벨 수를 부풀리지 않는다. 최초 실험은 class-blind하게 선택한 최대 20,000개와 100,000개 $U$를 고정하고, 모든 준지도 비교군이 같은 행을 받도록 하는 안을 제안한다. 실제 확보 수·중복 수·라벨을 가린 후의 분포는 결과 보고서에 기록하며, 학습 알고리즘에는 숨긴 정답 분포를 전달하지 않는다.
+
+\textbf{미지 공격 적응과 제로 노출은 다른 조건이다.} 대상 공격이 $U$에 이미 존재하면 그 특징을 본 준지도 적응으로 부르고, 라벨을 받기 전부터 완전히 보지 않았다고 표현하지 않는다. 신규 공격 실험에서는 초기 지도학습에서 대상 공격을 빼고 $n$개 정답 공개 후 이름 있는 분류를 평가한다. $U$에서 대상 공격을 제외한 조건과 포함한 조건은 별도 시나리오로 표시하며, 포함한 상태의 향상을 unknown discovery로 해석하지 않는다.
+
+\textbf{데이터 중복과 라벨 충돌은 제거 효과와 모델 효과를 혼동하지 않도록 관리한다.} 첫 연결 실험은 EXP90의 정제 전 특징·분할을 유지하고, 동일 특징 group이 train/test를 가로지르는 정도와 해당 test group을 제외한 진단을 병기한다. 논문 확인용 후속 평가에서는 특징 group을 나눈 독립 분할을 미리 고정하고 모든 방법을 재실행한다. 같은 입력 벡터에 서로 다른 정답이 있는 경우 행 특징만 보는 결정적 모델은 둘을 모두 맞힐 수 없으므로, 충돌률과 조건부 오류를 따로 측정한다. 이를 개선하려면 추출 특징이나 연결·시간 문맥을 추가하는 별도 데이터 설계가 필요하며 이번 두 구조가 자동으로 해소한다고 주장하지 않는다.
+
+\clearpage
+\section{1안: TabPFN 교사와 비균등 대표점 학습}
+\subsection{구조와 한 번의 예측}
+\textbf{1안은 소수 라벨의 의미를 비라벨 분포에 연결하여 학생의 분류 표현을 학습한다.} 예를 들어 희귀 공격 라벨 3개가 있고 비라벨 자료에 그 공격과 유사한 flow가 더 있으면, 교사 확률과 학생 표현의 거리를 함께 이용해 추가 학습 신호를 만든다. 유사하다는 이유만으로 정답을 확정하지 않고 확률 배정과 신뢰도 가중치를 사용한다. 아래 encoder는 TabPFN 내부 표현을 바꾸는 모듈이 아니라 독립 네트워크다.
+
+\reportfigure{figures/20261028_design_a_architecture.pdf}{1안의 모델 구조. 교사의 가중치는 고정하고 학생의 가중치와 대표점 상태를 갱신한다. 마지막 분류는 학생 단독으로 수행한다.}
+
+\textbf{최소 구현의 encoder는 작은 잔차 다층 신경망으로 시작한다.} 수치 특징과 결측 indicator를 받아 128차원 은닉층 두 개와 64차원 정규화 표현을 출력하는 구성을 초기 후보로 둔다. 범주형 필드는 코드 숫자의 크기를 연속적 거리로 해석하지 않도록 별도 embedding 또는 one-hot 처리를 명시한다. 복원 decoder는 가린 수치에는 Huber 손실, 범주에는 교차엔트로피를 사용하며 실제 구현 전에 필드 의미와 전처리 목록을 고정한다. 이 크기는 성능이 확인된 최적값이 아니라 단순 대조군과 구조 차이를 검증하기 위한 시작점이다.
+
+\subsection{고정 교사와 학습 학생의 역할}
+\textbf{교사는 $L$을 context로 두고 각 비라벨 행의 클래스 확률을 한 번 계산한다.} 고정된 가중치를 $\omega$라 하면 $p^T_{jk}=P_\omega(y=k\mid u_j,L)$이고, 학생 학습 동안 이 확률로 역전파하지 않는다. 의사라벨을 교사 context에 반복 편입하는 동작은 기본안에 넣지 않아 교사 오류가 서로 재확인되는 경로를 줄인다. 신규 참라벨이 추가되면 그 시점의 적응을 별도 수행하고 교사 확률도 다시 계산한다.
+
+\textbf{학생은 특징 복원과 참라벨 분류로 먼저 준비한다.} 표현을 $z=f_\theta(x)/\|f_\theta(x)\|$, 클래스 대표점을 $\mu_k$라 두고, 초기 대표점은 해당 클래스 참라벨 표현의 정규화 평균으로 계산한다. 학생 확률은 다음 거리 기반 분류기로 정의한다.
+\begin{equation}
+ p^S_k(x)=\frac{\exp(-\|z-\mu_k\|^2/\tau_s)}
+ {\sum_{c=1}^{K}\exp(-\|z-\mu_c\|^2/\tau_s)}.
+\end{equation}
+여기서 $K$는 정상 포함 클래스 수, $\tau_s>0$는 개발 단계에서 고정하는 온도다. 한 클래스가 여러 형태로 나뉘는지는 대표점별 오차를 진단한 후 확인하고, 다중 대표점 확장은 기본안의 유효성 확인 뒤 별도 절제로 다룬다.
+
+\subsection{교사와 거리를 결합한 soft label 배정}
+\textbf{의사라벨은 교사가 높은 확률을 준 클래스와 학생 표현이 가까운 클래스를 함께 고려한다.} 비라벨 mini-batch 크기를 $B$라 하고 $Q_{jk}\geq0$, $\sum_kQ_{jk}=1$인 확률 배정 행렬을 구한다. 다음 식은 LotBoNC의 수식을 그대로 옮긴 것이 아니라, 그 분포 배정 관점을 현재 입력과 교사에 맞춘 \textbf{후보 목적함수}다.
+\begin{align}
+ C_{jk}&=-\lambda_T\log(p^T_{jk}+\epsilon)
+          +\lambda_G\|z_j-\mu_k\|^2,\\
+ Q^*&=\mathop{\arg\min}_{Q\geq0,\,Q\mathbf1=\mathbf1}
+ \frac1B\sum_{j,k}Q_{jk}C_{jk}
+ +\frac{\varepsilon}{B}\sum_{j,k}Q_{jk}\log Q_{jk}
+ +\lambda_\pi\operatorname{KL}(\bar q\,\|\,\pi),\label{eq:assignment}\\
+ \bar q_k&=\frac1B\sum_jQ_{jk}.
+\end{align}
+
+앞의 두 항은 교사·거리의 일치와 과도한 확정 배정 억제를 담당하고, 마지막 항은 mini-batch의 클래스 비율이 추정 비율에서 지나치게 벗어나는 것을 완만하게 제어한다. $\operatorname{KL}$은 Kullback--Leibler divergence이며 $\epsilon,\varepsilon>0$는 각각 수치 안정화와 엔트로피 계수다. 클래스마다 같은 수를 채우는 hard quota는 두지 않는다. 그래도 추정 비율이 틀리면 존재하지 않는 공격에 배정 질량을 줄 수 있어, 비율 제약이 없는 조건과 대상 공격이 없는 pool을 함께 검증한다.
+
+\textbf{추정 비율 $\pi$는 참라벨 표본 수를 실제 트래픽 비율로 간주하지 않는다.} 초기값 $\pi_0$는 $U$에 대한 교사 확률 평균을 작은 양수로 평활화한 뒤 정규화한다. 이후에는 $\bar q$의 이동평균을 $\pi_0$와 섞되 혼합 강도 $\rho\leq0.5$를 시작 상한으로 두고, 한 번에 큰 배율로 변하지 않게 제한하는 후보를 사용한다. 교사 자체가 희귀 공격을 놓치면 초기 비율도 틀릴 수 있으므로 $\lambda_\pi=0$, $\pi=\pi_0$ 고정, 제한 갱신을 필수 비교한다. 숨긴 실제 $U$ 비율을 넣는 실험은 가능해도 상한 진단으로만 표시하고 제안 모델의 실사용 성능으로 제시하지 않는다.
+
+\textbf{신뢰도 가중치는 teacher--student 불일치가 큰 행의 영향력을 줄인다.} 초기 후보는 교사 엔트로피와 두 예측 간 Jensen--Shannon divergence를 정규화하여 $[0,1]$ 범위의 가중치 $w_j$를 만드는 방식이다. 그러나 낮은 confidence가 희귀 공격의 유용한 경계 표본일 수 있어 모든 저신뢰 행을 삭제하지 않고 가중치 하한 0과 작은 양수 조건을 비교한다. 참라벨 손실에는 이 가중치를 적용하지 않으며, 의사라벨로 특정 클래스의 참라벨을 덮어쓰지 않는다.
+
+\subsection{실제로 갱신하는 가중치와 대표점}
+\textbf{가중치 학습은 참라벨 분류와 비라벨 soft label 분류를 결합한다.} 클래스 균형 참라벨 손실을 $\mathcal L_L$, 마스킹 복원 손실을 $\mathcal L_{\mathrm{mask}}$라 두면 학생 목적함수는 다음과 같다.
+\begin{align}
+ \mathcal L_L&=-\frac1K\sum_k\frac1{|L_k|}\sum_{i\in L_k}\log p^S_k(x_i),\\
+ \mathcal L_U&=-\frac1{\sum_jw_j+\epsilon}\sum_{j,k}w_jQ^*_{jk}\log p^S_k(u_j),\\
+ \mathcal L_A&=\mathcal L_L+\lambda_U\mathcal L_U+\lambda_M\mathcal L_{\mathrm{mask}}.
+\end{align}
+각 가중치 갱신에서는 $Q^*$와 대표점을 고정하고 $\theta$와 decoder의 파라미터만 갱신한다. 다음 대표점 갱신에서는 참라벨 표현 평균과 $w_jQ^*_{jk}$로 가중한 비라벨 표현 평균을 혼합하고 정규화한다. 혼합률은 초기 후보에서 최대 0.5로 제한하며, 비라벨 배정 질량이 작은 클래스는 참라벨 대표점을 유지한다.
+
+\textbf{대표점 갱신은 참라벨 기준에서 무제한 멀어지지 않게 한다.} 위 절차에서 대표점은 별도의 경사하강 변수라기보다 주기적으로 계산하는 상태 값이다. decoder는 표현 준비와 학습 정규화에만 쓰고 배포 시 제거한다. 전체 $U$의 행 수가 커졌다는 이유로 $\mathcal L_U$가 참라벨 손실을 압도하지 않도록 정규화와 $\lambda_U$의 점진적 증가를 사용한다. 반복 수·학습률·계수는 독립 개발 자료가 없으면 사전에 고정하며 test나 $U$의 숨긴 정답으로 최적 epoch를 선택하지 않는다.
+
+\reportfigure{figures/20261028_design_a_flow.pdf}{1안의 준비·교대 갱신·평가 흐름. 비라벨 정답을 이용한 oracle 선택을 배제하고 학생만 최종 평가한다.}
+
+\subsection{얻으려는 이점과 실패 시 수정 방향}
+\textbf{1안의 핵심 가설은 비라벨 분포의 구조가 교사 단독 예측을 넘는 학생 표현을 만든다는 것이다.} 교사 예측을 그대로 복제하는 학생이라면 새 분류 기여가 약하므로, 대표점·복원·분포 배정이 각각 추가 오류를 줄이는지 확인한다. 새 공격 $n$개 확보 후에는 새 대표점을 추가하고 기존 참라벨을 함께 재사용하여 적응하며, 신규 공격 개선과 기존 클래스 감소를 동시에 측정한다. 기본형은 학생 재학습 비용을 지불하므로 context만 갱신하는 TabPFN보다 적응이 빠르다고 전제하지 않는다.
+
+\begin{table}[H]\centering\small
+\caption{1안의 병목별 진단과 개선 후보. 결과가 나온 뒤 진단에 맞춰 한 요소씩 바꾼다.}
+\begin{tabularx}{\linewidth}{p{.23\linewidth}YY}
+\toprule
+병목 & 확인할 증거 & 다음 조치\\\midrule
+교사 오류의 복제 & 교사 오분류 행에서 학생도 같은 오류; pseudo-label 정밀도 & 교사 신호 강도 축소, 참라벨 anchor 강화, 가중치 없는 단순 증류와 비교\\
+희귀 공격 배정 소실 & 클래스별 soft mass·학생 recall의 동반 감소 & 비율 제약 제거/고정, confidence 하한 비교, 참라벨 손실 유지\\
+다수 클래스의 표현 지배 & 클래스별 복원·분류 오차, 대표점 간 거리 & 지도 손실 균형, 비라벨 계수 축소, 다중 대표점은 후속 절제로 검증\\
+비라벨 pool에 대상 부재 & 동결 후 확인한 대상 실제 수가 0 또는 매우 작음 & 비라벨 양/구성 조건을 분리 보고; 없는 근거를 강제로 배정하지 않음\\
+입력 특징만으로 분리 불가 & 동일 벡터 충돌 group에 오류 집중 & 연결/시간 특징 추가를 별도 데이터 연구로 평가\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{2안: 혼동 클래스 쌍의 순차 점수 보정}
+\subsection{구조와 기존 앙상블과의 차이}
+\textbf{2안은 Global의 전체 분류를 유지하면서 오류가 남은 클래스 쌍을 순서대로 보완한다.} 예를 들어 정상과 Infiltration을 잘못 구분하는 경우 해당 두 클래스만 판단하는 전문가를 만든다. 전문가의 결과로 전체 클래스 확률을 단순 평균하지 않고, 두 클래스 사이의 점수차를 제한적으로 수정한다. 첫 수정 뒤에도 남는 오류를 기준으로 다음 쌍을 선택하며, 처음부터 모든 쌍을 무제한 생성하지 않는다.
+
+\reportfigure{figures/20261028_design_b_architecture.pdf}{2안의 모델 구조. 쌍 이름은 예시이며 학습 예측에서 선택한다. 다른 logit을 직접 수정하지 않는 것과 다른 클래스의 확률·예측이 보존되는 것은 다르다.}
+
+\textbf{Global에는 제공된 참라벨을 전부 사용한다.} 쌍 전문가 $(a,b)$는 그중 두 클래스에 속하는 행을 context로 다시 사용하고, 라벨을 이진으로 바꾼다. 공격끼리의 쌍은 $2n$개 수준이므로 기본형에서 다시 지역 검색으로 줄이지 않는다. 정상 750개와 희귀 공격 $n$개가 있는 쌍도 우선 해당 행을 모두 쓰고, 정상 subset 검색은 정보 감소와 prior 변화까지 포함한 별도 절제로 둔다. 따라서 기본형은 LoCalPFN을 구현한 것이 아니라 이진 과제를 분리한 frozen TabPFN 전문가다.
+
+\subsection{쌍 선택: 현재 모델이 어떤 방향으로 틀렸는가}
+\textbf{쌍 후보는 자기 학습 행에 대한 과대평가를 피한 예측에서 선택한다.} Out-of-fold (OOF) 예측은 $L$을 동일 특징 벡터 group 단위로 나누고 각 fold의 나머지 행으로 예측기를 만든 뒤 보류 행에 대해 계산한다. $n=2,3$에서는 최대 2-fold, 나머지는 최대 3-fold를 초기 후보로 두되 각 학습부에서 필요한 클래스가 존재하는지 먼저 확인한다. 클래스가 사라진 fold를 정상적인 낮은 확률의 예로 취급하지 않는다.
+
+\textbf{오류 빈도는 클래스별 표본 수로 정규화한다.} 현재 $m$단계 예측의 혼동행렬을 $C^{(m)}$라 하면 후보 점수의 시작점은
+\begin{equation}
+ R_{ab}^{(m)}=\frac{C_{ab}^{(m)}}{|L_a|}
+                  +\frac{C_{ba}^{(m)}}{|L_b|},\qquad a\ne b
+\end{equation}
+이다. 정상에서 공격으로 틀리는 수와 공격을 정상으로 놓치는 수는 별도 기록하고, 최종 채택 때 정상 오탐 제약을 추가한다. $n=2$에서 한 번 틀렸다는 사실만으로 안정된 혼동 쌍이 되지는 않으므로, 후보 생성과 신뢰성 확인을 구분한다. EXP89 test에서 취약했던 클래스 이름은 연구 동기일 뿐 새 test의 전문가 목록을 미리 정하는 정답 정보로 쓰지 않는다.
+
+\subsection{점수 보정: 전문가의 의견과 현재 점수의 차이를 더한다}
+\textbf{전문가는 두 클래스의 상대적 근거만 제공한다.} 현재 점수를 $s^{(m)}$라 하고, 이진 전문가의 $a$ 확률을 $q_{ab}(x)$라 둔다. 기본형은 전문가의 log-odds를 $t_{ab}(x)$로 사용한다.
+\begin{align}
+ t_{ab}(x)&=\log\frac{q_{ab}(x)+\epsilon}{1-q_{ab}(x)+\epsilon},\\
+ d_{ab}^{(m)}(x)&=s_a^{(m)}(x)-s_b^{(m)}(x),\\
+ \delta_m(x)&=\alpha_m\,\operatorname{clip}
+       \bigl(t_{ab}(x)-d_{ab}^{(m)}(x),-b_m,b_m\bigr),\label{eq:delta}\\
+ s_a^{(m+1)}&=s_a^{(m)}+\delta_m/2,\quad
+ s_b^{(m+1)}=s_b^{(m)}-\delta_m/2,\label{eq:pairupdate}\\
+ s_k^{(m+1)}&=s_k^{(m)}\quad(k\notin\{a,b\}).
+\end{align}
+
+초기값은 $s_k^{(0)}=\log(p_{G,k}+\epsilon)$이고 $\alpha_m\in[0,1]$은 채택 강도, $b_m>0$는 한 번의 수정 상한이다. $\alpha_m=0$이면 현재 점수를 유지하며, 같은 근거를 반복해서 더하는 대신 현재 점수차와의 잔차를 보정한다. 마지막에 $p=\operatorname{softmax}(s^{(M)})$로 한 번만 정규화한다. 채택 전문가가 없거나 모든 계수가 0이면 수치 안정화에 따른 미세한 변화를 피하도록 원래 Global 확률을 그대로 반환한다.
+
+\textbf{수정하지 않은 클래스도 최종 확률이나 예측 결과가 바뀔 수 있다.} 식~\eqref{eq:pairupdate}에서 직접 바꾸는 것은 두 logit이지만, softmax 분모는 전체 클래스가 공유한다. 또한 두 클래스 중 하나의 점수가 올라가면 기존에 맞혔던 다른 공격을 빼앗을 수 있다. 따라서 ``다른 클래스 성능을 보존한다''는 결론은 구조만으로 성립하지 않으며, 전체 test의 클래스별 precision·recall로 확인한다.
+
+\subsection{context 비율 보정은 선택적 요소로 분리한다}
+\textbf{정상 subset을 사용하면 전문가가 본 클래스 비율과 Global이 본 비율이 달라질 수 있다.} 이때 후보 보정식은 $t_{ab}$에서 전문가 context의 log prior odds를 빼고 공통 기준 prior odds를 더하는 방식이다.
+\begin{equation}
+ t^{\mathrm{prior}}_{ab}(x)=t_{ab}(x)
+ -\log\frac{\pi^{E}_a}{\pi^{E}_b}
+ +\log\frac{\pi^{R}_a}{\pi^{R}_b}.
+\end{equation}
+기본형에서 두 클래스 행을 모두 쓰고 $\pi^R$를 $L$의 비율로 두면 두 prior odds가 같아져 이 항은 0이다. $\pi^R$는 실제 test 비율이 아니라 모델 간 비교를 위한 기준이며, 균형 표본의 비율이 실제 운영 비율이라는 뜻도 아니다.
+
+\textbf{prior 보정은 경계 학습과 같은 기능이 아니다.} 정상 subset 검색은 클래스 내 특징 분포까지 바꿀 수 있으므로 단순 prior 비율만으로 원래 posterior를 복원한다고 보장하지 않는다. 따라서 기본형은 보정 없이 시작하고, 무작위 정상 subset과 지역 subset 각각에 대해 보정 유무를 분리해 비교한다. 별도 비라벨 학습 pool로 prior를 추정하는 확장은 추가 정보 접근이 있는 2안-U로 표시한다. 원 DistPFN처럼 평가 query의 평균 posterior를 쓰는 대조는 test-time batch adaptation 조건으로 별도 보고하며, 주 실험의 inductive 조건과 섞지 않는다.
+
+\subsection{채택 규칙·순차 추가·극소수 라벨의 중단 규칙}
+\textbf{전문가 채택은 OOF의 공격 손실 개선과 정상 오탐 증가를 함께 본다.} 초기 후보는 $\alpha\in\{0,0.25,0.5\}$, $b\in\{1,2\}$, 최대 전문가 3개로 선택 공간을 작게 고정한다. 클래스 균형 교차엔트로피 감소를 주 선택 기준으로 삼고 정상 false positive rate (FPR; 정상 중 공격으로 예측된 비율)의 허용 증가를 제약으로 둔다. 정상 750개 조건에서는 초기 안전장치로 OOF 정상 오탐 수가 증가하지 않는 후보를 우선하며, 희귀 공격의 recall만 좋아져 precision이 무너지는지도 확인한다. 이 수치는 최적화된 설정이 아니고 별도 개발 자료 없이 시작하기 위한 보수적인 후보 규칙이다.
+
+\textbf{극소수 조건에서는 선택기를 학습할 증거가 충분한지 먼저 판단한다.} 초기 규칙은 두 클래스 각각에 최소 3개 고유 특징 group이 있고 필요한 모든 OOF 학습부에 두 클래스가 존재할 때만 해당 쌍을 데이터로 선택하도록 한다. 이 규칙 아래에서는 $n=2$의 대상 쌍 보정이 꺼질 수 있으며, 그 결과를 Global 성능으로 그대로 기록한다. $n=3$에서도 fold별 개선 방향이 일치하지 않으면 채택하지 않는다. 극소수 구간에서도 반드시 보정하도록 만들려면 별도 source-development 과제에서 고정한 쌍 선택·보정 규칙을 이전하는 조건을 따로 두어야 하며, 그 추가 학습 자료와 대상 공격 노출을 공개한다.
+
+\textbf{순차 추가는 채택된 수정 이후의 오류를 다시 계산한다.} 각 단계의 fold별 전문가도 해당 fold의 학습부만 context로 사용하며, 보류 행의 정답은 후보 선택용 평가에만 쓴다. 같은 OOF에서 쌍·계수를 고른 수치는 선택에 편향될 수 있어 최종 일반화 성능으로 보고하지 않는다. 최종 모델은 선택을 마친 뒤 전체 $L$로 Global과 채택 전문가의 context를 다시 만들고 독립 $T$에서 평가한다. 새로운 전문가가 기준을 만족하지 않거나 최대 개수에 도달하면 종료한다.
+
+\reportfigure{figures/20261028_design_b_flow.pdf}{2안의 OOF 기반 선택과 순차 갱신 흐름. 최소 group 수 규칙 때문에 n=2에서 보정이 꺼지는 조건도 성공률과 함께 공개한다.}
+
+\subsection{얻으려는 이점과 기존 TAILGUARD와의 관계}
+\textbf{2안의 핵심 가설은 전체 클래스 전문가보다 쌍 단위 잔차 수정이 작은 라벨 예산에서 오류 방향을 다루기 쉽다는 것이다.} 기본형은 선택된 전문가를 모든 query에서 호출하므로 추론 비용이 추가된다. Global의 상위 두 클래스가 해당 쌍일 때만 호출하는 방식은 비용 절감 후보가 될 수 있지만, 처음부터 상위 두 개에 오르지 못한 희귀 공격을 놓칠 수 있어 후속 절제로 둔다. 호출 제한을 넣지 않은 실험으로 sparse routing 비용 우위를 주장하지 않는다.
+
+\textbf{기존 TAILGUARD와의 차이는 쌍 선택·점수 보정·순차 잔차에서 증명해야 한다.} 기존 구조에는 잔차 기반 context 전문가와 호출·채택 정책이 있었고, EXP90에는 공유 라벨 전문가와 결합 계수가 있었다. 따라서 같은 라벨에서 기존 구조, 단순 이진 쌍 평균, 한 번에 선택한 쌍 보정, 순차 쌍 보정을 비교해야 한다. 순차성이나 점수 국소성이 없어도 동일한 성능이면 그 요소를 핵심 기여로 채택하지 않는다.
+
+\section{검증 설계: 무엇을 이겨야 제안 모델의 근거가 되는가}
+\subsection{데이터·시나리오·평가 범위}
+\textbf{첫 실험은 CIC2018·ToN-IoT의 정제 전 자료와 정상 포함 분류를 주 조건으로 둔다.} 공격당 $n\in\{2,3,5,10,20\}$, seed 43--47을 제안하고 정상 750개 조건을 주 평가, 정상도 $n$개인 조건을 민감도 평가로 둔다. 공격만 평가하는 지표는 같은 예측의 보조 진단이며 정상 행을 제외한 높은 수치만으로 채택하지 않는다. 데이터셋 확장은 두 구조의 작동 여부를 확인한 후 다른 특징 버전 또는 다른 IDS 자료에서 수행하며, NF-v3 자체를 필수 전제로 두지 않는다.
+
+\textbf{모든 공격이 few-shot인 실험과 새 공격만 few-shot인 실험은 분리한다.} 전자는 EXP89--90과 연결하고, 후자는 기존 정상·공격의 학습 자료를 고정한 뒤 목표 공격만 $n$개 추가하여 적응성을 확인한다. 같은 단계의 모든 비교군에 동일한 행을 공개하고 기존 클래스 성능의 전후 변화를 같은 test 행에서 측정한다. 새 공격 정답이 사전학습·개발 선택에 들어갔는지도 별도 기록한다. 대상 공격을 한 종류씩 바꾸는 반복으로 특정 쉬운 공격만 고른 결론을 피한다.
+
+\textbf{모델 입력은 파일 확장자가 아니라 정해진 수치·범주 특징 행렬이다.} CSV는 저장 형식의 한 예이며 NumPy 배열이나 데이터프레임으로 동일한 행렬을 전달할 수 있다. 바이트·연결 문맥을 새로 쓰려면 변환기와 특징 정의를 함께 변경해야 하며, 그 효과를 제안 구조의 효과와 분리한다. 식별자와 공격 생성 규칙을 직접 노출하는 필드가 있는지 확인하고 train에서 결정한 전처리를 test에 고정 적용한다.
+
+\subsection{1안의 비교군과 절제}
+\textbf{1안은 비라벨 자료를 받은 효과를 통제한 뒤 학생 구조의 이점을 평가한다.} 다음 비교의 라벨 행은 같고, 준지도 비교군은 같은 $U$를 받는다. eXtreme Gradient Boosting (XGB) 단독과 다른 기반 모델 비교는 참고선으로 유지하되, 그것만으로 구조 효과를 판정하지 않는다.
+\begin{table}[H]\centering\small
+\caption{1안의 필수 대조. 각 제거 실험은 전체안에서 한 요소만 바꾼다.}
+\begin{tabularx}{\linewidth}{p{.32\linewidth}Y}
+\toprule
+비교군 & 답하려는 질문\\\midrule
+TabPFN 단독, XGB 단독 & 라벨만으로 가능한 기본 성능보다 좋아졌는가?\\
+동일 학생의 참라벨 학습 & 학생 구조 자체가 이미 충분했는가?\\
+복원 사전학습 + 참라벨 학생 & 비라벨 자기지도학습만으로 설명되는가?\\
+TabPFN soft-label 증류 학생 & 교사 예측을 단순 학습한 것보다 배정·대표점이 유효한가?\\
+교사 없는 대표점·soft 배정 & TabPFN 신호가 필요한가?\\
+전체안에서 비율 제약만 제거 & 비균등 배정의 비율 항이 도움이 되는가?\\
+전체안에서 대표점 갱신만 고정 & 반복 표현·대표점 갱신이 필요한가?\\
+TabDPT 및 그 준지도 조건 & 다른 기반 모델/비라벨 확장보다 실효성이 있는가?\\
+BETA, encoder 하나의 BETA & PFN 앞의 표현 학습·앙상블과 학생 분류의 차이가 유효한가?\\
+LotBoNC의 수치 입력 적응 대조 & 원 기제를 현재 입력에 옮긴 것 이상이 있는가?\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{LotBoNC 대조는 입력 적응판임을 이름과 결과표에 표시한다.} 원 바이트 입력·발견 과제를 그대로 재현하지 못한 결과를 원 논문의 공식 성능처럼 제시하지 않는다. 입력을 통제한 기제 대조와 원 코드 재현은 구분하고, 원 방법에 필요한 원시 패킷이 없으면 그 사실과 대체 범위를 기록한다. TabPFN을 다른 교사로 바꾼 대조는 학생 구조의 일반성과 TabPFN 선택의 기여를 구분하는 후속 실험으로 둔다.
+
+\subsection{2안의 비교군과 절제}
+\textbf{2안은 쌍 전문가의 존재와 순차 보정의 효과를 각각 검증한다.} 단독 TabPFN, 내부 estimator 수를 늘린 TabPFN, EXP90의 Bank mean을 기본 대조로 유지한다. 아래 문헌 모델은 실제 코드·버전·학습 과정을 맞춰 실행한 뒤에만 재현 비교로 부른다.
+\begin{table}[H]\centering\small
+\caption{2안의 필수 대조. 모델별 추가 학습과 query 접근을 명시한다.}
+\begin{tabularx}{\linewidth}{p{.32\linewidth}Y}
+\toprule
+비교군 & 답하려는 질문\\\midrule
+BoostPFN & 기존 순차 PFN 결합보다 쌍 점수 수정이 유리한가?\\
+LoCalPFN, 검색만 한 TabPFN & 가중치 적응·지역성의 효과와 구별되는가?\\
+DistPFN, DistPFN-T & 단순 posterior 보정으로 설명되는 이득인가?\\
+BETA, bootstrap PFN & 표현별 평균·context bagging보다 쌍 잔차 보정이 유효한가?\\
+단순 쌍 전문가 결합 & 이진 과제 분리만으로 충분한가?\\
+쌍 점수 수정, 동시 선택 & 순차로 남은 오류를 다시 보는 과정이 필요한가?\\
+전체안에서 clip만 제거 & 큰 수정의 억제가 오탐과 기존 공격에 도움이 되는가?\\
+정상 subset별 prior 보정 유무 & 표본 비율과 지역 경계 효과를 구분할 수 있는가?\\
+기존 TAILGUARD의 잔차 전문가 & 기존 제안의 어떤 구성보다 나아졌는가?\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{문헌 모델의 추가 자원을 감추지 않고 비교한다.} LoCalPFN은 fine-tuning 비용을 포함하고, BoostPFN은 동일한 라벨 pool에서 context 수와 크기를 공개한다. DistPFN의 공식 batch 보정은 동일한 혼합 query 순서와 배치를 사용하고 실제 정답 prior를 넣지 않는다. 기본형 2안과 같은 $L$만 쓰는 조건, $U$를 사용하는 조건, 평가 query 통계를 사용하는 조건은 결과표의 정보 접근 열에서 분리한다. 1안과 2안 사이의 단순 점수 순위만으로 구조 우위를 주장하지 않는다.
+
+\subsection{지표·비용·성공 판단}
+\textbf{주 지표는 정상 포함 전체 test의 공격 Macro-F1이다.} 정상에서 공격으로 유입되는 false positive를 포함하여 공격별 precision·recall·F1과 정상 FPR를 함께 보고한다. 신규 공격 실험은 대상 공격의 F1·recall, 기존 공격의 갱신 전후 변화도 제시한다. 최종 상태 모델로 전체 test를 평가하고 단계별 예측 합산이나 개발 패널 추정을 최종 전체 성능과 섞지 않는다.
+
+\textbf{개선은 같은 seed의 대응 차이와 클래스별 수정 내역으로 판단한다.} 5개 seed의 평균·표준편차와 각 seed의 차이를 모두 보여주고, 작은 반복 수만으로 통계적 우위를 단정하지 않는다. 전문가가 고친 오류 수와 새로 만든 오류 수를 정상·각 공격별로 나누며, 1안은 교사 대비 학생의 오류 전환도 같은 방식으로 센다. 정상 FPR 허용치와 의미 있는 최소 향상폭은 운영 목표나 독립 개발 단계에서 미리 정하고, 이 보고서에서는 검증되지 않은 숫자를 성공 기준으로 꾸미지 않는다.
+
+\textbf{비용은 초기 준비·후속 적응·최종 추론으로 나눈다.} 1안은 전처리, 교사 예측, 학생 준비와 반복 학습, 대표점 갱신을 모두 적응 비용에 포함한다. 2안은 OOF Global·전문가 생성, 쌍/계수 선택, 최종 context/cache 준비를 포함한다. 추론에는 실제 호출한 모든 전문가와 점수 결합을 더하고 메모리, 모델 크기, 같은 장치의 처리량도 기록한다. 작은 학생의 빠른 추론이 학습 비용을 상쇄하는지는 관측량별 총비용으로 후속 판단한다.
+
+\begin{table}[H]\centering\small
+\caption{기여 주장별 필요한 근거. 기대 효과와 측정 결과를 분리한다.}
+\begin{tabularx}{\linewidth}{p{.29\linewidth}Y}
+\toprule
+주장 후보 & 최소한 필요한 관찰\\\midrule
+소수 라벨 분류 개선 & 같은 $n$·같은 추가 정보에서 강한 대조보다 반복적으로 개선\\
+희귀 공격 보완 & 해당 공격의 precision과 recall 동반 점검; 정상 오탐 허용 범위 유지\\
+새 공격 적응 & 사전 지도 노출을 제외한 대상 공격에서 $n$개 공개 전후 비교\\
+1안의 구조 기여 & 단순 증류·교사 없는 대표점·자기지도 학생보다 유효\\
+2안의 구조 기여 & 기존 TAILGUARD·단순 쌍 결합·BoostPFN 대비 순차 점수 수정의 추가 효과\\
+비용 이점 & 준비/적응/추론을 모두 기록한 동일 장치 실측\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{후속 평가 순서와 채택 판단}
+\textbf{1안을 우선 평가하고 2안은 독립된 구조 대조로 두는 것이 적절하다.} 1안은 현재 라벨 사례만 재배열했던 탐색에서 벗어나 실제 비라벨 분포를 학습하는 예측기로 바뀌므로 사용자가 요구한 모델 개발 질문에 더 직접적이다. 반면 비라벨 자료가 거의 없거나 특징 자체가 분리 불가능하면 이점이 제한될 수 있어 $U$의 양과 표본 구성부터 확인한다. 2안은 추가 비라벨 자료가 없어도 실행할 수 있지만, $n=2$에서 검증 기반 전문가 선택을 신뢰하기 어렵다는 구조적 제약을 공개한다.
+
+\Needspace{6\baselineskip}
+\begin{enumerate}[leftmargin=*,itemsep=4pt]
+\item \textbf{입력과 접근 예산 고정.} $L/U/T$ 행 ID, 고유 특징 group, 실제 클래스별 라벨 수, 전처리와 checkpoint를 저장한다. source-development 자료가 없으면 학습 반복 수와 선택 규칙을 사전에 고정한다.
+\item \textbf{1안 대조군 구성.} 구현한 전체안에 단독 교사, 참라벨 학생, 자기지도 학생, 단순 증류 대조를 추가한다. 각 조건에서도 의사라벨과 참라벨 구분 및 교사 가중치 불변을 확인한다.
+\item \textbf{2안 절제 구성.} 구현한 전체 라벨 Global과 식~\eqref{eq:delta}의 제한 수정에 대해 단순 쌍 결합·순차 선택 제거 대조를 구성한다. 실제 자료에서도 보정 0일 때 Global과 동일하고 OOF 검증 행이 context로 들어가지 않는지 확인한다.
+\item \textbf{분류 가설 확인.} 첫 개발 평가는 희귀 공격 recall만이 아니라 정상 오탐·전체 공격 F1·새로 만든 오류를 함께 본다. 개발에 사용한 결과를 최종 독립 test로 다시 주장하지 않는다.
+\item \textbf{문헌 대조와 확장.} 최소안이 유효할 때 필요한 문헌 구현과 절제를 같은 정보 접근으로 실행한다. 이후 다른 특징 버전·다른 IDS 데이터에서 일반성을 평가한다.
+\end{enumerate}
+
+\textbf{현재 확인한 것은 구현 경로가 동작한다는 사실까지다.} 1안이 향후 단순 증류와 차이가 없으면 분포 배정·대표점 반복을 핵심 기여로 유지하지 않고 오류 진단에 따라 표현 또는 신뢰도 기제를 수정한다. 2안이 기존 잔차 전문가와 차이가 없으면 새 모델로 포장하지 않고 기존 구조의 비교·개선 결과로 정리한다. 합성자료의 구현 검증은 IDS 성능 실험이나 논문 채택을 뜻하지 않으며 영어 원고와 발표자료는 변경하지 않는다.
+
+\section{구현 상태와 실행 방법: EXP91}
+\textbf{두 설계의 기본형은 학습·추론·저장·복원까지 실행 가능한 코드로 작성했다.} 1안은 실제 TabPFN 교사, 범주형 one-hot과 수치형 전처리, 마스킹 복원, soft 배정, 학생 가중치 학습, 대표점·prior 갱신을 포함한다. 2안은 전체 라벨 Global, 특징 group별 OOF, 혼동 쌍 선택, 제한 보정, 중단과 fallback을 포함한다. BETA·CURE의 공식 재현과 지역 검색·정상 subset prior 보정은 현재 코드에 구현하지 않은 별도 비교·확장 항목이다.
+
+\begin{table}[H]\centering\small
+\caption{설계와 구현의 연결. 코드 경로는 프로젝트 루트 기준이다.}
+\begin{tabularx}{\linewidth}{p{.22\linewidth}Y}
+\toprule
+구성 & 파일과 구현 범위\\\midrule
+1안 & \path{scripts/v7/exp91/teacher_student.py}: 고정 교사 확률, log-domain soft 배정, 학생 학습, anchor 대표점, 학생 단독 export\\
+2안 & \path{scripts/v7/exp91/pair_residual.py}: group OOF, 순차 쌍 보정, 같은 쌍 중복 채택 금지, PFN context 저장/복원\\
+공통 모듈 & \path{scripts/v7/exp91/common.py}: 확률 열 정렬, 고유 특징 group, 전처리, PFN 가중치 불변 검사\\
+실행 진입점 & \path{scripts/v7/exp91/run_designs.py}: NPZ 입력, 자료 접근 감사, seed·설정·코드 hash·예측·모델 저장\\
+검증 & \path{scripts/v7/exp91/test_models.py}: 배정 최적조건, fold 누출, n=2 fallback, 보정 상한, 가중치 갱신·저장 복원\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{입력 NPZ는 라벨과 비라벨의 접근 경로를 분리한다.} 필수 배열은 \texttt{X\_l}, \texttt{y\_l}, \texttt{X\_u}, \texttt{X\_test}이고 정답은 0 이상의 정수 class ID다. 선택 배열 \texttt{y\_test}는 모델 적합과 예측을 마친 뒤 채점할 때만 사용하며 \texttt{y\_u}는 사용하지 않는다. \texttt{ids\_l}, \texttt{ids\_u}, \texttt{ids\_test}가 있으면 ID 중복도 검사하고, 기본적으로 학습/비라벨과 test 사이의 동일 특징 group도 거부한다. 과거 split 진단에 한해 명시적 옵션으로 test 특징 중복을 허용하되 중복 수를 기록한다.
+
+\textbf{실제 데이터 실행은 같은 명령에서 입력 파일만 교체한다.} 범주형 열은 0부터 시작하는 인덱스로 \texttt{--categorical-columns}에 지정하고, 모든 열을 연속형으로 오해하지 않도록 필드 의미를 먼저 확인한다. \texttt{--config}의 JSON은 \texttt{student}·\texttt{pair} 설정을 별도로 받는다. 기본값은 학생 준비 10 epoch, 5회 교대 갱신과 회당 3 epoch, 2안 최대 전문가 3개이며 이 수치가 IDS 최적값이라는 근거는 없다.
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true]
+python scripts/results_versions.py run --version v7 --experiment exp91 \
+  --scope tabpfn --label designs_input \
+  --protocol configs/experiments/exp91_protocol.json -- \
+  python scripts/v7/exp91/run_designs.py \
+  --input /absolute/path/data.npz --model both --output '{run_dir}'
+
+python -m unittest discover -s scripts/v7/exp91 -p test_models.py -v
+\end{Verbatim}
+
+\textbf{단위 검증 10개와 실제 PFN smoke 검증은 분류 성능 평가와 구분한다.} 최적수송 형태의 배정식은 행합뿐 아니라 목적함수의 일차 최적조건을 검사했고, 2안은 전문가가 실제 채택되는 경로와 n=2에서 Global로 돌아가는 경로를 모두 검사했다. 실제 checkpoint 검증은 3개 클래스의 참라벨 18개·비라벨 36개·test 24개로 학습·예측·모델 저장/복원까지 수행했다. 1안의 encoder 가중치는 바뀌었고 PFN 교사와 2안 PFN들의 가중치 해시는 유지됐다. 같은 query 배치에서 복원 전후 확률 차이는 두 모델 모두 0이었다.
+
+\textbf{초기 저장 검증의 실패 원인은 배치가 다른 예측을 비교한 데 있었다.} 전체 24행 예측 중 앞 8행과 복원 후 8행 예측을 비교했을 때 2안의 최대 확률 차이는 약 $3.13\times10^{-4}$였다. 허용 오차를 늘리는 대신 저장 전후 모두 같은 8행 batch를 예측하도록 검사 조건을 고쳤고, 배치 크기에 따른 차이는 별도 진단 값으로 보존했다. 초기 실패 실행과 수정 후 성공 실행의 경로·출력·해시는 EXP91 검증 보고서에 기록한다.
+\sourcepath{docs/lablog/reports/20261028_exp91.tex}
+
+\appendix
+\section{출처·재현 자료·문서 상태}
+\textbf{IDS 관측 수치는 기존 보고서에서 가져왔고 두 후보의 IDS 성능 수치는 아직 없다.} 문헌은 아래 원문과 공식 구현을 기준으로 확인했으며, 로컬 PDF와 참조 파일의 해시는 별도 evidence에 기록한다. 두 후보의 구조·flow 그림 네 개는 자체 설계도이고 SOTA 표의 일곱 그림은 출처를 표시한 원문 발췌다. 보고서는 독립 XeLaTeX로 임시 컴파일하고, 그림 PDF는 재사용 입력으로 보존한다.
+\sourcepath{docs/lablog/evidence/20261028/model_designs_sources.json}
+\sourcepath{docs/lablog/_support/20261028_model_designs/build_figures.py}
+\sourcepath{docs/lablog/reports/20261027_exp89.tex}
+\sourcepath{docs/lablog/reports/20261028_exp90.tex}
+
+\begin{thebibliography}{9}\small
+\bibitem{tabpfn} Hollmann et al. \emph{Accurate predictions on small data with a tabular foundation model}. Nature, 2025. \href{https://www.nature.com/articles/s41586-024-08328-6}{원문}.
+\bibitem{lotbonc} Hu, Li, and Doerr. \emph{LotBoNC: Novel Botnet Traffic Classification under Long-tailed Distributions}. AsiaCCS, 2026. \href{https://doi.org/10.1145/3779208.3785276}{DOI 및 원문}. 로컬 원문: \path{evidence/20261015/lotbonc.pdf}, §§4--5.
+\bibitem{tabdpt} Ma et al. \emph{TabDPT: Scaling Tabular Foundation Models on Real Data}. \href{https://arxiv.org/html/2410.18164v3}{arXiv:2410.18164v3}, 2026-01-17 개정본, §§3, 4.6. \href{https://github.com/layer6ai-labs/TabDPT-inference}{공식 추론 구현}.
+\bibitem{localpfn} Thomas et al. \emph{Retrieval \& Fine-Tuning for In-Context Tabular Models}. NeurIPS, 2024. \href{https://arxiv.org/abs/2406.05207}{원문}. \href{https://github.com/layer6ai-labs/LoCalPFN}{공식 구현}.
+\bibitem{boostpfn} Wang et al. \emph{Prior-Fitted Networks Scale to Larger Datasets When Treated as Weak Learners}. AISTATS, PMLR 258:1090--1098, 2025. \href{https://proceedings.mlr.press/v258/wang25d.html}{공식 게재본}.
+\bibitem{distpfn} Lee. \emph{Mitigating Label Shift in Tabular In-Context Learning via Test-Time Posterior Adjustment}. \href{https://arxiv.org/html/2605.04363}{arXiv:2605.04363v2}, 2026. 공식 저장소에서 ICML 2026 채택을 확인했다.
+\bibitem{distcode} Lee. \emph{DistPFN official implementation}. \href{https://github.com/seunghan96/DistPFN}{공식 저장소 및 사용 예}. 2026-10-28 확인: 평균 query posterior를 사용한 기본 보정식.
+\bibitem{beta} Liu and Ye. \emph{TabPFN Unleashed: A Scalable and Effective Solution to Tabular Classification Problems}. ICML, PMLR 267:40043--40068, 2025. \href{https://proceedings.mlr.press/v267/liu25cn.html}{공식 게재본}, \href{https://arxiv.org/pdf/2502.02527}{사용자 제시 arXiv PDF}, \href{https://github.com/LAMDA-Tabular/BETA}{공식 코드}. 구조는 §3, Figure 3을 참고했다.
+\bibitem{cure} Lee, Choi, Choi, and Yoo. \emph{Bounded Context Management for Tabular Foundation Models on Stream Learning}. \href{https://arxiv.org/abs/2606.18677}{arXiv:2606.18677v1}, 2026-06-17. FMSD@ICML 2026 workshop spotlight oral; 본학회와 구분. 구조는 §4, Figure 1, 예측 후 정답 공개 조건은 §5.1을 참고했다.
+\end{thebibliography}
+\end{document}

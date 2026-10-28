@@ -1,0 +1,68 @@
+{
+  "analysis_date": "2026-10-27",
+  "report_date": "2026-10-27",
+  "original_execution_dates": [
+    "2026-10-21",
+    "2026-10-22"
+  ],
+  "run_paths": [
+    "results/v7/exp87/20261027_110920_fewshot_validity_audit_e8ebccad",
+    "results/v7/exp87/20261027_111156_original_test_population_audit_1a65ae21"
+  ],
+  "static_checks": [
+    {
+      "path": "scripts/v7/exp86/attack_fewshot.py",
+      "source_snapshot_matches": true,
+      "sha256": "5bf778001f6af92308de0b60abb1fe346d1629d56a68a2d65919dbc46d7bccd0"
+    },
+    {
+      "path": "scripts/v7/exp71/exp71_bounded_updates.py",
+      "source_snapshot_matches": true,
+      "sha256": "2e81e825f8d3062d806f5e73b430636b7a77824b9ae9cce99ab986c4fd05a4b3"
+    },
+    {
+      "path": "scripts/v7/exp72/replay_models.py",
+      "source_snapshot_matches": true,
+      "sha256": "ced926cfd69665b9c7a0edc5599087627da95a1d9b2a43e13861bde4b03d454d"
+    },
+    {
+      "path": "scripts/v7/exp72/replay_protocol.py",
+      "source_snapshot_matches": true,
+      "sha256": "b954c72e773d81661b39d9697ba23d901ea94affd6b9d2fe3ad6e20ad6bac3e4"
+    },
+    {
+      "path": "scripts/common/preprocess_nfv3_energy_suite.py",
+      "source_snapshot_matches": true,
+      "sha256": "38668d80b3b612134c05091a41ca775dfcdaac443c62d181d2c5877f90ed3f05"
+    }
+  ],
+  "train_membership_checks": [
+    {
+      "dataset": "cic2018",
+      "all_selected_rows_in_clean_train": true
+    },
+    {
+      "dataset": "toniot",
+      "all_selected_rows_in_clean_train": true
+    }
+  ],
+  "source_urls": [
+    {
+      "url": "https://staff.itee.uq.edu.au/marius/NIDS_datasets/",
+      "accessed": "2026-10-27",
+      "supports": "NF-v3 extraction variant has 53 features; differs from CICFlowMeter representation"
+    },
+    {
+      "url": "https://www.unb.ca/cic/datasets/ids-2018.html",
+      "accessed": "2026-10-27",
+      "supports": "Original attack collection used specified attacker/victim machines and time intervals"
+    }
+  ],
+  "conclusions_adoption": "exploratory_not_manuscript_adopted",
+  "limitations": [
+    "PFN predictions recomputed from saved outputs, but no new PFN model fit in this audit",
+    "Original-population restoration evaluated XGB only",
+    "Original population still attack-only; training retains global curation",
+    "Host/session/campaign disjointness and near duplicates remain untested"
+  ]
+}

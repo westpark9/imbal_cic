@@ -1,0 +1,488 @@
+{
+  "dataset": "cic2018",
+  "seed": 45,
+  "n": 1,
+  "method": "pfn",
+  "context_rows": 6,
+  "class_names": [
+    "benign",
+    "bot",
+    "brute_force",
+    "ddos",
+    "dos",
+    "infiltration",
+    "web_attacks"
+  ],
+  "train_source_ids": [
+    64337403,
+    65004784,
+    65632729,
+    66461900,
+    66810489,
+    66932612
+  ],
+  "train_ids_sha256": "b124a4350cb728e6e6a46ecb98ada4eb909af4a7d58d2d0dad9b05bb82184dab",
+  "train_class_counts": [
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "phase_a": {
+    "rows": 390270,
+    "confusion": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        41114,
+        0,
+        7,
+        0,
+        0,
+        421
+      ],
+      [
+        0,
+        0,
+        37696,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        132613,
+        0,
+        60523,
+        230,
+        1390,
+        67924
+      ],
+      [
+        0,
+        855,
+        1563,
+        0,
+        28573,
+        2372,
+        6120
+      ],
+      [
+        0,
+        1663,
+        196,
+        0,
+        2166,
+        2347,
+        2370
+      ],
+      [
+        0,
+        7,
+        3,
+        0,
+        25,
+        1,
+        91
+      ]
+    ],
+    "macro_f1": 0.47641395417928883,
+    "benign_false_positive_rate": null,
+    "attack_to_benign": 0,
+    "wrong_attack_family": 219926,
+    "attack_detection_recall": 1.0,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 0,
+        "precision": 0.0,
+        "recall": null,
+        "f1": null,
+        "TP": 0,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "name": "bot",
+        "support": 41542,
+        "precision": 0.2332682749699294,
+        "recall": 0.9896971739444418,
+        "f1": 0.37754942744060904,
+        "TP": 41114,
+        "FP": 135138,
+        "FN": 428
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 0.9553449237163566,
+        "recall": 1.0,
+        "f1": 0.9771625580008814,
+        "TP": 37696,
+        "FP": 1762,
+        "FN": 0
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 0.999884354865356,
+        "recall": 0.2304058169636059,
+        "f1": 0.37451192722997434,
+        "TP": 60523,
+        "FP": 7,
+        "FN": 202157
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 0.9218881073756211,
+        "recall": 0.723678545196667,
+        "f1": 0.8108460916327312,
+        "TP": 28573,
+        "FP": 2421,
+        "FN": 10910
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.3841243862520458,
+        "recall": 0.2684740334019675,
+        "f1": 0.3160517102073795,
+        "TP": 2347,
+        "FP": 3763,
+        "FN": 6395
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 0.001182955047708187,
+        "recall": 0.7165354330708661,
+        "f1": 0.0023620105641571384,
+        "TP": 91,
+        "FP": 76835,
+        "FN": 36
+      }
+    ]
+  },
+  "phase_b": {
+    "rows": 3042473,
+    "confusion": [
+      [
+        0,
+        624607,
+        74322,
+        28522,
+        352753,
+        590441,
+        981558
+      ],
+      [
+        0,
+        41114,
+        0,
+        7,
+        0,
+        0,
+        421
+      ],
+      [
+        0,
+        0,
+        37696,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        132613,
+        0,
+        60523,
+        230,
+        1390,
+        67924
+      ],
+      [
+        0,
+        855,
+        1563,
+        0,
+        28573,
+        2372,
+        6120
+      ],
+      [
+        0,
+        1663,
+        196,
+        0,
+        2166,
+        2347,
+        2370
+      ],
+      [
+        0,
+        7,
+        3,
+        0,
+        25,
+        1,
+        91
+      ]
+    ],
+    "macro_f1": 0.15463147635174582,
+    "benign_false_positive_rate": 1.0,
+    "attack_to_benign": 0,
+    "wrong_attack_family": 219926,
+    "attack_detection_recall": 1.0,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 2652203,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "TP": 0,
+        "FP": 0,
+        "FN": 2652203
+      },
+      {
+        "name": "bot",
+        "support": 41542,
+        "precision": 0.05133737649199172,
+        "recall": 0.9896971739444418,
+        "f1": 0.09761147007185414,
+        "TP": 41114,
+        "FP": 759745,
+        "FN": 428
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 0.3313060291791176,
+        "recall": 1.0,
+        "f1": 0.4977158097652433,
+        "TP": 37696,
+        "FP": 76084,
+        "FN": 0
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 0.679636616808157,
+        "recall": 0.2304058169636059,
+        "f1": 0.34414269955534327,
+        "TP": 60523,
+        "FP": 28529,
+        "FN": 202157
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 0.07445791107161749,
+        "recall": 0.723678545196667,
+        "f1": 0.1350235096755901,
+        "TP": 28573,
+        "FP": 355174,
+        "FN": 10910
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.003934282232365716,
+        "recall": 0.2684740334019675,
+        "f1": 0.0077549219964546095,
+        "TP": 2347,
+        "FP": 594204,
+        "FN": 6395
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 8.597201280321668e-05,
+        "recall": 0.7165354330708661,
+        "f1": 0.00017192339773533432,
+        "TP": 91,
+        "FP": 1058393,
+        "FN": 36
+      }
+    ]
+  },
+  "feature_disjoint_attack": {
+    "rows": 389279,
+    "confusion": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        40123,
+        0,
+        7,
+        0,
+        0,
+        421
+      ],
+      [
+        0,
+        0,
+        37696,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        132613,
+        0,
+        60523,
+        230,
+        1390,
+        67924
+      ],
+      [
+        0,
+        855,
+        1563,
+        0,
+        28573,
+        2372,
+        6120
+      ],
+      [
+        0,
+        1663,
+        196,
+        0,
+        2166,
+        2347,
+        2370
+      ],
+      [
+        0,
+        7,
+        3,
+        0,
+        25,
+        1,
+        91
+      ]
+    ],
+    "macro_f1": 0.4754611982043255,
+    "benign_false_positive_rate": null,
+    "attack_to_benign": 0,
+    "wrong_attack_family": 219926,
+    "attack_detection_recall": 1.0,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 0,
+        "precision": 0.0,
+        "recall": null,
+        "f1": null,
+        "TP": 0,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "name": "bot",
+        "support": 40551,
+        "precision": 0.22893284872276204,
+        "recall": 0.9894453897561096,
+        "f1": 0.37183289159082905,
+        "TP": 40123,
+        "FP": 135138,
+        "FN": 428
+      },
+      {
+        "name": "brute_force",
+        "support": 37696,
+        "precision": 0.9553449237163566,
+        "recall": 1.0,
+        "f1": 0.9771625580008814,
+        "TP": 37696,
+        "FP": 1762,
+        "FN": 0
+      },
+      {
+        "name": "ddos",
+        "support": 262680,
+        "precision": 0.999884354865356,
+        "recall": 0.2304058169636059,
+        "f1": 0.37451192722997434,
+        "TP": 60523,
+        "FP": 7,
+        "FN": 202157
+      },
+      {
+        "name": "dos",
+        "support": 39483,
+        "precision": 0.9218881073756211,
+        "recall": 0.723678545196667,
+        "f1": 0.8108460916327312,
+        "TP": 28573,
+        "FP": 2421,
+        "FN": 10910
+      },
+      {
+        "name": "infiltration",
+        "support": 8742,
+        "precision": 0.3841243862520458,
+        "recall": 0.2684740334019675,
+        "f1": 0.3160517102073795,
+        "TP": 2347,
+        "FP": 3763,
+        "FN": 6395
+      },
+      {
+        "name": "web_attacks",
+        "support": 127,
+        "precision": 0.001182955047708187,
+        "recall": 0.7165354330708661,
+        "f1": 0.0023620105641571384,
+        "TP": 91,
+        "FP": 76835,
+        "FN": 36
+      }
+    ]
+  },
+  "exact_feature_overlap_test_rows": 991,
+  "exact_feature_overlap_attack_rows": 991,
+  "training_unique_feature_rows": 6,
+  "construct_seconds": 5.781800427939743e-05,
+  "fit_seconds": 0.2868909390090266,
+  "preparation_seconds": 0.286948757013306,
+  "inference_seconds": 77.88877246603079,
+  "test_rows": 3042473,
+  "weights_sha256": "152e50ac0356e138425f56f57078d20a088721d641e32cf7321533b12cad7c70",
+  "weights_unchanged": true,
+  "initial_ft": false,
+  "later_ft": false,
+  "xgb_tree_splits": null,
+  "peak_gpu_gib": 0.5740642547607422,
+  "checkpoint": "/home/user/Desktop/imbalcic/tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+  "predictions_path": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp86/20261021_232457_attack_fewshot_s43_47_0a849540/jobs/cic2018_s45_n1_pfn/predictions.npy",
+  "query_order_sha256": "aab673b1ac432dba7208f26777a58a94fc8abda3731659a1f85bd4d0fe1879a4",
+  "cost_scope": "Fresh construction + fit/cache preparation, not sequential update; excludes inference, saving, validation.",
+  "phase_b_role": "Attack-only output space: benign FPR=1 by construction. Diagnostic, not benign detection efficacy."
+}

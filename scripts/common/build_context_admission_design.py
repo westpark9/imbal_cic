@@ -1,58 +1,103 @@
 #!/usr/bin/env python3
-"""Reproduce the design's count audit and figure; never fits a model."""
-from pathlib import Path
+"""Audit the revised small-label design on real row IDs; never fit a model."""
+import ast
+import copy
+import hashlib
 import json
-import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot as plt, font_manager
+from pathlib import Path
+
+import numpy as np
 from experiment_paths import repo_root
 
-ROOT=repo_root()
+ROOT = repo_root()
+
+
+def existing_function(relative_path, name):
+    """Load only the exact audited function, avoiding runner imports/side effects."""
+    path = ROOT / relative_path
+    tree = ast.parse(path.read_text())
+    node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == name)
+    scope = {'np': np, 'copy': copy}
+    exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), 'exec'), scope)
+    return scope[name], hashlib.sha256(ast.get_source_segment(path.read_text(), node).encode()).hexdigest()
+
 
 def main():
-    config=json.loads((ROOT/'configs/experiments/proposals/20261020_context_admission.json').read_text())
-    assert config['status']=='design_only_not_executed'
-    frame=pd.read_csv(ROOT/'docs/lablog/data/exp83_budget_values.csv')
-    old=frame[(frame.new_per_class==400)&frame.method.isin(['pfn_accumulate','pfn_fifo','pfn_random','pfn_similar'])]
-    old.to_csv(ROOT/'docs/lablog/data/20261020_context_design_observations.csv',index=False)
-    font_path=Path('/home/user/.local/share/fonts/Pretendard/Pretendard-Regular.otf')
-    font_manager.fontManager.addfont(str(font_path))
-    plt.rcParams['font.family']=font_manager.FontProperties(fname=font_path).get_name()
-    plt.rcParams['axes.unicode_minus']=False
-    ns=config['available_labels_per_new_class']
-    fig,axs=plt.subplots(1,2,figsize=(11.5,3.4),layout='constrained')
-    for ax,(title,k) in zip(axs,[('CIC2018',1),('ToN-IoT',2)]):
-        ax.plot(range(6),[k*n/10 for n in ns],'o-',label='기존: 신규 사례 전부 편입',color='#80909F')
-        ax.plot(range(6),[min(k*n,100)/10 for n in ns],'o-',label='설계: 단계당 최대 100개 편입',color='#007BC6')
-        ax.set_xticks(range(6),ns);ax.set_ylim(0,85);ax.set_yticks([0,10,20,40,60,80]);ax.grid(axis='y',alpha=.2)
-        ax.set_title(title+' · 한 단계 최대 교체 비율',loc='left');ax.set_xlabel('신규 공격당 확보 라벨 수');ax.set_ylabel('1,000개 버퍼 대비 교체율 (%)')
-        ax.spines[['top','right']].set_visible(False)
-    axs[0].legend(frameon=False,fontsize=9,loc='upper left')
-    for ext in ['pdf','png']:fig.savefig(ROOT/f'docs/lablog/figures/20261020_admission_design.{ext}',dpi=180)
-    plt.close(fig)
-    checks=[]
-    for ds,arrivals in [('cic2018',[1,1,1,1]),('toniot',[2,1,1,2,1])]:
-        for n in ns:
-            for q in [50,100,200]:
-                counts=[750,125,125];ever=counts.copy();rows=[]
-                for stage,k in enumerate(arrivals,2):
-                    floor=[min(500,ever[0])]+[min(25,v) for v in ever[1:]]
-                    total=min(k*n,q,1000-sum(floor));quotas=[total//k+(i<total%k) for i in range(k)]
-                    assert min(quotas)>=1 and max(quotas)<=n
-                    need=total
-                    # Any feasible removal order suffices for this count-only check.
-                    for c in range(len(counts)):
-                        remove=min(need,counts[c]-floor[c]);counts[c]-=remove;need-=remove
-                    assert need==0
-                    counts+=quotas;ever+=quotas
-                    assert sum(counts)==1000 and all(counts[i]>=floor[i] for i in range(len(floor)))
-                    rows.append(dict(stage=stage,incoming=k*n,admitted=total,per_new_class=quotas,
-                                     protected_old_total=sum(floor),context_rows=sum(counts)))
-                checks.append(dict(dataset=ds,n=n,q=q,stages=rows))
-    dest=ROOT/'docs/lablog/evidence/20261020/context_admission_feasibility.json'
-    dest.parent.mkdir(parents=True,exist_ok=True)
-    dest.write_text(json.dumps(dict(passed=True,scope='Count constraints only, not model performance or real-row selection validation',checks=checks),ensure_ascii=False,indent=2)+'\n')
-    print(f'{len(checks)} feasible count schedules; no model experiment executed')
+    config_path = ROOT / 'configs/experiments/proposals/20261020_context_admission.json'
+    config = json.loads(config_path.read_text())
+    assert config['status'] == 'authorized_for_execution'
+    assert config['available_labels_per_new_class'] == [5, 10, 20, 30, 50, 100]
+    subset, subset_sha = existing_function('scripts/v7/exp78/noft_dist_budget.py', 'subset_plans')
+    replace, replace_sha = existing_function('scripts/v7/exp76/run_context_policies.py', 'replace_context')
+    checks = []
+    for ds in config['datasets']:
+        base = ROOT / config['sources']['base_plans'] / ds
+        meta = json.loads((base / 'manifest.json').read_text())
+        source = Path(meta['source'])
+        arr = {k: np.load(source / f'{k}.npy', mmap_mode='r')
+               for k in ['train_X', 'train_y', 'train_ids', 'test_ids']}
+        original = json.loads((base / 'plans.json').read_text())
+        previous = None
+        for n in config['available_labels_per_new_class']:
+            plans = subset(original, arr['train_y'], n, config['seed'])
+            assert plans[0]['incoming'] == original[0]['incoming']
+            if n in [10, 20, 50]:
+                saved = ROOT / config['sources']['overlap_plans'] / f'new_{n}/data/{ds}/plans.json'
+                saved_plans = json.loads(saved.read_text())
+                for a, b in zip(plans, saved_plans):
+                    assert a['incoming'] == b['incoming'] and a['released'] == b['released']
+            if n == 100:
+                for a, b in zip(plans, original):
+                    assert a['incoming'] == b['incoming'] and a['released'] == b['released']
+            for s, plan in enumerate(plans):
+                if previous:
+                    assert set(previous[s]['incoming']) <= set(plan['incoming'])
+                if s:
+                    counts = np.unique(arr['train_y'][plan['incoming']], return_counts=True)[1]
+                    assert all(counts == n)
+            released = plans[-1]['released']
+            assert len(released) == 1000 + n * (4 if ds == 'cic2018' else 7)
+            assert len(released) == len(set(released))
+            assert not np.intersect1d(arr['train_ids'][released], arr['test_ids']).size
+            for policy in ['fifo', 'random', 'similar']:
+                ctx = np.asarray(plans[0]['incoming'], dtype='int64')
+                evicted = set()
+                stages = []
+                for s, plan in enumerate(plans):
+                    incoming = np.asarray(plan['incoming'], dtype='int64')
+                    if s:
+                        old = ctx.copy()
+                        ctx, removed = replace(old, incoming, arr['train_y'], arr['train_X'],
+                                               policy, config['seed'] + s * 1009)
+                        assert len(removed) == len(incoming)
+                        assert set(removed) <= set(old)
+                        assert set(ctx) == (set(old) - set(removed)) | set(incoming)
+                        evicted.update(removed.tolist())
+                    else:
+                        removed = np.array([], dtype='int64')
+                    assert len(ctx) == len(set(ctx)) == 1000
+                    assert not set(ctx) & evicted
+                    assert set(incoming) <= set(ctx)
+                    assert set(ctx) <= set(plan['released'])
+                    assert set(arr['train_y'][ctx]) == set(arr['train_y'][plan['released']])
+                    counts = np.bincount(arr['train_y'][ctx], minlength=len(meta['class_names']))
+                    stages.append(dict(stage=s+1, supplied=len(incoming), admitted=len(incoming),
+                                       rejected=0, removed=len(removed), context_rows=len(ctx),
+                                       cumulative_rows=len(plan['released']),
+                                       context_counts=dict(zip(meta['class_names'], counts.tolist())),
+                                       context_ids_sha256=hashlib.sha256(ctx.tobytes()).hexdigest()))
+                checks.append(dict(dataset=ds, n=n, policy=policy, stages=stages))
+            previous = plans
+    dest = ROOT / 'docs/lablog/evidence/20261020/context_admission_feasibility.json'
+    dest.write_text(json.dumps(dict(
+        passed=True, revision=3, model_experiments_executed_by_this_audit=False,
+        scope='Real training row selection and buffer feasibility only, not model quality or update timing',
+        config_sha256=hashlib.sha256(config_path.read_bytes()).hexdigest(),
+        exact_existing_functions={'subset_plans': subset_sha, 'replace_context': replace_sha},
+        existing_10_20_50_100_plans_identical=True, all_supplied_new_rows_admitted=True,
+        train_test_row_ids_disjoint=True, checks=checks), ensure_ascii=False, indent=2)+'\n')
+    print(f'{len(checks)} real-row buffer schedules passed; 60 authorized model conditions; no model fitted by this audit')
 
-if __name__=='__main__':main()
+
+if __name__ == '__main__':
+    main()

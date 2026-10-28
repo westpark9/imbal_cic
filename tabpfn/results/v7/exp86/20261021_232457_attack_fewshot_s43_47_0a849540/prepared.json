@@ -1,0 +1,98 @@
+{
+  "passed": true,
+  "datasets": [
+    {
+      "dataset": "cic2018",
+      "class_names": [
+        "benign",
+        "bot",
+        "brute_force",
+        "ddos",
+        "dos",
+        "infiltration",
+        "web_attacks"
+      ],
+      "test_base": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp71/20261014_103108_cumulative_100k_uniform_natural_s43_43a766d9/data/cic2018",
+      "source_pickle": "/home/user/Desktop/imbalcic/data/nfv3_energy_suite_uncapped_scenarios.pkl",
+      "source_pickle_sha256": "07bf031ae6fd94380a59f9a199d615aea08c699816991a5d6b07248f5ef7ae61",
+      "clean_manifest": "/home/user/Desktop/imbalcic/data/derived/cic2018_conflict_free_fixed_split_20260915_180000/manifest.json",
+      "clean_manifest_sha256": "f9faadfa00d9206814c22ba96efbbbb3f3abb793cefeec3da18b1d44e0363640",
+      "candidate_counts": {
+        "bot": 124621,
+        "brute_force": 113024,
+        "ddos": 789310,
+        "dos": 118449,
+        "infiltration": 30143,
+        "web_attacks": 450
+      },
+      "test_counts": [
+        2652203,
+        41542,
+        37696,
+        262680,
+        39483,
+        8742,
+        127
+      ],
+      "test_rows": 3042473,
+      "features": 46,
+      "train_test_ids_disjoint": true,
+      "sampling": "20 rows per class from FULL clean train, nested prefixes at each n; no initial bank",
+      "preprocessing": "Existing row-local zero fill and fixed clipping; no learned full-train scaling. Estimator preprocessing fitted on supplied rows only.",
+      "query_order_sha256": "aab673b1ac432dba7208f26777a58a94fc8abda3731659a1f85bd4d0fe1879a4",
+      "split_caveat": "Previously inspected conflict-filtered fixed split; identical feature vectors can cross train/test. No new split or chronological replay."
+    },
+    {
+      "dataset": "toniot",
+      "class_names": [
+        "backdoor",
+        "benign",
+        "ddos",
+        "dos",
+        "injection",
+        "mitm",
+        "password",
+        "ransomware",
+        "scanning",
+        "xss"
+      ],
+      "test_base": "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp71/20261014_103108_cumulative_100k_uniform_natural_s43_43a766d9/data/toniot",
+      "source_pickle": "/home/user/Desktop/imbalcic/data/nfv3_energy_suite_uncapped_scenarios.pkl",
+      "source_pickle_sha256": "07bf031ae6fd94380a59f9a199d615aea08c699816991a5d6b07248f5ef7ae61",
+      "clean_manifest": "/home/user/Desktop/imbalcic/data/derived/toniot_conflict_free_fixed_split_20260916_021730/manifest.json",
+      "clean_manifest_sha256": "2424da6d133c8448b1d5f8f99fe4fb97b0c228294e76a6598f1813bc71585d12",
+      "candidate_counts": {
+        "backdoor": 120518,
+        "ddos": 613651,
+        "dos": 68286,
+        "injection": 201447,
+        "mitm": 3285,
+        "password": 637441,
+        "ransomware": 2151,
+        "scanning": 17881,
+        "xss": 987364
+      },
+      "test_counts": [
+        40030,
+        1474302,
+        103338,
+        22458,
+        68891,
+        1161,
+        210951,
+        709,
+        6029,
+        343854
+      ],
+      "test_rows": 2271723,
+      "features": 46,
+      "train_test_ids_disjoint": true,
+      "sampling": "20 rows per class from FULL clean train, nested prefixes at each n; no initial bank",
+      "preprocessing": "Existing row-local zero fill and fixed clipping; no learned full-train scaling. Estimator preprocessing fitted on supplied rows only.",
+      "query_order_sha256": "616e70bb8af3dba232a21060b95892b029227166ca865583a5abbc38a113cb4a",
+      "split_caveat": "Previously inspected conflict-filtered fixed split; identical feature vectors can cross train/test. No new split or chronological replay."
+    }
+  ],
+  "nested": true,
+  "benign_train_rows": 0
+}

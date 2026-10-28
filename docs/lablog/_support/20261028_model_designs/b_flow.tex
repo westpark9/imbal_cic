@@ -1,0 +1,33 @@
+\documentclass[tikz,border=7pt]{standalone}
+\usepackage{fontspec,kotex,amsmath}
+\setmainfont{DejaVu Sans}
+\setmainhangulfont{Noto Sans CJK KR}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+\definecolor{blue}{HTML}{245B8A}
+\definecolor{orange}{HTML}{AD5A17}
+\definecolor{green}{HTML}{287255}
+\tikzset{
+  box/.style={draw=blue,fill=blue!6,rounded corners=3pt,align=center,
+    text width=4.1cm,minimum height=1.1cm,inner sep=6pt,font=\small},
+  train/.style={box,draw=orange,fill=orange!8},
+  deploy/.style={box,draw=green,fill=green!8},
+  note/.style={align=center,font=\footnotesize,text=black!80},
+  arr/.style={-{Stealth[length=2.4mm]},line width=.8pt,draw=black!70},
+  upd/.style={arr,dashed,draw=orange},
+  label/.style={font=\scriptsize,fill=white,inner sep=2pt}}
+\begin{document}
+\begin{tikzpicture}
+
+\node[box,text width=10.4cm] (a) at (0,0) {① $L$을 동일 특징 벡터 group 단위로 fold 분리\\한 행의 검증 예측에는 그 행/동일 벡터의 라벨을 쓰지 않음};
+\node[box,text width=10.4cm] (b) at (0,-1.8) {② Global의 out-of-fold 예측으로 혼동 쌍 후보 생성\\클래스당 오류를 정규화 / 정상 오탐도 따로 집계};
+\node[box,text width=10.4cm] (c) at (0,-3.6) {③ fold 학습부의 해당 두 클래스만 전문가 context로 사용\\같은 fold 검증부에서 이진 확률과 보정 후 다중분류를 계산};
+\node[train,text width=10.4cm] (d) at (0,-5.4) {④ 제한된 보정 계수 후보 비교\\공격 손실 감소와 정상 오탐 제약을 함께 확인};
+\node[train,text width=10.4cm] (e) at (0,-7.2) {⑤ 안정된 개선이면 채택 후 남은 혼동을 다시 계산\\표본 부족·클래스 누락·기준 미충족이면 보정 0 / 종료};
+\node[deploy,text width=10.4cm] (f) at (0,-9) {⑥ 전체 $L$로 Global·채택 전문가 context를 재구성\\고정된 순서와 계수로 $T$ 평가 / 최대 전문가 수를 제한};
+\foreach \a/\b in {a/b,b/c,c/d,d/e,e/f}{\draw[arr] (\a)--(\b);}
+\draw[upd] (e.east)--(6.3,-7.2)--(6.3,-1.8)--(b.east);
+\node[note,rotate=90] at (6.6,-4.5) {채택된 보정 이후 다시 계산};
+\node[note,text width=11.5cm] at (0,-10.2) {OOF는 선택용이다. 같은 OOF에서 고른 성능을 최종 일반화 성능으로 보고하지 않는다.};
+
+\end{tikzpicture}
+\end{document}

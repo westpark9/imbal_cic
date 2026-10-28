@@ -1,0 +1,23 @@
+{
+  "research_version": "v7",
+  "experiment_id": "exp89",
+  "authorization": "2026-10-27 사용자: 정상 n개 포함/제외 학습 및 정상 포함/공격만 평가를 정제 전후에 비교하는 합의안에 대해 '이렇게 실험 진행해줘'",
+  "source_exp86": "tabpfn/results/v7/exp86/20261021_232457_attack_fewshot_s43_47_0a849540",
+  "datasets": ["cic2018", "toniot"],
+  "budgets": [2, 3, 5, 10, 20],
+  "seeds": [43, 44, 45, 46, 47],
+  "train_versions": ["clean", "original"],
+  "benign_training": [false, true],
+  "methods": ["xgb", "pfn"],
+  "expected_jobs": 400,
+  "sampling": "Uniform without replacement, 20 rows per class using the EXP86 class-specific RNG; nested n prefixes. Clean attack IDs reproduce EXP86. Attack IDs are identical with and without benign, and both models receive identical IDs. Original and clean pools differ; same seed is paired but their sampled IDs need not coincide.",
+  "original_definition": "Same source features, family labels and original outer split IDs; disable conflict-row removal only. No new split, feature engineering or normalization fitted to the full pool.",
+  "evaluation": "Every model predicts the entire original fixed test once. Original/clean population and all/attack-only views are masks of those same predictions. Predicting benign on a true attack remains an error; never remove output classes or renormalize.",
+  "query_protocol": "Full original test, label-independent seed43 permutation, batch8192, identical across all conditions. No test subsampling or deduplication. Existing predictions use different query batches and are continuity references only.",
+  "metrics": "Attack Macro-F1 in every view; all-class Macro-F1 only comparable on a fixed population and class set; per-class precision/recall/F1/TP/FP/FN, benign FPR and attack-to-benign errors. Attack-only-trained full-test scores are structural diagnostics with benign FPR=1.",
+  "models": "Unchanged EXP86 XGB300/depth8/lr.05/subsample.8/colsample.8/min_child_weight1 and frozen TabPFN-v3/4 estimators/fit_with_cache/CPU cache/no context subsampling; no hyperparameter search or FT.",
+  "contrasts": "Benign training on fixed attack rows; benign test inclusion for a fixed model; train curation on original fixed test; test curation for fixed model. Seed-paired deltas, mean and sample SD; original versus clean test changes the target population.",
+  "cost": "Fresh construct+fit/cache, full-original-test inference and validation overhead reported separately. No sequential updates or cross-run inference-cost comparisons.",
+  "report": "Independent prediction/ID/metric verification, Korean standalone LaTeX, plots and CSVs, one-line lablog; temporary PDF compilation. Automatic partial/failure record and finalization.",
+  "adoption": "Exploratory previously inspected split; execution success is not manuscript adoption. No version transition, manuscript or slide changes."
+}

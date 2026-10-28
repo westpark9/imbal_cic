@@ -1,0 +1,34 @@
+{
+  "status": "authorized_for_execution",
+  "research_version": "v7",
+  "experiment_id": "exp87",
+  "authorization": "2026-10-22 사용자: benign 제외, 2개부터 사례 수를 늘려 수렴을 단일 seed로 탐색한 후 다른 seed로 검증",
+  "source_run": "tabpfn/results/v7/exp86/20261021_232457_attack_fewshot_s43_47_0a849540",
+  "datasets": ["cic2018", "toniot"],
+  "pilot_seed": 43,
+  "validation_seeds": [44, 45, 46, 47],
+  "budgets": {
+    "cic2018": [2, 5, 10, 20, 40, 80, 160, 320, 450],
+    "toniot": [2, 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2151]
+  },
+  "balanced_cap": "Minimum full-clean-train attack-class count; CIC web_attacks=450, ToN ransomware=2151; no duplication or unequal class caps",
+  "sampling": "Keep each EXP86 seed's first 20 rows per attack, append uniformly sampled rows without replacement from the remaining same-class train pool; nested and paired between models",
+  "models": "Unchanged XGB300/depth8/lr.05/subsample.8/colsample.8/min_child_weight1 and frozen TabPFN-v3/4 estimators/fit_with_cache/CPU cache/no subsampling",
+  "evaluation": "Only the original fixed attack test rows; CIC390270 and ToN797421; no benign train or inference; no FT",
+  "query_order": "Filter the original seed43 mixed query order down to attack rows; batch8192; rerun pilot 2/5/10/20 to use the same attack-only execution protocol at every n",
+  "anchor": "At n20 compare attack-only predictions against saved EXP86 attack predictions; report batch-composition sensitivity if any",
+  "plateau": {
+    "tolerance_f1": 0.01,
+    "window": 3,
+    "minimum_n": 80,
+    "pilot": "Both models have max-min F1 <=1 percentage point over last3 budgets; require that condition at two consecutive budgets, including one larger confirmation budget",
+    "validation": "Run seeds44-47 at the last3 pilot budgets; reuse seed43. Check each model's five-seed mean range <=1pp, disclose per-seed ranges and paired gaps. If mean plateau fails, evaluate the next grid budget at all5 seeds and check the latest3 again, until confirmed or available-label cap",
+    "cap": "If the available-label cap is reached, say label cap reached; never label it converged merely because execution ends",
+    "between_model_gap": "Report |PFN-XGB|<=1pp separately; descriptive closeness is not statistical equivalence"
+  },
+  "selection_caveat": "Exploratory learning curves on an already-inspected fixed test; extra seeds verify sampling/model variability, not an untouched test or external generalization",
+  "cost": "Fresh construct+fit/cache preparation and attack-test inference separately; not sequential update",
+  "feature_disjoint": "No changing feature-disjoint test used for stopping or main curves; exact overlap counts may be recorded as diagnostics",
+  "report": "Automatically regenerate Korean standalone LaTeX, figures, CSVs and log; temporary PDF compile; retain predictions, IDs, code and decisions",
+  "slides_or_manuscript_edit": false
+}

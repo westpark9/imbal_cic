@@ -1,0 +1,73 @@
+{
+  "protocol": "exp88.1",
+  "checkpoint": "/home/user/Desktop/imbalcic/tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+  "threads": 8,
+  "batch": 8192,
+  "started_at": "2026-10-27T12:19:54.221725+09:00",
+  "design": {
+    "research_version": "v7",
+    "experiment_id": "exp88",
+    "authorization": "2026-10-27 사용자: 실험 a를 진행하고 보고서까지 작성; 클래스당 2/5/10/20, 무작위·고유벡터·다양성 선택과 커버리지 비교",
+    "source_run": "tabpfn/results/v7/exp87/20261022_154948_attack_saturation_pilot43_then5seeds_417964c7",
+    "datasets": [
+      "cic2018",
+      "toniot"
+    ],
+    "seeds": [
+      43,
+      44,
+      45,
+      46,
+      47
+    ],
+    "budgets": [
+      2,
+      5,
+      10,
+      20
+    ],
+    "arms": [
+      "row_random",
+      "unique_random",
+      "cluster20",
+      "cluster40"
+    ],
+    "primary_arms": [
+      "row_random",
+      "unique_random",
+      "cluster20"
+    ],
+    "sensitivity_arm": "cluster40",
+    "reference": {
+      "fraction": 0.1,
+      "maximum_per_class": 2000,
+      "seed": 880011,
+      "unit": "uniform random rows from clean original train; remove these IDs from every selection/scaler/cluster pool; same-vector rows may remain and zero-distance rate is reported"
+    },
+    "geometry": {
+      "categorical": [
+        "PROTOCOL",
+        "L7_PROTO",
+        "TCP_FLAGS",
+        "CLIENT_TCP_FLAGS",
+        "SERVER_TCP_FLAGS",
+        "ICMP_TYPE",
+        "ICMP_IPV4_TYPE",
+        "DNS_QUERY_TYPE",
+        "FTP_COMMAND_RET_CODE"
+      ],
+      "numeric": "signed log1p, candidate-only median and IQR (floor 0.1), clip standardized values to [-6,6]",
+      "scaler_fit": "fixed uniform maximum 5000 candidate rows per class, equally weighted classes",
+      "categorical_distance": "one-hot/sqrt(2): one categorical mismatch contributes one squared-distance unit; vocabulary from candidate rows only, separate unknown category",
+      "distance": "Euclidean distance divided by sqrt(46); per-class reference distance only; geometry is diagnostic, model input remains original 46 features",
+      "clustering": "MiniBatchKMeans, fixed class/k-specific seed, n_init=3, batch=4096, max_iter=100; at most 100000 uniformly sampled candidate rows per class for fitting; representatives are closest actual candidate in each occupied cluster, searched over the full pool",
+      "selection": "seeded first representative then greedy farthest-first among cluster representatives; nested prefixes 2/5/10/20; cluster40 checks arbitrary granularity",
+      "patterns": "clusters and distance are operational feature-space measures, not verified attack-pattern labels"
+    },
+    "models": "unchanged EXP87 XGB300/depth8 and frozen TabPFN-v3/4 estimators; no tuning or fine-tuning",
+    "evaluation": "same full fixed attack-only test and mixed query order as EXP87, batch8192; five paired seeds; no benign training or inference",
+    "checks": "train/reference/test ID disjointness; original clean train membership; equal per-class budgets; nested contexts; same rows and features between models; independent sklearn metric recalculation; frozen checkpoint digest",
+    "interpretation": "Selection knows full candidate-class labels and features: representativeness diagnosis, not an acquisition algorithm using only n labels. Existing test already inspected. Conditional on global conflict cleaning and within-collection split; no environment-bias conclusion.",
+    "report": "Korean standalone LaTeX, learning curves, per-class F1, coverage/unique vectors, paired gaps, costs, raw predictions and code snapshots; temporary PDF compilation; no manuscript/slides changes"
+  }
+}

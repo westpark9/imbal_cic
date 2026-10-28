@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-27T14:54:11.402698+09:00",
+  "research_version": "v7",
+  "experiment": "exp89",
+  "run": "tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a",
+  "manager_pid": 633089,
+  "worker_pid": 633170,
+  "expected_jobs": 400,
+  "completed_jobs": 13,
+  "status": "running",
+  "protocol": "configs/experiments/exp89_protocol.json",
+  "finalization_sources": {
+    "scripts/v7/exp89/analyze_curation.py": "3600ecbfd5f1ee48c1f84ed155afb0afc25556d9a21660457d8ff00ebc6d296f",
+    "scripts/v7/exp89/report_curation.py": "d9a5e4ef50b41c2443ed896228669de82163aacf14008f3ab8ead0fa5f505836"
+  },
+  "automatic_finalization": [
+    "analyze_curation.py: independently validate all input IDs and 1600 evaluation views, export paired contrasts",
+    "report_curation.py: Korean LaTeX, seven plots, CSVs, one-line log, temporary PDF compilation and structure check"
+  ],
+  "remaining_work": [
+    "finish model predictions",
+    "independent full-run validation",
+    "final numerical report and compile"
+  ],
+  "resume_command": [
+    "python",
+    "scripts/v7/exp89/curation_benign.py",
+    "--out",
+    "/home/user/Desktop/imbalcic/tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a"
+  ],
+  "resume_condition": "Only resume after confirming the current worker is no longer running; completed job hashes are checked before reuse."
+}

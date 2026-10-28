@@ -1,0 +1,32 @@
+\documentclass[tikz,border=7pt]{standalone}
+\usepackage{fontspec,kotex,amsmath}
+\setmainfont{DejaVu Sans}
+\setmainhangulfont{Noto Sans CJK KR}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+\definecolor{blue}{HTML}{245B8A}
+\definecolor{orange}{HTML}{AD5A17}
+\definecolor{green}{HTML}{287255}
+\tikzset{
+  box/.style={draw=blue,fill=blue!6,rounded corners=3pt,align=center,
+    text width=4.1cm,minimum height=1.1cm,inner sep=6pt,font=\small},
+  train/.style={box,draw=orange,fill=orange!8},
+  deploy/.style={box,draw=green,fill=green!8},
+  note/.style={align=center,font=\footnotesize,text=black!80},
+  arr/.style={-{Stealth[length=2.4mm]},line width=.8pt,draw=black!70},
+  upd/.style={arr,dashed,draw=orange},
+  label/.style={font=\scriptsize,fill=white,inner sep=2pt}}
+\begin{document}
+\begin{tikzpicture}
+
+\node[box,text width=10.7cm] (a) at (0,0) {① 분할을 먼저 고정: $L$ / 비라벨 $U$ / 평가 $T$\\$U$의 정답과 $T$ 전체를 학습·선택에서 차단};
+\node[train,text width=10.7cm] (b) at (0,-1.8) {② 학생 준비: $L\cup U$의 가려진 특징 복원 + $L$의 분류\\대표점은 참라벨로 초기화 / TabPFN은 $L$로 $U$를 예측};
+\node[train,text width=10.7cm] (c) at (0,-3.6) {③ 고정 교사 확률 + 현재 학생 거리로 $Q$ 배정\\행별 확률 합 1 / 클래스 균등 할당을 강제하지 않음};
+\node[train,text width=10.7cm] (d) at (0,-5.4) {④ $Q$를 고정하고 학생 가중치 학습, 대표점 갱신\\추정 비율은 교사 초기값에 묶어서 천천히 갱신};
+\node[box,text width=10.7cm] (e) at (0,-7.2) {⑤ 사전에 고정한 반복 수로 종료 / 독립 개발자료가 있으면 조기 종료\\$U$의 숨긴 정답이나 test 점수로 최적 epoch를 고르지 않음};
+\node[deploy,text width=10.7cm] (f) at (0,-9) {⑥ 학생을 고정한 뒤 $T$ 전체 평가\\공격 F1 + 정상 오탐 + 적응 비용 + 추론 비용 기록};
+\foreach \a/\b in {a/b,b/c,c/d,d/e,e/f}{\draw[arr] (\a)--(\b);}
+\draw[upd] (d.east)--(6.4,-5.4)--(6.4,-3.6)--(c.east);
+\node[note,rotate=90] at (6.7,-4.5) {고정 횟수 반복};
+
+\end{tikzpicture}
+\end{document}
