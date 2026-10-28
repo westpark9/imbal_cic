@@ -61,6 +61,7 @@ with torch.inference_mode():
         raise RuntimeError("CUDA attention check returned non-finite values")
 # Detect missing runtime libraries/import conflicts before the long experiment.
 import tabpfn, numpy, pandas, sklearn, scipy, xgboost, matplotlib, threadpoolctl
+import lxml.html, markdown_it
 print(json.dumps(dict(python=sys.version, torch=torch.__version__, cuda=torch.version.cuda,
                      gpu=torch.cuda.get_device_name(0), compute_capability=capability,
                      tabpfn=metadata.version("tabpfn"), flash_attention="passed")))

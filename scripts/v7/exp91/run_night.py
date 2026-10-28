@@ -13,12 +13,55 @@ from experiment_paths import repo_root
 ROOT = repo_root(__file__)
 
 import argparse
+from collections import deque
+import importlib
+import importlib.metadata
 import json
 import shlex
 import shutil
 import subprocess
 import traceback
 from prepare_inputs import INPUTS, CHECKPOINT, DATASETS, SOURCE_HASH, filename, sha, stamp, write
+
+
+def check_runtime(device):
+    """Check package imports and real device execution before loading full test data."""
+    status = dict(python=sys.executable, python_version=sys.version, device=device,
+                  packages={}, errors=[], ready=False)
+    modules = {}
+    for module, distribution in [('torch', 'torch'), ('tabpfn', 'tabpfn'),
+                                 ('lxml.html', 'lxml'), ('markdown_it', 'markdown-it-py')]:
+        try:
+            modules[module] = importlib.import_module(module)
+            status['packages'][distribution] = importlib.metadata.version(distribution)
+        except Exception as error:
+            status['errors'].append(dict(component=module, error=f'{type(error).__name__}: {error}'))
+    if 'torch' in modules:
+        torch = modules['torch']
+        status['torch_cuda_build'] = torch.version.cuda
+        try:
+            target = torch.device(device)
+            if target.type == 'cuda':
+                torch.cuda.init()  # Preserve the actual driver error, not just is_available=False.
+                status['gpu'] = torch.cuda.get_device_name(target)
+            with torch.inference_mode():
+                x = torch.ones((16, 16), device=target)
+                if not torch.isfinite(x @ x).all().item():
+                    raise RuntimeError('Device matrix multiplication returned non-finite values')
+                if target.type == 'cuda':
+                    torch.cuda.synchronize(target)
+            status['device_execution'] = 'passed'
+        except Exception as error:
+            status['errors'].append(dict(component='device', error=f'{type(error).__name__}: {error}'))
+    status['ready'] = not status['errors']
+    return status
+
+
+def print_log_tail(path, lines=80):
+    """Surface worker failures in the parent log without loading a large log."""
+    with path.open(errors='replace') as stream:
+        tail = ''.join(deque(stream, maxlen=lines))
+    print(f'--- Last {lines} lines: {path} ---\n{tail or "(empty log)"}', flush=True)
 
 
 def report_run(out, config, jobs, summaries, errors):
@@ -86,6 +129,8 @@ def main():
     p.add_argument('--config', type=Path)
     p.add_argument('--output', type=Path)
     p.add_argument('--check', action='store_true')
+    p.add_argument('--keep-going', action='store_true',
+                   help='Continue other conditions after a worker fails; default stops at the first failure')
     args = p.parse_args()
     if not args.check and args.output is None:
         p.error('--output is required unless using --check')
@@ -113,10 +158,16 @@ def main():
         '--output', str(args.input_dir), '--datasets', *args.datasets,
         '--budgets', *map(str, args.budgets), '--seeds', *map(str, args.seeds),
         '--unlabelled', str(args.unlabelled)]
-    print(json.dumps(dict(at=stamp(), ready=not missing, missing=missing, prepared_conditions=len(jobs),
+    runtime = check_runtime(args.device)
+    ready = not missing and runtime['ready']
+    print(json.dumps(dict(at=stamp(), ready=ready, missing=missing, prepared_conditions=len(jobs),
+        check_scope='input files, manifests, imports and device execution; model fit not checked', runtime=runtime,
         model=args.model, input_directory=str(args.input_dir), checkpoint=str(args.checkpoint),
         prepare_command=shlex.join(prepare_command)), ensure_ascii=False, indent=2), flush=True)
-    if missing:
+    if args.output:
+        args.output.mkdir(parents=True, exist_ok=True)
+        write(args.output/'runtime_check.json', runtime)
+    if not ready:
         raise SystemExit(2)
     if args.check:
         return
@@ -125,6 +176,7 @@ def main():
     (out/'jobs').mkdir(exist_ok=True)
     source_dir = out/'source'
     config = dict(model=args.model, datasets=args.datasets, budgets=args.budgets, seeds=args.seeds,
+        keep_going=args.keep_going,
         unlabelled=args.unlabelled, checkpoint_sha256=sha(args.checkpoint), device=args.device,
         estimators=args.estimators, batch_size=args.batch_size, threads=args.threads,
         override_sha256=sha(args.config) if args.config else None,
@@ -171,9 +223,15 @@ def main():
             with (target/'stdout.log').open('w') as log:
                 result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
             if result.returncode:
-                errors.append(dict(condition=name, returncode=result.returncode))
+                errors.append(dict(condition=name, returncode=result.returncode,
+                                   log=str((target/'stdout.log').relative_to(out))))
                 write(out/'failures.json', errors)
-                print(f'Failed {name}; see {target / "stdout.log"}', flush=True)
+                print(f'Failed {name} (exit {result.returncode}); see {target / "stdout.log"}', flush=True)
+                print_log_tail(target/'stdout.log')
+                if not args.keep_going:
+                    print('Stopping after the first failed condition. Inspect the error before restarting; '
+                          'use --keep-going only to run the remaining conditions despite failures.', flush=True)
+                    break
             else:
                 summaries[name] = json.loads((target/'summary.json').read_text())
             write(out/'summary.json', summaries)
@@ -184,8 +242,10 @@ def main():
         try:
             report_run(out, config, jobs, summaries, errors)
         except Exception:
-            (out/'report_error.txt').write_text(traceback.format_exc())
+            error = traceback.format_exc()
+            (out/'report_error.txt').write_text(error)
             print(f'Report generation needs review: {out / "report_error.txt"}', flush=True)
+            print(error, flush=True)
     if errors:
         raise SystemExit(1)
     write(out/'COMPLETE.json', dict(at=stamp(), conditions=len(summaries), models=args.model,

@@ -6,6 +6,8 @@ import tempfile
 import json
 import types
 import pickle
+import io
+from contextlib import redirect_stdout
 import numpy as np
 from prepare_inputs import choose_labels, choose_unlabelled, filename
 from common import row_groups
@@ -117,12 +119,74 @@ class PreparationTests(unittest.TestCase):
             args = ['run_night', '--datasets', 'toniot', '--budgets', '20', '--input-dir', str(inputs),
                     '--checkpoint', str(checkpoint), '--output', str(output), '--model', 'a']
             with patch('sys.argv', args), patch.object(run_night, 'ROOT', root), \
+                    patch.object(run_night, 'check_runtime', return_value={'ready': True}), \
                     patch.object(run_night.subprocess, 'run', side_effect=worker), \
                     patch.object(run_night, 'report_run'):
                 run_night.main()
                 run_night.main()
             self.assertEqual(len(calls), 1)
             self.assertTrue((output/'COMPLETE.json').is_file())
+
+    def test_launcher_surfaces_errors_and_stops_unless_keep_going(self):
+        import run_night
+        from prepare_inputs import SOURCE_HASH, sha, write
+        for keep_going, expected_calls in [(False, 1), (True, 2)]:
+            with self.subTest(keep_going=keep_going), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                inputs = root/'inputs'
+                inputs.mkdir()
+                for n in [2, 3]:
+                    source = inputs/filename('cic2018', n, 43, 10000)
+                    source.write_bytes(b'fixture; worker is replaced by a test double')
+                    write(source.with_suffix('.json'), dict(source_sha256=SOURCE_HASH,
+                        dataset='cic2018', n=n, seed=43, unlabelled_rows=10000,
+                        bytes=source.stat().st_size, npz_sha256=sha(source), benign_class=0,
+                        categorical_columns=[0, 1], historical_test_feature_overlap_allowed=True))
+                checkpoint = root/'model.ckpt'
+                checkpoint.write_bytes(b'fixture')
+                output = root/'run'
+                args = ['run_night', '--datasets', 'cic2018', '--budgets', '2', '3',
+                        '--input-dir', str(inputs), '--checkpoint', str(checkpoint),
+                        '--output', str(output)] + (['--keep-going'] if keep_going else [])
+                def worker(command, **kwargs):
+                    kwargs['stdout'].write('Traceback (most recent call last):\nRuntimeError: test backend failure\n')
+                    return types.SimpleNamespace(returncode=1)
+                captured = io.StringIO()
+                with patch('sys.argv', args), patch.object(run_night, 'ROOT', root), \
+                        patch.object(run_night, 'check_runtime', return_value={'ready': True}), \
+                        patch.object(run_night.subprocess, 'run', side_effect=worker) as calls, \
+                        patch.object(run_night, 'report_run', side_effect=RuntimeError('test report failure')), \
+                        redirect_stdout(captured), self.assertRaises(SystemExit) as raised:
+                    run_night.main()
+                self.assertEqual(raised.exception.code, 1)
+                self.assertEqual(calls.call_count, expected_calls)
+                self.assertIn('RuntimeError: test backend failure', captured.getvalue())
+                self.assertIn('RuntimeError: test report failure', captured.getvalue())
+                self.assertFalse((output/'COMPLETE.json').exists())
+                progress = json.loads((output/'progress.json').read_text())
+                self.assertEqual(progress['completed'], 0)
+                self.assertEqual(len(progress['failed']), expected_calls)
+                self.assertEqual(len(json.loads((output/'failures.json').read_text())), expected_calls)
+                for error in progress['failed']:
+                    self.assertTrue((output/error['log']).is_file())
+
+    def test_runtime_check_reports_import_and_driver_failures_together(self):
+        import run_night
+        from unittest.mock import Mock
+        torch = Mock()
+        torch.version.cuda = '13.0'
+        torch.device.return_value.type = 'cuda'
+        torch.cuda.init.side_effect = RuntimeError('NVIDIA driver too old')
+        def import_module(name):
+            if name == 'lxml.html':
+                raise ModuleNotFoundError("No module named 'lxml'")
+            return torch if name == 'torch' else Mock()
+        with patch.object(run_night.importlib, 'import_module', side_effect=import_module), \
+                patch.object(run_night.importlib.metadata, 'version', return_value='fixture'):
+            result = run_night.check_runtime('cuda:0')
+        self.assertFalse(result['ready'])
+        self.assertEqual({r['component'] for r in result['errors']}, {'lxml.html', 'device'})
+        self.assertIn('NVIDIA driver too old', result['errors'][1]['error'])
 
 
 if __name__ == '__main__':

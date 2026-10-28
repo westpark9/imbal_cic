@@ -73,4 +73,24 @@ CIC2018과 ToN-IoT의 n=20, seed 43, 비라벨 10,000개, 전체 test 입력을 
 
 \sourcepath{docs/lablog/evidence/20261029/exp91_portability_fix.json}
 \sourcepath{tabpfn/results/v7/exp91/20261029_003042_portable_no_history_regression_bdcecf7c/validation.json}
+\subsection{원격 실행 실패 확인과 오류 노출 개선}
+원격 실행의 입력 확인은 통과했지만 사용자 제공 상위 로그에 나타난 세 실행은 각각 10개 조건 모두 실패했다.
+장비의 확인 시각은 2026-10-29 00:58 KST이며 입력 10개와 checkpoint 경로는 존재했다.
+\texttt{--check}는 파일과 메타데이터만 검사하므로 GPU 및 TabPFN 실행 성공을 뜻하지 않는다.
+추가로 제공된 최신 실행의 CIC2018 n=2 작업 로그에서 GPU 초기화가 드라이버 호환 오류로 실패했음을 확인했다.
+로그의 드라이버 API 버전은 12040이며 실행 Python은 다른 프로젝트의 Python 3.14 가상환경이었다.
+보고서 생성은 별도로 \texttt{lxml} 패키지 누락 때문에 실패했다.
+
+실행기는 첫 실패에서 중단하고 개별 로그 마지막 80줄과 보고서 생성 예외를 상위 로그에 출력하도록 개선했다.
+\texttt{--keep-going}을 명시하면 실패 후 다른 조건을 계속 수행할 수 있으며, 기본 동작은 공통 오류의 반복 실행을 막는다.
+기존 입력은 재사용하고 공용 설치기의 Python 3.12·드라이버별 CUDA 빌드 선택으로 실행 환경을 교정한다.
+CUDA 12.4 지원 드라이버의 선택 결과는 PyTorch 2.6.0+cu124이며 공용 requirements에 \texttt{lxml}과 \texttt{markdown-it-py}를 추가했다.
+\texttt{--check}와 실제 실행 직전 검사에 패키지 import 및 장치 행렬 연산을 추가해 데이터 전체 로딩 전에 오류를 발견한다.
+이 검사는 모델 fit이나 성능 검증을 대신하지 않는다.
+
+로컬 단위 검증 17개가 통과했고, 추가한 검증은 실패 즉시 중단·명시적 계속 실행·오류 내용 노출·완료 표식 미생성 및 패키지 누락과 드라이버 오류 동시 보고를 확인했다.
+빈 결과의 보고서 생성은 격리된 로컬 경로에서 성공했다.
+원격 장비의 수정 환경 설치와 모델 실행 완료는 이 로컬 검증에 포함되지 않으며 재실행 후 확인해야 한다.
+
+\sourcepath{docs/lablog/evidence/20261029/exp91_remote_failure_diagnostics.json}
 \end{document}

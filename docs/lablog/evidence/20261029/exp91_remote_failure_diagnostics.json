@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-29",
+  "research_version": "v7",
+  "experiment": "exp91",
+  "source": "docs/lablog/evidence/20261029/exp91_remote_failure_terminal.txt",
+  "source_sha256": "a6d6ec3404629dae428ae4532a55de91026dcaa8e0ccb0553ce3fae6a361ae0b",
+  "reported_remote_runs": [
+    "20261028_155211_remote_both_s43_7a890b57",
+    "20261028_155236_remote_both_s43_76461c31",
+    "20261028_155253_remote_both_s43_36c012d1"
+  ],
+  "prepared_conditions": 10,
+  "failed_conditions_per_run": 10,
+  "root_cause": {
+    "worker": "Confirmed in the latest run CIC2018 n2: CUDA initialization fails because installed torch CUDA runtime is incompatible with driver API version 12040",
+    "report": "ModuleNotFoundError: No module named lxml",
+    "remote_python": "3.14, /home/jovyan/mspark/ktx/.venv/bin/python",
+    "other_worker_tracebacks": "not supplied; no assertion that every failed worker has the identical exception"
+  },
+  "changes": [
+    "Print final 80 worker-log lines and report exception in parent stdout",
+    "Stop at first worker failure unless --keep-going is explicit",
+    "Clarify --check scope",
+    "Import and device-matrix preflight in --check and before every managed run",
+    "Add lxml==6.1.1 and markdown-it-py==4.0.0 to shared requirements and setup import checks"
+  ],
+  "local_validation": {
+    "command": "python -m unittest discover -s scripts/v7/exp91 -p 'test_*.py'",
+    "tests": 17,
+    "passed": true,
+    "empty_results_report": "Generated in isolated temporary paths with XeLaTeX unavailable simulated",
+    "actual_device_check": {
+      "command": "python scripts/v7/exp91/run_night.py --check --budgets 20",
+      "ready": true,
+      "gpu": "NVIDIA GeForce RTX 4090",
+      "torch": "2.11.0",
+      "torch_cuda_build": "13.0",
+      "device_execution": "passed",
+      "remote_driver_reproduced": false
+    }
+  },
+  "ids_performance_evaluated": false,
+  "recovery": {
+    "setup": "python scripts/common/setup_exp57_env.py --prefix /home/jovyan/mspark/envs/exp91-cu124 --gpu 0",
+    "python": "3.12",
+    "selected_profile_for_cuda_12_4": "torch==2.6.0+cu124",
+    "source": "https://docs.pytorch.org/get-started/previous-versions/",
+    "remote_execution_verified": false,
+    "existing_npz_reusable": true
+  },
+  "original_attachment_sha256": "fb3975cdee20a1be9c149f7202578cb369c1a029940ac2c7d2454d2534323dd4",
+  "source_normalization": "CRLF converted to LF; trailing whitespace removed"
+}
