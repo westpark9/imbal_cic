@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "rows": 1182,
+  "labeled_rows": 798,
+  "unresolved_rows": 384,
+  "group_overlap": 0,
+  "exact_embedding_groups_across_splits": 33,
+  "embedding_conflict_groups": 1,
+  "embedding_conflicts": [
+    {
+      "embedding_sha256": "0f1ef38a0b2971d871af05ed4a13e757b266d4845c7563920e2cda3a1fa18f14",
+      "rows": 404,
+      "label_counts": {
+        "FTP-BruteForce_Attempted_Artefact": 30,
+        "FTP-BruteForce_Attempted_ClosedPort": 370
+      },
+      "examples": [
+        {
+          "flow_id": "0f53804454f9e8eecd4dae62",
+          "label": "FTP-BruteForce_Attempted_Artefact",
+          "split": "test",
+          "src_ip": "13.58.98.64",
+          "dst_ip": "172.31.69.25",
+          "src_port": 53998,
+          "dst_port": 21,
+          "start_ns": 1518631281300355000,
+          "end_ns": 1518631281300357000,
+          "packets": 2,
+          "fwd_payload_bytes": 0,
+          "bwd_payload_bytes": 0,
+          "first_packet_index": 405619,
+          "last_packet_index": 405620
+        },
+        {
+          "flow_id": "00445ce91d4ef929fcbeaa59",
+          "label": "FTP-BruteForce_Attempted_ClosedPort",
+          "split": "test",
+          "src_ip": "18.221.219.4",
+          "dst_ip": "172.31.69.25",
+          "src_port": 50386,
+          "dst_port": 21,
+          "start_ns": 1518622366632501000,
+          "end_ns": 1518622366632518000,
+          "packets": 2,
+          "fwd_payload_bytes": 0,
+          "bwd_payload_bytes": 0,
+          "first_packet_index": 239526,
+          "last_packet_index": 239527
+        }
+      ]
+    }
+  ],
+  "varied_length_batch_parity_max_abs_error": 2.384185791015625e-06,
+  "interpretation": "Group-disjoint is not feature-disjoint. No collision rows removed. This is a representation/label audit, not classifier evaluation."
+}

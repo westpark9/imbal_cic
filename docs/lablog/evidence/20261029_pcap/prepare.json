@@ -1,0 +1,102 @@
+{
+  "dataset": "CSE-CIC-IDS2018-PCAP-pilot",
+  "seed": 43,
+  "raw_stats": {
+    "cic2018_20180214_victim": {
+      "raw_packets": 4718327,
+      "peak_active_flows": 16,
+      "non_ipv4": 3174,
+      "flows": 289531,
+      "label_status_unmatched": 1973,
+      "closed_session_ack_tail": 367,
+      "label_status_matched": 287547,
+      "label_status_boundary": 10,
+      "truncated_capture_tail": 1,
+      "truncated_tail_bytes": 307,
+      "label_status_incomplete_capture": 1
+    }
+  },
+  "captures": [
+    {
+      "id": "cic2018_20180214_victim",
+      "path": "data/pcap/cic2018/20180214_victim.pcap",
+      "bytes": 852795392,
+      "sha256": "008f18cce0ff420ce013eba6d97ae0b974f36028a0707a977f78d4bfd7f48afc"
+    }
+  ],
+  "label_rules": [
+    {
+      "path": "configs/experiments/exp92_cic2018_labels.json",
+      "sha256": "09acb1f4823c2aaa0fcd3c132d1879faa81c64b7e42510b6d23d19c555e21e9f"
+    }
+  ],
+  "source_counts": [
+    {
+      "label": "FTP-BruteForce_Attempted_Artefact",
+      "split": "test",
+      "count": 4
+    },
+    {
+      "label": "FTP-BruteForce_Attempted_Artefact",
+      "split": "train",
+      "count": 21
+    },
+    {
+      "label": "FTP-BruteForce_Attempted_Artefact",
+      "split": "validation",
+      "count": 5
+    },
+    {
+      "label": "FTP-BruteForce_Attempted_ClosedPort",
+      "split": "test",
+      "count": 28057
+    },
+    {
+      "label": "FTP-BruteForce_Attempted_ClosedPort",
+      "split": "train",
+      "count": 136732
+    },
+    {
+      "label": "FTP-BruteForce_Attempted_ClosedPort",
+      "split": "validation",
+      "count": 28541
+    },
+    {
+      "label": "SSH-BruteForce",
+      "split": "test",
+      "count": 13816
+    },
+    {
+      "label": "SSH-BruteForce",
+      "split": "train",
+      "count": 66054
+    },
+    {
+      "label": "SSH-BruteForce",
+      "split": "validation",
+      "count": 14317
+    },
+    {
+      "label": "__UNRESOLVED__",
+      "split": "test",
+      "count": 299
+    },
+    {
+      "label": "__UNRESOLVED__",
+      "split": "train",
+      "count": 1389
+    },
+    {
+      "label": "__UNRESOLVED__",
+      "split": "validation",
+      "count": 296
+    }
+  ],
+  "sampled_rows": 1182,
+  "reservoir_per_label_split": 128,
+  "sampling_strata": "annotation label x split (Attempted categories are metadata, not target classes)",
+  "split": "SHA256 of capture group namespace + bidirectional 5-tuple; before sampling/PCA",
+  "flows_sha256": "9e10aca265517806defad408bdaf0fffc6a94cf743910f11ed2bca4f4129488a",
+  "unknown_policy": "retained with label=-1; excluded from supervised exports",
+  "short_flow_policy": "one-packet traffic retained; closed-session pure ACK tails counted separately"
+}

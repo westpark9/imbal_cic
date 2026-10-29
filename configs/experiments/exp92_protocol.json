@@ -1,0 +1,28 @@
+{
+  "dataset": "CSE-CIC-IDS2018-PCAP-pilot",
+  "purpose": "Real PCAP to frozen embeddings and train-only PCA. Attempted categories retained as annotations and mapped to BENIGN per corrected-dataset author recommendation. Uncovered traffic remains unresolved. No classifier evaluation.",
+  "seed": 43,
+  "checkpoint": "data/pcap_models/netfound-small",
+  "dtype": "float32",
+  "pca_components": 64,
+  "split_fractions": [
+    0.7,
+    0.15,
+    0.15
+  ],
+  "reservoir_per_label_split": 128,
+  "flow": {
+    "idle_seconds": 120,
+    "active_seconds": 120,
+    "reorder_seconds": 1.0,
+    "allow_truncated": true
+  },
+  "captures": [
+    {
+      "id": "cic2018_20180214_victim",
+      "path": "data/pcap/cic2018/20180214_victim.pcap",
+      "labels": "configs/experiments/exp92_cic2018_labels.json",
+      "group_namespace": "cic2018_20180214"
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "checked_on": "2026-10-29",
+  "sources": {
+    "engelen": {
+      "title": "Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study",
+      "authors": "Engelen, Rimmer, Joosen",
+      "venue": "IEEE SPW / WTMC",
+      "year": 2021,
+      "url": "https://intrusion-detection.distrinet-research.be/WTMC2021/Resources/wtmc2021_Engelen_Troubleshooting.pdf",
+      "evidence": "§III-A/B: first-FIN split, TCP appendices, ignored RST, timing/IP-only labels; §IV: reconstruction",
+      "scope": "CICIDS2017; specific mechanisms, not proof of every current exact-vector collision",
+      "local_pdf": "docs/lablog/evidence/20261029_pcap/papers/engelen2021.pdf",
+      "pdf_sha256": "c66cd93384d6061b413a0ce0f753ae1e923eb5ccb42d72a10225a8c229c21b1f"
+    },
+    "liu": {
+      "title": "Error Prevalence in NIDS datasets: A Case Study on CIC-IDS-2017 and CSE-CIC-IDS-2018",
+      "authors": "Liu, Engelen, Lynar, Essam, Joosen",
+      "venue": "IEEE CNS",
+      "year": 2022,
+      "url": "https://intrusion-detection.distrinet-research.be/CNS2022/index.html",
+      "evidence": "Author tools and dataset documentation, corrected labels updated 2023; 2018 FTP closed-port example",
+      "scope": "Direct CIC2017/2018 evidence"
+    },
+    "rosay": {
+      "title": "Network Intrusion Detection: A Comprehensive Analysis of CIC-IDS2017",
+      "authors": "Rosay, Cheval, Carlier, Leroux",
+      "venue": "ICISSP",
+      "year": 2022,
+      "url": "https://www.scitepress.org/Papers/2022/107740/107740.pdf",
+      "evidence": "§3.2.2–3.2.5, especially improper session termination producing similar flows with different labels",
+      "scope": "Similar does not prove exact equality over our selected features",
+      "local_pdf": "docs/lablog/evidence/20261029_pcap/papers/rosay2022.pdf",
+      "pdf_sha256": "0462420776a0c7c18e2a702fd4cfcf7d021ecb9bd1e08bee97385a0f60bf0f2f"
+    },
+    "xie": {
+      "title": "Analysis and Detection against Network Attacks in the Overlapping Phenomenon of Behavior Attribute",
+      "authors": "Xie, Li, Zhang, Sun, Xu",
+      "venue": "Computers & Security 121, 102867",
+      "year": 2022,
+      "url": "https://arxiv.org/abs/2310.10660",
+      "doi": "10.1016/j.cose.2022.102867",
+      "evidence": "Same-feature/different-label phenomenon; UNSW-NB15 and CCCS-CIC-AndMal-2020; journal October 2022, arXiv September 2023",
+      "scope": "Corroborating phenomenon in other datasets, not CIC2017/18 cause evidence",
+      "local_pdf": "docs/lablog/evidence/20261029_pcap/papers/overlap.pdf",
+      "pdf_sha256": "a53236ef0e396780ea5b42806280a7e4e0ae8b56f64e44df5dd7e7dbdcd9bb27"
+    },
+    "cantone": {
+      "title": "Machine Learning in Network Intrusion Detection: A Cross-Dataset Generalization Study",
+      "authors": "Cantone, Marrocco, Bria",
+      "venue": "IEEE Access",
+      "year": 2024,
+      "url": "https://iris.unicas.it/handle/11580/110014",
+      "doi": "10.1109/ACCESS.2024.3472907",
+      "evidence": "Within-dataset high scores versus cross-dataset degradation; CIC2017/18 and LycoS variants",
+      "scope": "Motivates external validation; not a direct exact-duplicate explanation",
+      "local_pdf": "docs/lablog/evidence/20261029_pcap/papers/cross2024.pdf",
+      "pdf_sha256": "0c367d36e40744c15aa63c5bbb3b56f46afae34342a8d8ebbf129d735cfcce37",
+      "local_pdf_note": "Local PDF is February 2024 preprint; final venue/title verified against author repository final published PDF"
+    },
+    "cic17": {
+      "title": "CIC-IDS2017 official dataset",
+      "venue": "UNB CIC",
+      "year": 2017,
+      "url": "https://www.unb.ca/cic/datasets/ids-2017.html",
+      "evidence": "PCAP, labeled CICFlowMeter CSV, capture setup and attack timetable"
+    },
+    "cic18": {
+      "title": "CSE-CIC-IDS2018 official dataset",
+      "venue": "UNB CIC",
+      "year": 2018,
+      "url": "https://www.unb.ca/cic/datasets/ids-2018.html",
+      "evidence": "PCAP/system logs, feature list and attack setup"
+    },
+    "aws": {
+      "title": "CSE-CIC-IDS2018 public S3 bucket",
+      "venue": "AWS Open Data Registry",
+      "year": 2018,
+      "url": "https://registry.opendata.aws/cse-cic-ids2018/",
+      "evidence": "Public ca-central-1 bucket; actual selective member download recorded"
+    },
+    "rules": {
+      "title": "Corrected CSE-CIC-IDS2018 labeling logic",
+      "venue": "CNS2022 author supplement, updated 2023",
+      "year": 2022,
+      "url": "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html",
+      "evidence": "14 February FTP closed port and SSH rules, UTC microsecond boundaries"
+    },
+    "attempted": {
+      "title": "Corrected dataset usage guidance",
+      "venue": "CNS2022 author supplement",
+      "year": 2022,
+      "url": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html",
+      "evidence": "Do not use Attempted categories as independent ML classes; benign mapping recommended when in doubt, attack mapping depends on task"
+    },
+    "iot23": {
+      "title": "IoT-23: labeled malicious and benign IoT network traffic",
+      "venue": "Stratosphere Laboratory",
+      "year": 2020,
+      "url": "https://www.stratosphereips.org/datasets-iot23",
+      "evidence": "20 malicious and 3 benign scenarios; PCAP plus labeled Zeek conn logs; use individual scenarios"
+    },
+    "unsw": {
+      "title": "UNSW-NB15 official dataset",
+      "venue": "UNSW",
+      "year": 2015,
+      "url": "https://research.unsw.edu.au/projects/unsw-nb15-dataset",
+      "evidence": "100 GB PCAP; UNSW-NB15_GT.csv and LIST_EVENTS; flow join required"
+    },
+    "ton": {
+      "title": "TON_IoT official datasets",
+      "venue": "UNSW",
+      "year": 2020,
+      "url": "https://research.unsw.edu.au/projects/toniot-datasets",
+      "evidence": "Network PCAP plus Zeek logs/CSV; distinguish network from telemetry/OS"
+    },
+    "iot2023": {
+      "title": "CICIoT2023 official dataset",
+      "venue": "UNB CIC",
+      "year": 2023,
+      "url": "https://www.unb.ca/cic/datasets/iotdataset-2023.html",
+      "evidence": "PCAP and extracted CSV; 33 attacks/7 groups/105 devices; per-flow label reconstruction needs validation"
+    },
+    "ctu13": {
+      "title": "CTU-13 official dataset",
+      "venue": "Stratosphere Laboratory",
+      "year": 2011,
+      "url": "https://www.stratosphereips.org/datasets-ctu13",
+      "evidence": "Full mixed PCAP is not released; only botnet PCAP, all-traffic bidirectional labeled NetFlow"
+    },
+    "netfound": {
+      "title": "netFound: Principled Design for Network Foundation Models",
+      "venue": "arXiv v5 / implementation v2",
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2310.17025v5",
+      "evidence": "Frozen header/metadata encoder, excludes IP and payload; repo b3ab5a3, HF e27221d"
+    },
+    "etbert": {
+      "title": "ET-BERT: A Contextualized Datagram Representation with Pre-training Transformers for Encrypted Traffic Classification",
+      "venue": "The Web Conference (WWW)",
+      "year": 2022,
+      "url": "https://arxiv.org/abs/2202.06335",
+      "evidence": "Datagram byte representations with Transformer; https://github.com/linwhitehat/ET-BERT"
+    },
+    "netmamba": {
+      "title": "NetMamba: Efficient Network Traffic Classification via Pre-training Unidirectional Mamba",
+      "venue": "IEEE ICNP",
+      "year": 2024,
+      "url": "https://github.com/wangtz19/NetMamba",
+      "evidence": "Byte-sequence representation with state-space model; ICNP 2024 implementation, distinct from NetMamba+ 2026"
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "description": "CNS2022 author rules for Tuesday 2017-07-04; timestamps UTC. Outside the documented attack conditions remains unresolved. Sessionization differs from corrected CICFlowMeter, so correspondence still requires audit.",
+  "rules": [
+    {
+      "id": "ftp_setup",
+      "label": "FTP-Patator_Attempted_Setup",
+      "src_ip": "172.16.0.1",
+      "dst_ip": "192.168.10.50",
+      "src_port": 52108,
+      "dst_port": 21,
+      "protocol": 6,
+      "start": "1499170672.838272",
+      "end": "1499174416.931403",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html"
+    },
+    {
+      "id": "ftp_empty",
+      "label": "FTP-Patator_Attempted_NoPayload",
+      "src_ip": "172.16.0.1",
+      "dst_ip": "192.168.10.50",
+      "exclude_src_ports": [
+        52108
+      ],
+      "dst_port": 21,
+      "protocol": 6,
+      "start": "1499170672.838272",
+      "end": "1499174416.931403",
+      "max_fwd_payload_bytes": 0,
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html"
+    },
+    {
+      "id": "ftp_payload",
+      "label": "FTP-Patator",
+      "src_ip": "172.16.0.1",
+      "dst_ip": "192.168.10.50",
+      "exclude_src_ports": [
+        52108
+      ],
+      "dst_port": 21,
+      "protocol": 6,
+      "start": "1499170672.838272",
+      "end": "1499174416.931403",
+      "min_fwd_payload_bytes": 1,
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html"
+    },
+    {
+      "id": "ssh_empty",
+      "label": "SSH-Patator_Attempted_NoPayload",
+      "src_ip": "172.16.0.1",
+      "dst_ip": "192.168.10.50",
+      "dst_port": 22,
+      "protocol": 6,
+      "start": "1499188141.049616",
+      "end": "1499195059.018486",
+      "max_fwd_payload_bytes": 0,
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html"
+    },
+    {
+      "id": "ssh_short",
+      "label": "SSH-Patator_Attempted_NoMaliciousPayload",
+      "src_ip": "172.16.0.1",
+      "dst_ip": "192.168.10.50",
+      "dst_port": 22,
+      "protocol": 6,
+      "start": "1499188141.049616",
+      "end": "1499195059.018486",
+      "min_fwd_payload_bytes": 1,
+      "max_fwd_payload_bytes": 32,
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html"
+    },
+    {
+      "id": "ssh_payload",
+      "label": "SSH-Patator",
+      "src_ip": "172.16.0.1",
+      "dst_ip": "192.168.10.50",
+      "dst_port": 22,
+      "protocol": 6,
+      "start": "1499188141.049616",
+      "end": "1499195059.018486",
+      "min_fwd_payload_bytes": 33,
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html"
+    }
+  ],
+  "attempted_policy": "benign",
+  "label_policy_source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+}

@@ -1,0 +1,111 @@
+% !TeX root = 20261029_exp92.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\usepackage{tabularx}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\hypersetup{pdftitle={EXP92: CIC 결함 근거와 PCAP 기반 학습 벡터 재구축}}
+\begin{document}
+\reporttitle{2026-10-29}{EXP92: CIC 결함 근거와\\PCAP 기반 학습 벡터 재구축}
+\recordnote{CIC2018 실제 PCAP의 4,718,327개 패킷을 처리하고, 1,182개 flow에 공개 netFound-v2-small을 적용해 512차원 임베딩과 64차원 PCA 벡터를 생성했다. 현재 채택하는 실행은 \path{20261029_210839_cic2018_verified_pcap_4d62ceac}이다. 이는 표현 생성 파이프라인의 구현 검증이며 TabPFN·XGB 분류 실험이나 새 제안 모델의 성능 검증이 아니다. CIC2017은 설정과 라벨 규칙을 준비했으며 실제 PCAP 실행은 아직 수행하지 않았다. 한국어 발표자료 11장은 PPTX와 PDF로 보관하고, 본 보고서 PDF는 임시 컴파일로만 검증한다.}
+
+\section{연구 목표와 근거의 범위}
+\textbf{새 표현의 목표는 소수 라벨 공격 분류를 개선하는 것이며, 데이터의 난도를 인위적으로 높이는 것이 아니다.} 기존 EXP89의 정제 전·정상 미포함 관측에서는 일부 공격이 적은 라벨에도 높은 F1에 도달했지만, 모든 클래스가 쉬웠던 것은 아니다. 클래스당 20개에서 XGB/TabPFN의 DDoS F1은 99.21/99.27\%, Web attacks는 12.16/10.74\%였다. 높은 점수와 동일 특징·상이 라벨 문제는 서로 다른 현상이므로, 조기 포화·표현 정보 부족·잘못된 라벨을 각각 점검한다. 발표자료에는 사용자가 요청한 대로 CSV 버전 구분을 넣지 않았으며, 과거 EXP89 수치를 새로운 PCAP 실험 결과로 제시하지 않는다.
+
+\textbf{원본 패킷 추적은 충돌의 원인을 검증할 수 있게 한다.} 같은 관측 벡터 $x$에 다른 라벨이 있으면 단일 flow만 보는 결정적 분류기는 두 정답을 동시에 맞힐 수 없다. 그러나 이 사실만으로 라벨이 틀렸다고 결론 내릴 수는 없으며, 통계 요약으로 정보가 사라졌거나 라벨이 관측 범위 밖의 공격 의도를 나타냈을 수도 있다. 새 임베딩은 더 많은 패턴을 표현하려는 수단이고, 라벨의 타당성 검증은 별도 작업이다. Packet Capture (PCAP) 파일은 오프라인으로 읽을 수 있으므로 실제 네트워크로 재전송하는 tcpreplay는 이번 파이프라인에 필요하지 않다.
+
+\section{동일 특징·상이 라벨과 CIC 결함을 뒷받침하는 문헌}
+\subsection{Engelen 외, IEEE SPW / WTMC 2021}
+\textbf{TCP flow의 조기 종료는 의미 없는 종료 패킷 flow를 만들었다.} \href{https://intrusion-detection.distrinet-research.be/WTMC2021/Resources/wtmc2021_Engelen_Troubleshooting.pdf}{Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study}는 첫 Finish (FIN) 패킷에서 종료하는 처리, 이후 ACK·FIN 잔여 패킷의 별도 flow 생성, Reset (RST) 무시, 방향 변화와 라벨 문제를 분석했다. 시간·호스트 조건만으로 공격 라벨을 부여하면 실제 공격 내용이 없는 연결도 포함될 수 있다고 지적했다.
+\paragraph{Discussion.} 이 연구는 충돌을 유발할 수 있는 구체적인 데이터 생성 과정을 설명했던 직접 근거다. 현재 보유 특징의 모든 정확한 중복을 같은 버그로 설명하지 않으며, 이번 구현은 첫 FIN에서 끊지 않고 RST·양방향 종료·새 SYN을 반영하고 원 패킷 위치를 보존한다.
+
+\subsection{Liu 외, IEEE CNS 2022 및 저자 수정 문서}
+\textbf{CIC2017·2018의 라벨 오류는 공격 수행 단계까지 확인해야 했다.} \href{https://intrusion-detection.distrinet-research.be/CNS2022/index.html}{Error Prevalence in NIDS datasets: A Case Study on CIC-IDS-2017 and CSE-CIC-IDS-2018}는 생성·특징·문서·라벨 오류와 교정 자료를 공개했다. 저자들의 \href{https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html}{CIC2018 설명}에 따르면 2018년 2월 14일 FTP 대상 포트는 닫혀 있었고 SYN에 RST/ACK가 응답했으므로 실제 자격증명 brute force가 진행되지 않았다. 저자들은 이를 Attempted로 구분했고, 2023년에도 일부 라벨 규칙을 수정했다.
+\paragraph{Discussion.} 시간 구간에 해당한다는 사실과 공격 내용이 관측된다는 사실을 구별한다. \href{https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html}{저자 사용 지침}은 Attempted 세부 유형을 독립 학습 클래스로 쓰지 말고, 과제에 맞춰 정상 또는 원 공격으로 매핑하도록 안내했다. 이번 파일럿은 권고된 정상 매핑을 명시적으로 사용하고 세부 유형은 주석으로 보존하며, 미매칭 자료에는 정상 라벨을 부여하지 않는다.
+
+\subsection{Rosay 외, ICISSP 2022}
+\textbf{잘못된 세션 종료와 특징 계산은 서로 다른 라벨의 유사 flow를 만들었다.} \href{https://www.scitepress.org/Papers/2022/107740/107740.pdf}{Network Intrusion Detection: A Comprehensive Analysis of CIC-IDS2017}는 특징 계산, 프로토콜 판별, 세션 종료와 라벨을 분석하고 LycoSTand를 제시했다. 특히 RST를 무시하면 이후 같은 식별자의 통신이 이전 flow에 합쳐질 수 있다고 설명했다.
+\paragraph{Discussion.} 원문이 보고했던 것은 유사 flow이므로, 이를 모든 선택 특징이 수치적으로 완전히 같았다는 증거로 확대하지 않는다. 새 파이프라인의 동일 벡터 감사는 원 패킷과 라벨 근거를 연결하며, 기존 통계 특징과의 비교도 같은 flow 집합에서 수행해야 한다.
+
+\subsection{Xie 외, Computers \& Security 121, 2022}
+\textbf{같은 특징에 다른 라벨이 연결되는 현상은 다른 보안 데이터에서도 직접 보고됐다.} \href{https://arxiv.org/abs/2310.10660}{Analysis and Detection against Network Attacks in the Overlapping Phenomenon of Behavior Attribute}는 UNSW-NB15와 CCCS-CIC-AndMal-2020에서 특징 중첩을 분석했다. DOI는 \href{https://doi.org/10.1016/j.cose.2022.102867}{10.1016/j.cose.2022.102867}이며, 게재 연도는 2022년이고 arXiv 등록은 2023년이었다.
+\paragraph{Discussion.} 이 연구는 현상의 존재를 뒷받침하지만 CIC2017·2018의 원인을 직접 입증하지 않았다. 현재 분류 과제에서 여러 라벨이 모두 참인지, 잘못된 라벨인지부터 확인해야 하므로 모든 충돌을 자동으로 multi-label 정답으로 바꾸지 않는다.
+
+\subsection{Cantone 외, IEEE Access 2024}
+\textbf{동일 데이터 안의 높은 점수는 새로운 데이터로의 일반화를 보장하지 않았다.} \href{https://iris.unicas.it/handle/11580/110014}{Machine Learning in Network Intrusion Detection: A Cross-Dataset Generalization Study}는 CIC2017·2018과 LycoS 교정 자료에서 데이터 간 전이를 분석했다. 최종 게재 DOI는 \href{https://doi.org/10.1109/ACCESS.2024.3472907}{10.1109/ACCESS.2024.3472907}이다.
+\paragraph{Discussion.} 이 연구는 현재 점수 포화를 일반화 성능과 구별할 근거이며, exact-duplicate 원인이나 netFound의 우위를 입증한 근거는 아니다. 후속 실험에는 날짜·호스트 또는 데이터 간 분리를 추가하되, 이번 단일 호스트 파일럿의 성공과 구별한다.
+
+\section{우선 데이터와 추가 PCAP 후보}
+\textbf{CIC2017·2018을 우선하고, 추가 후보는 PCAP과 라벨을 다시 연결할 수 있는지로 선택한다.} CIC2017은 \href{https://www.unb.ca/cic/datasets/ids-2017.html}{공식 자료}의 PCAP·라벨 CSV·공격 일정을 제공했고, CIC2018은 \href{https://registry.opendata.aws/cse-cic-ids2018/}{공개 S3}에 호스트별 캡처를 묶어 제공했다. 데이터셋 이름이나 CSV 제공 사실만으로 새 패킷 표현을 만들 수 있다고 판단하지 않는다.
+\begin{tabularx}{\linewidth}{p{.15\linewidth}YY}
+\toprule 후보 & 공개 자료 & 적용 판단\\\midrule
+\href{https://www.stratosphereips.org/datasets-iot23}{IoT-23} & PCAP와 라벨된 Zeek conn.log, 개별 시나리오 다운로드 & 작은 시나리오부터 시각·통신 키 연결을 검증할 후속 후보\\
+\href{https://research.unsw.edu.au/projects/unsw-nb15-dataset}{UNSW-NB15} & 100GB PCAP, GT CSV와 공격 이벤트 표 & 원시 통신과 ground truth의 시간·5-tuple 대응 검증\\
+\href{https://research.unsw.edu.au/projects/toniot-datasets}{TON\_IoT} & 네트워크 PCAP, Zeek 로그와 CSV & 센서·OS 모달리티와 네트워크 자료 구별\\
+\href{https://www.unb.ca/cic/datasets/iotdataset-2023.html}{CICIoT2023} & 공격별 PCAP, 특징 CSV와 처리 코드 & 캡처 이름만으로 모든 flow의 공격 라벨을 추정하지 않음\\
+\href{https://www.stratosphereips.org/datasets-ctu13}{CTU-13} & Botnet-only PCAP, 전체 트래픽의 라벨된 양방향 NetFlow & 정상·배경을 포함한 전체 PCAP은 비공개여서 정상 포함 분류의 우선 후보에서 제외\\
+\bottomrule
+\end{tabularx}
+\textbf{추가 후보의 제공 자료는 공식 출처에서 확인했으나 다운로드·라벨 연결을 모두 실행한 것은 아니다.} IoT-23은 우선 작은 시나리오 단위로 연결성과 비용을 검증한다. CIC2017은 화요일 FTP/SSH 규칙과 설정을 준비했으며, 모든 날짜·공격의 교정 규칙을 구현했다고 주장하지 않는다.
+
+\section{구현 구조와 모델 범위}
+\textbf{구현한 경로는 PCAP → 양방향 flow·라벨 → 그룹 분할 → 고정 netFound → 학습 자료만으로 PCA → NPZ/CSV이다.} 코드 진입점은 \path{scripts/v7/exp92/run_pipeline.py}이고, \path{flows.py}, \path{labels.py}, \path{netfound_encoder.py}로 단계별 책임을 나눈다. 기존 연구 버전 v7 안에 EXP92를 등록했으며 새 연구 버전을 만들지 않았다. 아래 절차는 모델 가중치 fine-tuning이나 앙상블 학습을 수행하지 않는다.
+
+\begin{enumerate}[leftmargin=*,itemsep=3pt]
+\item \textbf{패킷과 flow.} PCAP/PCAPNG의 IPv4 TCP·UDP·ICMP를 읽는다. 동일 양방향 통신 키와 120초 경계, 새로운 SYN, RST 및 양쪽 FIN 이후 ACK를 반영하며, 1패킷 공격 시도도 유지한다. 순서 뒤바뀜은 설정된 1초 창 안에서 재정렬하고 초과하면 중단한다. 비IPv4·단편·해석 실패·종료 ACK 잔여분의 수를 남긴다.
+\item \textbf{라벨.} UTC 시간 구간, 주소·포트·프로토콜, 필요한 경우 방향별 전체 payload 길이를 JSON 규칙과 대조한다. 입력을 양방향으로 매칭하되 공격자 방향의 payload 조건을 적용한다. 구간 경계와 충돌·미매칭은 확정 라벨에서 제외하고 근거·상태를 보존한다. Attempted 주석은 정상/원 공격/제외 정책과 분리한다.
+\item \textbf{분할과 표본.} 날짜·통신 그룹 namespace와 양방향 5-tuple로 그룹을 만들고 seed 43의 결정적 hash로 학습/검증/시험을 먼저 분리한다. 그 후 파일럿에서 주석 종류·분할별 최대 128개를 reservoir sampling한다. 같은 통신 키를 재사용한 여러 세션은 보수적으로 같은 그룹에 둔다. 표본 제한을 0으로 지정하면 준비 단계가 전량을 기록하지만 최종 PCA에는 학습 임베딩 메모리가 필요하다.
+\item \textbf{인코더.} \href{https://github.com/SNL-UCSB/netFound}{공식 netFound} commit \path{b3ab5a3aa72640cc725ef207fb0145b039a57d35}와 \href{https://huggingface.co/snlucsb/netFound-small}{Small checkpoint} revision \path{e27221dfe97994ff880e892a32901fdd233817c5}를 고정한다. 학습된 53,383,495개 파라미터는 동결하며, 체크포인트의 누락·불일치 키가 하나라도 있으면 중단한다. 패킷 헤더의 토큰 순서·상대 TCP 번호·방향별 burst 처리와 최대 6패킷/12burst는 고정한 공식 처리와 맞췄다.
+\item \textbf{집계와 PCA.} 유효 토큰의 평균으로 512차원 벡터를 만든다. padding을 평균에 포함하지 않아 배치 구성에 따른 벡터 변화를 방지한다. Principal Component Analysis (PCA)는 학습 자료에만 적합하고 같은 변환을 모든 분할에 적용한다. 식별자·주소·절대시각·라벨은 특징 열에 넣지 않는다.
+\end{enumerate}
+
+\textbf{netFound-v2는 payload를 사용하지 않으므로 내용 정보가 필요한 공격에서의 효과를 별도로 확인해야 한다.} \href{https://arxiv.org/abs/2310.17025v5}{2026년 v5 논문과 v2 코드}를 기준으로 사용했고 이전 netFound v1 체크포인트와 섞지 않았다. \href{https://arxiv.org/abs/2202.06335}{ET-BERT, WWW 2022}의 datagram 바이트 표현과 \href{https://github.com/wangtz19/NetMamba}{NetMamba, ICNP 2024}의 헤더·payload 시퀀스는 다음 비교 후보이며 이번에는 실행하지 않았다. 여기서 세 인코더를 결합한 앙상블을 이미 구현했다는 뜻은 아니다.
+
+\section{실제 실행과 독립 검증}
+\textbf{CIC2018의 공격 대상 호스트 캡처 하나로 전체 변환을 완료했다.} 공개 ZIP의 \path{pcap/UCAP172.31.69.25} member를 HTTP Range로 추출했고 ZIP CRC와 SHA256을 확인했다. ZIP 전체 39,913,353,098바이트 대신 약 419.5MB를 전송해 852,795,392바이트의 원본 PCAP을 확보했다. 현재 실행은 2026-10-29 21:08:39--21:09:40 KST에 진행됐고, 문서·슬라이드 작성과 추가 감사는 이후 수행했다.
+
+\begin{tabularx}{\linewidth}{lrrr}
+\toprule 집계 범위 & 학습 & 검증 & 시험\\\midrule
+전체 벡터 & 405 & 389 & 388\\
+정상 매핑 Attempted & 149 & 133 & 132\\
+SSH-BruteForce & 128 & 128 & 128\\
+미매칭·경계 미확정 & 128 & 128 & 128\\\bottomrule
+\end{tabularx}
+\textbf{파일럿 표본은 1,182개이며 자연 클래스 분포의 benchmark는 아니다.} 총 4,718,327패킷에서 289,531개 flow가 생성됐고, 규칙에 맞은 flow는 287,547개, 미매칭은 1,973개, 시간 경계는 10개, 불완전 캡처 종료는 1개였다. 비IPv4 3,174패킷과 종료 후 순수 ACK 367개를 별도 집계했으며, 원본 PCAP 마지막 레코드 1개가 307바이트만 남은 불완전 상태임을 독립 검사에서 확인했다. 표본의 798개는 감독학습용 라벨을 갖고 384개는 미확정이며, 미확정 자료를 정상으로 추정하지 않았다. 이 표의 정상은 저자의 Attempted 매핑 권고를 적용한 것으로, 일반 정상 활동 전체를 대표하지 않는다.
+
+\textbf{마지막 패킷의 불완전성은 직접 길이 검사로 복구했다.} 초기 dpkt reader는 짧은 마지막 패킷도 반환해 원본 레코드 수보다 1개 많은 패킷을 처리했다. classic PCAP 헤더의 captured length와 실제 읽은 길이를 비교하도록 수정하고, 불완전 레코드를 제외하며 종료 중인 flow는 미확정으로 유지했다. 이 수정 후 전체 파이프라인을 재실행했으며 파일럿 표본 수와 벡터는 변하지 않았지만 원본 감사 수치는 정정했다. 이전 두 실행은 기록으로만 보존하고 최종 실행을 슬라이드와 학습용 산출물의 근거로 사용한다.
+
+\textbf{PCA는 미라벨 자료를 포함한 학습 405행에만 적합했다.} 512차원에서 64차원으로 줄인 학습 자료 설명분산 비율 합은 약 99.975\%였다. 이 값은 분류 성능이나 희귀 공격의 정보 보존율이 아니다. 준비 55.95초, 모델 로딩을 포함한 인코딩 4.31초, PCA·출력 0.15초였고 다운로드·환경 설치·추가 감사 시간은 포함하지 않았다. 환경은 Python 3.13, PyTorch 2.11.0+cu130, Transformers 4.57.3, RTX 4090이었으며, 공식 저장소의 권장 torch 2.9.1과 달리 이 장치의 호환 CUDA 환경에서 검증했다.
+
+\textbf{초기 감사의 충돌은 임베딩 변경만으로 사라지지 않았다.} 첫 실행 \path{20261029_203801_cic2018_pcap_netfound_pilot_c71b47a7}은 Attempted 설명을 그대로 라벨 인덱스로 내보냈고, 같은 임베딩의 404행에 ClosedPort 370행과 Artefact 30행 및 미라벨 4행이 포함됐다. 이는 두 공격 의도가 같은 관측 패턴을 보일 수 있다는 구체적 예이며, 원래 공격 클래스 전체의 충돌을 재현한 결과로 확대하지 않는다. 이후 저자 사용 지침을 확인해 Attempted는 주석으로만 남기고 BENIGN으로 매핑한 현재 실행으로 수정했다. \textbf{따라서 학습 라벨 충돌 그룹 1→0은 라벨 정책의 효과이고 새 표현의 개선 성과가 아니다.}
+
+\textbf{그룹 분리와 특징 중복은 서로 다른 검사다.} 학습/검증/시험 간 통신 그룹 중복은 0이지만, 정확히 같은 임베딩이 둘 이상의 분할에 나온 그룹은 33개였다. 이 중 서로 다른 감사용 주석이 있는 그룹은 1개이고, 현재 감독학습 라벨의 충돌 그룹은 0개였다. 이 결과는 단순 그룹 분리가 반복되는 트래픽 패턴까지 없애지는 못함을 보여준다. 향후 분류 보고서에는 동일 캡처 내 반복 패턴과 날짜·호스트 간 일반화를 구별하고, 특징 중복을 제거할 경우에도 test 라벨을 본 뒤 선택적으로 지우지 않는다.
+
+\textbf{의미 있는 단위 검증 9개와 실제 벡터 독립 감사를 통과했다.} 검증은 첫 FIN에서 끊지 않기, RST와 재연결 분리, timeout 조각의 동일 그룹 유지, 마이크로초 시각·재정렬, 잘린 마지막 패킷 제외, 충돌·경계·미매칭 라벨, Attempted 주석과 학습 라벨의 분리, 공식 burst tokenizer와의 일치, 시험 입력 교란에 대한 PCA 불변성을 포함한다. 실제 출력에서는 flow ID 순서, NPZ 행 대응, PCA 수식 재계산, 분할별 감독학습 export의 미라벨 제외를 확인했다. 가장 짧은 flow와 긴 flow를 함께/따로 인코딩했을 때 최대 절대 차이는 $2.38\times10^{-6}$이었다. 이 검증은 구현의 일관성이며 IDS 분류 성능 검증을 대신하지 않는다.
+
+\section{다음 비교와 재실행}
+\textbf{표현과 라벨을 분리한 2×2 비교가 다음 실험이다.} 같은 원 패킷에 대응하는 공통 flow 집합에서 통계 특징/사전학습 임베딩과 기존 라벨/교정 라벨을 교차한다. 평가는 공통 기준 정답으로 비교하거나 두 라벨 기준의 결과를 함께 제시해 목표 정답 변경과 모델 개선을 구별한다. 정상 포함 분류를 주 평가로 하고 공격만의 결과를 보조로 제시하며, 클래스당 n=2·3·5·10·20의 동일 행과 seed를 사용한다. 클래스별·macro F1, 정상 오탐률, 희귀 공격, 미매칭·충돌률, 날짜·호스트 전이, 추출·추론 비용을 함께 확인한다.
+
+\textbf{소수 라벨 예산과 PCA의 미라벨 학습 풀은 구별한다.} 현재 PCA는 학습 구간의 전체 선택 특징을 사용한 train-pool 조건이다. 엄격히 n개 입력만 허용하는 비교에서는 PCA 적합 자료도 n개로 제한하거나 별도의 고정 외부 투영을 사용해야 한다. 현재 파일럿에서 단일 날짜·호스트와 SSH/Attempted만 처리했으므로, 일반 정상 활동과 다른 공격을 포함한 PCAP·라벨 범위 확장이 먼저 필요하다. IPv6·단편 재조립, 센서 간 중복 캡처와 전체 날짜 라벨의 검증도 확장 항목이며, ET-BERT·NetMamba는 이 공통 처리 계약 위에 추가한다.
+
+\textbf{다른 장비에서는 준비 스크립트가 공개 PCAP과 checkpoint까지 내려받는다.} 저장소 루트에서 아래 명령으로 실행한다. 기존 CUDA 호환 환경을 기준으로 격리 venv를 만들고 기존 TabPFN 패키지를 바꾸지 않으며, 현재 기본 Python이 GPU를 사용할 수 없으면 설치 전에 중단한다.
+\begin{Verbatim}[fontsize=\small,breaklines=true]
+# 이미 검증한 CUDA 호환 Python을 지정하는 경우
+PCAP_BASE_PYTHON=/home/jovyan/mspark/envs/exp91-cu124/bin/python \
+  bash scripts/v7/exp92/run_remote.sh
+
+# 현재 Python에서 CUDA가 정상 동작하는 경우
+bash scripts/v7/exp92/run_remote.sh
+\end{Verbatim}
+\textbf{CIC2017은 실제 PCAP을 지정한 뒤 같은 runner로 처리한다.} 기본 경로는 \path{data/pcap/cic2017/Tuesday-WorkingHours.pcap}이고 파일이 없으면 CSV로 대체하지 않고 명확히 중단한다. 다른 날짜는 \path{captures} 목록과 해당 날짜의 규칙을 추가하며, 현재 화요일 규칙을 전 날짜에 재사용하지 않는다.
+\begin{Verbatim}[fontsize=\small,breaklines=true]
+.envs/pcap-netfound/bin/python scripts/results_versions.py run \
+  --version v7 --experiment exp92 --scope tabpfn --label cic2017_pcap \
+  --protocol configs/experiments/exp92_cic2017_protocol.json -- \
+  .envs/pcap-netfound/bin/python scripts/v7/exp92/run_pipeline.py \
+  --config configs/experiments/exp92_cic2017_protocol.json \
+  --output '{run_dir}' --batch-size 16
+\end{Verbatim}
+\textbf{산출물은 학습용 배열과 감사 정보를 분리한다.} \path{dataset.npz}에는 X, y, split, flow\_id와 class\_names가 있고 미라벨 y는 -1이다. \path{train.npz}, \path{validation.npz}, \path{test.npz}는 라벨이 확정된 행만 담는다. \path{flows.jsonl}은 원 패킷 위치·주석·근거와 토큰, \path{embeddings.npy}는 PCA 전 표현, \path{pca.npz}는 적합 파라미터와 학습 flow ID를 보존한다. \path{vectors.csv}를 분류기에 넣을 때에도 flow ID·split·label·상태 열을 입력 특징에 포함하지 않는다.
+
+\textbf{대용량 자료와 독립 clone은 Git에 넣지 않는다.} PCAP·checkpoint는 \path{data/}, 공식 clone은 무시되는 \path{tabpfn/third_party/upstream/netFound/}, 환경은 \path{.envs/pcap-netfound/}에 둔다. 재생성 가능한 배열·벡터 CSV·flow JSONL은 무시하고, 코드·설정·작은 감사 JSON·발표자료·실험 기록을 공유한다. 문헌 원문과 공식 링크, 해시와 검증 요약은 \path{docs/lablog/evidence/20261029_pcap/}에 보존한다.
+\end{document}

@@ -129,3 +129,4 @@
 - 2026-10-28 · **EXP91** · 두 설계 기본형 코드·10개 단위 검증·실제 PFN 합성 smoke 완료; 학생 가중치 갱신·PFN 고정·전문가 채택·모델 저장/복원 확인, IDS 성능 미평가. [LaTeX](reports/20261028_exp91.tex)
 - 2026-10-29 · **EXP91** · 원격 실행 10/10조건·20평가 완료(04:36 KST), 혼동행렬 지표 재검산; 1안 공격 F1 6/10 우세·정상 오탐 10/10 증가, 2안 전문가 3/10 채택. 결과표·그래프·비용/한계/개선안 정리, 원격 kotex 누락 후 이 장치에서 임시 PDF 검증; 단일 seed 탐색 결과. [LaTeX](reports/20261029_exp91.tex)
 - 2026-10-29 · **SOTA 비교 준비** · TabDPT·LoCalPFN·BoostPFN·BETA·DistPFN·CURE 공식 clone 6개를 third_party/upstream에 격리·commit 고정; backbone/버전/context/환경/라벨 예산 검토, DistPFN-T 배열 오류 재현 및 수정 방향, 비교·실행 순서와 복원 명령 정리. GPU 모델 실행·IDS 성능 평가는 미수행. [LaTeX](reports/20261029_sota_review.tex)
+- 2026-10-29 · **EXP92** · CIC 결함 문헌 5편·PCAP 후보 검토, 한국어 슬라이드 11장; CIC2018 원본 471만 패킷→1,182 flow의 netFound 512차원·학습 PCA 64차원 생성, Attempted 주석/학습 라벨 분리·잘린 마지막 패킷 처리·9개 단위 검증·독립 감사 완료. 분류 성능 미평가; CIC2017 설정 준비. [LaTeX](reports/20261029_exp92.tex)

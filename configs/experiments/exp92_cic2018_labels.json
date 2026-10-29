@@ -1,0 +1,52 @@
+{
+  "description": "CNS2022 author-documented rules, restricted to 2018-02-14 victim capture. Uncovered traffic is unresolved, never assumed benign. Attempted categories remain distinct. UTC epoch seconds are explicit.",
+  "rules": [
+    {
+      "id": "ftp_closed",
+      "label": "FTP-BruteForce_Attempted_ClosedPort",
+      "src_ip": "18.221.219.4",
+      "dst_ip": "172.31.69.25",
+      "protocol": 6,
+      "start": "1518618806",
+      "end": "1518624631",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html"
+    },
+    {
+      "id": "ftp_artefact",
+      "label": "FTP-BruteForce_Attempted_Artefact",
+      "src_ip": "13.58.98.64",
+      "dst_ip": "172.31.69.25",
+      "dst_port": 21,
+      "protocol": 6,
+      "start": "1518631281.199541",
+      "end": "1518631281.502585",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html"
+    },
+    {
+      "id": "ssh_payload",
+      "label": "SSH-BruteForce",
+      "src_ip": "13.58.98.64",
+      "dst_ip": "172.31.69.25",
+      "dst_port": 22,
+      "protocol": 6,
+      "start": "1518631310",
+      "end": "1518636750",
+      "min_fwd_payload_bytes": 1,
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html"
+    },
+    {
+      "id": "ssh_empty",
+      "label": "SSH-BruteForce_Attempted_NoPayload",
+      "src_ip": "13.58.98.64",
+      "dst_ip": "172.31.69.25",
+      "dst_port": 22,
+      "protocol": 6,
+      "start": "1518631310",
+      "end": "1518636750",
+      "max_fwd_payload_bytes": 0,
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html"
+    }
+  ],
+  "attempted_policy": "benign",
+  "label_policy_source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+}
