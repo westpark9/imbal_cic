@@ -1,0 +1,83 @@
+CICFlowMeter CSV is the standard input for IDS classification
+Prior experiments: XGB · TabPFN · SOTA · proposed models → CICFlowMeter CSV vectors
+Most IDS tabular-classification studies also train and evaluate on the supplied flow-statistics CSV
+Input to prior classifiers                          CIC-IDS2017: How PCAP becomes CSV
+                 One CSV row                         Testbed                  PCAP             CICFlowMeter                       CSV
+     [duration, packets, length, IAT, flags, …]      benign +               raw packets               flows + fixed              vector
+             → numeric vector + label                 attack                in time order                statistics              + label
+
+                                          Examples of fixed flow statistics in the CSV
+Each row treated as an independent sample
+                                           Flow duration Fwd. packets Packet interval
+                                                     first to last packet              packets sent               interval statistics
+
+                                                      A summary of predefined flow statistics, not the packet sequence itself
+Prior models use the supplied flow-statistics CSV                                                                       01 Existing CSV    1
+Two issues in CSV-based IDS classification
+      Issue 1 Early saturation in some attacks                                  Issue 2 Identical features, different labels
+        Head attacks such as DDoS and Bot                                      Rows with dozens of identical flow statistics
+     reach F1 in the 90% range with n = 2 to 20                                   can still have different recorded labels
+     → a high data ceiling before adding labels                                → one deterministic classifier cannot fit both
+
+
+
+
+Early saturation and feature–label contradictions require separate diagnosis                                      01 Existing CSV   2
+Some head attacks already have high F1 with few labels
+Macro F1 still changes beyond n = 20, but DDoS and Bot approach high F1 with few labels
+
+
+
+
+ EXP87 · attack-only training and evaluation · benign excluded · 5 seeds · fixed conflict-free test · n = 450 is the balanced-label-budget ceiling
+
+Macro F1 changes with n, while classwise saturation is uneven                                                                              02 Data ceiling   3
+Identical features, different classes in CIC2018 CSV
+Exact agreement on 78 common CICFlowMeter statistics, excluding timestamps, identifiers, addresses, ports, and labels
+   Dst Port   Protocol   Flow Duration    Tot Fwd    Tot Bwd      … 69 fields …   TotLen Bwd    Flow Byts/s   Flow Pkts/s   Idle Min           NF-v3
+                                            Pkts       Pkts                          Pkts                                                      class
+     21          6            2               1          1        … 69 fields …        0            0          1000000         0                dos
+     21          6            2              1          1         … 69 fields …       0             0          1000000         0                 bf
+
+ The two rows above: bf · dos · all other 69 fields are also identical
+
+
+
+
+ Audit of all 16,232,943 raw CSV rows · aggregated to seven NF-v3 classes · bar endpoint: different-class rows
+
+
+Literal rows share all 78 common flow statistics but belong to different NF-v3 classes                                                 03 Label conflicts   4
+A PCAP-based CIC2018 representation pipeline
+Generate representations from packet sequences, then recheck both issues under the same protocol
+
+  PCAP + labels                Flow linkage                   Encoder                    Projection               New vectors
+     packet, time,             traceable traffic          packet-sequence                fit PCA on the            XGB + TabPFN
+    label evidence                and labels                embedding                  training split only        same evaluation
+
+                   Representation audit                                                Classification evaluation
+           identical embeddings with different labels                           baselines, few-shot curves, and classwise F1
+             and the PCAP evidence for each label                               to test whether early head saturation remains
+
+ Candidate encoders netFound (arXiv, 2026) · ET-BERT (WWW, 2022) · NetMamba (ICNP, 2024)
+ CICFlowMeter uses specified statistics; encoders learn from packet order, timing, and headers
+
+Keep encoders interchangeable and repeat representation audits with matched classification evaluation         04 PCAP reconstruction   5
+Summary
+      1 Existing CSV input                         2 Observed data issues                            3 Next validation
+       XGB · TabPFN · SOTA                               early head saturation
+                                                  identical features, different classes
+                                                                                                      new vectors from PCAP
+    CICFlowMeter flow statistics                                                                    repeat audits and baselines
+          row-level inputs                                average score alone                         under the same protocol
+                                                     does not establish difficulty
+
+
+
+
+             Goal Test whether new representations reduce the data ceiling and feature–label conflicts
+         If reduced, repeat TabPFN and XGB comparisons on the new vectors; if retained, examine PCAP label linkage further
+
+
+Recheck both CSV observations in a new PCAP-based representation                                                    05 Summary    6
+
