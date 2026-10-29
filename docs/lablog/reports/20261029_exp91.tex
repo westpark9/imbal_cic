@@ -93,4 +93,47 @@ CUDA 12.4 지원 드라이버의 선택 결과는 PyTorch 2.6.0+cu124이며 공�
 원격 장비의 수정 환경 설치와 모델 실행 완료는 이 로컬 검증에 포함되지 않으며 재실행 후 확인해야 한다.
 
 \sourcepath{docs/lablog/evidence/20261029/exp91_remote_failure_diagnostics.json}
+
+% EXP91_RUN: 20261028_161815_remote_both_s43_fixedenv_ecd34e66
+\subsection{실행 20261028\_\allowbreak{}161815\_\allowbreak{}remote\_\allowbreak{}both\_\allowbreak{}s43\_\allowbreak{}fixedenv\_\allowbreak{}ecd34e66}
+두 제안 분류기의 실제 자료 실행을 기록한다. 완료 조건은 10/\allowbreak{}10개이며 실행 모델은 both, seed는 [43], 공격별 라벨 예산은 [2, 3, 5, 10, 20]이다. 정상 라벨은 750개, 비라벨 학습 행은 10000개다. 실제 실행 경로는 tabpfn/\allowbreak{}results/\allowbreak{}v7/\allowbreak{}exp91/\allowbreak{}20261028\_\allowbreak{}161815\_\allowbreak{}remote\_\allowbreak{}both\_\allowbreak{}s43\_\allowbreak{}fixedenv\_\allowbreak{}ecd34e66이다.
+
+원래 시나리오별 시간 분할과 정제 전 특징을 사용한다. 각 모델은 정상 포함 전체 원래 test를 평가한다. 기존에 검토한 분할이며 train/\allowbreak{}비라벨과 test 사이의 동일 특징 중복을 유지하고 그 수를 감사 파일에 기록한다. 따라서 이 결과를 독립 분할 검증이나 문헌 대비 우위로 해석하지 않는다.
+
+\begingroup
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.32384\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.12764\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.15295\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13397\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.12764\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.13397\linewidth-2\tabcolsep\relax}}
+\toprule
+조건 & 모델 & 공격 Macro-F1 & 정상 오탐률 & 학습 초 & 추론 초 \\ \midrule
+\endfirsthead
+조건 & 모델 & 공격 Macro-F1 & 정상 오탐률 & 학습 초 & 추론 초 \\ \midrule
+\endhead
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n2\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.442659 & 0.005908 & 32.642 & 5.200 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n2\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.412322 & 0.000691 & 0.867 & 1087.175 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n2\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.246397 & 0.024142 & 71.098 & 10.729 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n2\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.168799 & 0.001189 & 1.118 & 929.758 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n3\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.610190 & 0.009326 & 32.869 & 5.122 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n3\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.554336 & 0.000662 & 12.880 & 596.751 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n3\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.339983 & 0.029434 & 32.555 & 7.447 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n3\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.368991 & 0.023559 & 25.041 & 830.413 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n5\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.662905 & 0.007442 & 32.364 & 5.258 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n5\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.675158 & 0.000706 & 14.113 & 607.137 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n5\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.427048 & 0.051074 & 32.139 & 7.520 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n5\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.425543 & 0.043738 & 45.454 & 829.157 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n10\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.651179 & 0.011648 & 32.506 & 5.130 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n10\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.496802 & 0.000787 & 32.876 & 1197.744 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n10\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.497348 & 0.085945 & 32.171 & 7.418 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n10\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.451340 & 0.072423 & 60.489 & 1655.424 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n20\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.632698 & 0.041435 & 32.679 & 5.056 \\
+{}cic2018\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n20\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.695031 & 0.000724 & 31.710 & 618.344 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n20\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & a & 0.489762 & 0.099168 & 31.817 & 7.444 \\
+{}toniot\_\allowbreak{}original\_\allowbreak{}fixed750\_\allowbreak{}n20\_\allowbreak{}s43\_\allowbreak{}u10000\_\allowbreak{}full & b & 0.492375 & 0.082536 & 87.111 & 2517.011 \\
+\bottomrule
+\end{longtable}
+\endgroup
+실패 상태는 []이며 각 조건의 stdout.log에서 원인을 확인한다. 실패 조건은 동일한 설정으로 재개하고, 설정이나 소스를 수정할 때에는 새 실행으로 등록한다. 후속 분석은 클래스별 오류와 전문가 채택 여부, 정상 오탐, 같은 정보 예산의 기반 모델 및 절제 대조를 확인한다.
+
+출처: tabpfn/\allowbreak{}results/\allowbreak{}v7/\allowbreak{}exp91/\allowbreak{}20261028\_\allowbreak{}161815\_\allowbreak{}remote\_\allowbreak{}both\_\allowbreak{}s43\_\allowbreak{}fixedenv\_\allowbreak{}ecd34e66/\allowbreak{}summary.json 및 각 jobs/\allowbreak{} 하위 config.json·input\_\allowbreak{}manifest.json·감사 파일.
+
+
 \end{document}

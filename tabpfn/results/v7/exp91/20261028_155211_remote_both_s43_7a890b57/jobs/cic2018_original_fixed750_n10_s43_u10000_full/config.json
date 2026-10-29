@@ -1,0 +1,109 @@
+{
+  "started_at": "2026-10-29T00:54:19.722471+09:00",
+  "research_version": "v7",
+  "experiment_id": "exp91",
+  "purpose": "explicit_input_experiment",
+  "input_path": "/home/jovyan/mspark/imbalcic/data/exp91/inputs/cic2018_original_fixed750_n10_s43_u10000_full.npz",
+  "input_sha256": "990fe89aeb92d81ab423eec888ef9d026bccad22125bd127910e4779d546fcda",
+  "checkpoint_sha256": "517c40ca21e0e1b1fa6629ded4b0412ffb7b2e577eb6cb96e5be5c487fadfb03",
+  "label_rows": 810,
+  "label_counts": {
+    "0": 750,
+    "1": 10,
+    "2": 10,
+    "3": 10,
+    "4": 10,
+    "5": 10,
+    "6": 10
+  },
+  "unlabelled_rows": 10000,
+  "test_rows": 4023114,
+  "train_test_feature_group_overlap": 3088,
+  "supplied_row_id_keys": [
+    "ids_l",
+    "ids_u",
+    "ids_test"
+  ],
+  "additional_validation_labels": 0,
+  "test_label_access": "Only metrics after both fit and predict; no parameter selection",
+  "student_config": {
+    "hidden": 128,
+    "embedding": 64,
+    "warmup_epochs": 10,
+    "rounds": 5,
+    "epochs_per_round": 3,
+    "batch_size": 256,
+    "predict_batch_size": 1024,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "mask_probability": 0.15,
+    "temperature": 0.2,
+    "teacher_strength": 1.0,
+    "geometry_strength": 1.0,
+    "assignment_entropy": 0.2,
+    "prior_strength": 0.1,
+    "assignment_steps": 100,
+    "unlabelled_strength": 1.0,
+    "reconstruction_strength": 0.2,
+    "confidence_floor": 0.0,
+    "prototype_mix": 0.5,
+    "prior_mix": 0.25,
+    "prior_momentum": 0.9,
+    "prior_max_ratio": 2.0,
+    "minimum_pseudo_mass": 1.0,
+    "seed": 43,
+    "device": "cuda:0",
+    "categorical_columns": [
+      0,
+      1
+    ]
+  },
+  "pair_config": {
+    "max_experts": 3,
+    "folds": 3,
+    "minimum_groups": 3,
+    "alphas": [
+      0.25,
+      0.5
+    ],
+    "caps": [
+      1.0,
+      2.0
+    ],
+    "minimum_improvement": 1e-06,
+    "allowed_benign_fp_increase": 0,
+    "require_fold_improvement": true,
+    "batch_size": 1024,
+    "seed": 43
+  },
+  "factory": {
+    "checkpoint": "/home/jovyan/mspark/imbalcic/tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+    "device": "cuda:0",
+    "n_estimators": 4,
+    "seed": 43,
+    "categorical_columns": [
+      0,
+      1
+    ]
+  },
+  "source_sha256": {
+    "pair_residual.py": "1d02b34f949f4f8d30b20771bb64cc4b1e45c24984eca0f1cf445d4adfec1764",
+    "test_models.py": "047cd2d224e21cf00aca3d47c836b53f9de07c3801b3a72af8717d1b32dfd773",
+    "run_designs.py": "feedc972cbfccd500515bd3f6a09e79626526af41e244468a73419417241d980",
+    "prepare_inputs.py": "538180254f5033cb87477bd74d7b2ad2b7b6fca51b12e15ab27b64918abe7c50",
+    "__init__.py": "0cf5b90432f42f35c539d2ac0081699023c1c7d1927dc1f15a7b08cf8b322cce",
+    "run_night.py": "40263970242a058c0de0b5f34359288b2e0549299035864faa1cfd564b2ca4cf",
+    "test_preparation.py": "09e9ec802a3be289701d30d05ce5102ae9380bfdd60a24b2722e346651313358",
+    "common.py": "f1b9aa7616bcf0da569e8e2978b98ef236a6e5645b9f36522976e0e798c87cc7",
+    "teacher_student.py": "cf255a528728b78a1b9819e41fb5ea9d4d175d7714ab53aa5bb8ec82c6d33ca8"
+  },
+  "python": "3.14.7 | packaged by Anaconda, Inc. | (main, Aug 14 2026, 10:21:40) [GCC 14.3.0]",
+  "packages": {
+    "torch": "2.14.1",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3",
+    "tabpfn": "8.2.0"
+  }
+}

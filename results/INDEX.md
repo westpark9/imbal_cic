@@ -371,8 +371,6 @@ EXP64–68: context composition feasibility, prompt-tuned contexts, temporal-arr
 | exp67 | 2026-10-01 | results_present | exploratory | `tabpfn/results/v5/exp67/20261001_185937_4104555_toniot_exp67_prompt_tuned_s44` |
 | exp67 | 2026-10-01 | results_present | exploratory | `tabpfn/results/v5/exp67/20261001_190757_4106755_cic2018_exp67_prompt_tuned_s43` |
 | exp67 | 2026-10-01 | results_present | exploratory | `tabpfn/results/v5/exp67/20261001_191422_4108285_toniot_exp67_prompt_tuned_s43` |
-| exp68 | 2026-10-02 | partial_or_legacy | not_adopted | `tabpfn/results/v5/exp68/20261002_004752_4179324_toniot_exp68_temporal_arrival_s43` |
-| exp68 | 2026-10-02 | partial_or_legacy | not_adopted | `tabpfn/results/v5/exp68/20261002_004935_4180483_toniot_exp68_temporal_arrival_s43` |
 | exp68 | 2026-10-02 | results_present | not_adopted | `tabpfn/results/v5/exp68/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43` |
 
 ## v6 · sparse_label_context_detection
@@ -420,9 +418,24 @@ EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨
 | exp90 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp90/20261028_003407_shared_experts_smoke_82170add` |
 | exp90 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp90/20261028_003926_shared_experts_smoke_fixed_e61da6c3` |
 | exp90 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp90/20261028_004124_shared_context_experts_overnight_227bdd85` |
+| exp91 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp91/20261028_155211_remote_both_s43_7a890b57` |
+| exp91 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp91/20261028_155236_remote_both_s43_76461c31` |
+| exp91 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp91/20261028_155253_remote_both_s43_36c012d1` |
+| exp91 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp91/20261028_161815_remote_both_s43_fixedenv_ecd34e66` |
+| exp91 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp91/20261028_161911_remote_both_s43_fixedenv_ad9b6017` |
 | exp91 | 2026-10-28 | failed | unreviewed | `tabpfn/results/v7/exp91/20261028_194707_two_designs_real_pfn_smoke_1e824bfb` |
 | exp91 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp91/20261028_194827_two_designs_real_pfn_smoke_fixed_probe_00ac57e9` |
 | exp91 | 2026-10-28 | finished | unreviewed | `tabpfn/results/v7/exp91/20261028_195409_two_designs_portable_export_smoke_d0ff0379` |
 | exp91 | 2026-10-29 | finished | unreviewed | `tabpfn/results/v7/exp91/20261029_000418_prepare_portable_inputs_n20_s43_1b05a5c5` |
 | exp91 | 2026-10-29 | finished | unreviewed | `tabpfn/results/v7/exp91/20261029_003042_portable_no_history_regression_bdcecf7c` |
+
+## Unassigned legacy paths
+
+- `tabpfn/results/20260901_033336_nfv3_cic2018_exp24b_signscorer`
+- `tabpfn/results/20260901_063105_nfv3_cic2018_exp27_ctxcover`
+- `tabpfn/results/20260901_071409_nfv3_cic2018_exp28_equalmem`
+- `tabpfn/results/20260901_191613_nfv3_cic2018_exp25_dump`
+- `tabpfn/results/20260902_055231_nfv3_cic2018_exp25_dump`
+- `tabpfn/results/exp57_clean_splits`
+- `tabpfn/results/exp57_external_s42`
 

@@ -1,0 +1,16 @@
+{
+  "research_version": "v7",
+  "experiment_id": "exp91",
+  "protocol_revision": "exp91.1",
+  "authorization": "2026-10-28 사용자: BETA·CURE와 대표 그림을 모델 디자인 보고서에 추가하고 1·2안 코드를 작성",
+  "scope": "Implement both report designs; unit contracts and a small synthetic integration run with the real frozen TabPFN backend. No IDS benchmark sweep or performance superiority claim is authorized by this implementation check.",
+  "design_report": "docs/lablog/reports/20261028_model_designs.tex",
+  "entrypoint": "scripts/v7/exp91/run_designs.py",
+  "data_contract": "NPZ: X_l, y_l (integer class IDs), X_u (no labels), X_test; optional y_test read only for scoring, and disjoint ids_l/ids_u/ids_test. Categorical indices are explicit. Exact L/U feature overlap is rejected. Test overlap requires explicit historical-diagnostic flag.",
+  "proposal_a": "Frozen PFN teacher, train-only numeric/categorical preprocessing, residual MLP and masked reconstruction, soft teacher+distance assignment with column-KL, confidence-weighted student adaptation, anchored prototypes/prior. Student-only deployment.",
+  "proposal_b": "Full-label Global, exact-feature-group OOF, eligible pairs with >=3 unique groups per class, bounded log-odds residual, foldwise loss improvement and global benign-FP constraint, max 3 distinct experts. Missing Global-fold classes trigger complete fallback. No query retrieval or prior adjustment in the base implementation.",
+  "checkpoint": "tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+  "test_plan": "Analytic assignment stationarity; teacher-independent deployment and export roundtrip; categorical/missing handling; group isolation; no extra labels; n=2 exact fallback; pair correction bounds and selected-expert branch; real PFN fit/predict/save/load and backbone digest invariance.",
+  "implementation_status": "prototype; performance unvalidated",
+  "not_implemented_in_base": ["BETA or CURE reproduction", "query-local context retrieval", "prior-corrected normal subsampling", "cross-dataset source-development selector transfer", "unknown attack discovery", "automatic hyperparameter search"]
+}
