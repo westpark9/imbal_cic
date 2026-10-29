@@ -2,8 +2,8 @@
   "created_at": "2026-10-28T19:18:42+09:00",
   "document": {
     "path": "docs/lablog/reports/20261028_model_designs.tex",
-    "sha256": "c63215148e5f803b9eda2bd0a24b6b4d7d3d6899e615505e19a7163f404a3f10",
-    "bytes": 55757
+    "sha256": "1e118f3bcc9dec883320393e1a2dd2d49739a80b6f7f2672078770d9f28217e3",
+    "bytes": 61251
   },
   "status": "prototypes_implemented_synthetic_validation_only_ids_performance_not_evaluated",
   "research_version_unchanged": "v7",
@@ -34,7 +34,11 @@
         "path": "docs/lablog/evidence/references/20261028/tabdpt_2410.18164.pdf",
         "sha256": "f336b271ffe3df26319bbba823d7f74ba30594a7b97e7247b2eedab58e0ffb47",
         "bytes": 864580
-      }
+      },
+      "publication_url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/fc0e3f908a2116ba529ad0a1530a3675-Abstract-Conference.html",
+      "venue": "NeurIPS",
+      "publication_year": 2025,
+      "publication_verified_on": "2026-10-29"
     },
     {
       "name": "LoCalPFN",
@@ -187,10 +191,10 @@
   "validation": {
     "report": "docs/lablog/reports/20261028_model_designs.tex",
     "pdf_persisted": false,
-    "compiled_pdf_sha256": "482025d7a75878635f758a75c10fccf7d74d0b146b579acafc04a6f9f1d30d8a",
+    "compiled_pdf_sha256": "80414e52c6ce15dc9d5e47576318296fc18fd6e28cc2b21f01e81f2409aa7947",
     "missing_glyphs": 0,
     "overfull_boxes": 0,
-    "pages": 15,
+    "pages": 19,
     "undefined_citations": false,
     "font_warnings": [
       "LaTeX Font Warning: Font shape `TU/NotoSerifCJKKR(0)/m/it' undefined",
@@ -198,16 +202,24 @@
     ],
     "structure_check": {
       "passed": true,
-      "reports": 52,
+      "reports": 53,
       "issues": []
     },
-    "visual_review": "Four proposal diagrams and seven source excerpts reviewed; full 15-page contact sheet and source-comparison table at full page resolution reviewed. No clipping observed. Synthetic implementation verification is recorded separately.",
+    "visual_review": "2026-10-29: inspected comparison table pages 2-3 and all seven enlarged source diagrams on pages 4-8. BETA (page 6) and CURE (page 7) inspected at full-page resolution. No visual clipping, missing glyphs or overfull text. Four proposal diagrams remain unchanged.",
     "paragraphs": "Korean prose sentence-end check: <=6 per paragraph; list items treated independently.",
     "report_pdf_retention": "temporary compilation only; only input figure PDFs persist",
     "proposed_diagram_count": 4,
-    "source_figure_count": 7
+    "source_figure_count": 7,
+    "preview_pdf_sha256": "1502155d24bb4f9acbb565c5551f17ef329886d30b6edc695c8326cfc1399ed9",
+    "literature_page_range": [
+      2,
+      8
+    ],
+    "beta_page": 6,
+    "cure_page": 7,
+    "source_figure_placements": 14
   },
-  "updated_at": "2026-10-28T20:09:18.315899+09:00",
+  "updated_at": "2026-10-29T15:11:24.794324+09:00",
   "sota_figure_manifest": {
     "path": "docs/lablog/evidence/references/20261028/design_sota_figure_sources.json",
     "sha256": "3f1b5fbcd3e4f9ee8cdb294188dd0383f0571a79d9f4a5993aec28c6d224b114",
@@ -215,13 +227,13 @@
   },
   "sota_figure_generator": {
     "path": "docs/lablog/_support/20261028_model_designs/build_sota_assets.py",
-    "sha256": "399acb4ba2afc65f20ebbc322f05d48d89aa8d65d5fbd9dbfa6c690fee021468",
-    "bytes": 6428
+    "sha256": "ebeb593555d648c5df9c545a9276985921b1ca1541471b4d0abb19082584a42c",
+    "bytes": 7863
   },
   "sota_table": {
     "path": "docs/lablog/_support/20261028_model_designs/sota_table.tex",
-    "sha256": "f0eb5e0cc479cc5f9a8daf1a6f1ea9e7590cb6999c17939f8e58ce34e91dfbdd",
-    "bytes": 4496
+    "sha256": "44cc360e641b6f105a36c36c84d159439879d10659a1fdabf422f35e1c05ac0a",
+    "bytes": 4888
   },
   "source_figure_excerpts": [
     {
@@ -266,5 +278,88 @@
     "bytes": 6420
   },
   "current_validation_run": "tabpfn/results/v7/exp91/20261028_195409_two_designs_portable_export_smoke_d0ff0379",
-  "performance_evidence": "No CIC2018/ToN-IoT run or IDS superiority claim from EXP91; existing EXP89/90 observations remain separately attributed."
+  "performance_evidence": "This design document preserves the design/implementation status as of 2026-10-28. The later completed IDS experiment is recorded separately in docs/lablog/reports/20261029_exp91.tex; this literature revision does not adopt its results as verified model contributions.",
+  "status_as_of": "2026-10-28",
+  "subsequent_results_report": "docs/lablog/reports/20261029_exp91.tex",
+  "literature_revision": {
+    "date": "2026-10-29",
+    "requested_title_format": "ABB (venue, year): mechanism",
+    "groups": [
+      {
+        "type": 1,
+        "mechanism": "사전학습·가중치 적응",
+        "methods": [
+          "TabDPT",
+          "LoCalPFN"
+        ]
+      },
+      {
+        "type": 2,
+        "mechanism": "앙상블",
+        "methods": [
+          "BoostPFN",
+          "BETA"
+        ]
+      },
+      {
+        "type": 3,
+        "mechanism": "출력 확률 보정",
+        "methods": [
+          "DistPFN"
+        ]
+      },
+      {
+        "type": 4,
+        "mechanism": "context 관리",
+        "methods": [
+          "CURE"
+        ]
+      }
+    ],
+    "separate_last_ids_reference": "LotBoNC",
+    "classification_note": "Mechanisms may overlap; TabDPT is its own pretrained foundation model, CURE supports multiple backbones, and LotBoNC is not a TabPFN-family model.",
+    "figure_placement": "All seven verified vector source excerpts appear both in the grouped comparison table and beneath the corresponding method description.",
+    "new_experiment_executed": false,
+    "publication_checks": [
+      {
+        "method": "TabDPT",
+        "venue": "NeurIPS",
+        "year": 2025,
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/fc0e3f908a2116ba529ad0a1530a3675-Abstract-Conference.html",
+        "correction": "Use conference year 2025 instead of arXiv revision year 2026."
+      },
+      {
+        "method": "LoCalPFN",
+        "venue": "NeurIPS",
+        "year": 2024,
+        "url": "https://papers.nips.cc/paper_files/paper/2024/hash/c40daf14d7a6469e65116507c21faeb7-Abstract-Conference.html"
+      },
+      {
+        "method": "BoostPFN",
+        "venue": "AISTATS",
+        "year": 2025,
+        "url": "https://proceedings.mlr.press/v258/wang25d.html"
+      },
+      {
+        "method": "BETA",
+        "venue": "ICML",
+        "year": 2025,
+        "url": "https://proceedings.mlr.press/v267/liu25cn.html"
+      },
+      {
+        "method": "DistPFN",
+        "venue": "ICML",
+        "year": 2026,
+        "url": "https://github.com/seunghan96/DistPFN/blob/main/README.md",
+        "verification_scope": "Acceptance stated in author-maintained repository; no invented proceedings identifier."
+      },
+      {
+        "method": "CURE",
+        "venue": "FMSD@ICML Workshop",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2606.18677",
+        "verification_scope": "Author submission comments state workshop spotlight oral; distinct from main conference."
+      }
+    ]
+  }
 }

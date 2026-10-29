@@ -9,6 +9,7 @@
 \begin{document}
 \reporttitle{2026-10-28}{소수 라벨 공격 분류를 위한\\두 TabPFN 기반 모델 설계안}
 \recordnote{2026-10-28 개정: BETA·CURE를 추가해 7개 문헌 방법의 대표 그림 비교표를 구성하고, 두 후보의 실행 코드를 v7/EXP91에 작성했다. 단위 검증과 실제 TabPFN checkpoint를 사용한 합성자료의 학습·추론·저장/복원 검증을 수행했다. IDS 데이터에서의 성능 향상·신규성·비용 우위는 아직 검증하지 않았다. 수식과 흐름도는 원문 기제라고 밝힌 부분을 제외하면 자체 후보 구조이며, 연구 버전은 v7을 유지한다.}
+\recordnote{2026-10-29 문헌 구성 개정: 네 유형으로 재분류하고 각 방법 제목을 ``약어 (venue, year): 유형''으로 통일했다. BETA·CURE를 포함한 일곱 방법의 원문 그림을 개별 설명에도 확대 배치했으며, LotBoNC는 마지막의 별도 IDS 참고 연구로 옮겼다. 이 문서의 설계·구현 상태 서술은 10월 28일 기준이며, 이후 완료한 IDS 실험 결과는 \path{reports/20261029_exp91.tex}에 기록했다.}
 
 \section{핵심 제안: 다른 두 가지 방법으로 분류기를 바꾼다}
 \textbf{1안은 비라벨 트래픽을 이용해 별도 학생 분류기를 학습하고, 2안은 혼동 클래스 쌍의 상대 점수를 순차적으로 수정한다.} 목표는 TabPFN을 선택한 근거를 추가로 쌓는 것보다, 같은 소수 라벨에서 제안 구조가 분류 성능을 개선하는지를 검증하는 데 있다. Intrusion Detection System (IDS; 침입 탐지 시스템)의 정상 오탐과 희귀 공격 누락을 함께 평가한다. 기반 모델은 Tabular Prior-data Fitted Network (TabPFN)이며, 명칭은 원 논문의 표기를 따른다~\cite{tabpfn}. 두 안은 독립 후보이고 처음부터 하나의 큰 모델로 결합하지 않는다.
@@ -41,46 +42,88 @@ TabPFN 가중치 & 변경하지 않음 & 변경하지 않음\\
 \sourcepath{docs/lablog/reports/20261028_exp90.tex}
 
 \section{참고 문헌의 기제와 설계로 옮기는 범위}
-\textbf{문헌에서 가져오는 것은 모델 이름이 아니라 작동 기제다.} 아래 설명은 원 방법의 목적과 입력을 먼저 구분하고, 이번 후보의 대응 관계를 명시한다. 여기서 SOTA는 각 원문 과제에서 비교할 가치가 있는 강한 방법 후보를 뜻하며, 일곱 방법 모두가 현재 IDS 조건에서 최고 성능이라는 뜻은 아니다. 두 설계가 원 방법의 충실한 재현이라는 뜻도 아니다.
+\textbf{표 기반 모델의 개선 기제를 네 유형으로 나누고, LotBoNC는 별도의 IDS 참고 연구로 배치한다.} 유형 1은 TabDPT·LoCalPFN의 사전학습·가중치 적응, 유형 2는 BoostPFN·BETA의 앙상블, 유형 3은 DistPFN의 출력 확률 보정, 유형 4는 CURE의 context 관리다. 유형은 설명을 위한 주된 개선 지점을 뜻하며, BETA의 encoder 학습처럼 여러 기제가 겹칠 수 있다. TabDPT는 자체 사전학습 모델이고 CURE는 여러 기반 모델에 적용한 정책이므로 모두를 TabPFN 파생 모델이라고 부르지 않는다. 여기서 State of the Art (SOTA)는 비교 후보군을 가리키는 편의상 표기이며, 현재 IDS 조건에서 일곱 방법의 최고 성능이나 두 설계의 충실한 재현을 확인했다는 뜻은 아니다.
 
-\subsection{LotBoNC: 표현·대표점·비균등 의사라벨의 반복 갱신}
-\textbf{LotBoNC는 소수 라벨과 불균형 비라벨 자료를 함께 사용해 표현과 클래스 대표점을 갱신했다.} 원문은 패킷 payload에서 만든 바이트 token을 encoder에 입력하고, 마스킹 예측과 대조 학습으로 표현을 준비했다. 이후 추정한 클래스 비율을 고려한 최적수송 기반 배정으로 비라벨 표본의 soft label을 만들고 encoder·대표점·비율을 반복 갱신했다. 새 공격을 이름 없이 군집으로 발견하는 원래 과제와, 이번의 공격 이름별 $n$개 라벨을 받은 분류 과제는 다르다~\cite{lotbonc}.
-
-\paragraph{Discussion.}
-1안은 비균등 분포를 고려한 배정과 표현 갱신의 연결을 참고한다. 숫자 flow 특징을 쓰는 현재 환경에서는 원래 바이트 encoder를 그대로 쓸 수 없어 별도 수치형 encoder를 둔다. TabPFN 확률을 외부 교사 신호로 추가하고 참라벨로 클래스 이름을 고정하는 것이 후보 설계의 차이다. 이 차이가 유효한지는 교사 없는 대표점 학습과 단순 의사라벨 학습을 모두 넘어서는지로 판단한다.
-
-\subsection{TabDPT: 실제 데이터의 자기지도학습과 비라벨 활용}
-\textbf{TabDPT는 실제 표 데이터의 열 예측 과제와 검색을 결합한 사전학습을 수행했다.} 이는 평가 test를 미리 학습시켜도 된다는 의미가 아니다. 원문의 few-shot 절에는 클래스당 10개 라벨 외에 비라벨 학습 행의 예측을 이용해 context를 보강한 준지도 조건도 있었다. 따라서 해당 결과를 순수한 10-label-only 결과와 구별해야 한다~\cite{tabdpt}.
-
-\paragraph{Discussion.}
-1안은 실제 IDS 학습 분포를 자기지도 방식으로 활용한다는 방향을 참고한다. 다만 TabDPT 규모의 범용 기반 모델을 새로 사전학습하는 것이 아니라, 현재 분류 문제의 학생 encoder를 학습한다. 비라벨 자료를 더 받은 효과와 TabPFN 교사의 효과를 분리하기 위해 같은 비라벨 집합을 사용하는 대조군이 필요하다. TabDPT 자체는 기반 모델 대조이자 준지도 확장 대조로 사용할 수 있다.
-
-\subsection{LoCalPFN·BoostPFN·DistPFN: 경계·잔차·사전확률의 분리}
-\textbf{세 방법은 서로 다른 적응 지점을 다뤘다.} LoCalPFN은 가까운 사례 검색과 실제 가중치 fine-tuning을 결합했으며, 검색만 수행한 TabPFN-kNN과 같지 않았다~\cite{localpfn}. BoostPFN은 잔차에 따라 context 추출을 바꾸고 약한 예측기를 순차적으로 더하는 방식으로 큰 라벨 집합을 활용했다~\cite{boostpfn}. DistPFN은 context의 클래스 비율과 예측 posterior를 이용해 추가 가중치 학습 없이 출력을 보정했다~\cite{distpfn}. 공식 DistPFN 사용 예에서는 query 집합의 평균 예측 확률을 이용하므로 그 비라벨 query 접근도 실험 조건에 포함해야 한다~\cite{distcode}.
-
-\paragraph{Discussion.}
-2안은 LoCalPFN의 지역 경계 관점, BoostPFN의 순차 오류 보완, DistPFN의 context 비율 문제를 각각 참고한다. 그러나 검색 없이 두 클래스만 쓰는 전문가가 LoCalPFN은 아니며, 제안하는 쌍 점수 보정이 원 BoostPFN 알고리즘과 동일하지도 않다. 클래스 비율 보정은 분포 가정이 맞을 때의 후보이고, 지역 검색으로 클래스 내 분포까지 바뀌면 충분하지 않을 수 있다. 따라서 세 방법의 정식 구현과 단순 쌍 전문가를 별도 비교하고, 쌍 선택·점수 수정·순차 갱신 중 무엇이 필요한지 분해해야 한다.
-
-\subsection{BETA: encoder 학습과 bootstrap context 앙상블}
-\textbf{BETA는 입력 표현을 학습하는 앙상블이라는 점에서 기존 탐색보다 직접적인 구조 대조다.} Bagging and Encoder-based Fine-tuning for TabPFN Adaptation (BETA)은 TabPFN을 고정하고 그 앞의 작은 encoder를 학습했다. Batch Ensemble로 여러 표현을 만들고 추론에서는 bootstrap으로 뽑은 support context의 PFN 예측을 평균했다. 가중치를 고정한 PFN을 통과하는 손실로 encoder를 학습하므로 ``PFN이 고정됐다''는 사실이 전체 모델에 학습이 없었다는 의미는 아니다~\cite{beta}.
-
-\textbf{BETA의 정식 게재본은 ICML 2025에서 확인했다.} 사용자가 제시한 arXiv:2502.02527과 함께 공식 PMLR 게재본 및 저자 코드를 연결한다. 대표 그림은 사용자가 지정한 arXiv PDF의 Figure 3을 출처와 함께 인용한다. 원문 입력·backbone 버전·validation 사용량을 맞추지 않은 자체 구현을 원 논문의 재현으로 표시하지 않는다~\cite{beta}.
-
-\paragraph{Discussion.}
-1안과 BETA는 encoder를 학습한다는 공통점이 있지만, BETA는 encoder 뒤의 PFN으로 최종 분류했고 1안은 교사 확률을 받아 학생·대표점만으로 분류한다. 2안은 여러 PFN 결과를 쓴다는 공통점이 있지만, 표현별 평균이 아니라 선택한 클래스 쌍의 현재 점수차를 보정한다. 따라서 BETA, encoder 하나만 사용한 BETA, 단순 bootstrap PFN을 비교해야 표현 학습과 평균 앙상블 이상의 이점이 있는지 판단할 수 있다. 극소수 라벨에서 encoder 학습·설정 선택에 별도 정답을 보태지 않고, 원문 효율 주장을 현재 장치의 비용 우위로 대신하지 않는다.
-
-\subsection{CURE: 고정 용량 안에서 내용을 바꾸는 context 관리}
-\textbf{CURE에서 고정한 것은 context의 용량이며, 저장한 사례의 내용은 계속 바뀌었다.} Context management via Uncertainty-aware admission and Redundancy-aware Eviction (CURE)은 최근 사례를 보존하는 short bank와 오래된 사례를 선택적으로 보존하는 long bank를 사용했다. short bank에서 밀려난 사례는 처음 예측했을 때 기록한 엔트로피가 기준을 넘으면 long bank에 편입됐다. long bank가 넘치면 가장 많은 클래스에서 가까운 두 사례를 찾고 최근 분포의 대표점에서 더 먼 쪽을 제거했다~\cite{cure}.
-
-\textbf{CURE의 평가는 예측 후 정답을 받아 갱신하는 stream 조건이었다.} 원문은 일곱 stream과 여러 기반 모델을 평가했으며 주 backbone은 TabICL-v2였다. 따라서 모든 사례의 정답이 순차 제공되는 조건을 공격당 2--20개 정답만 받는 조건과 동일하게 취급하지 않는다. 게재 상태도 ICML 본학회가 아니라 FMSD@ICML 2026 워크숍의 spotlight oral로 구분한다~\cite{cure}.
-
-\paragraph{Discussion.}
-CURE는 현재 두 분류기보다 EXP84--85에서 다뤘던 고정 용량 버퍼 정책과 가장 직접적으로 대응한다. 후속 비교는 같은 버퍼 크기와 같은 라벨 도착 행을 사용해 FIFO·무작위·유사도 교체와 CURE를 대조하는 방식이 적절하다. 1안의 비라벨 pool을 어떤 기간으로 유지할지 또는 2안의 전문가 context를 언제 갱신할지에 참고할 수 있지만, 현재 기본 구현에는 해당 정책을 섞지 않는다. 불확실한 사례의 편입만을 새로운 기여라고 주장하기 어려워졌으므로, 분류 구조의 추가 이점과 버퍼 정책의 이점을 분리해 평가한다.
-
-\subsection{대표 그림을 포함한 SOTA 구조 비교표}
-\textbf{그림 비교표는 실제로 바뀌는 부분과 최종 분류기를 한 행에서 보여준다.} 문헌 설명과 연결되는 원문 대표 그림을 사용하고, 확대해서 확인할 수 있도록 원문 링크와 PDF 페이지를 표시한다. 각 그림의 crop 좌표·원본 해시는 별도 출처 파일에 남긴다.
+\textbf{비교표와 개별 설명은 같은 순서를 따른다.} 표에서는 전체 구조를 비교하고, 뒤의 각 설명에서는 원문 그림을 확대해 학습 대상과 예측 흐름을 확인한다. 제목에는 공식 게재 venue와 연도를 표시하며, arXiv 개정 연도와 구별한다. 원문 그림 번호·PDF 페이지·출처 링크를 캡션에 남기고 crop 좌표와 원본 해시도 보존한다.
 \input{_support/20261028_model_designs/sota_table.tex}
 \sourcepath{docs/lablog/evidence/references/20261028/design_sota_figure_sources.json}
+
+\clearpage
+\subsection{유형 1: 사전학습·가중치 적응}
+\textbf{TabDPT와 LoCalPFN은 학습 데이터로 모델 가중치를 바꾸는 단계에 초점을 맞췄다.} TabDPT는 다양한 실제 표를 이용한 범용 사전학습, LoCalPFN은 목표 데이터의 지역 context를 이용한 fine-tuning을 수행했다. 두 방법을 같은 유형으로 묶되 학습 시점과 사용하는 자료를 구별한다.
+
+\subsubsection{TabDPT (NeurIPS, 2025): 실제 표 데이터 사전학습}
+\textbf{TabDPT는 실제 표 데이터의 열 예측 과제와 검색을 결합한 사전학습을 수행했다.} 이는 최종 평가 test를 미리 학습에 사용한다는 의미가 아니다. 원문의 few-shot 절에는 클래스당 10개 라벨 외에 비라벨 학습 행의 예측을 이용해 context를 보강한 준지도 조건도 있었다. 따라서 해당 결과를 순수한 10-label-only 결과와 구별해야 한다~\cite{tabdpt}.
+
+\begin{figure}[H]\centering
+\includegraphics[width=.90\linewidth]{figures/20261028_design_sota/tabdpt.pdf}
+\caption{TabDPT의 사전학습 자료 구성과 모델 구조. 검색으로 학습 묶음을 만들고 열 예측 과제로 transformer를 학습했다. 출처: \href{https://arxiv.org/pdf/2410.18164}{원문 Figure 2, 보관 PDF 5쪽}; 게재: NeurIPS 2025~\cite{tabdpt}.}
+\end{figure}
+
+\Needspace{10\baselineskip}
+\subsubsection{LoCalPFN (NeurIPS, 2024): 지역 검색·가중치 적응}
+\textbf{LoCalPFN은 가까운 사례를 context로 검색하고 PFN 가중치를 실제로 fine-tuning했다.} Locally-calibrated PFN (LoCalPFN)은 query 주변의 학습 사례로 지역적 예측을 구성했다. 학습에서는 근접 이웃 집합을 context와 query로 나누어 그 구조에 맞게 가중치를 적응시켰다. 검색만 수행한 TabPFN-kNN과는 구별된다~\cite{localpfn}.
+
+\begin{figure}[H]\centering
+\includegraphics[width=.80\linewidth]{figures/20261028_design_sota/local.pdf}
+\caption{LoCalPFN의 지역 context 검색과 fine-tuning용 자료 구성. 왼쪽은 query별 근접 이웃 검색, 오른쪽은 근접 집합을 context와 query로 나누는 학습 절차다. 출처: \href{https://papers.nips.cc/paper_files/paper/2024/file/c40daf14d7a6469e65116507c21faeb7-Paper-Conference.pdf}{원문 Figure 3, PDF 5쪽}~\cite{localpfn}.}
+\end{figure}
+
+\paragraph{Discussion.}
+1안은 TabDPT의 실제 분포 활용을 참고해 별도 IDS 학생 encoder를 학습하므로, 같은 비라벨 자료를 받는 자기지도 학생·TabDPT 준지도 대조로 교사의 효과를 분리한다. 2안은 LoCalPFN의 지역 경계 관점을 참고하지만 query별 검색이나 PFN fine-tuning은 수행하지 않는다. LoCalPFN·검색만 한 TabPFN과 비교해 이진 과제 분리의 효과를 지역성·가중치 적응의 효과와 구별한다. 범용 표 평가에서 확인한 두 원문의 성과가 정상·희귀 공격의 IDS 분류에도 유지되는지는 별도로 검증해야 한다.
+
+\clearpage
+\subsection{유형 2: 앙상블}
+\textbf{BoostPFN과 BETA는 여러 예측을 결합하되 예측기의 차이를 만드는 방식이 달랐다.} BoostPFN은 남은 오류를 기준으로 다음 context를 순차 선택했고, BETA는 학습한 여러 입력 표현과 bootstrap context를 결합했다. 따라서 단순히 PFN estimator 수를 늘리는 대조와 각 구조를 구별한다.
+
+\subsubsection{BoostPFN (AISTATS, 2025): 잔차 기반 순차 앙상블}
+\textbf{BoostPFN은 PFN을 약한 학습기로 사용해 큰 라벨 집합을 순차적으로 활용했다.} 이전 단계의 잔차에 따라 다음 context의 표본 가중치를 바꾸고 새 예측기를 앙상블에 추가했다. 전체 학습 자료에서 각 PFN의 제한된 context를 구성하는 과정과 최종 결합을 함께 설계했다~\cite{boostpfn}.
+
+\reportfigure{figures/20261028_design_sota/boost.pdf}{BoostPFN의 순차 결합 구조. 앙상블의 잔차가 다음 context의 표본 가중치로 연결되고, 각 PFN 출력이 최종 예측에 결합됐다. 출처: \href{https://arxiv.org/pdf/2503.01256}{원문 Figure 1, 보관 PDF 2쪽}~\cite{boostpfn}.}
+
+\Needspace{34\baselineskip}
+\subsubsection{BETA (ICML, 2025): encoder 학습·bagging 앙상블}
+\textbf{BETA는 입력 표현을 학습하고 여러 context의 PFN 예측을 평균했다.} Bagging and Encoder-based Fine-tuning for TabPFN Adaptation (BETA)은 TabPFN 가중치를 고정하고 그 앞의 작은 encoder를 학습했다. Batch Ensemble로 여러 표현을 만들고 추론에서는 bootstrap으로 뽑은 support context의 예측을 결합했다. 고정된 PFN을 통과하는 손실로 encoder를 학습했으므로 PFN 고정이 전체 모델의 무학습을 의미하지는 않았다~\cite{beta}.
+
+\reportfigure{figures/20261028_design_sota/beta.pdf}{BETA의 학습과 추론 구조. 위는 고정 PFN 앞의 encoder를 학습하는 단계, 아래는 여러 표현·bootstrap context의 PFN 예측을 평균하는 단계다. 출처: \href{https://arxiv.org/pdf/2502.02527}{사용자 제시 원문 Figure 3, PDF 6쪽}; 게재: ICML 2025~\cite{beta}.}
+
+\paragraph{Discussion.}
+2안은 BoostPFN의 순차 오류 보완을 참고하지만, 전체 클래스 출력을 더하는 대신 선택한 클래스 쌍의 현재 점수차만 제한적으로 수정한다. 1안과 BETA는 encoder를 학습한다는 공통점이 있지만, BETA는 PFN으로 최종 분류했고 1안은 학생·대표점만으로 분류한다. 2안도 BETA의 평균 결합과 달리 혼동 쌍별 보정이므로 정식 BoostPFN·BETA와 단순 bootstrap PFN을 비교해야 구조의 추가 이점을 판별할 수 있다. BETA에서 encoder 하나만 쓰는 대조와 2안에서 순차 선택을 제거하는 대조는 각각 표현 다양성과 오류 재평가의 효과를 분리한다. 원문이 더 큰 학습 집합에서 보인 향상이 공격당 2--20개 라벨에서도 유지되는지, encoder 학습·모델 선택에 추가 정답이 필요한지는 별도로 확인해야 한다.
+
+\clearpage
+\subsection{유형 3: 출력 확률 보정}
+\subsubsection{DistPFN (ICML, 2026): 클래스 분포 기반 posterior 보정}
+\textbf{DistPFN은 context의 클래스 비율과 예측 posterior를 이용해 추가 가중치 학습 없이 출력을 보정했다.} 학습 context와 query의 클래스 비율이 달라지는 label shift를 대상으로, context 비율이 예측에 미치는 영향을 조정했다. 공식 사용 예는 query 집합의 평균 예측 확률을 보정에 사용했으므로 해당 비라벨 query 접근도 실험 조건에 포함해야 한다~\cite{distpfn,distcode}. ICML 2026 채택 정보는 저자의 공식 저장소에서 확인했다.
+
+\reportfigure{figures/20261028_design_sota/dist.pdf}{DistPFN의 출력 확률 보정 위치. 기반 모델의 예측 뒤에 분포 조정을 적용했다. 출처: \href{https://arxiv.org/pdf/2605.04363}{원문 Figure 4, 보관 PDF 4쪽}~\cite{distpfn}.}
+
+\paragraph{Discussion.}
+DistPFN은 2안에서 얻는 이득이 복잡한 전문가 구조 없이 클래스 비율 보정만으로 설명되는지 확인할 대조다. 2안의 쌍 점수 수정은 별도 이진 예측을 사용하므로 원 DistPFN과 같은 알고리즘이 아니며, 기본 구현에 DistPFN을 포함했다고 표시하지 않는다. 클래스 내부 특징 분포까지 달라지는 조건에서는 label shift만을 가정한 보정으로 충분한지 별도 검증이 필요하다. 같은 query 배치·비율 조건에서 DistPFN, DistPFN-T, 쌍 전문가를 비교하고 정상 오탐과 공격별 precision·recall을 함께 확인한다.
+
+\Needspace{12\baselineskip}
+\subsection{유형 4: context 관리}
+\subsubsection{CURE (FMSD@ICML Workshop, 2026): 고정 용량 context 관리}
+\textbf{CURE에서 고정한 것은 context의 용량이며, 저장한 사례의 내용은 계속 바뀌었다.} Context management via Uncertainty-aware admission and Redundancy-aware Eviction (CURE)은 최근 사례를 보존하는 short bank와 오래된 사례를 선택적으로 보존하는 long bank를 사용했다. short bank에서 밀려난 사례는 처음 예측했을 때 기록한 엔트로피가 기준을 넘으면 long bank에 편입됐다. long bank가 넘치면 가장 많은 클래스에서 가까운 두 사례를 찾고 최근 분포의 대표점에서 더 먼 쪽을 제거했다~\cite{cure}.
+
+\reportfigure{figures/20261028_design_sota/cure.pdf}{CURE의 두 context bank와 갱신 흐름. 최근 사례를 short bank에 보존하고 불확실성 기준으로 long bank에 편입한 뒤 중복을 제거했다. 출처: \href{https://arxiv.org/pdf/2606.18677}{사용자 제시 원문 Figure 1, PDF 3쪽}~\cite{cure}.}
+
+\textbf{CURE의 평가는 예측 후 정답을 받아 갱신하는 stream 조건이었다.} 원문은 일곱 stream과 여러 기반 모델을 평가했으며 주 backbone은 TabICL-v2였다. 따라서 모든 사례의 정답이 순차 제공되는 조건을 공격당 2--20개 정답만 받는 조건과 동일하게 취급하지 않는다. 게재 상태는 ICML 본학회가 아니라 FMSD@ICML 2026 워크숍의 spotlight oral로 확인됐다~\cite{cure}.
+
+\paragraph{Discussion.}
+CURE는 현재 두 분류기보다 EXP84--85에서 다뤘던 고정 용량 버퍼 정책과 직접적으로 대응한다. 후속 비교는 같은 버퍼 크기와 같은 라벨 도착 행을 사용해 선입선출(First In, First Out; FIFO)·무작위·유사도 교체와 CURE를 대조하는 방식이 적절하다. 1안의 비라벨 pool 유지 기간이나 2안의 전문가 context 갱신 시점에 참고할 수 있지만, 현재 기본 구현에는 해당 정책을 섞지 않는다. 분류 구조의 추가 이점과 버퍼 정책의 이점을 분리해 평가하고, 불확실한 사례의 편입만을 새로운 기여라고 주장하지 않는다.
+
+\Needspace{28\baselineskip}
+\subsection{별도 IDS 참고 연구: TabPFN 계열 외 접근}
+\subsubsection{LotBoNC (AsiaCCS, 2026): 표현·대표점·비균등 의사라벨 학습}
+\textbf{LotBoNC는 소수 라벨과 불균형 비라벨 자료를 함께 사용해 표현과 클래스 대표점을 갱신했다.} 원문은 패킷 payload에서 만든 바이트 token을 encoder에 입력하고, 마스킹 예측과 대조 학습으로 표현을 준비했다. 이후 추정한 클래스 비율을 고려한 최적수송 기반 배정으로 비라벨 표본의 soft label을 만들고 encoder·대표점·비율을 반복 갱신했다. 새 공격을 이름 없이 군집으로 발견하는 원래 과제와, 이번의 공격 이름별 $n$개 라벨을 받은 분류 과제는 다르다~\cite{lotbonc}.
+
+\begin{figure}[H]\centering
+\includegraphics[width=.82\linewidth]{figures/20261028_design_sota/lotbonc.pdf}
+\caption{LotBoNC의 비균등 의사라벨 배정과 대표점 갱신. 클래스 비율을 반영한 배정과 표현·대표점 갱신을 반복했다. 출처: \href{https://doi.org/10.1145/3779208.3785276}{원문 Figure 4, PDF 5쪽}~\cite{lotbonc}.}
+\end{figure}
+
+\paragraph{Discussion.}
+1안은 비균등 분포를 고려한 배정과 표현 갱신의 연결을 참고한다. 숫자 flow 특징을 쓰는 현재 환경에서는 원래 바이트 encoder를 그대로 쓸 수 없어 별도 수치형 encoder를 둔다. TabPFN 확률을 외부 교사 신호로 추가하고 참라벨로 클래스 이름을 고정하는 것이 후보 설계의 차이다. 이 차이가 유효한지는 교사 없는 대표점 학습과 단순 의사라벨 학습을 모두 넘어서는지로 판단한다. LotBoNC는 이러한 IDS 설계 참고를 위해 포함하며 표 기반 모델의 네 유형에 억지로 편입하지 않는다.
 
 \section{공통 데이터 계약: 라벨 수와 비라벨 수를 별도로 센다}
 \textbf{라벨 예산은 학습·모델 선택에 공개한 모든 정답 수를 뜻한다.} 참라벨 집합을 $L=\{(x_i,y_i)\}$, 비라벨 학습 집합을 $U=\{u_j\}$, 최종 평가 집합을 $T$라 둔다. $n$은 평가 대상 공격 한 클래스에 제공한 실제 정답의 수이며, 정상 수와 기존 공격 수는 별도 설정으로 기록한다. 가용 자료가 $n$보다 적으면 실제 수와 고유 특징 group 수를 표시하고 복제로 라벨 수를 채우지 않는다.
@@ -361,8 +404,8 @@ python -m unittest discover -s scripts/v7/exp91 -p test_models.py -v
 \begin{thebibliography}{9}\small
 \bibitem{tabpfn} Hollmann et al. \emph{Accurate predictions on small data with a tabular foundation model}. Nature, 2025. \href{https://www.nature.com/articles/s41586-024-08328-6}{원문}.
 \bibitem{lotbonc} Hu, Li, and Doerr. \emph{LotBoNC: Novel Botnet Traffic Classification under Long-tailed Distributions}. AsiaCCS, 2026. \href{https://doi.org/10.1145/3779208.3785276}{DOI 및 원문}. 로컬 원문: \path{evidence/20261015/lotbonc.pdf}, §§4--5.
-\bibitem{tabdpt} Ma et al. \emph{TabDPT: Scaling Tabular Foundation Models on Real Data}. \href{https://arxiv.org/html/2410.18164v3}{arXiv:2410.18164v3}, 2026-01-17 개정본, §§3, 4.6. \href{https://github.com/layer6ai-labs/TabDPT-inference}{공식 추론 구현}.
-\bibitem{localpfn} Thomas et al. \emph{Retrieval \& Fine-Tuning for In-Context Tabular Models}. NeurIPS, 2024. \href{https://arxiv.org/abs/2406.05207}{원문}. \href{https://github.com/layer6ai-labs/LoCalPFN}{공식 구현}.
+\bibitem{tabdpt} Ma et al. \emph{TabDPT: Scaling Tabular Foundation Models on Real Data}. NeurIPS, 2025. \href{https://proceedings.neurips.cc/paper_files/paper/2025/hash/fc0e3f908a2116ba529ad0a1530a3675-Abstract-Conference.html}{공식 게재 정보}. 구조·few-shot 설명: \href{https://arxiv.org/html/2410.18164v3}{arXiv:2410.18164v3}, §§3, 4.6. \href{https://github.com/layer6ai-labs/TabDPT-inference}{공식 추론 구현}. 게재 연도와 arXiv 개정 연도를 구분했다.
+\bibitem{localpfn} Thomas et al. \emph{Retrieval \& Fine-Tuning for In-Context Tabular Models}. NeurIPS, 2024. \href{https://papers.nips.cc/paper_files/paper/2024/hash/c40daf14d7a6469e65116507c21faeb7-Abstract-Conference.html}{공식 게재 정보}. \href{https://github.com/layer6ai-labs/LoCalPFN}{공식 구현}.
 \bibitem{boostpfn} Wang et al. \emph{Prior-Fitted Networks Scale to Larger Datasets When Treated as Weak Learners}. AISTATS, PMLR 258:1090--1098, 2025. \href{https://proceedings.mlr.press/v258/wang25d.html}{공식 게재본}.
 \bibitem{distpfn} Lee. \emph{Mitigating Label Shift in Tabular In-Context Learning via Test-Time Posterior Adjustment}. \href{https://arxiv.org/html/2605.04363}{arXiv:2605.04363v2}, 2026. 공식 저장소에서 ICML 2026 채택을 확인했다.
 \bibitem{distcode} Lee. \emph{DistPFN official implementation}. \href{https://github.com/seunghan96/DistPFN}{공식 저장소 및 사용 예}. 2026-10-28 확인: 평균 query posterior를 사용한 기본 보정식.
