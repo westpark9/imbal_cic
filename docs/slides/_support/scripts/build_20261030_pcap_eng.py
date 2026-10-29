@@ -274,7 +274,7 @@ def scenes() -> None:
     # 4. Literal source rows and the class-level incidence of contradictions.
     headers = ['Dst Port', 'Protocol', 'Flow Duration', 'Tot Fwd\nPkts', 'Tot Bwd\nPkts', '… 69 fields …', 'TotLen Bwd\nPkts', 'Flow Byts/s', 'Flow Pkts/s', 'Idle Min', 'NF-v3\nclass']
     a = [
-        txt(.65, 1.10, 12.0, 'Exact agreement on 78 common CICFlowMeter statistics, excluding timestamps, identifiers, addresses, ports, and labels', 14.5, False, GREY),
+        txt(.65, 1.10, 12.0, 'Exact agreement on 78 common CICFlowMeter statistics, excluding timestamp, Flow ID, source IP/port, destination IP, and label', 13.2, False, GREY),
     ]
     a += raw_row(.65, 1.62, headers, label_fill=NAVY)
     a += raw_row(.65, 2.11, row_a, label_fill='FBE8E7')
@@ -330,10 +330,73 @@ def scenes() -> None:
          'The presentation has three steps. Existing IDS classifiers used fixed CICFlowMeter statistics from CSV inputs. Inspection of those inputs identified early saturation for some head attacks and identical-feature, different-class rows in the original CSV. The next step is to measure both phenomena again on new CIC2018 vectors created by PCAP encoders, using the same audit and baseline protocol. Only after verifying whether the representation reduces conflicts and improves separation of tail or emerging attacks can a classification benefit from the new representation or model design be assessed.', [])
 
 
+def apply_speaker_scripts() -> None:
+    """Replace descriptive notes with presentation-ready English scripts."""
+    scripts = {
+        'CICFlowMeter CSV is the standard input for IDS classification': (
+            'I will begin with the input that has been used throughout our IDS experiments. '
+            'CIC datasets first record network traffic as PCAP files. CICFlowMeter then groups packets into flows and writes one CSV row per flow using fixed statistics such as duration, packet counts, packet lengths, inter-arrival times, and TCP flags. '
+            'Our previous XGB, TabPFN, SOTA, and proposed-model experiments all used these CSV vectors, as do many IDS studies that frame the task as tabular classification. '
+            'The important point is that a row is a predefined statistical summary. It does not retain the full order of packets that generated the flow. '
+            'The following observations therefore concern both the classifiers and this shared input representation.'
+        ),
+        'Two issues in CSV-based IDS classification': (
+            'When we inspected the CSV-based experiments, two patterns required separate attention. '
+            'First, some head attack classes reached very high F1 with only a small label budget. '
+            'Second, the raw CSV contained rows whose flow statistics were identical even though their recorded classes differed. '
+            'These patterns affect how classification scores should be interpreted. '
+            'The next slide quantifies the first pattern across label budgets, and the slide after that shows literal source-CSV rows for the second pattern.'
+        ),
+        'Some head attacks already have high F1 with few labels': (
+            'This figure is a diagnostic learning curve for attack-only classification. '
+            'At n equals 20 labels per class, XGB reached F1 of 99.3 for DDoS, 98.6 for Bot, 96.7 for DoS, and 99.9 for BF. '
+            'TabPFN reached 99.7 for DDoS, 99.4 for Bot, 96.1 for DoS, and 100.0 for BF under the same condition. '
+            'Infiltration remained around 78 to 79, and web attacks remained around 9 to 11. '
+            'The curve shows that adding labels still changes macro F1, but four classes are already close to saturation at n equals 20 while difficult classes remain difficult. '
+            'This classwise imbalance motivates checking the data representation before drawing conclusions from an aggregate score.'
+        ),
+        'Identical features, different classes in CIC2018 CSV': (
+            'Next, we inspected the original CIC2018 CSV files directly. '
+            'We grouped rows whose 78 common CICFlowMeter statistics were exactly identical after excluding Timestamp, Flow ID, source IP and port, destination IP, and Label. '
+            'The two rows at the top are a literal example: every displayed value and the omitted 69 fields agree, but their NF-v3 classes are dos and bf. '
+            'Across all 16.23 million rows, 406,811 rows, or 2.51 percent, belong to identical-feature groups that span multiple NF-v3 classes. '
+            'The incidence is particularly large for bf at 42.7 percent, followed by inf at 25.5 percent and dos at 11.8 percent. '
+            'A classifier receives the same input for these cases, so the representation and the evidence used to assign labels must be examined together.'
+        ),
+        'A PCAP-based CIC2018 representation pipeline': (
+            'The next step is to build a new CIC2018 feature representation from the raw PCAP files. '
+            'We preserve the link among each flow, its packets, its label evidence, and its train or test split. '
+            'A network encoder then reads packet direction, size, timing, protocol, and header patterns and produces one vector per flow. '
+            'NetFound is the first encoder in this pipeline. It is a pretrained network-data encoder; in this study it serves only to generate a 512-dimensional flow representation, which is projected to 64 dimensions using PCA fit on the training split. '
+            'NetFound does not produce the attack label here. XGB and TabPFN receive its output vectors and perform the classification. '
+            'The same corpus and split can later be reused with ET-BERT or NetMamba, so encoder choice can be evaluated under matched conditions.'
+        ),
+        'Summary': (
+            'This presentation establishes the reason for rebuilding the input representation. '
+            'The CSV experiments revealed early saturation for several head classes and exact feature conflicts across recorded classes in the original data. '
+            'The PCAP pipeline creates a reusable corpus and encoder-specific vector views while keeping labels and splits traceable. '
+            'The next evaluation will first repeat the representation audit, then rerun XGB and TabPFN baselines and few-shot curves on the new vectors. '
+            'These checks will show whether the new representation changes the feature conflicts and classwise learning behavior observed in the current CSV experiments.'
+        ),
+    }
+    for scene in r.SCENES:
+        script = scripts.get(scene['title'])
+        if script is None:
+            raise KeyError(f'Missing speaker script for {scene["title"]!r}')
+        sources = []
+        for key in scene['source_keys']:
+            title, venue, url, evidence = r.SOURCES[key]
+            sources.append(f'{title}\n{venue}\n{evidence}\n{url}')
+        scene['notes'] = 'Speaker notes\n' + script
+        if sources:
+            scene['notes'] += '\n\nSources\n' + '\n\n'.join(sources)
+
+
 def main() -> None:
     QA.mkdir(parents=True, exist_ok=True)
     r.ASSETS.mkdir(parents=True, exist_ok=True)
     scenes()
+    apply_speaker_scripts()
     r.validate_scenes()
     r.pptx()
     from pptx import Presentation
