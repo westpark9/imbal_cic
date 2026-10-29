@@ -13,16 +13,15 @@ IDS 분류의 기존 입력은 CICFlowMeter CSV
                                          패킷 sequence 자체가 아니라, 미리 정한 flow 통계의 요약값
 기존 모델은 제공된 flow 통계 CSV를 입력으로 사용                                                01 기존 CSV    1
 CSV 기반 IDS 분류에서 확인한 두 문제
-             문제 1 일부 공격의 조기 포화                             문제 2 동일 특징·상이 라벨
-         DDoS·Bot 등 head 공격은                            수십 개 flow 통계가 모두 같아도
-      클래스당 n=2~20개에도 F1 90%대                            서로 다른 Label이 기록된 행 존재
-     → 추가 라벨 전에 이미 높은 data ceiling                    → 결정적 분류기가 동시에 맞힐 수 없음
+             문제 1 일부 공격의 조기 포화                       문제 2 동일 특징·상이 라벨
+         DDoS·Bot 등 head 공격은                       수십 개 flow 통계가 모두 같아도
+      클래스당 n=2~20개에도 F1 90%대                       서로 다른 Label이 기록된 행 존재
+     → 추가 라벨 전에 이미 높은 data ceiling               → 결정적 분류기가 동시에 맞힐 수 없음
 
 
-  02 긴 learning curve와 클래스별 F1                   03 원본 CIC2018 CSV 행 감사
-  두 문제를 먼저 분리해 확인한 뒤, PCAP에서 새 표현을 만들고 같은 지표로 다시 측정
 
-일부 head 공격의 조기 포화와 동일 feature·상이 label을 분리해 진단                                01 기존 CSV   2
+
+일부 head 공격의 조기 포화와 동일 feature·상이 label을 분리해 진단                          01 기존 CSV   2
 일부 head 공격은 적은 라벨에서 이미 높은 F1
 n=450까지 늘리면 macro-F1은 계속 변하지만, DDoS·Bot은 적은 라벨에서 먼저 고점에 도달
 
@@ -44,7 +43,7 @@ Timestamp·Flow ID·Src IP/Src Port·Dst IP·Label을 제외한 78개 공통 CIC
 
 
 
-원본 CSV 16,233,002행 전체 감사 · 동일 feature·상이 label은 표현 한계 또는 라벨 근거를 재점검할 사례
+CIC는 원본 CSV, ToN은 현재 NF-v3 46-feature 입력 기준 · 동일 feature·상이 label은 표현 한계 또는 라벨 근거를 재점검할 사례
 
 원본 CSV의 78개 공통 flow 통계가 완전히 같은 실제 행을 확인                                                                                         03 label conflict   4
 PCAP 기반 CIC2018 재표현 파이프라인
