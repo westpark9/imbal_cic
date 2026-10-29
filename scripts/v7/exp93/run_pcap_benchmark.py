@@ -169,15 +169,26 @@ class CorrectedRuleSet:
 
 def fetch(config: dict[str, Any], out: Path) -> dict[str, Any]:
     receipts = []
-    for cap in config['captures']:
+    total = len(config['captures'])
+    progress_path = out / 'fetch_progress.json'
+    for index, cap in enumerate(config['captures'], 1):
         dest = resolve_path(cap['path'], ROOT)
+        write(progress_path, dict(status='downloading', completed=len(receipts), total=total,
+                                  current_index=index, capture_id=cap['id'], destination=str(dest),
+                                  started_at=time.time()))
+        print(f'fetch {index}/{total}: {cap["id"]} → {dest}', flush=True)
         receipt = download_member(cap['url'], cap['member'], dest, max_bytes=int(cap['max_uncompressed_bytes']))
         # ``download_member`` already records the selected archive member.
         # Keep that single, checksum-bound value instead of passing ``member``
         # twice when an existing capture is reused.
         receipts.append(dict(id=cap['id'], path=cap['path'], **receipt))
+        write(progress_path, dict(status='downloading', completed=len(receipts), total=total,
+                                  current_index=index, capture_id=cap['id'], destination=str(dest),
+                                  last_receipt=receipts[-1], updated_at=time.time()))
+        print(f'fetch {index}/{total}: complete {cap["id"]} ({receipt["bytes"]:,} bytes)', flush=True)
     result = dict(captures=receipts, downloaded_at=time.time())
     write(out / 'fetch.json', result)
+    write(progress_path, dict(status='complete', completed=total, total=total, updated_at=time.time()))
     return result
 
 
