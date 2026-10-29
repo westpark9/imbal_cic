@@ -1,0 +1,872 @@
+{
+  "audited_at_utc": "2026-10-29T07:11:08.198998+00:00",
+  "scope": "Source inspection and isolated CPU diagnostic; no model fitting or GPU benchmark",
+  "lock_sha256": "3b40b5708a95fe13c47edc84bd3ebe94394586300793591646b3c3b7b0a432d9",
+  "repositories": [
+    {
+      "name": "TabDPT",
+      "path": "tabpfn/third_party/upstream/TabDPT",
+      "expected": "93670551adba28b186354fab9a1584c56c34aa76",
+      "actual": "93670551adba28b186354fab9a1584c56c34aa76",
+      "origin": "https://github.com/layer6ai-labs/TabDPT-inference.git",
+      "status": "ok",
+      "evidence": [
+        {
+          "path": "pyproject.toml",
+          "sha256": "a5efc58ff0144c2508cb265ad37ee87d896beb09ec26fcf084f44048181cc20a",
+          "url": "https://github.com/layer6ai-labs/TabDPT-inference/blob/93670551adba28b186354fab9a1584c56c34aa76/pyproject.toml",
+          "matching_lines": [
+            {
+              "line": 7,
+              "text": "version = \"1.3.1\""
+            },
+            {
+              "line": 12,
+              "text": "requires-python = \">=3.10\""
+            },
+            {
+              "line": 14,
+              "text": "    \"faiss-cpu>=1.11.0,<1.13.0\","
+            },
+            {
+              "line": 21,
+              "text": "    \"torch>=2.6.0,<3.0\","
+            },
+            {
+              "line": 27,
+              "text": "    \"faiss-cpu==1.11.0\","
+            }
+          ]
+        },
+        {
+          "path": "src/tabdpt/estimator.py",
+          "sha256": "81a345826a5534d9e4a5916ab4dd11f815a17787703eb54a42b7c968a2992678",
+          "url": "https://github.com/layer6ai-labs/TabDPT-inference/blob/93670551adba28b186354fab9a1584c56c34aa76/src/tabdpt/estimator.py",
+          "matching_lines": [
+            {
+              "line": 19,
+              "text": "_VERSION = \"1_3\""
+            },
+            {
+              "line": 20,
+              "text": "_MODEL_NAME = f\"tabdpt{_VERSION}.safetensors\""
+            },
+            {
+              "line": 29,
+              "text": "            filename=_MODEL_NAME,"
+            },
+            {
+              "line": 41,
+              "text": "        context_reduction: Literal[\"retrieval\", \"subsample\", \"subsample-balanced\"] = \"subsample\","
+            },
+            {
+              "line": 70,
+              "text": "            context_reduction: Method used to reduce training rows when train size exceeds"
+            },
+            {
+              "line": 98,
+              "text": "        self.max_features = self.model.num_features"
+            },
+            {
+              "line": 192,
+              "text": "        if self.n_features > self.max_features and self.feature_reduction == \"pca\":"
+            },
+            {
+              "line": 194,
+              "text": "            _, _, self.projection = torch.pca_lowrank(train_x, q=min(train_x.shape[0], self.max_features))"
+            },
+            {
+              "line": 282,
+              "text": "        X_ctx = pad_x(ctx_x[None, :, :], self.max_features).to(self.device)"
+            },
+            {
+              "line": 305,
+              "text": "        if self.n_features > self.max_features:"
+            },
+            {
+              "line": 311,
+              "text": "                train_x = train_x[:, feat_perm][:, :self.max_features]"
+            },
+            {
+              "line": 312,
+              "text": "                test_x = test_x[:, feat_perm][:, :self.max_features]"
+            }
+          ]
+        },
+        {
+          "path": "src/tabdpt/classifier.py",
+          "sha256": "d4090e73630c1c2ee83c0a0769440cd52d6b9b8e10fa99113b584f5eb05deee3",
+          "url": "https://github.com/layer6ai-labs/TabDPT-inference/blob/93670551adba28b186354fab9a1584c56c34aa76/src/tabdpt/classifier.py",
+          "matching_lines": [
+            {
+              "line": 49,
+              "text": "    def _predict_large_cls(self, X_context, X_eval, y_context, num_features):"
+            },
+            {
+              "line": 79,
+              "text": "        context_size: int | None = None,"
+            },
+            {
+              "line": 80,
+              "text": "        batch_size: int | None = None,"
+            },
+            {
+              "line": 90,
+              "text": "            context_size: Maximum number of train points in the context. Uses all points if `None`, which can lead to"
+            },
+            {
+              "line": 92,
+              "text": "            batch_size: Number of inference points to use in each batch. If `None`, defaults to 4096 on CPU and 128k on"
+            },
+            {
+              "line": 112,
+              "text": "                batch_size = 128*1024"
+            },
+            {
+              "line": 190,
+              "text": "        context_size: int | None = None,"
+            },
+            {
+              "line": 191,
+              "text": "        batch_size: int | None = None,"
+            },
+            {
+              "line": 201,
+              "text": "            context_size: Maximum number of train points in the context. Uses all points if `None`, which can lead to"
+            },
+            {
+              "line": 203,
+              "text": "            batch_size: Number of inference points to use in each batch. If `None`, defaults to 4096 on CPU and 128k on"
+            },
+            {
+              "line": 251,
+              "text": "        context_size: int | None = None,"
+            },
+            {
+              "line": 252,
+              "text": "        batch_size: int | None = None,"
+            },
+            {
+              "line": 263,
+              "text": "            context_size: Maximum number of train points in the context. Uses all points if `None`, which can lead to"
+            },
+            {
+              "line": 265,
+              "text": "            batch_size: Number of inference points to use in each batch. If `None`, defaults to 4096 on CPU and 128k on"
+            }
+          ]
+        }
+      ],
+      "python_syntax_files_passed": 20,
+      "python_syntax_failures": [],
+      "files_above_100MB": []
+    },
+    {
+      "name": "LoCalPFN",
+      "path": "tabpfn/third_party/upstream/LoCalPFN",
+      "expected": "ff8803c57cd277380b2444f0f5ed4856b46f47f5",
+      "actual": "ff8803c57cd277380b2444f0f5ed4856b46f47f5",
+      "origin": "https://github.com/layer6ai-labs/LoCalPFN.git",
+      "status": "ok",
+      "evidence": [
+        {
+          "path": "config.py",
+          "sha256": "575f6681fd94e1386e610d4acf22ffe471aea425aa5d5e3c0b01ca19754b740b",
+          "url": "https://github.com/layer6ai-labs/LoCalPFN/blob/ff8803c57cd277380b2444f0f5ed4856b46f47f5/config.py",
+          "matching_lines": [
+            {
+              "line": 15,
+              "text": "        \"--model_path\","
+            },
+            {
+              "line": 17,
+              "text": "        default=\"./models_diff/prior_diff_real_checkpoint_n_0_epoch_42.cpkt\","
+            },
+            {
+              "line": 44,
+              "text": "    parser.add_argument(\"--filter_feature\", type=int, default=100)"
+            },
+            {
+              "line": 45,
+              "text": "    parser.add_argument(\"--filter_class\", type=int, default=10)"
+            },
+            {
+              "line": 58,
+              "text": "    knn_parser.add_argument(\"--context_length\", type=int, default=1000)"
+            },
+            {
+              "line": 77,
+              "text": "    vanilla_parser.add_argument(\"--context_length\", type=int, default=1000)"
+            },
+            {
+              "line": 96,
+              "text": "    ft_parser.add_argument(\"--context_length\", type=int, default=1000)"
+            },
+            {
+              "line": 105,
+              "text": "    ft_parser.add_argument(\"--num_epochs\", type=int, default=21)"
+            },
+            {
+              "line": 117,
+              "text": "    ft_parser.add_argument(\"--num_steps\", type=int, default=30)"
+            }
+          ]
+        },
+        {
+          "path": "methods/ftknn.py",
+          "sha256": "cd3cbe59d8ad9cf23dc16cd767199fafbf1caec53a952bf3ac0265a63cfbff4f",
+          "url": "https://github.com/layer6ai-labs/LoCalPFN/blob/ff8803c57cd277380b2444f0f5ed4856b46f47f5/methods/ftknn.py",
+          "matching_lines": [
+            {
+              "line": 44,
+              "text": "    num_classes = len(np.unique(y_train))"
+            },
+            {
+              "line": 58,
+              "text": "    num_retrievals = ["
+            },
+            {
+              "line": 59,
+              "text": "        min(int(10 * np.sqrt(len(data[\"X_train\"]))), args.context_length),"
+            },
+            {
+              "line": 60,
+              "text": "        args.train_query_length,"
+            },
+            {
+              "line": 218,
+              "text": "    num_classes = len(np.unique(data_loader.dataset.tensors[1]))"
+            },
+            {
+              "line": 226,
+              "text": "        int(10 * np.sqrt(len(data[\"X_train\"]))), args.context_length"
+            }
+          ]
+        },
+        {
+          "path": "utils.py",
+          "sha256": "7e3fddfa76d36308ecf48f6d105b8e3bcdedb48c83e6c6140c7d0a2f434acc84",
+          "url": "https://github.com/layer6ai-labs/LoCalPFN/blob/ff8803c57cd277380b2444f0f5ed4856b46f47f5/utils.py",
+          "matching_lines": [
+            {
+              "line": 92,
+              "text": "def pad_x(X, num_features=100):"
+            },
+            {
+              "line": 113,
+              "text": "    assert num_classes <= 10, \"can only handle up to 10 classes\""
+            },
+            {
+              "line": 257,
+              "text": "class SingleclassFaiss:"
+            }
+          ]
+        }
+      ],
+      "python_syntax_files_passed": 8,
+      "python_syntax_failures": [],
+      "files_above_100MB": [
+        {
+          "path": "models_diff/prior_diff_real_checkpoint_n_0_epoch_42.cpkt",
+          "bytes": 103350223,
+          "sha256": "3c9aadaeddbf51462af8c0ee4b3ca3c697890f77e92318abbb0821b75261c392"
+        }
+      ]
+    },
+    {
+      "name": "BoostPFN",
+      "path": "tabpfn/third_party/upstream/BoostPFN",
+      "expected": "c957ac2af8d4f308f13a5b1061b4a6eb37945030",
+      "actual": "c957ac2af8d4f308f13a5b1061b4a6eb37945030",
+      "origin": "https://github.com/yxzwang/BoostPFN.git",
+      "status": "ok",
+      "evidence": [
+        {
+          "path": "scripts/transformer_prediction_interface.py",
+          "sha256": "fea4dc73ecf32890d6875d987e6033bad065fc56540eff7a112378641ac60ae2",
+          "url": "https://github.com/yxzwang/BoostPFN/blob/c957ac2af8d4f308f13a5b1061b4a6eb37945030/scripts/transformer_prediction_interface.py",
+          "matching_lines": [
+            {
+              "line": 7,
+              "text": "from tabpfn.utils import normalize_data, to_ranking_low_mem, remove_outliers"
+            },
+            {
+              "line": 8,
+              "text": "from tabpfn.utils import NOP, normalize_by_used_features_f"
+            },
+            {
+              "line": 20,
+              "text": "from tabpfn.scripts.model_builder import load_model, load_model_only_inference"
+            },
+            {
+              "line": 71,
+              "text": "            url = 'https://github.com/automl/TabPFN/raw/main/tabpfn/models_diff/prior_diff_real_checkpoint_n_0_epoch_42.cpkt'"
+            },
+            {
+              "line": 171,
+              "text": "        self.max_num_features = self.c['num_features']"
+            },
+            {
+              "line": 238,
+              "text": "        if X.shape[0] > 1024 and not overwrite_warning:"
+            }
+          ]
+        },
+        {
+          "path": "gradient_boost_tabpfn.py",
+          "sha256": "6360f52dad7728b8238d5a208b6fe0c5f68f9052e2009f6b6d16f395b3fb00fb",
+          "url": "https://github.com/yxzwang/BoostPFN/blob/c957ac2af8d4f308f13a5b1061b4a6eb37945030/gradient_boost_tabpfn.py",
+          "matching_lines": [
+            {
+              "line": 10,
+              "text": "from sklearn.ensemble._gb_losses import LeastSquaresError,BinomialDeviance,ExponentialLoss,MultinomialDeviance"
+            },
+            {
+              "line": 61,
+              "text": "        max_samples=500,"
+            },
+            {
+              "line": 64,
+              "text": "        version=1,"
+            },
+            {
+              "line": 83,
+              "text": "        self.max_samples=max_samples"
+            },
+            {
+              "line": 106,
+              "text": "            sample_num=self.max_samples"
+            },
+            {
+              "line": 108,
+              "text": "            sample_num=min(int(self.sampling_size*num_trains),self.max_samples)##sample_num should be less than max_samples"
+            },
+            {
+              "line": 247,
+              "text": "    def fit(self,X,y,X_test):"
+            }
+          ]
+        },
+        {
+          "path": "main_10times.py",
+          "sha256": "643406aad075b571d251d544ad5b465478e55d12265a9cd27ec967c7e489672d",
+          "url": "https://github.com/yxzwang/BoostPFN/blob/c957ac2af8d4f308f13a5b1061b4a6eb37945030/main_10times.py",
+          "matching_lines": [
+            {
+              "line": 85,
+              "text": "        elif modelname==\"gboost_tabpfnV2\":"
+            },
+            {
+              "line": 88,
+              "text": "            classifier=SamplingGradientboost(TabPFNClassifier(device=device,N_ensemble_configurations=32),ensemblenum,args.sampling_size,args,version=2)"
+            }
+          ]
+        },
+        {
+          "path": "ReadMe.md",
+          "sha256": "390870f5127b3baef84313b6dcc4c88386901c57c097336c634ca065e8b8553e",
+          "url": "https://github.com/yxzwang/BoostPFN/blob/c957ac2af8d4f308f13a5b1061b4a6eb37945030/ReadMe.md",
+          "matching_lines": [
+            {
+              "line": 9,
+              "text": "To run small datasets lower than 5000:"
+            },
+            {
+              "line": 15,
+              "text": "```python largedataset_boostpfn.py --modelname gboost_tabpfnV2 --gpu 0 --sampling_size 0.001 --test_batch 50000 --seed 5 --maxsample 500 --updating exphadamard --endnum 0 --step 100 --startnum -1 --ensemble_num 10```"
+            },
+            {
+              "line": 21,
+              "text": "```--ensemble_num```: the number of boosting rounds"
+            }
+          ]
+        }
+      ],
+      "python_syntax_files_passed": 37,
+      "python_syntax_failures": [],
+      "files_above_100MB": []
+    },
+    {
+      "name": "BETA",
+      "path": "tabpfn/third_party/upstream/BETA",
+      "expected": "441e3741b58915e69024a97e372575701a9f86a3",
+      "actual": "441e3741b58915e69024a97e372575701a9f86a3",
+      "origin": "https://github.com/LAMDA-Tabular/BETA.git",
+      "status": "ok",
+      "evidence": [
+        {
+          "path": "configs/deep_configs.json",
+          "sha256": "d002d8f1fad64baa5d85eb2b14e32fddbc48c2de6423c68548e3dfa24d91ebda",
+          "url": "https://github.com/LAMDA-Tabular/BETA/blob/441e3741b58915e69024a97e372575701a9f86a3/configs/deep_configs.json",
+          "matching_lines": [
+            {
+              "line": 4,
+              "text": "    \"max_epoch\": 200,"
+            },
+            {
+              "line": 5,
+              "text": "    \"batch_size\": 1024,"
+            },
+            {
+              "line": 19,
+              "text": "    \"evaluate_option\": \"best-val\","
+            }
+          ]
+        },
+        {
+          "path": "configs/default/Beta.json",
+          "sha256": "9218be1dcc0597072c1daaacfbe48f5bb23defbc4a321397081750c2c942063a",
+          "url": "https://github.com/LAMDA-Tabular/BETA/blob/441e3741b58915e69024a97e372575701a9f86a3/configs/default/Beta.json",
+          "matching_lines": [
+            {
+              "line": 4,
+              "text": "            \"arch_type\": \"tabm-mini\","
+            },
+            {
+              "line": 5,
+              "text": "            \"k\": 16,"
+            },
+            {
+              "line": 16,
+              "text": "                \"d_block\":100,"
+            },
+            {
+              "line": 22,
+              "text": "            \"weight_decay\": 0.02"
+            }
+          ]
+        },
+        {
+          "path": "model/models/Beta.py",
+          "sha256": "6025ee3a32c9e0a39f676e64babe00093826e9950c42cf3d7bbca9fb17783d6f",
+          "url": "https://github.com/LAMDA-Tabular/BETA/blob/441e3741b58915e69024a97e372575701a9f86a3/model/models/Beta.py",
+          "matching_lines": [
+            {
+              "line": 151,
+              "text": "        self.TabPFN, self.c, self.results_file = load_model_workflow(0, 42, add_name=model_string, base_path=base_path, device=device,"
+            },
+            {
+              "line": 156,
+              "text": "            param.requires_grad = False"
+            },
+            {
+              "line": 158,
+              "text": "        self.max_num_classes = self.c['max_num_classes']"
+            },
+            {
+              "line": 168,
+              "text": "        candidate_indices = [i for i in range(num_samples)]# if i not in train_indices]"
+            },
+            {
+              "line": 192,
+              "text": "            indices = np.random.randint(0, candidate_size, (min(1024,candidate_size),))"
+            },
+            {
+              "line": 246,
+              "text": "                        indices = np.random.randint(0, candidate_size, (min(1000,candidate_size),))"
+            }
+          ]
+        },
+        {
+          "path": "model/methods/Beta.py",
+          "sha256": "f8b084249bff1cde757aa441d84a0cbc99c574e27eeee1eaf3e8052e7b599ea1",
+          "url": "https://github.com/LAMDA-Tabular/BETA/blob/441e3741b58915e69024a97e372575701a9f86a3/model/methods/Beta.py",
+          "matching_lines": [
+            {
+              "line": 102,
+              "text": "            self.pre_validate()"
+            },
+            {
+              "line": 152,
+              "text": "        test_logit = test_logit.mean(1).to(torch.float32)"
+            },
+            {
+              "line": 186,
+              "text": "    def pre_validate(self):"
+            },
+            {
+              "line": 254,
+              "text": "        if self.trlog['best_epoch'] ==-1:"
+            },
+            {
+              "line": 255,
+              "text": "            return self.PFN_predict(data, info, model_name)"
+            },
+            {
+              "line": 268,
+              "text": "        batch_size = 4096"
+            },
+            {
+              "line": 284,
+              "text": "            test_logit = test_logit.mean(1).to(torch.float32)"
+            }
+          ]
+        },
+        {
+          "path": "model/lib/tabpfn/utils.py",
+          "sha256": "d7929129967e3353cba8422b2e9a1b6376585ce943abbf6037749458142a5834",
+          "url": "https://github.com/LAMDA-Tabular/BETA/blob/441e3741b58915e69024a97e372575701a9f86a3/model/lib/tabpfn/utils.py",
+          "matching_lines": [
+            {
+              "line": 470,
+              "text": "            url = 'https://github.com/automl/TabPFN/raw/main/tabpfn/models_diff/prior_diff_real_checkpoint_n_0_epoch_42.cpkt'"
+            },
+            {
+              "line": 538,
+              "text": "            url = 'https://github.com/automl/TabPFN/raw/main/tabpfn/models_diff/prior_diff_real_checkpoint_n_0_epoch_42.cpkt'"
+            }
+          ]
+        }
+      ],
+      "python_syntax_files_passed": 28,
+      "python_syntax_failures": [],
+      "files_above_100MB": []
+    },
+    {
+      "name": "DistPFN",
+      "path": "tabpfn/third_party/upstream/DistPFN",
+      "expected": "6b375c8a7624e614e84072c419c4d127229c77b0",
+      "actual": "6b375c8a7624e614e84072c419c4d127229c77b0",
+      "origin": "https://github.com/seunghan96/DistPFN.git",
+      "status": "ok",
+      "evidence": [
+        {
+          "path": "README.md",
+          "sha256": "81c4917c2cdb3de7d30da7201dd929690f61dc41bc54e62bde9396d81e41bad4",
+          "url": "https://github.com/seunghan96/DistPFN/blob/6b375c8a7624e614e84072c419c4d127229c77b0/README.md",
+          "matching_lines": [
+            {
+              "line": 31,
+              "text": "    P_test_avg = y_prob.mean(axis=0)  "
+            },
+            {
+              "line": 32,
+              "text": "    y_prior_train = np.bincount(y_train) / len(y_train)"
+            },
+            {
+              "line": 33,
+              "text": "    adjusted = (y_prob * P_test_avg) / (y_prior_train + 1e-8)"
+            },
+            {
+              "line": 37,
+              "text": "    P_test_avg = y_prob.mean(axis=0)"
+            },
+            {
+              "line": 38,
+              "text": "    y_prior_train = np.bincount(y_train) / len(y_train)"
+            },
+            {
+              "line": 39,
+              "text": "    tau = cross_entropy(P_test_avg, y_prior_train)"
+            },
+            {
+              "line": 40,
+              "text": "    P_test_avg = softmax_temperature(P_test_avg, T=tau)"
+            },
+            {
+              "line": 41,
+              "text": "    adjusted = (y_prob * P_test_avg) / (y_prior_train + 1e-8)"
+            },
+            {
+              "line": 55,
+              "text": "pip install tabpfn[full]"
+            }
+          ]
+        },
+        {
+          "path": "src/evals/eval_TABPFN_shift_O.py",
+          "sha256": "cec0ac442a85078c449d7386cac237f7ee66a08626e05c2faa2fe0c9d91e2e8a",
+          "url": "https://github.com/seunghan96/DistPFN/blob/6b375c8a7624e614e84072c419c4d127229c77b0/src/evals/eval_TABPFN_shift_O.py",
+          "matching_lines": [
+            {
+              "line": 23,
+              "text": "def cross_entropy(p, q, eps=1e-12):"
+            },
+            {
+              "line": 35,
+              "text": "    ce = -np.sum(p * log_q, axis=1)  # shape (N,)"
+            },
+            {
+              "line": 40,
+              "text": "    p = p - np.max(p, axis=1, keepdims=True)  # 안정성 확보"
+            },
+            {
+              "line": 42,
+              "text": "    return exp_p / np.sum(exp_p, axis=1, keepdims=True)"
+            },
+            {
+              "line": 53,
+              "text": "            int(entry.id), max_samples=4000, multiclass=True, shuffled=True)"
+            },
+            {
+              "line": 81,
+              "text": "                    n_estimators=N_ensemble_configurations,"
+            },
+            {
+              "line": 89,
+              "text": "                    P_test_avg = y_prob.mean(axis=0)  "
+            },
+            {
+              "line": 91,
+              "text": "                    adjusted = (y_prob * P_test_avg) / (y_prior_train + 1e-8)"
+            },
+            {
+              "line": 92,
+              "text": "                    y_prob = adjusted / adjusted.sum(axis=1, keepdims=True)  "
+            },
+            {
+              "line": 95,
+              "text": "                    P_test_avg = y_prob.mean(axis=0)"
+            },
+            {
+              "line": 97,
+              "text": "                    tau = cross_entropy(P_test_avg, y_prior_train)"
+            },
+            {
+              "line": 98,
+              "text": "                    P_test_avg = softmax_temperature(P_test_avg, T=tau)"
+            },
+            {
+              "line": 99,
+              "text": "                    adjusted = (y_prob * P_test_avg) / (y_prior_train + 1e-8)"
+            },
+            {
+              "line": 100,
+              "text": "                    y_prob = adjusted / adjusted.sum(axis=1, keepdims=True)"
+            },
+            {
+              "line": 102,
+              "text": "                y_pred_cls = y_prob.argmax(axis=1)"
+            },
+            {
+              "line": 108,
+              "text": "                cross_entropy = log_loss(y_test, y_prob)"
+            },
+            {
+              "line": 124,
+              "text": "        roc_auc, cross_entropy, accuracy, pred_time = max(values, key=lambda x: x[0])"
+            }
+          ]
+        },
+        {
+          "path": "src/__init__.py",
+          "sha256": "efd694ff548294f70f950fbe056b7064a8349ac7ef68e43783bd84da8cedf249",
+          "url": "https://github.com/seunghan96/DistPFN/blob/6b375c8a7624e614e84072c419c4d127229c77b0/src/__init__.py",
+          "matching_lines": [
+            {
+              "line": 5,
+              "text": "BASE_DIR = '/home/seunghan9613/tabpfn-eval/src'"
+            }
+          ]
+        },
+        {
+          "path": "requirements.txt",
+          "sha256": "ac9db2ac95e2c0d0bed411ca24af716c4e8cf0def94ca39b34239a3ca1bfc23e",
+          "url": "https://github.com/seunghan96/DistPFN/blob/6b375c8a7624e614e84072c419c4d127229c77b0/requirements.txt",
+          "matching_lines": [
+            {
+              "line": 1,
+              "text": "# Please use python V3.7 - 3.9 to be compatible with all packages"
+            },
+            {
+              "line": 2,
+              "text": "gpytorch==1.5.0"
+            },
+            {
+              "line": 3,
+              "text": "#torch==1.9.0"
+            },
+            {
+              "line": 4,
+              "text": "torch"
+            },
+            {
+              "line": 5,
+              "text": "scikit-learn==0.24.2"
+            },
+            {
+              "line": 10,
+              "text": "numpy==1.21.2"
+            },
+            {
+              "line": 15,
+              "text": "torchviz"
+            },
+            {
+              "line": 16,
+              "text": "torchview"
+            }
+          ]
+        }
+      ],
+      "python_syntax_files_passed": 17,
+      "python_syntax_failures": [
+        {
+          "path": "src/evals/eval_ML_models_hyperopt_O_shift_O.py",
+          "line": 149,
+          "message": "unexpected indent"
+        },
+        {
+          "path": "src/evals/eval_ML_models_hyperopt_O_shift_X.py",
+          "line": 147,
+          "message": "unexpected indent"
+        },
+        {
+          "path": "src/evals/train.py",
+          "line": 13,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "src/tabpfn/train.py",
+          "line": 13,
+          "message": "invalid syntax"
+        }
+      ],
+      "files_above_100MB": [
+        {
+          "path": "src/tabpfn/models_diff/prior_diff_real_checkpointkc_n_0_epoch_100.cpkt",
+          "bytes": 103354871,
+          "sha256": "197df1688741caa55088283264638ebc40587c3130a6c719af825bd11ac80c3f"
+        },
+        {
+          "path": "src/tabpfn/models_diff/prior_diff_real_checkpointkc_n_0_epoch_100.cpkt.1",
+          "bytes": 103354871,
+          "sha256": "197df1688741caa55088283264638ebc40587c3130a6c719af825bd11ac80c3f"
+        }
+      ]
+    },
+    {
+      "name": "CURE",
+      "path": "tabpfn/third_party/upstream/CURE",
+      "expected": "f7c6b2f3c172ce3576f6c208a25c9655de2ea7e2",
+      "actual": "f7c6b2f3c172ce3576f6c208a25c9655de2ea7e2",
+      "origin": "https://github.com/morcellinus/CURE-ICML-FMSD.git",
+      "status": "ok",
+      "evidence": [
+        {
+          "path": "requirements.txt",
+          "sha256": "4aa4a094f558fd8285141ab2bc151386dcf2849c60cbb52b5ba2e7aa2e873d08",
+          "url": "https://github.com/morcellinus/CURE-ICML-FMSD/blob/f7c6b2f3c172ce3576f6c208a25c9655de2ea7e2/requirements.txt",
+          "matching_lines": [
+            {
+              "line": 1,
+              "text": "numpy==2.4.3"
+            },
+            {
+              "line": 3,
+              "text": "scikit-learn==1.6.1"
+            },
+            {
+              "line": 5,
+              "text": "torch==2.11.0"
+            },
+            {
+              "line": 6,
+              "text": "tabicl==2.0.3"
+            }
+          ]
+        },
+        {
+          "path": "src/stream/model/tabicl_stream_wrapper.py",
+          "sha256": "953c245e9e8b12e6a012f6c1a107803a403d6ef5ed7e44a20947b97aa8a66576",
+          "url": "https://github.com/morcellinus/CURE-ICML-FMSD/blob/f7c6b2f3c172ce3576f6c208a25c9655de2ea7e2/src/stream/model/tabicl_stream_wrapper.py",
+          "matching_lines": [
+            {
+              "line": 20,
+              "text": "        checkpoint_version: str = \"tabicl-classifier-v2-20260212.ckpt\","
+            },
+            {
+              "line": 21,
+              "text": "        n_estimators: int = 1,"
+            },
+            {
+              "line": 23,
+              "text": "        batch_size: int | None = 1,"
+            },
+            {
+              "line": 29,
+              "text": "        if n_estimators != 1:"
+            },
+            {
+              "line": 30,
+              "text": "            raise ValueError(\"This streaming pipeline fixes TabICL n_estimators=1.\")"
+            },
+            {
+              "line": 32,
+              "text": "            from tabicl import TabICLClassifier"
+            },
+            {
+              "line": 42,
+              "text": "        self.clf = TabICLClassifier("
+            },
+            {
+              "line": 43,
+              "text": "            n_estimators=1,"
+            }
+          ]
+        },
+        {
+          "path": "src/stream/experiment/tabicl_cure_runner.py",
+          "sha256": "55edb4d2d7a67ca9b0dca3a13c4083e987a0c700bc44c7dd6bed731dc3e702a5",
+          "url": "https://github.com/morcellinus/CURE-ICML-FMSD/blob/f7c6b2f3c172ce3576f6c208a25c9655de2ea7e2/src/stream/experiment/tabicl_cure_runner.py",
+          "matching_lines": [
+            {
+              "line": 26,
+              "text": "    budget_B: int = 1000"
+            },
+            {
+              "line": 27,
+              "text": "    short_ratio: float = 0.75"
+            },
+            {
+              "line": 28,
+              "text": "    warmup_steps: int = 100"
+            },
+            {
+              "line": 136,
+              "text": "            step_fit_s = float(model.fit(X_mem, y_mem))"
+            },
+            {
+              "line": 137,
+              "text": "            y_hat, probs, step_pred_s = model.predict(x_t)"
+            },
+            {
+              "line": 154,
+              "text": "        memory.append_then_evict(x_t, y_t, t)"
+            }
+          ]
+        },
+        {
+          "path": "scripts/run_tabicl_cure.py",
+          "sha256": "da330b3b856c17a4566d74bc57599a79eb1de89ca1376f585006d0b48de7da30",
+          "url": "https://github.com/morcellinus/CURE-ICML-FMSD/blob/f7c6b2f3c172ce3576f6c208a25c9655de2ea7e2/scripts/run_tabicl_cure.py",
+          "matching_lines": [
+            {
+              "line": 21,
+              "text": "    \"poker\": 829201,"
+            },
+            {
+              "line": 39,
+              "text": "    p.add_argument(\"--tabicl-model-path\", type=str, default=\"auto\")"
+            }
+          ]
+        }
+      ],
+      "python_syntax_files_passed": 17,
+      "python_syntax_failures": [],
+      "files_above_100MB": []
+    }
+  ],
+  "distpfn_t_vector_probe": {
+    "status": "upstream shape error reproduced",
+    "error": "AxisError",
+    "message": "axis 1 is out of bounds for array of dimension 1"
+  },
+  "distpfn_prior_float_probe": {
+    "status": "integer-label requirement confirmed",
+    "error": "TypeError",
+    "message": "Cannot cast array data from dtype('float32') to dtype('int64') according to the rule 'safe'"
+  },
+  "parent_tracked_clone_files": [],
+  "existing_vendored_diff": []
+}

@@ -1,0 +1,226 @@
+% !TeX root = 20261029_sota_review.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\usepackage{tabularx}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\hypersetup{pdftitle={여섯 SOTA 후보의 공식 구현 점검과 IDS 비교 실험 설계}}
+\begin{document}
+\reporttitle{2026-10-29}{여섯 SOTA 후보의 공식 구현 점검과\\IDS 비교 실험 설계}
+\recordnote{수행 상태: TabDPT, LoCalPFN, BoostPFN, BETA, DistPFN, CURE의 공식 저장소 여섯 개를 독립적으로 복제하고 commit을 고정했다. 소스·논문·checkpoint 메타데이터를 검토하고 작은 배열 연산 오류를 재현했다. 패키지 통합 설치, 여섯 모델의 IDS 학습·추론, GPU 최대 용량 측정은 수행하지 않았다. 본 문서는 비교 준비 검토이며 새 성능 결과나 새 연구 버전이 아니다.}
+
+\section{핵심 판단: backbone과 라벨 접근 조건을 함께 맞춘다}
+\textbf{여섯 방법을 모두 같은 TabPFN 버전의 분류기로 간주하면 구조의 효과와 기반 모델의 차이가 섞인다.} Tabular Prior-data Fitted Network (TabPFN)의 v1을 사용했던 LoCalPFN·BoostPFN·BETA, 원 논문에서 v2를 주요 기반으로 사용했던 DistPFN, 자체 사전학습 모델인 TabDPT, Tabular In-Context Learning (TabICL)의 v2를 사용한 CURE 공개 구현을 구별한다. Intrusion Detection System (IDS)에서 제안 구조의 이점을 확인하려면 각 개선 방법과 해당 backbone 단독을 짝지어 비교한다. 기존 EXP91의 TabPFN-v3와의 절대 성능 비교도 함께 제시하되, 그 차이 전체를 앙상블 구조의 효과로 해석하지 않는다.
+
+\textbf{고정 라벨 비교와 스트림 갱신 비교를 분리한다.} LoCalPFN·BoostPFN·BETA·TabDPT는 같은 학습 행으로 고정 test를 분류하는 주 비교에 넣을 수 있다. DistPFN에는 비라벨 query 전체의 평균 예측을 사용할지 명시하고, CURE에는 예측 후 정답을 언제 얼마나 제공할지 별도로 정해야 한다. 특히 CURE에 모든 test 정답을 순차 제공하면서 다른 방법은 공격당 n개만 학습시키는 구성은 같은 라벨 예산의 비교가 아니다.
+
+\begin{longtable}{L{.13\linewidth}L{.25\linewidth}L{.25\linewidth}L{.27\linewidth}}
+\caption{공식 구현에서 확인한 기반 모델과 식별자. 패키지 버전과 모델 세대를 구별했다.}\\
+\toprule 방법 & Backbone / 버전 & 가중치·기본 설정 & 우선 비교 위치\\\midrule\endfirsthead
+\toprule 방법 & Backbone / 버전 & 가중치·기본 설정 & 우선 비교 위치\\\midrule\endhead
+TabDPT & 자체 TabDPT v1.3; 패키지 1.3.1 & \path{tabdpt1_3.safetensors}; 원 논문 시기와 다른 최신 배포판 & 고정 학습 비교. 논문 당시 버전은 별도 재현 조건\\
+LoCalPFN & TabPFN-v1 구조를 직접 구현 & v1 \path{epoch_42.cpkt}; 검색 + PFN 가중치 fine-tuning & v1 단독, 검색만 한 TabPFN-kNN과 함께\\
+BoostPFN & TabPFN-v1 API/가중치 & \path{gboost_tabpfnV2}의 V2는 boost 구현 분기 & v1 단독 및 같은 횟수 bagging과 함께\\
+BETA & 고정 TabPFN-v1 + 학습 encoder & v1 \path{epoch_42.cpkt}; 기본 encoder 16개 & v1 단독, bootstrap 및 encoder 제거 대조\\
+DistPFN & backbone 독립 보정; 논문 주요 기반 v2 & 현재 저장소의 \path{tabpfn} 설치 버전은 미고정 & v2 단독과 보정; v3 적용은 별도 조합으로 표기\\
+CURE & TabICL-v2; 패키지 2.0.3 & \path{tabicl-classifier-v2-20260212.ckpt}; estimator 1 & 같은 label-release를 받는 TabICL 버퍼 대조\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\clearpage
+\section{입력 규모: 전체 풀, context, query batch는 다른 수다}
+\textbf{context가 1,000개인 방법도 전체 학습 풀이 1,000개로 제한되는 것은 아니다.} 전체 풀 $N$은 라벨을 가진 학습 행 수, context $K$는 한 번의 모델 호출에서 참고하는 행 수, query batch $Q$는 한 번에 예측하는 행 수다. 검색·bagging·boosting은 큰 $N$에서 작은 $K$를 반복 구성한다. 아래의 기본값·명시적 검사·논문 데이터 규모는 GPU에서 실측한 최대 처리량과 구별한다.
+
+\small
+\begin{longtable}{L{.13\linewidth}L{.28\linewidth}L{.28\linewidth}L{.21\linewidth}}
+\caption{소스 기준 규모와 현재 실험에서의 의미. 입력 행은 모두 수치 배열로 변환해야 한다.}\\
+\toprule 방법 & 전체 풀과 context & 특성·클래스 & Query / 비용\\\midrule\endfirsthead
+\toprule 방법 & 전체 풀과 context & 특성·클래스 & Query / 비용\\\midrule\endhead
+TabDPT v1.3 & API 기본 \path{context_size=None}: 전량. 유한 K에서 subsample 또는 검색. README 표는 K=2,048·ensemble 8 조건 & 가중치 메타데이터: 128특성·16클래스. 초과 특성 PCA/열 샘플링, 초과 클래스 분해 경로 존재 & GPU 기본 Q=131,072는 안전 용량 보장이 아님. 작은 Q부터 측정\\
+LoCalPFN & 풀 전체를 검색. FT 추론 K=$\min(\lfloor10\sqrt N\rfloor,1000)$ & 기본 100특성·10클래스. 논문 전체 데이터 규모 최대 130,064행 & 기본 Q=512; query별 이웃 context 때문에 메모리 증가\\
+BoostPFN & 기본 weak learner 최대 500행. 작은 자료 경로는 샘플 비율도 적용 & 기본 v1은 100특성·10클래스. 원 논문 큰 자료 표에는 수백만 행이 포함 & 단계 수 $T$와 내부 estimator 수를 모두 기록. 단계별 전체 풀 예측 비용 발생\\
+BETA & 전체 풀에서 복원추출. 학습 support 최대 1,024; 추론 최대 1,000행 & 원 특성은 encoder로 기본 100차원 변환. 공개 기본 경로는 v1의 10클래스 범위 & encoder 16개; 공식 test chunk 4,096. 입력·학습 배열의 장치 상주 확인 필요\\
+DistPFN & 자체 context 상한 없음: backbone 상속. 공개 평가 스크립트는 전체 자료를 4,000행으로 제한 & backbone 상속. 이 제한은 방법의 이론적 최대 N이 아님 & 전체 query 평균을 쓸 경우 batch 평균을 따로 적용하지 않음\\
+CURE & 기본 버퍼 B=1,000: short 750 + long 250. 스트림 길이는 별도 & TabICL 패키지·가중치에 종속. wrapper에는 고정 특성 수 검사가 없음 & Q=1, 매 예측 전 버퍼로 fit 호출. 기본 poker 실행 길이 829,201행\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\textbf{TabDPT의 최신 checkpoint는 모델 구조까지 직접 확인했다.} Hugging Face의 safetensors 헤더에서 128특성, 16클래스, 32층, hidden dimension 512를 확인했고, 가중치 파일 크기는 252,233,296 bytes였다. 메타데이터의 \path{max_eval_context=1048576}은 저장된 설정값이며 ``이 장비에서 100만 행 context가 실행 가능하다''는 실측 근거가 아니다. 전체 가중치는 다운로드하거나 실행하지 않았고 헤더·모델 revision·배포 SHA-256만 기록했다.
+\sourcepath{docs/lablog/evidence/20261029/tabdpt_v13_checkpoint_metadata.json}
+
+\textbf{현재 IDS 입력은 특성 수와 클래스 수보다 표본 불균형·추론 비용을 먼저 점검할 조건이다.} EXP91 입력은 두 데이터 모두 46특성이며 CIC2018은 정상 포함 7클래스, ToN-IoT는 10클래스다. 정상 750개를 고정하면 공격당 $n\in\{2,3,5,10,20\}$에서 학습 풀은 CIC2018 762--870행, ToN-IoT 768--930행이다. 따라서 모든 행을 한 context에 넣을 수 있는 설정도 있지만, 각 원 방법의 기본값이 실제로 전량을 사용한다는 뜻은 아니다. 예를 들어 LoCalPFN의 위 식은 이 범위에서 약 276--304개를 검색하고, BETA의 복원추출은 같은 크기로 뽑아도 일부 원본 행을 누락한다.
+
+\begin{table}[H]\centering\small
+\caption{기존 EXP91과 연결하는 학습 규모. 정상 750개 + 공격 클래스별 n개이며 validation도 이 예산에 포함한다.}
+\begin{tabular}{lrrrrrr}\toprule
+자료 & 공격 수 & n=2 & n=3 & n=5 & n=10 & n=20\\\midrule
+CIC2018 & 6 & 762 & 768 & 780 & 810 & 870\\
+ToN-IoT & 9 & 768 & 777 & 795 & 840 & 930\\\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{전체 test는 별도의 큰 추론 작업이다.} 고정 test는 CIC2018 4,023,114행, ToN-IoT 5,504,060행이며 이 행 수를 context 크기와 혼동하지 않는다. 46열 원본을 유지하고 PROTOCOL·L7\_PROTO의 범주형 처리 여부를 모델별로 기록한다. One-hot 변환 뒤 100열을 넘으면 v1의 직접 입력 제한과 충돌하므로 무조건 공통 one-hot 처리를 적용하지 않는다. 변환기·결측치 대체·정규화 통계는 허용된 학습 자료에서만 맞추고, test 정답으로 중복 벡터나 충돌 라벨을 제거하지 않는다.
+\sourcepath{configs/experiments/exp91_input_reference.json}
+
+\section{방법별 실행 경로와 필요한 수정}
+\subsection{TabDPT (NeurIPS, 2025): 자체 사전학습 모델}
+\textbf{TabDPT 공식 inference 저장소의 현재 HEAD는 원 논문 이후 모델을 기본으로 사용했다.} 패키지 1.3.1은 v1.3 가중치를 내려받았고, README는 v1.2를 TabDPT-Turbo로 설명했다. 따라서 최신 구현을 사용한 결과는 ``TabDPT-v1.3''으로 쓰고 원 논문 당시 설정의 완전 재현으로 표시하지 않는다. 이 저장소의 \path{fit(X,y)}는 전처리·학습 배열 보관을 수행했으며 자체 사전학습을 다시 실행하지 않았다.
+
+\textbf{IDS adapter는 numpy 배열과 확률 출력을 연결하면 된다.} 가중치 경로, 모델 SHA-256, ensemble 유무·횟수, context 크기, reduction 종류를 명시하고 자동 최신 다운로드에 의존하지 않는다. 단일 \path{predict_proba} 호출과 ensemble 호출을 혼동하지 않으며, 기본 \path{context_size=None}과 README의 2,048행 결과를 구별한다. 현재 1,000행 미만 풀에서는 전량 context가 자연스러운 시작점이고, batch를 줄여 peak memory와 처리량을 측정한다.
+
+\paragraph{Discussion.}
+TabDPT는 실제 표 사전학습 기반을 제공했으므로 제안 모델과의 절대 성능 비교에 유용하다. 그러나 같은 backbone에 앙상블만 추가한 대조는 아니므로 구조 효과를 분리하는 단독 TabPFN 대조를 함께 둔다. 소수 라벨에서 TabDPT가 약하다고 가정하지 않고, 같은 행·seed·추가 비라벨 접근 조건에서 확인한다.
+\sourcepath{tabpfn/third_party/upstream/TabDPT/src/tabdpt/estimator.py}
+\href{https://github.com/layer6ai-labs/TabDPT-inference/tree/93670551adba28b186354fab9a1584c56c34aa76}{공식 고정 소스} · \href{https://huggingface.co/Layer6/TabDPT}{공식 가중치}
+
+\subsection{LoCalPFN (NeurIPS, 2024): 지역 검색과 가중치 적응}
+\textbf{Locally-calibrated PFN (LoCalPFN)은 \path{ft} 경로에서 PFN 가중치를 실제로 학습했다.} \path{knn}만 실행하면 검색 대조군이며 LoCalPFN 전체 방법이 아니다. 기본 fine-tuning은 21 epoch, epoch당 최대 30 step, 학습 batch 2, 학습 query 길이 1,000이고 validation으로 모델을 선택했다. 원 논문은 100특성·10클래스 이하의 TabZilla 자료와 별도 train/validation/test 분할을 사용했다.
+
+\textbf{소수 라벨 adapter는 이웃 수와 출력 열 수부터 고정한다.} 검색 수가 N보다 크면 FAISS의 -1 padding을 처리해야 하므로 유효 이웃만 사용하고 support와 학습 query를 분리한다. 공식 \path{eval_ft_knn}은 출력 클래스 수를 평가 loader의 정답에서 계산했으므로, IDS adapter에서는 학습 시 고정한 전체 클래스 사전을 사용한다. 그렇지 않으면 어떤 chunk에 희귀 클래스가 없다는 이유만으로 출력 폭이 바뀔 수 있다. 학습·검증 분할은 n개 예산 안에서 만들고 test loader를 early stopping에 연결하지 않는다.
+
+\paragraph{Discussion.}
+LoCalPFN은 지역성의 효과와 fine-tuning의 효과를 구분하는 데 적합하다. v1 단독, v1+kNN, LoCalPFN을 같은 예산에서 비교하면 제안 앙상블의 이점이 단순 검색·적응으로 설명되는지 검증할 수 있다. n=2에서 검증용으로 한 행을 떼는 영향이 크므로 내부 선택 규칙과 최종 전량 재학습 절차를 보고한다.
+\sourcepath{tabpfn/third_party/upstream/LoCalPFN/methods/ftknn.py}
+\href{https://github.com/layer6ai-labs/LoCalPFN/tree/ff8803c57cd277380b2444f0f5ed4856b46f47f5}{공식 고정 소스} · \href{https://papers.nips.cc/paper_files/paper/2024/hash/c40daf14d7a6469e65116507c21faeb7-Abstract-Conference.html}{공식 논문}
+
+\subsection{BoostPFN (AISTATS, 2025): 작은 context의 순차 결합}
+\textbf{BoostPFN의 \path{gboost_tabpfnV2}는 TabPFN-v2를 의미하지 않았다.} 이 분기는 \path{SamplingGradientboost(..., version=2)}를 선택했고, 실제 분류기는 v1의 \path{N_ensemble_configurations} API와 v1 checkpoint를 사용했다. 큰 자료 경로의 기본 \path{maxsample=500}은 weak learner의 context 크기였고 전체 학습 풀 제한은 아니었다. 작은 자료 경로에서는 \path{sampling_size}와 최대 500개 중 작은 값으로 context가 정해졌다.
+
+\textbf{기존 호환 포트를 활용하되 공식 원본과의 차이를 기록한다.} 기존 \path{third_party/BoostPFN}에는 v1 이름 충돌과 제거된 scikit-learn 내부 API를 다루는 포트가 있으므로 원본으로 덮어쓰지 않는다. 각 라운드의 표본 ID, 표본별 가중치, class remapping, 내부 estimator 수, 최종 결합 계수를 저장하는 adapter가 필요하다. 원본 \path{fit(X,y,X_test)}는 학습 중 query 예측도 누적했으므로 학습 비용과 최종 추론 비용을 분리하고 test 정답을 넘기지 않는다. n=2처럼 정상 비율이 큰 조건에서는 rare class가 샘플링에서 빠지는 빈도를 기록하며, class 보장 샘플링을 추가하면 원형과 구별한 보완 ablation으로 표시한다.
+
+\paragraph{Discussion.}
+BoostPFN은 앙상블을 어떻게 나누고 합칠지에 대한 직접 대조다. 동일 v1·유사 호출 예산의 단순 bagging과 비교해 잔차 기반 선택의 효과를 확인한다. 기존 포트의 과거 실행 기록은 활용할 수 있지만, 현재 데이터·환경에서의 성공이나 성능으로 대신하지 않는다.
+\sourcepath{tabpfn/third_party/boostpfn_port/IMBALCIC_PORT_NOTES.md}
+\href{https://github.com/yxzwang/BoostPFN/tree/c957ac2af8d4f308f13a5b1061b4a6eb37945030}{공식 고정 소스} · \href{https://proceedings.mlr.press/v258/wang25d.html}{공식 논문}
+
+\subsection{BETA (ICML, 2025): 학습 encoder와 bootstrap}
+\textbf{Bagging and Encoder-based Fine-tuning for TabPFN Adaptation (BETA)은 v1 PFN 가중치를 고정하고 입력 encoder를 학습했다.} 공개 기본 설정은 encoder 16개, 두 층 MLP, 출력 100차원, 최대 200 epoch, batch 1,024였다. 실제 코드는 학습 support를 최대 1,024개, 추론 support를 최대 1,000개 복원추출했고, test에서는 encoder별 logit을 평균했다. 논문에는 10클래스 초과를 위한 출력 코드 확장이 있었으나 현재 공개 기본 \path{Beta.py} 경로에는 해당 확장이 확인되지 않았으므로 10클래스 초과 지원을 그대로 주장하지 않는다.
+
+\textbf{BETA 재현에는 모델 선택 결과와 support 중복을 명시해야 한다.} \path{pre_validate}가 측정한 단독 PFN보다 검증 성능이 개선되지 않으면 \path{best_epoch=-1}을 유지하고 test도 단독 PFN으로 돌아갔다. 따라서 공식 선택을 포함한 BETA 결과에는 fallback 여부·빈도를 기록하며, encoder 강제 사용 결과는 별도 대조로 표시한다. 또한 학습 query를 뽑은 뒤 support 후보에서 그 행을 제외하지 않아 학습 중 자기 행이 support에 다시 들어갈 수 있었다. 이 동작은 test 정답 유출과는 다르지만 support/query를 분리하는 수정은 학습 과제를 바꾸므로 원형 실행과 보완 실행을 구분한다.
+
+\textbf{공개 코드와 논문 설정의 차이를 lock 파일로 남긴다.} 논문 Appendix B.3의 weight decay는 $10^{-5}$였지만 현재 기본 JSON은 0.02였고, encoder 형태는 \path{tabm-mini}였다. 저장소에는 완전한 requirements lock이 없으며 실제 import에는 \path{category_encoders}, \path{delu} 등이 필요했다. v1 자동 다운로드 URL은 오래된 경로이므로 검증한 v1 checkpoint를 지정하고, 원 논문 설정 재현과 현재 코드 기본 실행을 별도 이름으로 기록한다.
+
+\paragraph{Discussion.}
+BETA는 제안 모델이 단순 bagging·학습 결합보다 낫다는 것을 보이는 데 중요한 대조다. 원형의 선택 규칙을 보존한 결과와 동일 backbone 단독을 함께 보고하고, fallback 때문에 동일한 점수가 나온 경우를 encoder 학습 성공으로 해석하지 않는다. 극소수 라벨에서의 bootstrap 클래스 누락·학습 overlap이 성능에 미치는 영향은 별도 ablation으로 검증한다.
+\sourcepath{tabpfn/third_party/upstream/BETA/model/methods/Beta.py}
+\href{https://github.com/LAMDA-Tabular/BETA/tree/441e3741b58915e69024a97e372575701a9f86a3}{공식 고정 소스} · \href{https://proceedings.mlr.press/v267/liu25cn.html}{공식 논문}
+
+\subsection{DistPFN (ICML, 2026): 학습 후 확률 보정}
+\textbf{DistPFN은 고유 backbone을 새로 학습하는 모델이 아니라 예측 확률을 조정하는 방법이었다.} 논문은 TabPFN-v2를 주요 기반으로 사용했고, 공식 README는 다른 표 기반 모델에도 적용할 수 있는 보정으로 소개했다. 현재 평가 코드의 \path{TabPFNClassifier(n_estimators=...)}는 설치 패키지에 의존했고 버전을 고정하지 않았다. 저장소에 남은 v1 계열 파일이나 오래된 requirements만 보고 논문 backbone이 v1이라고 분류하면 안 된다.
+
+\textbf{query 평균 보정은 평가 집합의 구성과 연결된다.} README 형태는 학습 비율 $\pi_c$와 전체 query 평균 $\bar p_c$에 대해 $p'_{ic}\propto p_{ic}\bar p_c/(\pi_c+\epsilon)$였다. 전체 고정 test를 대상으로 비교한다면 먼저 확률 합과 행 수를 누적하고, 같은 $\bar p$로 모든 chunk를 보정한다. chunk마다 다른 평균을 적용하면 다른 방법이 되며 마지막 작은 chunk에서 결과가 더 바뀔 수 있다. 이 접근은 비라벨 test 분포를 함께 사용하는 transductive 조건으로 기록하고, 학습 측 비라벨 풀에서만 평균을 추정하는 조건은 별도 변형으로 둔다.
+
+\textbf{공식 평가 스크립트는 그대로 실행하기 전에 작은 오류와 선택 규칙을 고쳐야 한다.} DistPFN-T의 평균 확률은 1차원인데 \path{cross_entropy}는 axis=1을 사용했고, 해당 함수만 분리한 배열 검증에서 AxisError를 재현했다. 학습 라벨을 float tensor로 바꾼 뒤 \path{np.bincount}에 전달하는 경로도 정수형 변환이 필요했다. 또한 함수 이름 \path{cross_entropy}를 점수 변수로 덮어쓰고, 여러 ensemble 설정 중 test AUC가 가장 큰 결과를 고르는 부분이 있었다. IDS adapter는 함수명·차원·정수 label을 바로잡고, 설정을 미리 고정하거나 예산 안의 validation으로만 선택하며 수정 diff를 남긴다.
+
+\paragraph{Discussion.}
+DistPFN-v2와 단독 v2의 비교는 보정의 효과를 보여주고, DistPFN-v3와 단독 v3의 비교는 현재 기반 모델에서도 같은 이점이 남는지 보여준다. 확률 보정 자체에는 추가 공격 라벨이 필요하지 않지만 query 집합 접근 조건은 같아야 한다. 코드 오류 수정과 test 기반 선택 제거는 필요한 재현 작업이며, 수정 전 스크립트 출력이 곧 공정한 비교 결과라는 가정은 하지 않는다.
+\sourcepath{docs/lablog/evidence/20261029/sota_source_audit.json}
+\href{https://github.com/seunghan96/DistPFN/tree/6b375c8a7624e614e84072c419c4d127229c77b0}{공식 고정 소스} · \href{https://arxiv.org/abs/2605.04363}{논문}
+
+\subsection{CURE (FMSD@ICML Workshop, 2026): 제한된 context 갱신}
+\textbf{Context management via Uncertainty-aware admission and Redundancy-aware Eviction (CURE)의 공개 실행 경로는 TabICL-v2 스트림이었다.} 기본 버퍼는 1,000행이며 short/long 비율은 0.75/0.25, warmup은 100행이었다. 실행 순서는 이전 버퍼로 fit, 현재 행 예측, 정답으로 지표 계산, 정답과 함께 현재 행을 버퍼에 넣는 방식이었다. 이 fit은 wrapper의 TabICL context 준비 호출이며 코드에 gradient optimizer가 있는 fine-tuning 단계는 아니었다.
+
+\textbf{현재 n개 라벨 비교에서는 CURE의 원래 이점을 거의 작동시키지 못할 수 있다.} 정상 750개 조건도 전체 학습 풀이 최대 930행이므로 기본 버퍼 1,000행보다 작다. 이 상태에서 최종 context를 고정해 평가하면 초과 용량의 장기 eviction 정책을 충분히 시험하지 못한다. 따라서 원형 비교는 같은 스트림·정답 공개 시점·버퍼 용량의 TabICL+FIFO, reservoir, CURE로 구성한다. test 이후 정답을 추가 학습에 쓰지 않는 주 비교와 이 스트림 결과를 다른 표에 둔다.
+
+\textbf{고정 라벨 시나리오와 연결하려면 제한된 파생 실험을 별도로 명명한다.} 허용된 학습 행만 순차 입력하면서 128 또는 256행 버퍼를 구성하고, 최종 버퍼를 고정해 공통 test를 평가하는 ``CURE memory / frozen evaluation''을 추가할 수 있다. 이때 모든 정책에 같은 학습 순서와 정답을 주고, full-pool TabICL도 참고점으로 둔다. 이는 원 논문의 연속 prequential 평가와 다른 이식 조건이며 추가 공격 라벨은 사용하지 않는다. CLI에 직접 노출되지 않은 budget·seed 설정은 \path{RunConfig} adapter로 전달한다.
+
+\paragraph{Discussion.}
+CURE는 context 관리 기제의 대조로 적합하지만 앙상블 결합의 직접 대조는 아니다. 정상·희귀 공격을 어느 정도 유지하는지와 갱신 비용을 측정하면 제안 모델의 표본 선택과 연결되는 부분을 평가할 수 있다. TabICL-v2 원형 결과를 먼저 확보하고 TabPFN-v3로 backbone을 교체한 CURE는 별도 이식 결과로 남긴다.
+\sourcepath{tabpfn/third_party/upstream/CURE/src/stream/experiment/tabicl_cure_runner.py}
+\href{https://github.com/morcellinus/CURE-ICML-FMSD/tree/f7c6b2f3c172ce3576f6c208a25c9655de2ea7e2}{공식 고정 소스} · \href{https://arxiv.org/abs/2606.18677}{논문}
+
+\section{실험 계획: 동일 표본과 backbone 짝 비교}
+\textbf{첫 비교는 기존 EXP91 입력과 연결하되 새 모델용 공통 adapter가 필요하다.} 원래 분할과 46개 특성을 유지하고 공격당 n=2,3,5,10,20, 정상 750개 조건을 사용한다. 기존 seed 43 결과는 연결 기준으로 두고 본 비교에서는 43--47의 동일 5 seed를 모든 방법에 적용한다. 학습 행 ID와 class mapping을 한 번 만들어 공유하고 전체 test를 고정한다. 정상도 n개인 EXP89형 조건은 정상 비율에 대한 보조 실험으로 분리한다.
+
+\begin{table}[H]\centering\small
+\caption{비교 묶음과 해석할 수 있는 효과. CURE는 별도 조건에서 비교한다.}
+\begin{tabularx}{\linewidth}{p{.20\linewidth}YY}\toprule
+묶음 & 포함할 방법 & 확인할 효과\\\midrule
+실용 성능 & XGB, PFN-v1/v2/v3, TabDPT-v1.3, TabICL-v2 & 같은 라벨에서 어떤 완성 모델이 잘 분류하는가\\
+지역 적응 & v1 단독, v1+kNN, LoCalPFN & 검색 효과와 실제 fine-tuning 효과\\
+앙상블 & v1 단독, 호출 수 대응 bagging, BoostPFN, BETA & 나누는 방식·표현 학습·결합 효과\\
+확률 보정 & v2 / v2+DistPFN / v2+DistPFN-T; v3 조합은 별도 & backbone 고정 상태의 보정 효과\\
+context 관리 & TabICL-v2+FIFO / reservoir / CURE & 같은 정답 공개·버퍼 예산의 보존·갱신 효과\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{validation도 총 라벨 예산에 포함한다.} n개를 학습에 전부 넣은 뒤 별도의 공격 정답으로 early stopping이나 가중치를 고르면 ``공격당 n개 라벨'' 조건이 아니다. LoCalPFN·BETA의 선택은 예산 안의 층화 교차검증으로 수행하고 정한 epoch·설정으로 전체 n개를 다시 학습하는 절차를 우선 검토한다. n=2는 2-fold로 한 행씩만 남으므로 선택 분산을 보고하고, 별도의 개발 데이터에서 고정한 학습 step을 사용하는 대조도 유용하다. 추가 validation 라벨을 허용하는 재현 조건을 별도로 수행할 경우 학습+검증의 합계를 반드시 표시한다.
+
+\textbf{제안 모델의 장점은 평균 정확도 하나로 판단하지 않는다.} 주 지표는 정상과 공격을 함께 예측한 전체 confusion matrix에서 계산한 attack macro-F1이며, 전체 macro-F1, 클래스별 F1·recall, 정상 false-positive rate를 함께 보고한다. 공격 클래스 F1을 계산할 때 정상에서 공격으로 오인한 false positive를 빼지 않는다. ``정상 행을 평가에서 제거한 결과''는 다른 평가 view로 표기한다. 클래스별 평가 표본 수·학습 표본 수와 동일 seed에서의 성능 차이를 제시하며, 전처리·학습·모델 선택·추론·갱신 시간과 peak GPU memory를 구분한다.
+
+\textbf{비라벨 자료와 계산 예산은 별도 축으로 기록한다.} 기본 고정 라벨 비교에서는 추가 비라벨 풀을 사용하지 않고, 제안 모델이 10,000개 비라벨 행을 이용하면 동일한 접근 조건의 비교를 별도로 만든다. 여러 encoder, boosting round, PFN 내부 estimator는 같은 ``모델 수''가 아니므로 각각의 수와 실제 PFN 호출 수·처리 시간을 기록한다. 문헌 기본 설정의 성능 비교와 시간 또는 호출 예산을 맞춘 비교를 나란히 두면 구조의 이점과 추가 계산의 이점을 구별할 수 있다.
+
+\section{환경과 실행 순서}
+\textbf{한 환경에 여섯 저장소의 requirements를 합쳐 설치하면 버전 충돌이 발생한다.} 최신 TabDPT는 Python 3.10 이상·torch 2.6 이상·FAISS 1.11 이상 1.13 미만을 요구했지만 현재 프로젝트의 \path{requirements-sota.txt}는 FAISS 1.15.0을 고정했다. BoostPFN 원본은 Python 3.7·torch 1.9·scikit-learn 0.24.2를 기준으로 했고, BETA에는 전체 환경 lock이 없었다. CURE는 torch 2.11.0·tabicl 2.0.3을 고정했으므로 원격 CUDA 12.4 환경에 무조건 덮어 설치하지 않는다.
+
+\begin{table}[H]\centering\small
+\caption{환경 구성 방안. 아래는 설치·실행 검증 전의 분리 계획이다.}
+\begin{tabularx}{\linewidth}{p{.20\linewidth}YY}\toprule
+환경 & 대상 & 먼저 확인할 사항\\\midrule
+기존 PFN-v3 & 기존 baseline, DistPFN-v3 & checkpoint와 패키지 버전 별도 기록; 보정 배열 연산만 분리\\
+legacy PFN & LoCalPFN·BoostPFN·BETA & v1 namespace·checkpoint; 각 방법 의존성 충돌 시 개별 환경\\
+TabDPT & TabDPT-v1.3 & FAISS 범위와 torch CUDA build; 가중치 해시 고정\\
+TabICL & TabICL-v2·CURE & 패키지 2.0.3, private loader patch, 장치 호환성과 메모리\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{CURE의 torch 요구값과 TabICL 패키지의 최소 요구값은 다르다.} 실제 TabICL 2.0.3 wheel metadata는 Python 3.10 이상·torch 2.2 이상을 요구했다. 따라서 CUDA 12.4 장비의 검증된 torch 2.6 환경에서 동작 가능성을 확인할 여지는 있지만, 이것을 CURE 공식 환경 재현 성공으로 미리 선언하지 않는다. 호환 환경을 만들 경우 원본 환경과의 차이, import·fit·predict의 실제 검증 결과를 저장한다. 모델 가중치·정밀도·attention backend 차이도 비용 비교에 포함한다.
+\sourcepath{docs/lablog/evidence/20261029/tabicl_v203_package_metadata.json}
+
+\textbf{작은 검증을 통과한 방법부터 전체 test로 확대한다.} 다음 순서로 진행하면 수백만 query에 실패를 반복하는 비용을 줄일 수 있다.
+\begin{enumerate}[leftmargin=*]
+\item 7·10클래스 합성자료로 import, checkpoint hash, fit/predict, 확률 열 정렬, 소수 클래스 누락, 저장·복원과 추가 정답 미사용을 확인한다.
+\item 두 IDS에서 n=2,20·seed 43의 동일 학습 행을 연결한다. train 내부 선택만 사용하고, 작은 query 부분집합은 실행 비용 검증용으로 한정해 성능 주장에 사용하지 않는다.
+\item LoCalPFN은 Q=8 또는 16, 다른 방법은 Q=256 또는 1,024부터 실제 메모리·시간을 측정한다. chunk 크기·순서 변경에 대한 예측 일관성을 확인하고, DistPFN의 전체 평균 보정은 별도 두 단계로 검증한다.
+\item n 다섯 값·두 자료·다섯 seed의 고정 비교로 확대한다. 방법당 50조건이며 내부 교차검증 비용은 별도 합산한다. CURE의 스트림/작은 버퍼 실험은 별도 실행으로 등록한다.
+\end{enumerate}
+
+\textbf{현재 준비 우선순위는 backbone 단독·DistPFN 보정, BoostPFN·LoCalPFN, BETA, CURE 순으로 둔다.} 앞 단계에서 공통 배열·라벨·지표·chunk 처리를 검증한 뒤 기존 v1 포트를 활용하고, 이어 BETA의 선택·encoder 학습 경로를 연결한다. CURE는 라벨 공개 조건까지 달라 별도 adapter로 구성한다. 이 순서는 재현 작업의 의존관계이며 성능 순위 예측이 아니다. 실제 실험은 승인된 v7 안에서 \path{scripts/results_versions.py run}으로 등록하고 완료 뒤 실험 ID가 있는 한국어 결과 보고서를 작성한다.
+
+\section{Git 관리와 다른 장치에서 복원하기}
+\textbf{공식 원본은 기존 third\_party 코드와 분리해 보존했다.} 기존 BoostPFN·LoCalPFN·DistPFN 및 boostpfn\_port는 수정하지 않았고, 아래 \path{upstream/}의 여섯 디렉터리는 각자의 .git을 갖는 독립 clone이다. 상위 프로젝트에는 \path{/tabpfn/third_party/upstream/} 전체를 ignore 처리했으며 submodule이나 gitlink로 등록하지 않았다. 원본 Git에 포함된 LoCalPFN의 약 103 MB 가중치와 DistPFN의 약 103 MB 파일 두 개도 상위 Git 추적에서 제외된다.
+
+\begin{Verbatim}[fontsize=\small,breaklines=true]
+tabpfn/third_party/
+  BoostPFN/                 # 기존 호환 코드 유지
+  LoCalPFN/                # 기존 코드 유지
+  DistPFN/                 # 기존 코드 유지
+  boostpfn_port/            # 기존 호환 기록 유지
+  upstream_sources.lock.json
+  upstream/                # 상위 Git 전체 제외
+    TabDPT/  LoCalPFN/  BoostPFN/  BETA/  DistPFN/  CURE/
+\end{Verbatim}
+
+\begin{table}[H]\centering\small
+\caption{2026-10-29에 복제한 공식 commit. 전체 SHA·URL은 lock JSON에 보존했다.}
+\begin{tabular}{ll}\toprule
+방법 & 고정 commit 앞 12자리\\\midrule
+TabDPT & \texttt{93670551adba}\\
+LoCalPFN & \texttt{ff8803c57cd2}\\
+BoostPFN & \texttt{c957ac2af8d4}\\
+BETA & \texttt{441e3741b589}\\
+DistPFN & \texttt{6b375c8a7624}\\
+CURE & \texttt{f7c6b2f3c172}\\\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{상위 저장소를 pull한 장치에서는 복원 명령을 한 번 실행한다.} 아래 명령은 lock의 정확한 commit을 복제하며 환경 설치나 학습은 하지 않는다. Git-tracked 데이터·가중치는 clone의 일부로 내려오지만 실행 시 자동 다운로드되는 별도 가중치는 설치하지 않는다. 기존 clone에 로컬 변경·다른 commit이 있으면 보존하고 이유를 출력하며 자동 reset·clean·덮어쓰기를 수행하지 않는다. upstream을 새 버전으로 갱신하려면 별도 검토 뒤 lock과 본 검토를 함께 갱신한다.
+
+\begin{Verbatim}[fontsize=\small,breaklines=true]
+# imbalcic 저장소 루트에서 실행
+python scripts/common/sota_sources.py fetch
+python scripts/common/sota_sources.py check
+
+# 필요한 모델만 복원할 때
+python scripts/common/sota_sources.py fetch --models BETA CURE
+
+# 공식 소스 근거와 작은 CPU 진단을 다시 생성
+python scripts/common/audit_sota_sources.py
+\end{Verbatim}
+
+\textbf{현재 검증은 복제·격리·소스 점검까지 완료했다.} 여섯 clone의 origin·commit·깨끗한 상태를 확인했고 상위 Git이 clone 내부 파일을 추적하지 않는 것을 확인했다. Python 소스 127개는 AST 구문 검사를 통과했으며 DistPFN의 부수 학습/ML 평가 스크립트 네 파일은 구문 오류가 있어 해당 경로 재사용 시 수정이 필요했다. 이 네 파일은 주 보정 함수와 구별하며, 구문 통과를 모델 실행 성공으로 해석하지 않는다. 학습·추론 adapter 구현, 장치별 환경 lock, 전체 IDS 성능 및 최대 처리량은 다음 실행 단계의 작업이다.
+\sourcepath{tabpfn/third_party/upstream_sources.lock.json}
+\sourcepath{docs/lablog/evidence/20261029/sota_source_audit.json}
+\end{document}
