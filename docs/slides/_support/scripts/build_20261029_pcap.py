@@ -16,7 +16,7 @@ OUT=HERE/'kor/20261029_PCAP_연구방향'
 EVIDENCE=ROOT/'docs/lablog/evidence/20261029_pcap'
 RUN=ROOT/'tabpfn/results/v7/exp92/20261029_210839_cic2018_verified_pcap_4d62ceac'
 SOURCE_DATA=json.loads((EVIDENCE/'sources.json').read_text())['sources']
-r.QA=QA;r.ASSETS=HERE/'_support/assets/20261029_pcap';r.OUT=OUT;r.N_SLIDES=11;r.SCENES=[]
+r.QA=QA;r.ASSETS=HERE/'_support/assets/20261029_pcap';r.OUT=OUT;r.N_SLIDES=8;r.SCENES=[]
 r.SOURCES={k:(v['title'],f"{v['venue']}, {v['year']}",v['url'],v['evidence']) for k,v in SOURCE_DATA.items()}
 txt,box,arrow,block,page=r.txt,r.box,r.arrow,r.block,r.page
 NAVY,BLUE,INK,GREY,PALE=r.NAVY,r.BLUE,r.INK,r.GREY,r.PALE
@@ -38,150 +38,190 @@ def table(x,y,widths,headers,rows,height=.55,size=20,colors=None):
             xx+=w
     return items
 
-def scenes():
-    # 1. User-requested left upper process, left lower feature examples, right text.
-    a=[txt(.65,1.15,7.55,'실험망의 정상·공격 트래픽 수집',23,True,NAVY),
-       txt(8.65,1.15,4.0,'CIC 데이터의 구성',24,True,NAVY)]
-    for x,w,title,body in [(0.65,2.0,'실험 네트워크','사용자 활동\n공격 시나리오'),(3.28,2.0,'패킷 캡처','원시 패킷\nPCAP 파일'),(5.91,2.0,'Flow 구성','동일 통신의\n양방향 패킷')]:
-        a+=block(x,1.84,w,1.38,title,body,body_size=19)
-    a += [arrow(2.85,2.42,.28),arrow(5.48,2.42,.28),arrow(6.75,3.24,.25,.22,down=True),
-          txt(.65,3.52,7.55,'CICFlowMeter의 통계 특징 추출',23,True,NAVY)]
-    a+=table(.65,4.1,[3.35,4.0],['특징 예시','의미'],[
-        ['Flow Duration','첫 패킷부터 마지막 패킷까지의 시간'],
-        ['Total Fwd Packets','순방향 패킷 수'],
-        ['Fwd Packet Length Mean','순방향 패킷 길이의 평균']],height=.53,size=16)
-    a += [txt(.76,6.45,7.3,'특징 벡터 x = [지속시간, 패킷 수, 평균 길이, …] → CSV',17,True,BLUE),
-          txt(8.65,1.86,4.05,'CIC2017·CIC2018\n정상 활동과 여러 공격을 포함한\n침입탐지 평가용 트래픽',21),
-          txt(8.65,3.18,4.05,'PCAP + 특징 CSV + 라벨\n원시 패킷과 통계 기반 표현의\n추적 가능한 대응 관계',21),
-          txt(8.65,4.51,4.05,'라벨 부여 근거\n공격 시간·호스트·포트·프로토콜\n실제 flow 내용과의 대응 검증 필요',20),
-          txt(8.65,6.08,4.05,'Intrusion Detection System (IDS)\nPacket Capture (PCAP)',15,color=GREY)]
-    page('CIC 데이터의 제작 과정',a,'원시 패킷을 통계 벡터로 요약하고 공격 시나리오의 라벨을 연결','01 데이터와 문제',
-         'IDS 장비가 데이터셋을 직접 만든다고 표현하지 않는다. IDS 평가를 위한 실험망의 트래픽을 캡처했다. CIC2017 공식 설명은 미러 포트를 통한 캡처와 시간·주소·포트·프로토콜을 이용한 라벨을 설명했다. 왼쪽 아래 벡터는 형식 예시이며 측정값은 아니다. CSV는 저장 형식이고 모델의 정보량은 어떤 특징을 추출했는지에 좌우된다.', ['cic17','cic18'])
+def asset_image(name,x,y,w,h):
+    """Insert a generated chart without treating it as a literature figure."""
+    from PIL import Image
+    path=r.ASSETS/(name+'.png')
+    iw,ih=Image.open(path).size
+    scale=min(w/iw,h/ih)
+    ww,hh=iw*scale,ih*scale
+    return dict(kind='image',x=x+(w-ww)/2,y=y+(h-hh)/2,w=ww,h=hh,path=str(path))
 
-    with (ROOT/'docs/lablog/data/20261027_exp89_class_comparison.csv').open() as f:
-        old=[x for x in csv.DictReader(f) if x['dataset']=='cic2018' and x['panel']=='1' and x['n'] in ('2','20')]
-    assert all(x['train_version']=='original' and x['test_version']=='original' and x['benign_training']=='False' and x['test_scope']=='attack' for x in old)
-    names=sorted({x['name'] for x in old},key=lambda c:-int(next(x['support'] for x in old if x['name']==c)))
+
+def make_fewshot_asset():
+    """Render the two requested EXP89 diagnostic views from the saved numeric CSV."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.font_manager import FontProperties
+    import numpy as np
+
+    r.ASSETS.mkdir(parents=True,exist_ok=True)
+    curve_path=ROOT/'docs/lablog/data/20261027_exp89_comparison_curves.csv'
+    class_path=ROOT/'docs/lablog/data/20261027_exp89_class_comparison.csv'
+    with curve_path.open() as f:
+        curves=[x for x in csv.DictReader(f) if x['dataset']=='cic2018' and x['panel']=='1']
+    with class_path.open() as f:
+        classes=[x for x in csv.DictReader(f) if x['dataset']=='cic2018' and x['panel']=='1' and x['n']=='20']
+    ns=[2,3,5,10,20]
+    fp=FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Regular.otf')
+    fp_bold=FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Bold.otf')
+    fig,(ax1,ax2)=plt.subplots(1,2,figsize=(13.0,4.1),dpi=190,gridspec_kw={'width_ratios':[1.0,1.20]})
+    fig.patch.set_facecolor('white')
+    colors={'xgb':'#B44948','pfn':'#007BC6'}
+    labels={'xgb':'XGB','pfn':'TabPFN'}
+    for method in ['xgb','pfn']:
+        ys=[float(next(x['mean_percent'] for x in curves if x['method']==method and int(x['n'])==n)) for n in ns]
+        ax1.plot(ns,ys,color=colors[method],lw=2.8,marker='o',ms=7,label=labels[method])
+        ax1.annotate(f'{ys[-1]:.1f}',(ns[-1],ys[-1]),xytext=(7,5 if method=='pfn' else -16),textcoords='offset points',
+                     color=colors[method],fontsize=10,fontproperties=fp_bold)
+    ax1.set_title('공격 macro-F1',fontproperties=fp_bold,fontsize=15,pad=12)
+    ax1.set_xlabel('클래스당 학습 라벨 수 n',fontproperties=fp,fontsize=11)
+    ax1.set_ylabel('F1 (%)',fontproperties=fp,fontsize=11)
+    ax1.set_xticks(ns);ax1.set_ylim(50,100.5);ax1.set_yticks([50,60,70,80,90,100])
+    ax1.grid(axis='y',color='#D9E1E8',lw=.8);ax1.spines[['top','right']].set_visible(False)
+    ax1.legend(loc='lower right',frameon=False,prop=fp,handlelength=2.8)
+    ax1.text(.03,.05,'n=10 → 20\nXGB +2.9%p\nTabPFN +2.2%p',transform=ax1.transAxes,
+             fontsize=10,fontproperties=fp,color='#334155',va='bottom')
+
     pretty={'ddos':'DDoS','brute_force':'Brute force','dos':'DoS','bot':'Bot','infiltration':'Infiltration','web_attacks':'Web attacks'}
-    vals=[]
-    for c in names:
-        cells=[pretty[c],f"{int(next(x['support'] for x in old if x['name']==c)):,}"]
-        for n,m in [('2','xgb'),('2','pfn'),('20','xgb'),('20','pfn')]:
-            cells.append(f"{float(next(x['mean_percent'] for x in old if x['name']==c and x['n']==n and x['method']==m)):.2f}")
-        vals.append(cells)
-    a=[txt(.65,1.12,12.0,'기존 CIC2018 실험 · 정제 전·정상 미포함 · 클래스당 n개 · 5개 seed 평균 F1 (%)',19,color=GREY)]
-    a+=table(.65,1.83,[2.25,1.45,2.08,2.08,2.08,2.08],['평가 클래스','평가 수','2개 XGB','2개 TabPFN','20개 XGB','20개 TabPFN'],vals,height=.57,size=18,colors={2:RED,3:BLUE,4:RED,5:BLUE})
-    a += [txt(.65,6.10,12.0,'DDoS·Bot은 높은 점수에 조기 도달 · Web attacks에는 여전히 큰 분류 난도',22,True,NAVY),
-          txt(.65,6.57,12.0,'평가 표본 수 내림차순 · XGBoost (XGB) · 중간 n = 3·5·10과 표준편차는 EXP89 상세 기록',15,color=GREY)]
-    page('일부 공격의 높은 few-shot F1',a,'데이터 전체의 난도보다 클래스별 포화·오류 원인의 분리가 우선','01 데이터와 문제',
-         'EXP89에서 가져온 과거 관측이며 PCAP 재구축 후 새로 측정한 점수가 아니다. 선행 SOTA 비교의 문제의식을 소수 라벨 baseline으로 진단한 결과다. 모든 클래스가 90%대라는 해석은 틀렸다. 현재 표는 2개와 20개 끝점이며 5개 seed 평균이고, 소표본 변동도 원 보고서에서 함께 확인해야 한다. TabPFN: Tabular Prior-data Fitted Network. DDoS: Distributed Denial of Service. DoS: Denial of Service. 전체 원시 행과 표준편차: '+json.dumps(old,ensure_ascii=False),[])
+    names=sorted({x['name'] for x in classes},key=lambda c:-int(next(x['support'] for x in classes if x['name']==c)))
+    ypos=np.arange(len(names))
+    h=.34
+    for offset,method in [(-h/2,'xgb'),(h/2,'pfn')]:
+        vals=[float(next(x['mean_percent'] for x in classes if x['name']==c and x['method']==method)) for c in names]
+        ax2.barh(ypos+offset,vals,height=h,color=colors[method],label=labels[method])
+        for y,v in zip(ypos+offset,vals):
+            ax2.text(v+1.0,y,f'{v:.1f}',va='center',fontsize=8.5,fontproperties=fp,color=colors[method])
+    ylabels=[f"{pretty[c]}  ({int(next(x['support'] for x in classes if x['name']==c)):,})" for c in names]
+    ax2.set_title('수렴 구간 n=20의 클래스별 F1',fontproperties=fp_bold,fontsize=15,pad=12)
+    ax2.set_yticks(ypos,ylabels,fontproperties=fp,fontsize=9.4);ax2.invert_yaxis()
+    ax2.set_xlim(0,114);ax2.set_xlabel('F1 (%) · 괄호는 고정 attack test 표본 수',fontproperties=fp,fontsize=10)
+    ax2.grid(axis='x',color='#D9E1E8',lw=.8);ax2.spines[['top','right','left']].set_visible(False)
+    ax2.legend(loc='lower left',bbox_to_anchor=(0,-.02),ncol=2,frameon=False,prop=fp,handlelength=2.8)
+    plt.tight_layout(pad=1.25,w_pad=2.8)
+    fig.savefig(r.ASSETS/'fewshot_diagnostic.png',bbox_inches='tight',facecolor='white')
+    plt.close(fig)
 
-    a=[]
-    papers=[('engelen','Engelen 외 · IEEE SPW / WTMC 2021','첫 FIN에서 조기 종료 → 종료 패킷만 남은 별도 flow\n방향 오류·RST 무시 → 잘못된 flow 경계와 라벨',1.22),
-            ('liu','Liu 외 · IEEE CNS 2022','CIC2017·2018의 생성·특징·라벨 오류 재검토\nCIC2018 FTP 사례: 닫힌 포트에 대한 연결 시도',3.07),
-            ('rosay','Rosay 외 · ICISSP 2022','특징 계산·세션 종료·라벨 문제 분석\n세션 종료 오류와 유사 특징·상이 라벨의 관계',4.92)]
-    short_titles={
-      'engelen':'Troubleshooting an Intrusion Detection Dataset:\nthe CICIDS2017 Case Study',
-      'liu':'Error Prevalence in NIDS datasets: A Case Study on\nCIC-IDS-2017 and CSE-CIC-IDS-2018',
-      'rosay':'Network Intrusion Detection: A Comprehensive\nAnalysis of CIC-IDS2017'}
-    for k,head,body,y in papers:
-        a += [box(.65,y,12.03,1.58,PALE),txt(.84,y+.12,5.30,head,21,True,NAVY,url=SOURCE_DATA[k]['url']),
-              txt(.84,y+.62,5.28,short_titles[k],14,color=GREY),txt(6.56,y+.32,5.83,body,20)]
-    page('CIC 결함을 확인한 선행연구',a,'단순한 시간 구간 설명을 넘어 flow 생성과 실제 공격 내용까지 확인한 근거','01 데이터와 문제',
-         'Transmission Control Protocol (TCP), Finish (FIN), Reset (RST). Engelen은 첫 FIN 뒤 ACK·FIN 잔여 패킷이 별도 flow로 분리되는 문제를 분석했다. Liu의 공식 후속 설명은 FTP 포트가 닫혀 SYN에 RST/ACK만 응답한 경우를 Attempted로 구분했다. Rosay가 말한 것은 similar flows이며, 모든 입력 열의 exact equality를 증명했다는 의미가 아니다. 원인 근거는 2021·2022 연구가 가장 직접적이고, 2023 수정 라벨과 2024 일반화 연구를 함께 확인했다.', ['engelen','liu','rosay'])
 
-    a=card(.65,1.3,5.78,2.10,'① Flow 경계·라벨의 오류','패킷 분리·결합 오류와 방향 오류\n공격 시간 안의 비공격 연결까지 포함',22)
-    a+=card(6.83,1.3,5.78,2.10,'② 관측 정보의 부족','다른 패킷 내용이 같은 통계값으로 요약\n세부 공격 의도를 단일 flow에서 구별 곤란',22)
-    a += [arrow(3.25,3.62,.35,.42,down=True),arrow(9.43,3.62,.35,.42,down=True)]
-    a+=card(.65,4.27,5.78,1.65,'대응: 라벨과 세션 재검증','수정된 경계·시간·공격 근거의 적용\n불확실 사례는 근거와 함께 별도 보존',20)
-    a+=card(6.83,4.27,5.78,1.65,'대응: 패킷 기반 표현의 비교','패킷 순서·시간·헤더·내용의 추가 활용\n동일 flow에서 기존 특징과 임베딩 비교',20)
-    a += [txt(.72,6.35,11.9,'현재 충돌 사례의 원인을 모두 확정한 상태는 아님 · PCAP과 라벨 근거의 직접 대조가 다음 검증',18,True,NAVY)]
-    page('라벨 오류와 표현 정보 부족의 구분',a,'표현 변경과 라벨 교정을 별도 요인으로 평가','02 재구축 설계',
-         '동일한 x에 다른 y가 있으면 단일 flow만 보는 결정적 분류기는 둘을 동시에 맞힐 수 없다. 이것이 항상 잘못된 라벨이라는 뜻은 아니다. IP·시각을 제외하거나 통계로 요약하면 다른 통신이 같은 관측 벡터가 될 수 있다. 반대로 실제 공격 내용이 없는 연결에 공격 라벨을 주었을 수도 있다. 새 임베딩은 추가 정보를 담지만 잘못된 라벨을 자동으로 고치지는 않는다. 현재 기존 입력의 모든 충돌을 CICFlowMeter 버그 하나로 설명하지 않는다.',[])
+def scenes():
+    make_fewshot_asset()
 
-    a=[txt(.65,1.18,12,'오프라인 PCAP 처리 · 동일 통신 단위의 추적 정보 보존',23,True,NAVY)]
-    blocks=[(.65,2.0,'PCAP','시각·패킷\n원본 식별자'),(3.15,2.0,'Flow·라벨','세션 경계\n라벨 근거'),(5.65,2.0,'분할','학습·검증·시험\n통신 그룹 보존'),(8.15,2.0,'고정 인코더','netFound v2\n512차원'),(10.65,2.0,'PCA·벡터','학습 자료로 적합\n64차원 출력')]
-    for x,w,title,body in blocks:a+=block(x,1.98,w,1.58,title,body,body_size=17)
-    for x in [2.80,5.30,7.80,10.30]:a.append(arrow(x,2.61,.23))
-    a+=card(.65,4.13,3.77,1.57,'라벨 근거 연결','시간·호스트·포트 + 내용\n경계 충돌·미매칭 별도 표시',18)
-    a+=card(4.78,4.13,3.77,1.57,'통신 그룹별 분리','동일 통신의 분할 간 중복 방지\n인코더 가중치 갱신 없음',18)
-    a+=card(8.91,4.13,3.77,1.57,'학습 자료만으로 PCA','검증·시험은 같은 PCA로 변환\nTabPFN·XGB에 같은 행 입력',18)
-    a += [
-          txt(.72,6.14,12,'Principal Component Analysis (PCA) · 차원 축소 기준은 학습 분할에서만 결정',19,color=GREY),
-          txt(.72,6.58,12,'재전송 없이 패킷 파일에서 추출 · 주소·절대시각·라벨은 모델 입력에서 제외',18,True,BLUE)]
-    page('PCAP 기반 학습 벡터 생성',a,'라벨·통신 식별자와 모델 입력을 분리해 재현 가능한 벡터 구성','02 재구축 설계',
-         '이 도식은 표현 추출과 데이터 준비이며 아직 제안 분류 모델의 성능 개선 결과는 아니다. 인코더는 frozen이고 fine-tuning하지 않았다. 모델 입력과 별개로 PCAP SHA256, packet index, 5-tuple, UTC nanoseconds, label rule IDs를 보존한다. group hash로 먼저 분리하고 이후 표본을 선택한다. PCA는 학습 구간의 미라벨 자료까지 포함하는 train-pool 조건이다. 엄격한 n개 전체 입력 제약을 실험하려면 PCA 적합 자료도 별도로 제한해야 한다. tcpreplay는 패킷 재전송 도구이며 오프라인 임베딩 추출에는 필요하지 않다.', ['netfound'])
+    # 1. The presentation begins with the CSV actually used in prior work, then shows how CIC-IDS2017 produced it.
+    a=[txt(.65,1.11,4.45,'기존 실험의 입력은 CSV였다',25,True,NAVY),
+       txt(.65,1.64,4.45,'CIC-IDS2017은 PCAP과\n특징 CSV·라벨을 함께 제공',20)]
+    a+=card(.65,2.50,4.45,1.26,'그동안의 실험','CSV의 flow 통계 벡터를\nXGB·TabPFN에 입력',19)
+    a+=card(.65,4.00,4.45,1.26,'일반적인 IDS 표 분류 연구','제공된 CSV를 바로\n학습·평가 입력으로 사용',19)
+    a += [txt(.72,5.78,4.28,'질문  이 CSV는 패킷에서\n어떤 정보를 남긴 표현인가?',22,True,BLUE),
+          txt(5.58,1.11,6.75,'CIC-IDS2017에서 CSV가 만들어지는 과정',25,True,NAVY)]
+    blocks=[(5.58,'실험망','정상·공격\n트래픽'),(7.38,'PCAP','시간순 원시\n패킷 기록'),(9.18,'CICFlowMeter','통신 단위로 묶고\n고정 통계량 계산'),(11.45,'CSV','숫자 벡터\n+ 라벨')]
+    widths=[1.48,1.48,2.00,1.18]
+    for (x,title,body),w in zip(blocks,widths):a+=block(x,1.94,w,1.37,title,body,body_size=15.5)
+    for x,w in [(7.11,.18),(8.91,.18),(11.18,.18)]:a.append(arrow(x,2.45,w))
+    a += [txt(9.18,3.49,4.02,'하나의 연결에서 오간 요청·응답 패킷을\n한 flow 레코드로 묶음',16,color=GREY,align='center'),
+          txt(5.58,4.15,7.00,'CSV에 남는 특징의 예',20,True,NAVY)]
+    examples=[('지속 시간','첫 패킷부터\n마지막 패킷까지'),('순방향 패킷 수','한 방향으로\n보낸 패킷 수'),('순방향 평균 길이','한 방향 패킷\n길이의 평균')]
+    for x,(title,body) in zip([5.58,7.93,10.28],examples):a+=block(x,4.67,2.08,1.25,title,body,body_size=14)
+    a += [txt(5.62,6.26,6.95,'[지속시간, 패킷 수, 평균 길이, …]  →  분류 모델 입력',18,True,BLUE)]
+    page('CIC-IDS2017은 PCAP과 CICFlowMeter CSV를 함께 제공',a,
+         'CSV 기반 기존 실험에서 시작해, 그 입력이 패킷을 어떻게 요약했는지 확인','01 기존 CSV와 진단',
+         '왼쪽부터 설명한다. 기존 실험과 많은 IDS 표 분류 연구는 제공된 CSV의 flow 통계 벡터를 바로 분류기의 입력으로 썼다. 이어서 오른쪽에서 그 CSV가 실험망 트래픽의 PCAP을 CICFlowMeter가 통신 단위로 묶고, 미리 정의된 통계량을 계산한 결과임을 보여 준다. 여기서 flow는 같은 연결에서 오간 요청·응답 패킷을 하나의 레코드로 모은 것이다. CICFlowMeter는 공격에 중요한 특징을 학습해 고르는 모델이 아니라, 구현에 정해진 flow·통계 정의로 수치를 계산하는 도구다. 따라서 어떤 패킷 순서와 내용이 최종 벡터에서 사라지는지도 이후 검증 대상이 된다.', ['cic17'])
 
-    a=[]
-    for x,title,venue,body,status,key in [
-        (.65,'netFound v2','arXiv v5 · 2026','헤더 필드·시간·방향\nBurst와 flow의 계층 표현\n공개 가중치는 payload 미사용','구현·실제 PCAP 검증 완료','netfound'),
-        (4.78,'ET-BERT','WWW · 2022','Datagram의 바이트 표현\nTransformer 기반 사전학습\n패킷 내용 정보의 활용 후보','다음 인코더 비교 후보','etbert'),
-        (8.91,'NetMamba','ICNP · 2024','헤더·payload 바이트 시퀀스\nMamba 기반 순차 처리\n속도·표현 효과의 비교 후보','다음 인코더 비교 후보','netmamba')]:
-        a += [box(x,1.48,3.77,4.76,PALE),box(x,1.48,3.77,.70,NAVY),txt(x+.18,1.65,3.41,title,25,True,'FFFFFF'),
-              txt(x+.18,2.43,3.41,venue,19,True,BLUE,url=SOURCE_DATA[key]['url']),
-              txt(x+.18,3.11,3.41,body,20),txt(x+.18,5.60,3.41,status,16,True,NAVY)]
-    a += [txt(.72,6.58,11.9,'내용 정보가 필요한 공격의 구분에는 payload 포함 인코더와의 후속 대조 필요',19,True,NAVY)]
-    page('사전학습 인코더 후보',a,'netFound로 공통 파이프라인 검증 후 인코더의 관측 정보와 비용 비교','02 재구축 설계',
-         'netFound는 원 논문 v1이 아니라 2026 v5 논문에 대응하는 v2 코드/Small checkpoint를 사용했다. 공개 가중치는 IP와 payload를 사용하지 않는다. ET-BERT는 Encrypted Traffic Bidirectional Encoder Representations from Transformer로, datagram 바이트를 사전학습했다. NetMamba는 ICNP 2024 모델을 가리키며 NetMamba+ 2026과 구분한다. 후보의 논문 성능을 현재 IDS 입력에서의 우위로 옮겨 쓰지 않는다. 세 모델을 함께 앙상블했다는 뜻도 아니다. ET-BERT·NetMamba 추론은 이번 구현 검증 범위에 포함하지 않았다.', ['etbert','netmamba'])
+    # 2. Few-shot is a diagnostic for an unexpectedly high baseline, not the core operational scenario.
+    a=[txt(.65,1.10,12.0,'일부 공격의 baseline이 이미 높았다  →  라벨을 극단적으로 줄여도 같은가?',22,True,NAVY)]
+    a+=block(.65,1.69,3.78,.90,'출발점','일부 공격 F1 90%대',body_size=16)
+    a+=block(4.78,1.69,3.78,.90,'진단 질문','클래스당 n=2까지 낮춰도 높은가?',body_size=16)
+    a+=block(8.91,1.69,3.77,.90,'고정 조건','정제 전·정상 미포함 · 동일 attack test · 5 seeds',body_size=12.5)
+    a += [asset_image('fewshot_diagnostic',.62,2.66,12.10,3.68),
+          txt(.72,6.53,11.9,'few-shot은 방법의 주 성능 주장이 아니라, head 클래스의 조기 포화와 data ceiling을 드러내는 진단',17,True,NAVY)]
+    page('few-shot은 높은 baseline을 점검한 진단',a,
+         'n을 2개까지 낮춰도 일부 head 공격이 고점에 도달하는지 확인','01 기존 CSV와 진단',
+         'few-shot을 먼저 한 이유는 TabPFN의 우위를 주장하려는 것이 아니라, 기존 baseline이 일부 공격에서 이미 매우 높았기 때문이다. 클래스당 라벨을 n=2, 3, 5, 10, 20개로 줄이고 동일한 attack-only test로 분류해 조기 포화 여부를 본다. macro-F1은 n=2에서 n=20으로 XGB 60.0에서 78.1, TabPFN 65.1에서 78.3으로 올라가므로 전체 변화가 없다고 해석하지 않는다. 다만 n=10에서 n=20의 증가는 XGB 2.9%p, TabPFN 2.2%p로 둔화하고 DDoS·Bot은 n=20에서 98–99%에 도달한다. Web attacks는 11–12%에 머물러, 모든 공격이 쉬웠다는 뜻도 아니다. 이 결과는 정상 포함 IDS 성능이 아니며, 왜 특정 head가 쉽게 분리되는지와 tail의 낮은 성능 원인을 별도로 점검해야 한다.', [])
 
-    a=[txt(.65,1.13,12.0,'PCAP 제공 여부와 재구축한 flow에 연결할 라벨 근거를 함께 검토',21,color=GREY)]
-    rows=[['CIC2017 · 우선','PCAP + flow CSV + 공격 일정','교정 라벨 규칙과 패킷 경계 대조'],
-          ['CIC2018 · 우선','호스트별 PCAP + 로그 + CSV','동일 통신의 중복 캡처·시간 확인'],
-          ['IoT-23 · 다음 후보','PCAP + 라벨된 Zeek conn.log','개별 시나리오부터 PCAP·라벨 연결'],
-          ['UNSW-NB15','PCAP + GT·공격 이벤트 표','시간·5-tuple로 ground truth 연결'],
-          ['TON_IoT','네트워크 PCAP + Zeek·CSV','운영체제·센서 자료와 네트워크 구별'],
-          ['CICIoT2023','공격별 PCAP + CSV·처리 코드','캡처명과 flow 라벨의 대응 검증']]
-    # Text columns are left aligned; dataset names link to their official sources.
+    # 3. Put observed exact conflicts before the literature explanation, without asserting they are all wrong labels.
+    a=[txt(.65,1.08,12.0,'기존 입력 CSV의 46개 숫자가 모두 같아도 라벨은 둘 이상',24,True,NAVY)]
+    metrics=[('20,115,529','감사한 전체 행'),('20,609','상이 라벨 벡터 그룹'),('26.6%','상이 라벨 그룹에 속한 행')]
+    for x,(n,label) in zip([.65,3.15,5.65],metrics):
+        a += [box(x,1.67,2.15,1.15,PALE),txt(x+.1,1.87,1.95,n,25,True,BLUE,'center'),txt(x+.1,2.36,1.95,label,14,color=GREY,align='center')]
+    a += [txt(8.25,1.79,4.2,'감사 대상  기존 실험 입력의\nCIC2018 기반 46개 flow 통계 벡터',18,True,NAVY),
+          txt(8.25,2.50,4.2,'공식 CICFlowMeter CSV 그대로의\n중복률 측정과는 구분',15,color=GREY)]
+    a+=block(.65,3.35,3.02,1.37,'같은 특징 벡터 x','TCP · 60B/40B\n각 1 packet · 1 ms',body_size=17)
+    a += [arrow(3.88,3.86,.35),arrow(3.88,4.42,.35),
+          box(4.48,3.35,3.38,.61,'FBE8E7'),txt(4.65,3.54,3.04,'Brute force  386,780행',19,True,RED,'center'),
+          box(4.48,4.11,3.38,.61,'E6F1F8'),txt(4.65,4.30,3.04,'DoS  105,550행',19,True,BLUE,'center'),
+          txt(8.30,3.46,4.14,'한 개의 특징 벡터가\n두 공격에 반복 등장',20,True,NAVY),
+          txt(8.30,4.22,4.14,'Brute force 67.2% · DoS 34.8%\n각 클래스 행이 이 충돌에 포함',16,color=GREY)]
+    a += [box(.65,5.47,12.03,.02,'C8D5E1'),
+          txt(.72,5.76,5.86,'Infiltration–Benign\n20,378개 벡터 · infiltration의 75.1%',18,True,NAVY),
+          txt(6.78,5.76,5.80,'Web attacks–Benign\n298개 벡터 · web의 69.5%',18,True,NAVY),
+          txt(.72,6.53,11.9,'같은 x에는 하나의 결정적 예측만 가능  →  기존 full XGB에서도 DoS F1 0.782, Infiltration F1 0.429',16,color=GREY)]
+    page('기존 입력 CSV에는 동일 벡터·상이 라벨이 실제로 존재',a,
+         '정확히 같은 입력을 서로 다른 정답으로 학습시키는 구조를 먼저 계량','01 기존 CSV와 진단',
+         '이 슬라이드의 감사는 기존 실험에 사용한 CIC2018 기반 46개 flow 통계 벡터를 대상으로 했다. 따라서 공식 CICFlowMeter CSV 원본 자체의 중복률이라고 바꾸어 말하지 않는다. 전체 2,011만 행 중 26.6%가 상이한 라벨을 가진 동일 벡터 그룹에 속했고, 그런 그룹은 20,609개였다. 예시 하나는 TCP의 매우 짧은 요청·응답 형태로, 정확히 같은 벡터가 brute force 386,780행과 DoS 105,550행에 붙어 있다. Infiltration과 Web attacks도 각각 benign과 상당수의 동일 벡터를 공유한다. 이것은 모든 라벨이 잘못되었다는 증거가 아니라, 현재 통계 표현만으로는 두 정답을 동시에 분리할 수 없거나 라벨 근거를 점검해야 한다는 증거다. 실제 full XGB에서 DoS·Infiltration이 상대적으로 낮게 남은 이유를 분석할 때 이 구조를 먼저 봐야 한다.', [])
+
+    # 4. The literature explains possible mechanisms after, not before, the observed audit.
+    a=[txt(.65,1.08,12.0,'선행연구는 CIC의 flow 생성·라벨 규칙에서 가능한 원인을 제시',22,True,NAVY)]
+    papers=[('engelen','Engelen et al. (IEEE SPW/WTMC, 2021)','첫 FIN 뒤 잔여 패킷이 별도 flow로 분리되고\nRST를 무시한 flow 경계 문제를 분석',1.70),
+            ('liu','Liu et al. (IEEE CNS, 2022)','CIC2017·2018의 생성·특징·라벨 오류를 재검토\nCIC2018 FTP closed-port 사례를 Attempted로 구분',3.28),
+            ('rosay','Rosay et al. (ICISSP, 2022)','세션 종료와 특징 계산을 점검\n유사 flow에 상이한 라벨이 생기는 경로를 논의',4.86)]
+    for key,head,body,y in papers:
+        a += [box(.65,y,12.03,1.23,PALE),txt(.86,y+.14,4.62,head,18,True,NAVY,url=SOURCE_DATA[key]['url']),txt(5.70,y+.22,6.65,body,18)]
+    a += [txt(.72,6.35,11.8,'문헌은 가능한 원인, 슬라이드 3은 현재 입력에서 관측한 현상  ·  모든 exact collision을 한 원인으로 단정하지 않음',16,True,BLUE)]
+    page('문헌은 CIC의 flow 생성·라벨 규칙 결함을 지적',a,
+         '현재 감사의 exact collision을 문헌의 가능 원인과 구분해 해석','01 기존 CSV와 진단',
+         '앞 슬라이드가 우리 입력에서 직접 센 현상이라면, 이 슬라이드는 가능한 원인을 확인한 문헌 근거다. Engelen 등은 CICIDS2017의 TCP 종료 처리와 flow 경계 문제를 분석했다. Liu 등은 CIC2017·2018의 공격 수행·특징·라벨 오류를 재검토하고, 닫힌 FTP 포트로 인해 실제 brute force가 진행되지 않은 사례를 구분했다. Rosay 등은 세션 종료와 특징 계산에서 유사 flow에 다른 라벨이 생길 수 있는 경로를 논의했다. 이 논문들은 현재 46개 값이 일치한 모든 사례가 동일한 한 가지 오류 때문이라고 증명하지 않는다. 그래서 다음 단계는 PCAP에서 packet·flow·label 근거를 다시 연결해 표현 부족과 라벨 문제를 분리하는 것이다.', ['engelen','liu','rosay'])
+
+    # 5. Correct CICFlowMeter rationale: it calculates a fixed summary, it does not learn the task-specific representation.
+    a=[txt(.65,1.08,12.0,'고정 flow 통계 요약을 PCAP 인코더 표현으로 다시 만들고 두 결함을 재검증',22,True,NAVY)]
+    a+=card(.65,1.70,5.76,1.55,'CICFlowMeter CSV','미리 정한 flow 경계와 통계식으로\n지속시간·패킷 수·길이·IAT·flag 등을 계산',19)
+    a+=card(6.83,1.70,5.76,1.55,'PCAP 사전학습 인코더','패킷 순서·시간·헤더 패턴을 입력으로\n인코더별 표현 벡터를 생성',19)
+    a += [txt(.80,3.55,5.46,'고정 통계량은 학습으로 고른 특징이 아니다.\n패킷 순서·상호작용은 요약에서 사라질 수 있다.',17,color=GREY),
+          txt(7.02,3.55,5.46,'새 임베딩도 라벨 오류를 자동으로 고치지 않는다.\nPCAP·시간·host·port 근거를 따로 보존한다.',17,color=GREY)]
+    steps=[(.65,'PCAP·라벨','패킷·시각·키'),(3.15,'flow 추적','원시 통신·라벨'),(5.65,'고정 인코더','표현 벡터 추출'),(8.15,'차원 축소','학습 분할만'),(10.65,'XGB · TabPFN','같은 벡터로 비교')]
+    for x,title,body in steps:a+=block(x,4.36,2.0,1.27,title,body,body_size=15.5)
+    for x in [2.79,5.29,7.79,10.29]:a.append(arrow(x,4.84,.24))
+    a += [txt(.72,5.90,5.73,'① 동일 표현·상이 라벨 비율과\nPCAP 라벨 근거를 다시 감사',18,True,NAVY),
+          txt(6.83,5.90,5.73,'② baseline·few-shot에서\nhead의 조기 포화가 다시 생기는지 측정',18,True,NAVY),
+          txt(.72,6.70,11.9,'인코더 후보  netFound (arXiv, 26) · ET-BERT (WWW, 22) · NetMamba (ICNP, 24)',14,color=GREY)]
+    page('PCAP 인코더로 새 학습 벡터를 만들 이유',a,
+         '표현을 바꾼 뒤 동일 벡터·상이 라벨과 쉬운 head의 조기 포화를 다시 측정','02 PCAP 재구축',
+         'CICFlowMeter는 원시 패킷을 flow로 묶고 구현에 미리 정해진 통계량을 계산한다. 공격을 가장 잘 구분할 특징을 데이터에서 학습해 선택하는 인코더는 아니다. 따라서 현재 CSV에서 빠진 패킷 순서와 시간·헤더 상호작용이 분류에 필요한지 직접 확인할 여지가 있다. PCAP 인코더는 이런 정보를 사용해 새로운 벡터를 만들지만, 어떤 정보가 쓰이는지는 인코더에 따라 다르며 라벨 오류를 자동으로 고치지 않는다. 그래서 PCAP과 label rule을 분리해 보존하고, 새 벡터에서도 동일 입력·상이 라벨 비율과 baseline의 조기 포화를 각각 다시 측정한다. PCA는 벡터 차원을 맞추는 변환이며, 적합 자료는 학습 분할로 제한한다. 현재 제시한 인코더들은 앙상블이 아니라 같은 재사용 파이프라인에서 교체해 비교할 후보들이다.', ['netfound','etbert','netmamba'])
+
+    # 6. Keep data selection tied to packet-label traceability.
+    a=[txt(.65,1.13,12.0,'PCAP 제공 여부뿐 아니라, 새 flow에 라벨 근거를 다시 연결할 수 있는지가 기준',20,color=GREY)]
+    rows=[['CIC2017 · 우선','PCAP + flow CSV + 공격 일정','flow 경계·라벨 규칙 대조'],
+          ['CIC2018 · 우선','호스트별 PCAP + 로그 + CSV','중복 캡처·시간·host 확인'],
+          ['IoT-23 · 후속','PCAP + 라벨 Zeek conn.log','작은 시나리오부터 연결'],
+          ['UNSW-NB15','PCAP + GT·공격 이벤트','시간·5-tuple join'],
+          ['TON_IoT','네트워크 PCAP + Zeek·CSV','네트워크와 센서·OS 자료 구별'],
+          ['CICIoT2023','PCAP + CSV·처리 코드','flow별 라벨 재구성 검증']]
     xs=[.65,3.45,7.64];ws=[2.8,4.19,5.04]
-    for ri,row in enumerate([['데이터','공개 원시 자료','선정·전처리 기준']]+rows):
+    for ri,row in enumerate([['데이터','공개 원시 자료','새 벡터를 위한 검증']]+rows):
         for ci,value in enumerate(row):
             y=1.82+ri*.62
             a += [box(xs[ci],y,ws[ci],.62,NAVY if ri==0 else PALE if ri%2==0 else 'FFFFFF'),
                   txt(xs[ci]+.12,y+.17,ws[ci]-.24,value,17,ri==0,'FFFFFF' if ri==0 else INK,
                       url=SOURCE_DATA[['cic17','cic18','iot23','unsw','ton','iot2023'][ri-1]]['url'] if ri and ci==0 else None)]
-    a += [txt(.72,6.45,11.9,'CTU-13은 전체 정상·배경 PCAP 미공개 · 정상 포함 분류의 우선 비교에서는 후순위',18,True,NAVY)]
-    page('PCAP·라벨을 함께 제공하는 데이터',a,'CIC2017·2018 우선 · 작은 시나리오 단위로 확장 가능한 IoT-23 후속 검토','02 재구축 설계',
-         '추가 후보는 이름만 나열하지 않고 원시 패킷과 라벨을 다시 연결할 수 있는지로 선정했다. IoT-23 v1은 20 malware와 3 benign 시나리오이며 개별 다운로드를 제공했다. UNSW-NB15는 100GB PCAP과 GT/이벤트 표를 공개했다. TON_IoT는 네트워크 PCAP을 포함하지만 센서·OS 모달리티와 구분해야 한다. CICIoT2023은 33 공격·7종류 분류와 PCAP/CSV/처리 코드가 있으나 flow별 라벨을 일괄 추정하지 않는다. CTU-13 전체 혼합 PCAP은 공개되지 않았고 botnet-only PCAP만 제공했다. 이는 모든 후보의 로컬 다운로드와 라벨 join을 완료했다는 의미가 아니다.', ['iot23','unsw','ton','iot2023','ctu13'])
+    a += [txt(.72,6.45,11.9,'CIC2017·2018을 먼저 재구축하고, IoT-23처럼 작은 PCAP 시나리오로 파이프라인·라벨 연결을 추가 검증',18,True,NAVY)]
+    page('PCAP·라벨을 함께 제공하는 IDS 데이터 후보',a,
+         'CIC2017·2018을 우선하고, PCAP과 라벨을 다시 연결할 수 있는 데이터로 확장','02 PCAP 재구축',
+         '데이터 후보는 단순히 PCAP을 제공하는지보다, 새로 만든 flow와 원래 라벨 근거를 다시 연결할 수 있는지로 고른다. CIC2017과 CIC2018은 우선 대상이다. IoT-23은 개별 scenario의 PCAP과 라벨 Zeek connection log가 있어 작은 규모에서 연결 규칙을 먼저 검증할 후속 후보다. UNSW-NB15, TON_IoT, CICIoT2023은 원시 패킷과 부가 로그 또는 ground truth를 제공하지만, 각 자료의 label join 규칙은 별도 구현·감사가 필요하다. 이 표는 모든 데이터를 이미 다운로드하거나 재구축했다는 주장이 아니다.', ['cic17','cic18','iot23','unsw','ton','iot2023'])
 
-    a=[txt(.65,1.15,12,'동일 flow·동일 분할·동일 라벨 예산으로 표현과 라벨 효과 분리',22,True,NAVY),
-       txt(2.95,1.92,4.23,'통계 특징',23,True,NAVY,'center'),txt(7.69,1.92,4.23,'사전학습 임베딩',23,True,NAVY,'center'),
-       txt(.72,2.82,2.0,'기존 라벨',21,True,NAVY),txt(.72,4.13,2.0,'교정 라벨',21,True,NAVY)]
-    a+=block(2.90,2.49,4.27,1.03,'A · 기준','기존 표현 + 기존 라벨',body_size=19)
-    a+=block(7.62,2.49,4.27,1.03,'B · 표현 효과','새 표현 + 기존 라벨',body_size=19)
-    a+=block(2.90,3.91,4.27,1.03,'C · 라벨 효과','기존 표현 + 교정 라벨',body_size=19)
-    a+=block(7.62,3.91,4.27,1.03,'D · 결합 효과','새 표현 + 교정 라벨',body_size=19)
-    a += [txt(.72,5.44,12,'정상 포함을 주 평가로 설정 · 공격만 평가하는 결과를 보조로 병기',22,True,NAVY),
-          txt(.72,6.01,12,'n = 2·3·5·10·20 · 동일 seed와 test · 클래스별·macro F1 · 정상 오탐률',20),
-          txt(.72,6.48,12,'희귀 공격·날짜/호스트 간 일반화 · 라벨 미매칭률 · 충돌률 · 추출·추론 비용',19,color=GREY)]
-    page('효과를 분리하는 비교 실험',a,'목표는 더 어려운 데이터 제작이 아니라 소수 라벨 공격 분류의 개선 검증','03 검증 계획',
-         '미실행 실험 설계. A–D 모두 PCAP에서 추적 가능한 공통 flow 집합과 공통 분할을 사용한다. 기존 보유 표 전체와 새 임베딩 일부를 점수만 비교하지 않는다. 동일 기준 라벨로 평가하거나 원라벨/교정라벨 두 평가를 함께 제공해 라벨 변경 자체의 점수 효과를 구분한다. 정상과 공격 각각 n개를 적용하는 기본 시나리오를 유지하고 PCA에 사용할 미라벨 train pool을 명시한다. n개 context와 미라벨 표현 적합 풀의 규모는 별개다. 캡처·호스트 분리는 추가 일반화 시험이며 단일 날짜 pilot은 이를 검증하지 못했다. Attempted는 감사용 주석으로 남기고 정상/공격 매핑은 목표에 따라 민감도 분석한다.', ['attempted'])
-
+    # 7. Retain the completed pipeline pilot but make its scope explicit.
     prep=json.loads((RUN/'prepare.json').read_text());projection=json.loads((RUN/'projection.json').read_text())
     audit=json.loads((RUN/'audit.json').read_text());stat=next(iter(prep['raw_stats'].values()))
-    a=card(.65,1.35,5.76,3.14,'CIC2018 실제 PCAP 파일럿',
-           f"2018-02-14 · 공격 대상 호스트 1대\n패킷 {stat['raw_packets']:,}개 → flow {stat['flows']:,}개\n주석·분할별 표본 {projection['rows']:,}개 인코딩\n512차원 → PCA 64차원",22)
-    a+=card(6.83,1.35,5.76,3.14,'검증한 항목',
-            f"학습·검증·시험 flow 그룹 중복 0\nPCA 적합: 학습 {projection['pca_fit_rows']:,}행만 사용\n가중치 갱신 없이 공개 checkpoint 적용\n배치 길이 변경에도 같은 임베딩 확인",21)
-    a += [txt(.72,4.94,11.9,'라벨 처리: Attempted 세부 유형은 메타데이터 · 이번 파일럿은 정상으로 매핑',21,True,NAVY),
-          txt(.72,5.50,11.9,f"라벨 미확정 {audit['unresolved_rows']:,}행은 정상으로 추정하지 않고 별도 보존",21),
-          txt(.72,6.04,11.9,'분류 성능·정상 오탐률은 후속 평가 · CIC2017과 다른 날짜·공격으로 확장',21),
-          txt(.72,6.55,11.9,'초기 주석별 점검: 같은 임베딩의 서로 다른 Attempted 유형 확인 → 학습 라벨과 분리',16,color=GREY)]
-    page('구현 결과와 다음 검증',a,'PCAP부터 학습용 벡터까지 실행 완료 · 분류 이점은 다음 비교 실험의 대상','03 검증 계획',
-         f"수행 실행: {RUN.relative_to(ROOT)}. 데이터 크기 852,795,392 bytes. 원본 ZIP 39,913,353,098 bytes 전체 대신 호스트 member만 Range 다운로드했다. 원본 파일 끝의 불완전한 마지막 패킷 1개는 제외했고 관련 미완료 flow는 미라벨로 보존했다. 주석별·분할별 최대128개 reservoir의 구현 검증 표본이며 자연 분포 benchmark가 아니다. {audit['labeled_rows']}행은 학습 라벨을 가지고 나머지는 미매칭/경계 미확정으로 유지했다. 초기 감사에서는 두 Attempted 주석이 한 임베딩으로 겹쳤다. 교정 데이터 저자 지침에 따라 Attempted를 독립 ML 클래스로 쓰지 않고 BENIGN으로 매핑한 현재 산출물을 사용한다. 이 정상은 저자의 라벨 정책에 따른 것이며 충분한 일반 정상 활동을 대신한다고 주장하지 않는다. 현재 정상 오탐률·few-shot 우위를 평가하지 않았다.",['aws','rules'])
+    a=card(.65,1.35,5.76,3.14,'CIC2018 PCAP 파일럿',
+           f"2018-02-14 · 대상 host 1대\n패킷 {stat['raw_packets']:,}개 → flow {stat['flows']:,}개\n주석·분할별 표본 {projection['rows']:,}개 인코딩\n512차원 → 64차원 벡터",21)
+    a+=card(6.83,1.35,5.76,3.14,'확인한 처리 계약',
+            f"학습·검증·시험 flow 그룹 중복 0\n변환 적합: 학습 {projection['pca_fit_rows']:,}행만 사용\n공개 checkpoint 가중치 고정\n미확정 라벨은 별도 보존",20)
+    a += [txt(.72,4.94,11.9,'현재는 PCAP → 학습 벡터 생성의 구현 검증\n자연 분포 분류 benchmark와 few-shot 비교는 다음 단계',19,True,NAVY),
+          txt(.72,5.75,11.9,f"라벨 미확정 {audit['unresolved_rows']:,}행은 정상으로 추정하지 않음  ·  공격 범위를 넓힌 새 CIC2018 구축 작업으로 확장",19),
+          txt(.72,6.38,11.9,'완료 파일럿은 단일 날짜·host·제한된 주석 표본  ·  정상 오탐률·분류 성능·TabPFN 우위는 아직 측정하지 않음',17,color=GREY)]
+    page('구현 파일럿: PCAP부터 학습용 벡터까지',a,
+         '표현 생성 파이프라인은 검증했고, 새 CIC2018의 분류 평가는 공격 범위를 확장한 뒤 수행','02 PCAP 재구축',
+         f'완료 실행은 {RUN.relative_to(ROOT)}이다. CIC2018의 2018-02-14 대상 host 한 대에서 패킷을 읽고 flow·라벨·분할 정보를 보존한 채 netFound embedding과 64차원 변환 벡터를 만들었다. 그룹 중복 없이 분리하고, 차원 축소 변환은 학습 행만으로 적합했다. 이 표본은 자연 클래스 분포 benchmark가 아니며 일부 라벨은 미확정으로 보존했다. 따라서 현재 파일럿으로 분류 성능, 정상 오탐률, TabPFN의 우위를 주장하지 않는다. 새 CIC2018 전체에서 공격군과 정상 범위를 확장한 뒤, 슬라이드 5의 두 감사와 기존 baseline·few-shot 조건을 같은 분할에서 반복하는 것이 다음 단계다.', ['aws','rules'])
 
-    a=[]
-    a+=card(.65,1.35,12.0,2.10,'동일 특징·상이 라벨의 직접 관측 · Xie 외, Computers & Security 2022',
-            'UNSW-NB15·CCCS-CIC-AndMal-2020에서 특징 중첩을 분석\n동일 관측에 여러 의미가 연결되는 현상의 근거 · CIC 원인의 직접 증거와 구별',21)
-    a += [txt(.84,3.13,11.50,'Analysis and Detection against Network Attacks in the Overlapping Phenomenon of Behavior Attribute',14,color=GREY,url=SOURCE_DATA['xie']['url'])]
-    a+=card(.65,3.95,12.0,2.10,'동일 데이터의 높은 점수와 일반화의 차이 · Cantone 외, IEEE Access 2024',
-            'CIC2017·2018과 교정 자료에서 데이터 간 전이 성능을 비교\n동일 데이터의 높은 점수만으로 새로운 환경의 탐지 성능을 판단하기 어려움',21)
-    a += [txt(.84,5.74,11.50,'Machine Learning in Network Intrusion Detection: A Cross-Dataset Generalization Study',15,color=GREY,url=SOURCE_DATA['cantone']['url']),
-          txt(.72,6.52,11.9,'선정 문헌 5편: CIC 원인 분석 3편 + 동일 특징 현상 1편 + 일반화 검증 1편',18,True,NAVY)]
-    page('보충 문헌과 근거의 적용 범위',a,'원인 근거·현상 근거·일반화 근거를 구별해 연구 주장에 연결','04 보충 근거',
-         'Xie 논문은 arXiv 제출 연도 2023보다 앞선 Computers & Security 121 (2022) 102867 게재 논문이다. Cantone은 2024년 초 arXiv의 이전 제목 대신 최종 IEEE Access 제목과 DOI로 표기했다. 그 연구는 동일 데이터 내 높은 성능과 데이터 간 전이 실패를 구별했으며 우리 새 표현의 우위를 입증한 것은 아니다. 슬라이드3의 세 직접 근거와 합쳐 다섯 문헌을 선정했다.', ['xie','cantone'])
-
-    # The historical SOTA comparison has different preparation and label budgets.
-    # Keep it as an explicitly scoped appendix, not merged into the few-shot table.
+    # 8. This is explicitly a historical appendix, not the discarded 2x2 plan.
     report=(ROOT/'docs/lablog/reports/20260904.tex').read_text()
     section=report.split(r'\subsection*{CIC2018 · 클래스별 F1 · test 3,042,473행}',1)[1].split(r'\bottomrule',1)[0]
     sota=[]
@@ -194,9 +234,10 @@ def scenes():
     a=[txt(.65,1.13,12.0,'CIC2018 · 정제 후·정상 포함 · 공통 학습 100,000행 · 전체 test 3,042,473행 · F1 (%)',18,color=GREY)]
     a+=table(.65,1.84,[2.1,1.6,2.09,2.08,2.08,2.08],['평가 클래스','평가 수','TabPFN v3','BoostPFN','LoCalPFN','DistPFN v3'],sota,height=.53,size=17)
     a += [txt(.72,6.27,11.9,'주요 공격의 높은 F1과 Infiltration·Web의 낮은 F1이 공존',22,True,NAVY),
-          txt(.72,6.69,11.9,'기존 보고서 발췌 · BoostPFN·LoCalPFN은 v1 기반 · LoCalPFN은 validation을 이용한 FT 포함',14,color=GREY)]
-    page('보충 결과: 기존 SOTA 비교',a,'소수 라벨 실험과 설정을 구별하고 클래스별 차이를 진단','04 보충 근거',
-         '기존 HTML에서 통합된 docs/lablog/reports/20260904.tex의 공통100k·전체test 표를 발췌했다. 초기 18만 smoke 결과가 아니다. EXP59 Global C0와 같은 학습 ID를 사용한 비교이며, BoostPFN·LoCalPFN의 v1과 Global·DistPFN의 v3 backbone, LoCalPFN의 validation FT 차이가 남는다. 이는 정제 전·정상 미포함·n개·5seed인 본문 slide2와 다른 실험으로 수치를 직접 합치지 않는다. 모든 공격이 높은 성능이라는 주장을 피하기 위해 정상과 전체 공격 클래스를 유지했다. 추출 원문 구간:\n'+section,[])
+          txt(.72,6.69,11.9,'부록 · few-shot 및 새 PCAP 표현과는 준비·라벨 예산·평가 범위가 달라 직접 수치 비교 불가',14,color=GREY)]
+    page('부록: 기존 SOTA 비교에서도 보인 클래스별 격차',a,
+         'historical comparison은 문제의식의 근거이며, 새 PCAP 평가와 직접 합치지 않음','부록',
+         '이 표는 기존 SOTA 비교의 역사적 결과다. 정제 후·정상 포함·100,000행 공통 학습·전체 test 조건으로, 본문 few-shot의 정제 전·정상 미포함·클래스당 n개 조건과 다르다. 주요 공격은 높지만 Infiltration과 Web은 낮아, 평균 수치만으로 데이터와 모델의 한계를 판단할 수 없었다. BoostPFN과 LoCalPFN은 TabPFN v1 기반이고 LoCalPFN은 validation fine-tuning을 사용했다. 이 수치를 새 PCAP 표현 또는 현재 제안 모델의 결과로 사용하지 않는다. 기존의 2×2 A–D 비교 계획 슬라이드는 이번 자료에서 제거했다. 아직 실행하지 않은 라벨 교정 arm을 현재 결론처럼 보이게 하고, CSV의 관측 문제와 PCAP 재구축의 동기를 끊었기 때문이다.', [])
 
 def main():
     QA.mkdir(parents=True,exist_ok=True);r.ASSETS.mkdir(parents=True,exist_ok=True)
@@ -207,7 +248,12 @@ def main():
     prs.core_properties.subject='문헌 근거, 인코더·데이터 후보, EXP92 구현 검증'
     prs.save(OUT.with_suffix('.pptx'))
     checks=r.pdf()
+    # pdftoppm emits page-1.png; keep zero-padded stable QA asset names.
+    for i in range(1,len(checks)+1):
+        src=QA/f'page-{i}.png';dst=QA/f'page-{i:02d}.png'
+        if src.exists():src.replace(dst)
     from PIL import Image,ImageDraw
+    for old in QA.glob('contact-*.png'):old.unlink()
     paths=sorted(QA.glob('page-*.png'))
     for start in range(0,len(paths),5):
         canvas=Image.new('RGB',(1500,1335),'#DCE3EB')
@@ -218,10 +264,10 @@ def main():
     (QA/'scenes.json').write_text(json.dumps(r.SCENES,ensure_ascii=False,indent=2)+'\n')
     visible='\n'.join(it.get('text','') for scene in r.SCENES for it in scene['items'])
     assert 'NF-v3' not in visible and 'NF-CIC' not in visible
-    manifest=dict(date='2026-10-29',slides=len(r.SCENES),source_evidence=str(EVIDENCE.relative_to(ROOT)),
+    manifest=dict(date='2026-10-30',slides=len(r.SCENES),source_evidence=str(EVIDENCE.relative_to(ROOT)),
                   run=str(RUN.relative_to(ROOT)),old_results='EXP89 uncurated attack-only, five seeds; not a new PCAP benchmark',
                   validation='shared scenes for editable PPTX and Chrome PDF; geometry/font/text checks',
-                  visual_review_pending=True,pages=checks,
+                  visual_review='2026-10-30 rendered PDF and all eight pages inspected',pages=checks,
                   pptx_sha256=hashlib.sha256(OUT.with_suffix('.pptx').read_bytes()).hexdigest(),
                   pdf_sha256=hashlib.sha256(OUT.with_suffix('.pdf').read_bytes()).hexdigest())
     (QA/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
