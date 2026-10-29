@@ -1,0 +1,168 @@
+{
+  "dataset": "CSE-CIC-IDS2018-PCAP-expanded",
+  "purpose": "Build an encoder-independent, group-split raw-PCAP corpus with broad CIC2018 attack families; make a frozen netFound-v2-small view; then compare XGBoost and frozen TabPFN on exactly matched few-shot rows. This is a new feature representation and split, not a reproduction of the prior NF-v3 scores.",
+  "seed": 43,
+  "label_source": "https://github.com/GintsEngelen/CNS2022_Code/blob/master/Labelling/CICIDS2018_labelling_fixed_CICFlowMeter.ipynb",
+  "label_rule_note": "Rules transcribe the corrected-CICFlowMeter notebook's attack interval, endpoint and stated feature filters. Sessions are independently reconstructed from PCAP, so labels have the same documented intent but are not asserted to reproduce notebook rows one-for-one. Unmatched daily-capture traffic is background benign; flows crossing an attack-rule boundary remain unresolved.",
+  "class_order": ["benign", "bot", "brute_force", "ddos", "dos", "infiltration", "web_attacks"],
+  "split_fractions": [0.7, 0.15, 0.15],
+  "corpus": {
+    "reservoir_per_label_split": 1024,
+    "reservoir_unresolved_per_split": 256,
+    "reconstruction_contract": "flow_id, bidirectional five-tuple, start/end packet positions and bounded netFound tokens identify a session. A future encoder may re-open the checksum-pinned PCAP and reconstruct all packets using capture_id plus the flow locator; it must write a separate encoder view without changing corpus labels, IDs or splits."
+  },
+  "flow": {
+    "idle_seconds": 120,
+    "active_seconds": 5,
+    "reorder_seconds": 1.0,
+    "allow_truncated": true
+  },
+  "encoders": {
+    "netfound-v2-small": {
+      "checkpoint": "data/pcap_models/netfound-small",
+      "dtype": "float32",
+      "feature_description": "512-dimensional frozen netFound v2 header/timing representation, projected to 64 dimensions with training-split PCA. Raw payload, IP addresses, ports, absolute timestamps, labels and split are excluded from encoder input."
+    }
+  },
+  "projection": {
+    "components": 64,
+    "fit_scope": "all training-split corpus flows, including unresolved flows; neither validation nor test flows are used"
+  },
+  "fewshot": {
+    "budgets": [2, 3, 5, 10, 20, 50],
+    "seeds": [43, 44, 45, 46, 47],
+    "methods": ["xgb", "tabpfn"],
+    "regimes": ["with_benign", "attack_only"],
+    "tabpfn_checkpoint": "tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+    "paired_sampling": "For every class, seed and n, a deterministic maximum-n sample is drawn from only its training split and its first n rows are used by both methods. Test rows and PCA are held fixed across methods.",
+    "interpretation": "with_benign is the primary IDS task. attack_only is a diagnostic that removes normal-vs-attack separation and must not replace the primary result."
+  },
+  "captures": [
+    {
+      "id": "cic2018_20180214_bruteforce",
+      "path": "data/pcap/cic2018/20180214_victim.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Wednesday-14-02-2018/pcap.zip",
+      "member": "pcap/UCAP172.31.69.25",
+      "max_uncompressed_bytes": 2000000000,
+      "group_namespace": "cic2018_20180214_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"ssh_bruteforce","label":"brute_force","annotation":"SSH-BruteForce","src_ips":["13.58.98.64"],"dst_ips":["172.31.69.25"],"dst_ports":[22],"protocol":6,"start_ns":1518631310000000000,"end_ns":1518636750000000000,"min_attack_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"ssh_bruteforce_attempted","annotation":"SSH-BruteForce-Attempted-NoPayload","attempted":true,"src_ips":["13.58.98.64"],"dst_ips":["172.31.69.25"],"dst_ports":[22],"protocol":6,"start_ns":1518631310000000000,"end_ns":1518636750000000000,"max_attack_payload_bytes":0,"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    },
+    {
+      "id": "cic2018_20180215_dos",
+      "path": "data/pcap/cic2018/20180215_victim.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Thursday-15-02-2018/pcap.zip",
+      "member": "pcap/UCAP172.31.69.25",
+      "max_uncompressed_bytes": 1000000000,
+      "group_namespace": "cic2018_20180215_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"dos_goldeneye","label":"dos","annotation":"DoS-GoldenEye","src_ips":["18.219.211.138"],"dst_ips":["172.31.69.25"],"protocol":6,"start_ns":1518701262000000000,"end_ns":1518703905000000000,"min_total_payload_bytes":1,"any_of":[{"attack_rst_eq":0},{"min_duration_us":5050000}],"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"dos_slowloris","label":"dos","annotation":"DoS-Slowloris","src_ips":["18.217.165.70"],"dst_ips":["172.31.69.25"],"protocol":6,"start_ns":1518706812000000000,"end_ns":1518709321000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    },
+    {
+      "id": "cic2018_20180221_ddos_part1",
+      "path": "data/pcap/cic2018/20180221_victim_part1.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Wednesday-21-02-2018/pcap.zip",
+      "member": "pcap/UCAP172.31.69.28 part 1",
+      "max_uncompressed_bytes": 26000000000,
+      "group_namespace": "cic2018_20180221_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"ddos_loic_udp","label":"ddos","annotation":"DDoS-LOIC-UDP","src_ips":["18.218.115.60","18.219.9.1","18.219.32.43","18.218.55.126","52.14.136.135","18.219.5.43","18.216.200.189","18.218.229.235","18.218.11.51","18.216.24.42"],"dst_ips":["172.31.69.28"],"protocol":17,"start_ns":1519222131000000000,"end_ns":1519224219000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"ddos_hoic","label":"ddos","annotation":"DDoS-HOIC","src_ips":["18.218.115.60","18.219.9.1","18.219.32.43","18.218.55.126","52.14.136.135","18.219.5.43","18.216.200.189","18.218.229.235","18.218.11.51","18.216.24.42"],"dst_ips":["172.31.69.28"],"protocol":6,"start_ns":1519236668000000000,"end_ns":1519239955000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    },
+    {
+      "id": "cic2018_20180221_ddos_part2",
+      "path": "data/pcap/cic2018/20180221_victim_part2.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Wednesday-21-02-2018/pcap.zip",
+      "member": "pcap/UCAP172.31.69.28 part 2",
+      "max_uncompressed_bytes": 4000000000,
+      "group_namespace": "cic2018_20180221_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"ddos_loic_udp","label":"ddos","annotation":"DDoS-LOIC-UDP","src_ips":["18.218.115.60","18.219.9.1","18.219.32.43","18.218.55.126","52.14.136.135","18.219.5.43","18.216.200.189","18.218.229.235","18.218.11.51","18.216.24.42"],"dst_ips":["172.31.69.28"],"protocol":17,"start_ns":1519222131000000000,"end_ns":1519224219000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"ddos_hoic","label":"ddos","annotation":"DDoS-HOIC","src_ips":["18.218.115.60","18.219.9.1","18.219.32.43","18.218.55.126","52.14.136.135","18.219.5.43","18.216.200.189","18.218.229.235","18.218.11.51","18.216.24.42"],"dst_ips":["172.31.69.28"],"protocol":6,"start_ns":1519236668000000000,"end_ns":1519239955000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    },
+    {
+      "id": "cic2018_20180222_web",
+      "path": "data/pcap/cic2018/20180222_victim.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Thursday-22-02-2018/pcap.zip",
+      "member": "pcap/UCAP172.31.69.28",
+      "max_uncompressed_bytes": 1000000000,
+      "group_namespace": "cic2018_20180222_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"web_sql","label":"web_attacks","annotation":"Web-Attack-SQL","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519330590418906000,"end_ns":1519331276022793000,"min_attack_payload_bytes":1,"min_peer_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"web_xss","label":"web_attacks","annotation":"Web-Attack-XSS","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519321899783923000,"end_ns":1519324181827037000,"exclude_attack_src_ports":[63782,64144],"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"web_bruteforce","label":"web_attacks","annotation":"Web-Attack-BruteForce","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519309071336902000,"end_ns":1519313039858533000,"min_attack_packets":21,"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    },
+    {
+      "id": "cic2018_20180223_web",
+      "path": "data/pcap/cic2018/20180223_victim.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Friday-23-02-2018/pcap.zip",
+      "member": "pcap/UCAP172.31.69.28",
+      "max_uncompressed_bytes": 1000000000,
+      "group_namespace": "cic2018_20180223_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"web_sql","label":"web_attacks","annotation":"Web-Attack-SQL","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519412792126122000,"end_ns":1519413444947957000,"min_attack_payload_bytes":1,"min_peer_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"web_xss","label":"web_attacks","annotation":"Web-Attack-XSS","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519405264559707000,"end_ns":1519409428237472000,"exclude_attack_src_ports":[59173],"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"web_bruteforce","label":"web_attacks","annotation":"Web-Attack-BruteForce","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519394670193975000,"end_ns":1519398186406294000,"min_attack_packets":21,"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    },
+    {
+      "id": "cic2018_20180228_infiltration_part1",
+      "path": "data/pcap/cic2018/20180228_victim_part1.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Wednesday-28-02-2018/pcap.zip",
+      "member": "pcap/capEC2AMAZ-O4EL3NG-172.31.69.24- part1",
+      "max_uncompressed_bytes": 1000000000,
+      "group_namespace": "cic2018_20180228_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"infiltration_dropbox_1","label":"infiltration","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519828404000000000,"end_ns":1519829172000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_dropbox_2","label":"infiltration","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519839771000000000,"end_ns":1519839824000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_communication_1","label":"infiltration","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519829140000000000,"end_ns":1519834135000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_communication_2","label":"infiltration","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519839839000000000,"end_ns":1519843200000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_nmap","label":"infiltration","annotation":"Infiltration-NMAP","src_ips":["172.31.69.24"],"dst_ips":["172.31.69.1","172.31.69.10","172.31.69.11","172.31.69.12","172.31.69.13","172.31.69.14","172.31.69.16","172.31.69.17","172.31.69.19","172.31.69.20","172.31.69.23","172.31.69.4","172.31.69.5","172.31.69.6","172.31.69.8","172.31.69.9","172.31.69.7","172.31.69.22","172.31.69.15","172.31.69.21","172.31.69.18"],"start_ns":1519829182000000000,"end_ns":1519843140746247000,"exclude_attack_src_ports":[68],"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    },
+    {
+      "id": "cic2018_20180228_infiltration_part2",
+      "path": "data/pcap/cic2018/20180228_victim_part2.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Wednesday-28-02-2018/pcap.zip",
+      "member": "pcap/capEC2AMAZ-O4EL3NG-172.31.69.24-part2",
+      "max_uncompressed_bytes": 1000000000,
+      "group_namespace": "cic2018_20180228_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"infiltration_dropbox_1","label":"infiltration","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519828404000000000,"end_ns":1519829172000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_dropbox_2","label":"infiltration","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519839771000000000,"end_ns":1519839824000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_communication_1","label":"infiltration","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519829140000000000,"end_ns":1519834135000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_communication_2","label":"infiltration","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519839839000000000,"end_ns":1519843200000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_nmap","label":"infiltration","annotation":"Infiltration-NMAP","src_ips":["172.31.69.24"],"dst_ips":["172.31.69.1","172.31.69.10","172.31.69.11","172.31.69.12","172.31.69.13","172.31.69.14","172.31.69.16","172.31.69.17","172.31.69.19","172.31.69.20","172.31.69.23","172.31.69.4","172.31.69.5","172.31.69.6","172.31.69.8","172.31.69.9","172.31.69.7","172.31.69.22","172.31.69.15","172.31.69.21","172.31.69.18"],"start_ns":1519829182000000000,"end_ns":1519843140746247000,"exclude_attack_src_ports":[68],"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    },
+    {
+      "id": "cic2018_20180302_bot",
+      "path": "data/pcap/cic2018/20180302_victim.pcap",
+      "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Friday-02-03-2018/pcap.zip",
+      "member": "pcap/capEC2AMAZ-O4EL3NG-172.31.69.13",
+      "max_uncompressed_bytes": 1000000000,
+      "group_namespace": "cic2018_20180302_victim",
+      "unmatched_policy": "benign",
+      "rules": [
+        {"id":"bot_ares","label":"bot","annotation":"Botnet-Ares","priority":0,"any_endpoint_ips":["18.219.211.138"],"start_ns":1520000008000000000,"end_ns":1520020492000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"bot_ares_attempted_rst","annotation":"Botnet-Ares-Attempted-TearDown","priority":10,"attempted":true,"dst_ips":["18.219.211.138"],"start_ns":1520020424000000000,"end_ns":1520020492000000000,"min_attack_payload_bytes":1,"peer_rst_eq":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"bot_ares_attempted_empty","annotation":"Botnet-Ares-Attempted-EmptyPayload","priority":10,"attempted":true,"any_endpoint_ips":["18.219.211.138"],"start_ns":1520000008000000000,"end_ns":1520020492000000000,"max_total_payload_bytes":0,"source":"CNS2022 corrected CICIDS2018 notebook"}
+      ]
+    }
+  ]
+}

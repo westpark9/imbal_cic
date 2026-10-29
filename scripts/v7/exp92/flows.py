@@ -145,6 +145,7 @@ class Flow:
     last_burst_start: list = field(default_factory=lambda: [None, None])
     burst_count: list = field(default_factory=lambda: [0, 0])
     bursts: list = field(default_factory=lambda: [[], []])
+    rst_count: list = field(default_factory=lambda: [0, 0])
 
     def __post_init__(self):
         self.start = self.end = self.first.ns
@@ -180,6 +181,8 @@ class Flow:
         self.last_dir_time[d] = p.ns
         self.end, self.last_index = p.ns, p.index
         self.count += 1; self.direction_count[d] += 1; self.payload[d] += p.payload_len
+        if p.proto == 6 and p.flags & 4:
+            self.rst_count[d] += 1
         if p.flags & 1: self.fin.add(d)
 
     def row(self, reason):
@@ -190,6 +193,7 @@ class Flow:
                     start_ns=self.start, end_ns=self.end, protocol=self.first.proto,
                     packets=self.count, fwd_packets=self.direction_count[0], bwd_packets=self.direction_count[1],
                     fwd_payload_bytes=self.payload[0], bwd_payload_bytes=self.payload[1],
+                    fwd_rst_packets=self.rst_count[0], bwd_rst_packets=self.rst_count[1],
                     first_packet_index=self.first.index, last_packet_index=self.last_index,
                     retained_packet_indices=[i for b in bs for i in b['packet_indices']], end_reason=reason,
                     flow_duration=(self.end-self.start)//1000,
