@@ -63,13 +63,25 @@ class CorrectedRuleSet:
         self.rules = sorted(capture.get('rules', []), key=lambda r: (-int(r.get('priority', 0)), r['id']))
         self.default_source = default_source
         self.background = capture.get('unmatched_policy')
+        # CIC publishes public endpoints in its corrected CSV labels, whereas
+        # a PCAP captured inside an EC2 instance can expose that same host by
+        # its private VPC address.  Keep the source-rule IP in the rule and
+        # declare this capture-local observation explicitly in the protocol.
+        self.endpoint_aliases = {
+            str(source): {str(source), *(str(value) for value in aliases)}
+            for source, aliases in capture.get('endpoint_aliases', {}).items()
+        }
 
-    @staticmethod
-    def _endpoint_match(row: dict[str, Any], rule: dict[str, Any]) -> tuple[bool, bool]:
+    def _matches_endpoint(self, observed: str, rule_endpoints: set[str]) -> bool:
+        return any(observed in self.endpoint_aliases.get(endpoint, {endpoint})
+                   for endpoint in rule_endpoints)
+
+    def _endpoint_match(self, row: dict[str, Any], rule: dict[str, Any]) -> tuple[bool, bool]:
         """Return (matched, reverse), where reverse locates the rule source."""
         any_ips = set(rule.get('any_endpoint_ips', []))
         if any_ips:
-            return bool({row['src_ip'], row['dst_ip']} & any_ips), False
+            return (self._matches_endpoint(row['src_ip'], any_ips)
+                    or self._matches_endpoint(row['dst_ip'], any_ips)), False
 
         srcs, dsts = set(rule.get('src_ips', [])), set(rule.get('dst_ips', []))
         sports, dports = set(rule.get('src_ports', [])), set(rule.get('dst_ports', []))
@@ -78,7 +90,8 @@ class CorrectedRuleSet:
             dst_ip = row['src_ip'] if reverse else row['dst_ip']
             src_port = row['dst_port'] if reverse else row['src_port']
             dst_port = row['src_port'] if reverse else row['dst_port']
-            return ((not srcs or src_ip in srcs) and (not dsts or dst_ip in dsts)
+            return ((not srcs or self._matches_endpoint(src_ip, srcs))
+                    and (not dsts or self._matches_endpoint(dst_ip, dsts))
                     and (not sports or src_port in sports) and (not dports or dst_port in dports))
         if matches(False):
             return True, False
@@ -201,6 +214,23 @@ def _reservoir_add(bucket: list[dict[str, Any]], seen: int, row: dict[str, Any],
         bucket[candidate] = row
 
 
+def label_mapping(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Expose the raw CIC annotation names behind each evaluation family."""
+    annotations: dict[str, set[str]] = defaultdict(set)
+    rule_ids: dict[str, set[str]] = defaultdict(set)
+    for capture in config['captures']:
+        for rule in capture.get('rules', []):
+            family = rule.get('label')
+            if family:
+                annotations[family].add(rule.get('annotation', family))
+                rule_ids[family].add(rule['id'])
+    return [dict(family=family,
+                 source_annotations=(sorted(annotations[family]) if annotations[family]
+                                     else ['Background / unmatched capture traffic'] if family == 'benign' else []),
+                 direct_rule_ids=sorted(rule_ids[family]))
+            for family in config['class_order']]
+
+
 def build_corpus(config: dict[str, Any], out: Path) -> dict[str, Any]:
     corpus = out / 'corpus'
     manifest_path = corpus / 'manifest.json'
@@ -223,8 +253,11 @@ def build_corpus(config: dict[str, Any], out: Path) -> dict[str, Any]:
             raise FileNotFoundError(f'Missing verified PCAP: {pcap}')
         engine = CorrectedRuleSet(cap_cfg, source)
         stats: Counter[str] = Counter()
+        completed_flows, next_progress = 0, 10000
+        print(f'corpus: {cap_cfg["id"]} ({pcap.name})', flush=True)
         for row in iter_flows(pcap, cap_cfg['id'], cap_cfg['group_namespace'], stats,
                               **config['flow']):
+            completed_flows += 1
             labelled = engine.apply(row)
             if row.get('capture_truncated'):
                 labelled = dict(label=None, annotation_label=None, label_status='incomplete_capture',
@@ -238,7 +271,13 @@ def build_corpus(config: dict[str, Any], out: Path) -> dict[str, Any]:
             if take:
                 _reservoir_add(buckets[key], seen[key], row, take, rng)
             all_status[row['label_status']] += 1
+            if completed_flows >= next_progress:
+                print(f'corpus: {cap_cfg["id"]}: {completed_flows:,} flows; '
+                      f'{stats["raw_packets"]:,} packets read', flush=True)
+                next_progress += 10000
         raw_stats[cap_cfg['id']] = dict(stats)
+        print(f'corpus: complete {cap_cfg["id"]}: {completed_flows:,} flows; '
+              f'{dict(stats)}', flush=True)
         capture_meta.append(dict(id=cap_cfg['id'], path=cap_cfg['path'], bytes=pcap.stat().st_size,
                                  sha256=sha256(pcap), group_namespace=cap_cfg['group_namespace']))
     flows = corpus / 'flows.jsonl'
@@ -249,6 +288,13 @@ def build_corpus(config: dict[str, Any], out: Path) -> dict[str, Any]:
     result = dict(schema=1, dataset=config['dataset'], seed=config['seed'], captures=capture_meta,
                   raw_stats=raw_stats, label_source=source,
                   label_rule_note=config['label_rule_note'], label_status_counts=dict(all_status),
+                  evaluation_label_schema=dict(
+                      label_type='NF-v3-aligned attack family',
+                      class_order=config['class_order'],
+                      mapping=label_mapping(config),
+                      raw_annotation_field='annotation_label'),
+                  endpoint_aliases=[dict(capture_id=cap['id'], aliases=cap['endpoint_aliases'])
+                                    for cap in config['captures'] if cap.get('endpoint_aliases')],
                   source_counts=[dict(label=k[0], split=k[1], rows=v) for k, v in sorted(seen.items())],
                   sampled_counts=[dict(label=k[0], split=k[1], rows=len(v)) for k, v in sorted(buckets.items())],
                   reservoir_per_label_split=cap, split='SHA256(capture group namespace + bidirectional 5-tuple), before reservoir',
@@ -264,6 +310,31 @@ def build_corpus(config: dict[str, Any], out: Path) -> dict[str, Any]:
                       netfound_view='burst_tokens/directions/bytes/iats/counts/protocol',
                       guarantee='A new encoder writes a separate view and never changes corpus labels, split, or flow IDs'))
     write(manifest_path, result)
+    return result
+
+
+def validate_coverage(config: dict[str, Any], corpus: Path, out: Path) -> dict[str, Any]:
+    """Fail before encoder work when a declared family lacks viable few-shot rows."""
+    rows = load_rows(corpus)
+    max_budget = max(int(value) for value in config['fewshot']['budgets'])
+    coverage = {}
+    failures = []
+    for family in config['class_order']:
+        by_split = Counter(row['split'] for row in rows if row.get('label') == family)
+        coverage[family] = {part: int(by_split[part]) for part in ('train', 'validation', 'test')}
+        if by_split['train'] < max_budget or by_split['test'] < 1:
+            failures.append(dict(family=family, required_train_rows=max_budget,
+                                 observed=coverage[family]))
+    result = dict(passed=not failures, max_fewshot_budget=max_budget,
+                  sampled_corpus_rows=len(rows), coverage=coverage, failures=failures,
+                  interpretation=('Counts are after the deterministic group split and label×split reservoir. '
+                                  'They are checked before frozen-encoder inference and classifier fitting.'))
+    write(out / 'label_coverage.json', result)
+    if failures:
+        details = '; '.join(f'{item["family"]}: train={item["observed"]["train"]}, '
+                            f'test={item["observed"]["test"]}' for item in failures)
+        raise ValueError(f'Insufficient labelled corpus coverage for n={max_budget}: {details}. '
+                         f'Inspect {out / "label_coverage.json"} and the capture-to-rule mapping.')
     return result
 
 
@@ -593,12 +664,15 @@ def main() -> None:
     corpus = resolve_path(args.corpus, ROOT) if args.corpus else out / 'corpus'
     if args.stage in ('corpus', 'all'):
         build_corpus(config, out)
+    if not (corpus / 'manifest.json').exists():
+        raise FileNotFoundError(f'Corpus missing: {corpus}')
+    # Do this before the costly frozen-encoder pass.  The same check also
+    # protects a later adapter that reuses an existing corpus.
+    validate_coverage(config, corpus, out)
     if args.stage == 'corpus':
         write(out / 'status.json', dict(status='complete', stage=args.stage, adapter=args.adapter,
                                         corpus=str(corpus), classifier_evaluated=False))
         return
-    if not (corpus / 'manifest.json').exists():
-        raise FileNotFoundError(f'Corpus missing: {corpus}')
     if args.stage in ('encode', 'all'):
         encoder_dir = encode_netfound(config, corpus, out, args.device, args.batch_size)
     else:

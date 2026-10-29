@@ -3,8 +3,9 @@
   "purpose": "Build an encoder-independent, group-split raw-PCAP corpus with broad CIC2018 attack families; make a frozen netFound-v2-small view; then compare XGBoost and frozen TabPFN on exactly matched few-shot rows. This is a new feature representation and split, not a reproduction of the prior NF-v3 scores.",
   "seed": 43,
   "label_source": "https://github.com/GintsEngelen/CNS2022_Code/blob/master/Labelling/CICIDS2018_labelling_fixed_CICFlowMeter.ipynb",
-  "label_rule_note": "Rules transcribe the corrected-CICFlowMeter notebook's attack interval, endpoint and stated feature filters. Sessions are independently reconstructed from PCAP, so labels have the same documented intent but are not asserted to reproduce notebook rows one-for-one. Unmatched daily-capture traffic is background benign; flows crossing an attack-rule boundary remain unresolved.",
-  "class_order": ["benign", "bot", "brute_force", "ddos", "dos", "infiltration", "web_attacks"],
+  "label_rule_note": "Rules transcribe the corrected-CICFlowMeter notebook's attack interval, endpoint and stated feature filters. Sessions are independently reconstructed from PCAP, so labels have the same documented intent but are not asserted to reproduce notebook rows one-for-one. Unmatched daily-capture traffic is background benign; flows crossing an attack-rule boundary remain unresolved. Raw attack names are retained as annotation_label and evaluation uses the documented NF-v3-aligned family mapping.",
+  "class_order": ["benign", "ddos", "bot", "dos", "bf", "inf", "web"],
+  "evaluation_label_note": "Classifier labels use the seven attack families used for the prior NF-v3 comparison: benign, ddos, bot, dos, bf, inf and web. The corrected-CICFlowMeter source annotation remains in annotation_label; the corpus manifest records every direct source annotation and rule ID per family.",
   "split_fractions": [0.7, 0.15, 0.15],
   "corpus": {
     "reservoir_per_label_split": 1024,
@@ -47,7 +48,7 @@
       "group_namespace": "cic2018_20180214_victim",
       "unmatched_policy": "benign",
       "rules": [
-        {"id":"ssh_bruteforce","label":"brute_force","annotation":"SSH-BruteForce","src_ips":["13.58.98.64"],"dst_ips":["172.31.69.25"],"dst_ports":[22],"protocol":6,"start_ns":1518631310000000000,"end_ns":1518636750000000000,"min_attack_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"ssh_bruteforce","label":"bf","annotation":"SSH-BruteForce","src_ips":["13.58.98.64"],"dst_ips":["172.31.69.25"],"dst_ports":[22],"protocol":6,"start_ns":1518631310000000000,"end_ns":1518636750000000000,"min_attack_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
         {"id":"ssh_bruteforce_attempted","annotation":"SSH-BruteForce-Attempted-NoPayload","attempted":true,"src_ips":["13.58.98.64"],"dst_ips":["172.31.69.25"],"dst_ports":[22],"protocol":6,"start_ns":1518631310000000000,"end_ns":1518636750000000000,"max_attack_payload_bytes":0,"source":"CNS2022 corrected CICIDS2018 notebook"}
       ]
     },
@@ -99,9 +100,9 @@
       "group_namespace": "cic2018_20180222_victim",
       "unmatched_policy": "benign",
       "rules": [
-        {"id":"web_sql","label":"web_attacks","annotation":"Web-Attack-SQL","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519330590418906000,"end_ns":1519331276022793000,"min_attack_payload_bytes":1,"min_peer_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"web_xss","label":"web_attacks","annotation":"Web-Attack-XSS","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519321899783923000,"end_ns":1519324181827037000,"exclude_attack_src_ports":[63782,64144],"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"web_bruteforce","label":"web_attacks","annotation":"Web-Attack-BruteForce","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519309071336902000,"end_ns":1519313039858533000,"min_attack_packets":21,"source":"CNS2022 corrected CICIDS2018 notebook"}
+        {"id":"web_sql","label":"web","annotation":"Web-Attack-SQL","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519330590418906000,"end_ns":1519331276022793000,"min_attack_payload_bytes":1,"min_peer_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"web_xss","label":"web","annotation":"Web-Attack-XSS","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519321899783923000,"end_ns":1519324181827037000,"exclude_attack_src_ports":[63782,64144],"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"web_bruteforce","label":"web","annotation":"Web-Attack-BruteForce","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519309071336902000,"end_ns":1519313039858533000,"min_attack_packets":21,"source":"CNS2022 corrected CICIDS2018 notebook"}
       ]
     },
     {
@@ -113,9 +114,9 @@
       "group_namespace": "cic2018_20180223_victim",
       "unmatched_policy": "benign",
       "rules": [
-        {"id":"web_sql","label":"web_attacks","annotation":"Web-Attack-SQL","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519412792126122000,"end_ns":1519413444947957000,"min_attack_payload_bytes":1,"min_peer_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"web_xss","label":"web_attacks","annotation":"Web-Attack-XSS","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519405264559707000,"end_ns":1519409428237472000,"exclude_attack_src_ports":[59173],"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"web_bruteforce","label":"web_attacks","annotation":"Web-Attack-BruteForce","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519394670193975000,"end_ns":1519398186406294000,"min_attack_packets":21,"source":"CNS2022 corrected CICIDS2018 notebook"}
+        {"id":"web_sql","label":"web","annotation":"Web-Attack-SQL","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519412792126122000,"end_ns":1519413444947957000,"min_attack_payload_bytes":1,"min_peer_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"web_xss","label":"web","annotation":"Web-Attack-XSS","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519405264559707000,"end_ns":1519409428237472000,"exclude_attack_src_ports":[59173],"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"web_bruteforce","label":"web","annotation":"Web-Attack-BruteForce","src_ips":["18.218.115.60"],"dst_ips":["172.31.69.28"],"start_ns":1519394670193975000,"end_ns":1519398186406294000,"min_attack_packets":21,"source":"CNS2022 corrected CICIDS2018 notebook"}
       ]
     },
     {
@@ -127,11 +128,11 @@
       "group_namespace": "cic2018_20180228_victim",
       "unmatched_policy": "benign",
       "rules": [
-        {"id":"infiltration_dropbox_1","label":"infiltration","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519828404000000000,"end_ns":1519829172000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"infiltration_dropbox_2","label":"infiltration","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519839771000000000,"end_ns":1519839824000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"infiltration_communication_1","label":"infiltration","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519829140000000000,"end_ns":1519834135000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"infiltration_communication_2","label":"infiltration","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519839839000000000,"end_ns":1519843200000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"infiltration_nmap","label":"infiltration","annotation":"Infiltration-NMAP","src_ips":["172.31.69.24"],"dst_ips":["172.31.69.1","172.31.69.10","172.31.69.11","172.31.69.12","172.31.69.13","172.31.69.14","172.31.69.16","172.31.69.17","172.31.69.19","172.31.69.20","172.31.69.23","172.31.69.4","172.31.69.5","172.31.69.6","172.31.69.8","172.31.69.9","172.31.69.7","172.31.69.22","172.31.69.15","172.31.69.21","172.31.69.18"],"start_ns":1519829182000000000,"end_ns":1519843140746247000,"exclude_attack_src_ports":[68],"source":"CNS2022 corrected CICIDS2018 notebook"}
+        {"id":"infiltration_dropbox_1","label":"inf","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519828404000000000,"end_ns":1519829172000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_dropbox_2","label":"inf","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519839771000000000,"end_ns":1519839824000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_communication_1","label":"inf","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519829140000000000,"end_ns":1519834135000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_communication_2","label":"inf","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519839839000000000,"end_ns":1519843200000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_nmap","label":"inf","annotation":"Infiltration-NMAP","src_ips":["172.31.69.24"],"dst_ips":["172.31.69.1","172.31.69.10","172.31.69.11","172.31.69.12","172.31.69.13","172.31.69.14","172.31.69.16","172.31.69.17","172.31.69.19","172.31.69.20","172.31.69.23","172.31.69.4","172.31.69.5","172.31.69.6","172.31.69.8","172.31.69.9","172.31.69.7","172.31.69.22","172.31.69.15","172.31.69.21","172.31.69.18"],"start_ns":1519829182000000000,"end_ns":1519843140746247000,"exclude_attack_src_ports":[68],"source":"CNS2022 corrected CICIDS2018 notebook"}
       ]
     },
     {
@@ -143,11 +144,11 @@
       "group_namespace": "cic2018_20180228_victim",
       "unmatched_policy": "benign",
       "rules": [
-        {"id":"infiltration_dropbox_1","label":"infiltration","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519828404000000000,"end_ns":1519829172000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"infiltration_dropbox_2","label":"infiltration","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519839771000000000,"end_ns":1519839824000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"infiltration_communication_1","label":"infiltration","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519829140000000000,"end_ns":1519834135000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"infiltration_communication_2","label":"infiltration","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519839839000000000,"end_ns":1519843200000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
-        {"id":"infiltration_nmap","label":"infiltration","annotation":"Infiltration-NMAP","src_ips":["172.31.69.24"],"dst_ips":["172.31.69.1","172.31.69.10","172.31.69.11","172.31.69.12","172.31.69.13","172.31.69.14","172.31.69.16","172.31.69.17","172.31.69.19","172.31.69.20","172.31.69.23","172.31.69.4","172.31.69.5","172.31.69.6","172.31.69.8","172.31.69.9","172.31.69.7","172.31.69.22","172.31.69.15","172.31.69.21","172.31.69.18"],"start_ns":1519829182000000000,"end_ns":1519843140746247000,"exclude_attack_src_ports":[68],"source":"CNS2022 corrected CICIDS2018 notebook"}
+        {"id":"infiltration_dropbox_1","label":"inf","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519828404000000000,"end_ns":1519829172000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_dropbox_2","label":"inf","annotation":"Infiltration-Dropbox","src_ips":["172.31.69.24"],"dst_ips":["162.125.3.1","162.125.3.5","162.125.3.6","162.125.248.1","162.125.18.133"],"start_ns":1519839771000000000,"end_ns":1519839824000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_communication_1","label":"inf","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519829140000000000,"end_ns":1519834135000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_communication_2","label":"inf","annotation":"Infiltration-Communication","src_ips":["172.31.69.24"],"dst_ips":["13.58.225.34"],"start_ns":1519839839000000000,"end_ns":1519843200000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},
+        {"id":"infiltration_nmap","label":"inf","annotation":"Infiltration-NMAP","src_ips":["172.31.69.24"],"dst_ips":["172.31.69.1","172.31.69.10","172.31.69.11","172.31.69.12","172.31.69.13","172.31.69.14","172.31.69.16","172.31.69.17","172.31.69.19","172.31.69.20","172.31.69.23","172.31.69.4","172.31.69.5","172.31.69.6","172.31.69.8","172.31.69.9","172.31.69.7","172.31.69.22","172.31.69.15","172.31.69.21","172.31.69.18"],"start_ns":1519829182000000000,"end_ns":1519843140746247000,"exclude_attack_src_ports":[68],"source":"CNS2022 corrected CICIDS2018 notebook"}
       ]
     },
     {
@@ -157,6 +158,8 @@
       "member": "pcap/capEC2AMAZ-O4EL3NG-172.31.69.13",
       "max_uncompressed_bytes": 1000000000,
       "group_namespace": "cic2018_20180302_victim",
+      "endpoint_aliases": {"18.219.211.138": ["172.31.69.13"]},
+      "endpoint_alias_note": "The corrected-CICFlowMeter notebook identifies Botnet Ares with public endpoint 18.219.211.138. The pinned host PCAP is named for, and exposes, its local VPC endpoint 172.31.69.13; the public endpoint does not appear literally in that capture. This explicit, capture-scoped alias preserves the notebook rule while avoiding a broad time-window-only Bot label.",
       "unmatched_policy": "benign",
       "rules": [
         {"id":"bot_ares","label":"bot","annotation":"Botnet-Ares","priority":0,"any_endpoint_ips":["18.219.211.138"],"start_ns":1520000008000000000,"end_ns":1520020492000000000,"min_total_payload_bytes":1,"source":"CNS2022 corrected CICIDS2018 notebook"},

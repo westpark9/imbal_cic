@@ -35,7 +35,7 @@ class Exp93RulesTest(unittest.TestCase):
     def test_confirmed_and_attempted_ssh_are_disjoint(self):
         direct = self.rules.apply(row())
         attempted = self.rules.apply(row(fwd_payload_bytes=0, bwd_payload_bytes=0))
-        self.assertEqual(direct['label'], 'brute_force')
+        self.assertEqual(direct['label'], 'bf')
         self.assertEqual(direct['label_status'], 'confirmed_attack')
         self.assertEqual(attempted['label'], 'benign')
         self.assertEqual(attempted['label_status'], 'attempted_to_benign')
@@ -43,7 +43,7 @@ class Exp93RulesTest(unittest.TestCase):
     def test_reverse_flow_uses_attack_direction(self):
         reverse = self.rules.apply(row(src_ip='172.31.69.25', dst_ip='13.58.98.64', src_port=22, dst_port=44000,
                                        fwd_payload_bytes=40, bwd_payload_bytes=120))
-        self.assertEqual(reverse['label'], 'brute_force')
+        self.assertEqual(reverse['label'], 'bf')
 
     def test_interval_crossing_is_not_silently_benign(self):
         boundary = self.rules.apply(row(start_ns=1518631309000000000, end_ns=1518631400000000000))
@@ -59,6 +59,23 @@ class Exp93RulesTest(unittest.TestCase):
                                          bwd_rst_packets=1))
         self.assertEqual(attempted['annotation_label'], 'Botnet-Ares-Attempted-TearDown')
         self.assertEqual(attempted['label'], 'benign')
+
+    def test_bot_public_rule_matches_declared_capture_local_alias(self):
+        bot_capture = next(c for c in self.config['captures'] if c['id'].endswith('_bot'))
+        bot_rules = RUNNER.CorrectedRuleSet(bot_capture, self.config['label_source'])
+        direct = bot_rules.apply(row(src_ip='172.31.69.13', dst_ip='72.21.91.29', src_port=443,
+                                     dst_port=54000, start_ns=1520001000000000000,
+                                     end_ns=1520001000100000000, fwd_payload_bytes=100,
+                                     bwd_payload_bytes=20))
+        self.assertEqual(direct['label'], 'bot')
+        self.assertEqual(direct['annotation_label'], 'Botnet-Ares')
+
+    def test_manifest_mapping_uses_nf_v3_families_and_keeps_source_annotations(self):
+        mapping = {item['family']: item for item in RUNNER.label_mapping(self.config)}
+        self.assertEqual(list(mapping), self.config['class_order'])
+        self.assertIn('SSH-BruteForce', mapping['bf']['source_annotations'])
+        self.assertIn('Infiltration-NMAP', mapping['inf']['source_annotations'])
+        self.assertIn('Web-Attack-XSS', mapping['web']['source_annotations'])
 
     def test_every_target_class_has_a_direct_rule_and_valid_capture(self):
         targets = set(self.config['class_order']) - {'benign'}
