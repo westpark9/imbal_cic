@@ -1,0 +1,482 @@
+{
+  "schema": 1,
+  "created_at": "2026-10-29T17:11:43.177984+00:00",
+  "input": {
+    "csv_dir": "/home/user/Desktop/imbal_cic/data/cic2018",
+    "files": [
+      "0_Wednesday-14-02-2018_TrafficForML_CICFlowMeter.csv",
+      "1_Thursday-15-02-2018_TrafficForML_CICFlowMeter.csv",
+      "2_Friday-16-02-2018_TrafficForML_CICFlowMeter.csv",
+      "3_Thuesday-20-02-2018_TrafficForML_CICFlowMeter.csv",
+      "4_Wednesday-21-02-2018_TrafficForML_CICFlowMeter.csv",
+      "5_Thursday-22-02-2018_TrafficForML_CICFlowMeter.csv",
+      "6_Friday-23-02-2018_TrafficForML_CICFlowMeter.csv",
+      "7_Wednesday-28-02-2018_TrafficForML_CICFlowMeter.csv",
+      "8_Thursday-01-03-2018_TrafficForML_CICFlowMeter.csv",
+      "9_Friday-02-03-2018_TrafficForML_CICFlowMeter.csv"
+    ],
+    "features": [
+      "ACK Flag Cnt",
+      "Active Max",
+      "Active Mean",
+      "Active Min",
+      "Active Std",
+      "Bwd Blk Rate Avg",
+      "Bwd Byts/b Avg",
+      "Bwd Header Len",
+      "Bwd IAT Max",
+      "Bwd IAT Mean",
+      "Bwd IAT Min",
+      "Bwd IAT Std",
+      "Bwd IAT Tot",
+      "Bwd PSH Flags",
+      "Bwd Pkt Len Max",
+      "Bwd Pkt Len Mean",
+      "Bwd Pkt Len Min",
+      "Bwd Pkt Len Std",
+      "Bwd Pkts/b Avg",
+      "Bwd Pkts/s",
+      "Bwd Seg Size Avg",
+      "Bwd URG Flags",
+      "CWE Flag Count",
+      "Down/Up Ratio",
+      "Dst Port",
+      "ECE Flag Cnt",
+      "FIN Flag Cnt",
+      "Flow Byts/s",
+      "Flow Duration",
+      "Flow IAT Max",
+      "Flow IAT Mean",
+      "Flow IAT Min",
+      "Flow IAT Std",
+      "Flow Pkts/s",
+      "Fwd Act Data Pkts",
+      "Fwd Blk Rate Avg",
+      "Fwd Byts/b Avg",
+      "Fwd Header Len",
+      "Fwd IAT Max",
+      "Fwd IAT Mean",
+      "Fwd IAT Min",
+      "Fwd IAT Std",
+      "Fwd IAT Tot",
+      "Fwd PSH Flags",
+      "Fwd Pkt Len Max",
+      "Fwd Pkt Len Mean",
+      "Fwd Pkt Len Min",
+      "Fwd Pkt Len Std",
+      "Fwd Pkts/b Avg",
+      "Fwd Pkts/s",
+      "Fwd Seg Size Avg",
+      "Fwd Seg Size Min",
+      "Fwd URG Flags",
+      "Idle Max",
+      "Idle Mean",
+      "Idle Min",
+      "Idle Std",
+      "Init Bwd Win Byts",
+      "Init Fwd Win Byts",
+      "PSH Flag Cnt",
+      "Pkt Len Max",
+      "Pkt Len Mean",
+      "Pkt Len Min",
+      "Pkt Len Std",
+      "Pkt Len Var",
+      "Pkt Size Avg",
+      "Protocol",
+      "RST Flag Cnt",
+      "SYN Flag Cnt",
+      "Subflow Bwd Byts",
+      "Subflow Bwd Pkts",
+      "Subflow Fwd Byts",
+      "Subflow Fwd Pkts",
+      "Tot Bwd Pkts",
+      "Tot Fwd Pkts",
+      "TotLen Bwd Pkts",
+      "TotLen Fwd Pkts",
+      "URG Flag Cnt"
+    ],
+    "feature_count": 78,
+    "excluded_columns": [
+      "Dst IP",
+      "Flow ID",
+      "Label",
+      "Src IP",
+      "Src Port",
+      "Timestamp"
+    ],
+    "equality": "Every selected raw CSV field is outer-whitespace-trimmed and concatenated in a fixed column order before SHA-256 grouping."
+  },
+  "totals": {
+    "rows": 16233002,
+    "conflicting_feature_groups": 22131,
+    "rows_in_conflicting_groups": 419579,
+    "fraction_rows_in_conflicting_groups": 0.025847283207382096
+  },
+  "per_label": [
+    {
+      "label": "FTP-BruteForce",
+      "rows": 193360,
+      "conflicting_rows": 175191,
+      "conflicting_fraction": 0.9060353744311129
+    },
+    {
+      "label": "DoS attacks-SlowHTTPTest",
+      "rows": 139890,
+      "conflicting_rows": 77277,
+      "conflicting_fraction": 0.5524126099077847
+    },
+    {
+      "label": "Infilteration",
+      "rows": 161934,
+      "conflicting_rows": 41279,
+      "conflicting_fraction": 0.2549124952140996
+    },
+    {
+      "label": "SQL Injection",
+      "rows": 87,
+      "conflicting_rows": 9,
+      "conflicting_fraction": 0.10344827586206896
+    },
+    {
+      "label": "Brute Force -Web",
+      "rows": 611,
+      "conflicting_rows": 20,
+      "conflicting_fraction": 0.03273322422258593
+    },
+    {
+      "label": "Benign",
+      "rows": 13484708,
+      "conflicting_rows": 125771,
+      "conflicting_fraction": 0.009326935370050282
+    },
+    {
+      "label": "Brute Force -XSS",
+      "rows": 230,
+      "conflicting_rows": 2,
+      "conflicting_fraction": 0.008695652173913044
+    },
+    {
+      "label": "SSH-Bruteforce",
+      "rows": 187589,
+      "conflicting_rows": 30,
+      "conflicting_fraction": 0.00015992408936558113
+    },
+    {
+      "label": "Bot",
+      "rows": 286191,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "DDOS attack-HOIC",
+      "rows": 686012,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "DDOS attack-LOIC-UDP",
+      "rows": 1730,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "DDoS attacks-LOIC-HTTP",
+      "rows": 576191,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "DoS attacks-GoldenEye",
+      "rows": 41508,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "DoS attacks-Hulk",
+      "rows": 461912,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "DoS attacks-Slowloris",
+      "rows": 10990,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "Label",
+      "rows": 59,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    }
+  ],
+  "representative_conflicting_groups": [
+    {
+      "feature_sha256": "1edc5f0a343a7d90cf5fd9fed89f8dd1256b73896910b80f0e61edea52c428c2",
+      "rows": 149331,
+      "labels": 3,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce | SSH-Bruteforce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 62024
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 87297
+        },
+        {
+          "label": "SSH-Bruteforce",
+          "rows": 10
+        }
+      ],
+      "raw_samples": [
+        {
+          "filename": "/home/user/Desktop/imbal_cic/data/cic2018/2_Friday-16-02-2018_TrafficForML_CICFlowMeter.csv",
+          "label": "DoS attacks-SlowHTTPTest",
+          "Dst Port": "21",
+          "Protocol": "6",
+          "Flow Duration": "2",
+          "Tot Fwd Pkts": "1",
+          "Tot Bwd Pkts": "1",
+          "TotLen Fwd Pkts": "0",
+          "TotLen Bwd Pkts": "0",
+          "Flow Byts/s": "0",
+          "Flow Pkts/s": "1000000",
+          "Idle Min": "0"
+        },
+        {
+          "filename": "/home/user/Desktop/imbal_cic/data/cic2018/0_Wednesday-14-02-2018_TrafficForML_CICFlowMeter.csv",
+          "label": "FTP-BruteForce",
+          "Dst Port": "21",
+          "Protocol": "6",
+          "Flow Duration": "2",
+          "Tot Fwd Pkts": "1",
+          "Tot Bwd Pkts": "1",
+          "TotLen Fwd Pkts": "0",
+          "TotLen Bwd Pkts": "0",
+          "Flow Byts/s": "0",
+          "Flow Pkts/s": "1000000",
+          "Idle Min": "0"
+        },
+        {
+          "filename": "/home/user/Desktop/imbal_cic/data/cic2018/0_Wednesday-14-02-2018_TrafficForML_CICFlowMeter.csv",
+          "label": "SSH-Bruteforce",
+          "Dst Port": "21",
+          "Protocol": "6",
+          "Flow Duration": "2",
+          "Tot Fwd Pkts": "1",
+          "Tot Bwd Pkts": "1",
+          "TotLen Fwd Pkts": "0",
+          "TotLen Bwd Pkts": "0",
+          "Flow Byts/s": "0",
+          "Flow Pkts/s": "1000000",
+          "Idle Min": "0"
+        }
+      ]
+    },
+    {
+      "feature_sha256": "63f332875ffc602a404ae6975ed138f33809461c91d885bdd9612e9505552b3f",
+      "rows": 65374,
+      "labels": 3,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce | SSH-Bruteforce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 1028
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 64336
+        },
+        {
+          "label": "SSH-Bruteforce",
+          "rows": 10
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "00b29722048225a897d07688c5b95d68b929e825212079e69034531613687727",
+      "rows": 12737,
+      "labels": 2,
+      "label_set": "FTP-BruteForce | SSH-Bruteforce",
+      "per_label_rows": [
+        {
+          "label": "FTP-BruteForce",
+          "rows": 12733
+        },
+        {
+          "label": "SSH-Bruteforce",
+          "rows": 4
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "adab821b8d767c4e0174e2d441fc738e40a501a9d5cc8c8b25586ca524983cbe",
+      "rows": 9671,
+      "labels": 3,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce | SSH-Bruteforce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 5328
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 4340
+        },
+        {
+          "label": "SSH-Bruteforce",
+          "rows": 3
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "b091235fadf9ee167a250e0fee0ce555e4f598701f560a446f3e57e33fef5bfc",
+      "rows": 6585,
+      "labels": 2,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 5493
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 1092
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "a91ef9f56e3bf9bbe3a4dc9fa876be16c566c3f51044d25a168a6787d60c8d16",
+      "rows": 4907,
+      "labels": 2,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 1932
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 2975
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "1b5ab5c3f57f048f652b38a17ec498cb4796bf6cc4a525e538e6a23a999c4e3b",
+      "rows": 1227,
+      "labels": 2,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 118
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 1109
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "2c03bd431c4405aadc7f67975fdf2eca1bd70c2df03014037db8ae520889624a",
+      "rows": 958,
+      "labels": 2,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 831
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 127
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "f53b1e3290873ed0d6e89ac114248c66dfdd8474a814a5bb7f8fe235e6e52ed0",
+      "rows": 681,
+      "labels": 3,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce | SSH-Bruteforce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 85
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 595
+        },
+        {
+          "label": "SSH-Bruteforce",
+          "rows": 1
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "9a81c5dae30fa497680b56633c6a23420268f81a39a4036934fff62984ffd7cb",
+      "rows": 648,
+      "labels": 3,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce | SSH-Bruteforce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 207
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 440
+        },
+        {
+          "label": "SSH-Bruteforce",
+          "rows": 1
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "03ed72423f43e84c8b5ceb931e62a37289ffd62b0a078b977364efe274a26b0d",
+      "rows": 341,
+      "labels": 2,
+      "label_set": "DoS attacks-SlowHTTPTest | FTP-BruteForce",
+      "per_label_rows": [
+        {
+          "label": "DoS attacks-SlowHTTPTest",
+          "rows": 207
+        },
+        {
+          "label": "FTP-BruteForce",
+          "rows": 134
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "b80b0d60e5baed67bb74a32dd6b458373ec9f25642f99028cba49592440c91a7",
+      "rows": 297,
+      "labels": 2,
+      "label_set": "Benign | Infilteration",
+      "per_label_rows": [
+        {
+          "label": "Benign",
+          "rows": 294
+        },
+        {
+          "label": "Infilteration",
+          "rows": 3
+        }
+      ],
+      "raw_samples": []
+    }
+  ]
+}

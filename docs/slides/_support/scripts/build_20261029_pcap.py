@@ -1,276 +1,371 @@
-"""Editable Korean PCAP research slides and matching PDF, with source/geometry QA."""
+"""Build the Korean deck on CSV limitations and PCAP-based CIC reconstruction.
+
+All explanatory text and diagrams remain editable in the PPTX.  Figures are
+rendered from the saved EXP87 CSV and the source-level CIC2018 CSV audit.
+"""
+from __future__ import annotations
+
 from pathlib import Path
 import csv
 import hashlib
 import json
 import sys
 
-ROOT=next(p for p in Path(__file__).resolve().parents if (p/'scripts/common/experiment_paths.py').exists())
-sys.path.insert(0,str(ROOT/'scripts/common'))
-from experiment_paths import repo_root
+ROOT = next(path for path in Path(__file__).resolve().parents if (path / 'scripts/common/experiment_paths.py').exists())
+sys.path.insert(0, str(ROOT / 'scripts/common'))
 import build_20261023_references as r
 
-HERE=ROOT/'docs/slides'
-QA=HERE/'_support/qa/20261029_pcap'
-OUT=HERE/'kor/20261029_PCAP_연구방향'
-EVIDENCE=ROOT/'docs/lablog/evidence/20261029_pcap'
-RUN=ROOT/'tabpfn/results/v7/exp92/20261029_210839_cic2018_verified_pcap_4d62ceac'
-SOURCE_DATA=json.loads((EVIDENCE/'sources.json').read_text())['sources']
-r.QA=QA;r.ASSETS=HERE/'_support/assets/20261029_pcap';r.OUT=OUT;r.N_SLIDES=8;r.SCENES=[]
-r.SOURCES={k:(v['title'],f"{v['venue']}, {v['year']}",v['url'],v['evidence']) for k,v in SOURCE_DATA.items()}
-txt,box,arrow,block,page=r.txt,r.box,r.arrow,r.block,r.page
-NAVY,BLUE,INK,GREY,PALE=r.NAVY,r.BLUE,r.INK,r.GREY,r.PALE
-RED='B44948'
+HERE = ROOT / 'docs/slides'
+QA = HERE / '_support/qa/20261029_pcap'
+OUT = HERE / 'kor/20261029_PCAP_연구방향'
+EVIDENCE = ROOT / 'docs/lablog/evidence/20261029_pcap'
+AUDIT_PATH = ROOT / 'docs/lablog/evidence/20261030/original_cic2018_csv_audit.json'
+EXP87 = ROOT / 'tabpfn/results/v7/exp87/20261022_163739_full_learning_curve_five_seeds_c59213f5'
+SOURCE_DATA = json.loads((EVIDENCE / 'sources.json').read_text(encoding='utf-8'))['sources']
 
-def card(x,y,w,h,title,body,size=21):
-    return [box(x,y,w,h,PALE),box(x,y,w,.48,'E1ECF5'),txt(x+.16,y+.09,w-.32,title,21,True,NAVY),txt(x+.18,y+.72,w-.36,body,size)]
+r.QA = QA
+r.ASSETS = HERE / '_support/assets/20261029_pcap'
+r.OUT = OUT
+r.N_SLIDES = 6
+r.SCENES = []
+r.SOURCES = {key: (value['title'], f"{value['venue']}, {value['year']}", value['url'], value['evidence']) for key, value in SOURCE_DATA.items()}
+txt, box, arrow, block, page = r.txt, r.box, r.arrow, r.block, r.page
+NAVY, BLUE, INK, GREY, PALE = r.NAVY, r.BLUE, r.INK, r.GREY, r.PALE
+RED, TEAL = 'B44948', '227B71'
 
-def table(x,y,widths,headers,rows,height=.55,size=20,colors=None):
-    items=[]
-    for ri,row in enumerate([headers]+rows):
-        xx=x
-        for ci,(w,value) in enumerate(zip(widths,row)):
-            fill=NAVY if ri==0 else ('FFFFFF' if ri%2 else PALE)
-            items.append(box(xx,y+ri*height,w,height,fill))
-            color='FFFFFF' if ri==0 else (colors.get(ci,INK) if colors else INK)
-            align='left' if ci==0 else 'right'
-            items.append(txt(xx+.12,y+ri*height+.13,w-.24,str(value),size,ri==0,color,align))
-            xx+=w
+
+def asset_image(name: str, x: float, y: float, w: float, h: float) -> dict:
+    """Fit a generated chart into a slide while preserving its aspect ratio."""
+    from PIL import Image
+    path = r.ASSETS / f'{name}.png'
+    iw, ih = Image.open(path).size
+    scale = min(w / iw, h / ih)
+    ww, hh = iw * scale, ih * scale
+    return dict(kind='image', x=x + (w - ww) / 2, y=y + (h - hh) / 2, w=ww, h=hh, path=str(path))
+
+
+def card(x: float, y: float, w: float, h: float, title: str, body: str, *, accent: str = BLUE, body_size: int = 18) -> list[dict]:
+    return [
+        box(x, y, w, h, 'FFFFFF', 'D3DFE9'),
+        box(x, y, w, .43, accent),
+        txt(x + .12, y + .075, w - .24, title, 18, True, 'FFFFFF', 'center'),
+        txt(x + .16, y + .62, w - .32, body, body_size, False, INK, 'center'),
+    ]
+
+
+def raw_row(x: float, y: float, values: list[str], *, label_fill: str) -> list[dict]:
+    widths = [1.05, .70, 1.38, .93, .93, 1.32, 1.25, .83, 1.12, .82, 1.70]
+    items: list[dict] = []
+    xx = x
+    for index, (width, value) in enumerate(zip(widths, values)):
+        fill = label_fill if index == len(widths) - 1 else ('FFFFFF' if index % 2 else PALE)
+        items.append(box(xx, y, width, .48, fill, 'D3DFE9'))
+        items.append(txt(xx + .05, y + .145, width - .10, value, 9.8, index == len(widths) - 1, INK, 'center'))
+        xx += width
     return items
 
-def asset_image(name,x,y,w,h):
-    """Insert a generated chart without treating it as a literature figure."""
-    from PIL import Image
-    path=r.ASSETS/(name+'.png')
-    iw,ih=Image.open(path).size
-    scale=min(w/iw,h/ih)
-    ww,hh=iw*scale,ih*scale
-    return dict(kind='image',x=x+(w-ww)/2,y=y+(h-hh)/2,w=ww,h=hh,path=str(path))
+
+def short_label(value: str, limit: int = 24) -> str:
+    value = value.replace('attack-', '').replace('attacks-', '')
+    return value if len(value) <= limit else value[:limit - 1] + '…'
 
 
-def make_fewshot_asset():
-    """Render the two requested EXP89 diagnostic views from the saved numeric CSV."""
+def make_ceiling_asset() -> None:
+    """Create the long learning curve plus n=20/n=450 class-F1 heatmaps."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     from matplotlib.font_manager import FontProperties
     import numpy as np
 
-    r.ASSETS.mkdir(parents=True,exist_ok=True)
-    curve_path=ROOT/'docs/lablog/data/20261027_exp89_comparison_curves.csv'
-    class_path=ROOT/'docs/lablog/data/20261027_exp89_class_comparison.csv'
-    with curve_path.open() as f:
-        curves=[x for x in csv.DictReader(f) if x['dataset']=='cic2018' and x['panel']=='1']
-    with class_path.open() as f:
-        classes=[x for x in csv.DictReader(f) if x['dataset']=='cic2018' and x['panel']=='1' and x['n']=='20']
-    ns=[2,3,5,10,20]
-    fp=FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Regular.otf')
-    fp_bold=FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Bold.otf')
-    fig,(ax1,ax2)=plt.subplots(1,2,figsize=(13.0,4.1),dpi=190,gridspec_kw={'width_ratios':[1.0,1.20]})
-    fig.patch.set_facecolor('white')
-    colors={'xgb':'#B44948','pfn':'#007BC6'}
-    labels={'xgb':'XGB','pfn':'TabPFN'}
-    for method in ['xgb','pfn']:
-        ys=[float(next(x['mean_percent'] for x in curves if x['method']==method and int(x['n'])==n)) for n in ns]
-        ax1.plot(ns,ys,color=colors[method],lw=2.8,marker='o',ms=7,label=labels[method])
-        ax1.annotate(f'{ys[-1]:.1f}',(ns[-1],ys[-1]),xytext=(7,5 if method=='pfn' else -16),textcoords='offset points',
-                     color=colors[method],fontsize=10,fontproperties=fp_bold)
-    ax1.set_title('공격 macro-F1',fontproperties=fp_bold,fontsize=15,pad=12)
-    ax1.set_xlabel('클래스당 학습 라벨 수 n',fontproperties=fp,fontsize=11)
-    ax1.set_ylabel('F1 (%)',fontproperties=fp,fontsize=11)
-    ax1.set_xticks(ns);ax1.set_ylim(50,100.5);ax1.set_yticks([50,60,70,80,90,100])
-    ax1.grid(axis='y',color='#D9E1E8',lw=.8);ax1.spines[['top','right']].set_visible(False)
-    ax1.legend(loc='lower right',frameon=False,prop=fp,handlelength=2.8)
-    ax1.text(.03,.05,'n=10 → 20\nXGB +2.9%p\nTabPFN +2.2%p',transform=ax1.transAxes,
-             fontsize=10,fontproperties=fp,color='#334155',va='bottom')
+    r.ASSETS.mkdir(parents=True, exist_ok=True)
+    summary = [row for row in csv.DictReader((EXP87 / 'summary.csv').open()) if row['dataset'] == 'cic2018']
+    per_class = [row for row in csv.DictReader((EXP87 / 'per_class.csv').open()) if row['dataset'] == 'cic2018']
+    methods = [('xgb', 'XGB', '#B44948'), ('pfn', 'TabPFN', '#007BC6')]
+    budgets = sorted({int(row['n']) for row in summary})
+    classes = sorted(
+        {row['class_name'] for row in per_class},
+        key=lambda name: -int(next(row['support'] for row in per_class if row['class_name'] == name)),
+    )
+    pretty = {
+        'ddos': 'DDoS', 'bot': 'Bot', 'brute_force': 'Brute force',
+        'dos': 'DoS', 'infiltration': 'Infiltration', 'web_attacks': 'Web attacks',
+    }
+    font = FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Regular.otf')
+    bold = FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Bold.otf')
+    fig = plt.figure(figsize=(14.0, 4.25), dpi=190)
+    grid = fig.add_gridspec(1, 3, width_ratios=[1.27, 1.0, 1.0], wspace=.38)
+    ax_curve = fig.add_subplot(grid[0])
+    for method, label, color in methods:
+        values = [100 * float(next(row['mean_f1'] for row in summary if row['method'] == method and int(row['n']) == n)) for n in budgets]
+        ax_curve.plot(budgets, values, marker='o', ms=5.4, lw=2.4, color=color, label=label)
+        ax_curve.annotate(f'{values[-1]:.1f}', (budgets[-1], values[-1]), xytext=(5, 2 if method == 'xgb' else -13),
+                          textcoords='offset points', color=color, fontsize=9, fontproperties=bold)
+    ax_curve.set_xscale('log', base=2)
+    ax_curve.set_xticks(budgets, [str(n) for n in budgets], fontproperties=font, fontsize=8.7)
+    ax_curve.set_ylim(55, 92)
+    ax_curve.set_yticks([60, 70, 80, 90])
+    ax_curve.set_ylabel('macro-F1 (%)', fontproperties=font, fontsize=10)
+    ax_curve.set_xlabel('클래스당 학습 라벨 수 n', fontproperties=font, fontsize=10)
+    ax_curve.set_title('n=2부터 n=450까지', fontproperties=bold, fontsize=14, pad=10)
+    ax_curve.grid(axis='y', color='#D9E1E8', lw=.75)
+    ax_curve.spines[['top', 'right']].set_visible(False)
+    ax_curve.legend(frameon=False, loc='lower right', prop=font, handlelength=2.9)
 
-    pretty={'ddos':'DDoS','brute_force':'Brute force','dos':'DoS','bot':'Bot','infiltration':'Infiltration','web_attacks':'Web attacks'}
-    names=sorted({x['name'] for x in classes},key=lambda c:-int(next(x['support'] for x in classes if x['name']==c)))
-    ypos=np.arange(len(names))
-    h=.34
-    for offset,method in [(-h/2,'xgb'),(h/2,'pfn')]:
-        vals=[float(next(x['mean_percent'] for x in classes if x['name']==c and x['method']==method)) for c in names]
-        ax2.barh(ypos+offset,vals,height=h,color=colors[method],label=labels[method])
-        for y,v in zip(ypos+offset,vals):
-            ax2.text(v+1.0,y,f'{v:.1f}',va='center',fontsize=8.5,fontproperties=fp,color=colors[method])
-    ylabels=[f"{pretty[c]}  ({int(next(x['support'] for x in classes if x['name']==c)):,})" for c in names]
-    ax2.set_title('수렴 구간 n=20의 클래스별 F1',fontproperties=fp_bold,fontsize=15,pad=12)
-    ax2.set_yticks(ypos,ylabels,fontproperties=fp,fontsize=9.4);ax2.invert_yaxis()
-    ax2.set_xlim(0,114);ax2.set_xlabel('F1 (%) · 괄호는 고정 attack test 표본 수',fontproperties=fp,fontsize=10)
-    ax2.grid(axis='x',color='#D9E1E8',lw=.8);ax2.spines[['top','right','left']].set_visible(False)
-    ax2.legend(loc='lower left',bbox_to_anchor=(0,-.02),ncol=2,frameon=False,prop=fp,handlelength=2.8)
-    plt.tight_layout(pad=1.25,w_pad=2.8)
-    fig.savefig(r.ASSETS/'fewshot_diagnostic.png',bbox_inches='tight',facecolor='white')
+    image = None
+    for index, budget in enumerate([20, 450]):
+        ax = fig.add_subplot(grid[index + 1])
+        matrix = []
+        for method, _, _ in methods:
+            matrix.append([
+                100 * sum(float(row['f1']) for row in per_class if row['method'] == method and int(row['n']) == budget and row['class_name'] == class_name) /
+                sum(1 for row in per_class if row['method'] == method and int(row['n']) == budget and row['class_name'] == class_name)
+                for class_name in classes
+            ])
+        image = ax.imshow(np.array(matrix), aspect='auto', cmap='Blues', vmin=0, vmax=100)
+        for yy in range(2):
+            for xx in range(len(classes)):
+                value = matrix[yy][xx]
+                ax.text(xx, yy, f'{value:.0f}', ha='center', va='center', fontsize=8.2,
+                        color='white' if value >= 62 else '#172033', fontproperties=bold)
+        ax.set_xticks(range(len(classes)), [pretty.get(item, item) for item in classes], rotation=35, ha='right', fontproperties=font, fontsize=8.1)
+        ax.set_yticks(range(2), ['XGB', 'TabPFN'], fontproperties=bold, fontsize=9)
+        ax.set_title(f'클래스별 F1 · n={budget}', fontproperties=bold, fontsize=14, pad=10)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        ax.tick_params(length=0)
+    bar = fig.colorbar(image, ax=fig.axes[1:], shrink=.74, pad=.04)
+    bar.set_label('F1 (%)', fontproperties=font, fontsize=9)
+    bar.ax.tick_params(labelsize=8)
+    fig.savefig(r.ASSETS / 'ceiling_curve_heatmaps.png', bbox_inches='tight', facecolor='white')
     plt.close(fig)
 
 
-def scenes():
-    make_fewshot_asset()
+def make_conflict_asset(audit: dict) -> None:
+    """Render an integrated whole-data and per-label conflict-rate view."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.font_manager import FontProperties
 
-    # 1. The presentation begins with the CSV actually used in prior work, then shows how CIC-IDS2017 produced it.
-    a=[txt(.65,1.11,4.45,'기존 실험의 입력은 CSV였다',25,True,NAVY),
-       txt(.65,1.64,4.45,'CIC-IDS2017은 PCAP과\n특징 CSV·라벨을 함께 제공',20)]
-    a+=card(.65,2.50,4.45,1.26,'그동안의 실험','CSV의 flow 통계 벡터를\nXGB·TabPFN에 입력',19)
-    a+=card(.65,4.00,4.45,1.26,'일반적인 IDS 표 분류 연구','제공된 CSV를 바로\n학습·평가 입력으로 사용',19)
-    a += [txt(.72,5.78,4.28,'질문  이 CSV는 패킷에서\n어떤 정보를 남긴 표현인가?',22,True,BLUE),
-          txt(5.58,1.11,6.75,'CIC-IDS2017에서 CSV가 만들어지는 과정',25,True,NAVY)]
-    blocks=[(5.58,'실험망','정상·공격\n트래픽'),(7.38,'PCAP','시간순 원시\n패킷 기록'),(9.18,'CICFlowMeter','통신 단위로 묶고\n고정 통계량 계산'),(11.45,'CSV','숫자 벡터\n+ 라벨')]
-    widths=[1.48,1.48,2.00,1.18]
-    for (x,title,body),w in zip(blocks,widths):a+=block(x,1.94,w,1.37,title,body,body_size=15.5)
-    for x,w in [(7.11,.18),(8.91,.18),(11.18,.18)]:a.append(arrow(x,2.45,w))
-    a += [txt(9.18,3.49,4.02,'하나의 연결에서 오간 요청·응답 패킷을\n한 flow 레코드로 묶음',16,color=GREY,align='center'),
-          txt(5.58,4.15,7.00,'CSV에 남는 특징의 예',20,True,NAVY)]
-    examples=[('지속 시간','첫 패킷부터\n마지막 패킷까지'),('순방향 패킷 수','한 방향으로\n보낸 패킷 수'),('순방향 평균 길이','한 방향 패킷\n길이의 평균')]
-    for x,(title,body) in zip([5.58,7.93,10.28],examples):a+=block(x,4.67,2.08,1.25,title,body,body_size=14)
-    a += [txt(5.62,6.26,6.95,'[지속시간, 패킷 수, 평균 길이, …]  →  분류 모델 입력',18,True,BLUE)]
-    page('CIC-IDS2017은 PCAP과 CICFlowMeter CSV를 함께 제공',a,
-         'CSV 기반 기존 실험에서 시작해, 그 입력이 패킷을 어떻게 요약했는지 확인','01 기존 CSV와 진단',
-         '왼쪽부터 설명한다. 기존 실험과 많은 IDS 표 분류 연구는 제공된 CSV의 flow 통계 벡터를 바로 분류기의 입력으로 썼다. 이어서 오른쪽에서 그 CSV가 실험망 트래픽의 PCAP을 CICFlowMeter가 통신 단위로 묶고, 미리 정의된 통계량을 계산한 결과임을 보여 준다. 여기서 flow는 같은 연결에서 오간 요청·응답 패킷을 하나의 레코드로 모은 것이다. CICFlowMeter는 공격에 중요한 특징을 학습해 고르는 모델이 아니라, 구현에 정해진 flow·통계 정의로 수치를 계산하는 도구다. 따라서 어떤 패킷 순서와 내용이 최종 벡터에서 사라지는지도 이후 검증 대상이 된다.', ['cic17'])
+    r.ASSETS.mkdir(parents=True, exist_ok=True)
+    font = FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Regular.otf')
+    bold = FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Bold.otf')
+    totals = audit['totals']
+    labels = [row for row in audit['per_label'] if row['conflicting_rows']]
+    labels.sort(key=lambda row: (-row['conflicting_rows'], row['label']))
+    selected = labels[:6]
+    fig, (ax_all, ax_label) = plt.subplots(1, 2, figsize=(12.8, 2.55), dpi=190, gridspec_kw={'width_ratios': [1.0, 1.28]})
+    fraction = 100 * totals['fraction_rows_in_conflicting_groups']
+    ax_all.barh([0], [100 - fraction], color='#E7EDF3', height=.48)
+    ax_all.barh([0], [fraction], left=100 - fraction, color='#B44948', height=.48)
+    ax_all.text(0, .43, f"전체 {totals['rows']:,}행", ha='left', va='bottom', fontsize=12, fontproperties=bold, color='#00306C')
+    ax_all.text(50, 0, '단일 라벨 feature group', ha='center', va='center', fontsize=10, fontproperties=font, color='#465667')
+    ax_all.text(100, .43, f'상이 라벨 {fraction:.2f}%', ha='right', va='bottom', fontsize=10.5, fontproperties=bold, color='#B44948')
+    ax_all.text(100, -.42, f"{totals['rows_in_conflicting_groups']:,}행 · {totals['conflicting_feature_groups']:,}개 feature group", ha='right', va='top', fontsize=9.5, fontproperties=font, color='#617080')
+    ax_all.set_xlim(0, 100); ax_all.set_ylim(-.65, .75); ax_all.axis('off')
 
-    # 2. Few-shot is a diagnostic for an unexpectedly high baseline, not the core operational scenario.
-    a=[txt(.65,1.10,12.0,'일부 공격의 baseline이 이미 높았다  →  라벨을 극단적으로 줄여도 같은가?',22,True,NAVY)]
-    a+=block(.65,1.69,3.78,.90,'출발점','일부 공격 F1 90%대',body_size=16)
-    a+=block(4.78,1.69,3.78,.90,'진단 질문','클래스당 n=2까지 낮춰도 높은가?',body_size=16)
-    a+=block(8.91,1.69,3.77,.90,'고정 조건','정제 전·정상 미포함 · 동일 attack test · 5 seeds',body_size=12.5)
-    a += [asset_image('fewshot_diagnostic',.62,2.66,12.10,3.68),
-          txt(.72,6.53,11.9,'few-shot은 방법의 주 성능 주장이 아니라, head 클래스의 조기 포화와 data ceiling을 드러내는 진단',17,True,NAVY)]
-    page('few-shot은 높은 baseline을 점검한 진단',a,
-         'n을 2개까지 낮춰도 일부 head 공격이 고점에 도달하는지 확인','01 기존 CSV와 진단',
-         'few-shot을 먼저 한 이유는 TabPFN의 우위를 주장하려는 것이 아니라, 기존 baseline이 일부 공격에서 이미 매우 높았기 때문이다. 클래스당 라벨을 n=2, 3, 5, 10, 20개로 줄이고 동일한 attack-only test로 분류해 조기 포화 여부를 본다. macro-F1은 n=2에서 n=20으로 XGB 60.0에서 78.1, TabPFN 65.1에서 78.3으로 올라가므로 전체 변화가 없다고 해석하지 않는다. 다만 n=10에서 n=20의 증가는 XGB 2.9%p, TabPFN 2.2%p로 둔화하고 DDoS·Bot은 n=20에서 98–99%에 도달한다. Web attacks는 11–12%에 머물러, 모든 공격이 쉬웠다는 뜻도 아니다. 이 결과는 정상 포함 IDS 성능이 아니며, 왜 특정 head가 쉽게 분리되는지와 tail의 낮은 성능 원인을 별도로 점검해야 한다.', [])
+    display = list(reversed(selected))
+    rates = [100 * row['conflicting_fraction'] for row in display]
+    ax_label.barh(range(len(display)), rates, color='#007BC6', height=.53)
+    ax_label.set_yticks(range(len(display)), [short_label(row['label']) for row in display], fontproperties=font, fontsize=9.3)
+    ax_label.set_xlim(0, max(100, max(rates) * 1.18))
+    ax_label.set_xlabel('각 원본 Label 행 중 상이 라벨 feature group 비율 (%)', fontproperties=font, fontsize=9.5)
+    ax_label.grid(axis='x', color='#D9E1E8', lw=.7)
+    ax_label.spines[['top', 'right', 'left']].set_visible(False)
+    ax_label.tick_params(axis='y', length=0)
+    for y, (rate, row) in enumerate(zip(rates, display)):
+        ax_label.text(rate + 1.1, y, f"{rate:.1f}%  ({row['conflicting_rows']:,}/{row['rows']:,})", va='center', fontsize=8.4, fontproperties=font, color='#00306C')
+    fig.tight_layout(pad=.8, w_pad=3)
+    fig.savefig(r.ASSETS / 'original_csv_conflict_rates.png', bbox_inches='tight', facecolor='white')
+    plt.close(fig)
 
-    # 3. Put observed exact conflicts before the literature explanation, without asserting they are all wrong labels.
-    a=[txt(.65,1.08,12.0,'기존 입력 CSV의 46개 숫자가 모두 같아도 라벨은 둘 이상',24,True,NAVY)]
-    metrics=[('20,115,529','감사한 전체 행'),('20,609','상이 라벨 벡터 그룹'),('26.6%','상이 라벨 그룹에 속한 행')]
-    for x,(n,label) in zip([.65,3.15,5.65],metrics):
-        a += [box(x,1.67,2.15,1.15,PALE),txt(x+.1,1.87,1.95,n,25,True,BLUE,'center'),txt(x+.1,2.36,1.95,label,14,color=GREY,align='center')]
-    a += [txt(8.25,1.79,4.2,'감사 대상  기존 실험 입력의\nCIC2018 기반 46개 flow 통계 벡터',18,True,NAVY),
-          txt(8.25,2.50,4.2,'공식 CICFlowMeter CSV 그대로의\n중복률 측정과는 구분',15,color=GREY)]
-    a+=block(.65,3.35,3.02,1.37,'같은 특징 벡터 x','TCP · 60B/40B\n각 1 packet · 1 ms',body_size=17)
-    a += [arrow(3.88,3.86,.35),arrow(3.88,4.42,.35),
-          box(4.48,3.35,3.38,.61,'FBE8E7'),txt(4.65,3.54,3.04,'Brute force  386,780행',19,True,RED,'center'),
-          box(4.48,4.11,3.38,.61,'E6F1F8'),txt(4.65,4.30,3.04,'DoS  105,550행',19,True,BLUE,'center'),
-          txt(8.30,3.46,4.14,'한 개의 특징 벡터가\n두 공격에 반복 등장',20,True,NAVY),
-          txt(8.30,4.22,4.14,'Brute force 67.2% · DoS 34.8%\n각 클래스 행이 이 충돌에 포함',16,color=GREY)]
-    a += [box(.65,5.47,12.03,.02,'C8D5E1'),
-          txt(.72,5.76,5.86,'Infiltration–Benign\n20,378개 벡터 · infiltration의 75.1%',18,True,NAVY),
-          txt(6.78,5.76,5.80,'Web attacks–Benign\n298개 벡터 · web의 69.5%',18,True,NAVY),
-          txt(.72,6.53,11.9,'같은 x에는 하나의 결정적 예측만 가능  →  기존 full XGB에서도 DoS F1 0.782, Infiltration F1 0.429',16,color=GREY)]
-    page('기존 입력 CSV에는 동일 벡터·상이 라벨이 실제로 존재',a,
-         '정확히 같은 입력을 서로 다른 정답으로 학습시키는 구조를 먼저 계량','01 기존 CSV와 진단',
-         '이 슬라이드의 감사는 기존 실험에 사용한 CIC2018 기반 46개 flow 통계 벡터를 대상으로 했다. 따라서 공식 CICFlowMeter CSV 원본 자체의 중복률이라고 바꾸어 말하지 않는다. 전체 2,011만 행 중 26.6%가 상이한 라벨을 가진 동일 벡터 그룹에 속했고, 그런 그룹은 20,609개였다. 예시 하나는 TCP의 매우 짧은 요청·응답 형태로, 정확히 같은 벡터가 brute force 386,780행과 DoS 105,550행에 붙어 있다. Infiltration과 Web attacks도 각각 benign과 상당수의 동일 벡터를 공유한다. 이것은 모든 라벨이 잘못되었다는 증거가 아니라, 현재 통계 표현만으로는 두 정답을 동시에 분리할 수 없거나 라벨 근거를 점검해야 한다는 증거다. 실제 full XGB에서 DoS·Infiltration이 상대적으로 낮게 남은 이유를 분석할 때 이 구조를 먼저 봐야 한다.', [])
 
-    # 4. The literature explains possible mechanisms after, not before, the observed audit.
-    a=[txt(.65,1.08,12.0,'선행연구는 CIC의 flow 생성·라벨 규칙에서 가능한 원인을 제시',22,True,NAVY)]
-    papers=[('engelen','Engelen et al. (IEEE SPW/WTMC, 2021)','첫 FIN 뒤 잔여 패킷이 별도 flow로 분리되고\nRST를 무시한 flow 경계 문제를 분석',1.70),
-            ('liu','Liu et al. (IEEE CNS, 2022)','CIC2017·2018의 생성·특징·라벨 오류를 재검토\nCIC2018 FTP closed-port 사례를 Attempted로 구분',3.28),
-            ('rosay','Rosay et al. (ICISSP, 2022)','세션 종료와 특징 계산을 점검\n유사 flow에 상이한 라벨이 생기는 경로를 논의',4.86)]
-    for key,head,body,y in papers:
-        a += [box(.65,y,12.03,1.23,PALE),txt(.86,y+.14,4.62,head,18,True,NAVY,url=SOURCE_DATA[key]['url']),txt(5.70,y+.22,6.65,body,18)]
-    a += [txt(.72,6.35,11.8,'문헌은 가능한 원인, 슬라이드 3은 현재 입력에서 관측한 현상  ·  모든 exact collision을 한 원인으로 단정하지 않음',16,True,BLUE)]
-    page('문헌은 CIC의 flow 생성·라벨 규칙 결함을 지적',a,
-         '현재 감사의 exact collision을 문헌의 가능 원인과 구분해 해석','01 기존 CSV와 진단',
-         '앞 슬라이드가 우리 입력에서 직접 센 현상이라면, 이 슬라이드는 가능한 원인을 확인한 문헌 근거다. Engelen 등은 CICIDS2017의 TCP 종료 처리와 flow 경계 문제를 분석했다. Liu 등은 CIC2017·2018의 공격 수행·특징·라벨 오류를 재검토하고, 닫힌 FTP 포트로 인해 실제 brute force가 진행되지 않은 사례를 구분했다. Rosay 등은 세션 종료와 특징 계산에서 유사 flow에 다른 라벨이 생길 수 있는 경로를 논의했다. 이 논문들은 현재 46개 값이 일치한 모든 사례가 동일한 한 가지 오류 때문이라고 증명하지 않는다. 그래서 다음 단계는 PCAP에서 packet·flow·label 근거를 다시 연결해 표현 부족과 라벨 문제를 분리하는 것이다.', ['engelen','liu','rosay'])
+def raw_values_for_slide(audit: dict) -> tuple[list[str], list[str], str]:
+    """Return two original CSV rows from one exact-conflict group for the table."""
+    group = next(item for item in audit['representative_conflicting_groups'] if item['labels'] >= 2 and len(item['raw_samples']) >= 2)
+    samples: dict[str, dict] = {}
+    for row in group['raw_samples']:
+        samples.setdefault(row['label'], row)
+    chosen = list(samples.values())[:2]
+    while len(chosen) < 2:
+        chosen.append(group['raw_samples'][0])
+    columns = ['Dst Port', 'Protocol', 'Flow Duration', 'Tot Fwd Pkts', 'Tot Bwd Pkts', 'TotLen Fwd Pkts', 'TotLen Bwd Pkts', 'Flow Byts/s', 'Flow Pkts/s', 'Idle Min']
+    def make(row: dict) -> list[str]:
+        return [str(row[column]) for column in columns[:5]] + ['… 69 fields …'] + [str(row[column]) for column in columns[-4:]] + [short_label(row['label'], 28)]
+    label_set = ' · '.join(short_label(item['label'], 24) for item in group['per_label_rows'])
+    return make(chosen[0]), make(chosen[1]), label_set
 
-    # 5. Correct CICFlowMeter rationale: it calculates a fixed summary, it does not learn the task-specific representation.
-    a=[txt(.65,1.08,12.0,'고정 flow 통계 요약을 PCAP 인코더 표현으로 다시 만들고 두 결함을 재검증',22,True,NAVY)]
-    a+=card(.65,1.70,5.76,1.55,'CICFlowMeter CSV','미리 정한 flow 경계와 통계식으로\n지속시간·패킷 수·길이·IAT·flag 등을 계산',19)
-    a+=card(6.83,1.70,5.76,1.55,'PCAP 사전학습 인코더','패킷 순서·시간·헤더 패턴을 입력으로\n인코더별 표현 벡터를 생성',19)
-    a += [txt(.80,3.55,5.46,'고정 통계량은 학습으로 고른 특징이 아니다.\n패킷 순서·상호작용은 요약에서 사라질 수 있다.',17,color=GREY),
-          txt(7.02,3.55,5.46,'새 임베딩도 라벨 오류를 자동으로 고치지 않는다.\nPCAP·시간·host·port 근거를 따로 보존한다.',17,color=GREY)]
-    steps=[(.65,'PCAP·라벨','패킷·시각·키'),(3.15,'flow 추적','원시 통신·라벨'),(5.65,'고정 인코더','표현 벡터 추출'),(8.15,'차원 축소','학습 분할만'),(10.65,'XGB · TabPFN','같은 벡터로 비교')]
-    for x,title,body in steps:a+=block(x,4.36,2.0,1.27,title,body,body_size=15.5)
-    for x in [2.79,5.29,7.79,10.29]:a.append(arrow(x,4.84,.24))
-    a += [txt(.72,5.90,5.73,'① 동일 표현·상이 라벨 비율과\nPCAP 라벨 근거를 다시 감사',18,True,NAVY),
-          txt(6.83,5.90,5.73,'② baseline·few-shot에서\nhead의 조기 포화가 다시 생기는지 측정',18,True,NAVY),
-          txt(.72,6.70,11.9,'인코더 후보  netFound (arXiv, 26) · ET-BERT (WWW, 22) · NetMamba (ICNP, 24)',14,color=GREY)]
-    page('PCAP 인코더로 새 학습 벡터를 만들 이유',a,
-         '표현을 바꾼 뒤 동일 벡터·상이 라벨과 쉬운 head의 조기 포화를 다시 측정','02 PCAP 재구축',
-         'CICFlowMeter는 원시 패킷을 flow로 묶고 구현에 미리 정해진 통계량을 계산한다. 공격을 가장 잘 구분할 특징을 데이터에서 학습해 선택하는 인코더는 아니다. 따라서 현재 CSV에서 빠진 패킷 순서와 시간·헤더 상호작용이 분류에 필요한지 직접 확인할 여지가 있다. PCAP 인코더는 이런 정보를 사용해 새로운 벡터를 만들지만, 어떤 정보가 쓰이는지는 인코더에 따라 다르며 라벨 오류를 자동으로 고치지 않는다. 그래서 PCAP과 label rule을 분리해 보존하고, 새 벡터에서도 동일 입력·상이 라벨 비율과 baseline의 조기 포화를 각각 다시 측정한다. PCA는 벡터 차원을 맞추는 변환이며, 적합 자료는 학습 분할로 제한한다. 현재 제시한 인코더들은 앙상블이 아니라 같은 재사용 파이프라인에서 교체해 비교할 후보들이다.', ['netfound','etbert','netmamba'])
 
-    # 6. Keep data selection tied to packet-label traceability.
-    a=[txt(.65,1.13,12.0,'PCAP 제공 여부뿐 아니라, 새 flow에 라벨 근거를 다시 연결할 수 있는지가 기준',20,color=GREY)]
-    rows=[['CIC2017 · 우선','PCAP + flow CSV + 공격 일정','flow 경계·라벨 규칙 대조'],
-          ['CIC2018 · 우선','호스트별 PCAP + 로그 + CSV','중복 캡처·시간·host 확인'],
-          ['IoT-23 · 후속','PCAP + 라벨 Zeek conn.log','작은 시나리오부터 연결'],
-          ['UNSW-NB15','PCAP + GT·공격 이벤트','시간·5-tuple join'],
-          ['TON_IoT','네트워크 PCAP + Zeek·CSV','네트워크와 센서·OS 자료 구별'],
-          ['CICIoT2023','PCAP + CSV·처리 코드','flow별 라벨 재구성 검증']]
-    xs=[.65,3.45,7.64];ws=[2.8,4.19,5.04]
-    for ri,row in enumerate([['데이터','공개 원시 자료','새 벡터를 위한 검증']]+rows):
-        for ci,value in enumerate(row):
-            y=1.82+ri*.62
-            a += [box(xs[ci],y,ws[ci],.62,NAVY if ri==0 else PALE if ri%2==0 else 'FFFFFF'),
-                  txt(xs[ci]+.12,y+.17,ws[ci]-.24,value,17,ri==0,'FFFFFF' if ri==0 else INK,
-                      url=SOURCE_DATA[['cic17','cic18','iot23','unsw','ton','iot2023'][ri-1]]['url'] if ri and ci==0 else None)]
-    a += [txt(.72,6.45,11.9,'CIC2017·2018을 먼저 재구축하고, IoT-23처럼 작은 PCAP 시나리오로 파이프라인·라벨 연결을 추가 검증',18,True,NAVY)]
-    page('PCAP·라벨을 함께 제공하는 IDS 데이터 후보',a,
-         'CIC2017·2018을 우선하고, PCAP과 라벨을 다시 연결할 수 있는 데이터로 확장','02 PCAP 재구축',
-         '데이터 후보는 단순히 PCAP을 제공하는지보다, 새로 만든 flow와 원래 라벨 근거를 다시 연결할 수 있는지로 고른다. CIC2017과 CIC2018은 우선 대상이다. IoT-23은 개별 scenario의 PCAP과 라벨 Zeek connection log가 있어 작은 규모에서 연결 규칙을 먼저 검증할 후속 후보다. UNSW-NB15, TON_IoT, CICIoT2023은 원시 패킷과 부가 로그 또는 ground truth를 제공하지만, 각 자료의 label join 규칙은 별도 구현·감사가 필요하다. 이 표는 모든 데이터를 이미 다운로드하거나 재구축했다는 주장이 아니다.', ['cic17','cic18','iot23','unsw','ton','iot2023'])
+def scenes() -> None:
+    if not AUDIT_PATH.exists():
+        raise FileNotFoundError(f'Run source CSV audit first: {AUDIT_PATH}')
+    audit = json.loads(AUDIT_PATH.read_text(encoding='utf-8'))
+    make_ceiling_asset()
+    make_conflict_asset(audit)
+    row_a, row_b, conflict_labels = raw_values_for_slide(audit)
+    totals = audit['totals']
 
-    # 7. Retain the completed pipeline pilot but make its scope explicit.
-    prep=json.loads((RUN/'prepare.json').read_text());projection=json.loads((RUN/'projection.json').read_text())
-    audit=json.loads((RUN/'audit.json').read_text());stat=next(iter(prep['raw_stats'].values()))
-    a=card(.65,1.35,5.76,3.14,'CIC2018 PCAP 파일럿',
-           f"2018-02-14 · 대상 host 1대\n패킷 {stat['raw_packets']:,}개 → flow {stat['flows']:,}개\n주석·분할별 표본 {projection['rows']:,}개 인코딩\n512차원 → 64차원 벡터",21)
-    a+=card(6.83,1.35,5.76,3.14,'확인한 처리 계약',
-            f"학습·검증·시험 flow 그룹 중복 0\n변환 적합: 학습 {projection['pca_fit_rows']:,}행만 사용\n공개 checkpoint 가중치 고정\n미확정 라벨은 별도 보존",20)
-    a += [txt(.72,4.94,11.9,'현재는 PCAP → 학습 벡터 생성의 구현 검증\n자연 분포 분류 benchmark와 few-shot 비교는 다음 단계',19,True,NAVY),
-          txt(.72,5.75,11.9,f"라벨 미확정 {audit['unresolved_rows']:,}행은 정상으로 추정하지 않음  ·  공격 범위를 넓힌 새 CIC2018 구축 작업으로 확장",19),
-          txt(.72,6.38,11.9,'완료 파일럿은 단일 날짜·host·제한된 주석 표본  ·  정상 오탐률·분류 성능·TabPFN 우위는 아직 측정하지 않음',17,color=GREY)]
-    page('구현 파일럿: PCAP부터 학습용 벡터까지',a,
-         '표현 생성 파이프라인은 검증했고, 새 CIC2018의 분류 평가는 공격 범위를 확장한 뒤 수행','02 PCAP 재구축',
-         f'완료 실행은 {RUN.relative_to(ROOT)}이다. CIC2018의 2018-02-14 대상 host 한 대에서 패킷을 읽고 flow·라벨·분할 정보를 보존한 채 netFound embedding과 64차원 변환 벡터를 만들었다. 그룹 중복 없이 분리하고, 차원 축소 변환은 학습 행만으로 적합했다. 이 표본은 자연 클래스 분포 benchmark가 아니며 일부 라벨은 미확정으로 보존했다. 따라서 현재 파일럿으로 분류 성능, 정상 오탐률, TabPFN의 우위를 주장하지 않는다. 새 CIC2018 전체에서 공격군과 정상 범위를 확장한 뒤, 슬라이드 5의 두 감사와 기존 baseline·few-shot 조건을 같은 분할에서 반복하는 것이 다음 단계다.', ['aws','rules'])
+    # 1. Context only once: existing work uses provided CSV, then show its origin.
+    a = [
+        txt(.65, 1.08, 12.0, '기존 실험  XGB · TabPFN · SOTA · 제안 모델  →  CICFlowMeter CSV 벡터 입력', 22, True, NAVY),
+        txt(.65, 1.52, 12.0, '일반적인 IDS 표 분류 연구도 제공된 CSV의 flow 통계를 학습·평가에 사용', 17, False, GREY),
+        txt(.65, 2.16, 4.45, '기존 분류기의 입력', 21, True, NAVY),
+    ]
+    a += card(.65, 2.64, 4.45, 1.30, 'CSV 한 행', '[지속 시간, 패킷 수, 길이, IAT, flag, …]\n→ 숫자 벡터 + Label', body_size=16)
+    a += [arrow(2.67, 4.20, .42), txt(.65, 4.78, 4.45, '각 행을 독립 표본으로 사용', 19, True, BLUE, 'center')]
+    a += [
+        txt(5.55, 2.16, 7.05, 'CIC-IDS2017: PCAP에서 CSV가 만들어지는 과정', 21, True, NAVY),
+    ]
+    stages = [(5.55, 1.45, '실험망', '정상·공격\n통신'), (7.30, 1.45, 'PCAP', '시간순\n원시 패킷'), (9.05, 1.96, 'CICFlowMeter', 'flow를 묶고\n고정 통계 계산'), (11.52, 1.34, 'CSV', '벡터\n+ label')]
+    widths = [1.43, 1.43, 2.10, 1.13]
+    for (x, _, title, body), width in zip(stages, widths):
+        a += block(x, 2.65, width, 1.33, title, body, body_size=15)
+    for x in [7.05, 8.80, 10.80]:
+        a.append(arrow(x, 3.15, .20))
+    a += [
+        txt(5.55, 4.42, 7.0, 'CSV의 고정 flow 통계 예', 20, True, NAVY),
+    ]
+    for x, title, body in [
+        (5.55, '지속 시간', '처음~마지막 패킷'),
+        (7.92, '순방향 패킷 수', '보낸 패킷의 개수'),
+        (10.29, '패킷 간 시간', '도착 간격 통계'),
+    ]:
+        a += block(x, 4.92, 2.08, 1.22, title, body, body_size=14.5)
+    a += [txt(5.60, 6.40, 6.90, '패킷 sequence 자체가 아니라, 미리 정한 flow 통계의 요약값', 17, False, GREY, 'center')]
+    page('IDS 분류의 기존 입력은 CICFlowMeter CSV', a,
+         '기존 모델은 제공된 flow 통계 CSV를 입력으로 사용', '01 기존 CSV',
+         '기존 XGB·TabPFN·SOTA·제안 모델 실험은 CICFlowMeter CSV를 분류 입력으로 사용했다. 많은 IDS 표 분류 연구도 제공된 flow 통계를 같은 방식으로 학습·평가에 사용했다. 오른쪽은 CIC-IDS2017에서 이 CSV가 만들어진 경로다. 실험망 패킷을 PCAP으로 기록하고, CICFlowMeter가 일정 규칙으로 flow를 묶어 지속 시간·패킷 수·IAT와 flag 통계 등을 계산한다. CSV의 한 행은 패킷 sequence 그 자체가 아니라 이 고정 통계량의 요약이다.', ['cic17'])
 
-    # 8. This is explicitly a historical appendix, not the discarded 2x2 plan.
-    report=(ROOT/'docs/lablog/reports/20260904.tex').read_text()
-    section=report.split(r'\subsection*{CIC2018 · 클래스별 F1 · test 3,042,473행}',1)[1].split(r'\bottomrule',1)[0]
-    sota=[]
-    for line in section.splitlines():
-        if not line.startswith('{}'):continue
-        fields=[v.strip() for v in line[2:].split('&')]
-        sota.append([fields[0],fields[1],*[f'{float(fields[i])*100:.2f}' for i in [2,4,5,6]]])
-    assert len(sota)==7 and sum(int(x[1].replace(',','')) for x in sota)==3042473
-    assert [int(x[1].replace(',','')) for x in sota]==sorted([int(x[1].replace(',','')) for x in sota],reverse=True)
-    a=[txt(.65,1.13,12.0,'CIC2018 · 정제 후·정상 포함 · 공통 학습 100,000행 · 전체 test 3,042,473행 · F1 (%)',18,color=GREY)]
-    a+=table(.65,1.84,[2.1,1.6,2.09,2.08,2.08,2.08],['평가 클래스','평가 수','TabPFN v3','BoostPFN','LoCalPFN','DistPFN v3'],sota,height=.53,size=17)
-    a += [txt(.72,6.27,11.9,'주요 공격의 높은 F1과 Infiltration·Web의 낮은 F1이 공존',22,True,NAVY),
-          txt(.72,6.69,11.9,'부록 · few-shot 및 새 PCAP 표현과는 준비·라벨 예산·평가 범위가 달라 직접 수치 비교 불가',14,color=GREY)]
-    page('부록: 기존 SOTA 비교에서도 보인 클래스별 격차',a,
-         'historical comparison은 문제의식의 근거이며, 새 PCAP 평가와 직접 합치지 않음','부록',
-         '이 표는 기존 SOTA 비교의 역사적 결과다. 정제 후·정상 포함·100,000행 공통 학습·전체 test 조건으로, 본문 few-shot의 정제 전·정상 미포함·클래스당 n개 조건과 다르다. 주요 공격은 높지만 Infiltration과 Web은 낮아, 평균 수치만으로 데이터와 모델의 한계를 판단할 수 없었다. BoostPFN과 LoCalPFN은 TabPFN v1 기반이고 LoCalPFN은 validation fine-tuning을 사용했다. 이 수치를 새 PCAP 표현 또는 현재 제안 모델의 결과로 사용하지 않는다. 기존의 2×2 A–D 비교 계획 슬라이드는 이번 자료에서 제거했다. 아직 실행하지 않은 라벨 교정 arm을 현재 결론처럼 보이게 하고, CSV의 관측 문제와 PCAP 재구축의 동기를 끊었기 때문이다.', [])
+    # 2. State the two observations before the diagnostics.
+    a = []
+    a += card(.65, 1.88, 5.77, 2.73, '문제 1  일부 공격의 조기 포화', 'DDoS·Bot 등 head 공격은\n클래스당 n=2~20개에도 F1 90%대\n\n→ 추가 라벨 전에 이미 높은 data ceiling', accent=BLUE, body_size=20)
+    a += card(6.91, 1.88, 5.77, 2.73, '문제 2  동일 특징·상이 라벨', '수십 개 flow 통계가 모두 같아도\n서로 다른 Label이 기록된 행 존재\n\n→ 결정적 분류기가 동시에 맞힐 수 없음', accent=RED, body_size=20)
+    a += [
+        box(.65, 5.22, 12.03, 1.10, 'F6F9FC', 'D3DFE9'),
+        txt(.92, 5.50, 5.2, '02  긴 learning curve와 클래스별 F1', 19, True, BLUE),
+        txt(6.82, 5.50, 5.2, '03  원본 CIC2018 CSV 행 감사', 19, True, RED),
+        txt(.92, 6.06, 10.95, '두 문제를 먼저 분리해 확인한 뒤, PCAP에서 새 표현을 만들고 같은 지표로 다시 측정', 16, False, GREY),
+    ]
+    page('CSV 기반 IDS 분류에서 확인한 두 문제', a,
+         '일부 head 공격의 조기 포화와 동일 feature·상이 label을 분리해 진단', '01 기존 CSV',
+         'CSV 기반 기존 평가에서는 두 문제를 확인했다. 첫째, 일부 head 공격은 라벨을 극단적으로 줄여도 높은 F1을 보여 추가 라벨보다 데이터 표현과 평가 난이도를 먼저 점검할 필요가 있었다. 둘째, 여러 flow 통계가 완전히 같아도 다른 라벨이 붙은 행이 존재했다. 이는 모든 라벨이 잘못되었다는 뜻이 아니라, 현재 통계 표현으로는 하나의 결정적 예측으로 동시에 맞힐 수 없는 사례가 있음을 뜻한다. 다음 두 슬라이드에서 두 관측을 각각 수치와 실제 원본 행으로 보인다.', [])
 
-def main():
-    QA.mkdir(parents=True,exist_ok=True);r.ASSETS.mkdir(parents=True,exist_ok=True)
-    scenes();r.validate_scenes();r.pptx()
+    # 3. Long curve and visual class scores rather than a grouped bar chart.
+    a = [
+        txt(.65, 1.10, 12.0, 'n=450까지 늘리면 macro-F1은 계속 변하지만, DDoS·Bot은 적은 라벨에서 먼저 고점에 도달', 17, False, GREY),
+        asset_image('ceiling_curve_heatmaps', .56, 1.48, 12.20, 4.55),
+        txt(.72, 6.29, 11.8, 'EXP87 · 공격만 학습·평가 · 정상 제외 · 5 seeds · conflict-free 고정 test · n=450은 균등 라벨 예산의 상한', 14.5, False, GREY),
+    ]
+    page('일부 head 공격은 적은 라벨에서 이미 높은 F1', a,
+         '전체 macro-F1의 변화와 클래스별 포화를 함께 확인', '02 data ceiling',
+         '이 그림은 이전 CSV 기반 EXP87의 attack-only 조건을 n=2부터 n=450까지 확장해 다시 그린 것이다. macro-F1은 n=20 이후에도 상승하므로 전체 데이터가 완전히 포화됐다고 말할 수는 없다. 그러나 DDoS와 Bot 같은 head 클래스는 n=20 전후 이미 매우 높은 F1에 도달하고, n=450 heatmap과 비교해도 변화 폭이 작다. 반대로 Web attacks는 많은 라벨에서도 낮게 남는다. 따라서 높은 평균은 모든 공격이 쉬웠다는 뜻이 아니며, head의 조기 포화와 tail의 잔여 오류를 분리해 볼 필요가 있다. 이 결과는 정상 포함 IDS 탐지 성능이 아니라 공격 간 분류의 진단 결과다.', [])
+
+    # 4. Show literal source CSV rows then contextualise the scale and label rates.
+    headers = ['Dst Port', 'Protocol', 'Flow Duration', 'Tot Fwd\nPkts', 'Tot Bwd\nPkts', '… 69 fields …', 'TotLen Bwd\nPkts', 'Flow Byts/s', 'Flow Pkts/s', 'Idle Min', 'Label']
+    a = [
+        txt(.65, 1.10, 12.0, 'Timestamp·Flow ID·Src IP/Src Port·Dst IP·Label을 제외한 78개 공통 CICFlowMeter 통계의 정확 일치 기준', 15, False, GREY),
+    ]
+    a += raw_row(.65, 1.62, headers, label_fill=NAVY)
+    a += raw_row(.65, 2.11, row_a, label_fill='FBE8E7')
+    a += raw_row(.65, 2.60, row_b, label_fill='E6F1F8')
+    a += [
+        txt(.72, 3.24, 11.8, f'위 두 행: {conflict_labels}  ·  가운데 생략 표시는 나머지 69개도 동일함', 15.5, True, RED),
+        asset_image('original_csv_conflict_rates', .64, 3.53, 12.04, 2.22),
+        txt(.72, 6.03, 11.85, f"원본 CSV {totals['rows']:,}행 전체 감사  ·  동일 feature·상이 label은 표현 한계 또는 라벨 근거를 재점검할 사례", 14.5, False, GREY),
+    ]
+    page('원본 CIC2018 CSV의 동일 feature·상이 label', a,
+         '원본 CSV의 78개 공통 flow 통계가 완전히 같은 실제 행을 확인', '03 label conflict',
+         '이 슬라이드는 NF-v3 파생 입력이 아니라 원본 CIC2018 CICFlowMeter CSV 10개 파일 전체를 직접 감사한 결과다. Timestamp와 IP·flow 식별자를 제외하고, 모든 파일에 공통인 78개 통계 field가 같은 행을 묶었다. 위 표는 그중 실제 원본 CSV 값이며, 보이는 열과 생략한 68개 field가 모두 같지만 label은 다르다. 아래 왼쪽은 이런 그룹에 속한 전체 행의 비율을, 오른쪽은 해당 행 수가 큰 label 여섯 개의 클래스 내 비율을 보인다. 이 값은 모든 충돌을 같은 단일 원인이나 모든 라벨 오류로 단정하지 않는다. 다만 동일 통계 입력으로 하나의 분류기가 두 label을 동시에 맞힐 수 없으므로, 표현과 라벨 생성 근거를 함께 다시 점검해야 함을 보여 준다.', ['cic18', 'liu'])
+
+    # 5. Keep why in the body, and make adapters swappable by design.
+    a = [
+        txt(.65, 1.10, 12.0, '고정 통계식을 다시 쓰지 않고 패킷 sequence에서 표현을 생성해, 두 문제의 재발 여부를 같은 방식으로 확인', 17, False, GREY),
+    ]
+    steps = [
+        (.65, 'PCAP·라벨', '패킷·시각\n라벨 근거 보존'),
+        (3.15, 'flow 연결', '통신·라벨\n추적 가능하게 유지'),
+        (5.65, '인코더 교체', 'packet sequence\nembedding'),
+        (8.15, '차원 변환', '학습 split만\nPCA 적합'),
+        (10.65, '새 학습 벡터', 'XGB·TabPFN\n동일 평가'),
+    ]
+    for x, title, body in steps:
+        a += block(x, 1.95, 2.0, 1.38, title, body, body_size=15)
+    for x in [2.79, 5.29, 7.79, 10.29]:
+        a.append(arrow(x, 2.49, .24))
+    a += card(.65, 3.93, 5.78, 1.28, '표현 감사', '동일 embedding·상이 Label 비율과\nPCAP의 라벨 근거를 다시 확인', accent=RED, body_size=17)
+    a += card(6.90, 3.93, 5.78, 1.28, '분류 평가', 'baseline·few-shot curve·클래스별 F1으로\nhead 조기 포화가 반복되는지 확인', accent=BLUE, body_size=17)
+    a += [
+        txt(.72, 5.63, 11.9, '인코더 후보  netFound (arXiv, 26) · ET-BERT (WWW, 22) · NetMamba (ICNP, 24)', 14.5, False, GREY),
+        txt(.72, 6.01, 11.9, 'CICFlowMeter는 정해진 flow·통계식을 계산하고, 인코더는 패킷 순서·시간·헤더 패턴에서 표현을 생성', 16.5, True, NAVY),
+    ]
+    page('PCAP 기반 CIC2018 재표현 파이프라인', a,
+         '인코더를 교체 가능하게 두고, 표현 감사와 분류 평가를 함께 반복', '04 PCAP 재구축',
+         'CICFlowMeter는 미리 정한 flow 규칙과 통계식으로 CSV를 계산한다. 새 파이프라인은 PCAP·시간·라벨 연결을 보존한 상태에서 packet sequence encoder로 embedding을 생성하고, 학습 분할로만 차원 변환을 적합한다. 인코더는 교체 가능하게 설계해 netFound뿐 아니라 ET-BERT와 NetMamba도 같은 입력·분할·평가로 비교할 수 있게 한다. 생성한 벡터에서는 먼저 동일 embedding·상이 label 비율과 PCAP 라벨 근거를 감사한다. 이어 기존 XGB·TabPFN baseline과 few-shot learning curve, 클래스별 F1으로 head 조기 포화가 새 표현에서도 반복되는지 측정한다.', ['netfound', 'etbert', 'netmamba'])
+
+    # 6. A short final flow, not a second appendix.
+    a = []
+    a += card(.65, 1.48, 3.55, 2.58, '1  기존 CSV 입력', 'XGB·TabPFN·SOTA\nCICFlowMeter flow 통계\n행 단위 입력', accent=BLUE, body_size=17)
+    a += [arrow(4.43, 2.59, .44)]
+    a += card(5.04, 1.48, 3.55, 2.58, '2  확인한 데이터 문제', 'head 조기 포화\n+ 동일 feature·상이 label\n\n높은 평균만으로\n난이도 판단 불가', accent=RED, body_size=17)
+    a += [arrow(8.82, 2.59, .44)]
+    a += card(9.43, 1.48, 3.25, 2.58, '3  다음 검증', 'PCAP encoder로\n새 CIC2018 벡터 생성\n\n표현 감사와 baseline을\n같은 조건에서 반복', accent=TEAL, body_size=17.5)
+    a += [
+        box(.65, 4.77, 12.03, 1.10, 'F6F9FC', 'D3DFE9'),
+        txt(.92, 5.06, 11.5, '목표  모델 간 단순 비교가 아니라, 새 표현이 데이터 상한과 feature–label 충돌을 완화하는지 검증', 19, True, NAVY, 'center'),
+        txt(.92, 5.63, 11.5, '완화되면 기존 TabPFN·XGB 비교를 새 벡터에서 다시 수행하고, 남으면 PCAP 라벨 연결을 추가 감사', 15.5, False, GREY, 'center'),
+    ]
+    page('Summary', a,
+         'CSV의 두 관측을 PCAP 기반 새 표현에서 재검증', '05 summary',
+         '발표의 흐름은 세 단계다. 기존 IDS 분류는 CICFlowMeter CSV의 고정 flow 통계를 입력으로 사용했다. 그 입력을 확인하면서 일부 head 공격의 조기 포화와 원본 CSV의 동일 feature·상이 label을 관찰했다. 다음 단계는 PCAP encoder가 만든 새 CIC2018 벡터에서 두 현상을 같은 감사와 baseline 조건으로 다시 측정하는 것이다. 표현이 충돌을 줄이고 tail 또는 새로운 공격의 구분을 보완하는지 확인한 뒤에야 새 표현과 모델 구조의 분류 이점을 판단할 수 있다.', [])
+
+
+def main() -> None:
+    QA.mkdir(parents=True, exist_ok=True)
+    r.ASSETS.mkdir(parents=True, exist_ok=True)
+    scenes()
+    r.validate_scenes()
+    r.pptx()
     from pptx import Presentation
-    prs=Presentation(OUT.with_suffix('.pptx'))
-    prs.core_properties.title='CIC 데이터 결함 검토와 PCAP 기반 학습 벡터 재구축'
-    prs.core_properties.subject='문헌 근거, 인코더·데이터 후보, EXP92 구현 검증'
-    prs.save(OUT.with_suffix('.pptx'))
-    checks=r.pdf()
-    # pdftoppm emits page-1.png; keep zero-padded stable QA asset names.
-    for i in range(1,len(checks)+1):
-        src=QA/f'page-{i}.png';dst=QA/f'page-{i:02d}.png'
-        if src.exists():src.replace(dst)
-    from PIL import Image,ImageDraw
-    for old in QA.glob('contact-*.png'):old.unlink()
-    paths=sorted(QA.glob('page-*.png'))
-    for start in range(0,len(paths),5):
-        canvas=Image.new('RGB',(1500,1335),'#DCE3EB')
-        for j,p in enumerate(paths[start:start+5]):
-            im=Image.open(p);im.thumbnail((730,411));x=(j%2)*750+10;y=(j//2)*445+8
-            canvas.paste(im,(x,y));ImageDraw.Draw(canvas).text((x,y+414),str(start+j+1),fill='black')
-        canvas.save(QA/f'contact-{start//5+1}.png')
-    (QA/'scenes.json').write_text(json.dumps(r.SCENES,ensure_ascii=False,indent=2)+'\n')
-    visible='\n'.join(it.get('text','') for scene in r.SCENES for it in scene['items'])
+    presentation = Presentation(OUT.with_suffix('.pptx'))
+    presentation.core_properties.title = 'CIC CSV 입력의 한계와 PCAP 기반 재표현'
+    presentation.core_properties.subject = '원본 CIC2018 CSV 감사와 EXP87 long learning curve'
+    presentation.save(OUT.with_suffix('.pptx'))
+    checks = r.pdf()
+    for index in range(1, len(checks) + 1):
+        source = QA / f'page-{index}.png'
+        target = QA / f'page-{index:02d}.png'
+        if source.exists():
+            source.replace(target)
+    from PIL import Image, ImageDraw
+    for old in QA.glob('contact-*.png'):
+        old.unlink()
+    paths = sorted(QA.glob('page-*.png'))
+    canvas = Image.new('RGB', (1500, 1335), '#DCE3EB')
+    for index, image_path in enumerate(paths):
+        image = Image.open(image_path)
+        image.thumbnail((730, 411))
+        x, y = (index % 2) * 750 + 10, (index // 2) * 445 + 8
+        canvas.paste(image, (x, y))
+        ImageDraw.Draw(canvas).text((x, y + 414), str(index + 1), fill='black')
+    canvas.save(QA / 'contact-1.png')
+    (QA / 'scenes.json').write_text(json.dumps(r.SCENES, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    visible = '\n'.join(item.get('text', '') for scene in r.SCENES for item in scene['items'])
     assert 'NF-v3' not in visible and 'NF-CIC' not in visible
-    manifest=dict(date='2026-10-30',slides=len(r.SCENES),source_evidence=str(EVIDENCE.relative_to(ROOT)),
-                  run=str(RUN.relative_to(ROOT)),old_results='EXP89 uncurated attack-only, five seeds; not a new PCAP benchmark',
-                  validation='shared scenes for editable PPTX and Chrome PDF; geometry/font/text checks',
-                  visual_review='2026-10-30 rendered PDF and all eight pages inspected',pages=checks,
-                  pptx_sha256=hashlib.sha256(OUT.with_suffix('.pptx').read_bytes()).hexdigest(),
-                  pdf_sha256=hashlib.sha256(OUT.with_suffix('.pdf').read_bytes()).hexdigest())
-    (QA/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
-    print(json.dumps(dict(pptx=str(OUT.with_suffix('.pptx')),pdf=str(OUT.with_suffix('.pdf')),slides=len(r.SCENES)),ensure_ascii=False))
+    manifest = {
+        'date': '2026-10-30',
+        'slides': len(r.SCENES),
+        'sources': 'docs/lablog/evidence/20261029_pcap/sources.json',
+        'original_csv_audit': str(AUDIT_PATH.relative_to(ROOT)),
+        'fewshot_data': str(EXP87.relative_to(ROOT)),
+        'validation': 'shared editable PPTX/HTML-PDF scenes; geometry/font/text checks; visual contact sheet reviewed',
+        'pages': checks,
+        'pptx_sha256': hashlib.sha256(OUT.with_suffix('.pptx').read_bytes()).hexdigest(),
+        'pdf_sha256': hashlib.sha256(OUT.with_suffix('.pdf').read_bytes()).hexdigest(),
+    }
+    (QA / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(json.dumps({'pptx': str(OUT.with_suffix('.pptx')), 'pdf': str(OUT.with_suffix('.pdf')), 'slides': len(r.SCENES)}, ensure_ascii=False))
 
-if __name__=='__main__':main()
+
+if __name__ == '__main__':
+    main()
