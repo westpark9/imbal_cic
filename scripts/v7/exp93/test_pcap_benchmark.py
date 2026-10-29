@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 
@@ -70,6 +71,22 @@ class Exp93RulesTest(unittest.TestCase):
             for rule in capture['rules']:
                 self.assertLessEqual(rule['start_ns'], rule['end_ns'])
                 self.assertIn('source', rule)
+
+    def test_fetch_keeps_member_once_when_receipt_already_has_it(self):
+        config = {'captures': [dict(id='cap', path='data/pcap/example.pcap',
+                                    url='https://example.invalid/archive.zip', member='pcap/example',
+                                    max_uncompressed_bytes=123)]}
+        old = RUNNER.download_member
+        try:
+            RUNNER.download_member = lambda *args, **kwargs: dict(
+                url='https://example.invalid/archive.zip', member='pcap/example',
+                bytes=12, sha256='abc')
+            with tempfile.TemporaryDirectory() as tmp:
+                result = RUNNER.fetch(config, Path(tmp))
+                self.assertEqual(result['captures'][0]['member'], 'pcap/example')
+                self.assertEqual(result['captures'][0]['id'], 'cap')
+        finally:
+            RUNNER.download_member = old
 
 
 if __name__ == '__main__':

@@ -172,7 +172,10 @@ def fetch(config: dict[str, Any], out: Path) -> dict[str, Any]:
     for cap in config['captures']:
         dest = resolve_path(cap['path'], ROOT)
         receipt = download_member(cap['url'], cap['member'], dest, max_bytes=int(cap['max_uncompressed_bytes']))
-        receipts.append(dict(id=cap['id'], path=cap['path'], member=cap['member'], **receipt))
+        # ``download_member`` already records the selected archive member.
+        # Keep that single, checksum-bound value instead of passing ``member``
+        # twice when an existing capture is reused.
+        receipts.append(dict(id=cap['id'], path=cap['path'], **receipt))
     result = dict(captures=receipts, downloaded_at=time.time())
     write(out / 'fetch.json', result)
     return result
