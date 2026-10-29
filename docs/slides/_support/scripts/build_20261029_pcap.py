@@ -33,6 +33,19 @@ txt, box, arrow, block, page = r.txt, r.box, r.arrow, r.block, r.page
 NAVY, BLUE, INK, GREY, PALE = r.NAVY, r.BLUE, r.INK, r.GREY, r.PALE
 RED, TEAL = 'B44948', '227B71'
 
+# Keep the source audit on the original CSV, while using the same seven
+# target classes as the NF-v3 experiments for all slide-facing labels.
+RAW_TO_NFV3 = {
+    'Benign': 'benign',
+    'DDOS attack-HOIC': 'ddos', 'DDOS attack-LOIC-UDP': 'ddos', 'DDoS attacks-LOIC-HTTP': 'ddos',
+    'Bot': 'bot',
+    'DoS attacks-GoldenEye': 'dos', 'DoS attacks-Hulk': 'dos',
+    'DoS attacks-SlowHTTPTest': 'dos', 'DoS attacks-Slowloris': 'dos',
+    'FTP-BruteForce': 'bf', 'SSH-Bruteforce': 'bf',
+    'Infilteration': 'inf',
+    'Brute Force -Web': 'web', 'Brute Force -XSS': 'web', 'SQL Injection': 'web',
+}
+
 
 def asset_image(name: str, x: float, y: float, w: float, h: float) -> dict:
     """Fit a generated chart into a slide while preserving its aspect ratio."""
@@ -142,7 +155,7 @@ def make_ceiling_asset() -> None:
 
 
 def make_conflict_asset(audit: dict) -> None:
-    """Show the original CIC CSV class rates in descending sample-count order."""
+    """Show source-CSV conflict rates at the NF-v3 target-class granularity."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -152,21 +165,22 @@ def make_conflict_asset(audit: dict) -> None:
     font = FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Regular.otf')
     bold = FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Bold.otf')
     totals = audit['totals']
-    rows = sorted(audit['per_label'], key=lambda row: (-row['rows'], row['label']))
+    family_audit = audit['nfv3_family_audit']
+    rows = family_audit['per_family']
     rates = [100 * row['conflicting_fraction'] for row in rows]
     fig, axis = plt.subplots(figsize=(13.0, 2.45), dpi=190)
     axis.barh(range(len(rows)), rates, color='#B44948', height=.55)
     axis.set_yticks(
         range(len(rows)),
-        [f"{short_label(row['label'], 28)}  ({row['rows']:,})" for row in rows],
-        fontproperties=font, fontsize=7.35,
+        [row['family'] for row in rows],
+        fontproperties=bold, fontsize=8.3,
     )
     axis.invert_yaxis()
     axis.set_xlim(0, 100)
-    axis.set_xlabel('해당 class에서 동일 feature·상이 label group에 속한 비율 (%)', fontproperties=font, fontsize=8.7)
+    axis.set_xlabel('해당 class에서 동일 feature·상이 class group에 속한 비율 (%)', fontproperties=font, fontsize=8.7)
     axis.set_title(
-        f"원본 CIC2018 CSV {totals['rows']:,}행 · {totals['rows_in_conflicting_groups']:,}행 "
-        f"({100 * totals['fraction_rows_in_conflicting_groups']:.2f}%) · class 표본 수 내림차순",
+        f"원본 CIC2018 CSV {totals['rows']:,}행 · NF-v3 7개 class 기준 "
+        f"{family_audit['rows_in_conflicting_groups']:,}행 ({100 * family_audit['fraction_rows_in_conflicting_groups']:.2f}%)",
         fontproperties=bold, fontsize=10.6, color='#00306C', pad=7,
     )
     axis.grid(axis='x', color='#D9E1E8', lw=.7)
@@ -194,8 +208,8 @@ def raw_values_for_slide(audit: dict) -> tuple[list[str], list[str], str]:
         chosen.append(group['raw_samples'][0])
     columns = ['Dst Port', 'Protocol', 'Flow Duration', 'Tot Fwd Pkts', 'Tot Bwd Pkts', 'TotLen Fwd Pkts', 'TotLen Bwd Pkts', 'Flow Byts/s', 'Flow Pkts/s', 'Idle Min']
     def make(row: dict) -> list[str]:
-        return [str(row[column]) for column in columns[:5]] + ['… 69 fields …'] + [str(row[column]) for column in columns[-4:]] + [short_label(row['label'], 28)]
-    label_set = ' · '.join(short_label(item['label'], 24) for item in group['per_label_rows'])
+        return [str(row[column]) for column in columns[:5]] + ['… 69 fields …'] + [str(row[column]) for column in columns[-4:]] + [RAW_TO_NFV3[row['label']]]
+    label_set = ' · '.join(sorted({RAW_TO_NFV3[item['label']] for item in group['per_label_rows']}))
     return make(chosen[0]), make(chosen[1]), label_set
 
 
@@ -258,7 +272,7 @@ def scenes() -> None:
          '이 그림은 이전 CSV 기반 EXP87의 attack-only 조건을 n=2부터 n=450까지 확장해 다시 그린 것이다. macro-F1은 n=20 이후에도 상승하므로 전체 데이터가 완전히 포화됐다고 말할 수는 없다. 그러나 DDoS와 Bot 같은 head 클래스는 n=20 전후 이미 매우 높은 F1에 도달하고, n=450 heatmap과 비교해도 변화 폭이 작다. 반대로 Web attacks는 많은 라벨에서도 낮게 남는다. 따라서 높은 평균은 모든 공격이 쉬웠다는 뜻이 아니며, head의 조기 포화와 tail의 잔여 오류를 분리해 볼 필요가 있다. 이 결과는 정상 포함 IDS 탐지 성능이 아니라 공격 간 분류의 진단 결과다.', [])
 
     # 4. Show literal source CSV rows then contextualise the scale and label rates.
-    headers = ['Dst Port', 'Protocol', 'Flow Duration', 'Tot Fwd\nPkts', 'Tot Bwd\nPkts', '… 69 fields …', 'TotLen Bwd\nPkts', 'Flow Byts/s', 'Flow Pkts/s', 'Idle Min', 'Label']
+    headers = ['Dst Port', 'Protocol', 'Flow Duration', 'Tot Fwd\nPkts', 'Tot Bwd\nPkts', '… 69 fields …', 'TotLen Bwd\nPkts', 'Flow Byts/s', 'Flow Pkts/s', 'Idle Min', 'NF-v3\nclass']
     a = [
         txt(.65, 1.10, 12.0, 'Timestamp·Flow ID·Src IP/Src Port·Dst IP·Label을 제외한 78개 공통 CICFlowMeter 통계의 정확 일치 기준', 15, False, GREY),
     ]
@@ -268,11 +282,11 @@ def scenes() -> None:
     a += [
         txt(.72, 3.24, 11.8, f'위 두 행: {conflict_labels}  ·  가운데 생략 표시는 나머지 69개도 동일함', 15.5, True, RED),
         asset_image('original_csv_conflict_rates', .64, 3.47, 12.04, 2.33),
-        txt(.72, 6.05, 11.85, f"원본 CSV {totals['rows']:,}행 전체 감사  ·  괄호는 class 전체 표본 수, 막대 끝은 해당 class의 상이 label 행 수", 13.8, False, GREY),
+        txt(.72, 6.05, 11.85, f"원본 CSV {totals['rows']:,}행 전체 감사  ·  NF-v3 7개 class로 집계 · 막대 끝은 해당 class의 상이 class 행 수", 13.8, False, GREY),
     ]
-    page('원본 CIC2018 CSV의 동일 feature·상이 label', a,
+    page('원본 CIC2018 CSV의 동일 feature·상이 class', a,
          '원본 CSV의 78개 공통 flow 통계가 완전히 같은 실제 행을 확인', '03 label conflict',
-         '이 슬라이드는 NF-v3 파생 입력이 아니라 원본 CIC2018 CICFlowMeter CSV 10개 파일 전체를 직접 감사한 결과다. Timestamp와 flow 식별자를 제외하고 모든 파일에 공통인 78개 통계 field가 같은 행을 묶었다. 위 표는 실제 원본 CSV 값이며, 보이는 열과 생략한 69개 field가 모두 같지만 label은 다르다. 아래 막대는 class 전체 표본 수가 많은 순서로 정렬했다. 괄호는 그 class의 전체 행 수, 막대 길이와 끝 숫자는 그 class에서 동일 feature·상이 label group에 속한 비율과 행 수다. 이 값은 모든 충돌을 같은 단일 원인이나 모든 라벨 오류로 단정하지 않는다. 다만 동일 통계 입력으로 하나의 분류기가 두 label을 동시에 맞힐 수 없으므로, 표현과 라벨 생성 근거를 함께 다시 점검해야 함을 보여 준다.', ['cic18', 'liu'])
+         '이 슬라이드는 NF-v3 파생 입력이 아니라 원본 CIC2018 CICFlowMeter CSV 10개 파일 전체를 직접 감사한 결과다. Timestamp와 flow 식별자를 제외하고 모든 파일에 공통인 78개 통계 field가 같은 행을 묶었다. 위 표는 실제 원본 CSV 값이며, 보이는 열과 생략한 69개 field가 모두 같지만 NF-v3 class는 다르다. 아래 막대는 NF-v3의 benign, ddos, bot, dos, bf, inf, web 순서다. 막대 길이와 끝 숫자는 해당 class에서 동일 feature·상이 class group에 속한 비율과 행 수다. 이 값은 모든 충돌을 같은 단일 원인이나 모든 라벨 오류로 단정하지 않는다. 다만 동일 통계 입력으로 하나의 분류기가 두 class를 동시에 맞힐 수 없으므로, 표현과 라벨 생성 근거를 함께 다시 점검해야 함을 보여 준다.', ['cic18', 'liu'])
 
     # 5. Keep why in the body, and make adapters swappable by design.
     a = [

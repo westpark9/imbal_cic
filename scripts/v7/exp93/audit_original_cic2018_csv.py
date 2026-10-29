@@ -24,6 +24,28 @@ DISPLAY_COLUMNS = [
     "TotLen Fwd Pkts", "TotLen Bwd Pkts", "Flow Byts/s", "Flow Pkts/s", "Idle Min",
 ]
 
+# The published NF-CICIDS2018-v3 benchmark reports these seven target
+# families.  The audit keeps the original CSV values, but evaluates a
+# contradiction at the same target granularity used by the experiments.
+NFV3_FAMILY = {
+    "Benign": "benign",
+    "DDOS attack-HOIC": "ddos",
+    "DDOS attack-LOIC-UDP": "ddos",
+    "DDoS attacks-LOIC-HTTP": "ddos",
+    "Bot": "bot",
+    "DoS attacks-GoldenEye": "dos",
+    "DoS attacks-Hulk": "dos",
+    "DoS attacks-SlowHTTPTest": "dos",
+    "DoS attacks-Slowloris": "dos",
+    "FTP-BruteForce": "bf",
+    "SSH-Bruteforce": "bf",
+    "Infilteration": "inf",
+    "Brute Force -Web": "web",
+    "Brute Force -XSS": "web",
+    "SQL Injection": "web",
+}
+NFV3_FAMILY_ORDER = ["benign", "ddos", "bot", "dos", "bf", "inf", "web"]
+
 
 def sql_quote(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
@@ -31,6 +53,14 @@ def sql_quote(value: str) -> str:
 
 def identifier(value: str) -> str:
     return '"' + value.replace('"', '""') + '"'
+
+
+def family_case() -> str:
+    clauses = " ".join(
+        f"WHEN trim(\"Label\") = {sql_quote(label)} THEN {sql_quote(family)}"
+        for label, family in NFV3_FAMILY.items()
+    )
+    return f"CASE {clauses} ELSE NULL END"
 
 
 def source_relation(files: list[Path], columns: list[str]) -> str:
@@ -90,6 +120,7 @@ def main() -> None:
     con.execute("SET preserve_insertion_order TO false")
     con.execute("DROP TABLE IF EXISTS flow_rows")
     con.execute("DROP TABLE IF EXISTS conflict_keys")
+    con.execute("DROP TABLE IF EXISTS family_conflict_keys")
 
     fields = ", ".join(
         f"coalesce(trim({identifier(column)}), '<NULL>')" for column in feature_columns
@@ -98,7 +129,8 @@ def main() -> None:
     print(f"Scanning {len(files)} files with {len(feature_columns)} common feature fields", flush=True)
     con.execute(
         "CREATE TABLE flow_rows AS "
-        f"SELECT trim(\"Label\") AS label, sha256(concat_ws(chr(31), {fields})) AS feature_sha256 "
+        f"SELECT trim(\"Label\") AS label, {family_case()} AS nfv3_family, "
+        f"sha256(concat_ws(chr(31), {fields})) AS feature_sha256 "
         # A repeated header is embedded as a data row in part of the released
         # CSV.  ``Label`` is not an attack class and is excluded explicitly.
         f"FROM {relation} WHERE trim(\"Label\") <> '' AND trim(\"Label\") <> 'Label'"
@@ -108,6 +140,11 @@ def main() -> None:
         "CREATE TABLE conflict_keys AS "
         "SELECT feature_sha256, count(*) AS rows, count(DISTINCT label) AS labels "
         "FROM flow_rows GROUP BY feature_sha256 HAVING count(DISTINCT label) > 1"
+    )
+    con.execute(
+        "CREATE TABLE family_conflict_keys AS "
+        "SELECT feature_sha256, count(*) AS rows, count(DISTINCT nfv3_family) AS families "
+        "FROM flow_rows GROUP BY feature_sha256 HAVING count(DISTINCT nfv3_family) > 1"
     )
 
     total_rows = con.execute("SELECT count(*) FROM flow_rows").fetchone()[0]
@@ -131,6 +168,32 @@ def main() -> None:
             "conflicting_fraction": conflict / rows if rows else 0.0,
         })
     per_label.sort(key=lambda row: (-row["conflicting_fraction"], -row["conflicting_rows"], row["label"]))
+
+    unknown_families = con.execute(
+        "SELECT DISTINCT label FROM flow_rows WHERE nfv3_family IS NULL ORDER BY label"
+    ).fetchall()
+    if unknown_families:
+        raise RuntimeError(f"Unmapped CIC2018 labels: {[row[0] for row in unknown_families]}")
+    family_totals = dict(con.execute(
+        "SELECT nfv3_family, count(*) FROM flow_rows GROUP BY nfv3_family"
+    ).fetchall())
+    family_conflicts = dict(con.execute(
+        "SELECT r.nfv3_family, count(*) FROM flow_rows r "
+        "JOIN family_conflict_keys c USING(feature_sha256) GROUP BY r.nfv3_family"
+    ).fetchall())
+    per_family = []
+    for family in NFV3_FAMILY_ORDER:
+        rows = int(family_totals.get(family, 0))
+        conflict = int(family_conflicts.get(family, 0))
+        per_family.append({
+            "family": family,
+            "rows": rows,
+            "conflicting_rows": conflict,
+            "conflicting_fraction": conflict / rows if rows else 0.0,
+        })
+    family_group_count, family_conflict_rows = con.execute(
+        "SELECT count(*), coalesce(sum(rows), 0) FROM family_conflict_keys"
+    ).fetchone()
 
     top_rows = con.execute(
         "SELECT c.feature_sha256, c.rows, c.labels, "
@@ -186,6 +249,14 @@ def main() -> None:
             "conflicting_feature_groups": int(group_count),
             "rows_in_conflicting_groups": int(conflict_rows),
             "fraction_rows_in_conflicting_groups": conflict_rows / total_rows if total_rows else 0.0,
+        },
+        "nfv3_family_audit": {
+            "families": NFV3_FAMILY_ORDER,
+            "criterion": "The same 78-field vector occurs with more than one NF-v3 target family.",
+            "conflicting_feature_groups": int(family_group_count),
+            "rows_in_conflicting_groups": int(family_conflict_rows),
+            "fraction_rows_in_conflicting_groups": family_conflict_rows / total_rows if total_rows else 0.0,
+            "per_family": per_family,
         },
         "per_label": per_label,
         "representative_conflicting_groups": examples,

@@ -803,12 +803,12 @@
     ]
   },
   {
-    "title": "원본 CIC2018 CSV의 동일 feature·상이 label",
+    "title": "원본 CIC2018 CSV의 동일 feature·상이 class",
     "source_keys": [
       "cic18",
       "liu"
     ],
-    "notes": "발표 설명\n이 슬라이드는 NF-v3 파생 입력이 아니라 원본 CIC2018 CICFlowMeter CSV 10개 파일 전체를 직접 감사한 결과다. Timestamp와 flow 식별자를 제외하고 모든 파일에 공통인 78개 통계 field가 같은 행을 묶었다. 위 표는 실제 원본 CSV 값이며, 보이는 열과 생략한 69개 field가 모두 같지만 label은 다르다. 아래 막대는 class 전체 표본 수가 많은 순서로 정렬했다. 괄호는 그 class의 전체 행 수, 막대 길이와 끝 숫자는 그 class에서 동일 feature·상이 label group에 속한 비율과 행 수다. 이 값은 모든 충돌을 같은 단일 원인이나 모든 라벨 오류로 단정하지 않는다. 다만 동일 통계 입력으로 하나의 분류기가 두 label을 동시에 맞힐 수 없으므로, 표현과 라벨 생성 근거를 함께 다시 점검해야 함을 보여 준다.\n\n원문 근거\nCSE-CIC-IDS2018 official dataset\nUNB CIC, 2018\nPCAP/system logs, feature list and attack setup\nhttps://www.unb.ca/cic/datasets/ids-2018.html\n\nError Prevalence in NIDS datasets: A Case Study on CIC-IDS-2017 and CSE-CIC-IDS-2018\nIEEE CNS, 2022\nAuthor tools and dataset documentation, corrected labels updated 2023; 2018 FTP closed-port example\nhttps://intrusion-detection.distrinet-research.be/CNS2022/index.html",
+    "notes": "발표 설명\n이 슬라이드는 NF-v3 파생 입력이 아니라 원본 CIC2018 CICFlowMeter CSV 10개 파일 전체를 직접 감사한 결과다. Timestamp와 flow 식별자를 제외하고 모든 파일에 공통인 78개 통계 field가 같은 행을 묶었다. 위 표는 실제 원본 CSV 값이며, 보이는 열과 생략한 69개 field가 모두 같지만 NF-v3 class는 다르다. 아래 막대는 NF-v3의 benign, ddos, bot, dos, bf, inf, web 순서다. 막대 길이와 끝 숫자는 해당 class에서 동일 feature·상이 class group에 속한 비율과 행 수다. 이 값은 모든 충돌을 같은 단일 원인이나 모든 라벨 오류로 단정하지 않는다. 다만 동일 통계 입력으로 하나의 분류기가 두 class를 동시에 맞힐 수 없으므로, 표현과 라벨 생성 근거를 함께 다시 점검해야 함을 보여 준다.\n\n원문 근거\nCSE-CIC-IDS2018 official dataset\nUNB CIC, 2018\nPCAP/system logs, feature list and attack setup\nhttps://www.unb.ca/cic/datasets/ids-2018.html\n\nError Prevalence in NIDS datasets: A Case Study on CIC-IDS-2017 and CSE-CIC-IDS-2018\nIEEE CNS, 2022\nAuthor tools and dataset documentation, corrected labels updated 2023; 2018 FTP closed-port example\nhttps://intrusion-detection.distrinet-research.be/CNS2022/index.html",
     "items": [
       {
         "kind": "text",
@@ -816,7 +816,7 @@
         "y": 0.32,
         "w": 12.08,
         "h": 0.5266666666666666,
-        "text": "원본 CIC2018 CSV의 동일 feature·상이 label",
+        "text": "원본 CIC2018 CSV의 동일 feature·상이 class",
         "size": 30,
         "bold": true,
         "color": "00306C",
@@ -1070,8 +1070,8 @@
         "x": 11.030000000000001,
         "y": 1.7650000000000001,
         "w": 1.5999999999999999,
-        "h": 0.19561111111111112,
-        "text": "Label",
+        "h": 0.3562222222222222,
+        "text": "NF-v3\nclass",
         "size": 9.8,
         "bold": true,
         "color": "20262E",
@@ -1313,7 +1313,7 @@
         "y": 2.255,
         "w": 1.5999999999999999,
         "h": 0.19561111111111112,
-        "text": "DoS SlowHTTPTest",
+        "text": "dos",
         "size": 9.8,
         "bold": true,
         "color": "20262E",
@@ -1555,7 +1555,7 @@
         "y": 2.745,
         "w": 1.5999999999999999,
         "h": 0.19561111111111112,
-        "text": "FTP-BruteForce",
+        "text": "bf",
         "size": 9.8,
         "bold": true,
         "color": "20262E",
@@ -1568,7 +1568,7 @@
         "y": 3.24,
         "w": 11.8,
         "h": 0.2890277777777778,
-        "text": "위 두 행: DoS SlowHTTPTest · FTP-BruteForce · SSH-Bruteforce  ·  가운데 생략 표시는 나머지 69개도 동일함",
+        "text": "위 두 행: bf · dos  ·  가운데 생략 표시는 나머지 69개도 동일함",
         "size": 15.5,
         "bold": true,
         "color": "B44948",
@@ -1577,9 +1577,9 @@
       },
       {
         "kind": "image",
-        "x": 0.8129669030732861,
+        "x": 1.3527777777777774,
         "y": 3.47,
-        "w": 11.694066193853427,
+        "w": 10.614444444444445,
         "h": 2.33,
         "path": "/home/user/Desktop/imbalcic/docs/slides/_support/assets/20261029_pcap/original_csv_conflict_rates.png"
       },
@@ -1589,7 +1589,7 @@
         "y": 6.05,
         "w": 11.85,
         "h": 0.26116666666666666,
-        "text": "원본 CSV 16,232,943행 전체 감사  ·  괄호는 class 전체 표본 수, 막대 끝은 해당 class의 상이 label 행 수",
+        "text": "원본 CSV 16,232,943행 전체 감사  ·  NF-v3 7개 class로 집계 · 막대 끝은 해당 class의 상이 class 행 수",
         "size": 13.8,
         "bold": false,
         "color": "617080",

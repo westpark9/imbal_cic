@@ -31,19 +31,19 @@ n=450까지 늘리면 macro-F1은 계속 변하지만, DDoS·Bot은 적은 라�
 EXP87 · 공격만 학습·평가 · 정상 제외 · 5 seeds · conflict-free 고정 test · n=450은 균등 라벨 예산의 상한
 
 전체 macro-F1의 변화와 클래스별 포화를 함께 확인                                                     02 data ceiling   3
-원본 CIC2018 CSV의 동일 feature·상이 label
+원본 CIC2018 CSV의 동일 feature·상이 class
 Timestamp·Flow ID·Src IP/Src Port·Dst IP·Label을 제외한 78개 공통 CICFlowMeter 통계의 정확 일치 기준
-  Dst Port   Protocol   Flow Duration   Tot Fwd   Tot Bwd   … 69 fields …   TotLen Bwd   Flow Byts/s   Flow Pkts/s   Idle Min          Label
-                                          Pkts      Pkts                       Pkts
-    21          6            2              1         1     … 69 fields …        0           0          1000000         0        DoS SlowHTTPTest
-    21          6            2             1         1      … 69 fields …       0            0          1000000         0          FTP-BruteForce
+  Dst Port   Protocol   Flow Duration   Tot Fwd   Tot Bwd   … 69 fields …   TotLen Bwd   Flow Byts/s   Flow Pkts/s   Idle Min          NF-v3
+                                          Pkts      Pkts                       Pkts                                                    class
+    21          6            2              1         1     … 69 fields …        0           0          1000000         0               dos
+    21          6            2             1         1      … 69 fields …       0            0          1000000         0                bf
 
-위 두 행: DoS SlowHTTPTest · FTP-BruteForce · SSH-Bruteforce · 가운데 생략 표시는 나머지 69개도 동일함
-
-
+위 두 행: bf · dos · 가운데 생략 표시는 나머지 69개도 동일함
 
 
-원본 CSV 16,232,943행 전체 감사 · 괄호는 class 전체 표본 수, 막대 끝은 해당 class의 상이 label 행 수
+
+
+원본 CSV 16,232,943행 전체 감사 · NF-v3 7개 class로 집계 · 막대 끝은 해당 class의 상이 class 행 수
 
 원본 CSV의 78개 공통 flow 통계가 완전히 같은 실제 행을 확인                                                                                         03 label conflict   4
 PCAP 기반 CIC2018 재표현 파이프라인
