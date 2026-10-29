@@ -20,7 +20,6 @@ QA = HERE / '_support/qa/20261029_pcap'
 OUT = HERE / 'kor/20261029_PCAP_연구방향'
 EVIDENCE = ROOT / 'docs/lablog/evidence/20261029_pcap'
 AUDIT_PATH = ROOT / 'docs/lablog/evidence/20261030/original_cic2018_csv_audit.json'
-TON_AUDIT_PATH = ROOT / 'docs/lablog/evidence/20261030/toniot_nfv3_feature_label_audit.json'
 EXP87 = ROOT / 'tabpfn/results/v7/exp87/20261022_163739_full_learning_curve_five_seeds_c59213f5'
 SOURCE_DATA = json.loads((EVIDENCE / 'sources.json').read_text(encoding='utf-8'))['sources']
 
@@ -142,8 +141,8 @@ def make_ceiling_asset() -> None:
     plt.close(fig)
 
 
-def make_conflict_asset(cic_audit: dict, ton_audit: dict) -> None:
-    """Compare conflict-row counts in CIC's source CSV and ToN's current input."""
+def make_conflict_asset(audit: dict) -> None:
+    """Show the original CIC CSV class rates in descending sample-count order."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -152,36 +151,34 @@ def make_conflict_asset(cic_audit: dict, ton_audit: dict) -> None:
     r.ASSETS.mkdir(parents=True, exist_ok=True)
     font = FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Regular.otf')
     bold = FontProperties(fname='/home/user/.local/share/fonts/Pretendard/Pretendard-Bold.otf')
-    fig, axes = plt.subplots(1, 2, figsize=(13.1, 3.05), dpi=190, gridspec_kw={'wspace': .58})
-    panels = [
-        (axes[0], cic_audit, 'CIC2018 원본 CICFlowMeter CSV', '#B44948'),
-        (axes[1], ton_audit, 'ToN-IoT 현재 NF-v3 입력 · 46 features', '#007BC6'),
-    ]
-    for axis, audit, title, color in panels:
-        totals = audit['totals']
-        rows = [row for row in audit['per_label'] if row['conflicting_rows']]
-        rows.sort(key=lambda row: (-row['conflicting_rows'], row['label']))
-        counts = [row['conflicting_rows'] for row in rows]
-        axis.barh(range(len(rows)), counts, color=color, height=.58)
-        axis.set_yticks(range(len(rows)), [short_label(row['label']) for row in rows], fontproperties=font, fontsize=7.7)
-        axis.invert_yaxis()
-        axis.set_xlim(0, max(counts) * 1.48)
-        axis.grid(axis='x', color='#D9E1E8', lw=.7)
-        axis.spines[['top', 'right', 'left']].set_visible(False)
-        axis.tick_params(axis='y', length=0)
-        axis.ticklabel_format(axis='x', style='plain', useOffset=False)
-        axis.tick_params(axis='x', labelsize=7.4)
-        axis.set_xlabel('상이 label feature group에 속한 행 수', fontproperties=font, fontsize=8.3)
-        axis.set_title(
-            f"{title}\n{totals['rows_in_conflicting_groups']:,}/{totals['rows']:,}행 "
-            f"({100 * totals['fraction_rows_in_conflicting_groups']:.2f}%) · class별 행 수 내림차순",
-            fontproperties=bold, fontsize=10.2, color='#00306C', pad=8,
-        )
-        for y, row in enumerate(rows):
-            axis.text(row['conflicting_rows'] + max(counts) * .025, y,
-                      f"{row['conflicting_rows']:,} · {100 * row['conflicting_fraction']:.1f}%",
-                      va='center', fontsize=6.9, fontproperties=font, color='#00306C')
-    fig.subplots_adjust(left=.075, right=.985, top=.79, bottom=.20, wspace=.58)
+    totals = audit['totals']
+    rows = sorted(audit['per_label'], key=lambda row: (-row['rows'], row['label']))
+    rates = [100 * row['conflicting_fraction'] for row in rows]
+    fig, axis = plt.subplots(figsize=(13.0, 2.45), dpi=190)
+    axis.barh(range(len(rows)), rates, color='#B44948', height=.55)
+    axis.set_yticks(
+        range(len(rows)),
+        [f"{short_label(row['label'], 28)}  ({row['rows']:,})" for row in rows],
+        fontproperties=font, fontsize=7.35,
+    )
+    axis.invert_yaxis()
+    axis.set_xlim(0, 100)
+    axis.set_xlabel('해당 class에서 동일 feature·상이 label group에 속한 비율 (%)', fontproperties=font, fontsize=8.7)
+    axis.set_title(
+        f"원본 CIC2018 CSV {totals['rows']:,}행 · {totals['rows_in_conflicting_groups']:,}행 "
+        f"({100 * totals['fraction_rows_in_conflicting_groups']:.2f}%) · class 표본 수 내림차순",
+        fontproperties=bold, fontsize=10.6, color='#00306C', pad=7,
+    )
+    axis.grid(axis='x', color='#D9E1E8', lw=.7)
+    axis.spines[['top', 'right', 'left']].set_visible(False)
+    axis.tick_params(axis='y', length=0)
+    axis.tick_params(axis='x', labelsize=7.5)
+    for y, (rate, row) in enumerate(zip(rates, rows)):
+        text_x = rate + 1.0 if rate < 95 else rate - 1.0
+        axis.text(text_x, y, f"{rate:.1f}% ({row['conflicting_rows']:,})",
+                  ha='left' if rate < 95 else 'right', va='center', fontsize=6.8,
+                  fontproperties=font, color='#00306C')
+    fig.subplots_adjust(left=.25, right=.975, top=.79, bottom=.20)
     fig.savefig(r.ASSETS / 'original_csv_conflict_rates.png', bbox_inches='tight', facecolor='white')
     plt.close(fig)
 
@@ -203,12 +200,11 @@ def raw_values_for_slide(audit: dict) -> tuple[list[str], list[str], str]:
 
 
 def scenes() -> None:
-    if not AUDIT_PATH.exists() or not TON_AUDIT_PATH.exists():
-        raise FileNotFoundError(f'Run source CSV audits first: {AUDIT_PATH}; {TON_AUDIT_PATH}')
+    if not AUDIT_PATH.exists():
+        raise FileNotFoundError(f'Run source CSV audit first: {AUDIT_PATH}')
     audit = json.loads(AUDIT_PATH.read_text(encoding='utf-8'))
-    ton_audit = json.loads(TON_AUDIT_PATH.read_text(encoding='utf-8'))
     make_ceiling_asset()
-    make_conflict_asset(audit, ton_audit)
+    make_conflict_asset(audit)
     row_a, row_b, conflict_labels = raw_values_for_slide(audit)
     totals = audit['totals']
 
@@ -272,11 +268,11 @@ def scenes() -> None:
     a += [
         txt(.72, 3.24, 11.8, f'위 두 행: {conflict_labels}  ·  가운데 생략 표시는 나머지 69개도 동일함', 15.5, True, RED),
         asset_image('original_csv_conflict_rates', .64, 3.47, 12.04, 2.33),
-        txt(.72, 6.05, 11.85, f"CIC는 원본 CSV, ToN은 현재 NF-v3 46-feature 입력 기준  ·  동일 feature·상이 label은 표현 한계 또는 라벨 근거를 재점검할 사례", 13.8, False, GREY),
+        txt(.72, 6.05, 11.85, f"원본 CSV {totals['rows']:,}행 전체 감사  ·  괄호는 class 전체 표본 수, 막대 끝은 해당 class의 상이 label 행 수", 13.8, False, GREY),
     ]
     page('원본 CIC2018 CSV의 동일 feature·상이 label', a,
          '원본 CSV의 78개 공통 flow 통계가 완전히 같은 실제 행을 확인', '03 label conflict',
-         '위 표와 왼쪽 막대는 NF-v3 파생 입력이 아니라 원본 CIC2018 CICFlowMeter CSV 10개 파일 전체를 직접 감사한 결과다. Timestamp와 flow 식별자를 제외하고 모든 파일에 공통인 78개 통계 field가 같은 행을 묶었다. 위 표는 실제 원본 CSV 값이며, 보이는 열과 생략한 69개 field가 모두 같지만 label은 다르다. 오른쪽 ToN-IoT 막대는 원본 PCAP이나 모든 CSV field가 아니라 현재 실험이 쓰는 NF-v3 46개 input field와 Attack label로 계산했다. 두 막대는 상이 label feature group에 속한 행 수로 내림차순 정렬했고, 끝 숫자는 클래스 내 비율이다. 이 값은 모든 충돌을 같은 단일 원인이나 모든 라벨 오류로 단정하지 않는다. 다만 동일 통계 입력으로 하나의 분류기가 두 label을 동시에 맞힐 수 없으므로, 표현과 라벨 생성 근거를 함께 다시 점검해야 함을 보여 준다.', ['cic18', 'liu'])
+         '이 슬라이드는 NF-v3 파생 입력이 아니라 원본 CIC2018 CICFlowMeter CSV 10개 파일 전체를 직접 감사한 결과다. Timestamp와 flow 식별자를 제외하고 모든 파일에 공통인 78개 통계 field가 같은 행을 묶었다. 위 표는 실제 원본 CSV 값이며, 보이는 열과 생략한 69개 field가 모두 같지만 label은 다르다. 아래 막대는 class 전체 표본 수가 많은 순서로 정렬했다. 괄호는 그 class의 전체 행 수, 막대 길이와 끝 숫자는 그 class에서 동일 feature·상이 label group에 속한 비율과 행 수다. 이 값은 모든 충돌을 같은 단일 원인이나 모든 라벨 오류로 단정하지 않는다. 다만 동일 통계 입력으로 하나의 분류기가 두 label을 동시에 맞힐 수 없으므로, 표현과 라벨 생성 근거를 함께 다시 점검해야 함을 보여 준다.', ['cic18', 'liu'])
 
     # 5. Keep why in the body, and make adapters swappable by design.
     a = [
@@ -357,7 +353,6 @@ def main() -> None:
         'slides': len(r.SCENES),
         'sources': 'docs/lablog/evidence/20261029_pcap/sources.json',
         'original_csv_audit': str(AUDIT_PATH.relative_to(ROOT)),
-        'toniot_input_audit': str(TON_AUDIT_PATH.relative_to(ROOT)),
         'fewshot_data': str(EXP87.relative_to(ROOT)),
         'validation': 'shared editable PPTX/HTML-PDF scenes; geometry/font/text checks; visual contact sheet reviewed',
         'pages': checks,

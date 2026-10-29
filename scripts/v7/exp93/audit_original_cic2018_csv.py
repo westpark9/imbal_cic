@@ -99,7 +99,9 @@ def main() -> None:
     con.execute(
         "CREATE TABLE flow_rows AS "
         f"SELECT trim(\"Label\") AS label, sha256(concat_ws(chr(31), {fields})) AS feature_sha256 "
-        f"FROM {relation} WHERE trim(\"Label\") <> ''"
+        # A repeated header is embedded as a data row in part of the released
+        # CSV.  ``Label`` is not an attack class and is excluded explicitly.
+        f"FROM {relation} WHERE trim(\"Label\") <> '' AND trim(\"Label\") <> 'Label'"
     )
     print("Grouping exact feature keys", flush=True)
     con.execute(
