@@ -8,8 +8,12 @@
   "evaluation_label_note": "Classifier labels use the seven attack families used for the prior NF-v3 comparison: benign, ddos, bot, dos, bf, inf and web. The corrected-CICFlowMeter source annotation remains in annotation_label; the corpus manifest records every direct source annotation and rule ID per family.",
   "split_fractions": [0.7, 0.15, 0.15],
   "corpus": {
-    "reservoir_per_label_split": 1024,
-    "reservoir_unresolved_per_split": 256,
+    "retention_per_label_split": {
+      "train": {"labelled": 1024, "unresolved": 256},
+      "validation": {"labelled": 1024, "unresolved": 256},
+      "test": {"labelled": null, "unresolved": null}
+    },
+    "holdout_policy": "All deterministic test-split flows are retained and evaluated. The training and validation pools use bounded reservoirs only to limit frozen-encoder work outside the held-out evaluation population.",
     "reconstruction_contract": "flow_id, bidirectional five-tuple, start/end packet positions and bounded netFound tokens identify a session. A future encoder may re-open the checksum-pinned PCAP and reconstruct all packets using capture_id plus the flow locator; it must write a separate encoder view without changing corpus labels, IDs or splits."
   },
   "flow": {

@@ -214,6 +214,30 @@ def _reservoir_add(bucket: list[dict[str, Any]], seen: int, row: dict[str, Any],
         bucket[candidate] = row
 
 
+def retention_limit(config: dict[str, Any], label: str | None, split: str) -> int | None:
+    """Return a bounded reservoir size, or ``None`` when every row is retained.
+
+    Few-shot constrains labelled *training* rows.  It must not silently turn
+    the held-out evaluation set into a class-balanced reservoir: doing so can
+    remove the within-family variation needed to assess a learning plateau or
+    the prevalence of cross-label identical inputs.  The explicit per-split
+    policy therefore makes full test retention the normal EXP93 protocol.
+    """
+    policy = config['corpus'].get('retention_per_label_split')
+    if policy is not None:
+        part = policy.get(split, {})
+        value = part.get('labelled' if label is not None else 'unresolved')
+        if value is None:
+            return None
+        value = int(value)
+        if value < 0:
+            raise ValueError(f'Negative retention cap for {split}: {value}')
+        return value
+    # Compatibility with the initial, explicitly superseded pilot protocol.
+    return (int(config['corpus']['reservoir_per_label_split']) if label is not None
+            else int(config['corpus'].get('reservoir_unresolved_per_split', 0)))
+
+
 def label_mapping(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Expose the raw CIC annotation names behind each evaluation family."""
     annotations: dict[str, set[str]] = defaultdict(set)
@@ -237,54 +261,66 @@ def build_corpus(config: dict[str, Any], out: Path) -> dict[str, Any]:
     if manifest_path.exists():
         return read(manifest_path)
     corpus.mkdir(parents=True, exist_ok=False)
-    cap = int(config['corpus']['reservoir_per_label_split'])
-    unknown_cap = int(config['corpus'].get('reservoir_unresolved_per_split', 0))
     fractions = config['split_fractions']
     if len(fractions) != 3 or abs(sum(fractions) - 1) > 1e-9:
         raise ValueError('split fractions must sum to one')
     rng = random.Random(config['seed'])
     buckets: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     seen: Counter[tuple[str, str]] = Counter()
+    retained_unbounded: Counter[tuple[str, str]] = Counter()
     capture_meta, raw_stats, all_status = [], {}, Counter()
     source = config['label_source']
-    for cap_cfg in config['captures']:
-        pcap = resolve_path(cap_cfg['path'], ROOT)
-        if not pcap.exists():
-            raise FileNotFoundError(f'Missing verified PCAP: {pcap}')
-        engine = CorrectedRuleSet(cap_cfg, source)
-        stats: Counter[str] = Counter()
-        completed_flows, next_progress = 0, 10000
-        print(f'corpus: {cap_cfg["id"]} ({pcap.name})', flush=True)
-        for row in iter_flows(pcap, cap_cfg['id'], cap_cfg['group_namespace'], stats,
-                              **config['flow']):
-            completed_flows += 1
-            labelled = engine.apply(row)
-            if row.get('capture_truncated'):
-                labelled = dict(label=None, annotation_label=None, label_status='incomplete_capture',
-                                label_rule_ids=[], label_sources=[source])
-            row.update(labelled)
-            row['split'] = split_group(row['group_id'], config['seed'], fractions)
-            label_key = row['label'] if row['label'] is not None else '__UNRESOLVED__'
-            key = (label_key, row['split'])
-            seen[key] += 1
-            take = cap if row['label'] is not None else unknown_cap
-            if take:
-                _reservoir_add(buckets[key], seen[key], row, take, rng)
-            all_status[row['label_status']] += 1
-            if completed_flows >= next_progress:
-                print(f'corpus: {cap_cfg["id"]}: {completed_flows:,} flows; '
-                      f'{stats["raw_packets"]:,} packets read', flush=True)
-                next_progress += 10000
-        raw_stats[cap_cfg['id']] = dict(stats)
-        print(f'corpus: complete {cap_cfg["id"]}: {completed_flows:,} flows; '
-              f'{dict(stats)}', flush=True)
-        capture_meta.append(dict(id=cap_cfg['id'], path=cap_cfg['path'], bytes=pcap.stat().st_size,
-                                 sha256=sha256(pcap), group_namespace=cap_cfg['group_namespace']))
+    unbounded = corpus / '.unbounded_flows.jsonl.tmp'
+    with unbounded.open('x') as keep_all:
+        for cap_cfg in config['captures']:
+            pcap = resolve_path(cap_cfg['path'], ROOT)
+            if not pcap.exists():
+                raise FileNotFoundError(f'Missing verified PCAP: {pcap}')
+            engine = CorrectedRuleSet(cap_cfg, source)
+            stats: Counter[str] = Counter()
+            completed_flows, next_progress = 0, 10000
+            print(f'corpus: {cap_cfg["id"]} ({pcap.name})', flush=True)
+            for row in iter_flows(pcap, cap_cfg['id'], cap_cfg['group_namespace'], stats,
+                                  **config['flow']):
+                completed_flows += 1
+                labelled = engine.apply(row)
+                if row.get('capture_truncated'):
+                    labelled = dict(label=None, annotation_label=None, label_status='incomplete_capture',
+                                    label_rule_ids=[], label_sources=[source])
+                row.update(labelled)
+                row['split'] = split_group(row['group_id'], config['seed'], fractions)
+                label_key = row['label'] if row['label'] is not None else '__UNRESOLVED__'
+                key = (label_key, row['split'])
+                seen[key] += 1
+                limit = retention_limit(config, row['label'], row['split'])
+                if limit is None:
+                    # Full test retention streams to disk rather than retaining
+                    # every bounded packet sequence in RAM.
+                    keep_all.write(json.dumps(row, separators=(',', ':')) + '\n')
+                    retained_unbounded[key] += 1
+                elif limit:
+                    _reservoir_add(buckets[key], seen[key], row, limit, rng)
+                all_status[row['label_status']] += 1
+                if completed_flows >= next_progress:
+                    print(f'corpus: {cap_cfg["id"]}: {completed_flows:,} flows; '
+                          f'{stats["raw_packets"]:,} packets read', flush=True)
+                    next_progress += 10000
+            raw_stats[cap_cfg['id']] = dict(stats)
+            print(f'corpus: complete {cap_cfg["id"]}: {completed_flows:,} flows; '
+                  f'{dict(stats)}', flush=True)
+            capture_meta.append(dict(id=cap_cfg['id'], path=cap_cfg['path'], bytes=pcap.stat().st_size,
+                                     sha256=sha256(pcap), group_namespace=cap_cfg['group_namespace']))
     flows = corpus / 'flows.jsonl'
     with flows.open('x') as f:
+        with unbounded.open() as keep_all:
+            for line in keep_all:
+                f.write(line)
         for key in sorted(buckets):
             for row in sorted(buckets[key], key=lambda x: x['flow_id']):
                 f.write(json.dumps(row, separators=(',', ':')) + '\n')
+    unbounded.unlink()
+    retained = Counter(retained_unbounded)
+    retained.update({key: len(rows) for key, rows in buckets.items()})
     result = dict(schema=1, dataset=config['dataset'], seed=config['seed'], captures=capture_meta,
                   raw_stats=raw_stats, label_source=source,
                   label_rule_note=config['label_rule_note'], label_status_counts=dict(all_status),
@@ -296,13 +332,15 @@ def build_corpus(config: dict[str, Any], out: Path) -> dict[str, Any]:
                   endpoint_aliases=[dict(capture_id=cap['id'], aliases=cap['endpoint_aliases'])
                                     for cap in config['captures'] if cap.get('endpoint_aliases')],
                   source_counts=[dict(label=k[0], split=k[1], rows=v) for k, v in sorted(seen.items())],
-                  sampled_counts=[dict(label=k[0], split=k[1], rows=len(v)) for k, v in sorted(buckets.items())],
-                  reservoir_per_label_split=cap, split='SHA256(capture group namespace + bidirectional 5-tuple), before reservoir',
+                  retained_counts=[dict(label=k[0], split=k[1], rows=v) for k, v in sorted(retained.items())],
+                  retention_per_label_split=config['corpus'].get('retention_per_label_split'),
+                  split=('SHA256(capture group namespace + bidirectional five-tuple), before retention; '
+                         'a null retention cap retains every row in that split'),
                   class_order=config['class_order'], flows_sha256=sha256(flows),
                   encoder_reuse_contract=dict(
                       artifact='flows.jsonl',
                       raw_source='capture path plus sha256 above',
-                      packet_locator=('capture_id + bidirectional 5-tuple + start/end timestamps + first/last packet index; '
+                      packet_locator=('capture_id + bidirectional five-tuple + start/end timestamps + first/last packet index; '
                                       'future adapters reopen the verified PCAP to reconstruct packets beyond the bounded prefix'),
                       common_fields=['flow_id', 'group_id', 'split', 'label', 'annotation_label', 'start_ns', 'end_ns',
                                      'src_ip', 'dst_ip', 'src_port', 'dst_port', 'first_packet_index', 'last_packet_index',
@@ -311,7 +349,6 @@ def build_corpus(config: dict[str, Any], out: Path) -> dict[str, Any]:
                       guarantee='A new encoder writes a separate view and never changes corpus labels, split, or flow IDs'))
     write(manifest_path, result)
     return result
-
 
 def validate_coverage(config: dict[str, Any], corpus: Path, out: Path) -> dict[str, Any]:
     """Fail before encoder work when a declared family lacks viable few-shot rows."""
@@ -326,9 +363,11 @@ def validate_coverage(config: dict[str, Any], corpus: Path, out: Path) -> dict[s
             failures.append(dict(family=family, required_train_rows=max_budget,
                                  observed=coverage[family]))
     result = dict(passed=not failures, max_fewshot_budget=max_budget,
-                  sampled_corpus_rows=len(rows), coverage=coverage, failures=failures,
-                  interpretation=('Counts are after the deterministic group split and label×split reservoir. '
-                                  'They are checked before frozen-encoder inference and classifier fitting.'))
+                  retained_corpus_rows=len(rows), coverage=coverage, failures=failures,
+                  holdout_policy=config['corpus'].get('holdout_policy'),
+                  interpretation=('Counts are after the deterministic group split and configured per-split retention. '
+                                  'A null test cap retains the complete holdout population; these counts are checked '
+                                  'before frozen-encoder inference and classifier fitting.'))
     write(out / 'label_coverage.json', result)
     if failures:
         details = '; '.join(f'{item["family"]}: train={item["observed"]["train"]}, '

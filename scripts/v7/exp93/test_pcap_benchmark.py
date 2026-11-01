@@ -105,6 +105,53 @@ class Exp93RulesTest(unittest.TestCase):
         finally:
             RUNNER.download_member = old
 
+    def test_protocol_keeps_every_held_out_flow(self):
+        self.assertEqual(RUNNER.retention_limit(self.config, 'ddos', 'train'), 1024)
+        self.assertEqual(RUNNER.retention_limit(self.config, None, 'validation'), 256)
+        self.assertIsNone(RUNNER.retention_limit(self.config, 'ddos', 'test'))
+        self.assertIsNone(RUNNER.retention_limit(self.config, None, 'test'))
+
+    def test_corpus_streams_full_test_and_samples_only_train(self):
+        fractions, seed = [0.7, 0.15, 0.15], 43
+        def group_for(part):
+            index = 0
+            while True:
+                candidate = f'group-{part}-{index}'
+                if RUNNER.split_group(candidate, seed, fractions) == part:
+                    return candidate
+                index += 1
+        train_group, test_group = group_for('train'), group_for('test')
+        def flow(flow_id, group_id):
+            return dict(flow_id=flow_id, group_id=group_id, capture_truncated=False)
+        config = dict(dataset='unit', seed=seed, label_source='unit', label_rule_note='unit', class_order=['benign'],
+                      split_fractions=fractions,
+                      corpus=dict(retention_per_label_split={
+                          'train': {'labelled': 1, 'unresolved': 0},
+                          'validation': {'labelled': 0, 'unresolved': 0},
+                          'test': {'labelled': None, 'unresolved': None}}),
+                      flow={}, captures=[dict(id='cap', path='capture.pcap', group_namespace='unit',
+                                               unmatched_policy='benign', rules=[])])
+        old = RUNNER.iter_flows
+        try:
+            RUNNER.iter_flows = lambda *args, **kwargs: iter([
+                flow('train-a', train_group), flow('train-b', train_group),
+                flow('test-a', test_group), flow('test-b', test_group)])
+            with tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp); (root / 'capture.pcap').write_bytes(b'pcap')
+                old_root = RUNNER.ROOT
+                try:
+                    RUNNER.ROOT = root
+                    RUNNER.build_corpus(config, root / 'out')
+                finally:
+                    RUNNER.ROOT = old_root
+                with (root / 'out/corpus/flows.jsonl').open() as handle:
+                    rows = [json.loads(line) for line in handle]
+                self.assertSetEqual({row['flow_id'] for row in rows if row['split'] == 'test'},
+                                    {'test-a', 'test-b'})
+                self.assertEqual(sum(row['split'] == 'train' for row in rows), 1)
+        finally:
+            RUNNER.iter_flows = old
+
 
 if __name__ == '__main__':
     unittest.main()

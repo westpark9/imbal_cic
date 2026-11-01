@@ -78,6 +78,9 @@ def summarize(run: Path, values: list[dict[str, Any]]) -> dict[str, Any]:
             paired.append(dict(regime=regime, budget=budget, comparison='tabpfn_minus_xgb', **mean_sd(differences)))
     input_examples = audit['identical_input_feature_cross_label_examples']
     projected_examples = audit['identical_projected_feature_cross_label_examples']
+    retention = manifest.get('retention_per_label_split')
+    full_test = bool(retention and retention.get('test', {}).get('labelled') is None
+                     and retention.get('test', {}).get('unresolved') is None)
     return dict(
         schema=1,
         analysis_date='2026-11-01',
@@ -86,8 +89,14 @@ def summarize(run: Path, values: list[dict[str, Any]]) -> dict[str, Any]:
         protocol=dict(class_order=config['class_order'], budgets=budgets, seeds=seeds,
                       regimes=config['fewshot']['regimes'], methods=config['fewshot']['methods'],
                       primary_regime='with_benign', adapter='netfound-v2-small'),
+        evaluation_scope=dict(full_group_heldout_test=full_test,
+                              statement=('All group-held-out test flows are retained.' if full_test else
+                                         'Pilot only: test rows came from a per-family reservoir and cannot establish '
+                                         'the full-holdout learning curve or cross-label prevalence.')),
         corpus=dict(label_status_counts=manifest['label_status_counts'], source_counts=manifest['source_counts'],
-                    sampled_counts=manifest['sampled_counts'], label_schema=manifest['evaluation_label_schema'],
+                    retained_counts=manifest.get('retained_counts', manifest.get('sampled_counts')),
+                    retention_policy=manifest.get('retention_per_label_split'),
+                    label_schema=manifest['evaluation_label_schema'],
                     coverage=coverage),
         projection=projection,
         audit=dict(rows=audit['rows'], labelled_rows=audit['labelled_rows'], unresolved_rows=audit['unresolved_rows'],
