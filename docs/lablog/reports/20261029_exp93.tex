@@ -1,0 +1,106 @@
+% !TeX root = 20261029_exp93.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\usepackage{tabularx}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\hypersetup{pdftitle={EXP93: CIC2018 PCAP·netFound 표현의 family few-shot 평가}}
+\begin{document}
+\reporttitle{2026-10-29 실행 · 2026-11-01 분석}{EXP93: CIC2018 PCAP·netFound 표현의\\family few-shot 평가}
+\recordnote{최종 실행 \path{20261029_192036_cic2018_pcap_expanded_59b3028b}은 120/120개 조건을 완료했다. 공개 CIC2018 host PCAP에서 flow를 재구성하고, 원본 세부 공격 주석을 기존 비교의 7개 family로 매핑한 뒤 frozen netFound-v2-small의 512차원 표현을 학습 split PCA 64차원으로 축소했다. 정상 포함 주 과제에서 TabPFN은 n=2, 5, 20, 50에서 각각 65.11\%, 84.39\%, 92.50\%, 95.36\% macro-F1을 기록했고 같은 행을 받은 XGBoost보다 17.70, 7.88, 2.78, 1.29\%p 높았다. n=20에서 이미 높은 점수이지만 n=50까지의 상승은 1\%p를 넘으므로, 사전 정의한 high-and-flat 표시는 어느 조건에서도 성립하지 않았다.}
+
+\section{목적과 주장 범위}
+\textbf{EXP93은 PCAP에서 재구성한 flow와 frozen netFound 표현에서 few-shot 분류 난도, TabPFN의 상대 이득, 동일 표현·상이 라벨을 함께 점검한다.} EXP89의 CIC CSV 결과는 family별 샘플링, test 구성, 통계 특징 및 라벨 처리가 달라 새 결과와 수치를 직접 대체하거나 단순 비교할 수 없다. 이번 실행은 기존 CIC2018 PCAP의 공개 host capture를 사용하고, corrected-CICFlowMeter 규칙을 flow에 다시 적용한다. 따라서 결과는 새 표현과 새 표본 구성에서의 진단 근거이며, 원본 CIC CSV의 일반화 성능이나 제안 앙상블 모델의 성능을 입증하지 않는다.
+
+\textbf{평가 라벨은 원본 세부 이름과 분리된 7개 family다.} 원본 주석 \texttt{DDoS-HOIC}/\texttt{DDoS-LOIC-UDP}, \texttt{Botnet-Ares}, \texttt{DoS-GoldenEye}/\texttt{DoS-Slowloris}, \texttt{SSH-BruteForce}, Infiltration 세 유형, Web-Attack 세 유형은 각각 \texttt{ddos}, \texttt{bot}, \texttt{dos}, \texttt{bf}, \texttt{inf}, \texttt{web}으로 평가한다. 원본 세부명은 각 flow의 \texttt{annotation\_label}과 corpus manifest의 \texttt{evaluation\_label\_schema}에 보존한다. Botnet Ares의 공개 endpoint는 host PCAP에서 private VPC 주소로 관측돼, protocol에 기록한 capture 한정 alias로 매칭했다. 이 alias는 시간 구간만으로 Bot을 부여하는 규칙이 아니며, 이후 원본 클라우드 주소 대응 자료로 재검증할 대상이다.
+
+\section{실행 설정과 재현 단위}
+\textbf{최종 실행은 2026-10-29 19:20:37--20:57:32 UTC에 완료됐고 반환값은 0이다.} 초기 세 실행은 fetch receipt의 중복 member 기록과 Bot public/private endpoint 불일치 때문에 전체 few-shot 평가에 도달하지 못했다. 최종 실행은 해당 두 조건을 수정한 commit \texttt{0ccd2290}에서 새 corpus를 만들었고, 이전 중간 산출물을 결과 근거로 사용하지 않는다. 전체 경과는 약 96.9분이며 대부분은 GPU를 쓰지 않는 PCAP flow 재구성 단계였다.
+
+\textbf{분할과 label budget은 모델 사이에서 동일하게 유지한다.} 양방향 5-tuple과 capture namespace를 hash하여 train/validation/test를 0.70/0.15/0.15로 먼저 나누고, 그 뒤 label$\times$split reservoir에서 최대 1,024개를 고른다. seed 43--47의 각 n에서 두 모델은 동일한 class별 training flow ID와 동일 test flow ID를 받는다. 주 과제는 정상 포함 \texttt{with\_benign}이고, 정상--공격 분리의 기여를 분리하기 위한 \texttt{attack\_only}은 진단 과제다. TabPFN v3 checkpoint는 4 estimators로 추론하며 각 결과에 기록된 가중치 hash가 fit 전후 동일한지 검사한다.
+
+\textbf{NetFound representation은 header와 timing으로 제한한다.} frozen netFound-v2-small은 512차원 flow 표현을 만들고, 주소·포트·절대시각·라벨·raw payload는 모델 입력 토큰에서 제외한다. Principal Component Analysis (PCA)는 label budget과 별개로 train split 7,057행에만 적합하며 64차원이 설명하는 분산 비율은 99.230\%다. validation/test는 PCA 적합과 model fit에 사용하지 않았고, train/validation/test 사이 group overlap은 0이다.
+
+\section{PCAP corpus와 class 지원}
+\textbf{재구성 전 corpus는 1,812,228개 flow이고, 평가용 reservoir는 19,725개 flow다.} 확정 공격 flow는 1,491,948개, 배경 정상 flow는 317,603개, attempted를 정상에 매핑한 flow는 2,646개다. 경계 또는 불완전 capture로 미확정인 31개 flow는 PCA train pool에는 남지만 classifier label에는 들어가지 않는다. Web family의 원시 수가 가장 작아 train/test에서 각각 893/184개만 남고, 나머지 family는 각 split에서 1,024개 cap에 도달한다.
+
+\begin{table}[H]
+\centering\small
+\caption{Family별 raw flow 수와 reservoir 뒤 train/test 수. raw 수는 group split 뒤, reservoir 전 수다.}
+\begin{tabular}{lrrrr}
+\toprule
+family & raw train & raw test & sampled train & sampled test\\\midrule
+benign & 223,250 & 47,103 & 1,024 & 1,024\\
+ddos   & 784,396 & 167,096 & 1,024 & 1,024\\
+bot    & 13,972 & 2,712 & 1,024 & 1,024\\
+dos    & 47,288 & 10,304 & 1,024 & 1,024\\
+bf     & 65,874 & 14,379 & 1,024 & 1,024\\
+inf    & 132,046 & 28,192 & 1,024 & 1,024\\
+web    & 893 & 184 & 893 & 184\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{평가 macro-F1은 자연 발생 빈도 가중치가 아니라 family 균형 표본의 평균이다.} 정상 포함 test는 6,328행, 공격만 test는 5,304행이며 Web의 support만 184행이다. 이 구성이 희귀 family의 F1을 직접 비교하게 하지만, 실제 IDS 트래픽의 alert 비율이나 자연 분포 정확도를 나타내지는 않는다. 따라서 이후 날짜·host holdout과 자연 분포 test를 같은 corpus에 추가해야 한다.
+
+\section{Few-shot 결과}
+\textbf{TabPFN은 모든 n과 두 과제에서 평균 macro-F1이 XGBoost보다 높았고, 차이는 작은 n에서 가장 컸다.} 정상 포함 주 과제에서 n=2의 평균 차이는 17.70\%p였고 n=50에서는 1.29\%p로 줄었다. 공격만 진단에서도 n=2와 n=50의 차이는 각각 21.51\%p와 1.04\%p였다. error bar는 seed 43--47의 표본 표준편차이며, 각 n에서의 차이는 동일 seed·동일 class별 표본에 대한 관측값이다.
+
+\reportfigure{figures/exp93_macro_f1.pdf}{EXP93 macro-F1 학습곡선. 점은 5 seed 평균, 오차막대는 표본 표준편차다. 빨강은 TabPFN, 파랑은 XGBoost다.}
+
+\begin{table}[H]
+\centering\small
+\caption{Macro-F1 (\%, 평균 $\pm$ 표본 표준편차)과 TabPFN$-$XGBoost 차이.}
+\begin{tabular}{r|rrr|rrr}
+\toprule
+& \multicolumn{3}{c|}{정상 포함} & \multicolumn{3}{c}{공격만}\\
+n & XGBoost & TabPFN & 차이 & XGBoost & TabPFN & 차이\\\midrule
+2  & 47.42$\pm$3.99 & 65.11$\pm$8.66 & +17.70 & 47.83$\pm$6.57 & 69.34$\pm$6.30 & +21.51\\
+3  & 61.51$\pm$1.73 & 77.46$\pm$2.76 & +15.94 & 63.16$\pm$6.72 & 81.25$\pm$4.03 & +18.08\\
+5  & 76.51$\pm$3.35 & 84.39$\pm$3.27 & +7.88  & 82.05$\pm$3.23 & 91.00$\pm$3.49 & +8.95\\
+10 & 85.56$\pm$1.49 & 91.15$\pm$0.60 & +5.59  & 91.74$\pm$0.52 & 95.56$\pm$1.23 & +3.82\\
+20 & 89.72$\pm$2.21 & 92.50$\pm$0.86 & +2.78  & 95.19$\pm$2.71 & 97.66$\pm$1.70 & +2.47\\
+50 & 94.07$\pm$0.86 & 95.36$\pm$1.11 & +1.29  & 97.89$\pm$0.72 & 98.93$\pm$1.08 & +1.04\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{n=20에서 정상 포함은 Bot과 Web의 F1을 낮추며, attack-only 결과는 이 혼동을 진단하는 보조 근거다.} 정상 포함 n=20에서 XGBoost의 Bot/Web F1은 85.5/83.4\%, TabPFN은 87.9/91.3\%였다. 공격만 평가하면 각 모델의 Bot/Web F1은 94.6/91.6\%와 96.6/94.3\%로 높아졌다. 두 regime의 macro-F1은 포함 class가 달라 직접적인 정상 효과의 추정량은 아니므로, 그림은 같은 공격 class의 F1 변화를 함께 제시한다.
+
+\reportfigure{figures/exp93_class_f1_n20.pdf}{n=20 family별 F1. 왼쪽은 정상 포함 주 과제, 오른쪽은 공격만 진단 과제다. 막대는 5 seed 평균, 오차막대는 표본 표준편차다.}
+
+\begin{table}[H]
+\centering\small
+\caption{n=20 class F1 (\%, 5 seed 평균). 공격만 열의 benign은 과제에 포함되지 않는다.}
+\begin{tabular}{lrrrr}
+\toprule
+& \multicolumn{2}{c}{정상 포함} & \multicolumn{2}{c}{공격만}\\
+family & XGBoost & TabPFN & XGBoost & TabPFN\\\midrule
+benign & 78.0 & 78.7 & -- & --\\
+ddos   & 96.1 & 98.6 & 97.0 & 98.8\\
+bot    & 85.5 & 87.9 & 94.6 & 96.6\\
+dos    & 91.4 & 94.5 & 93.3 & 98.3\\
+bf     & 96.8 & 99.7 & 97.1 & 99.5\\
+inf    & 96.7 & 96.9 & 97.6 & 98.4\\
+web    & 83.4 & 91.3 & 91.6 & 94.3\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{상한선과 동일 표현·상이 라벨 감사}
+\textbf{n=20의 높은 F1은 확인됐지만, 이 실행은 n=20에서 완전히 포화됐다는 판정을 지지하지 않는다.} 사전 audit은 n=20 macro-F1이 90\% 이상이고 n=50까지의 변화가 1\%p 이하일 때만 high-and-flat 후보로 표시한다. 정상 포함에서 n=20$\rightarrow$50의 상승은 XGBoost 4.35\%p, TabPFN 2.86\%p였고, 공격만에서는 2.70\%p와 1.27\%p였다. 따라서 네 model$\times$regime 조합 모두 후보 표시가 false이며, n=20의 높은 점수만으로 데이터 상한을 선언하지 않는다.
+
+\textbf{PCAP와 frozen representation은 cross-label 동일 표현을 완전히 없애지 못했다.} netFound 입력 전 signature가 같은 그룹은 199개이고, 그중 benign--bot 또는 benign--inf를 함께 가진 cross-label 그룹은 7개, 해당 flow는 34개다. 64차원 PCA vector 기준으로는 동일 vector 그룹이 1,318개, cross-label 그룹이 43개와 151 flow로 늘었다. 이 값은 원본 CIC CSV의 중복 감사와 특징 정의·표본 수가 달라 비율을 직접 비교할 수 없지만, 새 pipeline에서도 header/timing만으로 구별되지 않는 관측이 남는다는 직접 근거다.
+
+\section{해석, 한계와 다음 실행}
+\textbf{EXP93은 n=2--5의 라벨 예산에서 TabPFN을 채택할 실증 근거를 제공한다.} 정상 포함 주 과제에서 TabPFN의 평균 이득은 n=2에서 17.70\%p, n=3에서 15.94\%p, n=5에서 7.88\%p였고 다섯 seed 모두 양수였다. n이 커질수록 격차가 줄어드는 패턴은 few-shot 보완이라는 사용 목적과 일치한다. 다만 이 결과는 frozen backbone 비교이며, 제안하는 앙상블이나 적응 구조의 분류 이득을 대신하지 않는다.
+
+\textbf{현재 높은 n=20--50 결과는 같은 host/day capture 안의 family 분리 난도와 reservoir test에 한정된다.} hash group split은 동일 5-tuple group의 누수를 막았지만, 날짜·host·공격 도구가 바뀐 분포 이동을 검증하지 않는다. Web support가 184개이고 benign은 unmatched background 정책에서 생성됐으므로, 정상 다양성과 각 family 내부의 sub-attack 비율도 자연 발생 분포와 다르다. XGBoost는 CPU feature와 CUDA booster의 device 불일치로 DMatrix fallback 경고를 냈으므로, 이번 reported 시간은 성능 비교가 아니라 기능 실행 기록으로만 사용한다.
+
+\textbf{다음 단계는 동일 corpus를 재라벨링하지 않고 adapter와 split을 확장하는 것이다.} 첫째, ET-BERT 또는 NetMamba처럼 payload를 포함할 수 있는 encoder view를 같은 flow IDㆍsplit 위에 추가해 7개 입력 충돌과 43개 PCA vector 충돌의 변화부터 감사한다. 둘째, 날짜 또는 host holdout을 추가해 반복적인 같은-capture traffic의 영향을 분리한다. 셋째, Bot endpoint alias와 cross-label 7개 입력 그룹의 원 패킷ㆍ시간ㆍ주석 규칙을 검토해 label 정책과 표현 손실을 구별한다. 이 세 검증 뒤에야 새 representation 위의 앙상블 구조를 기존 frozen TabPFN과 공정하게 비교할 수 있다.
+
+\sourcepath{tabpfn/results/v7/exp93/20261029\_192036\_cic2018\_pcap\_expanded\_59b3028b/RUN\_META.json}
+\sourcepath{tabpfn/results/v7/exp93/20261029\_192036\_cic2018\_pcap\_expanded\_59b3028b/corpus/manifest.json}
+\sourcepath{tabpfn/results/v7/exp93/20261029\_192036\_cic2018\_pcap\_expanded\_59b3028b/encoders/netfound-v2-small/projection.json}
+\sourcepath{tabpfn/results/v7/exp93/20261029\_192036\_cic2018\_pcap\_expanded\_59b3028b/encoders/netfound-v2-small/audit.json}
+\sourcepath{docs/lablog/evidence/20261029/exp93\_summary.json}
+\end{document}
