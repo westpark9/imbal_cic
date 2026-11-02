@@ -685,9 +685,11 @@ def audit(corpus: Path, encoder_dir: Path) -> dict[str, Any]:
                   corpus_flow_sha256=read(corpus / 'manifest.json')['flows_sha256'],
                   identical_input_feature_groups=sum(len(v) > 1 for v in token_groups.values()),
                   identical_input_feature_cross_label_groups=len(feature_conflicts),
+                  identical_input_feature_cross_label_rows=sum(item['rows'] for item in feature_conflicts),
                   identical_input_feature_cross_label_examples=feature_conflicts[:100],
                   identical_projected_feature_groups=sum(len(v) > 1 for v in vector_groups.values()),
                   identical_projected_feature_cross_label_groups=len(vector_conflicts),
+                  identical_projected_feature_cross_label_rows=sum(item['rows'] for item in vector_conflicts),
                   identical_projected_feature_cross_label_examples=vector_conflicts[:100],
                   interpretation='Checks corpus/vector alignment and group separation; it is not a classifier result.')
     write(encoder_dir / 'audit.json', result)

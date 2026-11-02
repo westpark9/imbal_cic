@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+import csv
+from datetime import date
 import json
 from pathlib import Path
 import sys
@@ -78,12 +80,14 @@ def summarize(run: Path, values: list[dict[str, Any]]) -> dict[str, Any]:
             paired.append(dict(regime=regime, budget=budget, comparison='tabpfn_minus_xgb', **mean_sd(differences)))
     input_examples = audit['identical_input_feature_cross_label_examples']
     projected_examples = audit['identical_projected_feature_cross_label_examples']
+    input_rows_complete = len(input_examples) == audit['identical_input_feature_cross_label_groups']
+    projected_rows_complete = len(projected_examples) == audit['identical_projected_feature_cross_label_groups']
     retention = manifest.get('retention_per_label_split')
     full_test = bool(retention and retention.get('test', {}).get('labelled') is None
                      and retention.get('test', {}).get('unresolved') is None)
     return dict(
         schema=1,
-        analysis_date='2026-11-01',
+        analysis_date=date.today().isoformat(),
         run=dict(path=str(run.relative_to(ROOT)), status=run_meta['status'], started_utc=run_meta['started'],
                  finished_utc=run_meta['finished'], returncode=run_meta['returncode'], git_head=run_meta['git_head']),
         protocol=dict(class_order=config['class_order'], budgets=budgets, seeds=seeds,
@@ -103,10 +107,15 @@ def summarize(run: Path, values: list[dict[str, Any]]) -> dict[str, Any]:
                    group_overlap=audit['group_overlap'], finite_vectors=audit['finite_vectors'],
                    identical_input_feature_groups=audit['identical_input_feature_groups'],
                    identical_input_feature_cross_label_groups=audit['identical_input_feature_cross_label_groups'],
-                   identical_input_feature_cross_label_rows=sum(item['rows'] for item in input_examples),
+                   identical_input_feature_cross_label_rows=audit.get(
+                       'identical_input_feature_cross_label_rows', sum(item['rows'] for item in input_examples)),
+                   identical_input_feature_cross_label_rows_complete=input_rows_complete,
                    identical_projected_feature_groups=audit['identical_projected_feature_groups'],
                    identical_projected_feature_cross_label_groups=audit['identical_projected_feature_cross_label_groups'],
-                   identical_projected_feature_cross_label_rows=sum(item['rows'] for item in projected_examples)),
+                   identical_projected_feature_cross_label_rows=audit.get(
+                       'identical_projected_feature_cross_label_rows', sum(item['rows'] for item in projected_examples)),
+                   identical_projected_feature_cross_label_rows_complete=projected_rows_complete,
+                   stored_projected_cross_label_examples=len(projected_examples)),
         macro_f1=macro, class_f1=classes, timing=timing, paired_differences=paired,
         ceiling_audit=load(run / 'evaluations/netfound-v2-small/fewshot/ceiling_audit.json')['saturation_candidates'])
 
@@ -165,21 +174,86 @@ def draw_class_n20(summary: dict[str, Any], destination: Path) -> None:
     plt.close(fig)
 
 
+def exp89_reference(path: Path) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    """Load the directly relevant, uncurated NF-v3 EXP89 curves.
+
+    These curves are displayed as a historical reference only: their CSV
+    features, original outer split and label construction differ from EXP93.
+    """
+    rows = list(csv.DictReader(path.open()))
+    result: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    settings = {
+        'with_benign': dict(benign_training='True', test_scope='all', metric='all_macro_f1'),
+        'attack_only': dict(benign_training='False', test_scope='attack', metric='attack_macro_f1'),
+    }
+    for regime, setting in settings.items():
+        values: dict[str, list[dict[str, Any]]] = {}
+        for method, exp89_method in [('xgb', 'xgb'), ('tabpfn', 'pfn')]:
+            selected = [row for row in rows
+                        if row['dataset'] == 'cic2018' and row['train_version'] == 'original'
+                        and row['test_version'] == 'original' and row['benign_training'] == setting['benign_training']
+                        and row['test_scope'] == setting['test_scope'] and row['method'] == exp89_method]
+            by_n: dict[int, list[float]] = defaultdict(list)
+            for row in selected:
+                by_n[int(row['n'])].append(float(row[setting['metric']]))
+            values[method] = [dict(budget=n, **mean_sd(scores)) for n, scores in sorted(by_n.items())]
+        result[regime] = values
+    return result
+
+
+def draw_exp89_comparison(summary: dict[str, Any], exp89: dict[str, dict[str, list[dict[str, Any]]]],
+                          destination: Path) -> None:
+    colors = {'xgb': '#1769aa', 'tabpfn': '#b71c1c'}
+    labels = {'xgb': 'XGBoost', 'tabpfn': 'TabPFN'}
+    regimes = [('with_benign', 'Normal + attack: all-class Macro-F1'),
+               ('attack_only', 'Attack families: Macro-F1')]
+    fig, axes = plt.subplots(1, 2, figsize=(10.4, 3.65), sharey=True, layout='constrained')
+    for ax, (regime, title) in zip(axes, regimes):
+        for method in ('xgb', 'tabpfn'):
+            current = macro_lookup(summary, regime, method)
+            ax.errorbar([item['budget'] for item in current], [100 * item['mean'] for item in current],
+                        yerr=[100 * item['sample_sd'] for item in current], color=colors[method], marker='o',
+                        linewidth=2.1, markersize=5, capsize=2.8, linestyle='-', label=f'{labels[method]} · PCAP')
+            old = exp89[regime][method]
+            ax.errorbar([item['budget'] for item in old], [100 * item['mean'] for item in old],
+                        yerr=[100 * item['sample_sd'] for item in old], color=colors[method], marker='o',
+                        linewidth=1.7, markersize=4.5, capsize=2.5, linestyle='--', alpha=.82,
+                        label=f'{labels[method]} · NF-v3 CSV')
+        ax.set_title(title, fontsize=10)
+        ax.set_xlabel('Labels per class (n)')
+        ax.set_xticks([2, 3, 5, 10, 20, 50])
+        ax.set_ylim(15, 103)
+        ax.grid(axis='y', alpha=.22)
+    axes[0].set_ylabel('Macro-F1 (%)')
+    axes[1].legend(loc='lower right', frameon=False, fontsize=7.7, handlelength=3.0)
+    fig.savefig(destination, bbox_inches='tight')
+    plt.close(fig)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run', type=Path, default=DEFAULT_RUN)
     parser.add_argument('--evidence', type=Path, default=ROOT / 'docs/lablog/evidence/20261029/exp93_summary.json')
     parser.add_argument('--macro-figure', type=Path, default=ROOT / 'docs/lablog/figures/exp93_macro_f1.pdf')
     parser.add_argument('--class-figure', type=Path, default=ROOT / 'docs/lablog/figures/exp93_class_f1_n20.pdf')
+    parser.add_argument('--exp89-metrics', type=Path,
+                        default=ROOT / 'tabpfn/results/v7/exp89/20261027_144031_curation_benign_n2_3_5_10_20_five_seeds_e1167f0a/analysis/metrics.csv')
+    parser.add_argument('--comparison-figure', type=Path)
     args = parser.parse_args()
     summary = summarize(args.run.resolve(), records(args.run.resolve()))
-    for path in (args.evidence, args.macro_figure, args.class_figure):
+    outputs = [args.evidence, args.macro_figure, args.class_figure]
+    if args.comparison_figure:
+        outputs.append(args.comparison_figure)
+    for path in outputs:
         path.parent.mkdir(parents=True, exist_ok=True)
     dump(args.evidence, summary)
     draw_macro(summary, args.macro_figure)
     draw_class_n20(summary, args.class_figure)
+    if args.comparison_figure:
+        draw_exp89_comparison(summary, exp89_reference(args.exp89_metrics), args.comparison_figure)
     print(json.dumps(dict(evidence=str(args.evidence), macro_figure=str(args.macro_figure),
-                          class_figure=str(args.class_figure), jobs=120), ensure_ascii=False))
+                          class_figure=str(args.class_figure), comparison_figure=str(args.comparison_figure),
+                          jobs=120), ensure_ascii=False))
 
 
 if __name__ == '__main__':
