@@ -44,7 +44,7 @@ web    & 893 & 184 & 893 & 184\\
 \section{수정한 재실행 protocol}
 \textbf{수정 protocol은 label budget만 training에 적용하고 test에는 적용하지 않는다.} deterministic bidirectional 5-tuple group hash로 먼저 70/15/15 split을 만든다. train과 validation은 family당 최대 1,024개 reservoir를 보존하지만 test의 labeledㆍunresolved flow는 모두 보존한다. few-shot training은 이 retained train pool에서 n=2, 3, 5, 10, 20, 50개를 seed별로 선택하며, 두 baseline은 매 조건에서 완전히 같은 training flow를 받는다.
 
-\textbf{full holdout에서는 class support가 원시 test 분포를 따른다.} 정상 포함 평가의 최소 labeled test 행 수는 표의 raw test 합계인 269,970개다. macro-F1은 family별 F1의 동일 가중 평균으로 유지하되, 각 family F1은 그 family의 모든 held-out flow로 계산한다. 따라서 DDoS처럼 행이 많은 family의 내부 변이와 Web처럼 184행뿐인 family의 불확실성이 F1 및 confidence interval에 그대로 반영된다.
+\textbf{full holdout에서는 class support가 원시 test 분포를 따른다.} 정상 포함 평가의 최소 labeled test 행 수는 표의 raw test 합계인 269,970개다. macro-F1은 family별 F1의 동일 가중 평균으로 유지하되, 각 family F1은 그 family의 모든 held-out flow로 계산한다. GPU memory를 제한하기 위해 fitted classifier의 확률 계산만 8,192행 단위로 나누고, 예측을 원래 순서로 합쳐 같은 full test에서 F1을 계산한다. 따라서 DDoS처럼 행이 많은 family의 내부 변이와 Web처럼 184행뿐인 family의 불확실성이 F1 및 confidence interval에 그대로 반영된다.
 
 \textbf{재실행은 기존 PCAP 파일을 재다운로드하지 않고 corpus부터 다시 구성한다.} 이전 reservoir는 버린 flow의 packet locator와 bounded token을 보존하지 않았으므로, 기존 \texttt{flows.jsonl}만 확장할 수 없다. PCAP를 다시 순회해 full test corpus를 만들고, frozen netFound encode, PCA, audit, XGBoostㆍTabPFN 120개 job 순으로 실행한다. 새로운 encoder는 동일 flow IDㆍsplitㆍlabel을 가진 별도 view를 작성할 수 있으므로 이후 ET-BERT나 NetMamba view를 추가해 같은 full holdout에서 비교할 수 있다.
 

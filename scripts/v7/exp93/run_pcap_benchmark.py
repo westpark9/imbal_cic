@@ -480,6 +480,19 @@ def _timed(call):
     return result, time.perf_counter() - start
 
 
+def _predict_proba_batched(model: Any, X: Any, rows_per_batch: int) -> Any:
+    """Bound full-holdout inference memory without changing a fitted context."""
+    import numpy as np
+    if rows_per_batch < 1:
+        raise ValueError(f'rows_per_batch must be positive, received {rows_per_batch}')
+    if len(X) <= rows_per_batch:
+        return model.predict_proba(X)
+    parts = []
+    for start in range(0, len(X), rows_per_batch):
+        parts.append(model.predict_proba(X[start:start + rows_per_batch]))
+    return np.concatenate(parts, axis=0)
+
+
 def _f1(y: Any, pred: Any, classes: list[int], names: list[str]) -> dict[str, Any]:
     import numpy as np
     y, pred = np.asarray(y), np.asarray(pred)
@@ -599,7 +612,8 @@ def fewshot(config: dict[str, Any], encoder_dir: Path, out: Path, adapter: str) 
                     model, construct = _timed(lambda: _make_model(method, seed, classes, config['fewshot']))
                     _, fit = _timed(lambda: model.fit(x[chosen], y_train))
                     frozen_before = _weights_digest(model) if method == 'tabpfn' else None
-                    proba, infer = _timed(lambda: model.predict_proba(x[test_mask]))
+                    batch_rows = int(config['fewshot'].get('inference_batch_rows', int(test_mask.sum())))
+                    proba, infer = _timed(lambda: _predict_proba_batched(model, x[test_mask], batch_rows))
                     if proba.shape != (int(test_mask.sum()), len(classes)) or not np.isfinite(proba).all():
                         raise RuntimeError('Invalid probability matrix')
                     if frozen_before and frozen_before != _weights_digest(model):
@@ -610,7 +624,8 @@ def fewshot(config: dict[str, Any], encoder_dir: Path, out: Path, adapter: str) 
                                test_rows=int(test_mask.sum()), test_flow_ids_sha256=hashlib.sha256(ids[test_mask].tobytes()).hexdigest(),
                                metrics=_f1(y[test_mask], pred, classes, names), construct_seconds=construct,
                                fit_seconds=fit, inference_seconds=infer, frozen_weights_sha256=frozen_before,
-                               adapter=adapter, pca_dimensions=x.shape[1], finetuning=False)
+                               adapter=adapter, pca_dimensions=x.shape[1], inference_batch_rows=batch_rows,
+                               finetuning=False)
                     np.save(job / 'predictions.npy', pred)
                     write(done, row); all_results.append(row)
                     del model

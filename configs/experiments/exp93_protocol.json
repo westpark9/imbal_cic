@@ -38,6 +38,7 @@
     "seeds": [43, 44, 45, 46, 47],
     "methods": ["xgb", "tabpfn"],
     "regimes": ["with_benign", "attack_only"],
+    "inference_batch_rows": 8192,
     "tabpfn_checkpoint": "tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
     "paired_sampling": "For every class, seed and n, a deterministic maximum-n sample is drawn from only its training split and its first n rows are used by both methods. Test rows and PCA are held fixed across methods.",
     "interpretation": "with_benign is the primary IDS task. attack_only is a diagnostic that removes normal-vs-attack separation and must not replace the primary result."

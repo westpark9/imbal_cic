@@ -7,6 +7,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
+import numpy as np
+
 
 ROOT = Path(__file__).resolve().parents[3]
 MODULE_PATH = ROOT / 'scripts/v7/exp93/run_pcap_benchmark.py'
@@ -151,6 +153,14 @@ class Exp93RulesTest(unittest.TestCase):
                 self.assertEqual(sum(row['split'] == 'train' for row in rows), 1)
         finally:
             RUNNER.iter_flows = old
+
+    def test_batched_inference_preserves_row_order_and_values(self):
+        class Model:
+            def predict_proba(self, X):
+                return np.column_stack((X[:, 0], X[:, 0] + 1))
+        X = np.arange(10, dtype=np.float32).reshape(5, 2)
+        actual = RUNNER._predict_proba_batched(Model(), X, 2)
+        np.testing.assert_array_equal(actual, Model().predict_proba(X))
 
 
 if __name__ == '__main__':
