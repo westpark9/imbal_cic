@@ -1,0 +1,1719 @@
+{
+  "completed_jobs": 120,
+  "expected_jobs": 120,
+  "adapter": "netfound-v2-small",
+  "budgets": [
+    2,
+    3,
+    5,
+    10,
+    20,
+    50
+  ],
+  "seeds": [
+    43,
+    44,
+    45,
+    46,
+    47
+  ],
+  "regimes": [
+    "with_benign",
+    "attack_only"
+  ],
+  "comparison": "XGB and frozen TabPFN receive exactly the same selected rows and PCA vectors in every job",
+  "ceiling_audit": {
+    "schema": 1,
+    "aggregate": [
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 2,
+        "seeds": 5,
+        "macro_f1_mean": 0.5845868865041653,
+        "macro_f1_std": 0.06336179434206204,
+        "macro_f1_min": 0.5148625222880402,
+        "macro_f1_max": 0.6811741116256216
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 3,
+        "seeds": 5,
+        "macro_f1_mean": 0.7138070291967049,
+        "macro_f1_std": 0.06952811328304896,
+        "macro_f1_min": 0.6563927228326897,
+        "macro_f1_max": 0.8506687131398459
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 5,
+        "seeds": 5,
+        "macro_f1_mean": 0.75364163681396,
+        "macro_f1_std": 0.03777190286211888,
+        "macro_f1_min": 0.6962404389476363,
+        "macro_f1_max": 0.7999119828588556
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 10,
+        "seeds": 5,
+        "macro_f1_mean": 0.8092362213278774,
+        "macro_f1_std": 0.036513826118176884,
+        "macro_f1_min": 0.7696752977815527,
+        "macro_f1_max": 0.8770937272272842
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 20,
+        "seeds": 5,
+        "macro_f1_mean": 0.9027202393157371,
+        "macro_f1_std": 0.05318827704897865,
+        "macro_f1_min": 0.803965630907007,
+        "macro_f1_max": 0.9580181796607424
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 50,
+        "seeds": 5,
+        "macro_f1_mean": 0.9261626250268817,
+        "macro_f1_std": 0.018114034467167403,
+        "macro_f1_min": 0.8968357390582681,
+        "macro_f1_max": 0.9460873072770687
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 2,
+        "seeds": 5,
+        "macro_f1_mean": 0.36555491247777744,
+        "macro_f1_std": 0.07807061884884109,
+        "macro_f1_min": 0.2943016736841116,
+        "macro_f1_max": 0.5125976509227345
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 3,
+        "seeds": 5,
+        "macro_f1_mean": 0.5857695674576935,
+        "macro_f1_std": 0.034024896942250665,
+        "macro_f1_min": 0.5466028365719192,
+        "macro_f1_max": 0.6306056286948297
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 5,
+        "seeds": 5,
+        "macro_f1_mean": 0.6647754495922247,
+        "macro_f1_std": 0.061082527580441796,
+        "macro_f1_min": 0.6015326252228337,
+        "macro_f1_max": 0.7611868687672776
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 10,
+        "seeds": 5,
+        "macro_f1_mean": 0.7271179221219894,
+        "macro_f1_std": 0.07157998465855173,
+        "macro_f1_min": 0.6293906326205873,
+        "macro_f1_max": 0.8224637137359618
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 20,
+        "seeds": 5,
+        "macro_f1_mean": 0.8437799744107733,
+        "macro_f1_std": 0.09836511687955624,
+        "macro_f1_min": 0.7039218862003512,
+        "macro_f1_max": 0.9472912835022812
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 50,
+        "seeds": 5,
+        "macro_f1_mean": 0.9229336617858562,
+        "macro_f1_std": 0.024283468740271003,
+        "macro_f1_min": 0.884392212403172,
+        "macro_f1_max": 0.9487893609233983
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 2,
+        "seeds": 5,
+        "macro_f1_mean": 0.5587828445668582,
+        "macro_f1_std": 0.05251798585564627,
+        "macro_f1_min": 0.5085232052419739,
+        "macro_f1_max": 0.6509935716523724
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 3,
+        "seeds": 5,
+        "macro_f1_mean": 0.6527687030095869,
+        "macro_f1_std": 0.05169198806791506,
+        "macro_f1_min": 0.5502547850698041,
+        "macro_f1_max": 0.6877625560402425
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 5,
+        "seeds": 5,
+        "macro_f1_mean": 0.7225409687836699,
+        "macro_f1_std": 0.03770051747965601,
+        "macro_f1_min": 0.6905944648869483,
+        "macro_f1_max": 0.7907012587465942
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 10,
+        "seeds": 5,
+        "macro_f1_mean": 0.771125376754199,
+        "macro_f1_std": 0.023318839812837593,
+        "macro_f1_min": 0.7483318370285584,
+        "macro_f1_max": 0.8159218834102095
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 20,
+        "seeds": 5,
+        "macro_f1_mean": 0.7881188674740678,
+        "macro_f1_std": 0.015982774355570273,
+        "macro_f1_min": 0.7642647952318292,
+        "macro_f1_max": 0.8094677356380363
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 50,
+        "seeds": 5,
+        "macro_f1_mean": 0.8087220293560419,
+        "macro_f1_std": 0.011466174345916683,
+        "macro_f1_min": 0.786473758843571,
+        "macro_f1_max": 0.8177535206654517
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 2,
+        "seeds": 5,
+        "macro_f1_mean": 0.3866400820126869,
+        "macro_f1_std": 0.03235976164408539,
+        "macro_f1_min": 0.3576619796944576,
+        "macro_f1_max": 0.4390119217946841
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 3,
+        "seeds": 5,
+        "macro_f1_mean": 0.5496669617646968,
+        "macro_f1_std": 0.023070770943775642,
+        "macro_f1_min": 0.52112575036904,
+        "macro_f1_max": 0.5904361833313505
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 5,
+        "seeds": 5,
+        "macro_f1_mean": 0.6279669175392226,
+        "macro_f1_std": 0.036011554243539946,
+        "macro_f1_min": 0.5986404054511093,
+        "macro_f1_max": 0.6912667206395252
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 10,
+        "seeds": 5,
+        "macro_f1_mean": 0.6745374445136783,
+        "macro_f1_std": 0.027800088790243288,
+        "macro_f1_min": 0.6388585908736719,
+        "macro_f1_max": 0.7079599599631844
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 20,
+        "seeds": 5,
+        "macro_f1_mean": 0.7247281904001406,
+        "macro_f1_std": 0.03299932002542522,
+        "macro_f1_min": 0.6861617036642818,
+        "macro_f1_max": 0.7827663059746799
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 50,
+        "seeds": 5,
+        "macro_f1_mean": 0.7862862633970049,
+        "macro_f1_std": 0.02711875942553853,
+        "macro_f1_min": 0.7476982531340403,
+        "macro_f1_max": 0.8232271204038637
+      }
+    ],
+    "class_aggregate": [
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9226255873820088,
+        "f1_std": 0.07403233782544326
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.4019760483903996,
+        "f1_std": 0.10967905947365578
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.5447599845020676,
+        "f1_std": 0.09950560710846768
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.835036816792214,
+        "f1_std": 0.11912628466031923
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.774121967103006,
+        "f1_std": 0.17774232755929267
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.029000914855296232,
+        "f1_std": 0.017850350674628306
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9719267838179411,
+        "f1_std": 0.01820959397776183
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.5175960726015363,
+        "f1_std": 0.11033944736339103
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.7864754713740233,
+        "f1_std": 0.08702472837987452
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9181870488390371,
+        "f1_std": 0.030164742452666884
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.8867044778302455,
+        "f1_std": 0.07623181852934045
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.201952320717446,
+        "f1_std": 0.3032006722102846
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9768949993166617,
+        "f1_std": 0.004953237491913609
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.6399187850731713,
+        "f1_std": 0.15930337596455327
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.9156018518656726,
+        "f1_std": 0.04648600726878676
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9748381791693383,
+        "f1_std": 0.02478635371777654
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9642381878125381,
+        "f1_std": 0.014424038333897934
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.05035781764637802,
+        "f1_std": 0.00545419423541559
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9834162169735541,
+        "f1_std": 0.007749643289921555
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.7701396905804011,
+        "f1_std": 0.07029121428642478
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.9583237432123269,
+        "f1_std": 0.025675592279231534
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9970510907743806,
+        "f1_std": 0.0022300255488205863
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9779151910299231,
+        "f1_std": 0.0049559633243317375
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.1685713953966785,
+        "f1_std": 0.22930450033065633
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9953834761786506,
+        "f1_std": 0.00737379456144987
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.8562165298749143,
+        "f1_std": 0.06183636359562016
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.9666278428429438,
+        "f1_std": 0.01801234939242053
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.994369430009769,
+        "f1_std": 0.007712348068179286
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9838657499272842,
+        "f1_std": 0.0022642581625704253
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.6198584070608613,
+        "f1_std": 0.311749740523097
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9992921030573039,
+        "f1_std": 0.0003059525918982737
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.9087459767324525,
+        "f1_std": 0.02725683443250115
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.9912651752965072,
+        "f1_std": 0.00577929499101962
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9991183037249491,
+        "f1_std": 0.0008693646754239348
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9878591982342648,
+        "f1_std": 0.00161280609149092
+      },
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.6706949931158125,
+        "f1_std": 0.10782950865378035
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 2,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.8061288116322839,
+        "f1_std": 0.09427465985800851
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 2,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.12006727653089153,
+        "f1_std": 0.03183153786217547
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 2,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.24697452224285818,
+        "f1_std": 0.12866575555115237
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 2,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.5628368363928615,
+        "f1_std": 0.11096409471478938
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 2,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.38936972577119994,
+        "f1_std": 0.14926971770781933
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 2,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.0679523022965699,
+        "f1_std": 0.09975496294356774
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 3,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9121647990968735,
+        "f1_std": 0.01797827983129779
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 3,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.35315570765940596,
+        "f1_std": 0.22103361278202888
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 3,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.5510359047951818,
+        "f1_std": 0.19561419128143395
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 3,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.7847933882128768,
+        "f1_std": 0.09034389106044242
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 3,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.888952326973282,
+        "f1_std": 0.014943321999051412
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 3,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.024515278008540344,
+        "f1_std": 0.0061851904585215195
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 5,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9294850929472205,
+        "f1_std": 0.026450241705544754
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 5,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.5221660314006666,
+        "f1_std": 0.29122646451730405
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 5,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.6923752044809921,
+        "f1_std": 0.1795157910523562
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 5,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.8599814651887939,
+        "f1_std": 0.07473988161571965
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 5,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.883916079316698,
+        "f1_std": 0.07843048040520281
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 5,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.10072882421897669,
+        "f1_std": 0.14239561985661842
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 10,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.955495441055521,
+        "f1_std": 0.029136932223270642
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 10,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.504601417015452,
+        "f1_std": 0.2774644837455102
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 10,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.8259938567412698,
+        "f1_std": 0.06729710564511449
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 10,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9247133383617013,
+        "f1_std": 0.05609555119613883
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 10,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9398429003424502,
+        "f1_std": 0.027696458906920962
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 10,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.21206057921554197,
+        "f1_std": 0.3277886091381837
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 20,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9836645395596906,
+        "f1_std": 0.017072028444263594
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 20,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.6636454242058697,
+        "f1_std": 0.15256866752932702
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 20,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.9278105982891818,
+        "f1_std": 0.034908997093824376
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 20,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9854583498911641,
+        "f1_std": 0.0186496824473384
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 20,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9572511727703528,
+        "f1_std": 0.011644412024198244
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 20,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.5448497617483806,
+        "f1_std": 0.4018461797910139
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 50,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9972960726572827,
+        "f1_std": 0.0013120618024991713
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 50,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.838317665769172,
+        "f1_std": 0.04904368494886368
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 50,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.9789843502335802,
+        "f1_std": 0.01107668587295032
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 50,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9986732038880742,
+        "f1_std": 0.00040070689860320267
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 50,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9767067059030229,
+        "f1_std": 0.012338580264789765
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget": 50,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.7476239722640049,
+        "f1_std": 0.13670506667961402
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.7556846741500982,
+        "f1_std": 0.037832459872658694
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9330601475380401,
+        "f1_std": 0.04860630715833325
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.22822834446319318,
+        "f1_std": 0.06842095559800082
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.41567639159354874,
+        "f1_std": 0.1657436866679705
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.7626098723954142,
+        "f1_std": 0.08582932920281108
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.7869410873393423,
+        "f1_std": 0.13102064789443296
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 2,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.029279394488370976,
+        "f1_std": 0.006714473874852972
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.7712042931564836,
+        "f1_std": 0.020314530366707127
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9775309440231593,
+        "f1_std": 0.005415846352576982
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.2727781432247573,
+        "f1_std": 0.03690348072189149
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.6453448519459545,
+        "f1_std": 0.211396913898523
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.8940118528901946,
+        "f1_std": 0.0196351763703168
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.8712129740004142,
+        "f1_std": 0.10229874287072002
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 3,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.1372978618261443,
+        "f1_std": 0.1577995578242111
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.7784212492845379,
+        "f1_std": 0.015475529181316873
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9760964539567641,
+        "f1_std": 0.0034276068922334487
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.32299282163487064,
+        "f1_std": 0.05367991278669914
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.7873092887166566,
+        "f1_std": 0.0716752371623111
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.961479664278737,
+        "f1_std": 0.027678682550910612
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9488896742596913,
+        "f1_std": 0.022243239473428347
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 5,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.28259762935443067,
+        "f1_std": 0.2189921060302976
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.802740784010471,
+        "f1_std": 0.04912860133779274
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9802783705805025,
+        "f1_std": 0.009599599631214926
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.3578676946042216,
+        "f1_std": 0.04502201740635494
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.8568900786725484,
+        "f1_std": 0.05612718109848843
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.981162098752602,
+        "f1_std": 0.01469920160799127
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.955813691160083,
+        "f1_std": 0.011007199465557279
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 10,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.4631249194989646,
+        "f1_std": 0.2184600604862245
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.8151767285496605,
+        "f1_std": 0.04247580831393806
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9890973298115705,
+        "f1_std": 0.008349033890195173
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.3992998673358439,
+        "f1_std": 0.03655026055985417
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.8518739381965957,
+        "f1_std": 0.02638837281791554
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9953783931974691,
+        "f1_std": 0.0054653787469094856
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9447343936470075,
+        "f1_std": 0.02726593783734053
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 20,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.5212714215803274,
+        "f1_std": 0.062392911244386555
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.8670879737055,
+        "f1_std": 0.012990361879409239
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.997285091938773,
+        "f1_std": 0.003606109773216655
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.425227214979345,
+        "f1_std": 0.01463559727097498
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.8898011022818035,
+        "f1_std": 0.019401278583659188
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9982301810856461,
+        "f1_std": 0.0006783976352439844
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9657759762633639,
+        "f1_std": 0.007441818684247963
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget": 50,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.5176466652378617,
+        "f1_std": 0.05791537865549789
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 2,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.6008245015595142,
+        "f1_std": 0.1259061359617749
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 2,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.7560164018184233,
+        "f1_std": 0.09388298626600687
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 2,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.1013655836902239,
+        "f1_std": 0.04204897949818061
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 2,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.2220920704375673,
+        "f1_std": 0.0968538448278185
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 2,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.6273846411363126,
+        "f1_std": 0.08322223475419045
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 2,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.3510646372375962,
+        "f1_std": 0.13189021048748567
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 2,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.04773273820917096,
+        "f1_std": 0.03171380092545416
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 3,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.7122491153080637,
+        "f1_std": 0.0657402887471799
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 3,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.8821639206648761,
+        "f1_std": 0.041440829122351086
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 3,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.23439248574011934,
+        "f1_std": 0.11461414120366197
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 3,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.45587136142794027,
+        "f1_std": 0.16397841930108606
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 3,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.7361102745897211,
+        "f1_std": 0.12916740522610143
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 3,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.8080724722931535,
+        "f1_std": 0.1000570026426239
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 3,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.01880910232900227,
+        "f1_std": 0.008225828130635602
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 5,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.7775304393772134,
+        "f1_std": 0.02929828050143427
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 5,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9270316913339103,
+        "f1_std": 0.025470945583014857
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 5,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.25129166344693543,
+        "f1_std": 0.10740934139408913
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 5,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.614591937273819,
+        "f1_std": 0.11253233610008113
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 5,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9117879237077651,
+        "f1_std": 0.03263472528560656
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 5,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.8793219399407926,
+        "f1_std": 0.0716149847315474
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 5,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.03421282769412276,
+        "f1_std": 0.013303378382752836
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 10,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.800723515714638,
+        "f1_std": 0.03037023909840329
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 10,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.95499533738218,
+        "f1_std": 0.021851830257360684
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 10,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.27715936732927915,
+        "f1_std": 0.06912947973281702
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 10,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.7548510699129929,
+        "f1_std": 0.08902711596022411
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 10,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9336819059431536,
+        "f1_std": 0.039114920289900906
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 10,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9016921152267466,
+        "f1_std": 0.05811993203210512
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 10,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.09865880008675779,
+        "f1_std": 0.09854047839655002
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 20,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.8180770725483644,
+        "f1_std": 0.007783036112496872
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 20,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9780099052070861,
+        "f1_std": 0.02204810533280549
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 20,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.3391784087593379,
+        "f1_std": 0.06007467938056251
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 20,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.836512426423667,
+        "f1_std": 0.03176993758409006
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 20,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9828781667493656,
+        "f1_std": 0.01436388772120452
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 20,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9531718405740623,
+        "f1_std": 0.013687214526952025
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 20,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.16526951253910055,
+        "f1_std": 0.18637618029165826
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 50,
+        "name": "benign",
+        "seeds": 5,
+        "f1_mean": 0.8591025291772325,
+        "f1_std": 0.01950787488369715
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 50,
+        "name": "ddos",
+        "seeds": 5,
+        "f1_mean": 0.9959239677051992,
+        "f1_std": 0.0030664941944970932
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 50,
+        "name": "bot",
+        "seeds": 5,
+        "f1_mean": 0.4000147991548494,
+        "f1_std": 0.029547134347926954
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 50,
+        "name": "dos",
+        "seeds": 5,
+        "f1_mean": 0.8941790127623008,
+        "f1_std": 0.020370265768383373
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 50,
+        "name": "bf",
+        "seeds": 5,
+        "f1_mean": 0.9906925884771921,
+        "f1_std": 0.008016457483329374
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 50,
+        "name": "inf",
+        "seeds": 5,
+        "f1_mean": 0.9651975931925125,
+        "f1_std": 0.011558733073128285
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget": 50,
+        "name": "web",
+        "seeds": 5,
+        "f1_mean": 0.3988933533097476,
+        "f1_std": 0.18712217299316822
+      }
+    ],
+    "saturation_candidates": [
+      {
+        "regime": "attack_only",
+        "method": "tabpfn",
+        "budget_a": 20,
+        "budget_b": 50,
+        "macro_f1_a": 0.9027202393157371,
+        "macro_f1_b": 0.9261626250268817,
+        "delta": 0.023442385711144653,
+        "high_and_flat_candidate": false
+      },
+      {
+        "regime": "attack_only",
+        "method": "xgb",
+        "budget_a": 20,
+        "budget_b": 50,
+        "macro_f1_a": 0.8437799744107733,
+        "macro_f1_b": 0.9229336617858562,
+        "delta": 0.07915368737508288,
+        "high_and_flat_candidate": false
+      },
+      {
+        "regime": "with_benign",
+        "method": "tabpfn",
+        "budget_a": 20,
+        "budget_b": 50,
+        "macro_f1_a": 0.7881188674740678,
+        "macro_f1_b": 0.8087220293560419,
+        "delta": 0.020603161881974086,
+        "high_and_flat_candidate": false
+      },
+      {
+        "regime": "with_benign",
+        "method": "xgb",
+        "budget_a": 20,
+        "budget_b": 50,
+        "macro_f1_a": 0.7247281904001406,
+        "macro_f1_b": 0.7862862633970049,
+        "delta": 0.06155807299686433,
+        "high_and_flat_candidate": false
+      }
+    ],
+    "interpretation": "A high-and-flat flag is a descriptive trigger for data/label review, not proof that a dataset has an intrinsic ceiling. Compare it with class support, cross-label identical-input audit, normal-included versus attack-only results, and a new encoder view."
+  }
+}

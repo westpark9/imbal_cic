@@ -435,6 +435,7 @@ EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨
 | exp93 | 2026-10-29 | failed | unreviewed | `tabpfn/results/v7/exp93/20261029_155732_cic2018_pcap_expanded_8d10b28a` |
 | exp93 | 2026-10-29 | failed | unreviewed | `tabpfn/results/v7/exp93/20261029_162556_cic2018_pcap_expanded_6f909ba0` |
 | exp93 | 2026-10-29 | finished | unreviewed | `tabpfn/results/v7/exp93/20261029_192036_cic2018_pcap_expanded_59b3028b` |
+| exp93 | 2026-11-02 | finished | unreviewed | `tabpfn/results/v7/exp93/20261102_003121_cic2018_pcap_expanded_d1f3d5cf` |
 
 ## Unassigned legacy paths
 

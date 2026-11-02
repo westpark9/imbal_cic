@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "max_fewshot_budget": 50,
+  "retained_corpus_rows": 283367,
+  "coverage": {
+    "benign": {
+      "train": 1024,
+      "validation": 1024,
+      "test": 47103
+    },
+    "ddos": {
+      "train": 1024,
+      "validation": 1024,
+      "test": 167096
+    },
+    "bot": {
+      "train": 1024,
+      "validation": 1024,
+      "test": 2712
+    },
+    "dos": {
+      "train": 1024,
+      "validation": 1024,
+      "test": 10304
+    },
+    "bf": {
+      "train": 1024,
+      "validation": 1024,
+      "test": 14379
+    },
+    "inf": {
+      "train": 1024,
+      "validation": 1024,
+      "test": 28192
+    },
+    "web": {
+      "train": 893,
+      "validation": 185,
+      "test": 184
+    }
+  },
+  "failures": [],
+  "holdout_policy": "All deterministic test-split flows are retained and evaluated. The training and validation pools use bounded reservoirs only to limit frozen-encoder work outside the held-out evaluation population.",
+  "interpretation": "Counts are after the deterministic group split and configured per-split retention. A null test cap retains the complete holdout population; these counts are checked before frozen-encoder inference and classifier fitting."
+}
