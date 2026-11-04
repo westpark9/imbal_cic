@@ -25,7 +25,7 @@ SOURCE_DATA = json.loads((ROOT / 'docs/lablog/evidence/20261029_pcap/sources.jso
 r.QA = QA
 r.ASSETS = HERE / '_support/assets/20261104_exp94'
 r.OUT = OUT
-r.N_SLIDES = 8
+r.N_SLIDES = 12
 r.SCENES = []
 r.SOURCES = {key: (value['title'], f"{value['venue']}, {value['year']}", value['url'], value['evidence']) for key, value in SOURCE_DATA.items()}
 txt, box, arrow, block, page = r.txt, r.box, r.arrow, r.block, r.page
@@ -142,6 +142,23 @@ def make_fewshot_asset(pcap: dict) -> dict:
 
 
 # ----------------------------------------------------------------------------- scenes
+def table(x, y, widths, header, rows, *, size=13.5, row_h=.40, header_fill=NAVY, align=None, bold_last=False):
+    """Simple grid: header row + body rows; numeric columns right-aligned."""
+    items = []
+    def row(values, yy, fill, bold=False, color=INK):
+        xx = x
+        for j, (w, v) in enumerate(zip(widths, values)):
+            items.append(box(xx, yy, w, row_h, fill, 'D3DFE9'))
+            al = (align[j] if align else ('left' if j == 0 else 'right'))
+            items.append(txt(xx + .08, yy + (row_h - size * 1.18 / 72) / 2, w - .16, v, size, bold, color, al))
+            xx += w
+    row(header, y, header_fill, True, 'FFFFFF')
+    for i, values in enumerate(rows):
+        last = bold_last and i == len(rows) - 1
+        row(values, y + row_h * (i + 1) + (.06 if last else 0), ('E6F1F8' if last else (PALE if i % 2 == 0 else 'FFFFFF')), last, NAVY if last else INK)
+    return items
+
+
 def scenes() -> None:
     pcap, csvs, audit = load()
     layer = make_layer_asset(pcap, audit)
@@ -150,7 +167,7 @@ def scenes() -> None:
     total = sum(status.values())
     bg, conf, unres = status['background_benign'], status['confirmed_attack'], status['unresolved_attempted']
 
-    # 1. What happened since 10/29: plan -> EXP93 limits -> EXP94.
+    # 1. What happened since 10/29.
     a = [txt(.65, 1.08, 12.0, '10/29 계획은 CIC2018 PCAP 재표현이었으나 host 1대 추출의 한계로 CIC2017 전체 망으로 전환', 17, False, GREY)]
     a += card(.65, 1.70, 3.45, 3.05, '10/29 계획', 'PCAP에서 인코더로 벡터 생성\n\n충돌·조기 포화를\n같은 조건에서 재점검', accent=BLUE, body_size=17)
     a += [arrow(4.27, 3.05, .40)]
@@ -158,19 +175,41 @@ def scenes() -> None:
     a += [arrow(8.93, 3.05, .40)]
     a += card(9.50, 1.70, 3.18, 3.05, 'EXP94  CIC2017 전체 망', '5일 전체 망 캡처 51 GB\n\n✓ 정상 모집단이 CSV와 동일\n✓ CSV와 같은 망에서 비교\n✓ 라벨을 세 상태로 재부여', accent=TEAL, body_size=16, align='left')
     steps = [('10/29', '연구 방향 발표'), ('11/02', 'EXP93 host 1대'), ('11/03', 'CSV 기준 실험'), ('11/04', 'PCAP 실행·비교')]
-    for i, (d, s) in enumerate(steps):
+    for i, (d, s_) in enumerate(steps):
         x = .65 + i * 3.05
         a += chip(x, 5.30, 1.05, d, NAVY, 'FFFFFF', 15, .42)
-        a.append(txt(x + 1.15, 5.36, 1.85, s, 15, False, INK))
+        a.append(txt(x + 1.15, 5.36, 1.85, s_, 15, False, INK))
         if i < 3:
             a.append(arrow(x + 2.72, 5.40, .24, .22))
     a.append(txt(.65, 6.10, 12.0, 'CIC2018은 host별 캡처 약 440개/일, 10일 450 GB  ·  CIC2017은 스위치 캡처 하루 1개 파일, 5일 51 GB', 15, False, GREY))
     page('지난 발표 이후의 진행', a,
          'host 1대 추출은 비교 조건을 깨뜨려 전체 망 캡처인 CIC2017로 전환', '06 진행 경과',
-         '10/29 발표의 계획은 CIC2018 PCAP에서 인코더로 새 벡터를 만들어 두 문제를 재점검하는 것이었다. CIC2018은 host별 캡처라 날짜당 피해 host 1대만 받아 실행했는데(EXP93), 그 결과 정상 트래픽이 그 host 것으로 바뀌어 CSV와 모집단이 달라졌고, 일부 공격이 빠졌으며, Bot은 피해 host가 아닌 파일을 골라 라벨이 틀렸다. 전체 450 GB 대신 스위치에서 전체 망을 캡처한 CIC2017(5개 파일, 51 GB)로 전환해 EXP94를 수행했다.', ['cic18', 'cic17'])
+         '10/29 발표의 계획은 CIC2018 PCAP에서 인코더로 새 벡터를 만들어 두 문제를 재점검하는 것이었다. CIC2018은 host별 캡처라 날짜당 피해 host 1대만 받아 실행했는데(EXP93), 정상 트래픽이 그 host 것으로 바뀌어 CSV와 모집단이 달라졌고, 일부 공격이 빠졌으며, Bot은 피해 host가 아닌 파일을 골라 라벨이 틀렸다. 전체 450 GB 대신 스위치에서 전체 망을 캡처한 CIC2017(5개 파일, 51 GB)로 전환해 EXP94를 수행했다.', ['cic18', 'cic17'])
 
-    # 2. Pipeline in six numbered steps.
-    a = [txt(.65, 1.08, 12.0, '같은 flow·라벨·분할 위에 두 가지 벡터 표현을 얹어, 표현만 바꿨을 때의 차이를 본다', 17, False, GREY)]
+    # 2. Why two views: isolate "fixed flow/label" from "new representation".
+    a = [txt(.65, 1.08, 12.0, '가설  CSV의 고정 통계가 정보를 버려 두 문제가 생긴다면, PCAP에서 패킷열로 표현을 만들면 나아진다', 17, False, GREY)]
+    cols = [
+        (.65, 'CSV (공식 배포본)', GREY, 'flow 정의  CICFlowMeter 원본\n(첫 FIN 종료, RST 무시)\n\n라벨  시간창 + 끝점\n\n표현  통계 78개'),
+        (4.85, 'view 1  통계 45개', GREEN, 'flow 정의  고침\n(RST·양쪽 FIN·새 SYN·120초)\n\n라벨  세 상태 (증거 조건)\n\n표현  통계 (CSV와 같은 종류)'),
+        (9.05, 'view 2  netFound', RED, 'flow 정의  view 1과 동일\n\n\n라벨  view 1과 동일\n\n표현  패킷 헤더열에서 학습한 벡터'),
+    ]
+    for x, t, c, b in cols:
+        a += card(x, 1.68, 3.63, 2.95, t, b, accent=c, body_size=15, align='left')
+    a += [arrow(4.38, 3.05, .38), arrow(8.58, 3.05, .38)]
+    a += [
+        box(.65, 4.95, 5.85, 1.35, 'F6F9FC', 'D3DFE9'),
+        txt(.85, 5.10, 5.5, 'CSV ↔ view 1', 17, True, GREEN),
+        txt(.85, 5.50, 5.5, 'flow 정의와 라벨을 고친 효과만 남음\n표현은 같은 종류이므로 대조군', 14.5, False, INK),
+        box(6.83, 4.95, 5.85, 1.35, 'F6F9FC', 'D3DFE9'),
+        txt(7.03, 5.10, 5.5, 'view 1 ↔ view 2', 17, True, RED),
+        txt(7.03, 5.50, 5.5, '표현을 바꾼 효과만 남음\n가설이 참이면 여기서 충돌이 줄고 tail이 올라야 함', 14.5, False, INK),
+    ]
+    page('두 view를 두는 이유', a,
+         'view 1은 flow·라벨 수정의 대조군, view 2가 가설 검증 대상', '07 접근',
+         'PCAP으로 가면 두 가지가 동시에 바뀐다. flow 정의와 라벨이 고쳐지고, 표현이 바뀐다. 둘의 효과를 가르기 위해 같은 flow·라벨 위에 통계 view(CSV와 같은 종류의 표현)와 netFound view(패킷 헤더열에서 학습한 표현)를 둔다. CSV와 view 1의 차이는 flow·라벨 수정의 효과, view 1과 view 2의 차이는 표현의 효과다.', [])
+
+    # 3. Pipeline with the encoder as an explicit step.
+    a = [txt(.65, 1.08, 12.0, '①~④는 두 view가 공유하고, ⑤에서 갈라진 뒤 ⑥에서 같은 평가를 받는다', 16, False, GREY)]
     blocks = [
         (.65, '① PCAP 5개', '56.4M 패킷\n시각 + 패킷 바이트'),
         (3.30, '② flow로 묶기', '같은 두 끝점의 패킷\nRST·FIN·SYN·120초 종료'),
@@ -178,20 +217,49 @@ def scenes() -> None:
         (8.60, '④ 시간순 나누기', '앞 70% 학습, 뒤 15% 평가\n날짜·family마다'),
     ]
     for x, title, body in blocks:
-        a += block(x, 1.70, 2.45, 1.42, title, body, body_size=14)
-    for x in [3.12, 5.77, 8.42, 11.07]:
-        a.append(arrow(x, 2.30, .20))
-    a += block(11.28, 1.70, 1.40, 1.42, '⑥ 평가', '충돌 점검\nfew-shot', body_size=14)
-    a += card(.65, 3.65, 5.85, 2.15, '⑤ view 1  통계 45개', 'CSV와 같은 종류의 요약을 깨끗한 flow 위에서 다시 계산\n지속 시간, 패킷 수·바이트, 길이·간격 통계, flag, window, 포트\n→ 45차원 그대로 분류기 입력', accent=GREEN, body_size=15)
-    a += card(6.83, 3.65, 5.85, 2.15, '⑤ view 2  netFound', '패킷 헤더를 토큰으로 바꿔 사전학습 transformer에 입력\nflow당 512차원 벡터 → 학습 데이터로 맞춘 PCA 64차원\n→ IP·포트·시각은 넣지 않음', accent=RED, body_size=15)
-    a.append(txt(.65, 6.15, 12.0, f'결과  flow {total:,}개  ·  학습 XGBoost와 TabPFN, class당 라벨 2~50개, 전체 평가 집합 340,543 flow', 15, False, GREY))
+        a += block(x, 1.60, 2.45, 1.30, title, body, body_size=13.5)
+    for x in [3.12, 5.77, 8.42]:
+        a.append(arrow(x, 2.15, .20))
+    a.append(arrow(9.72, 2.98, .24, .22, down=True))
+    a += block(.65, 3.40, 2.30, 1.12, '⑤a 통계 계산', '모든 패킷에서 45개', color=GREEN, body_size=13.5)
+    a.append(arrow(3.02, 3.86, .20))
+    a += block(3.30, 3.40, 2.00, 1.12, 'view 1', '45차원 벡터', color=GREEN, body_size=13.5)
+    a += block(.65, 4.95, 2.30, 1.12, '⑤b 토큰화', '헤더 필드 → 정수\nburst 12 × 패킷 6', color=RED, body_size=13.5)
+    a.append(arrow(3.02, 5.41, .20))
+    a += block(3.30, 4.95, 2.90, 1.12, 'netFound 인코더 (고정)', '토큰열 → 512차원', color=RED, body_size=13.5)
+    a.append(arrow(6.27, 5.41, .20))
+    a += block(6.55, 4.95, 1.65, 1.12, 'PCA 64', '학습 데이터로 맞춤', color=RED, body_size=13.5)
+    a.append(arrow(8.27, 5.41, .20))
+    a += block(8.55, 4.95, 1.55, 1.12, 'view 2', '64차원 벡터', color=RED, body_size=13.5)
+    a += block(10.45, 3.40, 2.23, 2.67, '⑥ 평가', '충돌 점검 (3층)\noracle 상한\n\nfew-shot\nXGB · TabPFN\nn = 2 ~ 50', body_size=14)
+    a.append(arrow(5.37, 3.86, .20))
+    a.append(txt(5.65, 3.72, 4.6, '두 view가 같은 flow·라벨·분할·표본을 받음', 13.5, False, GREY))
+    a.append(arrow(10.17, 5.41, .22))
+    a.append(arrow(10.12, 3.86, .24))
     page('PCAP에서 벡터까지 여섯 단계', a,
-         '표현(⑤)만 다르고 나머지 단계는 두 view가 공유', '07 파이프라인',
-         'PCAP은 시각과 패킷 바이트의 나열이다. 같은 두 끝점 사이의 패킷을 flow로 묶고(RST, 양쪽 FIN, 새 SYN, 120초로 종료), 교정 규칙으로 라벨을 세 상태로 붙인 뒤 날짜와 family마다 시간순으로 70/15/15로 나눈다. 그 위에 두 view를 얹는다. view 1은 CSV와 같은 종류의 통계 45개, view 2는 패킷 헤더 토큰을 고정된 netFound에 넣어 얻은 512차원을 PCA 64차원으로 줄인 것이다. 두 view는 같은 flow·라벨·분할·few-shot 표본을 받는다.', ['netfound'])
+         '공유 단계 ①~④ 위에서 ⑤a 통계와 ⑤b 토큰화·인코더만 다름', '08 파이프라인',
+         'PCAP은 시각과 패킷 바이트의 나열이다. 같은 두 끝점 사이의 패킷을 flow로 묶고, 교정 규칙으로 라벨을 세 상태로 붙인 뒤 날짜와 family마다 시간순으로 나눈다. 그 위에서 두 경로로 갈라진다. ⑤a는 모든 패킷에서 통계 45개를 계산하고, ⑤b는 패킷 헤더를 정수 토큰으로 바꿔 고정된 netFound 인코더에 넣어 512차원을 얻은 뒤 PCA로 64차원으로 줄인다. 두 view는 같은 flow·라벨·분할·few-shot 표본으로 ⑥에서 평가된다.', ['netfound'])
 
-    # 3. One flow followed to the end.
-    a = [txt(.65, 1.08, 12.0, '월요일 11:57 UTC, 사내 PC → 외부 웹서버(:80) 접속 1건  ·  패킷 10개, payload 97/179 B, 60.6 ms, 양쪽 FIN으로 종료', 16, False, GREY)]
-    a += [txt(.65, 1.62, 3.9, '첫 패킷(SYN)의 토큰', 18, True, NAVY)]
+    # 4. Step 1 -> 2 in detail: ten packets become one flow.
+    a = [txt(.65, 1.08, 12.0, '월요일 11:57:01 UTC  사내 PC 192.168.10.9:1057 ↔ 외부 웹서버 69.31.33.224:80  ·  이 두 끝점의 패킷만 모으면 아래 10개', 15.5, False, GREY)]
+    pk = [
+        ('1', '0', '→', 'SYN', '52', '0'), ('2', '19,958', '←', 'SYN+ACK', '52', '0'), ('3', '20,008', '→', 'ACK', '40', '0'),
+        ('4', '20,083', '→', 'ACK+PSH', '137', '97'), ('5', '40,027', '←', 'ACK', '40', '0'), ('6', '40,640', '←', 'ACK+PSH', '219', '179'),
+        ('7', '40,643', '←', 'ACK+FIN', '40', '0'), ('8', '40,685', '→', 'ACK', '40', '0'), ('9', '40,689', '→', 'ACK+FIN', '40', '0'), ('10', '60,574', '←', 'ACK', '40', '0'),
+    ]
+    a += table(.65, 1.60, [.45, 1.15, .65, 1.35, .85, 1.0], ['#', '시각 (µs)', '방향', 'TCP flag', '길이', 'payload'], pk, size=12.5, row_h=.36, align=['right', 'right', 'center', 'left', 'right', 'right'])
+    a.append(txt(.65, 5.65, 5.5, '→ PC가 보냄   ← 서버가 보냄   payload = 헤더 뒤의 실제 데이터(바이트)', 12.5, False, GREY))
+    a.append(txt(.65, 5.95, 5.5, '4번이 요청(97 B), 6번이 응답(179 B), 7·9번 FIN으로 양쪽 종료', 13.5, True, NAVY))
+    a += card(6.45, 1.60, 6.23, 1.55, '같은 flow로 묶는 조건', '프로토콜 + 두 (IP : 포트) 쌍이 같은 패킷\n어느 쪽이 보냈든 한 flow, 먼저 보낸 쪽이 →', accent=NAVY, body_size=14.5)
+    a += card(6.45, 3.30, 6.23, 1.75, 'flow가 끝나는 때', 'RST  ·  양쪽 FIN 뒤 ACK  ·  같은 끝점의 새 SYN\n120초 무통신  ·  시작 후 120초\n이 flow는 10번 패킷에서 종료 (60.6 ms)', accent=NAVY, body_size=14.5)
+    a += card(6.45, 5.20, 6.23, 1.45, '같은 규칙이 만드는 특수한 flow', '연결이 끝난 뒤 혼자 오는 RST 1개도 flow 하나\n→ 문제1에서 다시 등장 (패킷 1개짜리 RST flow)', accent=RED, body_size=14.5)
+    page('① 패킷 10개가 ② flow 하나가 되기까지', a,
+         f'패킷 56.4M개가 같은 규칙으로 flow {total:,}개가 되고, 그중 하나가 이 10개', '08 파이프라인',
+         '월요일의 짧은 HTTP 접속 한 건이다. 같은 프로토콜과 두 (IP, 포트) 쌍을 가진 패킷을 시각순으로 모으면 10개이고, 4번이 요청, 6번이 응답, 7번과 9번의 FIN으로 양쪽이 종료를 알린 뒤 10번 ACK에서 flow가 닫힌다. RST, 양쪽 FIN, 새 SYN, 120초 무통신, 시작 후 120초가 종료 조건이다. 연결이 끝난 뒤 혼자 오는 RST도 같은 규칙으로 flow 하나가 되는데, 이것이 문제1의 충돌을 만드는 flow다.', [])
+
+    # 5. One flow into two views.
+    a = [txt(.65, 1.08, 12.0, '앞 장의 flow(패킷 10개, payload 97/179 B, 60.6 ms)를 두 view의 입력으로 바꾸면', 16, False, GREY)]
+    a += [txt(.65, 1.62, 3.9, '⑤b  첫 패킷(SYN)의 토큰', 18, True, NAVY)]
     fields = [('IP 헤더 길이', '20'), ('TOS', '0'), ('IP 전체 길이', '52'), ('IP flag (DF)', '2'), ('TTL (Windows)', '128'), ('TCP flag (SYN)', '2'), ('window', '8192'), ('상대 seq·ack', '0 0 0 0'), ('urgent', '0')]
     for i, (k, v) in enumerate(fields):
         y = 2.05 + i * .40
@@ -199,8 +267,8 @@ def scenes() -> None:
         a.append(txt(.75, y + .07, 2.4, k, 13.5, False, INK))
         a.append(box(3.20, y, 1.15, .36, PALE if i % 2 == 0 else 'FFFFFF', 'D3DFE9'))
         a.append(txt(3.25, y + .07, 1.05, v, 13.5, True, NAVY, 'right'))
-    a.append(txt(.65, 5.72, 3.9, 'IP·포트·시각은 토큰에 없음', 14, False, GREY))
-    a += [txt(4.95, 1.62, 3.6, 'view 1  통계 45개 중 일부', 18, True, NAVY)]
+    a.append(txt(.65, 5.72, 3.9, '포트·IP·시각 없음  ·  패킷 10개 모두 같은 방식', 13, False, GREY))
+    a += [txt(4.95, 1.62, 3.6, '⑤a  통계 45개 중 일부', 18, True, NAVY)]
     stats = [('지속 시간', '60,574 µs'), ('보낸·받은 패킷', '5 · 5'), ('보낸 길이 평균·최대', '61.8 · 137'), ('받은 길이 평균·최대', '78.2 · 219'), ('패킷 간격 평균', '6,730 µs'), ('SYN·FIN·PSH 수', '2 · 2 · 2'), ('초기 window', '8192 · 29200'), ('초당 패킷', '165'), ('목적 포트', '80')]
     for i, (k, v) in enumerate(stats):
         y = 2.05 + i * .40
@@ -208,52 +276,86 @@ def scenes() -> None:
         a.append(txt(5.05, y + .07, 2.1, k, 13.5, False, INK))
         a.append(box(7.20, y, 1.45, .36, PALE if i % 2 == 0 else 'FFFFFF', 'D3DFE9'))
         a.append(txt(7.25, y + .07, 1.35, v, 13.5, True, GREEN, 'right'))
-    a += [txt(9.25, 1.62, 3.5, 'view 2  burst와 netFound', 18, True, NAVY)]
-    bursts = [('f 1', BLUE), ('b 1', TEAL), ('f 2', BLUE), ('b 3', TEAL), ('f 2', BLUE), ('b 1', TEAL)]
-    for i, (s, c) in enumerate(bursts):
-        a += chip(9.25 + i * .58, 2.08, .52, s, c, 'FFFFFF', 12, .40)
-    a.append(txt(9.25, 2.58, 3.5, '6 burst (방향 · 패킷 수)\n간격 0·0·20·20·21·21 ms\n같은 방향 10 ms 안의 패킷이 한 burst', 13.5, False, INK))
+    a.append(txt(4.95, 5.72, 3.7, '사람이 정한 요약, 포트 포함', 13, False, GREY))
+    a += [txt(9.25, 1.62, 3.5, '⑤b  burst → netFound', 18, True, NAVY)]
+    bursts = [('→ 1', BLUE), ('← 1', TEAL), ('→ 2', BLUE), ('← 3', TEAL), ('→ 2', BLUE), ('← 1', TEAL)]
+    for i, (s_, c) in enumerate(bursts):
+        a += chip(9.25 + i * .58, 2.08, .52, s_, c, 'FFFFFF', 12, .40)
+    a.append(txt(9.25, 2.58, 3.5, '6 burst (방향 · 패킷 수)\n같은 방향 10 ms 안의 패킷이 한 burst\n간격 0·0·20·20·21·21 ms', 13.5, False, INK))
     a += block(9.25, 3.45, 3.43, 1.05, 'netFound (고정)', '토큰열 → 512차원 벡터', body_size=14.5)
     a.append(arrow(10.85, 4.58, .24, .22, down=True))
     a += block(9.25, 4.92, 3.43, 1.05, 'PCA 64', '학습 데이터로만 맞춤 · 분산 98.1%', body_size=14.5)
-    a.append(txt(9.25, 6.12, 3.5, '사전학습: 라벨 없는 트래픽의\n가려진 헤더 토큰 맞히기', 13.5, False, GREY))
-    page('flow 하나를 두 view로 바꾸면', a,
-         'view 1은 사람이 정한 요약(포트 포함), view 2는 헤더 토큰에서 배운 벡터(포트·IP·시각 없음)', '07 파이프라인',
-         '월요일의 짧은 HTTP 접속 한 건을 끝까지 따라간다. 패킷 하나는 IP와 TCP 헤더 필드 값을 정수 토큰으로 옮긴 것이며 IP·포트·시각은 넣지 않는다. view 1은 이 flow의 모든 패킷에서 통계 45개를 계산한다(목적 포트 포함). view 2는 같은 방향 10 ms 안의 패킷을 burst로 묶고 처음 12 burst, burst당 6 패킷의 토큰을 고정된 netFound에 넣어 512차원 벡터를 얻은 뒤 PCA 64차원으로 줄인다.', ['netfound'])
+    a.append(txt(9.25, 6.12, 3.5, '사전학습  라벨 없는 트래픽의\n가려진 헤더 토큰 맞히기', 13, False, GREY))
+    page('② flow 하나를 ⑤ 두 view로', a,
+         'view 1은 사람이 정한 요약(포트 포함), view 2는 헤더 토큰에서 배운 벡터(포트·IP·시각 없음)', '08 파이프라인',
+         '앞 장의 flow를 두 view로 바꾼다. 토큰은 패킷마다 IP와 TCP 헤더 필드 값을 정수로 옮긴 것이고 IP·포트·시각은 넣지 않는다. 통계 45개는 모든 패킷에서 계산하며 목적 포트를 포함한다. netFound는 같은 방향 10 ms 안의 패킷을 burst로 묶어 처음 12 burst, burst당 6 패킷의 토큰을 받아 512차원 벡터를 내고, 학습 데이터로 맞춘 PCA로 64차원으로 줄인다.', ['netfound'])
 
-    # 4. Labels: three states and what unresolved contains.
-    a = [txt(.65, 1.08, 12.0, '교정 규칙 53개(CNS 2022)를 그대로 적용  ·  시간창과 끝점만 맞고 공격 행위가 없는 flow는 보류', 16, False, GREY)]
-    qs = [('공격자 IP ↔ 피해자 IP?', '아니오 → 정상(background)'), ('공격 시간창 안?', '창 밖 → 정상(background)'), ('공격 행위의 증거?  payload·RST·포트', '없음 → 보류(unresolved)')]
+    # 6. Labels: decision and what "evidence" means.
+    a = [txt(.65, 1.08, 12.0, '교정 규칙 53개(CNS 2022)를 그대로 적용  ·  증거 조건은 공격마다 다르고 저자가 패킷을 보고 정한 것', 16, False, GREY)]
+    qs = [('공격자 IP ↔ 피해자 IP?', '아니오 → 정상'), ('공격 시간창 안?', '창 밖 → 정상'), ('공격 행위의 증거?', '없음 → 보류')]
     for i, (q, no) in enumerate(qs):
-        y = 1.72 + i * 1.08
-        a += chip(.65, y, 4.35, q, NAVY, 'FFFFFF', 14.5, .50)
-        a.append(txt(.75, y + .58, 3.6, no, 13.5, False, GREY))
+        y = 1.65 + i * .98
+        a += chip(.65, y, 3.35, q, NAVY, 'FFFFFF', 14, .48)
+        a.append(txt(.75, y + .55, 2.6, no, 13, False, GREY))
         if i < 2:
-            a.append(arrow(4.55, y + .55, .22, .22, down=True))
-    a += chip(.65, 4.96, 4.35, '모두 예 → 공격(confirmed)', RED, 'FFFFFF', 14.5, .50)
-    a.append(txt(5.65, 1.62, 7.0, f'flow {total:,}개의 라벨 상태', 18, True, NAVY))
-    bw = 7.0
-    parts = [(bg, GREEN, '정상'), (conf, RED, '공격'), (unres, AMBER, '보류')]
-    x = 5.65
-    for n, c, name in parts:
-        w = bw * n / total
-        a.append(box(x, 2.05, w, .62, c))
-        if w > .9:
-            a.append(txt(x + .05, 2.21, w - .1, f'{name} {100 * n / total:.1f}%', 14, True, 'FFFFFF', 'center'))
-        x += w
-    a.append(txt(5.65, 2.78, 7.0, f'정상 {bg:,}  ·  공격 {conf:,}  ·  보류 {unres:,} (6.4%)', 14, False, INK))
-    a.append(txt(5.65, 3.35, 7.0, '보류 flow의 내역', 18, True, NAVY))
-    items = [('DoS Hulk  payload 없는 연결', 137908), ('Bot  master 종료 뒤 재접속', 4067), ('FTP brute force  payload 없음', 4039), ('Slowloris·Slowhttptest  무응답', 4439), ('Web 공격  payload 없음', 1869), ('DDoS LOIC  payload 없음', 1203)]
-    for i, (name, n) in enumerate(items):
-        a += hbar(5.65, 3.80 + i * .44, 3.45, 2.35, name, n, 137908, AMBER, f'{n:,}', h=.30, size=13.5)
-    a.append(txt(5.65, 6.48, 7.0, '보류는 공격에도 정상에도 넣지 않고 학습·채점에서 제외, 수만 집계', 14, False, GREY))
-    page('라벨의 세 상태', a,
-         f'창 안이지만 공격 행위가 없는 flow {unres:,}개는 보류로 분리하고 그 89%는 무효였던 DoS Hulk', '08 라벨',
-         '규칙은 시간창, 공격자와 피해자 끝점, 그리고 공격마다 다른 증거 조건으로 되어 있다. 셋을 모두 만족하면 공격, 창과 끝점만 맞고 증거가 없으면 보류, 어느 규칙에도 걸리지 않으면 정상이다. 보류는 저자들이 Attempted라 부른 7범주와 같다. 보류 flow를 공격으로 넣으면 정상 실패 접속과 같은 입력에 다른 라벨을 붙이는 셈이고, 정상으로 넣으면 공격자 트래픽이 정상에 섞인다. 그래서 제외하고 수만 집계하며, 두 정책의 영향은 변형 실험으로 따로 잰다.', ['liu', 'attempted'])
+            a.append(arrow(3.55, y + .52, .22, .22, down=True))
+    a += chip(.65, 4.60, 3.35, '모두 예 → 공격', RED, 'FFFFFF', 14, .48)
+    a.append(txt(.65, 5.25, 3.4, 'payload  헤더 뒤의 실제 데이터\nRST  상대가 연결을 거부·중단한 표시\n포트 제외  저자가 사람 조작으로\n확인한 연결의 포트 번호', 12.5, False, INK))
+    ev = [
+        ('FTP · SSH brute force', '공격자 payload ≥ 1 B (로그인 시도)', 'handshake만 하고 끝난 연결'),
+        ('DoS GoldenEye', 'payload ≥ 1, RST 없음 또는 5초 이상', '요청 전에 끊긴 연결'),
+        ('Slowloris · Slowhttptest', 'payload ≥ 1, 도구 설정 포트 제외', '서버 무응답 구간의 빈 연결'),
+        ('Web Brute Force · XSS', 'payload ≥ 1 (BF는 패킷 ≥ 21)\n브라우저 포트 제외', '설정·종료 때의 정적 파일 요청'),
+        ('Bot Ares', 'master와 payload 교환', 'master 종료 뒤\nSYN → RST 재접속'),
+        ('Portscan', 'SYN 1개와 무응답 또는 RST\n(payload 없음이 정상)', '해당 없음'),
+    ]
+    a += table(4.35, 1.65, [2.0, 3.65, 2.68], ['공격', '증거 조건', '증거가 없는 예 → 보류'], ev, size=12.5, row_h=.52, align=['left', 'left', 'left'])
+    a.append(txt(4.35, 5.40, 8.3, f'결과  flow {total:,}개 = 정상 {bg:,} · 공격 {conf:,} · 보류 {unres:,} (6.4%) · 경계 15', 14, True, NAVY))
+    a.append(txt(4.35, 5.78, 8.3, '보류는 공격에도 정상에도 넣지 않고 학습·채점에서 제외, 수만 집계\n저자 권고: Attempted는 독립 class로 쓰지 말 것', 13, False, GREY))
+    page('③ 라벨: 시간창·끝점·증거의 세 조건', a,
+         '시간창과 끝점만 맞고 공격 행위의 증거가 없는 flow 154,743개는 보류', '09 라벨',
+         '규칙은 시간창, 공격자와 피해자 끝점, 그리고 공격마다 다른 증거 조건으로 되어 있다. payload는 헤더 뒤의 실제 데이터이고, RST는 상대가 연결을 거부하거나 중단한 표시이며, 포트 제외는 저자들이 패킷을 직접 보고 사람 조작으로 확인한 연결의 포트 번호다. 셋을 모두 만족하면 공격, 창과 끝점만 맞고 증거가 없으면 보류, 어느 규칙에도 걸리지 않으면 정상이다. 보류는 저자들이 Attempted라 부른 7범주와 같고, 독립 class로 쓰지 말라는 권고에 따라 제외하고 수만 집계한다.', ['liu', 'attempted'])
 
-    # 5. Problem 1: where inputs become identical.
-    a = [txt(.65, 1.08, 12.0, '같은 flow를 세 단계의 입력으로 보고, 각 단계에서 "입력은 같은데 family가 다른" flow를 센다', 16, False, GREY)]
-    a.append(asset_image('layer_conflicts', .55, 1.52, 7.55, 3.35))
+    # 7. Final composition per family and subtype, with what is held out.
+    a = [txt(.65, 1.08, 12.0, '분할 전 전체 기준  ·  CSV는 공식 라벨 행 수, PCAP은 세 상태로 나눈 flow 수  ·  행 순서는 PCAP 공격 수 내림차순', 15, False, GREY)]
+    comp = [
+        ('benign', '월요일 전일 + 공격일 배경', '2,273,097', '1,731,862', '–', '○'),
+        ('portscan', '금 Portscan 161,202 · 목 NMAP 101,936', '158,930', '263,138', '0', '○'),
+        ('dos', 'Hulk 158,571 · GoldenEye 7,567 · Slowloris 3,859 · Slowhttptest 1,741', '252,661', '171,738', '143,383', '○'),
+        ('ddos', 'LOIC-HTTP', '128,027', '95,683', '1,203', '○'),
+        ('bf', 'FTP 4,021 · SSH 2,961', '13,835', '6,982', '4,090', '○'),
+        ('bot', 'Ares', '1,966', '736', '4,067', '○'),
+        ('web', 'Brute Force 73 · XSS 18 · SQL Injection 13', '2,180', '104', '1,954', '○ (test 16)'),
+        ('inf', 'Communication 32 · CoolDisk 4', '36', '36', '45', '✕ 학습 25'),
+        ('heartbleed', 'Heartbleed', '11', '11', '0', '✕ 학습 7'),
+        ('합계', '', '2,830,743', '2,270,290', '154,743', '7 family'),
+    ]
+    a += table(.65, 1.55, [1.2, 5.5, 1.3, 1.35, 1.3, 1.38], ['family', '세부 공격 (PCAP 공격 flow 수)', 'CSV 행', 'PCAP 공격', 'PCAP 보류', '채점'], comp, size=12, row_h=.40, align=['left', 'left', 'right', 'right', 'right', 'center'], bold_last=True)
+    a.append(txt(.65, 6.10, 12.0, 'CSV와 PCAP의 수 차이는 flow 정의(RST·FIN 처리)와 보류 분리에서 온다  ·  목요일 NMAP 101,936개는 CSV에서 BENIGN, 교정 규칙에서 portscan', 13.5, False, GREY))
+    page('최종 데이터 구성', a,
+         '보류 154,743개(6.4%)를 빼고 7 family를 채점, inf·heartbleed는 표본 부족으로 제외', '09 라벨',
+         '분할 전 전체 기준의 구성이다. PCAP 공격 수는 세부 공격별로도 적었다. dos의 보류 143,383은 거의 전부 payload 없는 Hulk 연결이고, web은 공격으로 확인된 flow가 104개뿐이다. 목요일 NMAP 스캔 101,936개는 원본 CSV에서 BENIGN이었으나 교정 규칙은 portscan으로 본다. inf와 heartbleed는 학습 표본이 50개에 못 미쳐 채점에서 뺀다.', ['liu'])
+
+    # 8. Problem 1: layers defined, why three, and the verified example.
+    a = [txt(.65, 1.08, 12.0, '같은 flow를 세 단계의 입력으로 보는 이유  ·  어느 단계에서 "입력은 같은데 family가 다른" 쌍이 생기는지 보면 라벨 탓인지 표현 탓인지 갈린다', 15, False, GREY)]
+    a += card(.65, 1.60, 3.9, 1.70, 'L1  flow가 가진 정보 전부', '통계 45개 + 자르기 전 토큰 전부\n여기서 같으면 가를 정보가 없음\n→ 라벨 쪽의 하한', accent=NAVY, body_size=13.5)
+    a += card(4.72, 1.60, 3.9, 1.70, 'L2  netFound 토큰화 뒤', '12 burst × 6 패킷으로 자르고\n간격을 ms로 반올림한 뒤\n→ tokenizer가 버린 정보', accent=RED, body_size=13.5)
+    a += card(8.79, 1.60, 3.89, 1.70, 'L3  분류기가 받는 벡터', 'view 1 통계 45차원\nview 2 PCA 64차원\n(CSV 78개 통계도 하나의 L3)', accent=GREEN, body_size=13.5)
+    a.append(txt(.65, 3.60, 12.0, '예  둘 다 패킷 1개짜리 RST+ACK, 길이 40 B, payload 0, TTL 128', 15, True, NAVY))
+    ex = [
+        ('정상  192.168.10.3:88 → 10.9:1031', '목적 포트 1031', '[20,0,40,2,128,20,0,0,0,0,0,0]', '벡터 다름 (포트)'),
+        ('스캔 응답  10.50:1720 → 10.8:51700', '목적 포트 51700', '[20,0,40,2,128,20,0,0,0,0,0,0]', '벡터 다름 (포트)'),
+    ]
+    a += table(.65, 3.97, [3.6, 2.35, 3.5, 2.58], ['flow', 'L1 · 통계', 'L2 · 토큰', 'L3 · view 1'], ex, size=12.5, row_h=.42, align=['left', 'left', 'left', 'left'])
+    a.append(txt(.65, 5.35, 12.0, 'L1·통계에서는 포트가 갈라 주지만, 포트가 없는 L2 토큰에서는 두 flow가 완전히 같은 입력 → 정상 11,817 + 스캔 4,363이 한 묶음', 14, True, RED))
+    a.append(txt(.65, 5.78, 12.0, '라벨 쪽 하한 0.04%  ·  통계 45 (view 1) 0.28% = CSV 0.25% 수준  ·  netFound 토큰 (view 2 입력) 4.86%  ·  상한(oracle)은 모두 99.8% 이상', 14, False, INK))
+    page('문제1  입력이 같아지는 단계', a,
+         '충돌은 라벨이 아니라 통계 요약과 토큰 절삭에서 생기며, 포트 없는 netFound 토큰에서 가장 큼', '10 문제1',
+         'L1은 flow가 가진 정보 전부이고, 여기서 같으면 파이프라인에 가를 정보가 없으므로 라벨 쪽 하한이다. L2는 netFound tokenizer 출력, L3는 분류기가 받는 벡터다. 같은 flow를 세 단계로 보는 이유는 충돌이 어느 단계에서 생기는지로 라벨 탓과 표현 탓을 가르기 위해서다. 예의 두 flow는 모두 패킷 1개짜리 RST+ACK인데, 통계에는 목적 포트가 있어 다른 벡터가 되지만 포트가 없는 토큰에서는 완전히 같아진다. 그래서 L2 충돌이 4.86%로 가장 크다.', [])
+
+    # 9. Problem 1 numbers: chart.
+    a = [txt(.65, 1.08, 12.0, '라벨 있는 flow 2,270,243개 기준  ·  막대는 "입력이 완전히 같은데 family가 다른" flow의 비율', 16, False, GREY)]
+    a.append(asset_image('layer_conflicts', .55, 1.50, 7.55, 3.35))
     a += card(8.35, 1.55, 4.33, 3.30, '충돌의 정체  패킷 1개짜리 RST', '닫힌 포트에 보낸 SYN의 RST 응답과\n끝난 연결의 늦은 RST가 같은 모양\n\n토큰  [20, 0, 40, 2, TTL, RST, 0, …]\nLinux  정상 49,204 + 스캔 59\nWindows  정상 11,817 + 스캔 4,363\n\n포트가 없는 토큰은 TTL로만 구분', accent=RED, body_size=14, align='left')
     a += [
         txt(.65, 5.12, 6.0, 'L1  라벨 자체가 못 가르는 양  0.04%', 16, True, NAVY),
@@ -263,11 +365,11 @@ def scenes() -> None:
         txt(7.0, 5.50, 5.7, 'CSV 99.997%  ·  통계 100%  ·  netFound 토큰 99.79%', 15, False, INK),
         txt(7.0, 5.88, 5.7, '충돌이 점수를 깎는 양은 모든 표현에서 작음', 15, False, INK),
     ]
-    page('문제1  입력이 같아지는 단계', a,
-         '충돌은 라벨이 아니라 통계 요약과 토큰 절삭에서 생기며, 포트 없는 netFound 토큰에서 가장 큼', '09 문제1',
-         'L1은 flow가 가진 정보 전부(통계 45개와 자르기 전 토큰 전부)이고, 여기서 같으면 파이프라인에 가를 정보가 없다. L2는 netFound tokenizer 출력, L3는 분류기가 받는 벡터다. 라벨 쪽 하한은 0.04%, 통계 요약은 CSV와 같은 0.28%, netFound 토큰은 4.86%다. 충돌 group의 flow를 열어 보면 거의 전부 패킷 1개짜리 RST flow다. 포트 스캔의 RST 응답과 정상 트래픽의 늦은 RST는 헤더가 같고, 포트·IP·시각이 없는 토큰에서는 TTL로만 갈린다. 그래도 세 표현 모두 oracle 상한이 99.8% 이상이라 충돌이 점수를 깎는 양은 작다.', [])
+    page('문제1  층별 충돌 비율', a,
+         'PCAP으로 가도 충돌은 사라지지 않고 netFound 토큰에서는 CSV보다 커지지만, 상한은 모두 99.8% 이상', '10 문제1',
+         '라벨 쪽 하한은 0.04%, 통계 요약은 CSV와 같은 0.28%, netFound 토큰은 4.86%다. 충돌 group의 flow는 거의 전부 패킷 1개짜리 RST flow이며, 포트 스캔의 RST 응답과 정상 트래픽의 늦은 RST는 헤더가 같고 토큰에서는 TTL로만 갈린다. 그래도 세 표현 모두 oracle 상한이 99.8% 이상이라 충돌이 점수를 깎는 양은 작다.', [])
 
-    # 6. Problem 2: few-shot curves in three columns.
+    # 10. Problem 2.
     a = [txt(.65, 1.08, 12.0, '정상 포함 7 family · class당 라벨 n개 · seed 5개 · 전체 평가 집합 · 두 모델에 같은 행', 16, False, GREY)]
     a.append(asset_image('fewshot_three_views', .45, 1.45, 12.45, 3.45))
     n50 = {k: few[(k, 'tabpfn')][50] for k in ('csv', 'flowstats-v1', 'netfound-v2-small')}
@@ -276,10 +378,10 @@ def scenes() -> None:
     a += card(4.85, 5.05, 3.95, 1.55, 'n=50 macro-F1  XGB / TabPFN', f'CSV  {n50x["csv"]:.1f} / {n50["csv"]:.1f}\n통계 45  {n50x["flowstats-v1"]:.1f} / {n50["flowstats-v1"]:.1f}\nnetFound  {n50x["netfound-v2-small"]:.1f} / {n50["netfound-v2-small"]:.1f}', accent=GREEN, body_size=14.5)
     a += card(9.05, 5.05, 3.63, 1.55, 'netFound 점수의 조건', 'test의 56%가 train과\n같은 토큰열\n외워서 맞힐 수 있는 구간', accent=RED, body_size=14.5)
     page('문제2  라벨 n개로 얼마나 오르나', a,
-         'head의 조기 포화는 표현과 무관하고, netFound+TabPFN의 고점은 토큰 중복 56% 조건 위의 수치', '10 문제2',
+         'head의 조기 포화는 표현과 무관하고, netFound+TabPFN의 고점은 토큰 중복 56% 조건 위의 수치', '11 문제2',
          '세 열 모두 같은 few-shot 규약이다. 공격만 과제에서 portscan·ddos·dos는 n=20에서 85~99%에 이르고 n=50으로 가도 1~2 pp만 변한다. 정상 포함 macro-F1은 n=50에서 netFound+TabPFN이 가장 높고 netFound+XGB가 가장 낮아 표현보다 표현과 분류기의 조합이 가른다. netFound view는 test의 56%가 train과 같은 토큰열이므로 그 점수의 일부는 암기로 설명될 수 있다.', [])
 
-    # 7. Verdict and what comes next.
+    # 11. Verdict.
     a = []
     a += card(.65, 1.45, 3.95, 2.55, '문제1  동일 입력·상이 라벨', 'PCAP으로 가도 사라지지 않음\n통계 0.28% = CSV 수준\nnetFound 토큰 4.86%\n\n상한은 모두 99.8% 이상', accent=RED, body_size=15)
     a += card(4.85, 1.45, 3.95, 2.55, '문제2  head 조기 포화', '세 표현에서 동일\n대량·반복 공격의 성질\n\n표현이 바꾸는 것은\ntail(bf·bot)과 모델 차이의 부호', accent=BLUE, body_size=15)
@@ -290,45 +392,32 @@ def scenes() -> None:
         txt(.90, 5.02, 11.5, '세 상태 라벨 · 시간순 분할 · 층별 충돌 점검과 상한 · 중복률을 본 연구의 평가 프로토콜로 채택', 14.5, False, GREY, 'center'),
     ]
     nexts = [('(a) 보류 → 공격 / 정상 두 정책 비교', '실행 중'), ('(b) PCA 128 · 512', '실행 중'), ('(c) 패킷 1개 RST flow 정리, 토큰에 포트 결합', '후보'), ('CIC2018 전체 450 GB 수집', '하지 않음')]
-    for i, (s, state) in enumerate(nexts):
+    for i, (s_, state) in enumerate(nexts):
         y = 5.70 + (i % 2) * .50
         x = .65 + (i // 2) * 6.1
         a += chip(x, y, .95, state, NAVY if state == '실행 중' else (TEAL if state == '후보' else GREY), 'FFFFFF', 12.5, .38)
-        a.append(txt(x + 1.05, y + .07, 4.9, s, 14.5, False, INK))
+        a.append(txt(x + 1.05, y + .07, 4.9, s_, 14.5, False, INK))
     page('판정과 다음 단계', a,
-         '표현 교체로는 두 문제를 풀 수 없고, 라벨 정책과 평가 규약이 남은 변수', '11 판정',
+         '표현 교체로는 두 문제를 풀 수 없고, 라벨 정책과 평가 규약이 남은 변수', '12 판정',
          '문제1은 PCAP 직접 인코딩으로 사라지지 않았고, 문제2는 데이터의 성질이라 표현과 무관하다. 대신 세 상태 라벨, 시간순 분할, 층별 충돌 점검과 oracle 상한, 중복률이 정리됐고 이를 본 연구의 평가 프로토콜로 가져간다. 보류 flow의 라벨 정책 두 가지와 PCA 차원 변형은 같은 corpus와 인코딩 위에서 실행 중이며, 패킷 1개짜리 RST flow 정리와 토큰에 포트를 결합하는 변형이 다음 후보다. CIC2018 전체 수집은 하지 않는다.', [])
 
-    # 8. Appendix: numbers behind slide 6 (n=20 class F1, normal included).
+    # 12. Appendix table.
     a = [txt(.65, 1.08, 12.0, '정상 포함 n=20 family별 F1 (%) · 5 seed 평균 · 행 순서는 PCAP 평가 집합 수 내림차순', 16, False, GREY)]
     header = ['family', 'PCAP test', 'CSV XGB', 'CSV TabPFN', '통계 XGB', '통계 TabPFN', 'netFound XGB', 'netFound TabPFN']
     widths = [1.55, 1.25, 1.35, 1.45, 1.35, 1.45, 1.75, 1.88]
     def cf(view, method, name):
-        c = next((c for c in pcap['views'][view]['class_f1'] if c['budget'] == 20 and c['regime'] == 'with_benign' and c['method'] == method and c['name'] == name), None)
-        return c
+        return next((c for c in pcap['views'][view]['class_f1'] if c['budget'] == 20 and c['regime'] == 'with_benign' and c['method'] == method and c['name'] == name), None)
     families = ['benign', 'portscan', 'dos', 'ddos', 'bf', 'bot', 'web']
     rows = []
     for name in families:
         c0 = cf('flowstats-v1', 'xgb', name)
         rows.append([name, f"{c0['support']:,}"] + [f"{100 * cf(v, m, name)['mean']:.1f}" for v in ('csv', 'flowstats-v1', 'netfound-v2-small') for m in ('xgb', 'tabpfn')])
-    macro = ['macro', '340,543'] + [f"{100 * next(m['mean'] for m in pcap['views'][v]['macro_f1'] if m['regime'] == 'with_benign' and m['method'] == mm and m['budget'] == 20):.1f}" for v in ('csv', 'flowstats-v1', 'netfound-v2-small') for mm in ('xgb', 'tabpfn')]
-    y = 1.62
-    def row(values, yy, fill, bold=False, color=INK):
-        items = []
-        xx = .65
-        for j, (w, v) in enumerate(zip(widths, values)):
-            items.append(box(xx, yy, w, .44, fill, 'D3DFE9'))
-            items.append(txt(xx + .08, yy + .10, w - .16, v, 14, bold, color, 'left' if j == 0 else 'right'))
-            xx += w
-        return items
-    a += row(header, y, NAVY, True, 'FFFFFF')
-    for i, values in enumerate(rows):
-        a += row(values, y + .50 + i * .47, PALE if i % 2 == 0 else 'FFFFFF')
-    a += row(macro, y + .50 + len(rows) * .47 + .08, 'E6F1F8', True, NAVY)
+    rows.append(['macro', '340,543'] + [f"{100 * next(m['mean'] for m in pcap['views'][v]['macro_f1'] if m['regime'] == 'with_benign' and m['method'] == mm and m['budget'] == 20):.1f}" for v in ('csv', 'flowstats-v1', 'netfound-v2-small') for mm in ('xgb', 'tabpfn')])
+    a += table(.65, 1.62, widths, header, rows, size=14, row_h=.44, bold_last=True)
     a.append(txt(.65, 6.05, 12.0, 'bot 0.0(CSV)은 평가 집합의 bot이 전부 master 종료 뒤 재접속 flow인 CSV 라벨 결함  ·  web은 PCAP 평가 집합 16행이라 참고치', 14, False, GREY))
     page('부록  n=20 family별 F1', a,
          '', '부록',
-         '슬라이드 6의 곡선을 family별로 푼 표다. CSV의 bot 0은 평가 집합의 bot 294행이 모두 master 종료 뒤 재접속 flow(저자 분류 Attempted)인데 Bot으로 라벨된 결함 때문이다. PCAP에서는 그 flow가 보류로 빠져 bot이 공격 사이에서는 구분되지만 정상과는 여전히 구분되지 않는다. web은 PCAP 평가 집합이 16행이라 수치를 해석하지 않는다.', [])
+         '문제2 곡선을 family별로 푼 표다. CSV의 bot 0은 평가 집합의 bot 294행이 모두 master 종료 뒤 재접속 flow(저자 분류 Attempted)인데 Bot으로 라벨된 결함 때문이다. PCAP에서는 그 flow가 보류로 빠져 bot이 공격 사이에서는 구분되지만 정상과는 여전히 구분되지 않는다. web은 PCAP 평가 집합이 16행이라 수치를 해석하지 않는다.', [])
 
 
 def main() -> None:
@@ -352,7 +441,7 @@ def main() -> None:
     for old in QA.glob('contact-*.png'):
         old.unlink()
     paths = sorted(QA.glob('page-*.png'))
-    canvas = Image.new('RGB', (1500, 4 * 445), '#DCE3EB')
+    canvas = Image.new('RGB', (1500, 6 * 445), '#DCE3EB')
     for index, image_path in enumerate(paths):
         image = Image.open(image_path)
         image.thumbnail((730, 411))
