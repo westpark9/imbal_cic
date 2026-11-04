@@ -10,7 +10,7 @@
 \hypersetup{pdftitle={EXP94: PCAP에서 직접 만든 표현은 CSV의 두 문제를 푸는가}}
 \begin{document}
 \reporttitle{2026-11-04 실행 · 2026-11-04 분석}{EXP94: PCAP에서 직접 만든 표현은\\CSV의 두 문제를 푸는가 (CIC-IDS2017)}
-\recordnote{이 문서는 앞선 보고서 없이 읽을 수 있게 썼다. 순서는 한눈에 보기(\S1) $\to$ 용어(\S2) $\to$ 배경(\S3) $\to$ PCAP에서 벡터까지(\S4) $\to$ CSV와의 비교(\S5) $\to$ 판정(\S6) $\to$ 실행 기록(\S7)이다. 수치 출처는 CSV 쪽 실행 \path{20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d}과 PCAP 쪽 실행 \path{20261104_104228_pcap_cic2017_9faba40e}이다. 라벨 정책·PCA 차원 변형 실험은 실행 중이며 완료 후 \S6에 추가한다.}
+\recordnote{이 문서는 앞선 보고서 없이 읽을 수 있게 썼다. 순서는 한눈에 보기(\S1) $\to$ 용어(\S2) $\to$ 배경(\S3) $\to$ PCAP에서 벡터까지(\S4) $\to$ CSV와의 비교(\S5) $\to$ 판정(\S6) $\to$ 실행 기록(\S7)이다. 수치 출처는 CSV 쪽 실행 \path{20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d}과 PCAP 쪽 실행 \path{20261104_104228_pcap_cic2017_9faba40e}이다. 라벨 정책 변형(a)은 \S6.1에 있고, PCA 차원 변형(b)은 사용자 판단으로 중단했다.}
 
 \section{한눈에 보기}
 \textbf{무엇을 했나.} CIC-IDS2017의 원시 패킷 파일(PCAP, 5일분 51 GB)에서 통신 단위(flow)를 직접 다시 만들고, 라벨을 다시 붙이고, 두 가지 방식으로 숫자 벡터를 만들어, 공식 배포 CSV와 같은 조건에서 비교했다.
@@ -22,7 +22,7 @@
 \item \textbf{문제2(조기 포화)는 표현과 무관하다.} CSV, 통계 view, netFound view 세 열 모두에서 portscan·DDoS·DoS는 n=20에서 85--99\%에 이른다. 대량·반복 공격의 성질이다.
 \item \textbf{문제1(동일 입력·상이 라벨)은 PCAP으로 가도 사라지지 않는다.} 원인을 층별로 재보니, 라벨 자체가 못 가르는 양은 0.04\%뿐이고, 통계 요약을 거치면 0.28\%(CSV 0.25\%와 같은 수준), netFound 토큰화를 거치면 4.86\%로 오히려 늘었다. 충돌의 정체는 거의 전부 ``패킷 1개짜리 RST flow''다(\S5.2).
 \item \textbf{그래도 문제1이 점수를 깎는 양은 작다.} 모든 표현에서 이론적 상한(oracle)이 99.8\% 이상이다. CSV 실험의 낮은 macro-F1(n=50에 63\%)은 문제1 때문이 아니라 tail 공격과 라벨 결함 때문이다.
-\item \textbf{표현보다 라벨 정책이 더 큰 변수다.} 창 안에 있지만 공격 행위가 없는 flow(154,743개, 대부분 Hulk)를 어디에 두느냐가 수치를 좌우한다. CSV는 공격으로 넣었고, 우리는 빼고 따로 센다.
+\item \textbf{표현보다 라벨 정책이 더 큰 변수다.} 창 안에 있지만 공격 행위가 없는 flow(154,743개, 대부분 Hulk)를 어디에 두느냐가 수치를 좌우한다. CSV처럼 공격으로 넣으면 통계 view 충돌이 0.28\% $\to$ 5.71\%로 뛰고 공격만 macro가 8 pp 내려간다(\S6.1). 우리는 빼고 따로 센다.
 \item \textbf{few-shot에서는 netFound+TabPFN 조합이 가장 높지만(정상 포함 n=50 macro 71.6\%), 그 view는 test의 56\%가 train과 똑같은 토큰열이라는 조건 위의 수치다.} 통계 view는 69.0\%, CSV는 63.7\%.
 \end{enumerate}
 
@@ -322,8 +322,31 @@ macro & 80,761 & 67.67 & \textbf{70.67} & 75.13 & \textbf{80.93} & 63.25 & \text
 \item \textbf{문제1.} PCAP으로 가도 사라지지 않는다. 라벨 쪽 하한 0.04\%, 통계 요약 0.28\%(CSV와 같은 수준), netFound 토큰화 4.86\%. 충돌의 정체는 패킷 1개짜리 RST flow이고, 포트·IP·시각을 뺀 netFound 토큰은 이를 OS(TTL)로밖에 못 가른다. 다만 모든 표현에서 상한이 99.8\% 이상이라 점수를 깎는 양은 작다.
 \item \textbf{문제2.} head 포화는 세 열 모두 같다. 표현이 바꾸는 것은 tail(bf·bot)과 TabPFN$-$XGB 차이의 부호다. netFound+TabPFN이 가장 높지만 중복 56\% 조건 위의 수치다.
 \item \textbf{view 1(통계)의 쓸모.} 대조군이자, 실제로는 공격만 과제에서 가장 높고(n=50 XGB 83.5\%) 중복이 적어 안정적이다. 이후 모델 연구의 기본 입력 후보다.
-\item \textbf{진행 중인 변형 실험.} (a) unresolved를 공격/정상으로 넣는 두 정책, (b) PCA 128/512. 결과를 여기에 추가한다. 추가 후보 (c): 패킷 1개짜리 RST flow 정리, netFound 벡터에 포트·프로토콜 결합.
+\item \textbf{변형 (a) 라벨 정책.} 아래 \S6.1. (b) PCA 128/512는 사용자 판단으로 중단했다(pca\_128 15 job 부분 실행, 미사용). 추가 후보 (c): 패킷 1개짜리 RST flow 정리, netFound 벡터에 목적 포트·프로토콜 결합과 ``포트만'' 대조군.
 \item \textbf{결론.} PCAP 전환의 산출물은 정리된 평가 규약이다. 세 상태 라벨, 시간순 분할, 층별 충돌 감사와 상한, 중복률을 본 연구의 평가 프로토콜로 가져간다. CIC2018 전체 수집은 하지 않으며 EXP93은 부분 수집 진단으로 남긴다.
+\end{itemize}
+
+\subsection{변형 (a): 보류 flow를 어디에 두느냐}
+같은 corpus·분할·인코딩 위에서 보류(unresolved) 154,743 flow의 라벨만 바꿔 충돌 점검과 few-shot을 다시 돌렸다. \textbf{attack}은 보류를 해당 공격 family로 넣는 CSV 방식, \textbf{benign}은 정상으로 넣는 CNS2022 권고·EXP93 방식, \textbf{exclude}가 본 실행이다.
+
+\begin{table}[H]
+\centering\small
+\caption{라벨 정책별 충돌과 few-shot (\%, 5 seed 평균). 충돌 비율은 라벨 있는 flow 대비. macro는 XGB/TabPFN.}
+\footnotesize
+\begin{tabular}{lrrr|rr|rr}
+\toprule & \multicolumn{3}{c|}{충돌 행 비율} & \multicolumn{2}{c|}{통계 45 macro-F1} & \multicolumn{2}{c}{netFound macro-F1}\\
+정책 & L1 & 통계 45 & netFound 토큰 & 정상 포함 n=50 & 공격만 n=50 & 정상 포함 n=50 & 공격만 n=50\\\midrule
+exclude (본 실행) & 0.04 & 0.28 & 4.86 & 65.2 / 69.0 & 83.5 / 81.4 & 57.8 / 71.6 & 64.5 / 75.7\\
+attack (CSV 방식) & 0.04 & 5.71 & 4.77 & 68.1 / 70.2 & 75.1 / 75.8 & 57.6 / 66.4 & 67.7 / 75.8\\
+benign (EXP93 방식) & 5.42 & 5.65 & 10.15 & 63.7 / 68.9 & 83.5 / 81.4 & 57.1 / 69.0 & 64.5 / 75.7\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+\item \textbf{attack 정책은 CSV의 충돌 기제를 그대로 재현한다.} 통계 view의 충돌이 0.28\% $\to$ 5.71\%로 뛰고, 그 130,504행이 dos다. payload 없는 Hulk 연결이 정상 실패 접속과 같은 통계 벡터를 갖기 때문이며, 이것이 CSV 2017 충돌(Hulk/BENIGN 3,362행 group)의 정체다. 공격만 macro n=50은 통계 view에서 83.5/81.4 $\to$ 75.1/75.8로 8 pp 내려가고, netFound+TabPFN 정상 포함 n=50은 71.6 $\to$ 66.4가 된다. 반대로 정상 포함 통계 view n=20은 55.1 $\to$ 60.7로 오르는데, 재접속·무payload 행이 test에 들어가 bot(10.4 $\to$ 36.8)·dos(69.2 $\to$ 82.0)의 쉬운 표본이 늘어난 효과다. 정책 하나가 점수를 양방향으로 흔든다.
+\item \textbf{benign 정책은 L1 충돌을 0.04\% $\to$ 5.42\%로 만든다.} payload 없는 Hulk 연결 130,500행이 정상이 되면서, flow 정보 전부가 같은 확정 dos 25행과 한 묶음이 된다. few-shot은 $-$0.1$\sim$$-$2.6 pp로 작게 내려가고 공격만 과제는 영향이 없다. netFound 토큰 충돌은 10.15\%까지 커진다.
+\item \textbf{exclude가 충돌·상한·곡선 모두에서 가장 깨끗하다.} 세 상태 라벨을 기본 규약으로 유지할 근거다. 보류 flow는 flow 단위 분류가 아니라 host·시간 집계 과제의 대상으로 따로 다룬다.
 \end{itemize}
 
 \section{실행 기록}
@@ -339,6 +362,8 @@ macro & 80,761 & 67.67 & \textbf{70.67} & 75.13 & \textbf{80.93} & 63.25 & \text
 \sourcepath{tabpfn/results/v7/exp94/20261104\_104228\_pcap\_cic2017\_9faba40e/audit3.json}
 \sourcepath{tabpfn/results/v7/exp94/20261104\_104228\_pcap\_cic2017\_9faba40e/resumptions/20261104\_1310\_host\_reboot/note.json}
 \sourcepath{docs/lablog/evidence/20261104/exp94\_pcap\_summary.json}
+\sourcepath{docs/lablog/evidence/20261104/exp94\_variants\_summary.json}
+\sourcepath{tabpfn/results/v7/exp94/20261104\_132432\_pcap\_cic2017\_variants\_f3b13342/RUN\_META.json}
 \sourcepath{docs/lablog/evidence/20261103/exp94\_csv\_summary.json}
 \sourcepath{docs/lablog/evidence/20261103/original\_cic2017\_csv\_audit.json}
 \sourcepath{docs/lablog/evidence/20261030/original\_cic2018\_csv\_audit.json}

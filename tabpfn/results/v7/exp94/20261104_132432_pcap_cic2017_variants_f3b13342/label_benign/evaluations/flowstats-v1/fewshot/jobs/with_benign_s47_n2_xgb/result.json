@@ -1,0 +1,109 @@
+{
+  "regime": "with_benign",
+  "seed": 47,
+  "budget": 2,
+  "method": "xgb",
+  "train_rows": 14,
+  "train_flow_ids": [
+    "ea374dc31dadb4b3fcf9e595",
+    "9e768d58448310c129247e64",
+    "d34865f978c79c360409f972",
+    "847e0a0563659c09d91d8687",
+    "5096389635b3d1012c8fd22d",
+    "22a8e7a11122fd4323c6c280",
+    "ab69679ab8803e9521127817",
+    "aab1bafc2ad52425c53f08d9",
+    "6e3927e52c342ded9990265d",
+    "72e1d9320eb987d251aa70d8",
+    "92972cf659e36eec90f0b79d",
+    "d08c9fa43dcf8306d116147f",
+    "1537090c5abf59488f55fd89",
+    "1548944ff571f6f25f206218"
+  ],
+  "test_rows": 363749,
+  "test_flow_ids_sha256": "d24adf74e99dbe3f449b36d9a8335c69f49bd1dcb771657ea76780c6db193df5",
+  "metrics": {
+    "macro_f1": 0.4132001780464667,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 282988,
+        "precision": 0.9985490384872556,
+        "recall": 0.5277220235487017,
+        "f1": 0.690514722201672,
+        "tp": 149339,
+        "fp": 217,
+        "fn": 133649
+      },
+      {
+        "name": "dos",
+        "support": 25761,
+        "precision": 0.8450094371044743,
+        "recall": 0.8863398160009316,
+        "f1": 0.8651813118108446,
+        "tp": 22833,
+        "fp": 4188,
+        "fn": 2928
+      },
+      {
+        "name": "portscan",
+        "support": 39472,
+        "precision": 0.473190819354448,
+        "recall": 0.9897902310498581,
+        "f1": 0.6402812261855011,
+        "tp": 39069,
+        "fp": 43496,
+        "fn": 403
+      },
+      {
+        "name": "ddos",
+        "support": 14353,
+        "precision": 0.5174116798846431,
+        "recall": 1.0,
+        "f1": 0.6819661226332169,
+        "tp": 14353,
+        "fp": 13387,
+        "fn": 0
+      },
+      {
+        "name": "bf",
+        "support": 1048,
+        "precision": 5.84744028301611e-05,
+        "recall": 0.0019083969465648854,
+        "f1": 0.00011347195824231937,
+        "tp": 2,
+        "fp": 34201,
+        "fn": 1046
+      },
+      {
+        "name": "bot",
+        "support": 111,
+        "precision": 0.006596541272954181,
+        "recall": 1.0,
+        "f1": 0.013106624158696423,
+        "tp": 111,
+        "fp": 16716,
+        "fn": 0
+      },
+      {
+        "name": "web",
+        "support": 16,
+        "precision": 0.000619266942756512,
+        "recall": 1.0,
+        "f1": 0.0012377673770935674,
+        "tp": 16,
+        "fp": 25821,
+        "fn": 0
+      }
+    ],
+    "rows": 363749
+  },
+  "construct_seconds": 3.295799979241565e-05,
+  "fit_seconds": 0.2817366940003012,
+  "inference_seconds": 0.1871923329999845,
+  "frozen_weights_sha256": null,
+  "adapter": "flowstats-v1",
+  "pca_dimensions": 45,
+  "inference_batch_rows": 8192,
+  "finetuning": false
+}

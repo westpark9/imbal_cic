@@ -1,0 +1,97 @@
+{
+  "regime": "attack_only",
+  "seed": 43,
+  "budget": 2,
+  "method": "tabpfn",
+  "train_rows": 12,
+  "train_flow_ids": [
+    "c06d239d4f668f8e8795a309",
+    "1f181f2fb7c682fd1fa1f9b3",
+    "1cb996f6c68c43e1e35d7976",
+    "7a29f801228f184e4869d277",
+    "44a36946b605684fc893a864",
+    "200863eb6f6bd0140c07b008",
+    "57847e7e38b7e7c15ae2d01c",
+    "b222dcef882f55d4734c5a28",
+    "1523d543860ea69c188f6d90",
+    "4d19780be52e2f54423a9fe2",
+    "9544514c84ef5529789fc57d",
+    "a78c929ec06c125188f71cdb"
+  ],
+  "test_rows": 103922,
+  "test_flow_ids_sha256": "80c1d9d47b623c19bc0870fc02cc8069b2d059edb409355bd4e2e3f7459d19af",
+  "metrics": {
+    "macro_f1": 0.46706297741896036,
+    "classes": [
+      {
+        "name": "dos",
+        "support": 47267,
+        "precision": 0.9529612007272446,
+        "recall": 0.5211881439482091,
+        "f1": 0.6738422823381384,
+        "tp": 24635,
+        "fp": 1216,
+        "fn": 22632
+      },
+      {
+        "name": "portscan",
+        "support": 39472,
+        "precision": 0.9313594662218515,
+        "recall": 0.2829094041345764,
+        "f1": 0.43399012863860714,
+        "tp": 11167,
+        "fp": 823,
+        "fn": 28305
+      },
+      {
+        "name": "ddos",
+        "support": 14878,
+        "precision": 0.9584530091510253,
+        "recall": 0.9644441457185106,
+        "f1": 0.9614392441957854,
+        "tp": 14349,
+        "fp": 622,
+        "fn": 529
+      },
+      {
+        "name": "bf",
+        "support": 1657,
+        "precision": 0.011935034041506028,
+        "recall": 0.3512371756185878,
+        "f1": 0.02308561908728506,
+        "tp": 582,
+        "fp": 48182,
+        "fn": 1075
+      },
+      {
+        "name": "bot",
+        "support": 377,
+        "precision": 0.2875675675675676,
+        "recall": 0.7055702917771883,
+        "f1": 0.40860215053763443,
+        "tp": 266,
+        "fp": 659,
+        "fn": 111
+      },
+      {
+        "name": "web",
+        "support": 271,
+        "precision": 0.17945109078114005,
+        "recall": 0.940959409594096,
+        "f1": 0.30141843971631205,
+        "tp": 255,
+        "fp": 1166,
+        "fn": 16
+      }
+    ],
+    "rows": 103922
+  },
+  "construct_seconds": 0.0001749880000261328,
+  "fit_seconds": 0.2894320840000546,
+  "inference_seconds": 2.7822076429999925,
+  "frozen_weights_sha256": "152e50ac0356e138425f56f57078d20a088721d641e32cf7321533b12cad7c70",
+  "adapter": "flowstats-v1",
+  "pca_dimensions": 45,
+  "inference_batch_rows": 8192,
+  "finetuning": false
+}

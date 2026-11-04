@@ -25,7 +25,7 @@ SOURCE_DATA = json.loads((ROOT / 'docs/lablog/evidence/20261029_pcap/sources.jso
 r.QA = QA
 r.ASSETS = HERE / '_support/assets/20261104_exp94'
 r.OUT = OUT
-r.N_SLIDES = 12
+r.N_SLIDES = 13
 r.SCENES = []
 r.SOURCES = {key: (value['title'], f"{value['venue']}, {value['year']}", value['url'], value['evidence']) for key, value in SOURCE_DATA.items()}
 txt, box, arrow, block, page = r.txt, r.box, r.arrow, r.block, r.page
@@ -381,27 +381,43 @@ def scenes() -> None:
          'head의 조기 포화는 표현과 무관하고, netFound+TabPFN의 고점은 토큰 중복 56% 조건 위의 수치', '11 문제2',
          '세 열 모두 같은 few-shot 규약이다. 공격만 과제에서 portscan·ddos·dos는 n=20에서 85~99%에 이르고 n=50으로 가도 1~2 pp만 변한다. 정상 포함 macro-F1은 n=50에서 netFound+TabPFN이 가장 높고 netFound+XGB가 가장 낮아 표현보다 표현과 분류기의 조합이 가른다. netFound view는 test의 56%가 train과 같은 토큰열이므로 그 점수의 일부는 암기로 설명될 수 있다.', [])
 
-    # 11. Verdict.
+    # 11. Label-policy variant (a).
+    a = [txt(.65, 1.08, 12.0, '같은 corpus·분할·인코딩에서 보류 154,743개의 라벨만 바꿔 다시 측정  ·  exclude = 본 실행, attack = CSV 방식, benign = EXP93 방식', 15.5, False, GREY)]
+    pol = [
+        ('exclude (본 실행)', '0.04', '0.28', '4.86', '83.5 / 81.4', '65.2 / 69.0', '57.8 / 71.6', '10.4 / 2.9'),
+        ('attack (CSV 방식)', '0.04', '5.71', '4.77', '75.1 / 75.8', '68.1 / 70.2', '57.6 / 66.4', '36.8 / 22.1'),
+        ('benign (EXP93 방식)', '5.42', '5.65', '10.15', '83.5 / 81.4', '63.7 / 68.9', '57.1 / 69.0', '11.4 / 7.8'),
+    ]
+    a += table(.65, 1.62, [2.2, .9, 1.2, 1.45, 1.55, 1.5, 1.85, 1.38], ['보류 정책', 'L1 충돌', '통계 충돌', '토큰 충돌', '통계 공격만 n=50', '통계 정상 n=50', 'netFound 정상 n=50', 'bot n=20 통계'], pol, size=12.5, row_h=.50)
+    a.append(txt(.65, 3.75, 12.0, '충돌은 라벨 있는 flow 대비 %  ·  macro-F1과 class F1은 XGB / TabPFN', 12.5, False, GREY))
+    a += card(.65, 4.20, 3.95, 2.25, 'attack  CSV의 충돌 기제 재현', '통계 view 충돌 0.28 → 5.71%\n그중 dos 130,504행 (payload 없는 Hulk)\n공격만 macro n=50  8 pp 하락\nnetFound+TabPFN 71.6 → 66.4', accent=RED, body_size=14, align='left')
+    a += card(4.85, 4.20, 3.95, 2.25, 'benign  L1 충돌을 만듦', 'flow 정보 전부가 같은데 라벨 다름\n0.04 → 5.42% (Hulk 130,500행이 정상)\nfew-shot 변화 −0.1 ~ −2.6 pp\n공격만 과제는 영향 없음', accent=AMBER, body_size=14, align='left')
+    a += card(9.05, 4.20, 3.63, 2.25, 'exclude  가장 깨끗', '충돌·상한·곡선 모두 최선\n세 상태 라벨을 기본 규약으로 유지\n보류는 host·시간 집계 과제로', accent=TEAL, body_size=14, align='left')
+    page('보류 flow를 어디에 두느냐 (변형 a)', a,
+         '보류를 공격으로 두면 CSV의 Hulk 충돌이 그대로 재현되고 공격만 macro가 8 pp 내려감, 제외가 가장 깨끗', '11 문제2',
+         '같은 corpus와 인코딩 위에서 보류 flow의 라벨만 세 가지로 바꿨다. 공격으로 넣는 CSV 방식에서는 payload 없는 Hulk 연결 130,504행이 정상 실패 접속과 같은 통계 벡터를 가져 통계 view 충돌이 5.71%로 뛰고, 공격만 macro-F1이 8 pp 내려간다. 반면 정상 포함 통계 view n=20은 재접속·무payload 행이 쉬운 표본으로 들어가 bot과 dos가 오른다. 정상으로 넣는 방식은 flow 정보 전부가 같은 확정 dos 25행과 한 묶음을 만들어 L1 충돌이 5.42%가 된다. 제외가 충돌·상한·곡선 모두에서 가장 깨끗하다.', [])
+
+    # 12. Verdict.
     a = []
     a += card(.65, 1.45, 3.95, 2.55, '문제1  동일 입력·상이 라벨', 'PCAP으로 가도 사라지지 않음\n통계 0.28% = CSV 수준\nnetFound 토큰 4.86%\n\n상한은 모두 99.8% 이상', accent=RED, body_size=15)
     a += card(4.85, 1.45, 3.95, 2.55, '문제2  head 조기 포화', '세 표현에서 동일\n대량·반복 공격의 성질\n\n표현이 바꾸는 것은\ntail(bf·bot)과 모델 차이의 부호', accent=BLUE, body_size=15)
-    a += card(9.05, 1.45, 3.63, 2.55, '더 큰 변수  라벨 정책', '보류 154,743 flow를\n공격/정상 어디에 두느냐\n\n같은 corpus·인코딩에서\n변형 실험 진행 중', accent=AMBER, body_size=15)
+    a += card(9.05, 1.45, 3.63, 2.55, '더 큰 변수  라벨 정책', '보류 154,743 flow를\n공격/정상 어디에 두느냐\n\n공격으로 두면 충돌 5.7%\n공격만 macro 8 pp 하락', accent=AMBER, body_size=15)
     a += [
         box(.65, 4.35, 12.03, 1.05, 'F6F9FC', 'D3DFE9'),
         txt(.90, 4.60, 11.5, 'PCAP 전환의 산출물은 새 표현이 아니라 정리된 평가 규약', 19, True, NAVY, 'center'),
         txt(.90, 5.02, 11.5, '세 상태 라벨 · 시간순 분할 · 층별 충돌 점검과 상한 · 중복률을 본 연구의 평가 프로토콜로 채택', 14.5, False, GREY, 'center'),
     ]
-    nexts = [('(a) 보류 → 공격 / 정상 두 정책 비교', '실행 중'), ('(b) PCA 128 · 512', '실행 중'), ('(c) 패킷 1개 RST flow 정리, 토큰에 포트 결합', '후보'), ('CIC2018 전체 450 GB 수집', '하지 않음')]
+    nexts = [('(a) 보류 → 공격 / 정상 두 정책 비교', '완료'), ('(b) PCA 128 · 512', '중단'), ('(c) 패킷 1개 RST flow 정리, 벡터에 포트 결합', '후보'), ('CIC2018 전체 450 GB 수집', '하지 않음')]
     for i, (s_, state) in enumerate(nexts):
         y = 5.70 + (i % 2) * .50
         x = .65 + (i // 2) * 6.1
-        a += chip(x, y, .95, state, NAVY if state == '실행 중' else (TEAL if state == '후보' else GREY), 'FFFFFF', 12.5, .38)
+        a += chip(x, y, .95, state, NAVY if state == '완료' else (TEAL if state == '후보' else GREY), 'FFFFFF', 12.5, .38)
         a.append(txt(x + 1.05, y + .07, 4.9, s_, 14.5, False, INK))
     page('판정과 다음 단계', a,
          '표현 교체로는 두 문제를 풀 수 없고, 라벨 정책과 평가 규약이 남은 변수', '12 판정',
-         '문제1은 PCAP 직접 인코딩으로 사라지지 않았고, 문제2는 데이터의 성질이라 표현과 무관하다. 대신 세 상태 라벨, 시간순 분할, 층별 충돌 점검과 oracle 상한, 중복률이 정리됐고 이를 본 연구의 평가 프로토콜로 가져간다. 보류 flow의 라벨 정책 두 가지와 PCA 차원 변형은 같은 corpus와 인코딩 위에서 실행 중이며, 패킷 1개짜리 RST flow 정리와 토큰에 포트를 결합하는 변형이 다음 후보다. CIC2018 전체 수집은 하지 않는다.', [])
+         '문제1은 PCAP 직접 인코딩으로 사라지지 않았고, 문제2는 데이터의 성질이라 표현과 무관하다. 대신 세 상태 라벨, 시간순 분할, 층별 충돌 점검과 oracle 상한, 중복률이 정리됐고 이를 본 연구의 평가 프로토콜로 가져간다. 보류 flow의 라벨 정책 변형은 제외가 가장 깨끗함을 보였고, PCA 차원 변형은 불필요하다고 판단해 중단했다. 패킷 1개짜리 RST flow 정리와 벡터에 포트를 결합하는 변형이 다음 후보다. CIC2018 전체 수집은 하지 않는다.', [])
 
-    # 12. Appendix table.
+    # 13. Appendix table.
     a = [txt(.65, 1.08, 12.0, '정상 포함 n=20 family별 F1 (%) · 5 seed 평균 · 행 순서는 PCAP 평가 집합 수 내림차순', 16, False, GREY)]
     header = ['family', 'PCAP test', 'CSV XGB', 'CSV TabPFN', '통계 XGB', '통계 TabPFN', 'netFound XGB', 'netFound TabPFN']
     widths = [1.55, 1.25, 1.35, 1.45, 1.35, 1.45, 1.75, 1.88]
@@ -441,7 +457,7 @@ def main() -> None:
     for old in QA.glob('contact-*.png'):
         old.unlink()
     paths = sorted(QA.glob('page-*.png'))
-    canvas = Image.new('RGB', (1500, 6 * 445), '#DCE3EB')
+    canvas = Image.new('RGB', (1500, 7 * 445), '#DCE3EB')
     for index, image_path in enumerate(paths):
         image = Image.open(image_path)
         image.thumbnail((730, 411))
