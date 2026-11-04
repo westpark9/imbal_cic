@@ -1,0 +1,92 @@
+{
+  "dataset": "CIC-IDS2017-CSV-MachineLearningCVE",
+  "purpose": "CSV-side reference for the CIC2017 PCAP comparison (EXP94). Few-shot learning curves of XGBoost and frozen TabPFN on the official CICFlowMeter CSV with a chronological split and the complete held-out test, plus identical-input audits and an oracle ceiling. Companion of EXP93; no PCAP is used here.",
+  "seed": 43,
+  "csv_dir": "data/cic2017",
+  "file_order": [
+    "1_Monday-WorkingHours.pcap_ISCX.csv",
+    "2_Tuesday-WorkingHours.pcap_ISCX.csv",
+    "3_Wednesday-workingHours.pcap_ISCX.csv",
+    "4_Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+    "5_Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+    "6_Friday-WorkingHours-Morning.pcap_ISCX.csv",
+    "7_Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+    "8_Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"
+  ],
+  "features": {
+    "policy": "all 78 statistical columns; the duplicated 'Fwd Header Length' column is used once; Label is the only non-feature column",
+    "nonfinite_policy": "rows with NaN or +/-Infinity in any feature are dropped before splitting and their counts are recorded per label"
+  },
+  "label_map": {
+    "BENIGN": "benign",
+    "FTP-Patator": "bf",
+    "SSH-Patator": "bf",
+    "DoS slowloris": "dos",
+    "DoS Slowhttptest": "dos",
+    "DoS Hulk": "dos",
+    "DoS GoldenEye": "dos",
+    "Heartbleed": "heartbleed",
+    "Web Attack * Brute Force": "web",
+    "Web Attack * XSS": "web",
+    "Web Attack * Sql Injection": "web",
+    "Infiltration": "inf",
+    "Bot": "bot",
+    "PortScan": "portscan",
+    "DDoS": "ddos"
+  },
+  "label_map_note": "'*' stands for the non-UTF-8 dash byte in the Web Attack labels; matching is by prefix/suffix.",
+  "class_order": [
+    "benign",
+    "dos",
+    "portscan",
+    "ddos",
+    "bf",
+    "bot",
+    "web",
+    "inf",
+    "heartbleed"
+  ],
+  "split": {
+    "method": "chronological_within_file_and_family",
+    "fractions": [
+      0.7,
+      0.15,
+      0.15
+    ],
+    "note": "Rows of each CSV are kept in file order (CICFlowMeter emits flows in start-time order). Within each file and family, the first 70% of that family's rows become train, the next 15% validation and the last 15% test, so every family's test rows come after its train rows in time. A plain positional split was rejected in the smoke test because families whose attack window ends early (web, DoS Hulk) had no or few test rows. Test is retained completely."
+  },
+  "fewshot": {
+    "budgets": [
+      2,
+      3,
+      5,
+      10,
+      20,
+      50
+    ],
+    "seeds": [
+      43,
+      44,
+      45,
+      46,
+      47
+    ],
+    "methods": [
+      "xgb",
+      "tabpfn"
+    ],
+    "regimes": [
+      "with_benign",
+      "attack_only"
+    ],
+    "inference_batch_rows": 8192,
+    "tabpfn_checkpoint": "tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+    "coverage_rule": "A family is trained and scored only if its train split has at least max(budgets) rows and its test split at least one row; other families are excluded from both training and macro-F1 and listed in label_coverage.json.",
+    "paired_sampling": "Per family, seed and n, a deterministic max-n sample is drawn from the train split and its first n rows are used by both methods. Test rows are fixed across methods."
+  },
+  "audits": {
+    "identical_input": "SHA256 over the float32 feature vector; cross-label groups are counted on the full labelled table and on the test split separately",
+    "train_test_duplicates": "fraction of test rows whose exact feature vector also occurs in the train split",
+    "oracle_ceiling": "On the test split, predict the majority family of each identical-feature group; its macro-F1 is the deterministic-classifier ceiling"
+  }
+}

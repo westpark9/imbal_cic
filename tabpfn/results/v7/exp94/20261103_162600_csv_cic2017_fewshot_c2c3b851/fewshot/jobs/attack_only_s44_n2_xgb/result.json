@@ -1,0 +1,95 @@
+{
+  "regime": "attack_only",
+  "seed": 44,
+  "budget": 2,
+  "method": "xgb",
+  "train_rows": 12,
+  "train_row_ids": [
+    1210431,
+    1148704,
+    2508905,
+    2508108,
+    2673948,
+    2646072,
+    593102,
+    551246,
+    2237473,
+    2187298,
+    1685496,
+    1699658
+  ],
+  "test_rows": 83478,
+  "metrics": {
+    "macro_f1": 0.4501410523241376,
+    "classes": [
+      {
+        "name": "dos",
+        "support": 37757,
+        "precision": 0.9613134415679392,
+        "recall": 0.6962947268056254,
+        "f1": 0.8076184624836802,
+        "tp": 26290,
+        "fp": 1058,
+        "fn": 11467
+      },
+      {
+        "name": "portscan",
+        "support": 23821,
+        "precision": 1.0,
+        "recall": 0.9866924142563285,
+        "f1": 0.9933016376122557,
+        "tp": 23504,
+        "fp": 0,
+        "fn": 317
+      },
+      {
+        "name": "ddos",
+        "support": 19204,
+        "precision": 0.8323017581628992,
+        "recall": 0.9663091022703604,
+        "f1": 0.8943132530120482,
+        "tp": 18557,
+        "fp": 3739,
+        "fn": 647
+      },
+      {
+        "name": "bf",
+        "support": 2075,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 2816,
+        "fn": 2075
+      },
+      {
+        "name": "bot",
+        "support": 294,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 2,
+        "fn": 294
+      },
+      {
+        "name": "web",
+        "support": 327,
+        "precision": 0.0029286474973375934,
+        "recall": 0.0672782874617737,
+        "f1": 0.005612960836841434,
+        "tp": 22,
+        "fp": 7490,
+        "fn": 305
+      }
+    ],
+    "rows": 83478
+  },
+  "construct_seconds": 3.0625960789620876e-05,
+  "fit_seconds": 0.23969298705924302,
+  "inference_seconds": 0.06172423099633306,
+  "frozen_weights_sha256": null,
+  "feature_count": 78,
+  "inference_batch_rows": 8192,
+  "finetuning": false
+}

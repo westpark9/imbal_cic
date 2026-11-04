@@ -1,0 +1,511 @@
+{
+  "schema": 1,
+  "created_at": "2026-11-03T07:21:19.408017+00:00",
+  "input": {
+    "csv_dir": "data/cic2017",
+    "files": [
+      "1_Monday-WorkingHours.pcap_ISCX.csv",
+      "2_Tuesday-WorkingHours.pcap_ISCX.csv",
+      "3_Wednesday-workingHours.pcap_ISCX.csv",
+      "4_Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+      "5_Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+      "6_Friday-WorkingHours-Morning.pcap_ISCX.csv",
+      "7_Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+      "8_Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"
+    ],
+    "features": [
+      "ACK Flag Count",
+      "Active Max",
+      "Active Mean",
+      "Active Min",
+      "Active Std",
+      "Average Packet Size",
+      "Avg Bwd Segment Size",
+      "Avg Fwd Segment Size",
+      "Bwd Avg Bulk Rate",
+      "Bwd Avg Bytes/Bulk",
+      "Bwd Avg Packets/Bulk",
+      "Bwd Header Length",
+      "Bwd IAT Max",
+      "Bwd IAT Mean",
+      "Bwd IAT Min",
+      "Bwd IAT Std",
+      "Bwd IAT Total",
+      "Bwd PSH Flags",
+      "Bwd Packet Length Max",
+      "Bwd Packet Length Mean",
+      "Bwd Packet Length Min",
+      "Bwd Packet Length Std",
+      "Bwd Packets/s",
+      "Bwd URG Flags",
+      "CWE Flag Count",
+      "Destination Port",
+      "Down/Up Ratio",
+      "ECE Flag Count",
+      "FIN Flag Count",
+      "Flow Bytes/s",
+      "Flow Duration",
+      "Flow IAT Max",
+      "Flow IAT Mean",
+      "Flow IAT Min",
+      "Flow IAT Std",
+      "Flow Packets/s",
+      "Fwd Avg Bulk Rate",
+      "Fwd Avg Bytes/Bulk",
+      "Fwd Avg Packets/Bulk",
+      "Fwd Header Length",
+      "Fwd IAT Max",
+      "Fwd IAT Mean",
+      "Fwd IAT Min",
+      "Fwd IAT Std",
+      "Fwd IAT Total",
+      "Fwd PSH Flags",
+      "Fwd Packet Length Max",
+      "Fwd Packet Length Mean",
+      "Fwd Packet Length Min",
+      "Fwd Packet Length Std",
+      "Fwd Packets/s",
+      "Fwd URG Flags",
+      "Idle Max",
+      "Idle Mean",
+      "Idle Min",
+      "Idle Std",
+      "Init_Win_bytes_backward",
+      "Init_Win_bytes_forward",
+      "Max Packet Length",
+      "Min Packet Length",
+      "PSH Flag Count",
+      "Packet Length Mean",
+      "Packet Length Std",
+      "Packet Length Variance",
+      "RST Flag Count",
+      "SYN Flag Count",
+      "Subflow Bwd Bytes",
+      "Subflow Bwd Packets",
+      "Subflow Fwd Bytes",
+      "Subflow Fwd Packets",
+      "Total Backward Packets",
+      "Total Fwd Packets",
+      "Total Length of Bwd Packets",
+      "Total Length of Fwd Packets",
+      "URG Flag Count",
+      "act_data_pkt_fwd",
+      "min_seg_size_forward"
+    ],
+    "feature_count": 77,
+    "duplicate_header_note": "The release lists Fwd Header Length twice; one copy is used.",
+    "excluded_columns": [
+      "Dst IP",
+      "Flow ID",
+      "Label",
+      "Src IP",
+      "Src Port",
+      "Timestamp"
+    ],
+    "equality": "Every selected raw CSV field is outer-whitespace-trimmed and concatenated in a fixed column order before SHA-256 grouping."
+  },
+  "totals": {
+    "rows": 2830743,
+    "conflicting_feature_groups": 698,
+    "rows_in_conflicting_groups": 7020,
+    "fraction_rows_in_conflicting_groups": 0.0024799142839883382
+  },
+  "nfv3_family_audit": {
+    "families": [
+      "benign",
+      "dos",
+      "portscan",
+      "ddos",
+      "bf",
+      "bot",
+      "web",
+      "inf",
+      "heartbleed"
+    ],
+    "criterion": "The same 78-field vector occurs with more than one EXP94 family.",
+    "conflicting_feature_groups": 698,
+    "rows_in_conflicting_groups": 7020,
+    "fraction_rows_in_conflicting_groups": 0.0024799142839883382,
+    "per_family": [
+      {
+        "family": "benign",
+        "rows": 2273097,
+        "conflicting_rows": 736,
+        "conflicting_fraction": 0.0003237873262777611
+      },
+      {
+        "family": "dos",
+        "rows": 252661,
+        "conflicting_rows": 5225,
+        "conflicting_fraction": 0.020679883321921468
+      },
+      {
+        "family": "portscan",
+        "rows": 158930,
+        "conflicting_rows": 1053,
+        "conflicting_fraction": 0.006625558421946769
+      },
+      {
+        "family": "ddos",
+        "rows": 128027,
+        "conflicting_rows": 6,
+        "conflicting_fraction": 4.686511438993337e-05
+      },
+      {
+        "family": "bf",
+        "rows": 13835,
+        "conflicting_rows": 0,
+        "conflicting_fraction": 0.0
+      },
+      {
+        "family": "bot",
+        "rows": 1966,
+        "conflicting_rows": 0,
+        "conflicting_fraction": 0.0
+      },
+      {
+        "family": "web",
+        "rows": 2180,
+        "conflicting_rows": 0,
+        "conflicting_fraction": 0.0
+      },
+      {
+        "family": "inf",
+        "rows": 36,
+        "conflicting_rows": 0,
+        "conflicting_fraction": 0.0
+      },
+      {
+        "family": "heartbleed",
+        "rows": 11,
+        "conflicting_rows": 0,
+        "conflicting_fraction": 0.0
+      }
+    ]
+  },
+  "per_label": [
+    {
+      "label": "DoS Hulk",
+      "rows": 231073,
+      "conflicting_rows": 5224,
+      "conflicting_fraction": 0.022607574229788853
+    },
+    {
+      "label": "PortScan",
+      "rows": 158930,
+      "conflicting_rows": 1053,
+      "conflicting_fraction": 0.006625558421946769
+    },
+    {
+      "label": "BENIGN",
+      "rows": 2273097,
+      "conflicting_rows": 736,
+      "conflicting_fraction": 0.0003237873262777611
+    },
+    {
+      "label": "DoS slowloris",
+      "rows": 5796,
+      "conflicting_rows": 1,
+      "conflicting_fraction": 0.0001725327812284334
+    },
+    {
+      "label": "DDoS",
+      "rows": 128027,
+      "conflicting_rows": 6,
+      "conflicting_fraction": 4.686511438993337e-05
+    },
+    {
+      "label": "Bot",
+      "rows": 1966,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "DoS GoldenEye",
+      "rows": 10293,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "DoS Slowhttptest",
+      "rows": 5499,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "FTP-Patator",
+      "rows": 7938,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "Heartbleed",
+      "rows": 11,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "Infiltration",
+      "rows": 36,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "SSH-Patator",
+      "rows": 5897,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "Web Attack � Brute Force",
+      "rows": 1507,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "Web Attack � Sql Injection",
+      "rows": 21,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    },
+    {
+      "label": "Web Attack � XSS",
+      "rows": 652,
+      "conflicting_rows": 0,
+      "conflicting_fraction": 0.0
+    }
+  ],
+  "representative_conflicting_groups": [
+    {
+      "feature_sha256": "5b656fc9e5876d810ef46e05c7135f8b82e3641be4bad09ff788565ab94543e9",
+      "rows": 3362,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 2
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 3360
+        }
+      ],
+      "raw_samples": [
+        {
+          "filename": "data/cic2017/2_Tuesday-WorkingHours.pcap_ISCX.csv",
+          "label": "BENIGN",
+          "Destination Port": "80",
+          "Flow Duration": "1",
+          "Total Fwd Packets": "2",
+          "Total Backward Packets": "0",
+          "Total Length of Fwd Packets": "0",
+          "Total Length of Bwd Packets": "0",
+          "Flow Bytes/s": "0",
+          "Flow Packets/s": "2000000",
+          "Idle Min": "0"
+        },
+        {
+          "filename": "data/cic2017/3_Wednesday-workingHours.pcap_ISCX.csv",
+          "label": "DoS Hulk",
+          "Destination Port": "80",
+          "Flow Duration": "1",
+          "Total Fwd Packets": "2",
+          "Total Backward Packets": "0",
+          "Total Length of Fwd Packets": "0",
+          "Total Length of Bwd Packets": "0",
+          "Flow Bytes/s": "0",
+          "Flow Packets/s": "2000000",
+          "Idle Min": "0"
+        }
+      ]
+    },
+    {
+      "feature_sha256": "57b4f1a2ca37aa4698aced35d68ee45d6984b033ec1f7b5d54047ad7166b0529",
+      "rows": 354,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 3
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 351
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "b3f8b328f792589d58c0e4b1f20c7af4dee392ffee93d1cf9bf1e6421fb6bdb2",
+      "rows": 164,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 1
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 163
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "82e9bfb6f2418ac93ac6acdd814051613b74e91fd8a45bd294581c0902235832",
+      "rows": 133,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 2
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 131
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "93ec3f9628d52f136c94297e20def2973b1d158dc83b11697dc8352ae8fec985",
+      "rows": 81,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 1
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 80
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "3085426a5a1cbf77e0d9a809e261c78e1dc9e087d326902155a28b2467a07efc",
+      "rows": 61,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 1
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 60
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "28a4dcebcb39d09aaa8feca4fd04de92d46589e3809f02af3522f3205ad4925e",
+      "rows": 54,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 1
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 53
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "2307eeec33c6b7e21759e2a11a164c89dd431e8d4e9cbbee07f0c865ae0eaa9d",
+      "rows": 48,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 1
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 47
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "1afb3a9c3d08420e985ed82afdca15f9c4dfe526c858ef74f15951399188823a",
+      "rows": 47,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 2
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 45
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "a448dd9be9585ab8cab571fede43beb2848b2070bb567fb8735d155db0fb4ede",
+      "rows": 46,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 1
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 45
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "d1907a619a490b54ad898a47a0202cd8aaf597392cdac555189af9a2309a77c6",
+      "rows": 36,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 1
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 35
+        }
+      ],
+      "raw_samples": []
+    },
+    {
+      "feature_sha256": "c54b9b588a9c8452555394e52224f0ec9dc04195791d7bc5efbfe80e00cc0085",
+      "rows": 34,
+      "labels": 2,
+      "label_set": "BENIGN | DoS Hulk",
+      "per_label_rows": [
+        {
+          "label": "BENIGN",
+          "rows": 1
+        },
+        {
+          "label": "DoS Hulk",
+          "rows": 33
+        }
+      ],
+      "raw_samples": []
+    }
+  ]
+}

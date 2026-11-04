@@ -1,0 +1,1880 @@
+{
+  "dataset": "CIC-IDS2017",
+  "purpose": "Machine-readable transcription of the corrected CIC-IDS2017 labelling rules (Liu, Engelen et al., IEEE CNS 2022) in the EXP93 CorrectedRuleSet rule format for a raw-PCAP evaluation of the 2017 captures.",
+  "label_source": "https://github.com/GintsEngelen/CNS2022_Code/blob/master/Labelling/CICIDS2017_labelling_fixed_CICFlowMeter.ipynb",
+  "label_source_raw": "https://raw.githubusercontent.com/GintsEngelen/CNS2022_Code/master/Labelling/CICIDS2017_labelling_fixed_CICFlowMeter.ipynb",
+  "label_documentation": [
+    "https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html",
+    "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html",
+    "https://intrusion-detection.distrinet-research.be/CNS2022/Tools_Documentation.html",
+    "https://intrusion-detection.distrinet-research.be/WTMC2021/extended_doc.html",
+    "https://intrusion-detection.distrinet-research.be/WTMC2021/tools_datasets.html",
+    "https://github.com/GintsEngelen/CNS2022_Code/blob/master/README.md"
+  ],
+  "transcribed_on": "2026-11-03",
+  "timezone_note": "CIC-IDS2017 was captured in Fredericton, Canada (Atlantic Daylight Time, UTC-3) on 2017-07-03..07. The corrected CICFlowMeter outputs timestamps in UTC and the notebook states 'Timestamps are in NANOSECONDS (!) Unix time. Note that the CSV files are in the UTC timezone.' Every start_ns/end_ns below is copied verbatim from the notebook (UTC epoch ns); each rule's window_note prints the UTC wall clock and the derived ADT wall clock for checking against the original CIC schedule (e.g. FTP-Patator 12:17 UTC = 09:17 ADT, CIC lists 9:20-10:20). No local-time string was converted; the notebook never gives local times.",
+  "label_rule_note": "Rules transcribe the notebook's label_flows calls (time window, src/dst IPs and ports, payload_filter and additional_filters). Later notebook calls overwrite earlier labels, so each later call is given a higher 'priority' (CorrectedRuleSet sorts by -priority then id; attempted rules carry no 'label' so they never cause a label conflict). Differences from the notebook that the matcher imposes: (1) the notebook tests the CICFlowMeter flow-start Timestamp against the window, whereas CorrectedRuleSet requires the whole session inside the window and marks partial overlaps 'boundary'; (2) the notebook matches Src IP/Dst IP directionally, CorrectedRuleSet matches bidirectionally with the rule source as the 'attack' side, so victim-frame notebook rules are restated in the attacker frame; (3) the notebook's 'Total Length of Fwd Packet' == attack payload bytes, 'Total Fwd Packet' == attack packets, 'Flow Duration' (us) == flow_duration; (4) no protocol condition is added because the notebook has none. Conditions the matcher cannot express are kept in 'todo_condition' with 'status': 'requires_matcher_extension' and proposed field names (max_peer_payload_bytes, min_peer_packets, max_peer_packets); the matcher ignores unknown fields, so read the per-rule consequence before running.",
+  "matcher_extensions_required": [
+    {
+      "field": "max_peer_payload_bytes",
+      "used_by": [
+        "ssh_patator_attempted_nomalicious"
+      ],
+      "meaning": "upper bound on payload bytes sent by the peer (victim) side"
+    },
+    {
+      "field": "max_peer_packets",
+      "used_by": [
+        "dos_slowhttptest_attempted_unresponsive",
+        "web_bruteforce_attempted_artefact"
+      ],
+      "meaning": "upper bound on packets sent by the peer side"
+    },
+    {
+      "field": "min_peer_packets",
+      "used_by": [
+        "web_bruteforce_attempted_artefact"
+      ],
+      "meaning": "lower bound on packets sent by the peer side"
+    },
+    {
+      "field": "(new) exclude flows by Fwd Packet Length Max == 408 or attack payload in {176, 20514}",
+      "used_by": [
+        "infiltration_portscan_round3_host50"
+      ],
+      "meaning": "per-destination exclusion of benign background; no existing field; rule over-labels until implemented"
+    }
+  ],
+  "pcap_source_note": "Original PCAPs are distributed by the Canadian Institute for Cybersecurity (https://www.unb.ca/cic/datasets/ids-2017.html) as one file per day (Monday..Friday-WorkingHours.pcap); the authors ran pcapfix then reordercap before CICFlowMeter. No download url/member fields are given here because the EXP93 fetch step expects zip members and the 2017 files are plain PCAPs; add them after verifying the mirror.",
+  "class_order": [
+    "benign",
+    "ddos",
+    "bot",
+    "dos",
+    "bf",
+    "inf",
+    "web",
+    "heartbleed",
+    "portscan"
+  ],
+  "captures": [
+    {
+      "id": "cic2017_monday",
+      "path": "data/pcap/cic2017/Monday-WorkingHours.pcap",
+      "group_namespace": "cic2017_monday",
+      "unmatched_policy": "benign",
+      "capture_note": "Notebook cell 2 labels every Monday flow BENIGN (label_rest_as_benign_and_write_csv only); no attack rules exist.",
+      "rules": []
+    },
+    {
+      "id": "cic2017_tuesday",
+      "path": "data/pcap/cic2017/Tuesday-WorkingHours.pcap",
+      "group_namespace": "cic2017_tuesday",
+      "unmatched_policy": "benign",
+      "rules": [
+        {
+          "id": "ftp_patator",
+          "label": "bf",
+          "annotation": "FTP-Patator",
+          "notebook_label": "FTP-Patator",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            21
+          ],
+          "start_ns": 1499170672838272000,
+          "end_ns": 1499174416931403000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499170672838272000..1499174416931403000 directly; no local-to-UTC conversion was applied. start 2017-07-04 12:17:52.838272000 UTC (= 2017-07-04 09:17:52 ADT, UTC-3); end 2017-07-04 13:20:16.931403000 UTC (= 2017-07-04 10:20:16 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Notebook: no payload or protocol condition on the confirmed rule; flows without attacker payload and the src-port-52108 pre-test are re-labelled by the higher-priority attempted rules below."
+        },
+        {
+          "id": "ftp_patator_attempted_nopayload",
+          "annotation": "FTP-Patator-Attempted-NoPayload",
+          "notebook_label": "FTP-Patator - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            21
+          ],
+          "start_ns": 1499170672838272000,
+          "end_ns": 1499174416931403000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499170672838272000..1499174416931403000 directly; no local-to-UTC conversion was applied. start 2017-07-04 12:17:52.838272000 UTC (= 2017-07-04 09:17:52 ADT, UTC-3); end 2017-07-04 13:20:16.931403000 UTC (= 2017-07-04 10:20:16 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "payload_filter=True in notebook: Total Length of Fwd Packet == 0."
+        },
+        {
+          "id": "ftp_patator_attempted_pretest",
+          "annotation": "FTP-Patator-Attempted-StartupTeardown",
+          "notebook_label": "FTP-Patator - Attempted",
+          "attempted": true,
+          "attempted_category": 2,
+          "attempted_category_name": "Category 2 - Attack Startup/Teardown Artefact",
+          "priority": 20,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "src_ports": [
+            52108
+          ],
+          "dst_ports": [
+            21
+          ],
+          "start_ns": 1499170672838272000,
+          "end_ns": 1499174416931403000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499170672838272000..1499174416931403000 directly; no local-to-UTC conversion was applied. start 2017-07-04 12:17:52.838272000 UTC (= 2017-07-04 09:17:52 ADT, UTC-3); end 2017-07-04 13:20:16.931403000 UTC (= 2017-07-04 10:20:16 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Authors: very first flow (src port 52108) is a successful login pre-test, not brute force."
+        },
+        {
+          "id": "ssh_patator",
+          "label": "bf",
+          "annotation": "SSH-Patator",
+          "notebook_label": "SSH-Patator",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            22
+          ],
+          "start_ns": 1499188141049616000,
+          "end_ns": 1499195059018486000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499188141049616000..1499195059018486000 directly; no local-to-UTC conversion was applied. start 2017-07-04 17:09:01.049616000 UTC (= 2017-07-04 14:09:01 ADT, UTC-3); end 2017-07-04 19:04:19.018486000 UTC (= 2017-07-04 16:04:19 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "ssh_patator_attempted_nopayload",
+          "annotation": "SSH-Patator-Attempted-NoPayload",
+          "notebook_label": "SSH-Patator - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            22
+          ],
+          "start_ns": 1499188141049616000,
+          "end_ns": 1499195059018486000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499188141049616000..1499195059018486000 directly; no local-to-UTC conversion was applied. start 2017-07-04 17:09:01.049616000 UTC (= 2017-07-04 14:09:01 ADT, UTC-3); end 2017-07-04 19:04:19.018486000 UTC (= 2017-07-04 16:04:19 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "ssh_patator_attempted_nomalicious",
+          "annotation": "SSH-Patator-Attempted-NoMaliciousPayload",
+          "notebook_label": "SSH-Patator - Attempted",
+          "attempted": true,
+          "attempted_category": 3,
+          "attempted_category_name": "Category 3 - No malicious payload",
+          "priority": 20,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            22
+          ],
+          "start_ns": 1499188141049616000,
+          "end_ns": 1499195059018486000,
+          "max_attack_payload_bytes": 32,
+          "max_peer_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499188141049616000..1499195059018486000 directly; no local-to-UTC conversion was applied. start 2017-07-04 17:09:01.049616000 UTC (= 2017-07-04 14:09:01 ADT, UTC-3); end 2017-07-04 19:04:19.018486000 UTC (= 2017-07-04 16:04:19 ADT, UTC-3).",
+          "todo_condition": "Notebook: (Total Length of Fwd Packet <= 32) & (Total Length of Bwd Packet == 0). The matcher has no max_peer_payload_bytes; the proposed field max_peer_payload_bytes=0 is included but ignored until CorrectedRuleSet._condition supports it. Until then this rule over-matches flows with <=32 B attacker payload and non-zero victim payload (they become attempted instead of confirmed SSH-Patator).",
+          "status": "matcher_extension_implemented_in_exp94",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Authors: small forward payload (likely TLS handshake) without login attempts."
+        }
+      ]
+    },
+    {
+      "id": "cic2017_wednesday",
+      "path": "data/pcap/cic2017/Wednesday-workingHours.pcap",
+      "group_namespace": "cic2017_wednesday",
+      "unmatched_policy": "benign",
+      "rules": [
+        {
+          "id": "dos_slowloris_attempted_early_launch",
+          "annotation": "DoS-Slowloris-Attempted-ImplementedIncorrectly",
+          "notebook_label": "DoS Slowloris - Attempted",
+          "attempted": true,
+          "attempted_category": 5,
+          "attempted_category_name": "Category 5 - Attack Implemented Incorrectly",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499258926211817000,
+          "end_ns": 1499258927000000000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499258926211817000..1499258927000000000 directly; no local-to-UTC conversion was applied. start 2017-07-05 12:48:46.211817000 UTC (= 2017-07-05 09:48:46 ADT, UTC-3); end 2017-07-05 12:48:47.000000000 UTC (= 2017-07-05 09:48:47 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Notebook: 'Accidental early launch of the tool with wrong parameters'. Authors' page quotes the launch as 12:48:46.211817..12:48:46.264300 UTC; the notebook end bound is 12:48:47.000000 UTC."
+        },
+        {
+          "id": "dos_slowloris",
+          "label": "dos",
+          "annotation": "DoS-Slowloris",
+          "notebook_label": "DoS Slowloris",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499258934539220000,
+          "end_ns": 1499260278500956000,
+          "exclude_attack_src_ports": [
+            33358,
+            33360,
+            33362,
+            54114
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499258934539220000..1499260278500956000 directly; no local-to-UTC conversion was applied. start 2017-07-05 12:48:54.539220000 UTC (= 2017-07-05 09:48:54 ADT, UTC-3); end 2017-07-05 13:11:18.500956000 UTC (= 2017-07-05 10:11:18 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Author page shows the human-readable end as '2017-07-05 14:20:08.91578' next to unix 1499260278.500956; the unix value (13:11:18.500956 UTC) is used, matching the notebook."
+        },
+        {
+          "id": "dos_slowloris_attempted_teardown",
+          "annotation": "DoS-Slowloris-Attempted-StartupTeardown",
+          "notebook_label": "DoS Slowloris - Attempted",
+          "attempted": true,
+          "attempted_category": 2,
+          "attempted_category_name": "Category 2 - Attack Startup/Teardown Artefact",
+          "priority": 20,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "src_ports": [
+            33358,
+            33360,
+            33362
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499258934539220000,
+          "end_ns": 1499260278500956000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499258934539220000..1499260278500956000 directly; no local-to-UTC conversion was applied. start 2017-07-05 12:48:54.539220000 UTC (= 2017-07-05 09:48:54 ADT, UTC-3); end 2017-07-05 13:11:18.500956000 UTC (= 2017-07-05 10:11:18 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Ports 33358, 33360, 33362 contain attack teardown flows (web page navigation when the tool shut down)."
+        },
+        {
+          "id": "dos_slowloris_attempted_nopayload",
+          "annotation": "DoS-Slowloris-Attempted-NoPayload",
+          "notebook_label": "DoS Slowloris - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 30,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499258934539220000,
+          "end_ns": 1499260278500956000,
+          "max_attack_payload_bytes": 0,
+          "exclude_attack_src_ports": [
+            33358,
+            33360,
+            33362,
+            54114
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499258934539220000..1499260278500956000 directly; no local-to-UTC conversion was applied. start 2017-07-05 12:48:54.539220000 UTC (= 2017-07-05 09:48:54 ADT, UTC-3); end 2017-07-05 13:11:18.500956000 UTC (= 2017-07-05 10:11:18 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "dos_slowloris_attempted_unresponsive",
+          "annotation": "DoS-Slowloris-Attempted-TargetUnresponsive",
+          "notebook_label": "DoS Slowloris - Attempted",
+          "attempted": true,
+          "attempted_category": 6,
+          "attempted_category_name": "Category 6 - Target System Unresponsive",
+          "priority": 40,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499258934539220000,
+          "end_ns": 1499260278500956000,
+          "max_attack_payload_bytes": 0,
+          "min_duration_us": 199800,
+          "exclude_attack_src_ports": [
+            33358,
+            33360,
+            33362,
+            54114
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499258934539220000..1499260278500956000 directly; no local-to-UTC conversion was applied. start 2017-07-05 12:48:54.539220000 UTC (= 2017-07-05 09:48:54 ADT, UTC-3); end 2017-07-05 13:11:18.500956000 UTC (= 2017-07-05 10:11:18 ADT, UTC-3).",
+          "todo_condition": "Notebook writes this rule in the VICTIM frame: Src IP 192.168.10.50, Src Port 80, Dst IP 172.16.0.1, Dst Port not in [33358,33360,33362,54114], Total Length of Bwd Packet == 0, Flow Duration >= 199800 (i.e. CICFlowMeter records whose direction was flipped by the timeout/TCP-appendix artefact). Our sessions have no such orientation artefact, so the rule is restated in the attacker frame (attacker payload == 0, duration >= 199800 us, attacker port not in the excluded list). Consequence: category 0 vs 6 assignment for zero-payload flows can differ from the notebook; both are Attempted.",
+          "status": "restated_in_attacker_frame",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Target unresponsive because of DoS, no payloads in these flows."
+        },
+        {
+          "id": "dos_slowloris_attempted_artefact",
+          "annotation": "DoS-Slowloris-Attempted-AttackArtefact",
+          "notebook_label": "DoS Slowloris - Attempted",
+          "attempted": true,
+          "attempted_category": 4,
+          "attempted_category_name": "Category 4 - Attack Artefact",
+          "priority": 50,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "src_ports": [
+            54114
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499258934539220000,
+          "end_ns": 1499260278500956000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499258934539220000..1499260278500956000 directly; no local-to-UTC conversion was applied. start 2017-07-05 12:48:54.539220000 UTC (= 2017-07-05 09:48:54 ADT, UTC-3); end 2017-07-05 13:11:18.500956000 UTC (= 2017-07-05 10:11:18 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Artefact likely from authors checking the webserver (normal web navigation)."
+        },
+        {
+          "id": "dos_slowhttptest",
+          "label": "dos",
+          "annotation": "DoS-Slowhttptest",
+          "notebook_label": "DoS Slowhttptest",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499260537936810000,
+          "end_ns": 1499261869331517000,
+          "exclude_attack_src_ports": [
+            33372
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499260537936810000..1499261869331517000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:15:37.936810000 UTC (= 2017-07-05 10:15:37 ADT, UTC-3); end 2017-07-05 13:37:49.331517000 UTC (= 2017-07-05 10:37:49 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "dos_slowhttptest_attempted_startup",
+          "annotation": "DoS-Slowhttptest-Attempted-StartupTeardown",
+          "notebook_label": "DoS Slowhttptest - Attempted",
+          "attempted": true,
+          "attempted_category": 2,
+          "attempted_category_name": "Category 2 - Attack Startup/Teardown Artefact",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "src_ports": [
+            33372
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499260537936810000,
+          "end_ns": 1499261869331517000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499260537936810000..1499261869331517000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:15:37.936810000 UTC (= 2017-07-05 10:15:37 ADT, UTC-3); end 2017-07-05 13:37:49.331517000 UTC (= 2017-07-05 10:37:49 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Initial flow navigating to the webpage in preparation of the attack."
+        },
+        {
+          "id": "dos_slowhttptest_attempted_nopayload",
+          "annotation": "DoS-Slowhttptest-Attempted-NoPayload",
+          "notebook_label": "DoS Slowhttptest - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 20,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499260537936810000,
+          "end_ns": 1499261869331517000,
+          "max_attack_payload_bytes": 0,
+          "exclude_attack_src_ports": [
+            33372,
+            37670
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499260537936810000..1499261869331517000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:15:37.936810000 UTC (= 2017-07-05 10:15:37 ADT, UTC-3); end 2017-07-05 13:37:49.331517000 UTC (= 2017-07-05 10:37:49 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "dos_slowhttptest_attempted_unresponsive",
+          "annotation": "DoS-Slowhttptest-Attempted-TargetUnresponsive",
+          "notebook_label": "DoS Slowhttptest - Attempted",
+          "attempted": true,
+          "attempted_category": 6,
+          "attempted_category_name": "Category 6 - Target System Unresponsive",
+          "priority": 30,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499260537936810000,
+          "end_ns": 1499261869331517000,
+          "max_attack_payload_bytes": 0,
+          "min_duration_us": 199984,
+          "exclude_attack_src_ports": [
+            33372,
+            37670
+          ],
+          "max_peer_packets": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499260537936810000..1499261869331517000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:15:37.936810000 UTC (= 2017-07-05 10:15:37 ADT, UTC-3); end 2017-07-05 13:37:49.331517000 UTC (= 2017-07-05 10:37:49 ADT, UTC-3).",
+          "todo_condition": "Notebook adds (Total Bwd packets == 0). The matcher has no peer-packet bound; proposed field max_peer_packets=0 is included but ignored until supported. Until then zero-payload flows with duration >= 199984 us but with victim packets are classed category 6 instead of 0 (both Attempted).",
+          "status": "matcher_extension_implemented_in_exp94",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Retransmissions because target web server is brought down."
+        },
+        {
+          "id": "dos_slowhttptest_attempted_artefact",
+          "annotation": "DoS-Slowhttptest-Attempted-AttackArtefact",
+          "notebook_label": "DoS Slowhttptest - Attempted",
+          "attempted": true,
+          "attempted_category": 4,
+          "attempted_category_name": "Category 4 - Attack Artefact",
+          "priority": 40,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "src_ports": [
+            37670
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499260537936810000,
+          "end_ns": 1499261869331517000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499260537936810000..1499261869331517000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:15:37.936810000 UTC (= 2017-07-05 10:15:37 ADT, UTC-3); end 2017-07-05 13:37:49.331517000 UTC (= 2017-07-05 10:37:49 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Authors likely navigating to the webpage mid-attack."
+        },
+        {
+          "id": "dos_hulk",
+          "label": "dos",
+          "annotation": "DoS-Hulk",
+          "notebook_label": "DoS Hulk",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499262203194704000,
+          "end_ns": 1499263641326171000,
+          "exclude_attack_src_ports": [
+            48678,
+            43664
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499262203194704000..1499263641326171000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:43:23.194704000 UTC (= 2017-07-05 10:43:23 ADT, UTC-3); end 2017-07-05 14:07:21.326171000 UTC (= 2017-07-05 11:07:21 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Notebook splits the confirmed label into 13:43:23.194704..13:44:59.999999999 UTC (src port not in [48678,43664]) and 13:45:00..14:07:21.326171 UTC (no port exclusion). This rule covers the union with the exclusion so a session straddling 13:45:00 is not left as 'boundary'; dos_hulk_late restores ports 48678/43664 for the second interval. Authors keep the DoS Hulk label although the tool is misimplemented (Connection: close), strictly category 5."
+        },
+        {
+          "id": "dos_hulk_late",
+          "label": "dos",
+          "annotation": "DoS-Hulk",
+          "notebook_label": "DoS Hulk",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499262300000000000,
+          "end_ns": 1499263641326171000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499262300000000000..1499263641326171000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:45:00.000000000 UTC (= 2017-07-05 10:45:00 ADT, UTC-3); end 2017-07-05 14:07:21.326171000 UTC (= 2017-07-05 11:07:21 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Second confirmed interval from the notebook (no src-port exclusion)."
+        },
+        {
+          "id": "dos_hulk_attempted_artefact",
+          "annotation": "DoS-Hulk-Attempted-AttackArtefact",
+          "notebook_label": "DoS Hulk - Attempted",
+          "attempted": true,
+          "attempted_category": 4,
+          "attempted_category_name": "Category 4 - Attack Artefact",
+          "priority": 30,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "src_ports": [
+            48678,
+            43664
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499262203194704000,
+          "end_ns": 1499262299999999999,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499262203194704000..1499262299999999999 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:43:23.194704000 UTC (= 2017-07-05 10:43:23 ADT, UTC-3); end 2017-07-05 13:44:59.999999999 UTC (= 2017-07-05 10:44:59 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Ports 48678 and 43664 carry a benign HTTP request launched by the attacker IP mid-attack (authors checking the webserver); only in the first interval."
+        },
+        {
+          "id": "dos_hulk_attempted_nopayload",
+          "annotation": "DoS-Hulk-Attempted-NoPayload",
+          "notebook_label": "DoS Hulk - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499262203194704000,
+          "end_ns": 1499263641326171000,
+          "max_attack_payload_bytes": 0,
+          "exclude_attack_src_ports": [
+            48678,
+            43664
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499262203194704000..1499263641326171000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:43:23.194704000 UTC (= 2017-07-05 10:43:23 ADT, UTC-3); end 2017-07-05 14:07:21.326171000 UTC (= 2017-07-05 11:07:21 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "dos_hulk_attempted_nomalicious",
+          "annotation": "DoS-Hulk-Attempted-NoMaliciousPayload",
+          "notebook_label": "DoS Hulk - Attempted",
+          "attempted": true,
+          "attempted_category": 3,
+          "attempted_category_name": "Category 3 - No malicious payload",
+          "priority": 20,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499262203194704000,
+          "end_ns": 1499263641326171000,
+          "min_attack_payload_bytes": 1,
+          "max_attack_payload_bytes": 281,
+          "exclude_attack_src_ports": [
+            48678,
+            43664
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499262203194704000..1499263641326171000 directly; no local-to-UTC conversion was applied. start 2017-07-05 13:43:23.194704000 UTC (= 2017-07-05 10:43:23 ADT, UTC-3); end 2017-07-05 14:07:21.326171000 UTC (= 2017-07-05 11:07:21 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Notebook: 0 < Total Length of Fwd Packet < 282; 282 is the minimum size of the malicious payload (artefacts from the tool or non-empty TCP appendices)."
+        },
+        {
+          "id": "dos_goldeneye",
+          "label": "dos",
+          "annotation": "DoS-GoldenEye",
+          "notebook_label": "DoS GoldenEye",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499263803231753000,
+          "end_ns": 1499264408915718000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499263803231753000..1499264408915718000 directly; no local-to-UTC conversion was applied. start 2017-07-05 14:10:03.231753000 UTC (= 2017-07-05 11:10:03 ADT, UTC-3); end 2017-07-05 14:20:08.915718000 UTC (= 2017-07-05 11:20:08 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "dos_goldeneye_attempted_nopayload",
+          "annotation": "DoS-GoldenEye-Attempted-NoPayload",
+          "notebook_label": "DoS GoldenEye - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499263803231753000,
+          "end_ns": 1499264408915718000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499263803231753000..1499264408915718000 directly; no local-to-UTC conversion was applied. start 2017-07-05 14:10:03.231753000 UTC (= 2017-07-05 11:10:03 ADT, UTC-3); end 2017-07-05 14:20:08.915718000 UTC (= 2017-07-05 11:20:08 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "heartbleed",
+          "label": "heartbleed",
+          "annotation": "Heartbleed",
+          "notebook_label": "Heartbleed",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.51"
+          ],
+          "src_ports": [
+            45022
+          ],
+          "dst_ports": [
+            444
+          ],
+          "start_ns": 1499278335650811000,
+          "end_ns": 1499279563294455000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499278335650811000..1499279563294455000 directly; no local-to-UTC conversion was applied. start 2017-07-05 18:12:15.650811000 UTC (= 2017-07-05 15:12:15 ADT, UTC-3); end 2017-07-05 18:32:43.294455000 UTC (= 2017-07-05 15:32:43 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Single src/dst port pair 45022 -> 444; tell-tale sign is the very long TCP duration."
+        },
+        {
+          "id": "heartbleed_attempted_nopayload",
+          "annotation": "Heartbleed-Attempted-NoPayload",
+          "notebook_label": "Heartbleed - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.51"
+          ],
+          "src_ports": [
+            45022
+          ],
+          "dst_ports": [
+            444
+          ],
+          "start_ns": 1499278335650811000,
+          "end_ns": 1499279563294455000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499278335650811000..1499279563294455000 directly; no local-to-UTC conversion was applied. start 2017-07-05 18:12:15.650811000 UTC (= 2017-07-05 15:12:15 ADT, UTC-3); end 2017-07-05 18:32:43.294455000 UTC (= 2017-07-05 15:32:43 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        }
+      ]
+    },
+    {
+      "id": "cic2017_thursday",
+      "path": "data/pcap/cic2017/Thursday-WorkingHours.pcap",
+      "group_namespace": "cic2017_thursday",
+      "unmatched_policy": "benign",
+      "rules": [
+        {
+          "id": "web_bruteforce_attempted_setup",
+          "annotation": "Web-Attack-Brute-Force-Attempted-StartupTeardown",
+          "notebook_label": "Web Attack - Brute Force - Attempted",
+          "attempted": true,
+          "attempted_category": 2,
+          "attempted_category_name": "Category 2 - Attack Startup/Teardown Artefact",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499343354880049000,
+          "end_ns": 1499343531179279000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499343354880049000..1499343531179279000 directly; no local-to-UTC conversion was applied. start 2017-07-06 12:15:54.880049000 UTC (= 2017-07-06 09:15:54 ADT, UTC-3); end 2017-07-06 12:18:51.179279000 UTC (= 2017-07-06 09:18:51 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Environment set-up flows before the attack (separate, earlier window)."
+        },
+        {
+          "id": "web_bruteforce",
+          "label": "web",
+          "annotation": "Web-Attack-Brute-Force",
+          "notebook_label": "Web Attack - Brute Force",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499343567660566000,
+          "end_ns": 1499346011622209000,
+          "min_attack_packets": 21,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499343567660566000..1499346011622209000 directly; no local-to-UTC conversion was applied. start 2017-07-06 12:19:27.660566000 UTC (= 2017-07-06 09:19:27 ADT, UTC-3); end 2017-07-06 13:00:11.622209000 UTC (= 2017-07-06 10:00:11 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Notebook: (Total Fwd Packet > 20) | (Src Port == 44464). The OR is split into this rule and web_bruteforce_port44464 because any_of cannot test ports."
+        },
+        {
+          "id": "web_bruteforce_port44464",
+          "label": "web",
+          "annotation": "Web-Attack-Brute-Force",
+          "notebook_label": "Web Attack - Brute Force",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "src_ports": [
+            44464
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499343567660566000,
+          "end_ns": 1499346011622209000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499343567660566000..1499346011622209000 directly; no local-to-UTC conversion was applied. start 2017-07-06 12:19:27.660566000 UTC (= 2017-07-06 09:19:27 ADT, UTC-3); end 2017-07-06 13:00:11.622209000 UTC (= 2017-07-06 10:00:11 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Second branch of the notebook OR (Src Port == 44464)."
+        },
+        {
+          "id": "web_bruteforce_attempted_nopayload",
+          "annotation": "Web-Attack-Brute-Force-Attempted-NoPayload",
+          "notebook_label": "Web Attack - Brute Force - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499343567660566000,
+          "end_ns": 1499346011622209000,
+          "max_attack_payload_bytes": 0,
+          "max_attack_packets": 20,
+          "exclude_attack_src_ports": [
+            44464
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499343567660566000..1499346011622209000 directly; no local-to-UTC conversion was applied. start 2017-07-06 12:19:27.660566000 UTC (= 2017-07-06 09:19:27 ADT, UTC-3); end 2017-07-06 13:00:11.622209000 UTC (= 2017-07-06 10:00:11 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Notebook: payload_filter & ~((Total Fwd Packet > 20) | (Src Port == 44464))."
+        },
+        {
+          "id": "web_bruteforce_attempted_artefact",
+          "annotation": "Web-Attack-Brute-Force-Attempted-AttackArtefact",
+          "notebook_label": "Web Attack - Brute Force - Attempted",
+          "attempted": true,
+          "attempted_category": 4,
+          "attempted_category_name": "Category 4 - Attack Artefact",
+          "priority": 20,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499343567660566000,
+          "end_ns": 1499346011622209000,
+          "min_attack_payload_bytes": 1,
+          "min_attack_packets": 5,
+          "max_attack_packets": 5,
+          "exclude_attack_src_ports": [
+            44464
+          ],
+          "min_peer_packets": 5,
+          "max_peer_packets": 5,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499343567660566000..1499346011622209000 directly; no local-to-UTC conversion was applied. start 2017-07-06 12:19:27.660566000 UTC (= 2017-07-06 09:19:27 ADT, UTC-3); end 2017-07-06 13:00:11.622209000 UTC (= 2017-07-06 10:00:11 ADT, UTC-3).",
+          "todo_condition": "Notebook adds (Total Bwd packets == 5). The matcher has no peer-packet bound; proposed fields min_peer_packets=5/max_peer_packets=5 are included but ignored until supported. Until then 5-forward-packet flows with any backward packet count are classed category 4; in the notebook such flows (<=20 fwd packets, with payload, not port 44464, bwd != 5) stay unlabelled and become BENIGN, so the end label (benign) is the same.",
+          "status": "matcher_extension_implemented_in_exp94",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Interlaced plain GET flows (5 fwd + 5 bwd packets) carry no brute-force attempt."
+        },
+        {
+          "id": "web_xss",
+          "label": "web",
+          "annotation": "Web-Attack-XSS",
+          "notebook_label": "Web Attack - XSS",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499346935283859000,
+          "end_ns": 1499348121341704000,
+          "min_attack_packets": 150,
+          "exclude_attack_src_ports": [
+            36180,
+            36182,
+            36184,
+            36186,
+            36188,
+            36190
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499346935283859000..1499348121341704000 directly; no local-to-UTC conversion was applied. start 2017-07-06 13:15:35.283859000 UTC (= 2017-07-06 10:15:35 ADT, UTC-3); end 2017-07-06 13:35:21.341704000 UTC (= 2017-07-06 10:35:21 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Total Fwd Packet >= 150 filters startup/teardown traffic; src-port exclusion prevents overlap with SQL Injection flows."
+        },
+        {
+          "id": "web_xss_attempted_nopayload",
+          "annotation": "Web-Attack-XSS-Attempted-NoPayload",
+          "notebook_label": "Web Attack - XSS - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499346935283859000,
+          "end_ns": 1499348121341704000,
+          "max_attack_payload_bytes": 0,
+          "exclude_attack_src_ports": [
+            36180,
+            36182,
+            36184,
+            36186,
+            36188,
+            36190
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499346935283859000..1499348121341704000 directly; no local-to-UTC conversion was applied. start 2017-07-06 13:15:35.283859000 UTC (= 2017-07-06 10:15:35 ADT, UTC-3); end 2017-07-06 13:35:21.341704000 UTC (= 2017-07-06 10:35:21 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "web_xss_attempted_startup_teardown",
+          "annotation": "Web-Attack-XSS-Attempted-StartupTeardown",
+          "notebook_label": "Web Attack - XSS - Attempted",
+          "attempted": true,
+          "attempted_category": 2,
+          "attempted_category_name": "Category 2 - Attack Startup/Teardown Artefact",
+          "priority": 20,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499346935283859000,
+          "end_ns": 1499348121341704000,
+          "min_attack_payload_bytes": 1,
+          "max_attack_packets": 149,
+          "exclude_attack_src_ports": [
+            36180,
+            36182,
+            36184,
+            36186,
+            36188,
+            36190
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499346935283859000..1499348121341704000 directly; no local-to-UTC conversion was applied. start 2017-07-06 13:15:35.283859000 UTC (= 2017-07-06 10:15:35 ADT, UTC-3); end 2017-07-06 13:35:21.341704000 UTC (= 2017-07-06 10:35:21 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Notebook: Total Length of Fwd Packet > 0 & Total Fwd Packet < 150."
+        },
+        {
+          "id": "web_sql_attempted_setup",
+          "annotation": "Web-Attack-SQL-Injection-Attempted-StartupTeardown",
+          "notebook_label": "Web Attack - SQL Injection - Attempted",
+          "attempted": true,
+          "attempted_category": 2,
+          "attempted_category_name": "Category 2 - Attack Startup/Teardown Artefact",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "src_ports": [
+            36180,
+            36182,
+            36184,
+            36186,
+            36188
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499348127852814000,
+          "end_ns": 1499348145720612000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499348127852814000..1499348145720612000 directly; no local-to-UTC conversion was applied. start 2017-07-06 13:35:27.852814000 UTC (= 2017-07-06 10:35:27 ADT, UTC-3); end 2017-07-06 13:35:45.720612000 UTC (= 2017-07-06 10:35:45 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Attack set-up (navigating to the proper DVWA page) isolated by timestamps and src ports."
+        },
+        {
+          "id": "web_sql",
+          "label": "web",
+          "annotation": "Web-Attack-SQL-Injection",
+          "notebook_label": "Web Attack - SQL Injection",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499348145732950000,
+          "end_ns": 1499348575320284000,
+          "exclude_attack_src_ports": [
+            36180,
+            36182,
+            36184,
+            36186,
+            36188
+          ],
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499348145732950000..1499348575320284000 directly; no local-to-UTC conversion was applied. start 2017-07-06 13:35:45.732950000 UTC (= 2017-07-06 10:35:45 ADT, UTC-3); end 2017-07-06 13:42:55.320284000 UTC (= 2017-07-06 10:42:55 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Authors: first malicious packet occurs about 5 minutes earlier than the original CIC time frame."
+        },
+        {
+          "id": "web_sql_attempted_nopayload",
+          "annotation": "Web-Attack-SQL-Injection-Attempted-NoPayload",
+          "notebook_label": "Web Attack - SQL Injection - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 20,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "dst_ports": [
+            80
+          ],
+          "start_ns": 1499348127852814000,
+          "end_ns": 1499348145720612000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499348127852814000..1499348145720612000 directly; no local-to-UTC conversion was applied. start 2017-07-06 13:35:27.852814000 UTC (= 2017-07-06 10:35:27 ADT, UTC-3); end 2017-07-06 13:35:45.720612000 UTC (= 2017-07-06 10:35:45 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Transcribed from the notebook, which applies this category-0 rule to the SET-UP window 13:35:27.852814..13:35:45.720612 UTC with no src-port filter. The authors' web page instead lists it for the main window 13:35:45.732950..13:42:55.320284 UTC with 'Src Port not in [36180..36188]'. The notebook (executable source) is followed; a human should decide whether to add the web-page variant."
+        },
+        {
+          "id": "infiltration_communication",
+          "label": "inf",
+          "annotation": "Infiltration-Communication",
+          "notebook_label": "Infiltration",
+          "priority": 0,
+          "src_ips": [
+            "192.168.10.8"
+          ],
+          "dst_ips": [
+            "205.174.165.73"
+          ],
+          "start_ns": 1499361542547210000,
+          "end_ns": 1499366769364731000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499361542547210000..1499366769364731000 directly; no local-to-UTC conversion was applied. start 2017-07-06 17:19:02.547210000 UTC (= 2017-07-06 14:19:02 ADT, UTC-3); end 2017-07-06 18:46:09.364731000 UTC (= 2017-07-06 15:46:09 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Section 11.2 'Communication Victim - Attacker': single TCP connection initiated by the victim 192.168.10.8 to 205.174.165.73; attacker issues commands. Dropbox download traffic that delivered the payload is left Benign by the authors (encrypted, flow not identifiable)."
+        },
+        {
+          "id": "infiltration_communication_attempted_nopayload",
+          "annotation": "Infiltration-Communication-Attempted-NoPayload",
+          "notebook_label": "Infiltration - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "192.168.10.8"
+          ],
+          "dst_ips": [
+            "205.174.165.73"
+          ],
+          "start_ns": 1499361542547210000,
+          "end_ns": 1499366769364731000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499361542547210000..1499366769364731000 directly; no local-to-UTC conversion was applied. start 2017-07-06 17:19:02.547210000 UTC (= 2017-07-06 14:19:02 ADT, UTC-3); end 2017-07-06 18:46:09.364731000 UTC (= 2017-07-06 15:46:09 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "infiltration_attempted_dryrun",
+          "annotation": "Infiltration-Communication-Attempted-StartupTeardown",
+          "notebook_label": "Infiltration - Attempted",
+          "attempted": true,
+          "attempted_category": 2,
+          "attempted_category_name": "Category 2 - Attack Startup/Teardown Artefact",
+          "priority": 10,
+          "src_ips": [
+            "192.168.10.9"
+          ],
+          "dst_ips": [
+            "205.174.165.73"
+          ],
+          "start_ns": 1499361228830533000,
+          "end_ns": 1499361301251276000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499361228830533000..1499361301251276000 directly; no local-to-UTC conversion was applied. start 2017-07-06 17:13:48.830533000 UTC (= 2017-07-06 14:13:48 ADT, UTC-3); end 2017-07-06 17:15:01.251276000 UTC (= 2017-07-06 14:15:01 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "A few connection attempts from 192.168.10.9 several minutes beforehand (possible dry run by the authors)."
+        },
+        {
+          "id": "infiltration_cooldisk_mac",
+          "label": "inf",
+          "annotation": "Infiltration-CoolDisk-MAC",
+          "notebook_label": "Infiltration",
+          "priority": 0,
+          "src_ips": [
+            "192.168.10.25"
+          ],
+          "dst_ips": [
+            "205.174.165.73"
+          ],
+          "start_ns": 1499363616453990000,
+          "end_ns": 1499371339347892000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499363616453990000..1499371339347892000 directly; no local-to-UTC conversion was applied. start 2017-07-06 17:53:36.453990000 UTC (= 2017-07-06 14:53:36 ADT, UTC-3); end 2017-07-06 20:02:19.347892000 UTC (= 2017-07-06 17:02:19 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Section 11.1 'Cool disk - MAC': completely missed in the original labelling; labelled because a Python Meterpreter is pushed from 205.174.165.73 to 192.168.10.25."
+        },
+        {
+          "id": "infiltration_cooldisk_mac_attempted_nopayload",
+          "annotation": "Infiltration-CoolDisk-MAC-Attempted-NoPayload",
+          "notebook_label": "Infiltration - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "192.168.10.25"
+          ],
+          "dst_ips": [
+            "205.174.165.73"
+          ],
+          "start_ns": 1499363616453990000,
+          "end_ns": 1499371339347892000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499363616453990000..1499371339347892000 directly; no local-to-UTC conversion was applied. start 2017-07-06 17:53:36.453990000 UTC (= 2017-07-06 14:53:36 ADT, UTC-3); end 2017-07-06 20:02:19.347892000 UTC (= 2017-07-06 17:02:19 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "infiltration_portscan_round1",
+          "label": "portscan",
+          "annotation": "Infiltration-Portscan",
+          "notebook_label": "Infiltration - Portscan",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.51"
+          ],
+          "src_ports": [
+            50122,
+            50133
+          ],
+          "start_ns": 1499360431706755000,
+          "end_ns": 1499360445728887000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499360431706755000..1499360445728887000 directly; no local-to-UTC conversion was applied. start 2017-07-06 17:00:31.706755000 UTC (= 2017-07-06 14:00:31 ADT, UTC-3); end 2017-07-06 17:00:45.728887000 UTC (= 2017-07-06 14:00:45 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Round 1: external attacker scans 192.168.10.51 from fixed source ports 50122/50133; final timestamp taken from the port group and the Meterpreter log."
+        },
+        {
+          "id": "infiltration_portscan_round2",
+          "label": "portscan",
+          "annotation": "Infiltration-Portscan",
+          "notebook_label": "Infiltration - Portscan",
+          "priority": 0,
+          "src_ips": [
+            "192.168.10.8"
+          ],
+          "dst_ips": [
+            "192.168.10.5"
+          ],
+          "start_ns": 1499362410884008000,
+          "end_ns": 1499362444285175000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499362410884008000..1499362444285175000 directly; no local-to-UTC conversion was applied. start 2017-07-06 17:33:30.884008000 UTC (= 2017-07-06 14:33:30 ADT, UTC-3); end 2017-07-06 17:34:04.285175000 UTC (= 2017-07-06 14:34:04 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Round 2 at 17:33 UTC from the compromised host; benign in the original dataset and absent from the CIC documentation."
+        },
+        {
+          "id": "infiltration_portscan_round3",
+          "label": "portscan",
+          "annotation": "Infiltration-Portscan",
+          "notebook_label": "Infiltration - Portscan",
+          "priority": 0,
+          "src_ips": [
+            "192.168.10.8"
+          ],
+          "dst_ips": [
+            "192.168.10.5",
+            "192.168.10.9",
+            "192.168.10.12",
+            "192.168.10.14",
+            "192.168.10.15",
+            "192.168.10.16",
+            "192.168.10.17",
+            "192.168.10.19",
+            "192.168.10.25",
+            "192.168.10.51"
+          ],
+          "start_ns": 1499364314425162000,
+          "end_ns": 1499366764331875000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499364314425162000..1499366764331875000 directly; no local-to-UTC conversion was applied. start 2017-07-06 18:05:14.425162000 UTC (= 2017-07-06 15:05:14 ADT, UTC-3); end 2017-07-06 18:46:04.331875000 UTC (= 2017-07-06 15:46:04 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Round 3 for the ten destination hosts that carry no extra condition in the notebook; 192.168.10.50 is handled by infiltration_portscan_round3_host50."
+        },
+        {
+          "id": "infiltration_portscan_round3_host50",
+          "label": "portscan",
+          "annotation": "Infiltration-Portscan",
+          "notebook_label": "Infiltration - Portscan",
+          "priority": 0,
+          "src_ips": [
+            "192.168.10.8"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "start_ns": 1499364314425162000,
+          "end_ns": 1499366764331875000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499364314425162000..1499366764331875000 directly; no local-to-UTC conversion was applied. start 2017-07-06 18:05:14.425162000 UTC (= 2017-07-06 15:05:14 ADT, UTC-3); end 2017-07-06 18:46:04.331875000 UTC (= 2017-07-06 15:46:04 ADT, UTC-3).",
+          "todo_condition": "Notebook excludes benign background 192.168.10.8 -> 192.168.10.50 flows with ~((Fwd Packet Length Max == 408) & Dst IP == 192.168.10.50) & ~((Total Length of Fwd Packet in [176, 20514]) & Dst IP == 192.168.10.50). The matcher has no max-packet-length feature or payload-equality exclusion. WARNING: until extended, this CONFIRMED rule over-labels that benign background traffic as portscan; disable it or extend the matcher before use.",
+          "status": "matcher_extension_implemented_in_exp94",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "exclude_attack_payload_max_eq": 408,
+          "exclude_attack_payload_total_in": [
+            176,
+            20514
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cic2017_friday",
+      "path": "data/pcap/cic2017/Friday-WorkingHours.pcap",
+      "group_namespace": "cic2017_friday",
+      "unmatched_policy": "benign",
+      "rules": [
+        {
+          "id": "botnet_ares",
+          "label": "bot",
+          "annotation": "Botnet-Ares",
+          "notebook_label": "Botnet",
+          "priority": 0,
+          "src_ips": [
+            "192.168.10.15",
+            "192.168.10.9",
+            "192.168.10.14",
+            "192.168.10.5",
+            "192.168.10.8"
+          ],
+          "dst_ips": [
+            "205.174.165.73"
+          ],
+          "start_ns": 1499432653990571000,
+          "end_ns": 1499436122903736000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499432653990571000..1499436122903736000 directly; no local-to-UTC conversion was applied. start 2017-07-07 13:04:13.990571000 UTC (= 2017-07-07 10:04:13 ADT, UTC-3); end 2017-07-07 14:02:02.903736000 UTC (= 2017-07-07 11:02:02 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Five infected hosts talk to the CnC 205.174.165.73; no other traffic between the attacker and non-victim IPs."
+        },
+        {
+          "id": "botnet_ares_attempted_nopayload",
+          "annotation": "Botnet-Ares-Attempted-NoPayload",
+          "notebook_label": "Botnet - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "192.168.10.15",
+            "192.168.10.9",
+            "192.168.10.14",
+            "192.168.10.5",
+            "192.168.10.8"
+          ],
+          "dst_ips": [
+            "205.174.165.73"
+          ],
+          "start_ns": 1499432653990571000,
+          "end_ns": 1499436122903736000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499432653990571000..1499436122903736000 directly; no local-to-UTC conversion was applied. start 2017-07-07 13:04:13.990571000 UTC (= 2017-07-07 10:04:13 ADT, UTC-3); end 2017-07-07 14:02:02.903736000 UTC (= 2017-07-07 11:02:02 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        },
+        {
+          "id": "botnet_ares_attempted_port_closed",
+          "annotation": "Botnet-Ares-Attempted-PortClosed",
+          "notebook_label": "Botnet - Attempted",
+          "attempted": true,
+          "attempted_category": 1,
+          "attempted_category_name": "Category 1 - Port/System closed",
+          "priority": 10,
+          "src_ips": [
+            "192.168.10.15",
+            "192.168.10.9",
+            "192.168.10.14",
+            "192.168.10.5",
+            "192.168.10.8"
+          ],
+          "dst_ips": [
+            "205.174.165.73"
+          ],
+          "start_ns": 1499436180000000000,
+          "end_ns": 1499457684606663000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499436180000000000..1499457684606663000 directly; no local-to-UTC conversion was applied. start 2017-07-07 14:03:00.000000000 UTC (= 2017-07-07 11:03:00 ADT, UTC-3); end 2017-07-07 20:01:24.606663000 UTC (= 2017-07-07 17:01:24 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Continued CnC connection attempts after the master was shut down. Notebook start is 1499436180000000000 (14:03:00.000000 UTC); the authors' page prints 14:03:14.356593 (unix 1499436194.356593). Notebook value used."
+        },
+        {
+          "id": "portscan_round1",
+          "label": "portscan",
+          "annotation": "Portscan",
+          "notebook_label": "Portscan",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "start_ns": 1499446532117090000,
+          "end_ns": 1499447948582083000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499446532117090000..1499447948582083000 directly; no local-to-UTC conversion was applied. start 2017-07-07 16:55:32.117090000 UTC (= 2017-07-07 13:55:32 ADT, UTC-3); end 2017-07-07 17:19:08.582083000 UTC (= 2017-07-07 14:19:08 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "First round with the firewall on: only ports 21, 22, 80, 443, 444 pass; start-up traffic excluded by the timestamps."
+        },
+        {
+          "id": "portscan_round2",
+          "label": "portscan",
+          "annotation": "Portscan",
+          "notebook_label": "Portscan",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "start_ns": 1499449905450532000,
+          "end_ns": 1499451841699238000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499449905450532000..1499451841699238000 directly; no local-to-UTC conversion was applied. start 2017-07-07 17:51:45.450532000 UTC (= 2017-07-07 14:51:45 ADT, UTC-3); end 2017-07-07 18:24:01.699238000 UTC (= 2017-07-07 15:24:01 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Second round (firewall off)."
+        },
+        {
+          "id": "ddos_loic_http",
+          "label": "ddos",
+          "annotation": "DDoS-LOIC-HTTP",
+          "notebook_label": "DDoS",
+          "priority": 0,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "start_ns": 1499453791796937000,
+          "end_ns": 1499454972216560000,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499453791796937000..1499454972216560000 directly; no local-to-UTC conversion was applied. start 2017-07-07 18:56:31.796937000 UTC (= 2017-07-07 15:56:31 ADT, UTC-3); end 2017-07-07 19:16:12.216560000 UTC (= 2017-07-07 16:16:12 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook",
+          "note": "Notebook label 'DDoS'; authors name the tool LOIC HTTP (CIC calls it LOIT). Mostly empty GET requests; identical flows also occur in background traffic outside the window; server stayed responsive."
+        },
+        {
+          "id": "ddos_loic_http_attempted_nopayload",
+          "annotation": "DDoS-LOIC-HTTP-Attempted-NoPayload",
+          "notebook_label": "DDoS - Attempted",
+          "attempted": true,
+          "attempted_category": 0,
+          "attempted_category_name": "Category 0 - No payload sent by attacker",
+          "priority": 10,
+          "src_ips": [
+            "172.16.0.1"
+          ],
+          "dst_ips": [
+            "192.168.10.50"
+          ],
+          "start_ns": 1499453791796937000,
+          "end_ns": 1499454972216560000,
+          "max_attack_payload_bytes": 0,
+          "window_note": "Notebook gives UTC Unix nanoseconds 1499453791796937000..1499454972216560000 directly; no local-to-UTC conversion was applied. start 2017-07-07 18:56:31.796937000 UTC (= 2017-07-07 15:56:31 ADT, UTC-3); end 2017-07-07 19:16:12.216560000 UTC (= 2017-07-07 16:16:12 ADT, UTC-3).",
+          "source": "CNS2022 corrected CICIDS2017 notebook"
+        }
+      ]
+    }
+  ],
+  "family_mapping": {
+    "background": "benign",
+    "FTP-Patator": "bf",
+    "SSH-Patator": "bf",
+    "DoS-Hulk": "dos",
+    "DoS-GoldenEye": "dos",
+    "DoS-Slowloris": "dos",
+    "DoS-Slowhttptest": "dos",
+    "Heartbleed": "heartbleed",
+    "Web-Attack-Brute-Force": "web",
+    "Web-Attack-XSS": "web",
+    "Web-Attack-SQL-Injection": "web",
+    "Infiltration-Communication": "inf",
+    "Infiltration-CoolDisk-MAC": "inf",
+    "Infiltration-Portscan": "portscan",
+    "Portscan": "portscan",
+    "Botnet-Ares": "bot",
+    "DDoS-LOIC-HTTP": "ddos",
+    "FTP-Patator-Attempted-NoPayload": "benign",
+    "FTP-Patator-Attempted-StartupTeardown": "benign",
+    "SSH-Patator-Attempted-NoPayload": "benign",
+    "SSH-Patator-Attempted-NoMaliciousPayload": "benign",
+    "DoS-Slowloris-Attempted-ImplementedIncorrectly": "benign",
+    "DoS-Slowloris-Attempted-StartupTeardown": "benign",
+    "DoS-Slowloris-Attempted-NoPayload": "benign",
+    "DoS-Slowloris-Attempted-TargetUnresponsive": "benign",
+    "DoS-Slowloris-Attempted-AttackArtefact": "benign",
+    "DoS-Slowhttptest-Attempted-StartupTeardown": "benign",
+    "DoS-Slowhttptest-Attempted-NoPayload": "benign",
+    "DoS-Slowhttptest-Attempted-TargetUnresponsive": "benign",
+    "DoS-Slowhttptest-Attempted-AttackArtefact": "benign",
+    "DoS-Hulk-Attempted-AttackArtefact": "benign",
+    "DoS-Hulk-Attempted-NoPayload": "benign",
+    "DoS-Hulk-Attempted-NoMaliciousPayload": "benign",
+    "DoS-GoldenEye-Attempted-NoPayload": "benign",
+    "Heartbleed-Attempted-NoPayload": "benign",
+    "Web-Attack-Brute-Force-Attempted-StartupTeardown": "benign",
+    "Web-Attack-Brute-Force-Attempted-NoPayload": "benign",
+    "Web-Attack-Brute-Force-Attempted-AttackArtefact": "benign",
+    "Web-Attack-XSS-Attempted-NoPayload": "benign",
+    "Web-Attack-XSS-Attempted-StartupTeardown": "benign",
+    "Web-Attack-SQL-Injection-Attempted-StartupTeardown": "benign",
+    "Web-Attack-SQL-Injection-Attempted-NoPayload": "benign",
+    "Infiltration-Communication-Attempted-NoPayload": "benign",
+    "Infiltration-Communication-Attempted-StartupTeardown": "benign",
+    "Infiltration-CoolDisk-MAC-Attempted-NoPayload": "benign",
+    "Botnet-Ares-Attempted-NoPayload": "benign",
+    "Botnet-Ares-Attempted-PortClosed": "benign",
+    "DDoS-LOIC-HTTP-Attempted-NoPayload": "benign"
+  },
+  "family_mapping_note": "Proposed families: bf (FTP/SSH-Patator), dos (Slowloris, Slowhttptest, Hulk, GoldenEye), heartbleed, web (Brute Force, XSS, SQL Injection), inf (Infiltration Communication and Cool disk - MAC), bot (Ares), portscan (Friday Portscan AND Thursday 'Infiltration - Portscan'), ddos (LOIC HTTP). Decision to confirm: the notebook's separate label 'Infiltration - Portscan' is mapped to portscan because it is behaviourally a port scan (rounds 2-3 originate from the compromised host 192.168.10.8); the original CIC dataset labelled those flows Infiltration, so 'inf' is the alternative. Every '*-Attempted-*' annotation maps to benign, which is what CorrectedRuleSet does at runtime via unmatched_policy; attempted_categories lists the parent family if merging is preferred.",
+  "attempted_categories": [
+    {
+      "annotation": "FTP-Patator-Attempted-NoPayload",
+      "rule_id": "ftp_patator_attempted_nopayload",
+      "capture_id": "cic2017_tuesday",
+      "parent_annotation": "FTP-Patator",
+      "parent_family": "bf",
+      "notebook_label": "FTP-Patator - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "FTP-Patator-Attempted-StartupTeardown",
+      "rule_id": "ftp_patator_attempted_pretest",
+      "capture_id": "cic2017_tuesday",
+      "parent_annotation": "FTP-Patator",
+      "parent_family": "bf",
+      "notebook_label": "FTP-Patator - Attempted",
+      "category": 2,
+      "category_name": "Category 2 - Attack Startup/Teardown Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "SSH-Patator-Attempted-NoPayload",
+      "rule_id": "ssh_patator_attempted_nopayload",
+      "capture_id": "cic2017_tuesday",
+      "parent_annotation": "SSH-Patator",
+      "parent_family": "bf",
+      "notebook_label": "SSH-Patator - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "SSH-Patator-Attempted-NoMaliciousPayload",
+      "rule_id": "ssh_patator_attempted_nomalicious",
+      "capture_id": "cic2017_tuesday",
+      "parent_annotation": "SSH-Patator",
+      "parent_family": "bf",
+      "notebook_label": "SSH-Patator - Attempted",
+      "category": 3,
+      "category_name": "Category 3 - No malicious payload",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowloris-Attempted-ImplementedIncorrectly",
+      "rule_id": "dos_slowloris_attempted_early_launch",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowloris",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowloris - Attempted",
+      "category": 5,
+      "category_name": "Category 5 - Attack Implemented Incorrectly",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowloris-Attempted-StartupTeardown",
+      "rule_id": "dos_slowloris_attempted_teardown",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowloris",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowloris - Attempted",
+      "category": 2,
+      "category_name": "Category 2 - Attack Startup/Teardown Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowloris-Attempted-NoPayload",
+      "rule_id": "dos_slowloris_attempted_nopayload",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowloris",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowloris - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowloris-Attempted-TargetUnresponsive",
+      "rule_id": "dos_slowloris_attempted_unresponsive",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowloris",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowloris - Attempted",
+      "category": 6,
+      "category_name": "Category 6 - Target System Unresponsive",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowloris-Attempted-AttackArtefact",
+      "rule_id": "dos_slowloris_attempted_artefact",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowloris",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowloris - Attempted",
+      "category": 4,
+      "category_name": "Category 4 - Attack Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowhttptest-Attempted-StartupTeardown",
+      "rule_id": "dos_slowhttptest_attempted_startup",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowhttptest",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowhttptest - Attempted",
+      "category": 2,
+      "category_name": "Category 2 - Attack Startup/Teardown Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowhttptest-Attempted-NoPayload",
+      "rule_id": "dos_slowhttptest_attempted_nopayload",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowhttptest",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowhttptest - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowhttptest-Attempted-TargetUnresponsive",
+      "rule_id": "dos_slowhttptest_attempted_unresponsive",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowhttptest",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowhttptest - Attempted",
+      "category": 6,
+      "category_name": "Category 6 - Target System Unresponsive",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Slowhttptest-Attempted-AttackArtefact",
+      "rule_id": "dos_slowhttptest_attempted_artefact",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Slowhttptest",
+      "parent_family": "dos",
+      "notebook_label": "DoS Slowhttptest - Attempted",
+      "category": 4,
+      "category_name": "Category 4 - Attack Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Hulk-Attempted-AttackArtefact",
+      "rule_id": "dos_hulk_attempted_artefact",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Hulk",
+      "parent_family": "dos",
+      "notebook_label": "DoS Hulk - Attempted",
+      "category": 4,
+      "category_name": "Category 4 - Attack Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Hulk-Attempted-NoPayload",
+      "rule_id": "dos_hulk_attempted_nopayload",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Hulk",
+      "parent_family": "dos",
+      "notebook_label": "DoS Hulk - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-Hulk-Attempted-NoMaliciousPayload",
+      "rule_id": "dos_hulk_attempted_nomalicious",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-Hulk",
+      "parent_family": "dos",
+      "notebook_label": "DoS Hulk - Attempted",
+      "category": 3,
+      "category_name": "Category 3 - No malicious payload",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DoS-GoldenEye-Attempted-NoPayload",
+      "rule_id": "dos_goldeneye_attempted_nopayload",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "DoS-GoldenEye",
+      "parent_family": "dos",
+      "notebook_label": "DoS GoldenEye - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Heartbleed-Attempted-NoPayload",
+      "rule_id": "heartbleed_attempted_nopayload",
+      "capture_id": "cic2017_wednesday",
+      "parent_annotation": "Heartbleed",
+      "parent_family": "heartbleed",
+      "notebook_label": "Heartbleed - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Web-Attack-Brute-Force-Attempted-StartupTeardown",
+      "rule_id": "web_bruteforce_attempted_setup",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Web-Attack-Brute-Force",
+      "parent_family": "web",
+      "notebook_label": "Web Attack - Brute Force - Attempted",
+      "category": 2,
+      "category_name": "Category 2 - Attack Startup/Teardown Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Web-Attack-Brute-Force-Attempted-NoPayload",
+      "rule_id": "web_bruteforce_attempted_nopayload",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Web-Attack-Brute-Force",
+      "parent_family": "web",
+      "notebook_label": "Web Attack - Brute Force - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Web-Attack-Brute-Force-Attempted-AttackArtefact",
+      "rule_id": "web_bruteforce_attempted_artefact",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Web-Attack-Brute-Force",
+      "parent_family": "web",
+      "notebook_label": "Web Attack - Brute Force - Attempted",
+      "category": 4,
+      "category_name": "Category 4 - Attack Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Web-Attack-XSS-Attempted-NoPayload",
+      "rule_id": "web_xss_attempted_nopayload",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Web-Attack-XSS",
+      "parent_family": "web",
+      "notebook_label": "Web Attack - XSS - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Web-Attack-XSS-Attempted-StartupTeardown",
+      "rule_id": "web_xss_attempted_startup_teardown",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Web-Attack-XSS",
+      "parent_family": "web",
+      "notebook_label": "Web Attack - XSS - Attempted",
+      "category": 2,
+      "category_name": "Category 2 - Attack Startup/Teardown Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Web-Attack-SQL-Injection-Attempted-StartupTeardown",
+      "rule_id": "web_sql_attempted_setup",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Web-Attack-SQL-Injection",
+      "parent_family": "web",
+      "notebook_label": "Web Attack - SQL Injection - Attempted",
+      "category": 2,
+      "category_name": "Category 2 - Attack Startup/Teardown Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Web-Attack-SQL-Injection-Attempted-NoPayload",
+      "rule_id": "web_sql_attempted_nopayload",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Web-Attack-SQL-Injection",
+      "parent_family": "web",
+      "notebook_label": "Web Attack - SQL Injection - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Infiltration-Communication-Attempted-NoPayload",
+      "rule_id": "infiltration_communication_attempted_nopayload",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Infiltration-Communication",
+      "parent_family": "inf",
+      "notebook_label": "Infiltration - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Infiltration-Communication-Attempted-StartupTeardown",
+      "rule_id": "infiltration_attempted_dryrun",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Infiltration-Communication",
+      "parent_family": "inf",
+      "notebook_label": "Infiltration - Attempted",
+      "category": 2,
+      "category_name": "Category 2 - Attack Startup/Teardown Artefact",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Infiltration-CoolDisk-MAC-Attempted-NoPayload",
+      "rule_id": "infiltration_cooldisk_mac_attempted_nopayload",
+      "capture_id": "cic2017_thursday",
+      "parent_annotation": "Infiltration-CoolDisk-MAC",
+      "parent_family": "inf",
+      "notebook_label": "Infiltration - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Botnet-Ares-Attempted-NoPayload",
+      "rule_id": "botnet_ares_attempted_nopayload",
+      "capture_id": "cic2017_friday",
+      "parent_annotation": "Botnet-Ares",
+      "parent_family": "bot",
+      "notebook_label": "Botnet - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "Botnet-Ares-Attempted-PortClosed",
+      "rule_id": "botnet_ares_attempted_port_closed",
+      "capture_id": "cic2017_friday",
+      "parent_annotation": "Botnet-Ares",
+      "parent_family": "bot",
+      "notebook_label": "Botnet - Attempted",
+      "category": 1,
+      "category_name": "Category 1 - Port/System closed",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    },
+    {
+      "annotation": "DDoS-LOIC-HTTP-Attempted-NoPayload",
+      "rule_id": "ddos_loic_http_attempted_nopayload",
+      "capture_id": "cic2017_friday",
+      "parent_annotation": "DDoS-LOIC-HTTP",
+      "parent_family": "ddos",
+      "notebook_label": "DDoS - Attempted",
+      "category": 0,
+      "category_name": "Category 0 - No payload sent by attacker",
+      "author_recommendation": "Not a separate ML class under any circumstance; may be merged into the parent attack label depending on flow preprocessing, otherwise relabel as Benign (Attempted Category != -1).",
+      "source": "https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+    }
+  ],
+  "attempted_category_definitions": {
+    "0": "Category 0 - No payload sent by attacker",
+    "1": "Category 1 - Port/System closed",
+    "2": "Category 2 - Attack Startup/Teardown Artefact",
+    "3": "Category 3 - No malicious payload",
+    "4": "Category 4 - Attack Artefact",
+    "5": "Category 5 - Attack Implemented Incorrectly",
+    "6": "Category 6 - Target System Unresponsive"
+  },
+  "attempted_category_definitions_source": "https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html",
+  "known_issues": [
+    "Timestamps: the corrected CICFlowMeter writes UTC with microsecond precision and the notebook windows are UTC Unix nanoseconds ('Note that the CSV files are in the UTC timezone'), so no local-time conversion is needed; the original CIC CSVs use local time. Sources: https://github.com/GintsEngelen/CNS2022_Code/blob/master/Labelling/CICIDS2017_labelling_fixed_CICFlowMeter.ipynb ; https://intrusion-detection.distrinet-research.be/CNS2022/Tools_Documentation.html",
+    "The attack time frames on the original CICIDS2017 web page are not accurate and do not allow exact reproduction of the original labelling; the WTMC2021 authors manually tuned windows (table on the page) and the CNS2022 notebook replaces them with first/last-packet UTC timestamps. Source: https://intrusion-detection.distrinet-research.be/WTMC2021/extended_doc.html",
+    "PCAP pre-processing: run pcapfix then reordercap on the original PCAPs before CICFlowMeter; in FTP-Patator a handful of flows looked victim-initiated because the SYN/ACK carried an earlier timestamp than the SYN (simulation environment issue), rectified by this step. Sources: https://github.com/GintsEngelen/CNS2022_Code/blob/master/README.md ; https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_FTP_Patator",
+    "FTP-Patator: the very first attacker flow (src port 52108) is a successful login pre-test, labelled Attempted category 2; flows with a single failed login after a 5-minute idle are still labelled malicious. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_FTP_Patator",
+    "SSH-Patator: one flow (src port 52056, 18:07:48 to 19:04:19 UTC, >1 hour, 1006-byte packet from port 22) is of uncertain legitimacy because the contents are encrypted; small-forward-payload TLS-handshake flows without login attempts are Attempted category 3; some flows are only the last 2 packets of a previous flow split by the 120 s flow timeout. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_SSH_Patator",
+    "DoS Hulk is misimplemented: the Python tool's urllib2 sends 'Connection: close' instead of Keep-Alive, so the server closes every connection and the attack is almost completely ineffective; strictly all of it is Attempted category 5 but the authors keep the DoS Hulk label because the traffic still looks anomalous, and the WTMC2021 page recommends not using it as a malicious class. Sources: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_DoS_Hulk ; https://intrusion-detection.distrinet-research.be/WTMC2021/extended_doc.html",
+    "DoS Hulk: nearly the whole attack can be filtered with four Total Length of Bwd Packets values (11595, 23190, 11606, 23201); only 8 of 545,438 flows fall outside, and src ports 48678 and 43664 look like manual web browsing by the authors mid-attack (Attempted category 4). Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_DoS_Hulk",
+    "DoS GoldenEye is not very effective (some flows with Total Length of Bwd Packet = 0 show the server struggling); the Apache KeepAliveTimeout of 5 s shortens its connections and creates a shortcut-learning risk. Sources: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Dos_GoldenEye ; https://intrusion-detection.distrinet-research.be/WTMC2021/extended_doc.html",
+    "DoS Slowloris: an accidental early launch between 2017-07-05 12:48:46.211817 and 12:48:46.264300 UTC is labelled Attempted category 5; the victim connection pool is exhausted around 12:49:12 (first unresponsive port 54470); src ports 33358/33360/33362 are tool-shutdown navigation (category 2) and 54114 is normal browsing (category 4); many connection attempts the server cannot answer are category 6. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_DoS_Slowloris",
+    "DoS Slowloris documentation inconsistency: the authors' page prints the human-readable end '2017-07-05 14:20:08.91578' next to unix 1499260278.500956 (which is 13:11:18.500956 UTC); the notebook uses the unix value. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_DoS_Slowloris",
+    "DoS Slowhttptest: src port 33372 is pre-attack navigation (category 2), src port 37670 is mid-attack navigation (category 4), and zero-payload retransmission flows with Flow Duration >= 199984 us and no backward packets are category 6; long Total TCP Flow Times show the attack worked. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_DoS_Slowhttptest",
+    "Heartbleed: the original labelling is fine; the attack is a single src/dst port pair (45022 -> 444) with very long TCP duration, and the WTMC2021 regenerated dataset contains only 11 Heartbleed flows (0 Attempted) because the 120 s flow timeout splits the single connection. Sources: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Heartbleed ; https://intrusion-detection.distrinet-research.be/WTMC2021/tools_datasets.html",
+    "Web Attack - SQL Injection: the first malicious packet occurs about 5 minutes earlier than the CIC time frame; set-up flows (src ports 36180-36188, 13:35:27.852814-13:35:45.720612 UTC) are Attempted category 2 and the src-port filter resolves a ~1 s overlap with XSS traffic; only 12 effective flows remain (WTMC count). Sources: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Web_SQL ; https://intrusion-detection.distrinet-research.be/WTMC2021/tools_datasets.html",
+    "Web Attack - SQL Injection documentation inconsistency: the notebook applies the category-0 (no payload) rule to the set-up window without a port filter, whereas the authors' page lists it for the main window with 'Src Port not in [36180..36188]'. Sources: https://github.com/GintsEngelen/CNS2022_Code/blob/master/Labelling/CICIDS2017_labelling_fixed_CICFlowMeter.ipynb ; https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Web_SQL",
+    "Web Attack - XSS: the original labelling included startup/teardown traffic without malicious content; a Total Fwd Packets >= 150 threshold and the SQL-injection src-port exclusion isolate 27 effective flows versus 652 Attempted (WTMC counts). Sources: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Web_XSS ; https://intrusion-detection.distrinet-research.be/WTMC2021/tools_datasets.html",
+    "Web Attack - Brute Force: the authors attacked the DVWA initial login page rather than the dedicated Brute Force page; the original logic yields 151 flows in two clusters (5 packets total: 72 flows; 204 fwd/105 bwd: 69 flows) and interlaced plain GET flows carry no attempt (Attempted category 4); WTMC counts 151 effective vs 1214 Attempted. Sources: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Web_Brute_Force ; https://intrusion-detection.distrinet-research.be/WTMC2021/tools_datasets.html",
+    "Infiltration: the Dropbox download that delivered the (Meterpreter) payload to 192.168.10.8 cannot be identified among encrypted Dropbox connections (162.125.4.6, 162.125.4.5, 162.125.3.1, 162.125.248.1), so that traffic stays Benign; 192.168.10.9 made earlier connection attempts and Dropbox visits (possible dry run) labelled Attempted category 2. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Infiltration",
+    "Infiltration 'Cool disk - MAC' (192.168.10.25 <-> 205.174.165.73, victim port 51325, attacker port 444) was completely missed in the original labelling and is labelled on the basis of the Python Meterpreter push; the authors' page text contains the typos '205.174.165.74' and '102.168.10.25'. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Infiltration_Cooldisk",
+    "Thursday NMAP portscan: the official window is 18:04-18:45 UTC, but a round at 17:33 UTC (192.168.10.8 -> 192.168.10.5) is benign in the original dataset and absent from the CIC documentation; six scripted rounds (aa.bat) stop on 192.168.10.9 in the sixth; benign background 192.168.10.8 -> 192.168.10.50 flows are removed with packet-attribute filters (Fwd Packet Length Max 408, fwd payload 176 or 20514). Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Infiltration_NMAP_Portscan",
+    "Friday portscan: the attacker also talks to IPs not listed as victims; the first round ran with the firewall on so only ports 21, 22, 80, 443 and 444 got through; start-up traffic is cut by the timestamps. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Infiltration_NMAP_Portscan",
+    "Botnet Ares: CnC connection attempts continue after the master is shut down and are Attempted category 1; the notebook starts that window at 14:03:00.000000 UTC while the page prints 14:03:14.356593. Sources: https://github.com/GintsEngelen/CNS2022_Code/blob/master/Labelling/CICIDS2017_labelling_fixed_CICFlowMeter.ipynb ; https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_Botnet",
+    "DDoS LOIC HTTP (named 'LOIT' by CIC): mostly empty GET requests; identical packets and flows also occur outside the attack window as programmatically generated background (2-3 flows every 5-12 s), and the server kept responding for the whole attack. Source: https://intrusion-detection.distrinet-research.be/CNS2022/CICIDS2017.html#2017_DDoS_LOIC_HTTP",
+    "Notebook post-processing: rows containing 'Infinity' or NaN are dropped and flows with Flow ID '8.0.6.4-8.6.0.1-0-0-0' are forced to BENIGN as artefacts. Source: https://github.com/GintsEngelen/CNS2022_Code/blob/master/Labelling/CICIDS2017_labelling_fixed_CICFlowMeter.ipynb",
+    "Original CICFlowMeter flow construction: a flow ended at the first FIN and RST was ignored, and a timed-out flow's successor inherits its direction (TCP-appendix problem), which made attacker-initiated flows look victim-initiated and benign; the fixed tool terminates on mutual FIN or RST and the WTMC authors reconstructed or relabelled more than 20 percent of the original traces. Sources: https://intrusion-detection.distrinet-research.be/WTMC2021/extended_doc.html ; https://intrusion-detection.distrinet-research.be/WTMC2021/tools_datasets.html",
+    "Original CICIDS2017 feature bugs: TCP flag counts are only 0 or 1 (counted on the first packet only, fixed upstream 2019-10-15), Fwd/Bwd PSH and URG flags were not incremented, and Fwd Header Length is duplicated. Source: https://intrusion-detection.distrinet-research.be/WTMC2021/extended_doc.html",
+    "Apache Timeout/KeepAlive configuration of the victim web server is undocumented by CIC and creates inter-arrival-time shortcuts for Slowloris/Slowhttptest/GoldenEye. Source: https://intrusion-detection.distrinet-research.be/WTMC2021/extended_doc.html",
+    "WTMC2021 paper table error: the correct total of Attempted labels is 9103 and the correct Benign count for Intermediate and Final versions is 1657069. Source: https://intrusion-detection.distrinet-research.be/WTMC2021/tools_datasets.html",
+    "TCP segmentation offload: the authors' tools page only states 'Fixed TCP Segmentation Offset issue (more details in our paper under section IV-B)'; the CNS2022 paper is not openly available and no 2017-specific detail is given on the public pages, so nothing further could be transcribed. Source: https://intrusion-detection.distrinet-research.be/CNS2022/Tools_Documentation.html",
+    "Friday timezone shift: NOT documented in the CNS2022 notebook, the CNS2022 CICIDS2017/Dataset_Download/Tools pages, the CNS2022_Code README or the WTMC2021 pages fetched on 2026-11-03; no such defect is asserted here.",
+    "'Attempted' flows must never be a separate class for a machine-learning model; when in doubt relabel them Benign (Attempted Category != -1). Source: https://intrusion-detection.distrinet-research.be/CNS2022/Dataset_Download.html"
+  ],
+  "matcher_extensions_implemented": {
+    "script": "scripts/v7/exp94/run_pcap_cic2017.py::EvidenceRuleSet._condition",
+    "fields": [
+      "max_peer_payload_bytes",
+      "min_peer_packets",
+      "max_peer_packets",
+      "exclude_attack_payload_max_eq",
+      "exclude_attack_payload_total_in"
+    ],
+    "note": "exclude_attack_payload_max_eq compares the attacker-side maximum TCP/UDP payload length of one packet (CICFlowMeter Fwd Packet Length Max); exclude_attack_payload_total_in compares the attacker-side total payload bytes. Fields inside any_of alternatives are evaluated by the EXP93 base matcher and do not see these extensions."
+  }
+}

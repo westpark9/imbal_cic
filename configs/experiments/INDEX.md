@@ -371,6 +371,8 @@ EXP64–68: context composition feasibility, prompt-tuned contexts, temporal-arr
 | exp67 | 2026-10-01 | results_present | exploratory | `tabpfn/results/v5/exp67/20261001_185937_4104555_toniot_exp67_prompt_tuned_s44` |
 | exp67 | 2026-10-01 | results_present | exploratory | `tabpfn/results/v5/exp67/20261001_190757_4106755_cic2018_exp67_prompt_tuned_s43` |
 | exp67 | 2026-10-01 | results_present | exploratory | `tabpfn/results/v5/exp67/20261001_191422_4108285_toniot_exp67_prompt_tuned_s43` |
+| exp68 | 2026-10-02 | partial_or_legacy | not_adopted | `tabpfn/results/v5/exp68/20261002_004752_4179324_toniot_exp68_temporal_arrival_s43` |
+| exp68 | 2026-10-02 | partial_or_legacy | not_adopted | `tabpfn/results/v5/exp68/20261002_004935_4180483_toniot_exp68_temporal_arrival_s43` |
 | exp68 | 2026-10-02 | results_present | not_adopted | `tabpfn/results/v5/exp68/20261002_005040_4181240_toniot_exp68_temporal_arrival_s43` |
 
 ## v6 · sparse_label_context_detection
@@ -436,14 +438,12 @@ EXP69: 실제 공격 클래스 최초 출현 순서 보존; 동일 누적 라벨
 | exp93 | 2026-10-29 | failed | unreviewed | `tabpfn/results/v7/exp93/20261029_162556_cic2018_pcap_expanded_6f909ba0` |
 | exp93 | 2026-10-29 | finished | unreviewed | `tabpfn/results/v7/exp93/20261029_192036_cic2018_pcap_expanded_59b3028b` |
 | exp93 | 2026-11-02 | finished | unreviewed | `tabpfn/results/v7/exp93/20261102_003121_cic2018_pcap_expanded_d1f3d5cf` |
+| exp94 | 2026-11-03 | finished | unreviewed | `tabpfn/results/v7/exp94/20261103_162600_csv_cic2017_fewshot_c2c3b851` |
+| exp94 | 2026-11-03 | finished | unreviewed | `tabpfn/results/v7/exp94/20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d` |
+| exp94 | 2026-11-04 | running | unreviewed | `tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e` |
 
 ## Unassigned legacy paths
 
-- `tabpfn/results/20260901_033336_nfv3_cic2018_exp24b_signscorer`
-- `tabpfn/results/20260901_063105_nfv3_cic2018_exp27_ctxcover`
-- `tabpfn/results/20260901_071409_nfv3_cic2018_exp28_equalmem`
-- `tabpfn/results/20260901_191613_nfv3_cic2018_exp25_dump`
-- `tabpfn/results/20260902_055231_nfv3_cic2018_exp25_dump`
 - `tabpfn/results/exp57_clean_splits`
 - `tabpfn/results/exp57_external_s42`
 

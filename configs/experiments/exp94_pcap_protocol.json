@@ -1,0 +1,75 @@
+{
+  "dataset": "CIC-IDS2017-PCAP-whole-network",
+  "seed": 43,
+  "purpose": "Whole-network CIC2017 PCAP corpus with three-state labels, time-forward split within capture and family, flow-statistics and frozen netFound views over the same flows, three-layer identical-input audit with oracle ceilings, and paired few-shot curves. Companion of EXP94 CSV run and EXP93.",
+  "label_rules_file": "configs/experiments/exp94_cic2017_labels.json",
+  "label_rule_note": "Rules transcribed from the CNS2022 corrected CICIDS2017 notebook; attempted categories and evidence-condition failures are unresolved (label None), never benign.",
+  "class_order": [
+    "benign",
+    "dos",
+    "portscan",
+    "ddos",
+    "bf",
+    "bot",
+    "web",
+    "inf",
+    "heartbleed"
+  ],
+  "split": {
+    "fractions": [
+      0.7,
+      0.15,
+      0.15
+    ]
+  },
+  "corpus": {
+    "retention_per_label_split": null,
+    "note": "null retention keeps every flow in every split; set train caps only if frozen-encoder time becomes prohibitive and record it"
+  },
+  "flow": {
+    "idle_seconds": 120,
+    "active_seconds": 120,
+    "reorder_seconds": 5.0,
+    "allow_truncated": true
+  },
+  "encoders": {
+    "netfound-v2-small": {
+      "checkpoint": "data/pcap_models/netfound-small",
+      "dtype": "float32",
+      "feature_description": "512-dimensional frozen netFound v2 header/timing representation, projected to 64 dimensions with training-split PCA. Raw payload, IP addresses, ports, absolute timestamps, labels and split are excluded from encoder input."
+    }
+  },
+  "projection": {
+    "components": 64,
+    "fit_scope": "all training-split corpus flows, including unresolved flows; neither validation nor test flows are used"
+  },
+  "fewshot": {
+    "budgets": [
+      2,
+      3,
+      5,
+      10,
+      20,
+      50
+    ],
+    "seeds": [
+      43,
+      44,
+      45,
+      46,
+      47
+    ],
+    "methods": [
+      "xgb",
+      "tabpfn"
+    ],
+    "regimes": [
+      "with_benign",
+      "attack_only"
+    ],
+    "inference_batch_rows": 8192,
+    "tabpfn_checkpoint": "tabpfn/tabpfn-v3-classifier-v3_20260417_multiclass.ckpt",
+    "interpretation": "with_benign is primary; attack_only diagnostic; the same flow IDs feed flowstats-v1 and netfound-v2-small views"
+  },
+  "flow_note": "reorder window 5 s: the whole-network captures show small packet disorder (CNS2022 ran reordercap); a flow is only rejected if disorder exceeds this window."
+}

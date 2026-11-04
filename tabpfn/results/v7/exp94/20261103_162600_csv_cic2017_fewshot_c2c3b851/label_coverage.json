@@ -1,0 +1,55 @@
+{
+  "max_fewshot_budget": 50,
+  "coverage": {
+    "benign": {
+      "train": 1589921,
+      "test": 340701
+    },
+    "dos": {
+      "train": 176198,
+      "test": 37757
+    },
+    "portscan": {
+      "train": 111162,
+      "test": 23821
+    },
+    "ddos": {
+      "train": 89617,
+      "test": 19204
+    },
+    "bf": {
+      "train": 9682,
+      "test": 2075
+    },
+    "bot": {
+      "train": 1369,
+      "test": 294
+    },
+    "web": {
+      "train": 1526,
+      "test": 327
+    },
+    "inf": {
+      "train": 25,
+      "test": 6
+    },
+    "heartbleed": {
+      "train": 7,
+      "test": 2
+    }
+  },
+  "included": [
+    "benign",
+    "dos",
+    "portscan",
+    "ddos",
+    "bf",
+    "bot",
+    "web"
+  ],
+  "excluded": [
+    "inf",
+    "heartbleed"
+  ],
+  "rule": "A family is trained and scored only if its train split has at least max(budgets) rows and its test split at least one row; other families are excluded from both training and macro-F1 and listed in label_coverage.json."
+}

@@ -1,0 +1,95 @@
+{
+  "regime": "attack_only",
+  "seed": 44,
+  "budget": 2,
+  "method": "xgb",
+  "train_rows": 12,
+  "train_row_ids": [
+    1214042,
+    1152239,
+    2508905,
+    2508108,
+    2673948,
+    2646072,
+    724838,
+    551246,
+    2237473,
+    2187298,
+    1685496,
+    1699636
+  ],
+  "test_rows": 83482,
+  "metrics": {
+    "macro_f1": 0.3615740165359937,
+    "classes": [
+      {
+        "name": "dos",
+        "support": 37758,
+        "precision": 0.8974540696723545,
+        "recall": 0.43598707558663063,
+        "f1": 0.5868701092672145,
+        "tp": 16462,
+        "fp": 1881,
+        "fn": 21296
+      },
+      {
+        "name": "portscan",
+        "support": 23821,
+        "precision": 1.0,
+        "recall": 0.3342428949246463,
+        "f1": 0.5010225592297769,
+        "tp": 7962,
+        "fp": 0,
+        "fn": 15859
+      },
+      {
+        "name": "ddos",
+        "support": 19204,
+        "precision": 0.47112506746479565,
+        "recall": 1.0,
+        "f1": 0.6404962812260281,
+        "tp": 19204,
+        "fp": 21558,
+        "fn": 0
+      },
+      {
+        "name": "bf",
+        "support": 2076,
+        "precision": 0.3388372893016856,
+        "recall": 0.47447013487475914,
+        "f1": 0.3953441701786073,
+        "tp": 985,
+        "fp": 1922,
+        "fn": 1091
+      },
+      {
+        "name": "bot",
+        "support": 294,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 11,
+        "fn": 294
+      },
+      {
+        "name": "web",
+        "support": 329,
+        "precision": 0.023412610209676225,
+        "recall": 0.9604863221884499,
+        "f1": 0.045710979314335314,
+        "tp": 316,
+        "fp": 13181,
+        "fn": 13
+      }
+    ],
+    "rows": 83482
+  },
+  "construct_seconds": 3.1420961022377014e-05,
+  "fit_seconds": 0.24789483309723437,
+  "inference_seconds": 0.06526328902691603,
+  "frozen_weights_sha256": null,
+  "feature_count": 78,
+  "inference_batch_rows": 8192,
+  "finetuning": false
+}

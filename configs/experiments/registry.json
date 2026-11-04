@@ -438,7 +438,10 @@
     "tabpfn/results/v7/exp93/20261029_155732_cic2018_pcap_expanded_8d10b28a": "v7",
     "tabpfn/results/v7/exp93/20261029_162556_cic2018_pcap_expanded_6f909ba0": "v7",
     "tabpfn/results/v7/exp93/20261029_192036_cic2018_pcap_expanded_59b3028b": "v7",
-    "tabpfn/results/v7/exp93/20261102_003121_cic2018_pcap_expanded_d1f3d5cf": "v7"
+    "tabpfn/results/v7/exp93/20261102_003121_cic2018_pcap_expanded_d1f3d5cf": "v7",
+    "tabpfn/results/v7/exp94/20261103_162600_csv_cic2017_fewshot_c2c3b851": "v7",
+    "tabpfn/results/v7/exp94/20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d": "v7",
+    "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e": "v7"
   },
   "run_annotations": {
     "tabpfn/results/v4/exp61/20260929_exp61_sota_local_s43": {
@@ -716,6 +719,18 @@
       "note": "Managed execution; results require scientific review"
     },
     "tabpfn/results/v7/exp93/20261102_003121_cic2018_pcap_expanded_d1f3d5cf": {
+      "evidence": "unreviewed",
+      "note": "Managed execution; results require scientific review"
+    },
+    "tabpfn/results/v7/exp94/20261103_162600_csv_cic2017_fewshot_c2c3b851": {
+      "evidence": "unreviewed",
+      "note": "Managed execution; results require scientific review"
+    },
+    "tabpfn/results/v7/exp94/20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d": {
+      "evidence": "unreviewed",
+      "note": "Managed execution; results require scientific review"
+    },
+    "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e": {
       "evidence": "unreviewed",
       "note": "Managed execution; results require scientific review"
     }
@@ -3488,6 +3503,18 @@
       ],
       "protocol": "configs/experiments/exp93_protocol.json",
       "note": "2026-10-29 사용자 요청: 확장 CIC2018 PCAP의 재사용 가능한 encoder-independent corpus를 만들고, 동일 feature·상이 label 감사와 paired XGBoost/TabPFN few-shot 평가를 A100에서 실행할 수 있도록 준비."
+    },
+    "v7/exp94": {
+      "version": "v7",
+      "id": "exp94",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [
+        "scripts/v7/exp94/run_csv_fewshot.py"
+      ],
+      "protocol": "configs/experiments/exp94_pcap_protocol.json",
+      "note": "CIC2017 CSV reference (few-shot curves, identical-input audit, oracle ceiling) for the CIC2017 PCAP comparison; user request 2026-11-03"
     }
   },
   "layout_migration": "configs/experiments/migrations/20261007_layout/manifest.json"

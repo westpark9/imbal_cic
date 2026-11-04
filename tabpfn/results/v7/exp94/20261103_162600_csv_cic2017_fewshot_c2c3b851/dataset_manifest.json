@@ -1,0 +1,323 @@
+{
+  "schema": 1,
+  "dataset": "CIC-IDS2017-CSV-MachineLearningCVE",
+  "feature_columns": [
+    "Destination Port",
+    "Flow Duration",
+    "Total Fwd Packets",
+    "Total Backward Packets",
+    "Total Length of Fwd Packets",
+    "Total Length of Bwd Packets",
+    "Fwd Packet Length Max",
+    "Fwd Packet Length Min",
+    "Fwd Packet Length Mean",
+    "Fwd Packet Length Std",
+    "Bwd Packet Length Max",
+    "Bwd Packet Length Min",
+    "Bwd Packet Length Mean",
+    "Bwd Packet Length Std",
+    "Flow Bytes/s",
+    "Flow Packets/s",
+    "Flow IAT Mean",
+    "Flow IAT Std",
+    "Flow IAT Max",
+    "Flow IAT Min",
+    "Fwd IAT Total",
+    "Fwd IAT Mean",
+    "Fwd IAT Std",
+    "Fwd IAT Max",
+    "Fwd IAT Min",
+    "Bwd IAT Total",
+    "Bwd IAT Mean",
+    "Bwd IAT Std",
+    "Bwd IAT Max",
+    "Bwd IAT Min",
+    "Fwd PSH Flags",
+    "Bwd PSH Flags",
+    "Fwd URG Flags",
+    "Bwd URG Flags",
+    "Fwd Header Length",
+    "Bwd Header Length",
+    "Fwd Packets/s",
+    "Bwd Packets/s",
+    "Min Packet Length",
+    "Max Packet Length",
+    "Packet Length Mean",
+    "Packet Length Std",
+    "Packet Length Variance",
+    "FIN Flag Count",
+    "SYN Flag Count",
+    "RST Flag Count",
+    "PSH Flag Count",
+    "ACK Flag Count",
+    "URG Flag Count",
+    "CWE Flag Count",
+    "ECE Flag Count",
+    "Down/Up Ratio",
+    "Average Packet Size",
+    "Avg Fwd Segment Size",
+    "Avg Bwd Segment Size",
+    "Fwd Header Length.1",
+    "Fwd Avg Bytes/Bulk",
+    "Fwd Avg Packets/Bulk",
+    "Fwd Avg Bulk Rate",
+    "Bwd Avg Bytes/Bulk",
+    "Bwd Avg Packets/Bulk",
+    "Bwd Avg Bulk Rate",
+    "Subflow Fwd Packets",
+    "Subflow Fwd Bytes",
+    "Subflow Bwd Packets",
+    "Subflow Bwd Bytes",
+    "Init_Win_bytes_forward",
+    "Init_Win_bytes_backward",
+    "act_data_pkt_fwd",
+    "min_seg_size_forward",
+    "Active Mean",
+    "Active Std",
+    "Active Max",
+    "Active Min",
+    "Idle Mean",
+    "Idle Std",
+    "Idle Max",
+    "Idle Min"
+  ],
+  "feature_count": 78,
+  "rows": 2827876,
+  "class_order": [
+    "benign",
+    "dos",
+    "portscan",
+    "ddos",
+    "bf",
+    "bot",
+    "web",
+    "inf",
+    "heartbleed"
+  ],
+  "per_file": [
+    {
+      "file": "1_Monday-WorkingHours.pcap_ISCX.csv",
+      "rows_read": 529918,
+      "rows_kept": 529481,
+      "dropped_nonfinite": {
+        "benign": 437
+      },
+      "split_rows": {
+        "train": 370636,
+        "validation": 79422,
+        "test": 79423
+      },
+      "labels": {
+        "BENIGN": 529481
+      },
+      "families": {
+        "benign": 529481
+      }
+    },
+    {
+      "file": "2_Tuesday-WorkingHours.pcap_ISCX.csv",
+      "rows_read": 445909,
+      "rows_kept": 445645,
+      "dropped_nonfinite": {
+        "benign": 261,
+        "bf": 3
+      },
+      "split_rows": {
+        "train": 311951,
+        "validation": 66847,
+        "test": 66847
+      },
+      "labels": {
+        "BENIGN": 431813,
+        "FTP-Patator": 7935,
+        "SSH-Patator": 5897
+      },
+      "families": {
+        "benign": 431813,
+        "bf": 13832
+      }
+    },
+    {
+      "file": "3_Wednesday-workingHours.pcap_ISCX.csv",
+      "rows_read": 692703,
+      "rows_kept": 691406,
+      "dropped_nonfinite": {
+        "benign": 348,
+        "dos": 949
+      },
+      "split_rows": {
+        "train": 483983,
+        "validation": 103711,
+        "test": 103712
+      },
+      "labels": {
+        "BENIGN": 439683,
+        "DoS slowloris": 5796,
+        "DoS Slowhttptest": 5499,
+        "DoS Hulk": 230124,
+        "DoS GoldenEye": 10293,
+        "Heartbleed": 11
+      },
+      "families": {
+        "benign": 439683,
+        "dos": 251712,
+        "heartbleed": 11
+      }
+    },
+    {
+      "file": "4_Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+      "rows_read": 170366,
+      "rows_kept": 170231,
+      "dropped_nonfinite": {
+        "benign": 135
+      },
+      "split_rows": {
+        "train": 119161,
+        "validation": 25535,
+        "test": 25535
+      },
+      "labels": {
+        "BENIGN": 168051,
+        "Web Attack ï¿½ Brute Force": 1507,
+        "Web Attack ï¿½ XSS": 652,
+        "Web Attack ï¿½ Sql Injection": 21
+      },
+      "families": {
+        "benign": 168051,
+        "web": 2180
+      }
+    },
+    {
+      "file": "5_Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+      "rows_read": 288602,
+      "rows_kept": 288395,
+      "dropped_nonfinite": {
+        "benign": 207
+      },
+      "split_rows": {
+        "train": 201876,
+        "validation": 43259,
+        "test": 43260
+      },
+      "labels": {
+        "BENIGN": 288359,
+        "Infiltration": 36
+      },
+      "families": {
+        "benign": 288359,
+        "inf": 36
+      }
+    },
+    {
+      "file": "6_Friday-WorkingHours-Morning.pcap_ISCX.csv",
+      "rows_read": 191033,
+      "rows_kept": 190911,
+      "dropped_nonfinite": {
+        "benign": 112,
+        "bot": 10
+      },
+      "split_rows": {
+        "train": 133637,
+        "validation": 28636,
+        "test": 28638
+      },
+      "labels": {
+        "BENIGN": 188955,
+        "Bot": 1956
+      },
+      "families": {
+        "benign": 188955,
+        "bot": 1956
+      }
+    },
+    {
+      "file": "7_Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+      "rows_read": 286467,
+      "rows_kept": 286096,
+      "dropped_nonfinite": {
+        "benign": 245,
+        "portscan": 126
+      },
+      "split_rows": {
+        "train": 200266,
+        "validation": 42915,
+        "test": 42915
+      },
+      "labels": {
+        "BENIGN": 127292,
+        "PortScan": 158804
+      },
+      "families": {
+        "benign": 127292,
+        "portscan": 158804
+      }
+    },
+    {
+      "file": "8_Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+      "rows_read": 225745,
+      "rows_kept": 225711,
+      "dropped_nonfinite": {
+        "benign": 32,
+        "ddos": 2
+      },
+      "split_rows": {
+        "train": 157997,
+        "validation": 33857,
+        "test": 33857
+      },
+      "labels": {
+        "BENIGN": 97686,
+        "DDoS": 128025
+      },
+      "families": {
+        "benign": 97686,
+        "ddos": 128025
+      }
+    }
+  ],
+  "split_counts": {
+    "train": {
+      "benign": 1589921,
+      "dos": 176198,
+      "portscan": 111162,
+      "ddos": 89617,
+      "bf": 9682,
+      "bot": 1369,
+      "web": 1526,
+      "inf": 25,
+      "heartbleed": 7
+    },
+    "validation": {
+      "benign": 340698,
+      "dos": 37757,
+      "portscan": 23821,
+      "ddos": 19204,
+      "bf": 2075,
+      "bot": 293,
+      "web": 327,
+      "inf": 5,
+      "heartbleed": 2
+    },
+    "test": {
+      "benign": 340701,
+      "dos": 37757,
+      "portscan": 23821,
+      "ddos": 19204,
+      "bf": 2075,
+      "bot": 294,
+      "web": 327,
+      "inf": 6,
+      "heartbleed": 2
+    }
+  },
+  "dataset_sha256": "5a3020070937d54c5b0fac95c91c901ac8faf972481d34c162b1cbb4f53d5708",
+  "split": {
+    "method": "chronological_within_file_and_family",
+    "fractions": [
+      0.7,
+      0.15,
+      0.15
+    ],
+    "note": "Rows of each CSV are kept in file order (CICFlowMeter emits flows in start-time order). Within each file and family, the first 70% of that family's rows become train, the next 15% validation and the last 15% test, so every family's test rows come after its train rows in time. A plain positional split was rejected in the smoke test because families whose attack window ends early (web, DoS Hulk) had no or few test rows. Test is retained completely."
+  }
+}
