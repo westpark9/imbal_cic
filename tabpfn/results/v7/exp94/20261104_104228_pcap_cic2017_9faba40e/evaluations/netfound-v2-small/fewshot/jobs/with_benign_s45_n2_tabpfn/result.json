@@ -1,0 +1,109 @@
+{
+  "regime": "with_benign",
+  "seed": 45,
+  "budget": 2,
+  "method": "tabpfn",
+  "train_rows": 14,
+  "train_flow_ids": [
+    "73ca8a2fa32fb148ffab3eb8",
+    "bc48dc984110a5f80fa2d7c9",
+    "19bd718390277d05128eb588",
+    "cad68512a3f4dc18c5361135",
+    "6215614ed479398cf55cd550",
+    "164c44990336c1f3da1a8948",
+    "55b08c13e02bad4759182f28",
+    "ab67bf89d1a159ca2bfee676",
+    "95930e8d2affe047607279bd",
+    "b5a04baaaaab3c3aa405a193",
+    "ca12ef66cd2a08e6eea681cb",
+    "864e775201fb65768d735aa4",
+    "a6c3d3d8d346d44d67940e91",
+    "c242b8c8f032550c057f3af5"
+  ],
+  "test_rows": 340543,
+  "test_flow_ids_sha256": "8e6e87d366cf3d87a243fb53fa60dbc5183ba94daf78f1141a6ba344b467ce27",
+  "metrics": {
+    "macro_f1": 0.2095663392429218,
+    "classes": [
+      {
+        "name": "benign",
+        "support": 259782,
+        "precision": 0.9153939227906764,
+        "recall": 0.15434864617256008,
+        "f1": 0.2641566612316155,
+        "tp": 40097,
+        "fp": 3706,
+        "fn": 219685
+      },
+      {
+        "name": "dos",
+        "support": 25761,
+        "precision": 0.25158270173874275,
+        "recall": 0.6571561662978922,
+        "f1": 0.3638649772705291,
+        "tp": 16929,
+        "fp": 50361,
+        "fn": 8832
+      },
+      {
+        "name": "portscan",
+        "support": 39472,
+        "precision": 0.37201627855452035,
+        "recall": 0.8082438184029185,
+        "f1": 0.5095145693090258,
+        "tp": 31903,
+        "fp": 53854,
+        "fn": 7569
+      },
+      {
+        "name": "ddos",
+        "support": 14353,
+        "precision": 0.19109387536774539,
+        "recall": 0.995610673726747,
+        "f1": 0.32064443023347133,
+        "tp": 14290,
+        "fp": 60490,
+        "fn": 63
+      },
+      {
+        "name": "bf",
+        "support": 1048,
+        "precision": 8.602150537634408e-05,
+        "recall": 0.0009541984732824427,
+        "f1": 0.00015781582892764143,
+        "tp": 1,
+        "fp": 11624,
+        "fn": 1047
+      },
+      {
+        "name": "bot",
+        "support": 111,
+        "precision": 0.0038097925779596443,
+        "recall": 0.972972972972973,
+        "f1": 0.007589866123194771,
+        "tp": 108,
+        "fp": 28240,
+        "fn": 3
+      },
+      {
+        "name": "web",
+        "support": 16,
+        "precision": 0.0005183137525915688,
+        "recall": 0.9375,
+        "f1": 0.0010360547036883548,
+        "tp": 15,
+        "fp": 28925,
+        "fn": 1
+      }
+    ],
+    "rows": 340543
+  },
+  "construct_seconds": 0.00013181799999983923,
+  "fit_seconds": 0.40421069000001353,
+  "inference_seconds": 12.924670563999939,
+  "frozen_weights_sha256": "152e50ac0356e138425f56f57078d20a088721d641e32cf7321533b12cad7c70",
+  "adapter": "netfound-v2-small",
+  "pca_dimensions": 64,
+  "inference_batch_rows": 8192,
+  "finetuning": false
+}

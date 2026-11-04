@@ -1,0 +1,5904 @@
+{
+  "schema": 1,
+  "run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+  "corpus_manifest": {
+    "captures": [
+      {
+        "id": "cic2017_monday",
+        "path": "data/pcap/cic2017/Monday-WorkingHours.pcap",
+        "bytes": 10822507416,
+        "sha256": "f6eac599358f216b074338813a1cf7be3cc4e91d116e13efc0dc71f2cca11972",
+        "group_namespace": "cic2017_monday",
+        "flows": 421674
+      },
+      {
+        "id": "cic2017_tuesday",
+        "path": "data/pcap/cic2017/Tuesday-WorkingHours.pcap",
+        "bytes": 11048283608,
+        "sha256": "080c2250154c5a174c03660ed0f75a3858d41a27511ba716e780d7bcb1ec4c57",
+        "group_namespace": "cic2017_tuesday",
+        "flows": 353521
+      },
+      {
+        "id": "cic2017_wednesday",
+        "path": "data/pcap/cic2017/Wednesday-workingHours.pcap",
+        "bytes": 13420789612,
+        "sha256": "cd2674db7559a53f24bc03be3239b315700174ccaef72d10f5edc4c1a08f6186",
+        "group_namespace": "cic2017_wednesday",
+        "flows": 661228
+      },
+      {
+        "id": "cic2017_thursday",
+        "path": "data/pcap/cic2017/Thursday-WorkingHours.pcap",
+        "bytes": 8302500180,
+        "sha256": "38f8b1bb276849bf1721f7c4de22bebfa7f59a74e52286d4c0a37edbb118fe01",
+        "group_namespace": "cic2017_thursday",
+        "flows": 409854
+      },
+      {
+        "id": "cic2017_friday",
+        "path": "data/pcap/cic2017/Friday-WorkingHours.pcap",
+        "bytes": 8839309056,
+        "sha256": "beff0dcce1eebc9b2454582f4dc8ed0ba0112b2c619a710bf03af93147254cd0",
+        "group_namespace": "cic2017_friday",
+        "flows": 578771
+      }
+    ],
+    "raw_stats": {
+      "cic2017_monday": {
+        "raw_packets": 11709971,
+        "non_ipv4": 83479,
+        "peak_active_flows": 4536,
+        "other_transport": 53,
+        "closed_session_ack_tail": 17869,
+        "out_of_order_packets": 3284,
+        "ipv4_fragments_excluded": 520
+      },
+      "cic2017_tuesday": {
+        "raw_packets": 11551954,
+        "non_ipv4": 82218,
+        "peak_active_flows": 4164,
+        "closed_session_ack_tail": 14464,
+        "ipv4_fragments_excluded": 532,
+        "out_of_order_packets": 3753,
+        "other_transport": 40
+      },
+      "cic2017_wednesday": {
+        "raw_packets": 13788878,
+        "non_ipv4": 83323,
+        "other_transport": 20,
+        "peak_active_flows": 5866,
+        "out_of_order_packets": 14608,
+        "closed_session_ack_tail": 62243,
+        "ipv4_fragments_excluded": 428
+      },
+      "cic2017_thursday": {
+        "raw_packets": 9322025,
+        "non_ipv4": 81302,
+        "peak_active_flows": 6508,
+        "other_transport": 130,
+        "out_of_order_packets": 3705,
+        "ipv4_fragments_excluded": 188,
+        "closed_session_ack_tail": 10538
+      },
+      "cic2017_friday": {
+        "raw_packets": 9997874,
+        "non_ipv4": 82194,
+        "peak_active_flows": 4043,
+        "other_transport": 179,
+        "closed_session_ack_tail": 8052,
+        "out_of_order_packets": 8374,
+        "ipv4_fragments_excluded": 392
+      }
+    },
+    "label_status_counts": {
+      "background_benign": 1731862,
+      "confirmed_attack": 538428,
+      "unresolved_attempted": 154743,
+      "boundary": 15
+    },
+    "split": {
+      "method": "time_forward_within_capture_and_family",
+      "fractions": [
+        0.7,
+        0.15,
+        0.15
+      ],
+      "note": "flows of each (capture, family) sorted by start time; first 70% train, next 15% validation, last 15% test"
+    },
+    "source_counts": [
+      {
+        "label": "__UNRESOLVED__",
+        "split": "test",
+        "rows": 23216
+      },
+      {
+        "label": "__UNRESOLVED__",
+        "split": "train",
+        "rows": 108328
+      },
+      {
+        "label": "__UNRESOLVED__",
+        "split": "validation",
+        "rows": 23214
+      },
+      {
+        "label": "benign",
+        "split": "test",
+        "rows": 259782
+      },
+      {
+        "label": "benign",
+        "split": "train",
+        "rows": 1212301
+      },
+      {
+        "label": "benign",
+        "split": "validation",
+        "rows": 259779
+      },
+      {
+        "label": "bf",
+        "split": "test",
+        "rows": 1048
+      },
+      {
+        "label": "bf",
+        "split": "train",
+        "rows": 4887
+      },
+      {
+        "label": "bf",
+        "split": "validation",
+        "rows": 1047
+      },
+      {
+        "label": "bot",
+        "split": "test",
+        "rows": 111
+      },
+      {
+        "label": "bot",
+        "split": "train",
+        "rows": 515
+      },
+      {
+        "label": "bot",
+        "split": "validation",
+        "rows": 110
+      },
+      {
+        "label": "ddos",
+        "split": "test",
+        "rows": 14353
+      },
+      {
+        "label": "ddos",
+        "split": "train",
+        "rows": 66978
+      },
+      {
+        "label": "ddos",
+        "split": "validation",
+        "rows": 14352
+      },
+      {
+        "label": "dos",
+        "split": "test",
+        "rows": 25761
+      },
+      {
+        "label": "dos",
+        "split": "train",
+        "rows": 120216
+      },
+      {
+        "label": "dos",
+        "split": "validation",
+        "rows": 25761
+      },
+      {
+        "label": "heartbleed",
+        "split": "test",
+        "rows": 2
+      },
+      {
+        "label": "heartbleed",
+        "split": "train",
+        "rows": 7
+      },
+      {
+        "label": "heartbleed",
+        "split": "validation",
+        "rows": 2
+      },
+      {
+        "label": "inf",
+        "split": "test",
+        "rows": 6
+      },
+      {
+        "label": "inf",
+        "split": "train",
+        "rows": 25
+      },
+      {
+        "label": "inf",
+        "split": "validation",
+        "rows": 5
+      },
+      {
+        "label": "portscan",
+        "split": "test",
+        "rows": 39472
+      },
+      {
+        "label": "portscan",
+        "split": "train",
+        "rows": 184196
+      },
+      {
+        "label": "portscan",
+        "split": "validation",
+        "rows": 39470
+      },
+      {
+        "label": "web",
+        "split": "test",
+        "rows": 16
+      },
+      {
+        "label": "web",
+        "split": "train",
+        "rows": 72
+      },
+      {
+        "label": "web",
+        "split": "validation",
+        "rows": 16
+      }
+    ]
+  },
+  "label_coverage": {
+    "passed": true,
+    "max_fewshot_budget": 50,
+    "coverage": {
+      "benign": {
+        "train": 1212301,
+        "validation": 259779,
+        "test": 259782
+      },
+      "dos": {
+        "train": 120216,
+        "validation": 25761,
+        "test": 25761
+      },
+      "portscan": {
+        "train": 184196,
+        "validation": 39470,
+        "test": 39472
+      },
+      "ddos": {
+        "train": 66978,
+        "validation": 14352,
+        "test": 14353
+      },
+      "bf": {
+        "train": 4887,
+        "validation": 1047,
+        "test": 1048
+      },
+      "bot": {
+        "train": 515,
+        "validation": 110,
+        "test": 111
+      },
+      "web": {
+        "train": 72,
+        "validation": 16,
+        "test": 16
+      },
+      "inf": {
+        "train": 25,
+        "validation": 5,
+        "test": 6
+      },
+      "heartbleed": {
+        "train": 7,
+        "validation": 2,
+        "test": 2
+      }
+    },
+    "included": [
+      "benign",
+      "dos",
+      "portscan",
+      "ddos",
+      "bf",
+      "bot",
+      "web"
+    ],
+    "excluded": [
+      "inf",
+      "heartbleed"
+    ],
+    "rule": "families below the budget are excluded from training and macro-F1; their flows stay in the corpus with label kept for audits"
+  },
+  "projection": {
+    "adapter": "netfound-v2-small",
+    "rows": 2425048,
+    "input_dimensions": 512,
+    "pca_dimensions": 64,
+    "pca_fit_rows": 1697525,
+    "pca_fit_scope": "all corpus train rows including unresolved; no validation/test",
+    "pca_explained_variance": 0.981137752532959,
+    "class_order": [
+      "benign",
+      "dos",
+      "portscan",
+      "ddos",
+      "bf",
+      "bot",
+      "web"
+    ],
+    "split_counts": {
+      "train": 1697525,
+      "validation": 363756,
+      "test": 363767
+    },
+    "labelled_counts": {
+      "train": {
+        "benign": 1212301,
+        "dos": 120216,
+        "portscan": 184196,
+        "ddos": 66978,
+        "bf": 4887,
+        "bot": 515,
+        "web": 72
+      },
+      "validation": {
+        "benign": 259779,
+        "dos": 25761,
+        "portscan": 39470,
+        "ddos": 14352,
+        "bf": 1047,
+        "bot": 110,
+        "web": 16
+      },
+      "test": {
+        "benign": 259782,
+        "dos": 25761,
+        "portscan": 39472,
+        "ddos": 14353,
+        "bf": 1048,
+        "bot": 111,
+        "web": 16
+      }
+    },
+    "five_tuple_groups_shared_train_test": 64317,
+    "split_note": "time-forward within capture and family; shared 5-tuple groups across splits are expected and reported",
+    "classifier_evaluated": false
+  },
+  "audit3": {
+    "schema": 1,
+    "rows": 2425048,
+    "labelled_rows": 2270243,
+    "test_rows": 340543,
+    "interpretation": "L1 counts flows the pipeline cannot tell apart at all (label-side floor). The increase from L1 to L2/L3 is information discarded by the representation. Oracle ceiling = majority label per identical group on test.",
+    "layers": {
+      "L1_flow_signature": {
+        "full_labelled": {
+          "rows": 2270243,
+          "identical_groups": 82318,
+          "cross_label_groups": 9,
+          "cross_label_rows": 913,
+          "cross_label_rows_by_family": {
+            "benign": 22,
+            "portscan": 891
+          }
+        },
+        "test": {
+          "rows": 340543,
+          "identical_groups": 7462,
+          "cross_label_groups": 0,
+          "cross_label_rows": 0,
+          "cross_label_rows_by_family": {}
+        },
+        "train_to_test_exact_duplicate_fraction": 0.1219757857304364,
+        "oracle_ceiling": {
+          "with_benign": {
+            "macro_f1": 1.0,
+            "classes": [
+              [
+                "benign",
+                1.0
+              ],
+              [
+                "dos",
+                1.0
+              ],
+              [
+                "portscan",
+                1.0
+              ],
+              [
+                "ddos",
+                1.0
+              ],
+              [
+                "bf",
+                1.0
+              ],
+              [
+                "bot",
+                1.0
+              ],
+              [
+                "web",
+                1.0
+              ]
+            ]
+          },
+          "attack_only": {
+            "macro_f1": 1.0,
+            "classes": [
+              [
+                "dos",
+                1.0
+              ],
+              [
+                "portscan",
+                1.0
+              ],
+              [
+                "ddos",
+                1.0
+              ],
+              [
+                "bf",
+                1.0
+              ],
+              [
+                "bot",
+                1.0
+              ],
+              [
+                "web",
+                1.0
+              ]
+            ]
+          }
+        }
+      },
+      "L2_tokenizer_input": {
+        "full_labelled": {
+          "rows": 2270243,
+          "identical_groups": 33776,
+          "cross_label_groups": 24,
+          "cross_label_rows": 110324,
+          "cross_label_rows_by_family": {
+            "benign": 63206,
+            "portscan": 47117,
+            "dos": 1
+          }
+        },
+        "test": {
+          "rows": 340543,
+          "identical_groups": 9776,
+          "cross_label_groups": 6,
+          "cross_label_rows": 9741,
+          "cross_label_rows_by_family": {
+            "benign": 8741,
+            "portscan": 1000
+          }
+        },
+        "train_to_test_exact_duplicate_fraction": 0.5606252367542425,
+        "oracle_ceiling": {
+          "with_benign": {
+            "macro_f1": 0.9978992826503023,
+            "classes": [
+              [
+                "benign",
+                0.9980847364831766
+              ],
+              [
+                "dos",
+                1.0
+              ],
+              [
+                "portscan",
+                0.9872102420689389
+              ],
+              [
+                "ddos",
+                1.0
+              ],
+              [
+                "bf",
+                1.0
+              ],
+              [
+                "bot",
+                1.0
+              ],
+              [
+                "web",
+                1.0
+              ]
+            ]
+          },
+          "attack_only": {
+            "macro_f1": 1.0,
+            "classes": [
+              [
+                "dos",
+                1.0
+              ],
+              [
+                "portscan",
+                1.0
+              ],
+              [
+                "ddos",
+                1.0
+              ],
+              [
+                "bf",
+                1.0
+              ],
+              [
+                "bot",
+                1.0
+              ],
+              [
+                "web",
+                1.0
+              ]
+            ]
+          }
+        }
+      },
+      "L3_flowstats_vector": {
+        "full_labelled": {
+          "rows": 2270243,
+          "identical_groups": 109187,
+          "cross_label_groups": 143,
+          "cross_label_rows": 6367,
+          "cross_label_rows_by_family": {
+            "benign": 572,
+            "portscan": 5770,
+            "dos": 25
+          }
+        },
+        "test": {
+          "rows": 340543,
+          "identical_groups": 11308,
+          "cross_label_groups": 2,
+          "cross_label_rows": 5,
+          "cross_label_rows_by_family": {
+            "benign": 2,
+            "portscan": 3
+          }
+        },
+        "train_to_test_exact_duplicate_fraction": 0.1789583106979148,
+        "oracle_ceiling": {
+          "with_benign": {
+            "macro_f1": 0.9999958308863325,
+            "classes": [
+              [
+                "benign",
+                0.9999961506185956
+              ],
+              [
+                "dos",
+                1.0
+              ],
+              [
+                "portscan",
+                0.9999746655857317
+              ],
+              [
+                "ddos",
+                1.0
+              ],
+              [
+                "bf",
+                1.0
+              ],
+              [
+                "bot",
+                1.0
+              ],
+              [
+                "web",
+                1.0
+              ]
+            ]
+          },
+          "attack_only": {
+            "macro_f1": 1.0,
+            "classes": [
+              [
+                "dos",
+                1.0
+              ],
+              [
+                "portscan",
+                1.0
+              ],
+              [
+                "ddos",
+                1.0
+              ],
+              [
+                "bf",
+                1.0
+              ],
+              [
+                "bot",
+                1.0
+              ],
+              [
+                "web",
+                1.0
+              ]
+            ]
+          }
+        }
+      },
+      "L3_netfound_pca_vector": {
+        "full_labelled": {
+          "rows": 2270243,
+          "identical_groups": 87163,
+          "cross_label_groups": 61,
+          "cross_label_rows": 67765,
+          "cross_label_rows_by_family": {
+            "benign": 60443,
+            "portscan": 7322
+          }
+        },
+        "test": {
+          "rows": 340543,
+          "identical_groups": 20149,
+          "cross_label_groups": 18,
+          "cross_label_rows": 8797,
+          "cross_label_rows_by_family": {
+            "benign": 8538,
+            "portscan": 259
+          }
+        },
+        "train_to_test_exact_duplicate_fraction": 0.5036221563796642,
+        "oracle_ceiling": {
+          "with_benign": {
+            "macro_f1": 0.999502881758297,
+            "classes": [
+              [
+                "benign",
+                0.9995420875420875
+              ],
+              [
+                "dos",
+                1.0
+              ],
+              [
+                "portscan",
+                0.996978084765992
+              ],
+              [
+                "ddos",
+                1.0
+              ],
+              [
+                "bf",
+                1.0
+              ],
+              [
+                "bot",
+                1.0
+              ],
+              [
+                "web",
+                1.0
+              ]
+            ]
+          },
+          "attack_only": {
+            "macro_f1": 1.0,
+            "classes": [
+              [
+                "dos",
+                1.0
+              ],
+              [
+                "portscan",
+                1.0
+              ],
+              [
+                "ddos",
+                1.0
+              ],
+              [
+                "bf",
+                1.0
+              ],
+              [
+                "bot",
+                1.0
+              ],
+              [
+                "web",
+                1.0
+              ]
+            ]
+          }
+        }
+      }
+    }
+  },
+  "views": {
+    "flowstats-v1": {
+      "completed_jobs": 120,
+      "macro_f1": [
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.5830926349075385,
+          "sample_sd": 0.07287378408965575
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.6350300957319005,
+          "sample_sd": 0.047220912108937495
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.7288678509650057,
+          "sample_sd": 0.0929972691191124
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.7854967179748185,
+          "sample_sd": 0.023441115259526298
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.8092951766961901,
+          "sample_sd": 0.025279429295427164
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.813657484100818,
+          "sample_sd": 0.013712531022894695
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.4664969225266611,
+          "sample_sd": 0.1111693020169405
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.5516818759959778,
+          "sample_sd": 0.0368082629269914
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.7185177034167863,
+          "sample_sd": 0.10124641540305926
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.7142844327435646,
+          "sample_sd": 0.08557893822572914
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.7512803972967645,
+          "sample_sd": 0.10799191768436653
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.8351826605617351,
+          "sample_sd": 0.02564242172591211
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.3549851136527267,
+          "sample_sd": 0.07397841829967743
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.40184115811812254,
+          "sample_sd": 0.09818903208385892
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.4735325262771052,
+          "sample_sd": 0.04044913671995897
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.5183732586600532,
+          "sample_sd": 0.028231648322133707
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.5746038363676634,
+          "sample_sd": 0.04759213884400734
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.6903583921462063,
+          "sample_sd": 0.0528458258996122
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.3662172173282069,
+          "sample_sd": 0.07374270322686746
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.4167531037237563,
+          "sample_sd": 0.10502871323774846
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.45661500182316034,
+          "sample_sd": 0.026800341808963405
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.4961878259310878,
+          "sample_sd": 0.02472475897705699
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.5512154699511779,
+          "sample_sd": 0.034495685362030994
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.6516244513466497,
+          "sample_sd": 0.0402736212750417
+        }
+      ],
+      "class_f1": [
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bf",
+          "mean": 0.22218469612766506,
+          "sample_sd": 0.4057199482104944,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bot",
+          "mean": 0.5003733660202407,
+          "sample_sd": 0.21260086395494612,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "ddos",
+          "mean": 0.8721213256127782,
+          "sample_sd": 0.10617088378986106,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "dos",
+          "mean": 0.8866665120384465,
+          "sample_sd": 0.07604382655786798,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "portscan",
+          "mean": 0.9956903846343577,
+          "sample_sd": 0.00033287937733557957,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "web",
+          "mean": 0.021519525011742837,
+          "sample_sd": 0.032029828951217414,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bf",
+          "mean": 0.4074177085418419,
+          "sample_sd": 0.39015895292419195,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bot",
+          "mean": 0.5871933443988201,
+          "sample_sd": 0.07051782081321936,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "ddos",
+          "mean": 0.8570515426264492,
+          "sample_sd": 0.14677365169145562,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "dos",
+          "mean": 0.8746826800930455,
+          "sample_sd": 0.10274528078899216,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "portscan",
+          "mean": 0.9956609873125775,
+          "sample_sd": 0.00042385981927306146,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "web",
+          "mean": 0.08817431141866974,
+          "sample_sd": 0.13028299084708067,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bf",
+          "mean": 0.6703123593772748,
+          "sample_sd": 0.4369446487416921,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bot",
+          "mean": 0.6139258833116649,
+          "sample_sd": 0.0816443497627962,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "ddos",
+          "mean": 0.9361682214555342,
+          "sample_sd": 0.08397363989357025,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "dos",
+          "mean": 0.9416711139146731,
+          "sample_sd": 0.0807062556134663,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "portscan",
+          "mean": 0.9960210094340542,
+          "sample_sd": 0.00035983038515052855,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "web",
+          "mean": 0.21510851829683258,
+          "sample_sd": 0.14390720296704332,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bf",
+          "mean": 0.9679868618085262,
+          "sample_sd": 0.01229226341419842,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bot",
+          "mean": 0.5019819615647533,
+          "sample_sd": 0.17592696659430127,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "ddos",
+          "mean": 0.9780517169234771,
+          "sample_sd": 0.04336967093060933,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "dos",
+          "mean": 0.9839536038684564,
+          "sample_sd": 0.027833505809206308,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "portscan",
+          "mean": 0.9959421523038969,
+          "sample_sd": 0.0003711199252874801,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "web",
+          "mean": 0.28506401137980086,
+          "sample_sd": 0.06870422235276735,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bf",
+          "mean": 0.9554309113445795,
+          "sample_sd": 0.041216013077978134,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bot",
+          "mean": 0.6254016794721862,
+          "sample_sd": 0.05603632757237759,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "ddos",
+          "mean": 0.978055954710656,
+          "sample_sd": 0.043385699216527546,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "dos",
+          "mean": 0.9849979964577088,
+          "sample_sd": 0.030234294014633713,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "portscan",
+          "mean": 0.9960950445077996,
+          "sample_sd": 0.000722118500627032,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "web",
+          "mean": 0.3157894736842105,
+          "sample_sd": 0.0,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bf",
+          "mean": 0.9809893449467934,
+          "sample_sd": 0.011206710230389052,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bot",
+          "mean": 0.6388893447943325,
+          "sample_sd": 0.0356668035625784,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "ddos",
+          "mean": 0.9977172968234498,
+          "sample_sd": 0.0010082418187572102,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "dos",
+          "mean": 0.9980669906439943,
+          "sample_sd": 0.0012504805904008038,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "portscan",
+          "mean": 0.9961359742782492,
+          "sample_sd": 0.0008582666774440056,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "web",
+          "mean": 0.27014595311808937,
+          "sample_sd": 0.08623844654488352,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bf",
+          "mean": 0.11128034746320921,
+          "sample_sd": 0.1487424042037731,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bot",
+          "mean": 0.255994621309538,
+          "sample_sd": 0.17086151934617919,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "ddos",
+          "mean": 0.8023196489606462,
+          "sample_sd": 0.18049773867041013,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "dos",
+          "mean": 0.7254052590058908,
+          "sample_sd": 0.19248041418823542,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "portscan",
+          "mean": 0.8997967902809367,
+          "sample_sd": 0.08714033918276588,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "web",
+          "mean": 0.0041848681397455454,
+          "sample_sd": 0.0041478762233389515,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bf",
+          "mean": 0.15292857626783884,
+          "sample_sd": 0.14363573680821543,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bot",
+          "mean": 0.41994380650884955,
+          "sample_sd": 0.25731371844066386,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "ddos",
+          "mean": 0.9227685626023894,
+          "sample_sd": 0.06718332295206694,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "dos",
+          "mean": 0.8016046487150039,
+          "sample_sd": 0.07026923178135037,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "portscan",
+          "mean": 0.9931083610044352,
+          "sample_sd": 0.0021476543083242946,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "web",
+          "mean": 0.019737300877349873,
+          "sample_sd": 0.023164394676172952,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bf",
+          "mean": 0.6013530106824944,
+          "sample_sd": 0.4091535745824816,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bot",
+          "mean": 0.6837301493585743,
+          "sample_sd": 0.08147318856302661,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "ddos",
+          "mean": 0.9587400770716588,
+          "sample_sd": 0.028480513501122448,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "dos",
+          "mean": 0.8965770255007225,
+          "sample_sd": 0.0819110643691115,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "portscan",
+          "mean": 0.9920505860736004,
+          "sample_sd": 0.00464211486206516,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "web",
+          "mean": 0.17865537181366759,
+          "sample_sd": 0.10217223437057726,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bf",
+          "mean": 0.7567714291059185,
+          "sample_sd": 0.3240337785633692,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bot",
+          "mean": 0.5092921999452058,
+          "sample_sd": 0.31143141017647313,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "ddos",
+          "mean": 0.9442656230639969,
+          "sample_sd": 0.055657267456686754,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "dos",
+          "mean": 0.9114889524687305,
+          "sample_sd": 0.06527910842382735,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "portscan",
+          "mean": 0.9947889275303933,
+          "sample_sd": 0.0013396011228046668,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "web",
+          "mean": 0.16909946434714235,
+          "sample_sd": 0.10951619210395182,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bf",
+          "mean": 0.7436861503391092,
+          "sample_sd": 0.33513660308396215,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bot",
+          "mean": 0.6439701817790393,
+          "sample_sd": 0.2550228750587751,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "ddos",
+          "mean": 0.9851800897777384,
+          "sample_sd": 0.007380941735900847,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "dos",
+          "mean": 0.9393655763023953,
+          "sample_sd": 0.07916332371740903,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "portscan",
+          "mean": 0.9951739105707824,
+          "sample_sd": 0.0002491419655575676,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "web",
+          "mean": 0.2003064750115222,
+          "sample_sd": 0.12239202183037066,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bf",
+          "mean": 0.9650885535765468,
+          "sample_sd": 0.0032519488821272096,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bot",
+          "mean": 0.8040847561015024,
+          "sample_sd": 0.16987077210296772,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "ddos",
+          "mean": 0.9906830576337337,
+          "sample_sd": 0.0066742309811783085,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "dos",
+          "mean": 0.9936023343455261,
+          "sample_sd": 0.002827775472520663,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "portscan",
+          "mean": 0.9954633486696232,
+          "sample_sd": 0.00014231900449352444,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "web",
+          "mean": 0.26217391304347826,
+          "sample_sd": 0.021662909858005407,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "benign",
+          "mean": 0.558832986619815,
+          "sample_sd": 0.25810987222055876,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bf",
+          "mean": 0.021912124153186757,
+          "sample_sd": 0.030158857522775227,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bot",
+          "mean": 0.01934675280043451,
+          "sample_sd": 0.01244017613428338,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "ddos",
+          "mean": 0.7074160958956737,
+          "sample_sd": 0.18350322272743136,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "dos",
+          "mean": 0.7163570834411285,
+          "sample_sd": 0.06164862313430847,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "portscan",
+          "mean": 0.4601991925990815,
+          "sample_sd": 0.2936737051213306,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "web",
+          "mean": 0.0008315600597672203,
+          "sample_sd": 0.0006709815454986078,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "benign",
+          "mean": 0.7334212269067903,
+          "sample_sd": 0.20448052648230192,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bf",
+          "mean": 0.05696756763337546,
+          "sample_sd": 0.07061034177894909,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bot",
+          "mean": 0.038178509918019,
+          "sample_sd": 0.044226308347306696,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "ddos",
+          "mean": 0.6717755121102419,
+          "sample_sd": 0.28423646102831485,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "dos",
+          "mean": 0.7508105321009463,
+          "sample_sd": 0.11139021350943915,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "portscan",
+          "mean": 0.5604240017591996,
+          "sample_sd": 0.3162910629235749,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "web",
+          "mean": 0.0013107563982851914,
+          "sample_sd": 0.0006511367910518289,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "benign",
+          "mean": 0.8444340842189704,
+          "sample_sd": 0.039566490626901665,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bf",
+          "mean": 0.07614435766176093,
+          "sample_sd": 0.06194319363543117,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bot",
+          "mean": 0.023586845448816535,
+          "sample_sd": 0.013466051371900893,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "ddos",
+          "mean": 0.8057623478092791,
+          "sample_sd": 0.1595165705463771,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "dos",
+          "mean": 0.7909467825816787,
+          "sample_sd": 0.09446464988554142,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "portscan",
+          "mean": 0.7724977933363647,
+          "sample_sd": 0.067586863147302,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "web",
+          "mean": 0.001355472882865877,
+          "sample_sd": 0.0006478362045570003,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "benign",
+          "mean": 0.8864393593373336,
+          "sample_sd": 0.020517870679634398,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bf",
+          "mean": 0.22874875006769563,
+          "sample_sd": 0.08685043248814023,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bot",
+          "mean": 0.030559722231905572,
+          "sample_sd": 0.0161799937185669,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "ddos",
+          "mean": 0.8399145329878934,
+          "sample_sd": 0.1344685546512471,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "dos",
+          "mean": 0.8067256731694659,
+          "sample_sd": 0.07402667103264218,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "portscan",
+          "mean": 0.83252150193217,
+          "sample_sd": 0.06517477734890313,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "web",
+          "mean": 0.0037032708939088435,
+          "sample_sd": 0.0045231104350081965,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "benign",
+          "mean": 0.9088769056448818,
+          "sample_sd": 0.03531974279088116,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bf",
+          "mean": 0.43831260387518833,
+          "sample_sd": 0.281101086408007,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bot",
+          "mean": 0.02858321920496243,
+          "sample_sd": 0.012642027252838202,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "ddos",
+          "mean": 0.9272857233766013,
+          "sample_sd": 0.06819602084721996,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "dos",
+          "mean": 0.8931600814654399,
+          "sample_sd": 0.048617169678473536,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "portscan",
+          "mean": 0.8229490595811464,
+          "sample_sd": 0.06084582128079528,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "web",
+          "mean": 0.003059261425424001,
+          "sample_sd": 0.0033574795789872982,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "benign",
+          "mean": 0.9597544156591544,
+          "sample_sd": 0.016132039463021976,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bf",
+          "mean": 0.7828142863301977,
+          "sample_sd": 0.22208877624702666,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bot",
+          "mean": 0.25008749347265075,
+          "sample_sd": 0.10617391731081127,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "ddos",
+          "mean": 0.9881290996046447,
+          "sample_sd": 0.015027882569598005,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "dos",
+          "mean": 0.9493991615614853,
+          "sample_sd": 0.04343943713353308,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "portscan",
+          "mean": 0.859505363210595,
+          "sample_sd": 0.07137093371682902,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "web",
+          "mean": 0.04281892518471617,
+          "sample_sd": 0.057576092640360135,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "benign",
+          "mean": 0.4883045536151398,
+          "sample_sd": 0.23001691441691205,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bf",
+          "mean": 0.049835298019597844,
+          "sample_sd": 0.09150495031688693,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bot",
+          "mean": 0.005774390193864502,
+          "sample_sd": 0.002540825153304165,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "ddos",
+          "mean": 0.8200427211069119,
+          "sample_sd": 0.20478269573243557,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "dos",
+          "mean": 0.6746167514771211,
+          "sample_sd": 0.2254149913910642,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "portscan",
+          "mean": 0.5239677398102103,
+          "sample_sd": 0.17225770868315876,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "web",
+          "mean": 0.0009790670746026295,
+          "sample_sd": 0.0005528075474552921,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "benign",
+          "mean": 0.7079328850329434,
+          "sample_sd": 0.23702817814726904,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bf",
+          "mean": 0.11878210695668104,
+          "sample_sd": 0.08107541351600255,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bot",
+          "mean": 0.014217573939261674,
+          "sample_sd": 0.007027463767928031,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "ddos",
+          "mean": 0.7190750559080509,
+          "sample_sd": 0.2351940688914938,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "dos",
+          "mean": 0.6343368263191553,
+          "sample_sd": 0.19354412271902977,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "portscan",
+          "mean": 0.7216885965363341,
+          "sample_sd": 0.14547529747835716,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "web",
+          "mean": 0.0012386813738677184,
+          "sample_sd": 0.0008494732683180368,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "benign",
+          "mean": 0.8206542778805472,
+          "sample_sd": 0.042118267052029305,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bf",
+          "mean": 0.18750137652657678,
+          "sample_sd": 0.16202095127431915,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bot",
+          "mean": 0.050448840541320705,
+          "sample_sd": 0.027633694026306152,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "ddos",
+          "mean": 0.7350374503982405,
+          "sample_sd": 0.1524177174279689,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "dos",
+          "mean": 0.5955728944305766,
+          "sample_sd": 0.08856940455742104,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "portscan",
+          "mean": 0.8050467649527476,
+          "sample_sd": 0.047298298896934994,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "web",
+          "mean": 0.0020434080321128185,
+          "sample_sd": 0.0011091301139075185,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "benign",
+          "mean": 0.855150526619377,
+          "sample_sd": 0.03315483108366945,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bf",
+          "mean": 0.36074128134218836,
+          "sample_sd": 0.09177532242722926,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bot",
+          "mean": 0.09674434774275945,
+          "sample_sd": 0.0862174113848836,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "ddos",
+          "mean": 0.6900418950446563,
+          "sample_sd": 0.14441431473168376,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "dos",
+          "mean": 0.6204149088322346,
+          "sample_sd": 0.09871896528757618,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "portscan",
+          "mean": 0.8461641987366221,
+          "sample_sd": 0.06366064701423722,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "web",
+          "mean": 0.0040576231997767,
+          "sample_sd": 0.0027106688087166595,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "benign",
+          "mean": 0.8889997444830107,
+          "sample_sd": 0.027200325583709647,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bf",
+          "mean": 0.42954514989351555,
+          "sample_sd": 0.18600976181555975,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bot",
+          "mean": 0.103720248873919,
+          "sample_sd": 0.0739252517962451,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "ddos",
+          "mean": 0.8911833800538483,
+          "sample_sd": 0.10224035908755416,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "dos",
+          "mean": 0.6923802285731706,
+          "sample_sd": 0.09557982513093012,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "portscan",
+          "mean": 0.8490800663552218,
+          "sample_sd": 0.04784129612318759,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "web",
+          "mean": 0.0035994714255598212,
+          "sample_sd": 0.002735659045102453,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "benign",
+          "mean": 0.9503461840523594,
+          "sample_sd": 0.011418862173623368,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bf",
+          "mean": 0.7267509304189379,
+          "sample_sd": 0.12355163097153031,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bot",
+          "mean": 0.18089481543205044,
+          "sample_sd": 0.07233605943644159,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "ddos",
+          "mean": 0.9333074481432974,
+          "sample_sd": 0.09220722943094613,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "dos",
+          "mean": 0.8773101140497417,
+          "sample_sd": 0.08775677031997449,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "portscan",
+          "mean": 0.8905592122640504,
+          "sample_sd": 0.05202437505885863,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "web",
+          "mean": 0.0022024550661108983,
+          "sample_sd": 0.0014898423877173705,
+          "support": 16
+        }
+      ],
+      "tabpfn_minus_xgb": [
+        {
+          "regime": "attack_only",
+          "budget": 2,
+          "mean_delta": 0.11659571238087743
+        },
+        {
+          "regime": "attack_only",
+          "budget": 3,
+          "mean_delta": 0.08334821973592281
+        },
+        {
+          "regime": "attack_only",
+          "budget": 5,
+          "mean_delta": 0.01035014754821928
+        },
+        {
+          "regime": "attack_only",
+          "budget": 10,
+          "mean_delta": 0.07121228523125389
+        },
+        {
+          "regime": "attack_only",
+          "budget": 20,
+          "mean_delta": 0.058014779399425585
+        },
+        {
+          "regime": "attack_only",
+          "budget": 50,
+          "mean_delta": -0.021525176460917006
+        },
+        {
+          "regime": "with_benign",
+          "budget": 2,
+          "mean_delta": -0.011232103675480188
+        },
+        {
+          "regime": "with_benign",
+          "budget": 3,
+          "mean_delta": -0.014911945605633758
+        },
+        {
+          "regime": "with_benign",
+          "budget": 5,
+          "mean_delta": 0.016917524453944843
+        },
+        {
+          "regime": "with_benign",
+          "budget": 10,
+          "mean_delta": 0.02218543272896547
+        },
+        {
+          "regime": "with_benign",
+          "budget": 20,
+          "mean_delta": 0.02338836641648545
+        },
+        {
+          "regime": "with_benign",
+          "budget": 50,
+          "mean_delta": 0.03873394079955654
+        }
+      ]
+    },
+    "netfound-v2-small": {
+      "completed_jobs": 120,
+      "macro_f1": [
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.4833321202342922,
+          "sample_sd": 0.03737247834202459
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.5675458789668772,
+          "sample_sd": 0.08145444195924835
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.6350927917813205,
+          "sample_sd": 0.03309633311666545
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.7075294856836668,
+          "sample_sd": 0.05408583875498763
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.7093890290185629,
+          "sample_sd": 0.010911965594818258
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.7573592714453399,
+          "sample_sd": 0.04887317813656477
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.3987475922253134,
+          "sample_sd": 0.14216899692752283
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.6091745179314927,
+          "sample_sd": 0.10828009536980467
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.6258918334361772,
+          "sample_sd": 0.06567187260690274
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.6496301389752633,
+          "sample_sd": 0.05830939177701941
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.6324858952393864,
+          "sample_sd": 0.014321805466405846
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.6449894534120937,
+          "sample_sd": 0.013367003389465344
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.23636380101458423,
+          "sample_sd": 0.028032343782027503
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.3030840618325457,
+          "sample_sd": 0.05191345004325374
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.38113220481376164,
+          "sample_sd": 0.03352920450171302
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.5325181100756161,
+          "sample_sd": 0.043798282265845215
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.6021308036753876,
+          "sample_sd": 0.04552451198829203
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.7161459838424469,
+          "sample_sd": 0.033318215180530214
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.22719538764736114,
+          "sample_sd": 0.048295388770582495
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.263048965609911,
+          "sample_sd": 0.021626218360156116
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.30252745208339726,
+          "sample_sd": 0.02426168534105068
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.4549560729164724,
+          "sample_sd": 0.008543870922560644
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.50617833860161,
+          "sample_sd": 0.010962689371988214
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.5776795185393897,
+          "sample_sd": 0.014891582134489257
+        }
+      ],
+      "class_f1": [
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bf",
+          "mean": 0.045862446241621876,
+          "sample_sd": 0.0975031573653682,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bot",
+          "mean": 0.41709162491659957,
+          "sample_sd": 0.22522491774904324,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "ddos",
+          "mean": 0.8581340168704354,
+          "sample_sd": 0.07831387288468211,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "dos",
+          "mean": 0.7355539890210437,
+          "sample_sd": 0.1521189428062861,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "portscan",
+          "mean": 0.8399432036938533,
+          "sample_sd": 0.04514244611189503,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "web",
+          "mean": 0.003407440662199397,
+          "sample_sd": 0.000583769064391291,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bf",
+          "mean": 0.23276977858906758,
+          "sample_sd": 0.32083044796068466,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bot",
+          "mean": 0.451285773457915,
+          "sample_sd": 0.3072738010142397,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "ddos",
+          "mean": 0.9388425572302888,
+          "sample_sd": 0.0727246581622583,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "dos",
+          "mean": 0.8329378903647318,
+          "sample_sd": 0.0656731209554499,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "portscan",
+          "mean": 0.9466404093314822,
+          "sample_sd": 0.050726386599797973,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "web",
+          "mean": 0.0027988648277779333,
+          "sample_sd": 0.0007138168063506453,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bf",
+          "mean": 0.5372757422667531,
+          "sample_sd": 0.3088699793482157,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bot",
+          "mean": 0.4824257802464822,
+          "sample_sd": 0.15852679031645786,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "ddos",
+          "mean": 0.9801176240607756,
+          "sample_sd": 0.0244583875075542,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "dos",
+          "mean": 0.8532336112568089,
+          "sample_sd": 0.06413465805309784,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "portscan",
+          "mean": 0.9545857168896088,
+          "sample_sd": 0.04270957867214674,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "web",
+          "mean": 0.002918275967494751,
+          "sample_sd": 0.0010894306703755812,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bf",
+          "mean": 0.8376551874573016,
+          "sample_sd": 0.12390374420239696,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bot",
+          "mean": 0.49588547417156736,
+          "sample_sd": 0.22513706007940912,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "ddos",
+          "mean": 0.99704058712822,
+          "sample_sd": 0.001383463592424897,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "dos",
+          "mean": 0.9230664014844558,
+          "sample_sd": 0.0255863259436978,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "portscan",
+          "mean": 0.9886980339589642,
+          "sample_sd": 0.010324371862503028,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "web",
+          "mean": 0.0028312299014920297,
+          "sample_sd": 0.001436192154960815,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bf",
+          "mean": 0.8865578561517353,
+          "sample_sd": 0.07106322995190127,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bot",
+          "mean": 0.46098230480618935,
+          "sample_sd": 0.05212300540237899,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "ddos",
+          "mean": 0.9919976310581695,
+          "sample_sd": 0.015048078643026527,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "dos",
+          "mean": 0.9221774635606834,
+          "sample_sd": 0.01904495787965809,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "portscan",
+          "mean": 0.9916681134651586,
+          "sample_sd": 0.005893798883289587,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "web",
+          "mean": 0.0029508050694409967,
+          "sample_sd": 0.000844629859926057,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bf",
+          "mean": 0.9067555597502999,
+          "sample_sd": 0.08909938958368302,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bot",
+          "mean": 0.5580640103388375,
+          "sample_sd": 0.08922747317238554,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "ddos",
+          "mean": 0.9994289745046464,
+          "sample_sd": 0.00031946040108598054,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "dos",
+          "mean": 0.9769405315848736,
+          "sample_sd": 0.01858614706492687,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "portscan",
+          "mean": 0.9937778838566574,
+          "sample_sd": 0.0017495284633831894,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "web",
+          "mean": 0.10918866863672391,
+          "sample_sd": 0.1707641188751597,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bf",
+          "mean": 0.12274881274863385,
+          "sample_sd": 0.21749010663681184,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bot",
+          "mean": 0.22340195786377387,
+          "sample_sd": 0.2139692603841982,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "ddos",
+          "mean": 0.7740455635131576,
+          "sample_sd": 0.16003207620615156,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "dos",
+          "mean": 0.6165594771211648,
+          "sample_sd": 0.1665946924948729,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "portscan",
+          "mean": 0.6528564670435298,
+          "sample_sd": 0.2884463096250043,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "web",
+          "mean": 0.0028732750616206745,
+          "sample_sd": 0.0022125224528884253,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bf",
+          "mean": 0.7461592232528936,
+          "sample_sd": 0.1364841915417365,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bot",
+          "mean": 0.3542892258059308,
+          "sample_sd": 0.29870361441878246,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "ddos",
+          "mean": 0.8439199172284757,
+          "sample_sd": 0.1631599136767678,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "dos",
+          "mean": 0.7888392879243084,
+          "sample_sd": 0.06475719518652603,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "portscan",
+          "mean": 0.9198089807919458,
+          "sample_sd": 0.10601177065604253,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "web",
+          "mean": 0.0020304725854012203,
+          "sample_sd": 0.0013146880072389588,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bf",
+          "mean": 0.6688067262921293,
+          "sample_sd": 0.4037105121699712,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bot",
+          "mean": 0.34338000511057665,
+          "sample_sd": 0.32643984367721524,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "ddos",
+          "mean": 0.961008323915188,
+          "sample_sd": 0.0164834992232175,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "dos",
+          "mean": 0.8235993279989678,
+          "sample_sd": 0.06972194806807867,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "portscan",
+          "mean": 0.9557856704569939,
+          "sample_sd": 0.039227936695110065,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "web",
+          "mean": 0.0027709468432075193,
+          "sample_sd": 0.0012034183782734687,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bf",
+          "mean": 0.7858492568568984,
+          "sample_sd": 0.10959258365149209,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bot",
+          "mean": 0.3145731511339277,
+          "sample_sd": 0.32116486758292667,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "ddos",
+          "mean": 0.9675654573742131,
+          "sample_sd": 0.019442343906374514,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "dos",
+          "mean": 0.8506255021942002,
+          "sample_sd": 0.027445791633266728,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "portscan",
+          "mean": 0.9764624612252353,
+          "sample_sd": 0.0220714221984557,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "web",
+          "mean": 0.0027050050671049222,
+          "sample_sd": 0.0008596127388329906,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bf",
+          "mean": 0.8602474272467211,
+          "sample_sd": 0.0751850420391008,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bot",
+          "mean": 0.10977513998070469,
+          "sample_sd": 0.07749011292091365,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "ddos",
+          "mean": 0.9805416594529447,
+          "sample_sd": 0.009869974485255135,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "dos",
+          "mean": 0.8473308163115428,
+          "sample_sd": 0.02163862107890473,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "portscan",
+          "mean": 0.9930350208430857,
+          "sample_sd": 0.0017373293774188723,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "web",
+          "mean": 0.003985307601319486,
+          "sample_sd": 0.0020484912023622168,
+          "support": 16
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bf",
+          "mean": 0.894747978808474,
+          "sample_sd": 0.09148909178341644,
+          "support": 1048
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bot",
+          "mean": 0.12307792381600394,
+          "sample_sd": 0.0331061825826207,
+          "support": 111
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "ddos",
+          "mean": 0.9852324180867944,
+          "sample_sd": 0.0019718385664840425,
+          "support": 14353
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "dos",
+          "mean": 0.8691106851866575,
+          "sample_sd": 0.021091925672338724,
+          "support": 25761
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "portscan",
+          "mean": 0.9935226414708511,
+          "sample_sd": 0.0010583557485277062,
+          "support": 39472
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "web",
+          "mean": 0.004245073103781698,
+          "sample_sd": 0.0019782307138389624,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "benign",
+          "mean": 0.3702081970823592,
+          "sample_sd": 0.13145433350190844,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bf",
+          "mean": 0.00887471803893024,
+          "sample_sd": 0.018705390870727197,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bot",
+          "mean": 0.017371041499968404,
+          "sample_sd": 0.01214923757189381,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "ddos",
+          "mean": 0.4317056053227545,
+          "sample_sd": 0.18948360649679843,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "dos",
+          "mean": 0.3748942003616502,
+          "sample_sd": 0.12763163275182,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "portscan",
+          "mean": 0.45054952174304386,
+          "sample_sd": 0.12455990935782266,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "web",
+          "mean": 0.0009433230533831417,
+          "sample_sd": 0.000541930532668621,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "benign",
+          "mean": 0.4793294374939663,
+          "sample_sd": 0.19621270021560092,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bf",
+          "mean": 0.03820869270486035,
+          "sample_sd": 0.052810461874928265,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bot",
+          "mean": 0.014723151727107874,
+          "sample_sd": 0.001432529278600626,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "ddos",
+          "mean": 0.5415535811832696,
+          "sample_sd": 0.133410459887255,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "dos",
+          "mean": 0.5208403670448554,
+          "sample_sd": 0.18621168121837026,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "portscan",
+          "mean": 0.5263207491660783,
+          "sample_sd": 0.1085291368790057,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "web",
+          "mean": 0.0006124535076817847,
+          "sample_sd": 0.0002503737561052574,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "benign",
+          "mean": 0.6839426957759412,
+          "sample_sd": 0.10284373583969444,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bf",
+          "mean": 0.08475190707414582,
+          "sample_sd": 0.05513763340754214,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bot",
+          "mean": 0.01920152443230675,
+          "sample_sd": 0.006632518021917246,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "ddos",
+          "mean": 0.6317191428976674,
+          "sample_sd": 0.13903285491692072,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "dos",
+          "mean": 0.5892171250439525,
+          "sample_sd": 0.16875481515370055,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "portscan",
+          "mean": 0.6581419591279782,
+          "sample_sd": 0.07968274111417621,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "web",
+          "mean": 0.0009510793443393692,
+          "sample_sd": 0.0005249026253597032,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "benign",
+          "mean": 0.9048030365750538,
+          "sample_sd": 0.03650720568812412,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bf",
+          "mean": 0.2913987871239829,
+          "sample_sd": 0.177102211483441,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bot",
+          "mean": 0.045074515589945796,
+          "sample_sd": 0.02229031332324593,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "ddos",
+          "mean": 0.8456249226957508,
+          "sample_sd": 0.11411109965616813,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "dos",
+          "mean": 0.7923185428159069,
+          "sample_sd": 0.04455782097837676,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "portscan",
+          "mean": 0.8469489056010502,
+          "sample_sd": 0.06864371067202421,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "web",
+          "mean": 0.0014580601276230928,
+          "sample_sd": 0.0009315440595373451,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "benign",
+          "mean": 0.9494102125381344,
+          "sample_sd": 0.01616854954756354,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bf",
+          "mean": 0.5068037249631568,
+          "sample_sd": 0.21884870767742776,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bot",
+          "mean": 0.044890053693580366,
+          "sample_sd": 0.02947913799795661,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "ddos",
+          "mean": 0.9424629632719252,
+          "sample_sd": 0.05879757437778256,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "dos",
+          "mean": 0.8758371669805609,
+          "sample_sd": 0.04856102902436482,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "portscan",
+          "mean": 0.8924153759578382,
+          "sample_sd": 0.053891378541278685,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "web",
+          "mean": 0.003096128322517648,
+          "sample_sd": 0.0021534009405337327,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "benign",
+          "mean": 0.9836901631548087,
+          "sample_sd": 0.00424618901037842,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bf",
+          "mean": 0.8122701928399618,
+          "sample_sd": 0.10522271506025338,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bot",
+          "mean": 0.299893519252537,
+          "sample_sd": 0.16281362641826003,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "ddos",
+          "mean": 0.990127293607831,
+          "sample_sd": 0.0059901706952325134,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "dos",
+          "mean": 0.9414152358532265,
+          "sample_sd": 0.023343397806505555,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "portscan",
+          "mean": 0.9448241502212402,
+          "sample_sd": 0.013572622141994412,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "web",
+          "mean": 0.04080133196752271,
+          "sample_sd": 0.026514986411754374,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "benign",
+          "mean": 0.4077777929945702,
+          "sample_sd": 0.033481332378895785,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bf",
+          "mean": 0.027555785960064295,
+          "sample_sd": 0.03692081226320649,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bot",
+          "mean": 0.033217105672679895,
+          "sample_sd": 0.023347986519738684,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "ddos",
+          "mean": 0.32643870849909135,
+          "sample_sd": 0.14970588558812326,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "dos",
+          "mean": 0.4913520580754672,
+          "sample_sd": 0.06926435638856007,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "portscan",
+          "mean": 0.3034394306751036,
+          "sample_sd": 0.15715634628932598,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "web",
+          "mean": 0.0005868316545514624,
+          "sample_sd": 0.0005498831081468236,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "benign",
+          "mean": 0.43497609984433294,
+          "sample_sd": 0.10103026050396423,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bf",
+          "mean": 0.04210570347005203,
+          "sample_sd": 0.054425758332351096,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bot",
+          "mean": 0.016502621684832866,
+          "sample_sd": 0.007630577403379727,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "ddos",
+          "mean": 0.2725643310844988,
+          "sample_sd": 0.08480894056492615,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "dos",
+          "mean": 0.46766446848593235,
+          "sample_sd": 0.1591750944888247,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "portscan",
+          "mean": 0.6069409055158973,
+          "sample_sd": 0.05954453354051602,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "web",
+          "mean": 0.0005886291838302331,
+          "sample_sd": 0.00038465554709717537,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "benign",
+          "mean": 0.4871313972374381,
+          "sample_sd": 0.08975903536071542,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bf",
+          "mean": 0.05916218393504957,
+          "sample_sd": 0.04374169041034879,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bot",
+          "mean": 0.01047508817365531,
+          "sample_sd": 0.004021488703461611,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "ddos",
+          "mean": 0.3884306617364173,
+          "sample_sd": 0.07157595781478358,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "dos",
+          "mean": 0.5294545177328278,
+          "sample_sd": 0.046713100641624726,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "portscan",
+          "mean": 0.6426187706161037,
+          "sample_sd": 0.06407323306209928,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "web",
+          "mean": 0.00041954515228876684,
+          "sample_sd": 0.00026509086143253533,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "benign",
+          "mean": 0.8173548231913952,
+          "sample_sd": 0.03866221725103,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bf",
+          "mean": 0.26733077835463215,
+          "sample_sd": 0.04489435634561481,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bot",
+          "mean": 0.03386528385159332,
+          "sample_sd": 0.019942393006338478,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "ddos",
+          "mean": 0.5924736154152592,
+          "sample_sd": 0.05783659753620192,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "dos",
+          "mean": 0.6759393039774613,
+          "sample_sd": 0.06122965938681393,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "portscan",
+          "mean": 0.7970536021943069,
+          "sample_sd": 0.05065468544673416,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "web",
+          "mean": 0.0006751034306588648,
+          "sample_sd": 0.0003220939605173292,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "benign",
+          "mean": 0.8915766609372611,
+          "sample_sd": 0.010153274768173778,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bf",
+          "mean": 0.32842600923876664,
+          "sample_sd": 0.09283864336587525,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bot",
+          "mean": 0.039902458621659,
+          "sample_sd": 0.011821634571031425,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "ddos",
+          "mean": 0.7218558687444144,
+          "sample_sd": 0.09301323827625851,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "dos",
+          "mean": 0.7340473423024051,
+          "sample_sd": 0.05057498457323684,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "portscan",
+          "mean": 0.8261537113499742,
+          "sample_sd": 0.04553751053446575,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "web",
+          "mean": 0.001286319016789968,
+          "sample_sd": 0.0008224206154278654,
+          "support": 16
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "benign",
+          "mean": 0.9500783209931333,
+          "sample_sd": 0.009569475426074992,
+          "support": 259782
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bf",
+          "mean": 0.40205362593159766,
+          "sample_sd": 0.07777747496835492,
+          "support": 1048
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bot",
+          "mean": 0.08731095349835069,
+          "sample_sd": 0.014845647226219465,
+          "support": 111
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "ddos",
+          "mean": 0.9312668584261365,
+          "sample_sd": 0.023225883422691915,
+          "support": 14353
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "dos",
+          "mean": 0.786847988940558,
+          "sample_sd": 0.02837222427701475,
+          "support": 25761
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "portscan",
+          "mean": 0.8840127343672506,
+          "sample_sd": 0.053435344098909585,
+          "support": 39472
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "web",
+          "mean": 0.0021861476187019432,
+          "sample_sd": 0.0007212700558829855,
+          "support": 16
+        }
+      ],
+      "tabpfn_minus_xgb": [
+        {
+          "regime": "attack_only",
+          "budget": 2,
+          "mean_delta": 0.08458452800897875
+        },
+        {
+          "regime": "attack_only",
+          "budget": 3,
+          "mean_delta": -0.0416286389646154
+        },
+        {
+          "regime": "attack_only",
+          "budget": 5,
+          "mean_delta": 0.009200958345143362
+        },
+        {
+          "regime": "attack_only",
+          "budget": 10,
+          "mean_delta": 0.057899346708403486
+        },
+        {
+          "regime": "attack_only",
+          "budget": 20,
+          "mean_delta": 0.07690313377917649
+        },
+        {
+          "regime": "attack_only",
+          "budget": 50,
+          "mean_delta": 0.11236981803324606
+        },
+        {
+          "regime": "with_benign",
+          "budget": 2,
+          "mean_delta": 0.009168413367223094
+        },
+        {
+          "regime": "with_benign",
+          "budget": 3,
+          "mean_delta": 0.04003509622263475
+        },
+        {
+          "regime": "with_benign",
+          "budget": 5,
+          "mean_delta": 0.07860475273036441
+        },
+        {
+          "regime": "with_benign",
+          "budget": 10,
+          "mean_delta": 0.07756203715914381
+        },
+        {
+          "regime": "with_benign",
+          "budget": 20,
+          "mean_delta": 0.09595246507377755
+        },
+        {
+          "regime": "with_benign",
+          "budget": 50,
+          "mean_delta": 0.13846646530305712
+        }
+      ]
+    },
+    "csv": {
+      "completed_jobs": 120,
+      "macro_f1": [
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.45087056467767417,
+          "sample_sd": 0.040030320679005506
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.4789217235154898,
+          "sample_sd": 0.0683945158122555
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.5565606247353326,
+          "sample_sd": 0.078754738821366
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.6628516245310685,
+          "sample_sd": 0.04311205213319016
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.7066560000527083,
+          "sample_sd": 0.017766719197684553
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.7221442175107955,
+          "sample_sd": 0.012940513409502927
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.45454934075169773,
+          "sample_sd": 0.05825508136646258
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.4885991025022138,
+          "sample_sd": 0.08009494047231619
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.6052078034284775,
+          "sample_sd": 0.14423780976070402
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.6708642501693365,
+          "sample_sd": 0.0626167524444122
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.6766644543922331,
+          "sample_sd": 0.042855916764591655
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.6952528750467231,
+          "sample_sd": 0.034096791068342826
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.25090636916442755,
+          "sample_sd": 0.086591966604748
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.344769625942363,
+          "sample_sd": 0.05894985085880032
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.4409813763145486,
+          "sample_sd": 0.07775933826918363
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.5250968385519059,
+          "sample_sd": 0.0529795126381186
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.5681528073760557,
+          "sample_sd": 0.02881835504972829
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.6366897709145449,
+          "sample_sd": 0.039327608114627814
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "seeds": 5,
+          "mean": 0.26744094193804663,
+          "sample_sd": 0.05912646089530126
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "seeds": 5,
+          "mean": 0.3128712418150844,
+          "sample_sd": 0.09262537597497966
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "seeds": 5,
+          "mean": 0.40901370662306,
+          "sample_sd": 0.03241406327896001
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "seeds": 5,
+          "mean": 0.5022153593174299,
+          "sample_sd": 0.08583115158473395
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "seeds": 5,
+          "mean": 0.6055609359859666,
+          "sample_sd": 0.012172534213496154
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "seeds": 5,
+          "mean": 0.6318475900797236,
+          "sample_sd": 0.013393032445555434
+        }
+      ],
+      "class_f1": [
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.21914043833365932,
+          "sample_sd": 0.15311372401520268,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.8194754999191269,
+          "sample_sd": 0.06667885081779731,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.59406307292761,
+          "sample_sd": 0.16671632754858115,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.771952332525097,
+          "sample_sd": 0.29176428847556557,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.30059204436055154,
+          "sample_sd": 0.11777719944755896,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.29072977267978917,
+          "sample_sd": 0.1822182433781166,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.8728120524379657,
+          "sample_sd": 0.05335359436072194,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.6550635588419651,
+          "sample_sd": 0.1754090439468358,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.6985509778864323,
+          "sample_sd": 0.3904346104141555,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.3563739792467868,
+          "sample_sd": 0.17269371980496967,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.5827023550738585,
+          "sample_sd": 0.16078947703709806,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.8724928249702186,
+          "sample_sd": 0.07208654567176835,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.8253689241573466,
+          "sample_sd": 0.07948363628195335,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.69810436487473,
+          "sample_sd": 0.38658056855932854,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.36069527933584233,
+          "sample_sd": 0.1318397747719962,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.7872634950574865,
+          "sample_sd": 0.13040947609663756,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.8919923558485973,
+          "sample_sd": 0.03671541071599912,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.8776193007685406,
+          "sample_sd": 0.023247534768702668,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9846300573763459,
+          "sample_sd": 0.0022890689307288113,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.4356045381354406,
+          "sample_sd": 0.15500511317176247,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.8426755170332907,
+          "sample_sd": 0.05910620485413198,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.9375279876006293,
+          "sample_sd": 0.034338574549633,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.9205531561083842,
+          "sample_sd": 0.012658737653441622,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9807100946723587,
+          "sample_sd": 0.008844069715756837,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.5584692449015877,
+          "sample_sd": 0.09476991854784467,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.9014860534387104,
+          "sample_sd": 0.028431205207201275,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.9542252086853485,
+          "sample_sd": 0.04114991998959382,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.9451918092033111,
+          "sample_sd": 0.035172336407891025,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9799969268608313,
+          "sample_sd": 0.022052491076715426,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.5519653068765712,
+          "sample_sd": 0.05583641425779987,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.4289999056142987,
+          "sample_sd": 0.17430153706288062,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.752217039475194,
+          "sample_sd": 0.07249351485822045,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.5896230128482387,
+          "sample_sd": 0.12383043501129495,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.796414355647206,
+          "sample_sd": 0.19810368548035473,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 2,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.16004173092524923,
+          "sample_sd": 0.09288479233619736,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.6310655521352749,
+          "sample_sd": 0.11059514820640538,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.7315859954952829,
+          "sample_sd": 0.09534761404386786,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.6845334514500545,
+          "sample_sd": 0.18551670855905186,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.6928477228792762,
+          "sample_sd": 0.319806953151799,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 3,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.19156189305339433,
+          "sample_sd": 0.20449360553825038,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.8463882410255126,
+          "sample_sd": 0.10546147904281632,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.27595423720786527,
+          "sample_sd": 0.4310708433213928,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.768290759478907,
+          "sample_sd": 0.11139020293017911,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.7920444067973555,
+          "sample_sd": 0.11672810075464712,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.6614497225408755,
+          "sample_sd": 0.3601796039485107,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 5,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.2871194535203486,
+          "sample_sd": 0.19996226723029928,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.8999231179047197,
+          "sample_sd": 0.04181020746079013,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.12098765432098765,
+          "sample_sd": 0.2705366194999746,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.8909881895944916,
+          "sample_sd": 0.0435050428919337,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.8893837916994054,
+          "sample_sd": 0.030045233505630497,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.983915281474258,
+          "sample_sd": 0.003941250583687923,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 10,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.23998746602215665,
+          "sample_sd": 0.19284015159250262,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.916956014248495,
+          "sample_sd": 0.029871154806375647,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.8931103443003469,
+          "sample_sd": 0.02218665036303702,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.9085530418935786,
+          "sample_sd": 0.0308981979300591,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9828859978665001,
+          "sample_sd": 0.0007671971617062332,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 20,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.35848132804447813,
+          "sample_sd": 0.19830727162237657,
+          "support": 329
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.9578798416386289,
+          "sample_sd": 0.01818745497501624,
+          "support": 2076
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.9148605492528732,
+          "sample_sd": 0.038335238720072454,
+          "support": 19204
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.9203713313401011,
+          "sample_sd": 0.03754063037813984,
+          "support": 37758
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.977095234093232,
+          "sample_sd": 0.022285947878785396,
+          "support": 23821
+        },
+        {
+          "regime": "attack_only",
+          "method": "xgb",
+          "budget": 50,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.4013102939555031,
+          "sample_sd": 0.1648718122661774,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.34836305786347893,
+          "sample_sd": 0.27084975887606566,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.060093732503490226,
+          "sample_sd": 0.03534460470162617,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.5959858841637261,
+          "sample_sd": 0.15570431255101722,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.28597831614717073,
+          "sample_sd": 0.10673699494909326,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.39056397733903864,
+          "sample_sd": 0.22901124401433554,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 2,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.07535961613408815,
+          "sample_sd": 0.059993803808746346,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.33958823482558265,
+          "sample_sd": 0.2785017765494509,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.10576499354059572,
+          "sample_sd": 0.09657083385717209,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.7554275658495728,
+          "sample_sd": 0.08783793177871634,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.4444410827018167,
+          "sample_sd": 0.15963437712133932,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.6684786506584469,
+          "sample_sd": 0.30598219642393687,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 3,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.09968685402052593,
+          "sample_sd": 0.05787993960864627,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.6806199076212758,
+          "sample_sd": 0.13655072328138937,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.14969326183149512,
+          "sample_sd": 0.1841096055597136,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.7080959214593161,
+          "sample_sd": 0.13689371912214876,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.6823711454359495,
+          "sample_sd": 0.0790977259784078,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.7409322734749744,
+          "sample_sd": 0.33477054687157554,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 5,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.1251571243788298,
+          "sample_sd": 0.07195021901691523,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.808365711428053,
+          "sample_sd": 0.09469102903484979,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.16599496403926575,
+          "sample_sd": 0.14670051846816087,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.003295225285810356,
+          "sample_sd": 0.007368347740248128,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.8222241046964205,
+          "sample_sd": 0.144864043688009,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.7311451353972676,
+          "sample_sd": 0.05044799662844998,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9530432632339407,
+          "sample_sd": 0.007607374458247229,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 10,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.19160946578258373,
+          "sample_sd": 0.2033909226048235,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.8932525554755223,
+          "sample_sd": 0.03002352220212122,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.269412643191094,
+          "sample_sd": 0.11979463440817222,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.9179169268622319,
+          "sample_sd": 0.02415210971598305,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.752619436031376,
+          "sample_sd": 0.062330551350235686,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9791229093361913,
+          "sample_sd": 0.007862812524954728,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 20,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.16474518073597477,
+          "sample_sd": 0.08473124897744835,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.9387921084070563,
+          "sample_sd": 0.008614287087931922,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.5382272427963486,
+          "sample_sd": 0.11682234942183772,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.9785048872216426,
+          "sample_sd": 0.017397788011986114,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.8318814121041613,
+          "sample_sd": 0.03873324380058759,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9850118079367057,
+          "sample_sd": 0.001549294054878535,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "tabpfn",
+          "budget": 50,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.18441093793589924,
+          "sample_sd": 0.15061332435597177,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.3530795674679503,
+          "sample_sd": 0.23093937301499334,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.10196941121415408,
+          "sample_sd": 0.09272409105691659,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.32697243598276615,
+          "sample_sd": 0.13043527459974297,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.39280754767199605,
+          "sample_sd": 0.06059117724960407,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.6576795706781885,
+          "sample_sd": 0.1164042218694899,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 2,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.0395780605512711,
+          "sample_sd": 0.03374361050004998,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.42794721149077974,
+          "sample_sd": 0.3050644801999117,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.11826774509987478,
+          "sample_sd": 0.12551167171737643,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.5126014968103594,
+          "sample_sd": 0.2017475846259764,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.5066685860817607,
+          "sample_sd": 0.06464135625841,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.5769553140929939,
+          "sample_sd": 0.21221499996223722,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 3,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.047658339129822494,
+          "sample_sd": 0.05475759209862876,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.58086728127476,
+          "sample_sd": 0.24806615876635343,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.3689514131290624,
+          "sample_sd": 0.3173344987947741,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0040639847285973,
+          "sample_sd": 0.0056854134247758155,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.6724215464564929,
+          "sample_sd": 0.14087942039447443,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.6090347495489725,
+          "sample_sd": 0.1483658167033211,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.5717969986888006,
+          "sample_sd": 0.28246829652451605,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 5,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.05595997253473417,
+          "sample_sd": 0.04714748724604689,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.7151777980786538,
+          "sample_sd": 0.23323462439464984,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.4964956156162813,
+          "sample_sd": 0.2658877678346771,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.7079969446163858,
+          "sample_sd": 0.21740655311435936,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.7544812899725291,
+          "sample_sd": 0.05305760905289395,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.8031731114574656,
+          "sample_sd": 0.13467437473520968,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 10,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.0381827554806934,
+          "sample_sd": 0.024586300375792385,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.9083789553867561,
+          "sample_sd": 0.011767057282016845,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.6374557674679185,
+          "sample_sd": 0.004026040606430442,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.8754825479702333,
+          "sample_sd": 0.029540623819478085,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.81039888650648,
+          "sample_sd": 0.05984109350345412,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9417426890450805,
+          "sample_sd": 0.03526431659166394,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 20,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.06546770552529724,
+          "sample_sd": 0.03598361466068923,
+          "support": 329
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "benign",
+          "seeds": 5,
+          "mean": 0.9270113835192173,
+          "sample_sd": 0.020756988565828395,
+          "support": 340701
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bf",
+          "seeds": 5,
+          "mean": 0.6456917945808571,
+          "sample_sd": 0.006506109890383572,
+          "support": 2076
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "bot",
+          "seeds": 5,
+          "mean": 0.0,
+          "sample_sd": 0.0,
+          "support": 294
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "ddos",
+          "seeds": 5,
+          "mean": 0.9187094810109426,
+          "sample_sd": 0.022856194802055425,
+          "support": 19204
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "dos",
+          "seeds": 5,
+          "mean": 0.8748329567588634,
+          "sample_sd": 0.03446054369794289,
+          "support": 37758
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "portscan",
+          "seeds": 5,
+          "mean": 0.9674026707488281,
+          "sample_sd": 0.01741017540238871,
+          "support": 23821
+        },
+        {
+          "regime": "with_benign",
+          "method": "xgb",
+          "budget": 50,
+          "name": "web",
+          "seeds": 5,
+          "mean": 0.0892848439393564,
+          "sample_sd": 0.03032836967247115,
+          "support": 329
+        }
+      ],
+      "tabpfn_minus_xgb": [
+        {
+          "regime": "attack_only",
+          "budget": 2,
+          "mean_delta": -0.0036787760740236487,
+          "seeds": 5
+        },
+        {
+          "regime": "attack_only",
+          "budget": 3,
+          "mean_delta": -0.00967737898672395,
+          "seeds": 5
+        },
+        {
+          "regime": "attack_only",
+          "budget": 5,
+          "mean_delta": -0.048647178693144735,
+          "seeds": 5
+        },
+        {
+          "regime": "attack_only",
+          "budget": 10,
+          "mean_delta": -0.008012625638267924,
+          "seeds": 5
+        },
+        {
+          "regime": "attack_only",
+          "budget": 20,
+          "mean_delta": 0.029991545660475193,
+          "seeds": 5
+        },
+        {
+          "regime": "attack_only",
+          "budget": 50,
+          "mean_delta": 0.026891342464072387,
+          "seeds": 5
+        },
+        {
+          "regime": "with_benign",
+          "budget": 2,
+          "mean_delta": -0.016534572773619093,
+          "seeds": 5
+        },
+        {
+          "regime": "with_benign",
+          "budget": 3,
+          "mean_delta": 0.031898384127278565,
+          "seeds": 5
+        },
+        {
+          "regime": "with_benign",
+          "budget": 5,
+          "mean_delta": 0.03196766969148866,
+          "seeds": 5
+        },
+        {
+          "regime": "with_benign",
+          "budget": 10,
+          "mean_delta": 0.022881479234476077,
+          "seeds": 5
+        },
+        {
+          "regime": "with_benign",
+          "budget": 20,
+          "mean_delta": -0.03740812860991083,
+          "seeds": 5
+        },
+        {
+          "regime": "with_benign",
+          "budget": 50,
+          "mean_delta": 0.004842180834821264,
+          "seeds": 5
+        }
+      ],
+      "source": "docs/lablog/evidence/20261103/exp94_csv_summary.json"
+    }
+  }
+}

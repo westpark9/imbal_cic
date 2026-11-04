@@ -1,0 +1,27 @@
+{
+  "reason": "Host rebooted at 2026-11-04 13:02 KST (who -b); the registry wrapper and worker died during the flowstats-v1 few-shot stage.",
+  "completed_before": {
+    "corpus": "11:01",
+    "flowstats_view": "11:04",
+    "netfound_encode": "11:42",
+    "pca": "11:44",
+    "audit3": "11:46",
+    "fewshot_jobs": {
+      "flowstats-v1": 57,
+      "netfound-v2-small": 0
+    }
+  },
+  "incomplete_job_moved": "with_benign_s47_n20_tabpfn (no result.json; directory preserved here, re-run from scratch)",
+  "resume_command": "run_pcap_cic2017.py --config configs/experiments/exp94_pcap_protocol.json --output <run> --stage fewshot",
+  "resumed_at": "2026-11-04T13:07:38.099028+09:00",
+  "policy": "Completed jobs are reused via their result.json; corpus, encoder, projection and audit3 artifacts are unchanged (sha256 checks in the pipeline).",
+  "corrupt_jobs_moved": [
+    "with_benign_s47_n10_tabpfn",
+    "with_benign_s47_n10_xgb",
+    "with_benign_s47_n20_xgb",
+    "with_benign_s47_n3_tabpfn",
+    "with_benign_s47_n5_tabpfn",
+    "with_benign_s47_n5_xgb"
+  ],
+  "corruption_cause": "result.json / predictions.npy written shortly before the reboot were zero-length (page cache not flushed); re-run from scratch"
+}

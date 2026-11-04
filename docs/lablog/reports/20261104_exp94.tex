@@ -1,0 +1,164 @@
+% !TeX root = 20261104_exp94.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\usepackage{tabularx}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
+\hypersetup{pdftitle={EXP94: CIC2017 전체 망 PCAP — CSV·통계 view·netFound view 3열 비교}}
+\begin{document}
+\reporttitle{2026-11-04 실행 · 2026-11-04 분석}{EXP94: CIC2017 전체 망 PCAP —\\CSV · 통계 view · netFound view 3열 비교}
+\recordnote{실행 \path{20261104_104228_pcap_cic2017_9faba40e}: 5일 전체 망 PCAP(51.2 GB, pcapng) $\to$ 2,425,048 flow $\to$ 3상태 라벨 $\to$ capture$\times$family 시간순 분할 $\to$ flowstats-v1(45 통계)·netFound-v2-small(512$\to$PCA 64) 두 view $\to$ 3층 감사 $\to$ few-shot 240 job. 13:02 KST host 재부팅으로 few-shot 단계가 중단됐고, 손상된 job 6개와 미완료 job 1개를 \path{resumptions/}에 격리한 뒤 같은 corpus·인코딩 위에서 재개해 완료했다. CSV 쪽 수치는 \path{20261103_exp94.tex}의 채택 실행(원 라벨 단위 분할)을 그대로 쓴다. 재부팅 전후 산출물은 sha256으로 동일함을 확인했다.}
+
+\section{구성: CSV vs PCAP 두 view}
+\begin{itemize}
+\item \textbf{같은 망, 다른 flow 정의.} CSV는 CICFlowMeter(원본 버그 포함) flow 2,830,743행. PCAP corpus는 자체 재구성 flow 2,425,048개(RST·양쪽 FIN·새 SYN 종료, idle·active 120초, 재정렬 창 5초). 패킷 56,370,702개, 순서 뒤바뀜 33,724개(모두 창 안).
+\item \textbf{라벨 상태.} background(benign) 1,731,862 · confirmed 538,428 · unresolved 154,743(6.4\%; 창·endpoint 일치 flow의 22.3\%) · boundary 15. unresolved의 89\%는 DoS-Hulk NoPayload 137,908이고, 나머지는 Bot PortClosed 4,067, FTP NoPayload 4,039, Slowloris/Slowhttptest 무응답 4,439, Web NoPayload 1,869, LOIC-HTTP NoPayload 1,203 등이다.
+\item \textbf{family 범위.} CSV와 같은 9 family. confirmed web은 104 flow(train 72, test 16)뿐이다. CSV의 web 2,180행 대부분이 Attempted였다는 저자 기록과 일치하며, web F1은 참고치다. inf(36)·heartbleed(11)는 양쪽 모두 coverage 미달로 제외.
+\item \textbf{분할.} 양쪽 모두 시간순 70/15/15(CSV는 파일$\times$원 라벨, PCAP은 capture$\times$family). PCAP에서는 같은 5-tuple group이 train/test에 걸치는 경우가 64,317개이며 금지하지 않고 기록한다.
+\item \textbf{두 view는 같은 flow·분할·표본을 받는다.} flowstats-v1은 모든 패킷에서 계산한 45개 통계(지속·방향별 패킷/바이트·길이·IAT 통계·flag·window·속도·protocol·port), netFound는 header·timing 토큰(12 burst$\times$6 패킷, iat ms)을 frozen encoder에 넣은 512차원을 training PCA 64차원(설명분산 98.1\%)으로 줄인 것이다.
+\end{itemize}
+
+\begin{table}[H]
+\centering\small
+\caption{family별 행 수. CSV는 비유한 행 제거 후 채택 실행, PCAP은 confirmed+background. 행 순서는 PCAP test 수 내림차순.}
+\begin{tabular}{lrr|rrr|r}
+\toprule & \multicolumn{2}{c|}{CSV} & \multicolumn{3}{c|}{PCAP} & \\
+family & 전체 & test & train & validation & test & PCAP unresolved\\\midrule
+benign & 2,271,324 & 340,701 & 1,212,301 & 259,779 & 259,782 & --\\
+portscan & 158,804 & 23,821 & 184,196 & 39,470 & 39,472 & 0\\
+dos & 251,712 & 37,758 & 120,216 & 25,761 & 25,761 & 143,383\\
+ddos & 128,025 & 19,204 & 66,978 & 14,352 & 14,353 & 1,203\\
+bf & 13,832 & 2,076 & 4,887 & 1,047 & 1,048 & 4,090\\
+bot & 1,957 & 294 & 515 & 110 & 111 & 4,067\\
+web & 2,180 & 329 & 72 & 16 & 16 & 1,954\\
+inf & 36 & 6 & 25 & 5 & 6 & 45\\
+heartbleed & 11 & 2 & 7 & 2 & 2 & 0\\\midrule
+채점 합계 & 2,827,834 & 424,183 & 1,589,165 & 340,535 & 340,543 & 154,743\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{문제1: 3층 감사와 oracle 상한}
+\begin{itemize}
+\item \textbf{층의 뜻.} L1 = flow 전체 signature(45 통계 + 잘리기 전 burst 토큰 전부). L2 = netFound tokenizer 출력(iat ms 절삭, 12$\times$6 절삭). L3 = 분류기 입력 vector(통계 45차원 / PCA 64차원). 라벨 상태와는 무관하며, 각 층에서 ``입력이 byte 단위로 같은데 family가 다른'' group·행 수와 oracle 상한(동일 입력 group의 다수 family를 맞히는 결정적 분류기의 macro-F1)을 잰다. 대상은 labelled 2,270,243 flow, test 340,543 flow.
+\end{itemize}
+
+\begin{table}[H]
+\centering\small
+\caption{3층 감사. 충돌 행 비율은 labelled flow 대비. CSV 열은 2017 원본 CSV 감사(78 통계 정확 일치, 2,830,743행)와 CSV 채택 실행의 test 감사.}
+\begin{tabular}{lrrrrrr}
+\toprule 층 & 동일 group & 충돌 group & 충돌 행 & 비율(\%) & test 충돌 행 & train$\to$test 중복\\\midrule
+CSV 78 통계 & -- & 698 & 7,020 & 0.248 & 48 & 14.7\%\\
+L1 flow signature & 82,318 & 9 & 913 & 0.040 & 0 & 12.2\%\\
+L3 통계 45 (flowstats-v1) & 109,187 & 143 & 6,367 & 0.280 & 5 & 17.9\%\\
+L2 netFound tokenizer 입력 & 33,776 & 24 & 110,324 & 4.860 & 9,741 & 56.1\%\\
+L3 netFound PCA 64 & 87,163 & 61 & 67,765 & 2.985 & 8,797 & 50.4\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+\item \textbf{라벨 쪽 하한(L1)은 0.04\%다.} 913행 중 891행이 portscan, 22행이 benign으로, SYN 1개짜리 스캔 flow와 같은 모양의 benign 실패 접속이다(원인 ③). 2017에서 문제1의 원리적 하한은 사실상 0이다.
+\item \textbf{통계 요약은 CSV와 같은 수준의 충돌을 만든다.} L1 0.04\% $\to$ 통계 45차원 0.28\%. CSV의 0.25\%와 같은 자릿수다. 즉 CSV 충돌의 대부분은 flow 종료 버그가 아니라 ``통계 요약이 짧은 flow들을 같은 벡터로 만든다''는 표현 손실(원인 ⑤)이며, flow 재구성을 고쳐도 통계 view에서는 그대로 남는다. 충돌은 거의 전부 portscan(5,770행)이다.
+\item \textbf{netFound tokenizer는 통계보다 더 많이 뭉갠다.} L2에서 110,324행(4.86\%)이 24개 group으로 합쳐지고, 가장 큰 group은 benign 49,204 + portscan 59다. 12 burst$\times$6 패킷 절삭과 iat ms 절삭이 짧은 benign flow(DNS·단발 접속)와 스캔을 같은 토큰열로 만든다. train$\to$test 정확 중복도 56\%로, netFound view의 few-shot 점수 일부는 암기로 설명될 수 있다.
+\item \textbf{PCA 64(L3)가 L2보다 적게 나오는 이유.} encoder는 결정적이지만 batch padding에 따른 $10^{-6}$ 수준 차이가 byte 단위 비교에서 group을 쪼갠다. 따라서 netFound의 모델 입력 충돌은 L2(4.86\%)로 읽어야 하고, L3 2.99\%는 하한이다. PCA 차원을 올려도 이 층은 바뀌지 않는다(변형 실험 (b)에서 확인).
+\item \textbf{oracle 상한은 모두 99.8\% 이상이다.} L1·통계 100\%, netFound L2 99.79\%(benign 99.81, portscan 98.72), PCA 99.95\%. 즉 2017에서 문제1은 어느 표현에서도 macro-F1 상한을 실질적으로 제한하지 않는다. CSV 실험의 room(n=50 macro 63\%)은 문제1이 아니라 tail·benign 오탐·라벨 결함에 있다.
+\end{itemize}
+
+\section{문제2: few-shot 학습곡선 3열}
+\begin{itemize}
+\item \textbf{설정.} 세 열 모두 class당 n=2·3·5·10·20·50, seed 43--47, XGBoost(300 trees, depth 8)와 frozen TabPFN(v3, 4 estimators), 두 모델에 같은 행, 전체 test. CSV 열은 11-03 채택 실행(test 424,183행), PCAP 두 열은 같은 flow ID·분할·표본(test 340,543행, 공격만 80,761행). 7 family 채점.
+\item \textbf{head 포화는 세 열에서 같다.} 공격만 n=20에서 portscan 98--99.6\%, ddos 89--99\%, dos 85--98\%. n=50으로 가도 변화는 1--2 pp다. 표현은 head의 조기 포화를 바꾸지 않는다.
+\item \textbf{정상 포함 macro는 표현보다 분류기와의 조합이 가른다.} n=50에서 netFound+TabPFN 71.61\%가 가장 높고 netFound+XGB 57.77\%가 가장 낮다. 통계 view는 65.16/69.04\%, CSV는 63.18/63.67\%. 같은 입력에서 TabPFN$-$XGB가 netFound에서 +0.9$\sim$+13.9 pp로 일관되게 양수이고, 통계 view에서는 $-$1.5$\sim$+3.9 pp, CSV에서는 부호가 섞인다. EXP93(CIC2018 host 1대)에서 본 ``PCAP 임베딩에서 TabPFN 이득''이 전체 망에서 재현됐다.
+\item \textbf{netFound 수치에는 중복 조건이 붙는다.} L2 train$\to$test 정확 중복이 56\%이므로 netFound view의 점수 일부는 test flow와 토큰열이 같은 train flow를 n개 안에 뽑았을 때의 암기다. 통계 view(18\%)와 CSV(15\%)보다 이 조건이 훨씬 강하다.
+\item \textbf{tail.} bf(정상 포함 n=20): CSV 63.75/26.94, 통계 42.95/43.83, netFound 32.84/50.68. n=50에서는 netFound+TabPFN 81.2\%, 통계 78.3\%. bot: CSV 0/0(라벨 결함), PCAP 정상 포함 3--10\%, 공격만 통계 64.4/62.5, netFound 11.0/46.1. 3상태 라벨로 재접속 시도를 분리하자 bot이 공격 간 구분에서는 학습 가능해졌지만 benign과의 구분은 여전히 안 된다. web은 test 16행이라 수치(0--32\%)를 해석하지 않는다.
+\item \textbf{benign F1.} n=20 netFound+TabPFN 94.94\%, 다른 다섯 조합 88.9--90.9\%. n=50에서는 95--98\%로 수렴한다.
+\end{itemize}
+
+\begin{table}[H]
+\centering\small
+\caption{정상 포함 Macro-F1 (\%, 5 seed 평균). 각 열 쌍에서 높은 값을 굵게. 표본 표준편차는 evidence JSON에 있다(CSV 1.2--9.3, 통계 2.5--10.5, netFound 0.9--5.2 pp).}
+\begin{tabular}{r|rr|rr|rr}
+\toprule & \multicolumn{2}{c|}{CSV} & \multicolumn{2}{c|}{PCAP 통계 45} & \multicolumn{2}{c}{PCAP netFound PCA 64}\\
+n & XGBoost & TabPFN & XGBoost & TabPFN & XGBoost & TabPFN\\\midrule
+2  & \textbf{26.74} & 25.09 & \textbf{36.62} & 35.50 & 22.72 & \textbf{23.64}\\
+3  & 31.29 & \textbf{34.48} & \textbf{41.68} & 40.18 & 26.30 & \textbf{30.31}\\
+5  & 40.90 & \textbf{44.10} & 45.66 & \textbf{47.35} & 30.25 & \textbf{38.11}\\
+10 & 50.22 & \textbf{52.51} & 49.62 & \textbf{51.84} & 45.50 & \textbf{53.25}\\
+20 & \textbf{60.56} & 56.82 & 55.12 & \textbf{57.46} & 50.62 & \textbf{60.21}\\
+50 & 63.18 & \textbf{63.67} & 65.16 & \textbf{69.04} & 57.77 & \textbf{71.61}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering\small
+\caption{공격만 Macro-F1 (\%, 5 seed 평균). 표본 표준편차: CSV 1.2--14.4, 통계 1.4--11.1, netFound 1.1--14.2 pp.}
+\begin{tabular}{r|rr|rr|rr}
+\toprule & \multicolumn{2}{c|}{CSV} & \multicolumn{2}{c|}{PCAP 통계 45} & \multicolumn{2}{c}{PCAP netFound PCA 64}\\
+n & XGBoost & TabPFN & XGBoost & TabPFN & XGBoost & TabPFN\\\midrule
+2  & \textbf{45.45} & 45.09 & 46.65 & \textbf{58.31} & 39.87 & \textbf{48.33}\\
+3  & \textbf{48.86} & 47.89 & 55.17 & \textbf{63.50} & \textbf{60.92} & 56.75\\
+5  & \textbf{60.52} & 55.66 & 71.85 & \textbf{72.89} & 62.59 & \textbf{63.51}\\
+10 & \textbf{67.09} & 66.29 & 71.43 & \textbf{78.55} & 64.96 & \textbf{70.75}\\
+20 & 67.67 & \textbf{70.67} & 75.13 & \textbf{80.93} & 63.25 & \textbf{70.94}\\
+50 & 69.53 & \textbf{72.21} & \textbf{83.52} & 81.37 & 64.50 & \textbf{75.74}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering\small
+\caption{정상 포함 n=20 class F1 (\%, 5 seed 평균). 행 순서는 PCAP test 수 내림차순. 각 열 쌍에서 높은 값을 굵게.}
+\begin{tabular}{lr|rr|rr|rr}
+\toprule & & \multicolumn{2}{c|}{CSV} & \multicolumn{2}{c|}{PCAP 통계 45} & \multicolumn{2}{c}{PCAP netFound PCA 64}\\
+family & PCAP test & XGBoost & TabPFN & XGBoost & TabPFN & XGBoost & TabPFN\\\midrule
+benign & 259,782 & \textbf{90.84} & 89.33 & 88.90 & \textbf{90.89} & 89.16 & \textbf{94.94}\\
+portscan & 39,472 & 94.17 & \textbf{97.91} & \textbf{84.91} & 82.29 & 82.62 & \textbf{89.24}\\
+dos & 25,761 & \textbf{81.04} & 75.26 & 69.24 & \textbf{89.32} & 73.40 & \textbf{87.58}\\
+ddos & 14,353 & 87.55 & \textbf{91.79} & 89.12 & \textbf{92.73} & 72.19 & \textbf{94.25}\\
+bf & 1,048 & \textbf{63.75} & 26.94 & 42.95 & \textbf{43.83} & 32.84 & \textbf{50.68}\\
+bot & 111 & 0.00 & 0.00 & \textbf{10.37} & 2.86 & 3.99 & \textbf{4.49}\\
+web & 16 & 6.55 & \textbf{16.47} & \textbf{0.36} & 0.31 & 0.13 & \textbf{0.31}\\\midrule
+macro & 340,543 & \textbf{60.56} & 56.82 & 55.12 & \textbf{57.46} & 50.62 & \textbf{60.21}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering\small
+\caption{공격만 n=20 class F1 (\%, 5 seed 평균).}
+\begin{tabular}{lr|rr|rr|rr}
+\toprule & & \multicolumn{2}{c|}{CSV} & \multicolumn{2}{c|}{PCAP 통계 45} & \multicolumn{2}{c}{PCAP netFound PCA 64}\\
+family & PCAP test & XGBoost & TabPFN & XGBoost & TabPFN & XGBoost & TabPFN\\\midrule
+portscan & 39,472 & \textbf{98.29} & 98.07 & 99.52 & \textbf{99.61} & \textbf{99.30} & 99.17\\
+dos & 25,761 & 90.86 & \textbf{92.06} & 93.94 & \textbf{98.50} & 84.73 & \textbf{92.22}\\
+ddos & 14,353 & 89.31 & \textbf{93.75} & \textbf{98.52} & 97.81 & 98.05 & \textbf{99.20}\\
+bf & 1,048 & \textbf{91.70} & 84.27 & 74.37 & \textbf{95.54} & 86.02 & \textbf{88.66}\\
+bot & 111 & 0.00 & 0.00 & \textbf{64.40} & 62.54 & 10.98 & \textbf{46.10}\\
+web & 16 & 35.85 & \textbf{55.85} & 20.03 & \textbf{31.58} & \textbf{0.40} & 0.30\\\midrule
+macro & 80,761 & 67.67 & \textbf{70.67} & 75.13 & \textbf{80.93} & 63.25 & \textbf{70.94}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\reportfigure{figures/exp94_pcap_macro_f1.pdf}{세 열의 few-shot learning curve. 위 정상 포함, 아래 공격만. 점은 5 seed 평균, 오차막대는 표본 표준편차.}
+\reportfigure{figures/exp94_pcap_class_f1_n20.pdf}{정상 포함 n=20 family별 F1. 빗금은 XGBoost, 민무늬는 TabPFN. 회색 CSV, 초록 PCAP 통계, 빨강 PCAP netFound.}
+
+\section{판정}
+\begin{itemize}
+\item \textbf{문제1.} 라벨 쪽 하한 0.04\%, 통계 요약 0.28\%(CSV 0.25\%와 동급), netFound 4.86\%. ``PCAP 직접 인코딩이 충돌을 없앤다''는 성립하지 않는다. flow 재구성은 CSV 결함(첫 FIN 종료·RST 무시·TCP-appendix)을 고치지만 그 결함은 2017 충돌의 주원인이 아니었고, 사전학습 header encoder는 통계보다 더 거칠다. 다만 모든 표현에서 oracle 상한이 99.8\% 이상이라 문제1은 성능 상한을 제한하지 않는다.
+\item \textbf{문제2.} head family의 n=20 포화는 세 열 모두 같다. 표현이 바꾸는 것은 tail(bf·bot)의 곡선과 TabPFN$-$XGB 차이의 부호다. netFound+TabPFN이 n$\ge$10에서 가장 높지만(정상 포함 n=50 71.6\%), 그 view는 train$\to$test 토큰 중복 56\%라는 조건 위의 수치다.
+\item \textbf{라벨 정책이 더 큰 변수다.} unresolved 154,743 flow(Hulk 138k)를 공격으로 두면 CSV와 같은 충돌·tail 붕괴가 재현될 것이고, benign으로 두면 benign 오탐이 바뀐다. 같은 corpus·인코딩 위의 변형 실험 (a)로 분리한다. PCA 차원은 (b)로 확인한다.
+\item \textbf{결론.} PCAP 전환의 산출물은 ``새 표현''이 아니라 ``분해된 평가 규약''이다. 3상태 라벨, 시간순 분할, 3층 감사와 oracle 상한, unresolved 제외를 본 연구의 평가 프로토콜로 가져간다. CIC2018 전체(450 GB) 수집은 하지 않는다.
+\end{itemize}
+
+\sourcepath{tabpfn/results/v7/exp94/20261104\_104228\_pcap\_cic2017\_9faba40e/RUN\_META.json}
+\sourcepath{tabpfn/results/v7/exp94/20261104\_104228\_pcap\_cic2017\_9faba40e/corpus/manifest.json}
+\sourcepath{tabpfn/results/v7/exp94/20261104\_104228\_pcap\_cic2017\_9faba40e/audit3.json}
+\sourcepath{tabpfn/results/v7/exp94/20261104\_104228\_pcap\_cic2017\_9faba40e/resumptions/20261104\_1310\_host\_reboot/note.json}
+\sourcepath{docs/lablog/evidence/20261104/exp94\_pcap\_summary.json}
+\sourcepath{docs/lablog/evidence/20261103/exp94\_csv\_summary.json}
+\sourcepath{docs/lablog/evidence/20261103/original\_cic2017\_csv\_audit.json}
+\sourcepath{data/pcap/cic2017/*.pcap.source.json}
+\end{document}

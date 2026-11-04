@@ -146,7 +146,7 @@ CNS2022 저자 문서와 notebook에서 확인한 사실(출처는 \path{configs
 \item \textbf{매처 확장.} peer 측 payload·패킷 수 상한/하한, 공격 측 최대 payload 길이·총 payload 제외 조건 5개를 \path{scripts/v7/exp94/run_pcap_cic2017.py}의 \texttt{EvidenceRuleSet}에 구현했다. 목요일 portscan round 3의 benign 배경 제외(Fwd Packet Length Max 408, payload 176·20514)는 ``매칭 안 됨 → background''로 처리한다.
 \item \textbf{3상태 라벨.} confirmed(창·endpoint·증거), unresolved(창·endpoint만: Attempted 범주 또는 증거 조건 실패; label None, benign으로 보내지 않음), background(규칙 미매칭 → benign), boundary.
 \item \textbf{분할.} capture$\times$family 안에서 시작 시각 순 70/15/15. EXP93의 5-tuple hash 분할과 달리 같은 5-tuple group이 train/test에 걸칠 수 있으며 그 수를 기록한다. 보존 상한은 기본 없음(전량).
-\item \textbf{두 view, 같은 flow.} flowstats-v1(모든 패킷에서 계산한 CICFlowMeter류 통계 48개, PCA 없음)과 netfound-v2-small(512 → PCA 64). XGB·TabPFN이 두 view에서 같은 flow ID·분할·라벨·n개 표본을 받는다. 이것이 EXP92에서 계획한 2$\times$2다.
+\item \textbf{두 view, 같은 flow.} flowstats-v1(모든 패킷에서 계산한 CICFlowMeter류 통계 45개, PCA 없음)과 netfound-v2-small(512 → PCA 64). XGB·TabPFN이 두 view에서 같은 flow ID·분할·라벨·n개 표본을 받는다. 이것이 EXP92에서 계획한 2$\times$2다.
 \item \textbf{3층 감사.} L1 flow 전체 signature(통계 + 전체 burst 토큰), L2 tokenizer 출력(ms iat, 12버스트$\times$6패킷 절삭), L3 모델 입력 vector(통계 / PCA). 층마다 전체·test의 cross-label group과 행, train$\to$test 중복률, oracle 상한을 저장한다.
 \item \textbf{smoke test.} CIC2018 02-14·03-02 capture 2개(307,139 flow)로 corpus → 두 view → 감사 → few-shot 8 job을 끝까지 실행했다. 라벨 상태 분포는 background 200,868 · confirmed 104,080 · unresolved 2,177 · boundary 13. 3층 감사는 L1 7 group → L2 94 group → netFound PCA 81 group으로, tokenizer 절삭이 충돌을 만드는 것을 그대로 보여줬다(oracle 정상 포함 99.94\% → 97.9\% → 98.9\%). 수치는 코드 검증용이며 결과로 쓰지 않는다.
 \item \textbf{실행 명령(PCAP 도착 후).}

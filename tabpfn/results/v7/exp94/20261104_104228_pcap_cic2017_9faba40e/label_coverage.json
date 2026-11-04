@@ -1,0 +1,65 @@
+{
+  "passed": true,
+  "max_fewshot_budget": 50,
+  "coverage": {
+    "benign": {
+      "train": 1212301,
+      "validation": 259779,
+      "test": 259782
+    },
+    "dos": {
+      "train": 120216,
+      "validation": 25761,
+      "test": 25761
+    },
+    "portscan": {
+      "train": 184196,
+      "validation": 39470,
+      "test": 39472
+    },
+    "ddos": {
+      "train": 66978,
+      "validation": 14352,
+      "test": 14353
+    },
+    "bf": {
+      "train": 4887,
+      "validation": 1047,
+      "test": 1048
+    },
+    "bot": {
+      "train": 515,
+      "validation": 110,
+      "test": 111
+    },
+    "web": {
+      "train": 72,
+      "validation": 16,
+      "test": 16
+    },
+    "inf": {
+      "train": 25,
+      "validation": 5,
+      "test": 6
+    },
+    "heartbleed": {
+      "train": 7,
+      "validation": 2,
+      "test": 2
+    }
+  },
+  "included": [
+    "benign",
+    "dos",
+    "portscan",
+    "ddos",
+    "bf",
+    "bot",
+    "web"
+  ],
+  "excluded": [
+    "inf",
+    "heartbleed"
+  ],
+  "rule": "families below the budget are excluded from training and macro-F1; their flows stay in the corpus with label kept for audits"
+}

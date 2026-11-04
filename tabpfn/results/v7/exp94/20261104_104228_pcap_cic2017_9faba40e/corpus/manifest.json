@@ -1,0 +1,531 @@
+{
+  "schema": 2,
+  "dataset": "CIC-IDS2017-PCAP-whole-network",
+  "seed": 43,
+  "captures": [
+    {
+      "id": "cic2017_monday",
+      "path": "data/pcap/cic2017/Monday-WorkingHours.pcap",
+      "bytes": 10822507416,
+      "sha256": "f6eac599358f216b074338813a1cf7be3cc4e91d116e13efc0dc71f2cca11972",
+      "group_namespace": "cic2017_monday",
+      "flows": 421674
+    },
+    {
+      "id": "cic2017_tuesday",
+      "path": "data/pcap/cic2017/Tuesday-WorkingHours.pcap",
+      "bytes": 11048283608,
+      "sha256": "080c2250154c5a174c03660ed0f75a3858d41a27511ba716e780d7bcb1ec4c57",
+      "group_namespace": "cic2017_tuesday",
+      "flows": 353521
+    },
+    {
+      "id": "cic2017_wednesday",
+      "path": "data/pcap/cic2017/Wednesday-workingHours.pcap",
+      "bytes": 13420789612,
+      "sha256": "cd2674db7559a53f24bc03be3239b315700174ccaef72d10f5edc4c1a08f6186",
+      "group_namespace": "cic2017_wednesday",
+      "flows": 661228
+    },
+    {
+      "id": "cic2017_thursday",
+      "path": "data/pcap/cic2017/Thursday-WorkingHours.pcap",
+      "bytes": 8302500180,
+      "sha256": "38f8b1bb276849bf1721f7c4de22bebfa7f59a74e52286d4c0a37edbb118fe01",
+      "group_namespace": "cic2017_thursday",
+      "flows": 409854
+    },
+    {
+      "id": "cic2017_friday",
+      "path": "data/pcap/cic2017/Friday-WorkingHours.pcap",
+      "bytes": 8839309056,
+      "sha256": "beff0dcce1eebc9b2454582f4dc8ed0ba0112b2c619a710bf03af93147254cd0",
+      "group_namespace": "cic2017_friday",
+      "flows": 578771
+    }
+  ],
+  "raw_stats": {
+    "cic2017_monday": {
+      "raw_packets": 11709971,
+      "non_ipv4": 83479,
+      "peak_active_flows": 4536,
+      "other_transport": 53,
+      "closed_session_ack_tail": 17869,
+      "out_of_order_packets": 3284,
+      "ipv4_fragments_excluded": 520
+    },
+    "cic2017_tuesday": {
+      "raw_packets": 11551954,
+      "non_ipv4": 82218,
+      "peak_active_flows": 4164,
+      "closed_session_ack_tail": 14464,
+      "ipv4_fragments_excluded": 532,
+      "out_of_order_packets": 3753,
+      "other_transport": 40
+    },
+    "cic2017_wednesday": {
+      "raw_packets": 13788878,
+      "non_ipv4": 83323,
+      "other_transport": 20,
+      "peak_active_flows": 5866,
+      "out_of_order_packets": 14608,
+      "closed_session_ack_tail": 62243,
+      "ipv4_fragments_excluded": 428
+    },
+    "cic2017_thursday": {
+      "raw_packets": 9322025,
+      "non_ipv4": 81302,
+      "peak_active_flows": 6508,
+      "other_transport": 130,
+      "out_of_order_packets": 3705,
+      "ipv4_fragments_excluded": 188,
+      "closed_session_ack_tail": 10538
+    },
+    "cic2017_friday": {
+      "raw_packets": 9997874,
+      "non_ipv4": 82194,
+      "peak_active_flows": 4043,
+      "other_transport": 179,
+      "closed_session_ack_tail": 8052,
+      "out_of_order_packets": 8374,
+      "ipv4_fragments_excluded": 392
+    }
+  },
+  "label_source": "https://github.com/GintsEngelen/CNS2022_Code/blob/master/Labelling/CICIDS2017_labelling_fixed_CICFlowMeter.ipynb",
+  "label_rule_note": "Rules transcribed from the CNS2022 corrected CICIDS2017 notebook; attempted categories and evidence-condition failures are unresolved (label None), never benign.",
+  "label_status_counts": {
+    "background_benign": 1731862,
+    "confirmed_attack": 538428,
+    "unresolved_attempted": 154743,
+    "boundary": 15
+  },
+  "label_states": {
+    "confirmed": "window + endpoint + evidence condition -> family label",
+    "unresolved": "window + endpoint, no evidence (attempted categories or failed condition); label None, never benign",
+    "background": "no rule endpoint/window -> benign",
+    "boundary": "crosses a rule window; label None"
+  },
+  "class_order": [
+    "benign",
+    "dos",
+    "portscan",
+    "ddos",
+    "bf",
+    "bot",
+    "web",
+    "inf",
+    "heartbleed"
+  ],
+  "family_mapping": {
+    "background": "benign",
+    "FTP-Patator": "bf",
+    "SSH-Patator": "bf",
+    "DoS-Hulk": "dos",
+    "DoS-GoldenEye": "dos",
+    "DoS-Slowloris": "dos",
+    "DoS-Slowhttptest": "dos",
+    "Heartbleed": "heartbleed",
+    "Web-Attack-Brute-Force": "web",
+    "Web-Attack-XSS": "web",
+    "Web-Attack-SQL-Injection": "web",
+    "Infiltration-Communication": "inf",
+    "Infiltration-CoolDisk-MAC": "inf",
+    "Infiltration-Portscan": "portscan",
+    "Portscan": "portscan",
+    "Botnet-Ares": "bot",
+    "DDoS-LOIC-HTTP": "ddos",
+    "FTP-Patator-Attempted-NoPayload": "benign",
+    "FTP-Patator-Attempted-StartupTeardown": "benign",
+    "SSH-Patator-Attempted-NoPayload": "benign",
+    "SSH-Patator-Attempted-NoMaliciousPayload": "benign",
+    "DoS-Slowloris-Attempted-ImplementedIncorrectly": "benign",
+    "DoS-Slowloris-Attempted-StartupTeardown": "benign",
+    "DoS-Slowloris-Attempted-NoPayload": "benign",
+    "DoS-Slowloris-Attempted-TargetUnresponsive": "benign",
+    "DoS-Slowloris-Attempted-AttackArtefact": "benign",
+    "DoS-Slowhttptest-Attempted-StartupTeardown": "benign",
+    "DoS-Slowhttptest-Attempted-NoPayload": "benign",
+    "DoS-Slowhttptest-Attempted-TargetUnresponsive": "benign",
+    "DoS-Slowhttptest-Attempted-AttackArtefact": "benign",
+    "DoS-Hulk-Attempted-AttackArtefact": "benign",
+    "DoS-Hulk-Attempted-NoPayload": "benign",
+    "DoS-Hulk-Attempted-NoMaliciousPayload": "benign",
+    "DoS-GoldenEye-Attempted-NoPayload": "benign",
+    "Heartbleed-Attempted-NoPayload": "benign",
+    "Web-Attack-Brute-Force-Attempted-StartupTeardown": "benign",
+    "Web-Attack-Brute-Force-Attempted-NoPayload": "benign",
+    "Web-Attack-Brute-Force-Attempted-AttackArtefact": "benign",
+    "Web-Attack-XSS-Attempted-NoPayload": "benign",
+    "Web-Attack-XSS-Attempted-StartupTeardown": "benign",
+    "Web-Attack-SQL-Injection-Attempted-StartupTeardown": "benign",
+    "Web-Attack-SQL-Injection-Attempted-NoPayload": "benign",
+    "Infiltration-Communication-Attempted-NoPayload": "benign",
+    "Infiltration-Communication-Attempted-StartupTeardown": "benign",
+    "Infiltration-CoolDisk-MAC-Attempted-NoPayload": "benign",
+    "Botnet-Ares-Attempted-NoPayload": "benign",
+    "Botnet-Ares-Attempted-PortClosed": "benign",
+    "DDoS-LOIC-HTTP-Attempted-NoPayload": "benign"
+  },
+  "split": {
+    "method": "time_forward_within_capture_and_family",
+    "fractions": [
+      0.7,
+      0.15,
+      0.15
+    ],
+    "note": "flows of each (capture, family) sorted by start time; first 70% train, next 15% validation, last 15% test"
+  },
+  "source_counts": [
+    {
+      "label": "__UNRESOLVED__",
+      "split": "test",
+      "rows": 23216
+    },
+    {
+      "label": "__UNRESOLVED__",
+      "split": "train",
+      "rows": 108328
+    },
+    {
+      "label": "__UNRESOLVED__",
+      "split": "validation",
+      "rows": 23214
+    },
+    {
+      "label": "benign",
+      "split": "test",
+      "rows": 259782
+    },
+    {
+      "label": "benign",
+      "split": "train",
+      "rows": 1212301
+    },
+    {
+      "label": "benign",
+      "split": "validation",
+      "rows": 259779
+    },
+    {
+      "label": "bf",
+      "split": "test",
+      "rows": 1048
+    },
+    {
+      "label": "bf",
+      "split": "train",
+      "rows": 4887
+    },
+    {
+      "label": "bf",
+      "split": "validation",
+      "rows": 1047
+    },
+    {
+      "label": "bot",
+      "split": "test",
+      "rows": 111
+    },
+    {
+      "label": "bot",
+      "split": "train",
+      "rows": 515
+    },
+    {
+      "label": "bot",
+      "split": "validation",
+      "rows": 110
+    },
+    {
+      "label": "ddos",
+      "split": "test",
+      "rows": 14353
+    },
+    {
+      "label": "ddos",
+      "split": "train",
+      "rows": 66978
+    },
+    {
+      "label": "ddos",
+      "split": "validation",
+      "rows": 14352
+    },
+    {
+      "label": "dos",
+      "split": "test",
+      "rows": 25761
+    },
+    {
+      "label": "dos",
+      "split": "train",
+      "rows": 120216
+    },
+    {
+      "label": "dos",
+      "split": "validation",
+      "rows": 25761
+    },
+    {
+      "label": "heartbleed",
+      "split": "test",
+      "rows": 2
+    },
+    {
+      "label": "heartbleed",
+      "split": "train",
+      "rows": 7
+    },
+    {
+      "label": "heartbleed",
+      "split": "validation",
+      "rows": 2
+    },
+    {
+      "label": "inf",
+      "split": "test",
+      "rows": 6
+    },
+    {
+      "label": "inf",
+      "split": "train",
+      "rows": 25
+    },
+    {
+      "label": "inf",
+      "split": "validation",
+      "rows": 5
+    },
+    {
+      "label": "portscan",
+      "split": "test",
+      "rows": 39472
+    },
+    {
+      "label": "portscan",
+      "split": "train",
+      "rows": 184196
+    },
+    {
+      "label": "portscan",
+      "split": "validation",
+      "rows": 39470
+    },
+    {
+      "label": "web",
+      "split": "test",
+      "rows": 16
+    },
+    {
+      "label": "web",
+      "split": "train",
+      "rows": 72
+    },
+    {
+      "label": "web",
+      "split": "validation",
+      "rows": 16
+    }
+  ],
+  "retained_counts": [
+    {
+      "label": "__UNRESOLVED__",
+      "split": "test",
+      "rows": 23216
+    },
+    {
+      "label": "__UNRESOLVED__",
+      "split": "train",
+      "rows": 108328
+    },
+    {
+      "label": "__UNRESOLVED__",
+      "split": "validation",
+      "rows": 23214
+    },
+    {
+      "label": "benign",
+      "split": "test",
+      "rows": 259782
+    },
+    {
+      "label": "benign",
+      "split": "train",
+      "rows": 1212301
+    },
+    {
+      "label": "benign",
+      "split": "validation",
+      "rows": 259779
+    },
+    {
+      "label": "bf",
+      "split": "test",
+      "rows": 1048
+    },
+    {
+      "label": "bf",
+      "split": "train",
+      "rows": 4887
+    },
+    {
+      "label": "bf",
+      "split": "validation",
+      "rows": 1047
+    },
+    {
+      "label": "bot",
+      "split": "test",
+      "rows": 111
+    },
+    {
+      "label": "bot",
+      "split": "train",
+      "rows": 515
+    },
+    {
+      "label": "bot",
+      "split": "validation",
+      "rows": 110
+    },
+    {
+      "label": "ddos",
+      "split": "test",
+      "rows": 14353
+    },
+    {
+      "label": "ddos",
+      "split": "train",
+      "rows": 66978
+    },
+    {
+      "label": "ddos",
+      "split": "validation",
+      "rows": 14352
+    },
+    {
+      "label": "dos",
+      "split": "test",
+      "rows": 25761
+    },
+    {
+      "label": "dos",
+      "split": "train",
+      "rows": 120216
+    },
+    {
+      "label": "dos",
+      "split": "validation",
+      "rows": 25761
+    },
+    {
+      "label": "heartbleed",
+      "split": "test",
+      "rows": 2
+    },
+    {
+      "label": "heartbleed",
+      "split": "train",
+      "rows": 7
+    },
+    {
+      "label": "heartbleed",
+      "split": "validation",
+      "rows": 2
+    },
+    {
+      "label": "inf",
+      "split": "test",
+      "rows": 6
+    },
+    {
+      "label": "inf",
+      "split": "train",
+      "rows": 25
+    },
+    {
+      "label": "inf",
+      "split": "validation",
+      "rows": 5
+    },
+    {
+      "label": "portscan",
+      "split": "test",
+      "rows": 39472
+    },
+    {
+      "label": "portscan",
+      "split": "train",
+      "rows": 184196
+    },
+    {
+      "label": "portscan",
+      "split": "validation",
+      "rows": 39470
+    },
+    {
+      "label": "web",
+      "split": "test",
+      "rows": 16
+    },
+    {
+      "label": "web",
+      "split": "train",
+      "rows": 72
+    },
+    {
+      "label": "web",
+      "split": "validation",
+      "rows": 16
+    }
+  ],
+  "retention_per_label_split": null,
+  "flows_sha256": "40a671b4a5e346182f32d52f8cddb129c8ef3f7709f2b9ab681a0ea121be5252",
+  "stats_columns": [
+    "duration_us",
+    "fwd_packets",
+    "bwd_packets",
+    "fwd_payload_bytes",
+    "bwd_payload_bytes",
+    "fwd_header_bytes",
+    "bwd_header_bytes",
+    "fwd_len_mean",
+    "fwd_len_std",
+    "fwd_len_min",
+    "fwd_len_max",
+    "bwd_len_mean",
+    "bwd_len_std",
+    "bwd_len_min",
+    "bwd_len_max",
+    "flow_iat_mean",
+    "flow_iat_std",
+    "flow_iat_min",
+    "flow_iat_max",
+    "fwd_iat_mean",
+    "fwd_iat_std",
+    "fwd_iat_min",
+    "fwd_iat_max",
+    "bwd_iat_mean",
+    "bwd_iat_std",
+    "bwd_iat_min",
+    "bwd_iat_max",
+    "fin_count",
+    "syn_count",
+    "rst_count",
+    "psh_count",
+    "ack_count",
+    "urg_count",
+    "fwd_psh",
+    "bwd_psh",
+    "fwd_urg",
+    "bwd_urg",
+    "init_win_fwd",
+    "init_win_bwd",
+    "down_up_ratio",
+    "avg_packet_size",
+    "bytes_per_s",
+    "packets_per_s",
+    "protocol",
+    "dst_port"
+  ]
+}
