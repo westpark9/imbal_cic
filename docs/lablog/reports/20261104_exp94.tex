@@ -2,25 +2,133 @@
 % !LW recipe=lablog XeLaTeX
 \input{_support/style.tex}
 \usepackage{tabularx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
-\hypersetup{pdftitle={EXP94: CIC2017 전체 망 PCAP — CSV·통계 view·netFound view 3열 비교}}
+\hypersetup{pdftitle={EXP94: CIC2017 PCAP에서 직접 만든 표현은 CSV의 두 문제를 푸는가}}
 \begin{document}
-\reporttitle{2026-11-04 실행 · 2026-11-04 분석}{EXP94: CIC2017 전체 망 PCAP —\\CSV · 통계 view · netFound view 3열 비교}
-\recordnote{실행 \path{20261104_104228_pcap_cic2017_9faba40e}: 5일 전체 망 PCAP(51.2 GB, pcapng) $\to$ 2,425,048 flow $\to$ 3상태 라벨 $\to$ capture$\times$family 시간순 분할 $\to$ flowstats-v1(45 통계)·netFound-v2-small(512$\to$PCA 64) 두 view $\to$ 3층 감사 $\to$ few-shot 240 job. 13:02 KST host 재부팅으로 few-shot 단계가 중단됐고, 손상된 job 6개와 미완료 job 1개를 \path{resumptions/}에 격리한 뒤 같은 corpus·인코딩 위에서 재개해 완료했다. CSV 쪽 수치는 \path{20261103_exp94.tex}의 채택 실행(원 라벨 단위 분할)을 그대로 쓴다. 재부팅 전후 산출물은 sha256으로 동일함을 확인했다.}
+\reporttitle{2026-11-04 실행 · 2026-11-04 분석}{EXP94: CIC2017 PCAP에서 직접 만든 표현은\\CSV의 두 문제를 푸는가 --- 배경 · 과정 · CSV와의 비교}
+\recordnote{이 문서는 앞선 보고서 없이 읽을 수 있도록 배경(\S1), PCAP에서 벡터와 라벨을 만드는 과정(\S2), CSV와의 비교(\S3), 판정(\S4), 실행 기록(\S5) 순으로 쓴다. 수치의 출처는 CSV 쪽 실행 \path{20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d}과 PCAP 쪽 실행 \path{20261104_104228_pcap_cic2017_9faba40e}이다. PCAP 실행은 13:02 KST host 재부팅으로 few-shot 단계가 끊겨 같은 corpus·인코딩에서 재개해 완료했다(\S5). 라벨 정책과 PCA 차원 변형 실험은 실행 중이며 완료 후 \S4에 추가한다.}
 
-\section{구성: CSV vs PCAP 두 view}
+\section{배경}
+\subsection{지금까지 쓰던 입력: CICFlowMeter CSV}
 \begin{itemize}
-\item \textbf{같은 망, 다른 flow 정의.} CSV는 CICFlowMeter(원본 버그 포함) flow 2,830,743행. PCAP corpus는 자체 재구성 flow 2,425,048개(RST·양쪽 FIN·새 SYN 종료, idle·active 120초, 재정렬 창 5초). 패킷 56,370,702개, 순서 뒤바뀜 33,724개(모두 창 안).
-\item \textbf{라벨 상태.} background(benign) 1,731,862 · confirmed 538,428 · unresolved 154,743(6.4\%; 창·endpoint 일치 flow의 22.3\%) · boundary 15. unresolved의 89\%는 DoS-Hulk NoPayload 137,908이고, 나머지는 Bot PortClosed 4,067, FTP NoPayload 4,039, Slowloris/Slowhttptest 무응답 4,439, Web NoPayload 1,869, LOIC-HTTP NoPayload 1,203 등이다.
-\item \textbf{family 범위.} CSV와 같은 9 family. confirmed web은 104 flow(train 72, test 16)뿐이다. CSV의 web 2,180행 대부분이 Attempted였다는 저자 기록과 일치하며, web F1은 참고치다. inf(36)·heartbleed(11)는 양쪽 모두 coverage 미달로 제외.
-\item \textbf{분할.} 양쪽 모두 시간순 70/15/15(CSV는 파일$\times$원 라벨, PCAP은 capture$\times$family). PCAP에서는 같은 5-tuple group이 train/test에 걸치는 경우가 64,317개이며 금지하지 않고 기록한다.
-\item \textbf{두 view는 같은 flow·분할·표본을 받는다.} flowstats-v1은 모든 패킷에서 계산한 45개 통계(지속·방향별 패킷/바이트·길이·IAT 통계·flag·window·속도·protocol·port), netFound는 header·timing 토큰(12 burst$\times$6 패킷, iat ms)을 frozen encoder에 넣은 512차원을 training PCA 64차원(설명분산 98.1\%)으로 줄인 것이다.
+\item \textbf{IDS 벤치마크 CIC-IDS2017·CSE-CIC-IDS2018}은 실험망에서 정상 트래픽과 공격을 며칠간 실행하며 패킷을 캡처(PCAP)한 뒤, CICFlowMeter라는 도구로 패킷을 ``flow''(같은 두 끝점 사이의 한 번의 통신)로 묶고 flow마다 고정된 통계 78개(지속 시간, 방향별 패킷 수·바이트, 패킷 길이의 평균·표준편차·최소·최대, 패킷 간격 통계, TCP flag 수, window 크기, 초당 바이트 등)를 계산해 CSV로 배포한다.
+\item \textbf{라벨은 CSV에만 있고, 규칙으로 만들어졌다.} PCAP에는 라벨이 없다. CIC는 ``이 시간창에 이 공격자 IP와 이 피해자 IP가 통신하면 그 공격''이라는 규칙으로 각 flow에 라벨을 붙였다. 이 프로젝트의 기존 실험(EXP86--89, 2018 NF-v3 46 특징)은 모두 이 CSV 행을 입력으로 썼다.
 \end{itemize}
 
+\subsection{CSV에서 확인한 두 문제}
+\begin{itemize}
+\item \textbf{문제1 --- 동일 벡터·상이 라벨.} 통계 78개가 완전히 같은 행에 서로 다른 family 라벨이 붙어 있다. 2018 CSV에서는 16,232,943행 중 406,811행(2.51\%; bf 42.7\%, inf 25.5\%, dos 11.8\%), 2017 CSV에서는 2,830,743행 중 7,020행(0.25\%; 대부분 DoS Hulk/BENIGN). 입력이 같으면 결정적 분류기는 둘 다 맞힐 수 없으므로, 이 비율은 성능 상한을 깎는다.
+\item \textbf{문제2 --- head 조기 포화.} DDoS·brute force·portscan 같은 대량·반복 공격(head)은 class당 라벨 20개만으로 F1 90\% 이상에 도달해 추가 라벨의 개선 여지가 없다. 반대로 web·bot·infiltration 같은 tail은 낮게 머문다.
+\item \textbf{알려진 라벨 결함(Engelen 외 2021, Liu 외 CNS 2022).} 원본 CICFlowMeter는 첫 FIN에서 flow를 끊고 RST를 무시하며 timeout 뒤 후속 flow가 방향을 상속해 공격자 발 flow가 피해자 발로 뒤집힌다. 시간창 규칙은 공격 행위가 없는 연결(포트 닫힘, handshake만, 시작·종료 잔여)까지 공격으로 라벨한다. 2017의 DoS Hulk는 구현 오류로 거의 무효였고, Bot 창 끝의 재접속 시도 294개가 Bot으로 라벨돼 CSV few-shot에서 bot F1이 0이 됐다(11-03 보고서).
+\item \textbf{가설.} CSV의 고정 통계가 정보를 버려서 문제1이 생기고 문제2가 커지는 것이라면, PCAP에서 패킷열을 직접 인코더에 넣어 표현을 만들면 둘 다 완화될 것이다. EXP92--94는 이 가설을 검증한다.
+\end{itemize}
+
+\subsection{왜 2018이 아니라 2017 전체 망인가}
+\begin{itemize}
+\item \textbf{CIC2018은 host별 캡처다.} 하루 zip 40--45 GB 안에 host별 PCAP 약 440개가 들어 있고 10일이면 약 450 GB다. EXP93은 날짜당 피해 host 1대만 HTTP Range로 추출했는데, 그 결과 benign이 ``그 host의 트래픽''으로 바뀌어 CSV와 모집단이 달라졌고(train 47배, test 74배 차이), family 범위가 비었으며, Bot은 피해 host가 아닌 capture를 골라 라벨이 통째로 틀렸다. 이 상태로는 문제2를 판단할 수 없다.
+\item \textbf{CIC2017은 스위치에서 전체 망을 하루 한 파일로 캡처했다.} 월~금 5개 파일 51.2 GB. host 선택이 없고 benign 모집단이 CSV와 같다. 월요일은 benign 전용이다. 원본 CSV 8개(2,830,743행)도 보유하고 있어 같은 망에서 CSV와 PCAP을 나란히 둘 수 있다.
+\item \textbf{따라서 EXP94는 2017 전체 망 PCAP을 본 실험으로 삼고}, 2018 전체 수집은 하지 않는다(\S4).
+\end{itemize}
+
+\section{PCAP에서 벡터와 라벨까지}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\small, >=Latex, node distance=5mm and 6mm,
+  b/.style={rectangle, rounded corners, draw, align=center, minimum height=10mm, inner sep=4pt, text width=34mm},
+  d/.style={b, fill=blue!8}, p/.style={b, fill=gray!10}, l/.style={b, fill=yellow!20}, v/.style={b, fill=green!12}, e/.style={b, fill=red!10}]
+\node[d] (pcap) {\textbf{PCAP 5개}\\56.4M 패킷, 51.2 GB};
+\node[p, right=of pcap] (flow) {\textbf{flow 재구성}\\양방향 5-tuple, RST·FIN·새 SYN·120초 종료\\$\to$ 2,425,048 flow};
+\node[l, right=of flow] (lab) {\textbf{라벨 규칙 53개}\\시간창 + endpoint + 증거\\$\to$ confirmed / unresolved / background};
+\node[p, right=of lab] (split) {\textbf{시간순 분할}\\capture$\times$family 70/15/15\\test 전량 보존};
+\node[v, below=9mm of flow] (st) {\textbf{view 1: 통계 45개}\\모든 패킷에서 계산, PCA 없음};
+\node[e, below=9mm of lab] (nf) {\textbf{view 2: netFound}\\burst 토큰 $\to$ frozen encoder 512차원 $\to$ PCA 64};
+\node[p, below=9mm of split] (ev) {\textbf{평가}\\3층 감사·oracle 상한\\few-shot XGB/TabPFN n=2..50, 5 seed};
+\draw[->] (pcap) -- (flow); \draw[->] (flow) -- (lab); \draw[->] (lab) -- (split);
+\draw[->] (split.south) -- ++(0,-4mm) -| (st.north);
+\draw[->] (split.south) -- ++(0,-4mm) -| (nf.north);
+\draw[->] (st.east) -- (nf.west); \draw[->] (nf.east) -- (ev.west);
+\end{tikzpicture}
+\caption{EXP94 PCAP 파이프라인. 분할된 같은 flow 집합이 두 view로 인코딩되고, 두 view는 같은 라벨·분할·few-shot 표본을 받는다.}
+\end{figure}
+
+\subsection{PCAP 파일의 생김새}
+\begin{itemize}
+\item \textbf{PCAP은 패킷 기록의 나열이다.} 레코드마다 캡처 시각(마이크로초)과 캡처된 바이트가 있다. 바이트는 바깥부터 Ethernet 헤더(14 B) $\to$ IPv4 헤더(20 B: 헤더 길이, TOS, 전체 길이, flag, TTL, 프로토콜, 출발·목적 IP) $\to$ TCP 헤더(20 B 이상: 포트, seq, ack, flag, window, urgent) 또는 UDP 헤더(8 B) $\to$ payload 순이다. 2017 파일은 pcapng 형식이며 5일 합계 56,370,702 패킷이다.
+\item \textbf{예시.} 월요일 11:57:01.877 UTC, 192.168.10.9:1057 $\to$ 69.31.33.224:80로 보낸 첫 패킷은 IP 헤더 20 B, TOS 0, 전체 길이 52 B, DF flag, TTL 128, TCP SYN, window 8192, payload 0 B다. TTL 128과 window 8192는 Windows host의 전형이다.
+\item \textbf{버리는 것.} IPv4가 아닌 패킷(ARP, IPv6), IP 단편, TCP·UDP·ICMP 외 프로토콜. 5일 합계 약 3만 패킷이 순서가 뒤바뀌어 있어 5초 창 안에서 시각순으로 재정렬한다.
+\end{itemize}
+
+\subsection{flow 재구성 규칙}
+\begin{itemize}
+\item \textbf{키.} (프로토콜, 두 (IP, 포트) 쌍을 정렬한 것). 방향은 첫 패킷의 출발지를 forward로 둔다. ICMP는 echo id로 묶는다. 같은 키의 패킷은 한 flow에 쌓인다.
+\item \textbf{종료.} (i) RST, (ii) 양쪽 FIN 뒤 순수 ACK, (iii) 같은 키에 새 SYN(다른 seq), (iv) 120초 무통신(idle), (v) 시작 후 120초(active). 종료 뒤 2초 안의 순수 ACK 잔여는 버린다. CICFlowMeter 원본의 세 결함(첫 FIN 종료·RST 무시·방향 상속)은 여기서 고쳐진다.
+\item \textbf{예시 flow.} 위 패킷으로 시작한 통신은 10패킷(5/5), payload 97/179 B, 60.6 ms, 양쪽 FIN으로 종료 --- 짧은 HTTP 요청 하나다. 5일 전체에서 2,425,048 flow가 나왔다.
+\item \textbf{flow마다 남기는 것.} 5-tuple, 시작·종료 시각, 방향별 패킷·payload 바이트·RST 수, 첫·마지막 패킷 번호, 종료 사유, 통계 45개, netFound용 burst 토큰. IP·포트·시각·라벨은 분류기 입력에 넣지 않는다.
+\end{itemize}
+
+\subsection{라벨: 시간창 + endpoint + 증거 $\to$ 세 상태}
+\begin{itemize}
+\item \textbf{규칙의 출처.} CNS 2022 저자들이 공개한 교정 notebook(CICIDS2017 labelling fixed CICFlowMeter)을 JSON 규칙 53개(confirmed 22, attempted 31)로 옮겼다. 각 규칙은 UTC 시간창, 공격자·피해자 IP(·포트), 그리고 공격마다 다른 \emph{증거 조건}을 갖는다.
+\item \textbf{증거 조건의 예.} FTP/SSH brute force는 공격자 payload $\ge$ 1 B(인증 시도가 실제로 있었는가), DoS GoldenEye는 payload $\ge$ 1이고 RST 없음 또는 5.05초 이상, Slowloris는 특정 포트 제외, Web XSS는 도구가 아닌 브라우저 연결 포트 제외, Bot은 창 안 master와의 payload 교환, 목요일 portscan은 benign 배경(Fwd 최대 payload 408 B 등) 제외.
+\item \textbf{세 상태.} \textbf{confirmed} = 창·endpoint·증거 모두 충족 $\to$ family 라벨(학습·채점). \textbf{unresolved} = 창·endpoint는 맞지만 증거 없음(CNS2022의 ``Attempted'' 7범주, 또는 증거 조건 실패) $\to$ 라벨 없음, 학습·채점에서 제외, 수는 기록. \textbf{background} = 어떤 규칙에도 안 걸린 그날 트래픽 $\to$ benign. 창 경계에 걸친 flow는 boundary로 제외(15개).
+\item \textbf{왜 unresolved를 공격이나 benign에 넣지 않는가.} 포트가 닫혀 SYN$\to$RST로 끝난 접속 시도는 패킷 바이트가 정상 실패 접속과 같다. 공격으로 넣으면 정의상 문제1을 만들고(CSV의 bot 0\%가 그 예), benign에 넣으면 공격자 트래픽이 정상 class에 섞인다. 그래서 기본은 제외하고, 두 정책을 변형 실험으로 따로 잰다.
+\item \textbf{family.} benign, bf(FTP·SSH Patator), dos(Hulk·GoldenEye·Slowloris·Slowhttptest), heartbleed, web(Brute Force·XSS·SQL Injection), inf(Infiltration), bot(Ares), portscan, ddos(LOIC-HTTP). 원 라벨은 annotation으로 보존한다.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\resizebox{.92\linewidth}{!}{%
+\begin{tikzpicture}[font=\small, >=Latex, node distance=5mm and 9mm,
+  q/.style={diamond, aspect=2.6, draw, inner sep=1pt, align=center, fill=gray!8},
+  s/.style={rectangle, rounded corners, draw, align=center, minimum width=26mm, minimum height=7mm},
+  conf/.style={s, fill=red!12}, unres/.style={s, fill=yellow!22}, back/.style={s, fill=green!12}, bnd/.style={s, fill=gray!18}]
+\node[s, fill=blue!8] (flow) {재구성한 flow\\(5-tuple, 시각, payload·flag 합계)};
+\node[q, below=of flow] (ep) {endpoint 일치?\\공격자 IP $\leftrightarrow$ 피해자 IP (+port)};
+\node[q, below=of ep] (tw) {시간창 안?};
+\node[q, below=of tw] (ev) {증거 조건?\\payload, RST, 포트 제외 등};
+\node[conf, below=of ev] (c) {\textbf{confirmed}\\family 라벨};
+\node[unres, right=12mm of ev] (u) {\textbf{unresolved}\\라벨 없음, 제외·집계};
+\node[bnd, right=12mm of tw] (b) {\textbf{boundary}\\제외};
+\node[back, left=10mm of tw] (bg) {\textbf{background}\\benign};
+\draw[->] (flow) -- (ep); \draw[->] (ep) -- node[right,xshift=1mm]{예} (tw); \draw[->] (ep.west) -| node[above,pos=.25]{아니오} (bg);
+\draw[->] (tw) -- node[right,xshift=1mm]{예} (ev); \draw[->] (tw.east) -- node[above]{걸침} (b); \draw[->] (tw.west) -- node[above]{창 밖} (bg);
+\draw[->] (ev) -- node[right,xshift=1mm]{예} (c); \draw[->] (ev.east) -- node[above]{아니오} (u);
+\end{tikzpicture}}
+\caption{라벨 판정 순서. 2,425,048 flow 중 background 1,731,862 · confirmed 538,428 · unresolved 154,743 · boundary 15.}
+\end{figure}
+
+\subsection{view 1: flow 통계 45개}
+\begin{itemize}
+\item CICFlowMeter와 같은 종류의 요약이지만 우리 flow 정의 위에서 모든 패킷으로 다시 계산한다. 지속 시간; 방향별 패킷 수·payload 바이트·헤더 바이트; 방향별 패킷 길이 평균·표준편차·최소·최대; 전체·방향별 패킷 간격(IAT) 평균·표준편차·최소·최대; FIN·SYN·RST·PSH·ACK·URG 수와 방향별 PSH·URG; 초기 window(방향별); down/up 비율; 평균 패킷 크기; 초당 바이트·패킷; 프로토콜; 목적 포트.
+\item 위 예시 flow의 값: 지속 60,574 µs, fwd 길이 평균 61.8·최대 137, bwd 평균 78.2·최대 219, IAT 평균 6,730 µs, SYN 2·FIN 2·PSH 2·ACK 9, 초기 window 8192/29200, 초당 165 패킷, 포트 80.
+\item 이 view는 ``CSV와 같은 정보량을 깨끗한 flow 정의 위에서 계산하면 어떻게 되는가''를 답한다. PCA 없이 45차원을 그대로 분류기에 넣는다.
+\end{itemize}
+
+\subsection{view 2: burst 토큰과 netFound}
+\begin{itemize}
+\item \textbf{netFound란.} UCSB SNL이 공개한 네트워크 트래픽 foundation model(Guthula 외, arXiv 2310.17025, v2 코드와 small checkpoint 사용). 라벨 없는 대량 트래픽에서 가려진 헤더 토큰을 맞히는 자기지도 학습으로 사전학습한 계층형 transformer다. burst 안의 패킷 토큰을 먼저 인코딩하고 burst들 사이를 다시 attention으로 묶는다. v2 small은 53.4M 파라미터, hidden 512, payload를 쓰지 않는 header-only 모델이다. 우리는 가중치를 고정(frozen)하고 특징 추출기로만 쓴다.
+\item \textbf{burst 분할.} 같은 방향으로 10 ms 안에 이어진 패킷을 하나의 burst로 묶는다. flow당 처음 12 burst, burst당 처음 6 패킷만 쓴다(사전학습 설정). 예시 flow는 6 burst: 방향 [f,b,f,b,f,b], 패킷 수 [1,1,2,3,2,1], 바이트 [52,52,177,299,80,40], burst 간격 [0,0,20.0,20.1,20.7,20.5] ms.
+\item \textbf{패킷 토큰.} 패킷 하나는 정수 토큰열이다. IP 헤더 5개(헤더 길이, TOS, 전체 길이, flag, TTL) + TCP 7개(flag, window, 상대 seq 상·하위 16비트, 상대 ack 상·하위, urgent) [UDP는 길이 1개, ICMP는 type·code] + payload 자리 6개(v2에서는 제거). 예시 첫 패킷: [20, 0, 52, 2(DF), 128, 2(SYN), 8192, 0, 0, 0, 0, 0]. seq·ack는 flow 첫 값 기준 상대값이다.
+\item \textbf{tokenizer.} burst마다 CLS 토큰을 앞에 붙이고, 토큰 ID에 1을 더하며, burst 간격을 ms 정수로 절삭하고, 12 burst$\times$6 패킷을 넘는 부분을 자른다. 방향·바이트·패킷 수·간격은 별도 입력으로 들어간다. \textbf{이 절삭과 ms 반올림이 \S3.2의 L2 층이다.}
+\item \textbf{임베딩.} 마지막 층의 hidden state를 유효 토큰(padding 제외) 평균으로 모아 512차원 벡터를 만든다. batch 구성에 따른 수치 차이는 $10^{-6}$ 수준이다. 2,425,048 flow 인코딩에 RTX 4090으로 38분.
+\item \textbf{PCA.} train split 1,697,525행(unresolved 포함, validation·test 제외)으로 적합해 64차원(설명분산 98.1\%)으로 줄인 것이 분류기 입력이다.
+\end{itemize}
+
+\subsection{분할·few-shot·모델}
+\begin{itemize}
+\item \textbf{분할.} capture(날짜)$\times$family마다 flow를 시작 시각으로 정렬해 앞 70\% train, 다음 15\% validation, 마지막 15\% test. 같은 family의 test는 항상 train보다 뒤 시각이다. 같은 5-tuple이 양쪽에 걸치는 group 64,317개는 금지하지 않고 기록한다. test는 전량 평가한다(340,543 flow).
+\item \textbf{few-shot.} class당 n=2·3·5·10·20·50개를 train에서 seed(43--47)별로 뽑아 학습하고 전체 test를 채점한다. 두 분류기는 같은 행을 받는다. 과제는 정상 포함(benign + 6 공격 family)과 공격만(6 family). train 50개 미만인 inf(25)·heartbleed(7)는 제외.
+\item \textbf{분류기.} XGBoost(300 trees, depth 8)는 기준 트리 모델. TabPFN(v3 checkpoint, 4 estimators)은 합성 표 데이터로 사전학습한 transformer로, n개 라벨 행을 context로 넣어 가중치 갱신 없이 in-context로 분류한다. 두 모델 모두 fine-tuning 없음. 지표는 family별 F1의 단순 평균(macro-F1).
+\end{itemize}
+
+\section{CSV와의 비교}
+\subsection{데이터 구성과 차이의 원인}
 \begin{table}[H]
 \centering\small
-\caption{family별 행 수. CSV는 비유한 행 제거 후 채택 실행, PCAP은 confirmed+background. 행 순서는 PCAP test 수 내림차순.}
+\caption{family별 행 수. CSV는 비유한 행 제거 후(2,827,876행), PCAP은 confirmed+background. 행 순서는 PCAP test 수 내림차순.}
 \begin{tabular}{lrr|rrr|r}
 \toprule & \multicolumn{2}{c|}{CSV} & \multicolumn{3}{c|}{PCAP} & \\
 family & 전체 & test & train & validation & test & PCAP unresolved\\\midrule
@@ -37,41 +145,53 @@ heartbleed & 11 & 2 & 7 & 2 & 2 & 0\\\midrule
 \bottomrule
 \end{tabular}
 \end{table}
-
-\section{문제1: 3층 감사와 oracle 상한}
 \begin{itemize}
-\item \textbf{층의 뜻.} L1 = flow 전체 signature(45 통계 + 잘리기 전 burst 토큰 전부). L2 = netFound tokenizer 출력(iat ms 절삭, 12$\times$6 절삭). L3 = 분류기 입력 vector(통계 45차원 / PCA 64차원). 라벨 상태와는 무관하며, 각 층에서 ``입력이 byte 단위로 같은데 family가 다른'' group·행 수와 oracle 상한(동일 입력 group의 다수 family를 맞히는 결정적 분류기의 macro-F1)을 잰다. 대상은 labelled 2,270,243 flow, test 340,543 flow.
+\item \textbf{전체 flow 수가 다르다(2.83M vs 2.43M).} flow 정의가 다르기 때문이다. 원본 CICFlowMeter는 첫 FIN에서 끊고 RST를 무시하며 timeout 조각을 따로 세고, 우리는 RST·양쪽 FIN·새 SYN·120초로 끊는다. 같은 통신이 다른 개수의 flow로 쪼개진다.
+\item \textbf{dos가 252k $\to$ 172k, unresolved 143k.} Hulk 창 안 flow의 45\%(137,908)가 payload 없는 연결이라 증거 조건에서 빠졌다. CSV는 이것을 모두 DoS Hulk로 세었다.
+\item \textbf{web이 2,180 $\to$ 104.} XSS 652·Brute Force 1,218 등이 payload 없는 startup/teardown 연결(Attempted)이었다. 저자 기록과 일치한다. test 16행이라 web F1은 참고치다.
+\item \textbf{bot 1,957 $\to$ 736, unresolved 4,067.} master 종료 뒤 재접속(SYN$\to$RST)이 우리 flow 정의에서는 각각 별도 flow가 되고 unresolved로 분리된다.
+\item \textbf{portscan 159k $\to$ 263k.} SYN 1개짜리 스캔을 우리 정의가 빠짐없이 flow로 만든다(CICFlowMeter는 일부를 합쳤다).
+\item \textbf{benign 2.27M $\to$ 1.73M.} flow 정의 차이와 월요일 포함은 같지만, 공격일의 창 안 벡터 중 규칙에 걸린 것이 background에서 빠진 효과다.
+\end{itemize}
+
+\subsection{문제1: 동일 입력·상이 라벨 --- 세 층으로 재기}
+\begin{itemize}
+\item \textbf{``group''.} 입력이 byte 단위로 완전히 같은 flow들의 집합. 한 group 안에 두 family 이상이 있으면 cross-label group이고, 그 group의 행이 충돌 행이다. 예: SYN 1개로 끝난 flow 300개의 토큰열이 전부 같으면 group 1개(300행)이고, 그 안에 portscan 291·benign 9가 섞여 있으면 충돌 행 300.
+\item \textbf{세 층.} 같은 flow를 세 단계의 입력으로 보고 각각 group을 센다. \textbf{L1} = flow 전체 signature(통계 45 + 잘리기 전 burst 토큰 전부). 여기서 같으면 파이프라인이 그 두 flow를 구분할 정보 자체를 갖고 있지 않다 $\to$ 라벨 쪽 하한. \textbf{L2} = netFound tokenizer 출력(ms 절삭, 12$\times$6 절삭). L1에서 달랐는데 L2에서 같아진 만큼 tokenizer가 정보를 버렸다. \textbf{L3} = 분류기가 실제로 받는 벡터(통계 45차원, 또는 PCA 64차원). CSV의 78 통계도 하나의 L3다.
+\item \textbf{oracle 상한.} test의 각 group에서 다수 family를 답하는 결정적 분류기의 macro-F1. 어떤 모델도 이 값을 넘을 수 없으므로 ``문제1이 성능을 얼마나 제한하는가''의 직접 지표다.
+\item \textbf{train$\to$test 정확 중복.} test flow 중 입력이 똑같은 train flow가 있는 비율. 높으면 few-shot 점수의 일부가 암기로 설명된다.
 \end{itemize}
 
 \begin{table}[H]
 \centering\small
-\caption{3층 감사. 충돌 행 비율은 labelled flow 대비. CSV 열은 2017 원본 CSV 감사(78 통계 정확 일치, 2,830,743행)와 CSV 채택 실행의 test 감사.}
-\begin{tabular}{lrrrrrr}
-\toprule 층 & 동일 group & 충돌 group & 충돌 행 & 비율(\%) & test 충돌 행 & train$\to$test 중복\\\midrule
-CSV 78 통계 & -- & 698 & 7,020 & 0.248 & 48 & 14.7\%\\
-L1 flow signature & 82,318 & 9 & 913 & 0.040 & 0 & 12.2\%\\
-L3 통계 45 (flowstats-v1) & 109,187 & 143 & 6,367 & 0.280 & 5 & 17.9\%\\
-L2 netFound tokenizer 입력 & 33,776 & 24 & 110,324 & 4.860 & 9,741 & 56.1\%\\
-L3 netFound PCA 64 & 87,163 & 61 & 67,765 & 2.985 & 8,797 & 50.4\%\\
+\caption{3층 감사. 충돌 행 비율은 labelled flow(2,270,243) 대비. CSV 행은 2017 원본 CSV 감사(78 통계 정확 일치, 2,830,743행)와 CSV 채택 실행의 test 감사. 중복 = train$\to$test 정확 중복 비율, 상한 = 정상 포함 oracle macro-F1.}
+\footnotesize
+\begin{tabular}{lrrrrrrr}
+\toprule 층 & 동일 group & 충돌 group & 충돌 행 & 비율(\%) & test 충돌 행 & 중복 & 상한\\\midrule
+CSV 78 통계 & -- & 698 & 7,020 & 0.248 & 48 & 14.7\% & 99.997\%\\
+L1 flow signature & 82,318 & 9 & 913 & 0.040 & 0 & 12.2\% & 100\%\\
+L3 통계 45 (view 1) & 109,187 & 143 & 6,367 & 0.280 & 5 & 17.9\% & 100\%\\
+L2 netFound tokenizer & 33,776 & 24 & 110,324 & 4.860 & 9,741 & 56.1\% & 99.79\%\\
+L3 netFound PCA 64 (view 2) & 87,163 & 61 & 67,765 & 2.985 & 8,797 & 50.4\% & 99.95\%\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{itemize}
-\item \textbf{라벨 쪽 하한(L1)은 0.04\%다.} 913행 중 891행이 portscan, 22행이 benign으로, SYN 1개짜리 스캔 flow와 같은 모양의 benign 실패 접속이다(원인 ③). 2017에서 문제1의 원리적 하한은 사실상 0이다.
-\item \textbf{통계 요약은 CSV와 같은 수준의 충돌을 만든다.} L1 0.04\% $\to$ 통계 45차원 0.28\%. CSV의 0.25\%와 같은 자릿수다. 즉 CSV 충돌의 대부분은 flow 종료 버그가 아니라 ``통계 요약이 짧은 flow들을 같은 벡터로 만든다''는 표현 손실(원인 ⑤)이며, flow 재구성을 고쳐도 통계 view에서는 그대로 남는다. 충돌은 거의 전부 portscan(5,770행)이다.
-\item \textbf{netFound tokenizer는 통계보다 더 많이 뭉갠다.} L2에서 110,324행(4.86\%)이 24개 group으로 합쳐지고, 가장 큰 group은 benign 49,204 + portscan 59다. 12 burst$\times$6 패킷 절삭과 iat ms 절삭이 짧은 benign flow(DNS·단발 접속)와 스캔을 같은 토큰열로 만든다. train$\to$test 정확 중복도 56\%로, netFound view의 few-shot 점수 일부는 암기로 설명될 수 있다.
-\item \textbf{PCA 64(L3)가 L2보다 적게 나오는 이유.} encoder는 결정적이지만 batch padding에 따른 $10^{-6}$ 수준 차이가 byte 단위 비교에서 group을 쪼갠다. 따라서 netFound의 모델 입력 충돌은 L2(4.86\%)로 읽어야 하고, L3 2.99\%는 하한이다. PCA 차원을 올려도 이 층은 바뀌지 않는다(변형 실험 (b)에서 확인).
-\item \textbf{oracle 상한은 모두 99.8\% 이상이다.} L1·통계 100\%, netFound L2 99.79\%(benign 99.81, portscan 98.72), PCA 99.95\%. 즉 2017에서 문제1은 어느 표현에서도 macro-F1 상한을 실질적으로 제한하지 않는다. CSV 실험의 room(n=50 macro 63\%)은 문제1이 아니라 tail·benign 오탐·라벨 결함에 있다.
+\item \textbf{라벨 쪽 하한(L1)은 0.04\%다.} 913행 중 891행이 portscan, 22행이 benign으로, SYN 1개짜리 스캔과 같은 모양의 benign 실패 접속이다. 관측 자체에 의도가 없어 어떤 표현으로도 못 가르는 양이며, 2017에서는 사실상 0이다.
+\item \textbf{통계 요약은 CSV와 같은 크기의 충돌을 만든다.} L1 0.04\% $\to$ 통계 45차원 0.28\%. CSV의 0.25\%와 같은 자릿수고, 충돌은 거의 전부 portscan(5,770행)이다. 즉 2017 CSV 충돌의 주원인은 flow 종료 버그가 아니라 ``통계 요약이 짧은 flow들을 같은 벡터로 만든다''는 표현 손실이고, flow 재구성을 고쳐도 통계 view에서는 그대로 남는다.
+\item \textbf{netFound tokenizer는 통계보다 더 많이 뭉갠다.} L2에서 110,324행(4.86\%)이 24개 group으로 합쳐진다. 가장 큰 group은 benign 49,204 + portscan 59다. 12 burst$\times$6 패킷 절삭과 ms 반올림이 짧은 benign flow(DNS·단발 접속)와 스캔을 같은 토큰열로 만든다. train$\to$test 중복도 56\%다.
+\item \textbf{PCA 64(L3)가 L2보다 적은 이유.} encoder는 결정적이지만 batch padding의 $10^{-6}$ 차이가 byte 비교를 쪼갠다. netFound의 모델 입력 충돌은 L2(4.86\%)로 읽어야 하고 L3 2.99\%는 하한이다. PCA 차원을 올려도 이 층은 바뀌지 않는다.
+\item \textbf{왜 이것이 어려운가.} 충돌 행은 ``맞히는 것이 불가능한 행''이고, 중복은 ``외우면 맞는 행''이다. 전자는 상한을 깎고 후자는 점수를 부풀린다. 그러나 2017에서는 oracle 상한이 모든 표현에서 99.8\% 이상이라 문제1은 성능 상한을 거의 제한하지 않는다. CSV 실험에서 n=50 macro가 63\%에 그친 이유는 문제1이 아니라 tail·benign 오탐·라벨 결함이다.
 \end{itemize}
 
-\section{문제2: few-shot 학습곡선 3열}
+\subsection{문제2: few-shot 학습곡선 3열}
 \begin{itemize}
-\item \textbf{설정.} 세 열 모두 class당 n=2·3·5·10·20·50, seed 43--47, XGBoost(300 trees, depth 8)와 frozen TabPFN(v3, 4 estimators), 두 모델에 같은 행, 전체 test. CSV 열은 11-03 채택 실행(test 424,183행), PCAP 두 열은 같은 flow ID·분할·표본(test 340,543행, 공격만 80,761행). 7 family 채점.
-\item \textbf{head 포화는 세 열에서 같다.} 공격만 n=20에서 portscan 98--99.6\%, ddos 89--99\%, dos 85--98\%. n=50으로 가도 변화는 1--2 pp다. 표현은 head의 조기 포화를 바꾸지 않는다.
-\item \textbf{정상 포함 macro는 표현보다 분류기와의 조합이 가른다.} n=50에서 netFound+TabPFN 71.61\%가 가장 높고 netFound+XGB 57.77\%가 가장 낮다. 통계 view는 65.16/69.04\%, CSV는 63.18/63.67\%. 같은 입력에서 TabPFN$-$XGB가 netFound에서 +0.9$\sim$+13.9 pp로 일관되게 양수이고, 통계 view에서는 $-$1.5$\sim$+3.9 pp, CSV에서는 부호가 섞인다. EXP93(CIC2018 host 1대)에서 본 ``PCAP 임베딩에서 TabPFN 이득''이 전체 망에서 재현됐다.
-\item \textbf{netFound 수치에는 중복 조건이 붙는다.} L2 train$\to$test 정확 중복이 56\%이므로 netFound view의 점수 일부는 test flow와 토큰열이 같은 train flow를 n개 안에 뽑았을 때의 암기다. 통계 view(18\%)와 CSV(15\%)보다 이 조건이 훨씬 강하다.
-\item \textbf{tail.} bf(정상 포함 n=20): CSV 63.75/26.94, 통계 42.95/43.83, netFound 32.84/50.68. n=50에서는 netFound+TabPFN 81.2\%, 통계 78.3\%. bot: CSV 0/0(라벨 결함), PCAP 정상 포함 3--10\%, 공격만 통계 64.4/62.5, netFound 11.0/46.1. 3상태 라벨로 재접속 시도를 분리하자 bot이 공격 간 구분에서는 학습 가능해졌지만 benign과의 구분은 여전히 안 된다. web은 test 16행이라 수치(0--32\%)를 해석하지 않는다.
+\item \textbf{설정.} 세 열 모두 class당 n=2·3·5·10·20·50, seed 43--47, XGBoost와 frozen TabPFN, 두 모델에 같은 행, 전체 test. CSV 열은 11-03 채택 실행(test 424,183행), PCAP 두 열은 같은 flow ID·분할·표본(test 340,543행, 공격만 80,761행). 7 family 채점.
+\item \textbf{head 포화는 세 열에서 같다.} 공격만 n=20에서 portscan 98--99.6\%, ddos 89--99\%, dos 85--98\%. n=50으로 가도 변화는 1--2 pp다. 표현은 head의 조기 포화를 바꾸지 않는다. 문제2는 데이터의 성질이다.
+\item \textbf{정상 포함 macro는 표현보다 분류기와의 조합이 가른다.} n=50에서 netFound+TabPFN 71.61\%가 가장 높고 netFound+XGB 57.77\%가 가장 낮다. 통계 view는 65.16/69.04\%, CSV는 63.18/63.67\%. 같은 입력에서 TabPFN$-$XGB가 netFound에서 +0.9$\sim$+13.9 pp로 일관되게 양수이고, 통계 view에서는 $-$1.5$\sim$+3.9 pp, CSV에서는 부호가 섞인다.
+\item \textbf{netFound 수치에는 중복 조건이 붙는다.} L2 train$\to$test 중복이 56\%이므로 netFound view 점수의 일부는 test flow와 토큰열이 같은 train flow를 n개 안에 뽑았을 때의 암기다. 통계 view(18\%)와 CSV(15\%)보다 이 조건이 훨씬 강하다.
+\item \textbf{tail.} bf(정상 포함 n=20): CSV 63.75/26.94, 통계 42.95/43.83, netFound 32.84/50.68; n=50에서 netFound+TabPFN 81.2\%, 통계 78.3\%. bot: CSV 0/0(라벨 결함), PCAP 정상 포함 3--10\%, 공격만 통계 64.4/62.5, netFound 11.0/46.1. 3상태 라벨로 재접속 시도를 분리하자 bot이 공격 간 구분에서는 학습 가능해졌지만 benign과의 구분은 여전히 안 된다. web은 test 16행이라 해석하지 않는다.
 \item \textbf{benign F1.} n=20 netFound+TabPFN 94.94\%, 다른 다섯 조합 88.9--90.9\%. n=50에서는 95--98\%로 수렴한다.
 \end{itemize}
 
@@ -145,12 +265,20 @@ macro & 80,761 & 67.67 & \textbf{70.67} & 75.13 & \textbf{80.93} & 63.25 & \text
 \reportfigure{figures/exp94_pcap_macro_f1.pdf}{세 열의 few-shot learning curve. 위 정상 포함, 아래 공격만. 점은 5 seed 평균, 오차막대는 표본 표준편차.}
 \reportfigure{figures/exp94_pcap_class_f1_n20.pdf}{정상 포함 n=20 family별 F1. 빗금은 XGBoost, 민무늬는 TabPFN. 회색 CSV, 초록 PCAP 통계, 빨강 PCAP netFound.}
 
-\section{판정}
+\section{판정과 남은 작업}
 \begin{itemize}
-\item \textbf{문제1.} 라벨 쪽 하한 0.04\%, 통계 요약 0.28\%(CSV 0.25\%와 동급), netFound 4.86\%. ``PCAP 직접 인코딩이 충돌을 없앤다''는 성립하지 않는다. flow 재구성은 CSV 결함(첫 FIN 종료·RST 무시·TCP-appendix)을 고치지만 그 결함은 2017 충돌의 주원인이 아니었고, 사전학습 header encoder는 통계보다 더 거칠다. 다만 모든 표현에서 oracle 상한이 99.8\% 이상이라 문제1은 성능 상한을 제한하지 않는다.
+\item \textbf{문제1.} ``PCAP 직접 인코딩이 충돌을 없앤다''는 성립하지 않는다. 라벨 쪽 하한 0.04\%, 통계 요약 0.28\%(CSV와 동급), netFound tokenizer 4.86\%. flow 재구성은 CSV의 종료 결함을 고치지만 그 결함은 2017 충돌의 주원인이 아니었고, 사전학습 header encoder는 통계보다 더 거칠다. 다만 모든 표현에서 oracle 상한이 99.8\% 이상이라 문제1은 성능 상한을 제한하지 않는다.
 \item \textbf{문제2.} head family의 n=20 포화는 세 열 모두 같다. 표현이 바꾸는 것은 tail(bf·bot)의 곡선과 TabPFN$-$XGB 차이의 부호다. netFound+TabPFN이 n$\ge$10에서 가장 높지만(정상 포함 n=50 71.6\%), 그 view는 train$\to$test 토큰 중복 56\%라는 조건 위의 수치다.
-\item \textbf{라벨 정책이 더 큰 변수다.} unresolved 154,743 flow(Hulk 138k)를 공격으로 두면 CSV와 같은 충돌·tail 붕괴가 재현될 것이고, benign으로 두면 benign 오탐이 바뀐다. 같은 corpus·인코딩 위의 변형 실험 (a)로 분리한다. PCA 차원은 (b)로 확인한다.
-\item \textbf{결론.} PCAP 전환의 산출물은 ``새 표현''이 아니라 ``분해된 평가 규약''이다. 3상태 라벨, 시간순 분할, 3층 감사와 oracle 상한, unresolved 제외를 본 연구의 평가 프로토콜로 가져간다. CIC2018 전체(450 GB) 수집은 하지 않는다.
+\item \textbf{라벨 정책이 더 큰 변수다.} unresolved 154,743 flow(Hulk 138k)를 공격으로 두면 CSV와 같은 충돌·tail 붕괴가, benign으로 두면 benign 오탐 변화가 예상된다. 같은 corpus·인코딩 위에서 (a) unresolved $\to$ attack / benign, (b) PCA 128 / 512 변형을 실행 중이며 결과를 이 절에 추가한다.
+\item \textbf{결론.} PCAP 전환의 산출물은 ``새 표현''이 아니라 ``분해된 평가 규약''이다. 3상태 라벨, 시간순 분할, 3층 감사와 oracle 상한, unresolved 제외를 본 연구의 평가 프로토콜로 가져간다. CIC2018 전체(450 GB) 수집은 하지 않으며, EXP93은 부분 수집 진단으로 남긴다.
+\end{itemize}
+
+\section{실행 기록}
+\begin{itemize}
+\item \textbf{입력.} \path{data/pcap/cic2017/}의 5개 pcapng(51.2 GB, SHA256은 \path{*.source.json}). 수요일 파일명은 배포본대로 \path{Wednesday-workingHours.pcap}.
+\item \textbf{단계와 시간(KST).} corpus 10:42--11:01(19분), 통계 view 11:04, netFound 인코딩 11:04--11:42(38분, batch 32), PCA 11:44, 3층 감사 11:46, few-shot 11:46--.
+\item \textbf{중단과 재개.} 13:02 host 재부팅으로 few-shot 58/240 job에서 중단. 직전 결과 6개가 0바이트, 미완료 1개를 \path{resumptions/20261104_1310_host_reboot/}에 격리하고 같은 run에서 \texttt{--stage fewshot}으로 재개, 13:35 240/240 완료. corpus·인코딩·PCA·감사는 sha256으로 재부팅 전과 동일함을 확인. RUN\_META에 재개 기록.
+\item \textbf{코드.} \path{scripts/v7/exp94/run_pcap_cic2017.py}(파이프라인), \path{run_variants.py}(변형), \path{analyze_pcap_run.py}(분석), \path{configs/experiments/exp94_pcap_protocol.json}, \path{exp94_cic2017_labels.json}(규칙 53개와 출처).
 \end{itemize}
 
 \sourcepath{tabpfn/results/v7/exp94/20261104\_104228\_pcap\_cic2017\_9faba40e/RUN\_META.json}
@@ -160,5 +288,7 @@ macro & 80,761 & 67.67 & \textbf{70.67} & 75.13 & \textbf{80.93} & 63.25 & \text
 \sourcepath{docs/lablog/evidence/20261104/exp94\_pcap\_summary.json}
 \sourcepath{docs/lablog/evidence/20261103/exp94\_csv\_summary.json}
 \sourcepath{docs/lablog/evidence/20261103/original\_cic2017\_csv\_audit.json}
-\sourcepath{data/pcap/cic2017/*.pcap.source.json}
+\sourcepath{docs/lablog/evidence/20261030/original\_cic2018\_csv\_audit.json}
+\sourcepath{https://github.com/SNL-UCSB/netFound}
+\sourcepath{https://github.com/GintsEngelen/CNS2022\_Code}
 \end{document}
