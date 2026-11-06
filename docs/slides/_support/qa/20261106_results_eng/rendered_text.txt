@@ -1,0 +1,248 @@
+11/06 From CSV to PCAP
+CSV inputs showed clear limits, so features are now built directly from raw packets
+          Prior experiments                                Problems found                       This report
+      CICFlowMeter CSV vectors                            Weak classification                PCAP instead of CSV
+             XGB · TabPFN                            Same features, different labels       Features from netFound,
+       SOTA · proposed models                        Some attacks score high even
+                                                                                            a transformer encoder
+                                                    in few-shot, leaving little to gain
+                                                                                                for network data
+    Evaluation scenarios attempted
+
+
+
+
+                         Question Do packet-based features fix these problems?
+
+Build features from PCAP with the netFound encoder and test whether the problems improve                01 Background   1
+Problem 1 Same Features, Different Labels
+PCAP is captured in a testbed, then CICFlowMeter groups packets into flows and computes fixed statistics
+         Testbed                                PCAP                         CICFlowMeter                                CSV
+   Benign and attack traffic      Raw packets in time order           Group flows · fixed statistics          Statistics vector + label
+Fixed statistics the same 78 formulas per flow · duration · packets sent, received · mean packet length · mean gap · FIN count
+How the same features get different labels
+    ① Main cause: flow boundary                               ② Very short flows                     ③ Labels follow the parent
+        Cuts at the first FIN, ignores RST                   Statistics from 1 or 2 packets                Identical tail flows carry
+       Leftover ACK and FIN become flows                              easily match                         benign and attack labels
+        These make up 25.9% of CIC2017
+
+Evidence Engelen 2021 · Liu 2022 · In our PCAP rebuild, removing tail flows cuts statistics conflicts from 6,367 to 69
+ Data           Flows with identical statistics                   Labels attached
+ CIC2017        Dst port 80 · 1 µs · sent 2 · received 0          BENIGN 2 rows · DoS Hulk 3,360 rows
+ CIC2018        Dst port 21 · 2 µs · sent 1 · received 1          SlowHTTPTest 62,024 rows · FTP 87,297 rows · SSH 10 rows
+The flow boundary defect creates very short flows, and identical statistics get different labels                             02 Problems   2
+Problem 1 Conflicts by Class in the CSVs
+All rows of the original CSVs · Rows in groups with identical statistics but different classes · Ordered by CIC2017 rows
+ class                   CIC2017 rows           Conflicts       Share %           CIC2018 rows      Conflicts        Share %
+ benign                      2,273,097               736           0.03              13,484,708       125,771           0.93
+ dos                           252,661             5,225            2.07                654,300        77,277           11.81
+ portscan                      158,930             1,053           0.66                        –            –               –
+ ddos                          128,027                  6          0.00               1,263,933             0           0.00
+ bf                             13,835                  0          0.00                 380,949      162,479           42.65
+ web                             2,180                  0          0.00                      928            5           0.54
+ bot                             1,966                  0          0.00                  286,191            0           0.00
+ inf                                36                  0          0.00                  161,934       41,279          25.49
+ heartbleed                          11                 0          0.00                        –            –               –
+ Total                      2,830,743              7,020           0.25             16,232,943       406,811            2.51
+CIC2018 attack classes conflict heavily: bf 42.65%, inf 25.49%, dos 11.81% · CIC2017 peaks at dos 2.07%
+Experiments use CIC2017 because of PCAP size (CIC2018 450 GB, CIC2017 51 GB)
+Conflict rows are 2.51% in CIC2018 and 0.25% in CIC2017, and CIC2018 concentrates them in attacks               02 Problems     3
+Problem 2 Some Attacks Score High Even in Few-Shot
+CIC2017 CSV · Attacks only in training and evaluation · n labels per class · Mean of 5 seeds
+
+
+
+
+At n=20: portscan 98%, ddos 94%, dos 92% · At n=50: 98%, 95%, 95%
+web stays at 55% at n=50, and bot 0% is a CSV label defect · Mean scores alone cannot show difficulty
+High-volume attacks are already high at 20 labels, so more labels add little                            02 Problems   4
+From PCAP to Features
+Labels are not used to compute features · The time split comes first so PCA is fit on training data only
+         ① PCAP                        ② Group into flows                        ③ Label                      ④ Time split
+    CIC2017 Mon to Fri                Same protocol, IPs and ports
+                                    Ends at RST · ACK after both FINs
+                                                                           Attacker and victim IPs?
+                                                                          Inside the attack window?
+                                                                                                              By day and attack
+     One file per day                        new SYN · 120 s             Evidence of attack behavior?
+                                                                                                                First 70% train
+                                                                                                          Next 15% val · last 15% test
+       5 files, 51 GB
+
+
+
+             ⑤ Tokenize                             ⑥ netFound                     ⑦ PCA                       ⑧ Evaluate
+     IP hdr len, TOS, length, flags, TTL          Tokens → 512 dims             512 → 64 dims
+    TCP flags, window, seq, ack, urgent
+       No IPs, ports, times or payload              Frozen weights            Fit on training data
+
+
+
+Packets become labelled flows, then header tokens pass through the encoder to give 64 features per flow                  03 Pipeline     5
+What a Packet Looks Like
+A packet is one piece of data on the network · Below: a real 151-byte packet from an office PC to a web server
+  Eth 14 B     IP header 20 B TCP header 20 B                                          payload 97 B
+
+    Ethernet 14 B                  IP header 20 B                    TCP header 20 B                         payload 97 B
+     Delivery to the          Which computer                     Which program                        The actual content
+       next device
+                              Source 192.168.10.9                Source port 1057                     GET /ncsi.txt HTTP/1.1
+      Source device           Destination 69.31.33.224           Destination port 80                  Connection: Close
+    Destination device        Total length 137 B                 seq 2039531092                       User-Agent: Microsoft NCSI
+                              TTL 128                            ack 2775650109                       Host: www.msftncsi.com
+                              Protocol 6 (TCP)                   Flags ACK+PSH
+                                                                 window 256
+
+
+
+
+A packet has headers outside and payload inside, and this work does not read payload content                             03 Pipeline   6
+Grouping One Conversation into a Flow
+A flow is the packets two programs on two computers exchange under one protocol: one conversation
+     Protocol                   IP A                 Port A                  IP B         Port B                If all five
+                                                                                                              values match
+                            Same flow · even when sender and receiver swap
+ Packet              Protocol     From                           To                    Result
+ Request             TCP          192.168.10.9 : 1057            69.31.33.224 : 80     flow A
+ Response            TCP          69.31.33.224 : 80              192.168.10.9 : 1057   flow A direction reversed
+ Auth 1              TCP          192.168.10.9 : 1055            192.168.10.3 : 88     flow B
+ Auth 2              TCP          192.168.10.9 : 1056            192.168.10.3 : 88     flow C different temporary port
+ DNS lookup          UDP          192.168.10.9 : 59285           192.168.10.3 : 53     flow D other protocol and peer
+Why group One packet says little; the whole conversation shows the request, response and end
+Once a conversation ends, the next packet starts a new flow · End conditions follow
+Packets that share the protocol and both IPs and ports form one flow                                              03 Pipeline   7
+Where a Flow Ends: FIN and RST
+→ PC sends ← server sends · The last column shows how each packet is handled · Real Monday packets
+Case 1 Ends with FIN · 192.168.10.9:1057 ↔ 69.31.33.224:80              Case 2 Ends with RST · 192.168.10.51:38488 ↔ 209.15.36.31:80
+   # Time (µs) Dir TCP flag Len payload Flow                               # Time (µs) Dir TCP flag Len payload Flow
+   1         0 → SYN         52       0 flow A                             1         0 → SYN         60       0 flow B
+   2    19,958 ← SYN+ACK 52           0 flow A                             2 42,246 ← SYN+ACK 60              0 flow B
+   3 20,008 → ACK            40       0 flow A                             3 42,350 → ACK            52       0 flow B
+   4 20,083 → ACK+PSH 137            97 flow A                             4 5,079,690 → ACK+FIN 52           0 flow B
+   5 40,027 ← ACK            40       0 flow A                             5 5,084,903 ← ACK+FIN 264        212 flow B
+   6 40,640 ← ACK+PSH 219           179 flow A                             6 5,084,965 → RST         40       0 flow B closes
+   7 40,643 ← ACK+FIN 40              0 flow A                             7 5,121,931 ← ACK         52       0 dropped
+   8 40,685 → ACK            40       0 flow A                             8 5,121,962 → RST         40       0 dropped
+   9 40,689 → ACK+FIN 40              0 flow A                          The PC closed first with FIN at 4, so it answers 5 and 7 with RST
+  10 60,574 ← ACK            40       0 flow A closes                   The flow ends at the first RST · Later tail packets are dropped
+               TCP flags                             Dropped tail packets                               When a flow ends
+       SYN open · ACK acknowledge                     Arrive within 2 s of the close               RST · ACK after both FINs · New SYN
+     PSH deliver now · FIN done sending           At most 2 packets, no SYN or payload                 120 s idle · 120 s since start
+     RST abort at once, no reply needed                                                                UDP and ICMP use time only
+A FIN flow runs to the last ACK, an RST flow to the first RST, and later packets are dropped                                    03 Pipeline   8
+From Header Tokens to netFound Features
+Each packet header becomes numeric tokens fed to netFound · Below: packets of flow A in case 1
+ Packet                 IP hdr     TOS      Total        IP        TTL    TCP window            seq     seq       ack      ack     urgent
+                           len                len      flag               flag                 high     low      high      low
+ Packet 1 SYN               20       0         52         2        128       2 8192               0       0         0        0          0
+ Pkt 2 SYN+ACK              20       0         52         2         56      18 29200              0       0         0        1          0
+ Packet 4 request           20       0       137          2        128      24   256              0       1         0        1          0
+ …                           …       …          …         …          …       …     …              …       …         …        …         …
+                    Header tokens of one flow · 1 packet = 12 numbers · No IPs, ports, times or payload content
+
+     Header tokens                             netFound                               PCA                              feature
+      In packet order, with               Pretrained transformer                  512 → 64 dims                 One flow = 64 values
+       gaps and direction                     Frozen weights                    Fit on training data             One classifier row
+
+                                      netFound a transformer pretrained on network traffic
+                       Learns by predicting masked header tokens in unlabelled traffic, used here as an encoder only
+
+Flow headers enter netFound as tokens and each flow yields 64 features                                                     03 Pipeline      9
+Labelling Flows
+Each flow is judged from left to right · The 53 corrected rules of CNS 2022 are applied as published
+                      Attacker IP ↔          Yes          Inside the           Yes         Evidence of           Yes
+   flow                 victim IP?                     attack window?                   attack behavior?                   Attack
+                                No                                No                                No
+                                          Benign                                          Unresolved
+ Label      Condition                              Handling                                         CNS 2022 Liu et al.
+ Attack     IPs, window and evidence all met       Used as attack                                Error Prevalence in NIDS Datasets
+ Unresolved IPs and window match, no evidence      Excluded from train and test                 Packet-level study of flow and label
+                                                                                                  errors in CIC-IDS 2017 and 2018
+ Benign IPs or window outside the rules            Used as benign                               Published corrected rules and tools
+Evidence FTP and SSH brute force: attacker payload ≥ 1 B
+Evidence Portscan: one SYN with no reply or RST
+
+IPs, window and evidence split flows into attack, unresolved and benign; unresolved flows are excluded                        04 Labels 10
+Final Data
+After deleting residual flows, before the split · CSV: official label rows; PCAP: labelled flows · Ordered by PCAP flows
+ class            Attacks (PCAP flows)                                                                 CSV rows            PCAP flow
+ benign           All of Monday + background of attack days                                             2,273,097           1,609,980
+ portscan         Fri Portscan 161,202 · Thu NMAP 76,947                                                  158,930             238,149
+ dos              Hulk 158,546 · GoldenEye 7,567 · Slowloris 3,859 · Slowhttptest 1,741                   252,661              171,713
+ ddos             LOIC-HTTP                                                                               128,027              95,683
+ bf               FTP 4,021 · SSH 2,961                                                                    13,835               6,982
+ bot              Ares                                                                                      1,966                 736
+ web              Brute Force 73 · XSS 18 · SQL Injection 13                                                2,180                  104
+ inf              Communication 32 · CoolDisk 4                                                                36                   36
+ heartbleed       Heartbleed                                                                                    11                   11
+ Total                                                                                                 2,830,743           2,123,394
+Counts differ from CSV because flow boundaries and labels are corrected · Thursday NMAP is BENIGN in CSV, portscan here
+inf has 25 train and 6 test flows, and heartbleed has 7 train and 2 test flows
+2,123,394 labelled flows across nine classes                                                                              04 Labels 11
+Problem 1 Revisited: Label Conflicts
+After deleting residual flows · Same features, different classes · Concentrated in very short flows
+ feature                            Conflicts             Share       Packets                   Flows Same input %             Conflicts
+                                                                      1                         7,853         97.2                  821
+ CSV 78 statistics                       7,020           0.25%        2                      505,950          97.2              42,443
+ netFound                            43,380              2.04%        3~5                     691,512          92.1                  110
+Remaining Portscan 42,609 · benign 770 · DoS 1                        6~20                    608,631           11.1                   6
+                                                                      21 or more              309,401           0.8                    0
+                            Causes                                                    Side information can help
+         Very short flows have few numbers, mostly fixed                Columns behind the netFound vector, without IP or port values
+         Example scan SYN and refusing RST, 2 packets                   Input                         Conflicts Share Reduced
+             Information netFound drops before input                    netFound                        43,380 2.04%                 –
+                IPs · ports · times · payload content                   + raw seq flag                  42,571 2.00%              1.9%
+                                                                        + ports in the last 60 s           964 0.05% 97.8%
+                                                                        + both                             302 0.01% 99.3%
+                                                                            The 60 s port count alone cuts conflict flows by 97.8%
+
+The remaining 2.04% comes from very short flows and dropped fields; side information cuts it to 0.05%                      05 Results 12
+Problem 2 Revisited: Few-Shot Performance
+All nine classes · Time split · 5 seeds · Same training rows · netFound after deleting residual flows
+                                                                                        macro-F1         XGB TabPFN XGB TabPFN
+                                                                                                        n=20 n=20 n=50 n=50
+                                                                                        CSV              46.9 45.2 53.0    53.6
+                                                                                        netFound         42.9 49.5 48.1    58.8
+                                                                                                    Difference from CSV
+                                                                                                   Both models are close on CSV
+                                                                                                 TabPFN leads clearly on netFound
+                                                                                                 Deletion: −0.5 pp (7 classes, n=50)
+
+      Why TabPFN leads n=50, before deletion                                 netFound + TabPFN n=50 F1 by class
+         Rows equal to training inputs: both models 97.0%                 benign 97.9 · portscan 97.3 · dos 89.9 · ddos 99.1 · bf 94.6
+             Other rows: XGB 91.1% · TabPFN 97.5%                                bot 35.2 · web 10.0 · inf 0.2 · heartbleed 5.1
+               The gap comes from unseen inputs                        inf and heartbleed: 6 and 2 test flows, high recall, low precision
+           PCA vectors suit axis splits poorly (inferred)
+
+netFound + TabPFN scores highest in few-shot, and the gap comes from inputs unseen in training                                05 Results 13
+Few-Shot with Side Information
+Nine-class macro-F1 · Columns behind the netFound vector · 5 seeds · Same training rows · Residual flows deleted
+ Input                                    XGB          XGB         TabPFN         TabPFN val gain pp False alarm %      Portscan F1
+                                         n=20         n=50           n=20           n=50 TabPFN n=50 TabPFN n=50         XGB n=50
+ netFound                                 42.9          48.1          49.5           58.8           –          2.97            94.2
+ + raw seq flag                           43.5         48.4            50.1          59.2        −0.4           3.18           94.9
+ + ports in the last 60 s                  43.1        48.8           50.4           60.2        +2.3          2.48           98.5
+                      Ports in the last 60 s                                                          Raw seq flag
+          TabPFN n=50 +1.4 pp, up in 4 of 5 seeds                                   TabPFN n=50 +0.4 pp, up in 2 of 5 seeds
+                  Validation also +2.3 pp                                                     Validation −0.4 pp
+             Benign false alarms 2.97 → 2.48%                                          Changes stay within seed spread
+               XGB Portscan F1 94.2 → 98.5                                                  so the effect is unclear
+
+
+Ports in the last 60 s help slightly on validation and test; the raw seq flag shows no clear effect                    05 Results 14
+Summary and Next Steps
+     Problem 1 Label conflicts                       Problem 2 Few-shot                             Why PCAP directly
+         Deleting residual flows                     Few-shot still works well                 Correct flow boundaries and labels
+             4.86 → 2.04%                       Nine-class n=50: 58.8%, CSV 53.6%
+                                                                                                 Use packet order and context
+      Remaining: short scan flows               High-volume attacks saturate early
+     60 s port count: down to 0.05%                 bot, web and inf remain low                  Experiment with input design
+
+
+   Next
+       Data       Find more datasets available as PCAP
+      Models      Test SOTA and proposed models on netFound features
+      feature     Compare models with the 60 s port count in the input
+
+Direct PCAP processing fixes data problems; next come more data and SOTA and proposed models                         06 Summary 15
+
