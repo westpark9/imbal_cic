@@ -1,0 +1,1391 @@
+{
+ "schema": 1,
+ "date": "2026-11-05",
+ "run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+ "scope": "Read-only analysis of the corpus, saved predictions and raw PCAP headers. No model was fitted. Candidate comparison uses train to validation only; test is used only for the two reported impact figures.",
+ "residual_flow_rule": "Flow is residual when the previous flow on the same 5-tuple ended by rst or fin_handshake, the gap is 0 to 2 s, packets <= 2, payload is 0, and the first packet has no SYN.",
+ "residual_counts": {
+  "all_flows": 284600,
+  "of": 2425048,
+  "labelled": 146896,
+  "by_status": {
+   "background_benign": [
+    121882,
+    1731862
+   ],
+   "confirmed_attack": [
+    25014,
+    538428
+   ],
+   "unresolved_attempted": [
+    137704,
+    154743
+   ]
+  },
+  "hulk_nopayload": [
+   133626,
+   137908
+  ],
+  "parent_also_residual": 79776,
+  "label_equals_parent_label": 1.0,
+  "gap_seconds": {
+   "median": 0.00015,
+   "p90": 0.013963,
+   "p99": 0.27655,
+   "share_under_1ms": 0.619
+  },
+  "unresolved_remaining": 17039,
+  "composition": {
+   "same_sender_rst_after_rst": 186820,
+   "byte_exact_rst_ack_repeat": 30347,
+   "peer_fin_after_rst": 29123
+  },
+  "after_removal_status": {
+   "background_benign": 1609980,
+   "confirmed_attack": 513414,
+   "unresolved": 17039,
+   "boundary": 15
+  }
+ },
+ "residual_vs_parent_last_packet": {
+  "rst_then_rst_same_sender": 157616,
+  "rst_ack_byte_exact_repeat": 30347,
+  "rst_ack_then_rst_same_sender": 29204,
+  "peer_fin_after_rst": 29123
+ },
+ "candidate_fields_on_L2_conflict_rows": [
+  {
+   "name": "L2 only",
+   "conflict_rows": 110324,
+   "groups": 24,
+   "minority": 4720,
+   "val_acc": 0.904471330878485,
+   "val_benign": 1.0,
+   "val_scan": 0.4335620711166563,
+   "val_seen": 1.0,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 1.0
+  },
+  {
+   "name": "+dst_port",
+   "conflict_rows": 1110,
+   "groups": 23,
+   "minority": 69,
+   "val_acc": 0.9042609153077328,
+   "val_benign": 0.9994937990382182,
+   "val_scan": 0.43480973175296317,
+   "val_seen": 0.8345081536033666,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.6093862815884477
+  },
+  {
+   "name": "+service port",
+   "conflict_rows": 12288,
+   "groups": 28,
+   "minority": 135,
+   "val_acc": 0.9923198316675435,
+   "val_benign": 1.0,
+   "val_scan": 0.9544603867747973,
+   "val_seen": 0.9872698579694897,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.6552346570397112
+  },
+  {
+   "name": "+src+dst port",
+   "conflict_rows": 6,
+   "groups": 2,
+   "minority": 3,
+   "val_acc": 0.9043661230931089,
+   "val_benign": 0.9998734497595545,
+   "val_scan": 0.4335620711166563,
+   "val_seen": 0.33782219884271436,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.15776173285198555
+  },
+  {
+   "name": "+seq==0,ack==0",
+   "conflict_rows": 106013,
+   "groups": 24,
+   "minority": 409,
+   "val_acc": 0.9923198316675435,
+   "val_benign": 1.0,
+   "val_scan": 0.9544603867747973,
+   "val_seen": 1.0,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.6985559566787004
+  },
+  {
+   "name": "+ip id==0",
+   "conflict_rows": 110324,
+   "groups": 24,
+   "minority": 4720,
+   "val_acc": 0.904471330878485,
+   "val_benign": 1.0,
+   "val_scan": 0.4335620711166563,
+   "val_seen": 1.0,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 1.0
+  },
+  {
+   "name": "+tcp hdr len",
+   "conflict_rows": 110324,
+   "groups": 24,
+   "minority": 4720,
+   "val_acc": 0.904471330878485,
+   "val_benign": 1.0,
+   "val_scan": 0.4335620711166563,
+   "val_seen": 1.0,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 1.0
+  },
+  {
+   "name": "+absolute seq (random)",
+   "conflict_rows": 216,
+   "groups": 5,
+   "minority": 44,
+   "val_acc": 0.9923198316675435,
+   "val_benign": 1.0,
+   "val_scan": 0.9544603867747973,
+   "val_seen": 0.09289847448711204,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.001444043321299639
+  },
+  {
+   "name": "+client targets 60s",
+   "conflict_rows": 39839,
+   "groups": 28,
+   "minority": 807,
+   "val_acc": 0.9828511309836928,
+   "val_benign": 0.9946848899012908,
+   "val_scan": 0.924516531503431,
+   "val_seen": 0.9989479221462388,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.6620938628158844
+  },
+  {
+   "name": "+client fail 60s",
+   "conflict_rows": 73296,
+   "groups": 28,
+   "minority": 2098,
+   "val_acc": 0.9828511309836928,
+   "val_benign": 0.9877246266767907,
+   "val_scan": 0.9588271990018715,
+   "val_seen": 1.0,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.9981949458483754
+  },
+  {
+   "name": "+pair ports 60s",
+   "conflict_rows": 12667,
+   "groups": 19,
+   "minority": 246,
+   "val_acc": 0.998211467648606,
+   "val_benign": 1.0,
+   "val_scan": 0.9893948845913911,
+   "val_seen": 0.9998947922146239,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.6736462093862816
+  },
+  {
+   "name": "+pair flows 60s",
+   "conflict_rows": 15439,
+   "groups": 28,
+   "minority": 808,
+   "val_acc": 0.9822198842714361,
+   "val_benign": 0.9926600860541634,
+   "val_scan": 0.9307548346849657,
+   "val_seen": 0.9058390320883746,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.8335740072202166
+  },
+  {
+   "name": "+service flows 60s",
+   "conflict_rows": 42944,
+   "groups": 38,
+   "minority": 4612,
+   "val_acc": 0.9068911099421357,
+   "val_benign": 0.9998734497595545,
+   "val_scan": 0.44853399875233935,
+   "val_seen": 0.9059442398737506,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 1.0
+  },
+  {
+   "name": "+client targets 2s",
+   "conflict_rows": 57283,
+   "groups": 45,
+   "minority": 775,
+   "val_acc": 0.9873750657548659,
+   "val_benign": 0.9981017463933182,
+   "val_scan": 0.9344978165938864,
+   "val_seen": 0.9997895844292478,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.7346570397111913
+  },
+  {
+   "name": "+pair ports 2s",
+   "conflict_rows": 16457,
+   "groups": 28,
+   "minority": 546,
+   "val_acc": 0.9917937927406628,
+   "val_benign": 1.0,
+   "val_scan": 0.9513412351840299,
+   "val_seen": 0.9998947922146239,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.6945848375451263
+  },
+  {
+   "name": "+service port + client targets 60s",
+   "conflict_rows": 4986,
+   "groups": 21,
+   "minority": 39,
+   "val_acc": 0.9592845870594424,
+   "val_benign": 0.9994937990382182,
+   "val_scan": 0.7610729881472239,
+   "val_seen": 0.895528669121515,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.42707581227436825
+  },
+  {
+   "name": "+service port + pair ports 60s + client fail",
+   "conflict_rows": 46,
+   "groups": 12,
+   "minority": 15,
+   "val_acc": 0.9558127301420305,
+   "val_benign": 1.0,
+   "val_scan": 0.7379912663755459,
+   "val_seen": 0.9147816938453446,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.5231046931407942
+  },
+  {
+   "name": "+seq==0 + pair ports 60s",
+   "conflict_rows": 626,
+   "groups": 16,
+   "minority": 22,
+   "val_acc": 0.9998947922146239,
+   "val_benign": 1.0,
+   "val_scan": 0.9993761696818465,
+   "val_seen": 0.9998947922146239,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.6678700361010831
+  },
+  {
+   "name": "+seq==0 + service port",
+   "conflict_rows": 1606,
+   "groups": 22,
+   "minority": 109,
+   "val_acc": 0.992845870594424,
+   "val_benign": 1.0,
+   "val_scan": 0.9575795383655645,
+   "val_seen": 0.9872698579694897,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.6530685920577617
+  },
+  {
+   "name": "+IP pair + day (rule itself)",
+   "conflict_rows": 18,
+   "groups": 3,
+   "minority": 6,
+   "val_acc": 0.9998947922146239,
+   "val_benign": 1.0,
+   "val_scan": 0.9993761696818465,
+   "val_seen": 0.45597054182009467,
+   "xday_acc": 0.6725631768953069,
+   "xday_benign": 1.0,
+   "xday_scan": 0.433832709113608,
+   "xday_seen": 0.0
+  }
+ ],
+ "rank_power_class_vs_benign_validation": {
+  "all|dos": {
+   "n": 25761,
+   "stats": [
+    [
+     0.9993785349928528,
+     "bwd_len_std"
+    ],
+    [
+     0.9971533499514815,
+     "bwd_len_mean"
+    ],
+    [
+     0.9959226921208044,
+     "bwd_len_max"
+    ]
+   ],
+   "ctx": [
+    [
+     1.0,
+     "srv_flows_60"
+    ],
+    [
+     1.0,
+     "pair_flows_60"
+    ],
+    [
+     1.0,
+     "cli_flows_60"
+    ]
+   ]
+  },
+  "all|portscan": {
+   "n": 39470,
+   "stats": [
+    [
+     0.9449988515749486,
+     "bytes_per_s"
+    ],
+    [
+     0.9446329522851338,
+     "fwd_payload_bytes"
+    ],
+    [
+     0.9288115551685051,
+     "duration_us"
+    ]
+   ],
+   "ctx": [
+    [
+     0.9951631401356624,
+     "pair_ports_60"
+    ],
+    [
+     0.993074073253431,
+     "pair_ports_2"
+    ],
+    [
+     0.9888879153329715,
+     "cli_fail_60"
+    ]
+   ]
+  },
+  "all|ddos": {
+   "n": 14352,
+   "stats": [
+    [
+     0.9998940482546259,
+     "bwd_len_std"
+    ],
+    [
+     0.9988276717312451,
+     "bwd_len_max"
+    ],
+    [
+     0.9986853451645201,
+     "bwd_len_mean"
+    ]
+   ],
+   "ctx": [
+    [
+     0.9997613355967957,
+     "cli_fail_60"
+    ],
+    [
+     0.985530008199277,
+     "cli_fail_2"
+    ],
+    [
+     0.9820160401444993,
+     "srv_flows_60"
+    ]
+   ]
+  },
+  "all|bf": {
+   "n": 1047,
+   "stats": [
+    [
+     0.9964392810812267,
+     "dst_port"
+    ],
+    [
+     0.9898182686052376,
+     "fwd_psh"
+    ],
+    [
+     0.989176567108712,
+     "down_up_ratio"
+    ]
+   ],
+   "ctx": [
+    [
+     0.9553774554525193,
+     "cli_targets_60"
+    ],
+    [
+     0.9024513813010253,
+     "cli_flows_2"
+    ],
+    [
+     0.8620990394182422,
+     "cli_fail_60"
+    ]
+   ]
+  },
+  "all|bot": {
+   "n": 110,
+   "stats": [
+    [
+     0.9221318890287513,
+     "dst_port"
+    ],
+    [
+     0.9014739451610793,
+     "init_win_bwd"
+    ],
+    [
+     0.869260024867291,
+     "fin_count"
+    ]
+   ],
+   "ctx": [
+    [
+     0.9398790370416252,
+     "cli_flows_2"
+    ],
+    [
+     0.8855846175542917,
+     "cli_flows_60"
+    ],
+    [
+     0.8663613547039459,
+     "pair_flows_2"
+    ]
+   ]
+  },
+  "all|web": {
+   "n": 16,
+   "stats": [
+    [
+     0.999801634273748,
+     "fwd_psh"
+    ],
+    [
+     0.9996041106094026,
+     "psh_count"
+    ],
+    [
+     0.999355702346995,
+     "fwd_payload_bytes"
+    ]
+   ],
+   "ctx": [
+    [
+     0.9781573953244873,
+     "cli_fail_60"
+    ],
+    [
+     0.9553774554525193,
+     "cli_targets_60"
+    ],
+    [
+     0.9034900819542765,
+     "cli_flows_2"
+    ]
+   ]
+  },
+  "short|dos": {
+   "n": 14,
+   "stats": [
+    [
+     0.8455191925370852,
+     "rst_count"
+    ],
+    [
+     0.8148045791186944,
+     "flow_iat_min"
+    ],
+    [
+     0.8148045791186944,
+     "flow_iat_mean"
+    ]
+   ],
+   "ctx": [
+    [
+     1.0,
+     "srv_flows_60"
+    ],
+    [
+     1.0,
+     "pair_flows_60"
+    ],
+    [
+     1.0,
+     "cli_flows_60"
+    ]
+   ]
+  },
+  "short|portscan": {
+   "n": 35822,
+   "stats": [
+    [
+     0.9458879326267926,
+     "syn_count"
+    ],
+    [
+     0.9196450414557189,
+     "init_win_fwd"
+    ],
+    [
+     0.8561660723717888,
+     "packets_per_s"
+    ]
+   ],
+   "ctx": [
+    [
+     0.9971739114323478,
+     "pair_ports_60"
+    ],
+    [
+     0.9958434103529807,
+     "pair_ports_2"
+    ],
+    [
+     0.9934780433669462,
+     "cli_targets_2"
+    ]
+   ]
+  }
+ },
+ "error_share_on_conflict_rows": {
+  "flowstats-v1|n20|xgb": {
+   "err": 54180.2,
+   "err_conf": 206.0,
+   "f1": 0.5512154699511779,
+   "f1_fix": 0.5516657165502546,
+   "bot": 0.103720248873919,
+   "bot_fix": 0.103720248873919,
+   "bf": 0.42954514989351555,
+   "bf_fix": 0.42954514989351555,
+   "web": 0.0035994714255598212,
+   "web_fix": 0.0035994714255598212,
+   "leak": 48980.4,
+   "leak_conf": 43.2,
+   "leak_le2": 0.24036926311764728,
+   "leak_pay0": 0.3165623942468593,
+   "leak_rst": 0.3550235852428127
+  },
+  "flowstats-v1|n20|tabpfn": {
+   "err": 44148.8,
+   "err_conf": 365.6,
+   "f1": 0.5746038363676635,
+   "f1_fix": 0.5754042881845567,
+   "bot": 0.02858321920496243,
+   "bot_fix": 0.02858321920496243,
+   "bf": 0.43831260387518833,
+   "bf_fix": 0.43831260387518833,
+   "web": 0.003059261425424001,
+   "web_fix": 0.003059261425424001,
+   "leak": 39884.4,
+   "leak_conf": 41.0,
+   "leak_le2": 0.28717861951713197,
+   "leak_pay0": 0.29377989374749996,
+   "leak_rst": 0.36346648883888905
+  },
+  "flowstats-v1|n50|xgb": {
+   "err": 25173.0,
+   "err_conf": 48.6,
+   "f1": 0.6516244513466497,
+   "f1_fix": 0.6517091744638743,
+   "bot": 0.18089481543205044,
+   "bot_fix": 0.18089481543205044,
+   "bf": 0.7267509304189379,
+   "bf_fix": 0.7267509304189379,
+   "web": 0.0022024550661108983,
+   "web_fix": 0.0022024550661108983,
+   "leak": 21230.2,
+   "leak_conf": 45.2,
+   "leak_le2": 0.40208216417373127,
+   "leak_pay0": 0.43950440209509767,
+   "leak_rst": 0.4580846281651789
+  },
+  "flowstats-v1|n50|tabpfn": {
+   "err": 20296.2,
+   "err_conf": 50.8,
+   "f1": 0.6903583921462063,
+   "f1_fix": 0.6904388431440532,
+   "bot": 0.25008749347265075,
+   "bot_fix": 0.25008749347265075,
+   "bf": 0.7828142863301977,
+   "bf_fix": 0.7828142863301977,
+   "web": 0.04281892518471617,
+   "web_fix": 0.04281892518471617,
+   "leak": 17767.2,
+   "leak_conf": 48.2,
+   "leak_le2": 0.5928032109401304,
+   "leak_pay0": 0.6206804155824697,
+   "leak_rst": 0.5615142333469629
+  },
+  "netfound-v2-small|n20|xgb": {
+   "err": 58081.0,
+   "err_conf": 4650.0,
+   "f1": 0.50617833860161,
+   "f1_fix": 0.5137954324982343,
+   "bot": 0.039902458621659,
+   "bot_fix": 0.03991296695383957,
+   "bf": 0.32842600923876664,
+   "bf_fix": 0.32842600923876664,
+   "web": 0.001286319016789968,
+   "web_fix": 0.0012864340332512999,
+   "leak": 48638.8,
+   "leak_conf": 4435.2,
+   "leak_le2": 0.2599559193191625,
+   "leak_pay0": 0.2582762407827944,
+   "leak_rst": 0.34932322159754814
+  },
+  "netfound-v2-small|n20|tabpfn": {
+   "err": 27427.4,
+   "err_conf": 3370.6,
+   "f1": 0.6021308036753876,
+   "f1_fix": 0.6080761801125718,
+   "bot": 0.044890053693580366,
+   "bot_fix": 0.04532514733786675,
+   "bf": 0.5068037249631568,
+   "bf_fix": 0.5068181314132837,
+   "web": 0.003096128322517648,
+   "web_fix": 0.003096128322517648,
+   "leak": 21778.4,
+   "leak_conf": 3146.4,
+   "leak_le2": 0.3019521492312158,
+   "leak_pay0": 0.35139897449981405,
+   "leak_rst": 0.4217324782234345
+  },
+  "netfound-v2-small|n50|xgb": {
+   "err": 28478.4,
+   "err_conf": 3503.2,
+   "f1": 0.5776795185393897,
+   "f1_fix": 0.5837957249335554,
+   "bot": 0.08731095349835069,
+   "bot_fix": 0.0873384321419823,
+   "bf": 0.40205362593159766,
+   "bf_fix": 0.40205362593159766,
+   "web": 0.0021861476187019432,
+   "web_fix": 0.0021861476187019432,
+   "leak": 20545.8,
+   "leak_conf": 3470.4,
+   "leak_le2": 0.37894653162116476,
+   "leak_pay0": 0.3518651177353106,
+   "leak_rst": 0.47108149256017456
+  },
+  "netfound-v2-small|n50|tabpfn": {
+   "err": 8793.0,
+   "err_conf": 1881.2,
+   "f1": 0.7161459838424469,
+   "f1_fix": 0.7198774310780436,
+   "bot": 0.299893519252537,
+   "bot_fix": 0.299893519252537,
+   "bf": 0.8122701928399618,
+   "bf_fix": 0.8122701928399618,
+   "web": 0.04080133196752271,
+   "web_fix": 0.04080133196752271,
+   "leak": 5723.4,
+   "leak_conf": 1643.4,
+   "leak_le2": 0.5708028189413555,
+   "leak_pay0": 0.5639970948566053,
+   "leak_rst": 0.6203212871220185
+  }
+ },
+ "macro_f1_saved_predictions_without_residual_test_rows": {
+  "flowstats-v1|20|xgb": {
+   "f1": 0.5512,
+   "f1_nt": 0.5683,
+   "bf": 0.4295,
+   "bf_nt": 0.4296,
+   "bot": 0.1037,
+   "bot_nt": 0.1065,
+   "web": 0.0036,
+   "web_nt": 0.0036,
+   "leak": 48980.4,
+   "leak_tail": 9237.6,
+   "err": 54180.2,
+   "err_tail": 10177.6
+  },
+  "flowstats-v1|20|tabpfn": {
+   "f1": 0.5746,
+   "f1_nt": 0.5901,
+   "bf": 0.4383,
+   "bf_nt": 0.4383,
+   "bot": 0.0286,
+   "bot_nt": 0.0286,
+   "web": 0.0031,
+   "web_nt": 0.0031,
+   "leak": 39884.4,
+   "leak_tail": 8530.6,
+   "err": 44148.8,
+   "err_tail": 10089.4
+  },
+  "flowstats-v1|50|xgb": {
+   "f1": 0.6516,
+   "f1_nt": 0.664,
+   "bf": 0.7268,
+   "bf_nt": 0.7271,
+   "bot": 0.1809,
+   "bot_nt": 0.1878,
+   "web": 0.0022,
+   "web_nt": 0.0022,
+   "leak": 21230.2,
+   "leak_tail": 6857.8,
+   "err": 25173.0,
+   "err_tail": 6878.6
+  },
+  "flowstats-v1|50|tabpfn": {
+   "f1": 0.6904,
+   "f1_nt": 0.7043,
+   "bf": 0.7828,
+   "bf_nt": 0.7828,
+   "bot": 0.2501,
+   "bot_nt": 0.2501,
+   "web": 0.0428,
+   "web_nt": 0.0428,
+   "leak": 17767.2,
+   "leak_tail": 8797.6,
+   "err": 20296.2,
+   "err_tail": 8835.6
+  },
+  "netfound-v2-small|20|xgb": {
+   "f1": 0.5062,
+   "f1_nt": 0.5216,
+   "bf": 0.3284,
+   "bf_nt": 0.3288,
+   "bot": 0.0399,
+   "bot_nt": 0.0399,
+   "web": 0.0013,
+   "web_nt": 0.0013,
+   "leak": 48638.8,
+   "leak_tail": 9270.4,
+   "err": 58081.0,
+   "err_tail": 10206.2
+  },
+  "netfound-v2-small|20|tabpfn": {
+   "f1": 0.6021,
+   "f1_nt": 0.614,
+   "bf": 0.5068,
+   "bf_nt": 0.5068,
+   "bot": 0.0449,
+   "bot_nt": 0.0456,
+   "web": 0.0031,
+   "web_nt": 0.0031,
+   "leak": 21778.4,
+   "leak_tail": 5880.2,
+   "err": 27427.4,
+   "err_tail": 6829.2
+  },
+  "netfound-v2-small|50|xgb": {
+   "f1": 0.5777,
+   "f1_nt": 0.5878,
+   "bf": 0.4021,
+   "bf_nt": 0.4023,
+   "bot": 0.0873,
+   "bot_nt": 0.0876,
+   "web": 0.0022,
+   "web_nt": 0.0022,
+   "leak": 20545.8,
+   "leak_tail": 6253.4,
+   "err": 28478.4,
+   "err_tail": 6276.4
+  },
+  "netfound-v2-small|50|tabpfn": {
+   "f1": 0.7161,
+   "f1_nt": 0.7213,
+   "bf": 0.8123,
+   "bf_nt": 0.8123,
+   "bot": 0.2999,
+   "bot_nt": 0.3,
+   "web": 0.0408,
+   "web_nt": 0.0408,
+   "leak": 5723.4,
+   "leak_tail": 2594.8,
+   "err": 8793.0,
+   "err_tail": 2824.0
+  }
+ },
+ "caveats": [
+  "Row removal assumes residual packets are dropped, leaving parent tokens unchanged.",
+  "Macro-F1 without residual rows is not a retrain; few-shot samples would change.",
+  "Portscan conflict evidence in validation comes almost entirely from the Thursday session; the cross-day lookup could not decide because Friday train has no matching reply type."
+ ],
+ "conflict_rows_by_label_policy": {
+  "exclude": {
+   "L1": {
+    "before": {
+     "rows": 2270243,
+     "conflict_rows": 913,
+     "pct": 0.04,
+     "groups": 9,
+     "minority": 12
+    },
+    "after": {
+     "rows": 2123347,
+     "conflict_rows": 2,
+     "pct": 0.0,
+     "groups": 1,
+     "minority": 1
+    }
+   },
+   "L2": {
+    "before": {
+     "rows": 2270243,
+     "conflict_rows": 110324,
+     "pct": 4.86,
+     "groups": 24,
+     "minority": 4720
+    },
+    "after": {
+     "rows": 2123347,
+     "conflict_rows": 43380,
+     "pct": 2.043,
+     "groups": 19,
+     "minority": 212
+    }
+   },
+   "L3s": {
+    "before": {
+     "rows": 2270243,
+     "conflict_rows": 6367,
+     "pct": 0.28,
+     "groups": 143,
+     "minority": 172
+    },
+    "after": {
+     "rows": 2123347,
+     "conflict_rows": 69,
+     "pct": 0.003,
+     "groups": 11,
+     "minority": 11
+    }
+   }
+  },
+  "attack": {
+   "L1": {
+    "before": {
+     "rows": 2424941,
+     "conflict_rows": 979,
+     "pct": 0.04,
+     "groups": 18,
+     "minority": 21
+    },
+    "after": {
+     "rows": 2140341,
+     "conflict_rows": 8,
+     "pct": 0.0,
+     "groups": 4,
+     "minority": 4
+    }
+   },
+   "L2": {
+    "before": {
+     "rows": 2424941,
+     "conflict_rows": 115687,
+     "pct": 4.771,
+     "groups": 30,
+     "minority": 6341
+    },
+    "after": {
+     "rows": 2140341,
+     "conflict_rows": 47141,
+     "pct": 2.202,
+     "groups": 24,
+     "minority": 279
+    }
+   },
+   "L3s": {
+    "before": {
+     "rows": 2424941,
+     "conflict_rows": 138527,
+     "pct": 5.713,
+     "groups": 815,
+     "minority": 1232
+    },
+    "after": {
+     "rows": 2140341,
+     "conflict_rows": 75,
+     "pct": 0.004,
+     "groups": 14,
+     "minority": 14
+    }
+   }
+  },
+  "benign": {
+   "L1": {
+    "before": {
+     "rows": 2424941,
+     "conflict_rows": 131418,
+     "pct": 5.419,
+     "groups": 12,
+     "minority": 39
+    },
+    "after": {
+     "rows": 2140341,
+     "conflict_rows": 2,
+     "pct": 0.0,
+     "groups": 1,
+     "minority": 1
+    }
+   },
+   "L3s": {
+    "before": {
+     "rows": 2424941,
+     "conflict_rows": 136899,
+     "pct": 5.645,
+     "groups": 144,
+     "minority": 173
+    },
+    "after": {
+     "rows": 2140341,
+     "conflict_rows": 69,
+     "pct": 0.003,
+     "groups": 11,
+     "minority": 11
+    }
+   }
+  },
+  "check": "attack before values equal variants run label_attack/audit3.json: L1 979, L2 115687, L3 stats 138527; benign L1 131418, L3 stats 136899."
+ },
+ "n2_start_point": {
+  "note": "Saved predictions at each budget. XGB tree counts and cpu_vs_saved come from a CPU refit of the same settings and rows; 1-NN on the same rows after a quantile transform fitted on unlabelled train rows. Scratch diagnostics, not registered results.",
+  "views": {
+   "flowstats-v1": {
+    "2": {
+     "xgb_mean": 0.3662172173282069,
+     "tabpfn_mean": 0.3549851136527267,
+     "paired_sd": 0.05603108020906611,
+     "max_abs_seed_gap": 0.06845549158963671,
+     "agreement": 0.639331303242175,
+     "split_trees_of_2100": 660.4,
+     "max_leaves": 2,
+     "same_xgb_cpu_vs_saved": 0.648045,
+     "one_nn": 0.3793725834019529
+    },
+    "3": {
+     "xgb_mean": 0.4167531037237563,
+     "tabpfn_mean": 0.40184115811812254,
+     "paired_sd": 0.0640628620196303,
+     "max_abs_seed_gap": 0.11651986095963984,
+     "agreement": 0.7680304689862953,
+     "split_trees_of_2100": 764.8,
+     "max_leaves": 3,
+     "same_xgb_cpu_vs_saved": 0.8760450000000001,
+     "one_nn": null
+    },
+    "5": {
+     "xgb_mean": 0.4566150018231602,
+     "tabpfn_mean": 0.4735325262771052,
+     "paired_sd": 0.02502868917473176,
+     "max_abs_seed_gap": 0.04955115989147124,
+     "agreement": 0.8084371136684648,
+     "split_trees_of_2100": 913.2,
+     "max_leaves": 4,
+     "same_xgb_cpu_vs_saved": 0.95684,
+     "one_nn": null
+    },
+    "10": {
+     "xgb_mean": 0.49618782593108773,
+     "tabpfn_mean": 0.5183732586600532,
+     "paired_sd": 0.02374623448241885,
+     "max_abs_seed_gap": 0.048137680686166806,
+     "agreement": 0.8376622041856681,
+     "split_trees_of_2100": 1038.8,
+     "max_leaves": 5,
+     "same_xgb_cpu_vs_saved": 0.9607749999999999,
+     "one_nn": null
+    },
+    "20": {
+     "xgb_mean": 0.5512154699511779,
+     "tabpfn_mean": 0.5746038363676635,
+     "paired_sd": 0.043032372869026274,
+     "max_abs_seed_gap": 0.060410967114972514,
+     "agreement": 0.8695078154594281,
+     "split_trees_of_2100": 1163.8,
+     "max_leaves": 7,
+     "same_xgb_cpu_vs_saved": 0.97525,
+     "one_nn": null
+    },
+    "50": {
+     "xgb_mean": 0.6516244513466497,
+     "tabpfn_mean": 0.6903583921462063,
+     "paired_sd": 0.030195967633113375,
+     "max_abs_seed_gap": 0.08952250176177501,
+     "agreement": 0.9502506291422815,
+     "split_trees_of_2100": 1384.4,
+     "max_leaves": 12,
+     "same_xgb_cpu_vs_saved": 0.97008,
+     "one_nn": 0.599245814943638
+    }
+   },
+   "netfound-v2-small": {
+    "2": {
+     "xgb_mean": 0.22719538764736114,
+     "tabpfn_mean": 0.23636380101458423,
+     "paired_sd": 0.049349078774276245,
+     "max_abs_seed_gap": 0.0728449078544802,
+     "agreement": 0.33851819006704,
+     "split_trees_of_2100": 644.8,
+     "max_leaves": 2,
+     "same_xgb_cpu_vs_saved": 0.42172,
+     "one_nn": 0.2181615678142737
+    },
+    "3": {
+     "xgb_mean": 0.263048965609911,
+     "tabpfn_mean": 0.3030840618325457,
+     "paired_sd": 0.05736641878558234,
+     "max_abs_seed_gap": 0.13616422985126608,
+     "agreement": 0.48025476958856883,
+     "split_trees_of_2100": 674.0,
+     "max_leaves": 3,
+     "same_xgb_cpu_vs_saved": 0.8041250000000002,
+     "one_nn": null
+    },
+    "5": {
+     "xgb_mean": 0.3025274520833972,
+     "tabpfn_mean": 0.38113220481376164,
+     "paired_sd": 0.05398163456840148,
+     "max_abs_seed_gap": 0.139242046944338,
+     "agreement": 0.4703394285009529,
+     "split_trees_of_2100": 783.2,
+     "max_leaves": 4,
+     "same_xgb_cpu_vs_saved": 0.848255,
+     "one_nn": null
+    },
+    "10": {
+     "xgb_mean": 0.4549560729164724,
+     "tabpfn_mean": 0.5325181100756161,
+     "paired_sd": 0.046827308726612914,
+     "max_abs_seed_gap": 0.14273337340730968,
+     "agreement": 0.7560601744860413,
+     "split_trees_of_2100": 993.2,
+     "max_leaves": 5,
+     "same_xgb_cpu_vs_saved": 0.9272450000000001,
+     "one_nn": null
+    },
+    "20": {
+     "xgb_mean": 0.50617833860161,
+     "tabpfn_mean": 0.6021308036753876,
+     "paired_sd": 0.04314487199345941,
+     "max_abs_seed_gap": 0.16249918090473492,
+     "agreement": 0.8541082917575753,
+     "split_trees_of_2100": 1125.4,
+     "max_leaves": 8,
+     "same_xgb_cpu_vs_saved": 0.9599900000000001,
+     "one_nn": null
+    },
+    "50": {
+     "xgb_mean": 0.5776795185393897,
+     "tabpfn_mean": 0.7161459838424469,
+     "paired_sd": 0.029516047358334883,
+     "max_abs_seed_gap": 0.18205831375337733,
+     "agreement": 0.929280590116373,
+     "split_trees_of_2100": 1338.8,
+     "max_leaves": 12,
+     "same_xgb_cpu_vs_saved": 0.981545,
+     "one_nn": 0.46457591646261387
+    }
+   },
+   "csv": {
+    "2": {
+     "xgb_mean": 0.2674409419380467,
+     "tabpfn_mean": 0.25090636916442755,
+     "paired_sd": 0.10261792569428879,
+     "max_abs_seed_gap": 0.11970505955903732,
+     "agreement": 0.46721108578137266,
+     "split_trees_of_2100": 892.6,
+     "max_leaves": 2,
+     "same_xgb_cpu_vs_saved": 0.714665,
+     "one_nn": 0.2911059774765059
+    },
+    "3": {
+     "xgb_mean": 0.3128712418150844,
+     "tabpfn_mean": 0.344769625942363,
+     "paired_sd": 0.10130979960896268,
+     "max_abs_seed_gap": 0.146834356443795,
+     "agreement": 0.5267599125848985,
+     "split_trees_of_2100": 1159.4,
+     "max_leaves": 3,
+     "same_xgb_cpu_vs_saved": 0.9076700000000001,
+     "one_nn": null
+    },
+    "5": {
+     "xgb_mean": 0.40901370662306,
+     "tabpfn_mean": 0.4409813763145486,
+     "paired_sd": 0.10327536957207445,
+     "max_abs_seed_gap": 0.17526019331978282,
+     "agreement": 0.5925211524271363,
+     "split_trees_of_2100": 1307.0,
+     "max_leaves": 5,
+     "same_xgb_cpu_vs_saved": 0.9541499999999999,
+     "one_nn": null
+    },
+    "10": {
+     "xgb_mean": 0.5022153593174299,
+     "tabpfn_mean": 0.5250968385519059,
+     "paired_sd": 0.0858840961596594,
+     "max_abs_seed_gap": 0.1672572656768752,
+     "agreement": 0.6906806732000105,
+     "split_trees_of_2100": 1468.0,
+     "max_leaves": 7,
+     "same_xgb_cpu_vs_saved": 0.9254950000000001,
+     "one_nn": null
+    },
+    "20": {
+     "xgb_mean": 0.6055609359859664,
+     "tabpfn_mean": 0.5681528073760557,
+     "paired_sd": 0.019102652977260534,
+     "max_abs_seed_gap": 0.07012327331795432,
+     "agreement": 0.8769681953307888,
+     "split_trees_of_2100": 1584.0,
+     "max_leaves": 9,
+     "same_xgb_cpu_vs_saved": 0.971675,
+     "one_nn": null
+    },
+    "50": {
+     "xgb_mean": 0.6318475900797236,
+     "tabpfn_mean": 0.6366897709145449,
+     "paired_sd": 0.03773599281292773,
+     "max_abs_seed_gap": 0.0645365033091354,
+     "agreement": 0.9190627630055896,
+     "split_trees_of_2100": 1739.2,
+     "max_leaves": 15,
+     "same_xgb_cpu_vs_saved": 0.9862400000000001,
+     "one_nn": 0.5484737925229753
+    }
+   }
+  }
+ },
+ "candidate_fields_after_residual_removal": [
+  {
+   "name": "없음",
+   "conflict_rows": 43380,
+   "groups": 19,
+   "minority": 212,
+   "val_rows": 831,
+   "val_acc": 0.9566787003610109,
+   "val_benign": 1.0,
+   "val_scan": 0.9507523939808481,
+   "val_seen": 1.0
+  },
+  {
+   "name": "목적 포트",
+   "conflict_rows": 199,
+   "groups": 15,
+   "minority": 58,
+   "val_rows": 831,
+   "val_acc": 0.9566787003610109,
+   "val_benign": 1.0,
+   "val_scan": 0.9507523939808481,
+   "val_seen": 0.9193742478941035
+  },
+  {
+   "name": "서비스 포트",
+   "conflict_rows": 841,
+   "groups": 18,
+   "minority": 61,
+   "val_rows": 831,
+   "val_acc": 0.9602888086642599,
+   "val_benign": 1.0,
+   "val_scan": 0.9548563611491108,
+   "val_seen": 0.8904933814681107
+  },
+  {
+   "name": "원본 seq가 0인지",
+   "conflict_rows": 42571,
+   "groups": 18,
+   "minority": 64,
+   "val_rows": 831,
+   "val_acc": 0.9939831528279182,
+   "val_benign": 1.0,
+   "val_scan": 0.9931600547195623,
+   "val_seen": 1.0
+  },
+  {
+   "name": "같은 IP 쌍의 최근 60초 포트 수",
+   "conflict_rows": 1143,
+   "groups": 16,
+   "minority": 27,
+   "val_rows": 831,
+   "val_acc": 0.9987966305655837,
+   "val_benign": 1.0,
+   "val_scan": 0.9986320109439124,
+   "val_seen": 0.9987966305655837
+  },
+  {
+   "name": "클라이언트의 최근 60초 접촉 대상 수",
+   "conflict_rows": 23487,
+   "groups": 19,
+   "minority": 50,
+   "val_rows": 831,
+   "val_acc": 0.9843561973525873,
+   "val_benign": 0.96,
+   "val_scan": 0.987688098495212,
+   "val_seen": 0.9987966305655837
+  }
+ ],
+ "netfound_pca_rounded_3dp": {
+  "cross_label_rows": 110324,
+  "groups": 24,
+  "pct": 4.86,
+  "train_to_test_dup_pct": 56.2,
+  "note": "Exact float32 hashing in audit3 split identical token flows on GPU noise and undercounted 67,765 rows."
+ },
+ "fewshot_overlap_n50_netfound": {
+  "test_rows_equal_to_350_train_rows_pct": 8.69,
+  "acc_on_those": {
+   "xgb": 97.02,
+   "tabpfn": 97.02
+  },
+  "acc_on_rest": {
+   "xgb": 91.13,
+   "tabpfn": 97.45
+  },
+  "full_train_dup_pct": 56.1
+ },
+ "token_overlap_labelled": {
+  "all": {
+   "rows": 2270243,
+   "distinct": 965200,
+   "in_identical_group_pct": 59.0
+  },
+  "no_residual": {
+   "rows": 2123347,
+   "distinct": 949165,
+   "in_identical_group_pct": 56.8
+  },
+  "by_packets": [
+   {
+    "packets": "1",
+    "rows": 129117,
+    "distinct": 2196,
+    "pct": 99.0,
+    "rows_no_residual": 7853
+   },
+   {
+    "packets": "2",
+    "rows": 531582,
+    "distinct": 34845,
+    "pct": 94.8,
+    "rows_no_residual": 505950
+   },
+   {
+    "packets": "3-5",
+    "rows": 691512,
+    "distinct": 64728,
+    "pct": 92.1,
+    "rows_no_residual": 691512
+   },
+   {
+    "packets": "6-20",
+    "rows": 608631,
+    "distinct": 555892,
+    "pct": 11.1,
+    "rows_no_residual": 608631
+   },
+   {
+    "packets": "21+",
+    "rows": 309401,
+    "distinct": 307588,
+    "pct": 0.8,
+    "rows_no_residual": 309401
+   }
+  ]
+ },
+ "netfound_upstream_comparison": {
+  "flow_rule": "scripts: PcapSplitter -m connection, FiveTupleSplitter splits TCP only at a pure SYN following a non-SYN packet; no RST, FIN or timeout close",
+  "direction": "Tokenize.py: side holding an internalIPs address is forward, else first packet sender",
+  "checkpoints": {
+   "small": {
+    "layers": 4,
+    "heads": 4,
+    "hidden": 512
+   },
+   "base": {
+    "layers": 12,
+    "heads": 12,
+    "hidden": 768
+   },
+   "large": {
+    "layers": 24,
+    "heads": 16,
+    "hidden": 1024
+   }
+  },
+  "strip_payload_all": true,
+  "max_burst_length_all": 73,
+  "our_flows": 2425048,
+  "estimated_flows_upstream_rule": 1571702,
+  "replayed_flows_upstream_rule_tcp_udp": 1567541,
+  "correction_2026_11_06": "Earlier value 1654948 counted 82899 non-TCP rows as pure SYN; continuation value was 451230. See evidence/20261106/exp94_flow_total_decomposition.json.",
+  "continuation_after_timeout": 534169
+ },
+ "flow_totals": {
+  "raw_packets": 56370702,
+  "non_ipv4": 412516,
+  "other_transport": 422,
+  "ipv4_fragments": 2060,
+  "closed_session_ack_tail": 113166,
+  "packets_in_flows": 55842538,
+  "flows": 2425048,
+  "tcp": 1424890,
+  "udp": 999509,
+  "icmp": 649,
+  "end_reason": {
+   "rst": 890230,
+   "fin_handshake": 386602,
+   "timeout": 1142158,
+   "new_syn": 3662,
+   "capture_end": 2396
+  },
+  "one_packet_flows": 264649,
+  "one_packet_residual": 253388
+ },
+ "false_alarm_profile_tabpfn_n50": {
+  "note": "Share of residual flows among true benign rows predicted as each class, mean over 5 seeds.",
+  "flowstats": {
+   "portscan": 0.7,
+   "bf": 0,
+   "bot": 0,
+   "web": 0
+  },
+  "netfound": {
+   "portscan": 0.74,
+   "bf": 0,
+   "bot": 0,
+   "web": 0
+  }
+ }
+}

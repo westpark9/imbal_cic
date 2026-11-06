@@ -1,0 +1,97 @@
+{
+  "regime": "attack_only",
+  "seed": 47,
+  "budget": 2,
+  "method": "tabpfn",
+  "train_rows": 12,
+  "train_flow_ids": [
+    "6d9abafb9c466b6280628aca",
+    "060536569f2bdd0d2d2b5230",
+    "3f2a2a131ce6e7d6725f6e02",
+    "d2a71889bfa2074ace69ab1c",
+    "ab69679ab8803e9521127817",
+    "aab1bafc2ad52425c53f08d9",
+    "6e3927e52c342ded9990265d",
+    "72e1d9320eb987d251aa70d8",
+    "92972cf659e36eec90f0b79d",
+    "d08c9fa43dcf8306d116147f",
+    "1537090c5abf59488f55fd89",
+    "1548944ff571f6f25f206218"
+  ],
+  "test_rows": 76103,
+  "test_flow_ids_sha256": "79d9cbd79396a9b20ca6a62e271e56f994befae9b4a13d7bce07928522711223",
+  "metrics": {
+    "macro_f1": 0.4760965284412815,
+    "classes": [
+      {
+        "name": "dos",
+        "support": 25761,
+        "precision": 0.9922430830039526,
+        "recall": 0.7795893016575444,
+        "f1": 0.8731549314145345,
+        "tp": 20083,
+        "fp": 157,
+        "fn": 5678
+      },
+      {
+        "name": "portscan",
+        "support": 34814,
+        "precision": 1.0,
+        "recall": 0.908801057046016,
+        "f1": 0.9522218710968654,
+        "tp": 31639,
+        "fp": 0,
+        "fn": 3175
+      },
+      {
+        "name": "ddos",
+        "support": 14353,
+        "precision": 0.9177608403253699,
+        "recall": 0.9983278757054275,
+        "f1": 0.9563505306013482,
+        "tp": 14329,
+        "fp": 1284,
+        "fn": 24
+      },
+      {
+        "name": "bf",
+        "support": 1048,
+        "precision": 0.010416666666666666,
+        "recall": 0.0009541984732824427,
+        "f1": 0.0017482517482517483,
+        "tp": 1,
+        "fp": 95,
+        "fn": 1047
+      },
+      {
+        "name": "bot",
+        "support": 111,
+        "precision": 0.03676714143756211,
+        "recall": 1.0,
+        "f1": 0.07092651757188498,
+        "tp": 111,
+        "fp": 2908,
+        "fn": 0
+      },
+      {
+        "name": "web",
+        "support": 16,
+        "precision": 0.001091703056768559,
+        "recall": 0.375,
+        "f1": 0.0021770682148040637,
+        "tp": 6,
+        "fp": 5490,
+        "fn": 10
+      }
+    ],
+    "rows": 76103
+  },
+  "construct_seconds": 0.00012881899601779878,
+  "fit_seconds": 1.3580588810145855,
+  "inference_seconds": 4.631075480981963,
+  "frozen_weights_sha256": "152e50ac0356e138425f56f57078d20a088721d641e32cf7321533b12cad7c70",
+  "adapter": "netfound-v2-small",
+  "pca_dimensions": 64,
+  "inference_batch_rows": 8192,
+  "finetuning": false
+}

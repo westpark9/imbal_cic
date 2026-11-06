@@ -1,0 +1,23 @@
+{
+  "experiment": "exp95",
+  "version": "v7",
+  "dataset": "CIC-IDS2017-PCAP-whole-network",
+  "base_run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+  "csv_run": "tabpfn/results/v7/exp94/20261103_162600_csv_cic2017_fewshot_c2c3b851",
+  "seed": 43,
+  "purpose": "Few-shot on all nine classes, including inf and heartbleed, with residual flows deleted, and with each of the two side columns added behind the netFound vector.",
+  "approval": "User request 2026-11-06: evaluate with inf and heartbleed included, and test the two side-information options on all classes.",
+  "classes": ["benign", "dos", "portscan", "ddos", "bf", "bot", "web", "inf", "heartbleed"],
+  "arms": {
+    "csv": "CSV 78 statistics, all nine classes.",
+    "netfound": "netFound PCA 64 of EXP94 on the rows left after deleting residual flows.",
+    "netfound+seq": "netfound plus first_seq_zero and first_ack_zero.",
+    "netfound+ports": "netfound plus pair_ports_60, the log1p count of service ports between the same two IPs in the last 60 s."
+  },
+  "side_columns": "IP values, ports and timestamps never enter the vector. Raw seq and ack are read from the first packet of each flow. Context uses flows that ended before the current flow, with IPs as grouping keys only.",
+  "sampling": "The seven classes keep the rows of the matching earlier run: EXP94 selection with residual rows replaced for netFound arms, and the CSV run formula for csv. inf and heartbleed draw with seed + 1009 * class up to all train rows, so at n=50 they use 25 and 7 labels.",
+  "scoring": "Test rows left after deletion for netFound arms and all CSV test rows for csv. Macro-F1 over nine classes, and over the seven earlier classes for continuity. inf has 6 test rows and heartbleed 2.",
+  "validation_budgets": [20, 50],
+  "selection": "A side column is judged on validation macro-F1 at the validation budgets. Test is reported and not used to choose.",
+  "method_settings": "Seeds 43 to 47, budgets 2 to 50, XGB and TabPFN settings and checkpoint come from protocol_snapshot.json of the base run."
+}

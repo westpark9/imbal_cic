@@ -1,0 +1,524 @@
+{
+ "schema": 1,
+ "date": "2026-11-06",
+ "run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+ "scope": "Read-only. Upstream FiveTupleSplitter rule replayed on the raw captures, compared with the EXP94 corpus and the published netFound cic arrow files. No model was fitted.",
+ "replay": {
+  "rule": "Symmetric 5-tuple; a new TCP flow only at a pure SYN whose previous packet on that tuple was not a pure SYN; no RST, FIN or timeout close; UDP never splits; IPv4 TCP and UDP only, ICMP not replayed.",
+  "source": "PcapPlusPlus Examples/PcapSplitter/ConnectionSplitters.h, hash5Tuple with directionUnique false; netFound pre_process_src/2_pcap_splitting.sh uses -m connection",
+  "days": {
+   "monday": {
+    "packets": 11709971,
+    "flows": 249695,
+    "tcp": 132328,
+    "udp": 117367,
+    "le2_tcp": 1020,
+    "le2_udp": 139,
+    "ge3_tcp": 131308,
+    "ge3_udp": 117228,
+    "bins": {
+     "6_1": 16,
+     "6_2": 1004,
+     "6_3": 318,
+     "6_4": 53,
+     "6_5": 113,
+     "6_6": 130824,
+     "17_1": 1,
+     "17_2": 138,
+     "17_3": 217,
+     "17_4": 79979,
+     "17_5": 24,
+     "17_6": 37008
+    }
+   },
+   "tuesday": {
+    "packets": 11551954,
+    "flows": 212702,
+    "tcp": 109268,
+    "udp": 103434,
+    "le2_tcp": 2135,
+    "le2_udp": 218,
+    "ge3_tcp": 107133,
+    "ge3_udp": 103216,
+    "bins": {
+     "6_1": 50,
+     "6_2": 2085,
+     "6_3": 260,
+     "6_4": 34,
+     "6_5": 172,
+     "6_6": 106667,
+     "17_1": 1,
+     "17_2": 217,
+     "17_3": 371,
+     "17_4": 70818,
+     "17_5": 24,
+     "17_6": 32003
+    }
+   },
+   "wednesday": {
+    "packets": 13788878,
+    "flows": 383701,
+    "tcp": 274677,
+    "udp": 109024,
+    "le2_tcp": 1251,
+    "le2_udp": 179,
+    "ge3_tcp": 273426,
+    "ge3_udp": 108845,
+    "bins": {
+     "6_1": 102,
+     "6_2": 1149,
+     "6_3": 405,
+     "6_4": 86,
+     "6_5": 155,
+     "6_6": 272780,
+     "17_2": 179,
+     "17_4": 76385,
+     "17_5": 6,
+     "17_6": 32454
+    }
+   },
+   "thursday": {
+    "packets": 9322025,
+    "flows": 269214,
+    "tcp": 170224,
+    "udp": 98990,
+    "le2_tcp": 49699,
+    "le2_udp": 306,
+    "ge3_tcp": 120525,
+    "ge3_udp": 98684,
+    "bins": {
+     "6_1": 2797,
+     "6_2": 46902,
+     "6_3": 2939,
+     "6_4": 23554,
+     "6_5": 163,
+     "6_6": 93869,
+     "17_2": 306,
+     "17_3": 41,
+     "17_4": 68514,
+     "17_5": 18,
+     "17_6": 30111
+    }
+   },
+   "friday": {
+    "packets": 9997874,
+    "flows": 452229,
+    "tcp": 349436,
+    "udp": 102793,
+    "le2_tcp": 164916,
+    "le2_udp": 445,
+    "ge3_tcp": 184520,
+    "ge3_udp": 102348,
+    "bins": {
+     "6_1": 2343,
+     "6_2": 162573,
+     "6_3": 923,
+     "6_4": 514,
+     "6_5": 155,
+     "6_6": 182928,
+     "17_1": 267,
+     "17_2": 178,
+     "17_3": 42,
+     "17_4": 71011,
+     "17_5": 18,
+     "17_6": 31277
+    }
+   }
+  },
+  "total_flows": 1567541,
+  "total_le2": 220308,
+  "total_le2_pct": 14.05
+ },
+ "monday_benign": {
+  "exp94_flows": 421674,
+  "exp94_residual": 43723,
+  "replay_flows": 249695,
+  "replay_tcp": 132328,
+  "replay_udp": 117367,
+  "replay_ge3": 248536,
+  "replay_ge3_tcp": 131308,
+  "replay_ge3_udp": 117228,
+  "replay_le2": {
+   "tcp_1": 16,
+   "tcp_2": 1004,
+   "udp_1": 1,
+   "udp_2": 138
+  },
+  "published": {
+   "rows": 248914,
+   "tcp": 131677,
+   "udp": 117237,
+   "ge3": 248557,
+   "ge3_tcp": 131459,
+   "ge3_udp": 117098,
+   "le2": {
+    "tcp_1": 10,
+    "tcp_2": 208,
+    "udp_1": 1,
+    "udp_2": 138
+   }
+  },
+  "reading": "Published benign equals Monday under the upstream split to 99.7%. The UDP 1 and 2 packet rows match exactly, so the paper text about discarding 1-2 packet flows is not applied in the published file."
+ },
+ "classes": [
+  {
+   "name": "benign, five days",
+   "exp94": 1731862,
+   "upstream_rows_merged": 1049087,
+   "published": null
+  },
+  {
+   "name": "benign, Monday",
+   "exp94": 421674,
+   "upstream_rows_merged": 249735,
+   "replay": 249695,
+   "published": 248914
+  },
+  {
+   "name": "portscan Friday",
+   "exp94": 161202,
+   "upstream_rows_merged": 161193,
+   "published": 159554,
+   "published_label": "6"
+  },
+  {
+   "name": "portscan Thursday",
+   "exp94": 101936,
+   "upstream_rows_merged": 76610,
+   "published": 66923,
+   "published_label": "5, listed as Infiltration in the paper table; the 134 exact key matches are all our Thursday portscan"
+  },
+  {
+   "name": "dos",
+   "exp94": 171738,
+   "upstream_rows_merged": 169599,
+   "published": 29754
+  },
+  {
+   "name": "ddos",
+   "exp94": 95683,
+   "upstream_rows_merged": 95683,
+   "published": 45168
+  },
+  {
+   "name": "bf",
+   "exp94": 6982,
+   "upstream_rows_merged": 6945,
+   "published": 6422
+  },
+  {
+   "name": "web",
+   "exp94": 104,
+   "upstream_rows_merged": 104,
+   "published": 2019
+  },
+  {
+   "name": "bot",
+   "exp94": 736,
+   "upstream_rows_merged": 736,
+   "published": 0
+  }
+ ],
+ "classes_note": "upstream_rows_merged joins our flows along the same 5-tuple and misses dropped ACK tails; the replay counts packets directly but has no labels. The dos and ddos gaps stay unexplained.",
+ "short_flows": {
+  "exp94_le2": 807636,
+  "exp94_total": 2425048,
+  "exp94_pct": 33.3,
+  "residual": 284600,
+  "other_continuation": {
+   "rows": 290560,
+   "after_timeout": 268995,
+   "udp": 262688,
+   "benign": 285018
+  },
+  "independent": {
+   "rows": 232476,
+   "portscan": 210180,
+   "benign": 17670,
+   "unresolved": 4626
+  },
+  "benign_le2_pct_exp94": 24.5,
+  "benign_le2_pct_upstream_rows_merged": 0.65,
+  "published": {
+   "le2": 224127,
+   "total": 558754,
+   "pct": 40.1,
+   "by_label": {
+    "6": 158989,
+    "5": 64651,
+    "7": 357,
+    "3": 110,
+    "0": 14,
+    "4": 6
+   }
+  }
+ },
+ "residual_parent_end": {
+  "rst": 262472,
+  "fin_handshake": 22128
+ },
+ "conflict_after_residual_removal": {
+  "L1": {
+   "before": {
+    "rows": 2270243,
+    "conflict": 913,
+    "pct": 0.04,
+    "groups": 9,
+    "minority": 12,
+    "ceiling": 99.999
+   },
+   "after": {
+    "rows": 2123347,
+    "conflict": 2,
+    "pct": 0.0,
+    "groups": 1,
+    "minority": 1,
+    "ceiling": 100.0
+   }
+  },
+  "L2": {
+   "before": {
+    "rows": 2270243,
+    "conflict": 110324,
+    "pct": 4.86,
+    "groups": 24,
+    "minority": 4720,
+    "ceiling": 99.792
+   },
+   "after": {
+    "rows": 2123347,
+    "conflict": 43380,
+    "pct": 2.043,
+    "groups": 19,
+    "minority": 212,
+    "ceiling": 99.99
+   }
+  },
+  "L3_stats": {
+   "before": {
+    "rows": 2270243,
+    "conflict": 6367,
+    "pct": 0.28,
+    "groups": 143,
+    "minority": 172,
+    "ceiling": 99.992
+   },
+   "after": {
+    "rows": 2123347,
+    "conflict": 69,
+    "pct": 0.003,
+    "groups": 11,
+    "minority": 11,
+    "ceiling": 99.999
+   }
+  },
+  "L3_netfound_pca_round3": {
+   "before": {
+    "rows": 2270243,
+    "conflict": 110324,
+    "pct": 4.86,
+    "groups": 24,
+    "minority": 4720,
+    "ceiling": 99.792
+   },
+   "after": {
+    "rows": 2123347,
+    "conflict": 43380,
+    "pct": 2.043,
+    "groups": 19,
+    "minority": 212,
+    "ceiling": 99.99
+   }
+  }
+ },
+ "l2_remaining": {
+  "rows": 43380,
+  "portscan": 42609,
+  "benign": 770,
+  "dos": 1,
+  "two_packet": 42443,
+  "residual_rows_in_before": 66943,
+  "non_residual_rows_in_before": 43381
+ },
+ "identical_input_pct": {
+  "any": 58.97,
+  "different_label": 4.86,
+  "same_label": 54.11
+ },
+ "residual_by_class": {
+  "benign": 121882,
+  "portscan": 24989,
+  "dos": 25,
+  "ddos": 0,
+  "bf": 0,
+  "bot": 0,
+  "web": 0
+ },
+ "real_residual_sequence": {
+  "capture": "Monday-WorkingHours.pcap",
+  "tuple": "192.168.10.12:43750 <-> 35.164.147.83:443",
+  "packets_in_capture": 75,
+  "last_six": [
+   {
+    "order": 1,
+    "dir": "client",
+    "flags": "PSH+ACK",
+    "payload": 31
+   },
+   {
+    "order": 2,
+    "dir": "client",
+    "flags": "FIN+ACK",
+    "payload": 0,
+    "after_ms": 0.05
+   },
+   {
+    "order": 3,
+    "dir": "server",
+    "flags": "PSH+ACK",
+    "payload": 31,
+    "after_ms": 85.815
+   },
+   {
+    "order": 4,
+    "dir": "server",
+    "flags": "FIN+ACK",
+    "payload": 0,
+    "after_ms": 0.003
+   },
+   {
+    "order": 5,
+    "dir": "client",
+    "flags": "RST",
+    "payload": 0,
+    "after_ms": 0.057,
+    "flow": "closes the flow"
+   },
+   {
+    "order": 6,
+    "dir": "client",
+    "flags": "RST",
+    "payload": 0,
+    "after_ms": 0.003,
+    "flow": "new one-packet flow"
+   }
+  ]
+ },
+ "corrections": [
+  "estimated_flows_upstream_rule 1,654,948 in 20261105 counted 82,899 non-TCP rows as pure SYN because token 5 is not a TCP flag on UDP rows. The merged estimate is 1,571,702 and the packet replay gives 1,567,541 for TCP and UDP.",
+  "continuation_after_timeout 451,230 in 20261105 is 534,169 after the same fix.",
+  "Earlier note that the short-flow filter is effectively present for benign is withdrawn: Monday under the upstream split already reaches 0.46% and the UDP short rows are kept."
+ ],
+ "input_limit_check": {
+  "note": "Scratch check stopped at the user request; values below finished before that.",
+  "flows_with_packets_cut": 340555,
+  "flows": 2425048,
+  "min_packets_in_cut_flows": 7,
+  "conflict_rows": 110324,
+  "conflict_rows_cut": 0,
+  "max_packets_in_conflict_rows": 6,
+  "cut_labelled_rows": 340479,
+  "cut_rows_with_same_input": 11274,
+  "corpus_tokens_note": "Corpus tokens are already bounded to 12 bursts x 6 packets, so slide 13 wording for L1 is inaccurate."
+ },
+ "feature_level": {
+  "stats45_exact": {
+   "rows": 2270243,
+   "same": 485220,
+   "same_pct": 21.37,
+   "conflict": 6367,
+   "conflict_pct": 0.28,
+   "same_label": 478853,
+   "same_label_pct": 21.09,
+   "test_in_train_pct": 17.9
+  },
+  "netfound_L2_tokens": {
+   "rows": 2270243,
+   "same": 1338819,
+   "same_pct": 58.97,
+   "conflict": 110324,
+   "conflict_pct": 4.86,
+   "same_label": 1228495,
+   "same_label_pct": 54.11,
+   "test_in_train_pct": 56.1
+  },
+  "netfound_pca_round2": {
+   "rows": 2270243,
+   "same": 1367858,
+   "same_pct": 60.25,
+   "conflict": 110324,
+   "conflict_pct": 4.86,
+   "same_label": 1257534,
+   "same_label_pct": 55.39,
+   "test_in_train_pct": 56.9
+  },
+  "netfound_pca_round3": {
+   "rows": 2270243,
+   "same": 1346669,
+   "same_pct": 59.32,
+   "conflict": 110324,
+   "conflict_pct": 4.86,
+   "same_label": 1236345,
+   "same_label_pct": 54.46,
+   "test_in_train_pct": 56.2
+  },
+  "netfound_pca_round4": {
+   "rows": 2270243,
+   "same": 1334027,
+   "same_pct": 58.76,
+   "conflict": 98102,
+   "conflict_pct": 4.321,
+   "same_label": 1235925,
+   "same_label_pct": 54.44,
+   "test_in_train_pct": 55.8
+  },
+  "netfound_pca_round5": {
+   "rows": 2270243,
+   "same": 1287887,
+   "same_pct": 56.73,
+   "conflict": 72938,
+   "conflict_pct": 3.213,
+   "same_label": 1214949,
+   "same_label_pct": 53.52,
+   "test_in_train_pct": 53.0
+  },
+  "netfound_pca_exact": {
+   "rows": 2270243,
+   "same": 1242743,
+   "same_pct": 54.74,
+   "conflict": 67765,
+   "conflict_pct": 2.985,
+   "same_label": 1174978,
+   "same_label_pct": 51.76,
+   "test_in_train_pct": 50.4
+  },
+  "csv78_exact": {
+   "rows": 2827876,
+   "same": 431049,
+   "same_pct": 15.24,
+   "conflict": 6790,
+   "conflict_pct": 0.24,
+   "same_label": 424259,
+   "same_label_pct": 15.0,
+   "test_in_train_pct": 14.2
+  },
+  "spread_in_conflict_groups": {
+   "groups": 24,
+   "within_max_abs_median": 3.814697265625e-06,
+   "within_max_abs_max": 8.58306884765625e-06,
+   "nearest_other_group_linf_min": 0.2668185234069824,
+   "nearest_other_group_linf_median": 1.698042392730713
+  }
+ },
+ "fully_identical_flows": {
+  "flows": 2425048,
+  "l1_rows": 510365,
+  "l1_pct": 21.05,
+  "l1_tuple_rows": 184939,
+  "l1_tuple_rows_residual": 170406,
+  "l1_tuple_start_rows": 2624,
+  "l1_tuple_start_one_packet": 2624,
+  "l1_tuple_start_residual": 2623,
+  "note": "Tuple is direction independent and within one capture. Raw seq is not in the saved arrays and was not compared; the last group looks like one packet recorded twice at the same timestamp."
+ }
+}

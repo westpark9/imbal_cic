@@ -1,0 +1,316 @@
+{
+ "schema": 1,
+ "date": "2026-11-05",
+ "scope": "Real packets and flows used by the explanatory slides. All values come from the EXP94 corpus and the Monday capture; nothing was fitted.",
+ "packet": {
+  "capture": "Monday-WorkingHours.pcap",
+  "record": 1303,
+  "flow_packet": 4,
+  "frame_bytes": 151,
+  "ethernet_bytes": 14,
+  "ip_header_bytes": 20,
+  "tcp_header_bytes": 20,
+  "payload_bytes": 97,
+  "src_ip": "192.168.10.9",
+  "dst_ip": "69.31.33.224",
+  "src_port": 1057,
+  "dst_port": 80,
+  "ip_total_length": 137,
+  "ttl": 128,
+  "protocol": 6,
+  "seq": 2039531092,
+  "ack": 2775650109,
+  "tcp_flags": "ACK+PSH",
+  "window": 256,
+  "payload_lines": [
+   "GET /ncsi.txt HTTP/1.1",
+   "Connection: Close",
+   "User-Agent: Microsoft NCSI",
+   "Host: www.msftncsi.com"
+  ],
+  "first_packet_seq": 2039531091
+ },
+ "tokens": {
+  "first_syn": [
+   20,
+   0,
+   52,
+   2,
+   128,
+   2,
+   8192,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "second_syn_ack": [
+   20,
+   0,
+   52,
+   2,
+   56,
+   18,
+   29200,
+   0,
+   0,
+   0,
+   1,
+   0
+  ],
+  "fourth_request": [
+   20,
+   0,
+   137,
+   2,
+   128,
+   24,
+   256,
+   0,
+   1,
+   0,
+   1,
+   0
+  ]
+ },
+ "records": {
+  "total": 56370702,
+  "ipv4": 55958186,
+  "arp": 233361,
+  "ipv6": 142021,
+  "llc_8023": 36637,
+  "lldp": 497,
+  "other_transport": 422,
+  "ipv4_fragments": 2060,
+  "closed_session_ack": 113166,
+  "in_flows": 55842538,
+  "out_of_order": 33724,
+  "reorder_window_seconds": 5
+ },
+ "flows_by_protocol": {
+  "tcp": 1424890,
+  "udp": 999509,
+  "icmp": 649
+ },
+ "neighbour_flows": [
+  {
+   "protocol": "TCP",
+   "a": "192.168.10.9:1055",
+   "b": "192.168.10.3:88",
+   "packets": 19
+  },
+  {
+   "protocol": "TCP",
+   "a": "192.168.10.9:1056",
+   "b": "192.168.10.3:88",
+   "packets": 15
+  },
+  {
+   "protocol": "UDP",
+   "a": "192.168.10.9:59285",
+   "b": "192.168.10.3:53",
+   "packets": 4
+  }
+ ],
+ "identical_short_flows": [
+  {
+   "name": "HTTPS 연결 끝의 RST",
+   "packets": 1,
+   "flows": 49263,
+   "labels": {
+    "benign": 49204,
+    "portscan": 59
+   },
+   "tokens": [
+    [
+     20,
+     0,
+     40,
+     2,
+     64,
+     4,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   ]
+  },
+  {
+   "name": "스캔 SYN과 거절 RST",
+   "packets": 2,
+   "flows": 79925,
+   "labels": {
+    "portscan": 79925
+   },
+   "tokens": [
+    [
+     20,
+     0,
+     60,
+     2,
+     62,
+     2,
+     29200,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     20,
+     0,
+     40,
+     2,
+     64,
+     20,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ]
+   ]
+  },
+  {
+   "name": "도메인 조회",
+   "packets": 4,
+   "flows": 11891,
+   "labels": {
+    "benign": 11891
+   },
+   "tokens": [
+    [
+     20,
+     0,
+     51,
+     2,
+     64,
+     31
+    ],
+    [
+     20,
+     0,
+     51,
+     2,
+     64,
+     31
+    ],
+    [
+     20,
+     0,
+     51,
+     0,
+     128,
+     31
+    ],
+    [
+     20,
+     0,
+     51,
+     0,
+     128,
+     31
+    ]
+   ],
+   "note": "Each packet is recorded twice with the same IP ID and payload."
+  }
+ ],
+ "residual_examples": [
+  {
+   "tuple": "192.168.10.12:43750 <-> 35.164.147.83:443",
+   "flow_rows": [
+    1325
+   ],
+   "sequence": "client FIN, server data and FIN, client RST (record 34617), client RST 0.003 ms later (record 34618, new flow)"
+  },
+  {
+   "tuple": "192.168.10.3:88 <-> 192.168.10.9:1055",
+   "sequence": "RST+ACK record 1150 closes the flow, the same packet with IP ID 21930 is recorded again as 1151 and becomes a new flow"
+  }
+ ],
+ "rst_boundary_example": {
+  "capture": "Monday-WorkingHours.pcap",
+  "tuple": "192.168.10.51:38488 <-> 209.15.36.31:80",
+  "flow_packets": 6,
+  "packets": [
+   {
+    "record": 6644581,
+    "time_us": 0,
+    "sender": "pc",
+    "flags": "SYN",
+    "ip_length": 60,
+    "payload": 0,
+    "handling": "flow"
+   },
+   {
+    "record": 6644587,
+    "time_us": 42246,
+    "sender": "server",
+    "flags": "SYN+ACK",
+    "ip_length": 60,
+    "payload": 0,
+    "handling": "flow"
+   },
+   {
+    "record": 6644588,
+    "time_us": 42350,
+    "sender": "pc",
+    "flags": "ACK",
+    "ip_length": 52,
+    "payload": 0,
+    "handling": "flow"
+   },
+   {
+    "record": 6645615,
+    "time_us": 5079690,
+    "sender": "pc",
+    "flags": "ACK+FIN",
+    "ip_length": 52,
+    "payload": 0,
+    "handling": "flow"
+   },
+   {
+    "record": 6645618,
+    "time_us": 5084903,
+    "sender": "server",
+    "flags": "ACK+FIN",
+    "ip_length": 264,
+    "payload": 212,
+    "handling": "flow"
+   },
+   {
+    "record": 6645619,
+    "time_us": 5084965,
+    "sender": "pc",
+    "flags": "RST",
+    "ip_length": 40,
+    "payload": 0,
+    "handling": "flow closes"
+   },
+   {
+    "record": 6645632,
+    "time_us": 5121931,
+    "sender": "server",
+    "flags": "ACK",
+    "ip_length": 52,
+    "payload": 0,
+    "handling": "dropped closed session ACK"
+   },
+   {
+    "record": 6645633,
+    "time_us": 5121962,
+    "sender": "pc",
+    "flags": "RST",
+    "ip_length": 40,
+    "payload": 0,
+    "handling": "new residual flow"
+   }
+  ]
+ }
+}

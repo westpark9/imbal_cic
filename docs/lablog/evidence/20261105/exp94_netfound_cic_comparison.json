@@ -1,0 +1,179 @@
+{
+ "schema": 1,
+ "date": "2026-11-05",
+ "sources": {
+  "paper_v1": "https://arxiv.org/abs/2310.17025v1",
+  "paper_v4": "https://arxiv.org/abs/2310.17025v4",
+  "paper_v5": "https://arxiv.org/abs/2310.17025v5",
+  "artifact_repo": "https://github.com/maybe-hello-world/netfound-paper",
+  "data": "https://huggingface.co/datasets/snlucsb/netfound-paper",
+  "pretraining_sampler": "https://zenodo.org/records/19863446"
+ },
+ "scope": "The paper gives no CIC-IDS-2017 preprocessing section. Measurements below are from cic/train and cic/test of the published dataset, read with the same keys as the EXP94 audit. Reasons for the observed properties are not stated by the authors.",
+ "paper_text": {
+  "flow": "same five tuple (v4 section 4.1)",
+  "short_flow_filter": "discard all flows with just 1-2 packets (v1, v4 section 4.1); pretraining also excludes flows with fewer than six packets and flows whose bursts all have two or fewer packets (v1, v4)",
+  "split": "70:30; v1 says by timestamp",
+  "metric": "weighted F1 (v5 Table 6); netFound-small frozen 0.9928, unfrozen 0.9996",
+  "tokens": "18 per TCP packet with 12 payload bytes in v1 and v4; header only in the published v2 checkpoints"
+ },
+ "measured": {
+  "rows": 558754,
+  "train": 447003,
+  "test": 111751,
+  "train_share": 0.8,
+  "file_order": "shuffled, label repeat 0.303 against 0.304 expected",
+  "labels": {
+   "0": {
+    "table6": "SSH Patator",
+    "rows": 3958
+   },
+   "1": {
+    "table6": "FTP Patator",
+    "rows": 2464
+   },
+   "2": {
+    "table6": "DDoS",
+    "rows": 45168
+   },
+   "3": {
+    "table6": "DoS",
+    "rows": 29754
+   },
+   "4": {
+    "table6": "Web",
+    "rows": 2019
+   },
+   "5": {
+    "table6": "Infiltration",
+    "rows": 66923,
+    "table6_rows": 3757
+   },
+   "6": {
+    "table6": "Port Scan",
+    "rows": 159554
+   },
+   "7": {
+    "table6": "Benign",
+    "rows": 248914,
+    "table6_rows": 249044
+   }
+  },
+  "one_way_pct": {
+   "attacks": 100.0,
+   "benign": 0.5
+  },
+  "packets_le2_pct": {
+   "Port Scan": 99.6,
+   "label 5": 96.6,
+   "Benign": 0.1
+  },
+  "one_packet_pct_port_scan": 99.1,
+  "tcp_first_packet_syn": 438188,
+  "tcp_rows": 438670,
+  "over_120s_pct": 12.23,
+  "longest_seconds": 28711,
+  "benign_day": "192,412 of 192,414 benign rows whose header key exists in our corpus appear on Monday; 2 appear only on other days",
+  "time_mix": "benign test rows later than train median 0.502, later than train maximum 0.0; label 3 test rows 0.534 and 0.0",
+  "header_only": {
+   "distinct": 258072,
+   "conflict_rows": 79739,
+   "conflict_pct": 14.27,
+   "groups": 2,
+   "minority": 28
+  },
+  "test_also_in_train_pct": {
+   "all": 54.9,
+   "port_scan": 99.1,
+   "label5": 96.3,
+   "benign": 33.9
+  },
+  "tree_on_packets_reply_protocol": {
+   "depth3": {
+    "weighted": 0.9007,
+    "macro": 0.4562
+   },
+   "depth12": {
+    "weighted": 0.949,
+    "macro": 0.8452
+   }
+  },
+  "two_way_attack_rows": 0
+ },
+ "exp94": {
+  "rows_labelled": 2270243,
+  "benign_days": 5,
+  "packets_le2_pct": {
+   "portscan": 89.5,
+   "benign": 24.5
+  },
+  "split": "time forward within capture and family 70/15/15",
+  "training": "2 to 50 labels per class",
+  "n50_weighted_f1": {
+   "flowstats_xgb": 0.9362,
+   "flowstats_tabpfn": 0.9477,
+   "netfound_xgb": 0.9273,
+   "netfound_tabpfn": 0.9755
+  },
+  "n50_macro_f1": {
+   "flowstats_xgb": 0.6516,
+   "flowstats_tabpfn": 0.6904,
+   "netfound_xgb": 0.5777,
+   "netfound_tabpfn": 0.7161
+  }
+ },
+ "checkpoints": {
+  "small": {
+   "layers": 4,
+   "heads": 4,
+   "hidden": 512,
+   "parameters": 53383495,
+   "max_bursts": 12,
+   "max_burst_length": 73
+  },
+  "base": {
+   "layers": 12,
+   "heads": 12,
+   "hidden": 768,
+   "parameters": 174683335,
+   "max_bursts": 12,
+   "max_burst_length": 73
+  },
+  "large": {
+   "layers": 24,
+   "heads": 16,
+   "hidden": 1024,
+   "parameters": 662187463,
+   "max_bursts": 12,
+   "max_burst_length": 73
+  }
+ },
+ "pretraining_data_head_of_first_shard": {
+  "source": "snl-server-1.cs.ucsb.edu/dataset/netfound/clean_ready_train_data/2022-09-09-1500.pcap.2.arrow, first 60 MB",
+  "flows": 299485,
+  "packets_1_pct": 67.7,
+  "packets_le2_pct": 72.7,
+  "packets_le5_pct": 77.0,
+  "one_way_pct": 88.4,
+  "note": "The v1 and v4 pretraining filter is not visible in the published v2 pretraining shards.",
+  "other_shards_packets_le2_pct": {
+   "2023-11-30-1215.2": 41.6,
+   "2023-12-10-1530.2": 35.6,
+   "2023-12-17-2000.2": 84.5,
+   "2023-12-21-1515.2": 86.1
+  },
+  "pcap_arrow_family_three_shards": {
+   "packets_le2_pct": [
+    80.2,
+    56.2,
+    86.3
+   ],
+   "packets_le5_pct": [
+    83.1,
+    61.0,
+    88.5
+   ],
+   "note": "First-part samples of three further shards named *.pcap.arrow; eight of 1,249 shards sampled in total."
+  }
+ }
+}

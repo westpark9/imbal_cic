@@ -1,0 +1,146 @@
+{
+  "status": "2026-11-06: only stages base and merge ran, for the residual option counts in evidence/20261106/exp95_residual_option_counts.json. The feature part was cancelled by the user. The few-shot re-evaluation with residual flows deleted uses exp95_drop_fewshot_protocol.json and run_drop_fewshot.py.",
+  "experiment": "exp95",
+  "version": "v7",
+  "dataset": "CIC-IDS2017-PCAP-whole-network",
+  "base_run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+  "seed": 43,
+  "purpose": "Part 1: test the slide 16 side features on all labelled flows without few-shot sampling. Part 2: compare four treatments of residual flows, reusing the EXP94 flows, labels, splits, seeds and label budgets, and track identical netFound inputs under each.",
+  "approval": "User request 2026-11-06. The user then limited part 1: few-shot is not needed there. Few-shot remains for part 2, which the earlier proposal named as few-shot re-evaluation.",
+  "residual_rule": "A flow is residual when the previous flow on the same 5-tuple ended by rst or fin_handshake, the gap is 0 to 2 s, packets <= 2, payload is 0 and the first packet has no SYN.",
+  "handling": {
+    "keep": "EXP94 flows unchanged.",
+    "drop": "Residual flows removed. Parent flows, tokens, labels and splits unchanged.",
+    "tailcount": "drop plus three columns on the root parent: residual packets, RST packets and FIN packets, added in front of the classifier.",
+    "merge": "Residual packets appended to the root parent in the packet stream, which changes its statistics and netFound tokens. Parent label and split stay as judged before merging. Pure ACK tails stay dropped as in EXP94."
+  },
+  "feature_sets": {
+    "none": [],
+    "seq": [
+      "first_seq_zero",
+      "first_ack_zero"
+    ],
+    "ports": [
+      "pair_ports_60"
+    ],
+    "seq_ports": [
+      "first_seq_zero",
+      "first_ack_zero",
+      "pair_ports_60"
+    ],
+    "ctx": [
+      "cli_flows_60",
+      "cli_targets_60",
+      "cli_fail_60",
+      "pair_flows_60",
+      "pair_ports_60",
+      "pair_fail_60",
+      "srv_flows_60",
+      "srv_clients_60",
+      "srv_fail_60",
+      "sig_rep_60"
+    ],
+    "seq_ctx": [
+      "first_seq_zero",
+      "first_ack_zero",
+      "cli_flows_60",
+      "cli_targets_60",
+      "cli_fail_60",
+      "pair_flows_60",
+      "pair_ports_60",
+      "pair_fail_60",
+      "srv_flows_60",
+      "srv_clients_60",
+      "srv_fail_60",
+      "sig_rep_60"
+    ]
+  },
+  "feature_note": "Side columns never hold IP values, ports or timestamps. IPs and service ports are grouping keys only. Context is causal: records are ordered by flow end within one capture and a flow sees only itself and flows that ended before it. Count columns are log1p scaled, rate columns are not.",
+  "context_window_seconds": 60,
+  "views": [
+    "flowstats-v1",
+    "netfound-v2-small"
+  ],
+  "part1": {
+    "lookup": {
+      "note": "The slide 16 method: train majority for the key L2 plus one side value, falling back to L2 majority and then to the largest class. The conflict scope repeats slide 16 and the all scope uses every labelled flow. Validation and test are both reported; nothing is tuned.",
+      "candidates": {
+        "none": [],
+        "dst_port": [
+          "dport"
+        ],
+        "service_port": [
+          "svc"
+        ],
+        "seq": [
+          "first_seq_zero",
+          "first_ack_zero"
+        ],
+        "ports": [
+          "pair_ports_bin"
+        ],
+        "seq_ports": [
+          "first_seq_zero",
+          "first_ack_zero",
+          "pair_ports_bin"
+        ]
+      },
+      "cross_session": [
+        [
+          "cic2017_thursday",
+          "cic2017_friday"
+        ],
+        [
+          "cic2017_friday",
+          "cic2017_thursday"
+        ]
+      ],
+      "cross_session_class": "portscan"
+    },
+    "full_label_xgb": {
+      "note": "XGB with the EXP94 settings trained on every labelled train flow of the keep handling, class-balanced by sample weight. TabPFN is excluded because its context does not scale to 1.6 million rows.",
+      "feature_sets": [
+        "none",
+        "seq",
+        "ports",
+        "seq_ports",
+        "ctx",
+        "seq_ctx"
+      ],
+      "seeds": [
+        43
+      ]
+    }
+  },
+  "arms": [
+    [
+      "keep",
+      "none"
+    ],
+    [
+      "drop",
+      "none"
+    ],
+    [
+      "tailcount",
+      "none"
+    ],
+    [
+      "merge",
+      "none"
+    ]
+  ],
+  "validation_budgets": [
+    20,
+    50
+  ],
+  "selection": "Handling options are ranked on validation macro-F1 of with_benign at the validation budgets, on the rows shared by all options. Test is reported for every option and never used to choose one.",
+  "scoring": {
+    "own": "Test rows that exist under that handling.",
+    "common": "Test rows that exist under every handling, which are the non-residual rows.",
+    "full": "All EXP94 test rows. Under drop, tailcount and merge a residual row takes the prediction of its root parent."
+  },
+  "pca": "keep reuses the EXP94 PCA. Other handling options refit PCA 64 on their own train rows, including unresolved rows, with the same seed.",
+  "inherited": "Flow IDs, labels, splits, seeds 43 to 47, budgets 2 to 50, regimes, XGB and TabPFN settings and TabPFN checkpoint come from protocol_snapshot.json of the base run.",
+  "evaluate_workers": 4
+}

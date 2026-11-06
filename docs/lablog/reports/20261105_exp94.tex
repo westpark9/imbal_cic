@@ -1,0 +1,191 @@
+% !TeX root = 20261105_exp94.tex
+% !LW recipe=lablog XeLaTeX
+\input{_support/style.tex}
+\usepackage{tabularx}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlist[itemize]{leftmargin=*,itemsep=3pt,topsep=3pt}
+\hypersetup{pdftitle={EXP94 재분석: 동일 입력의 원인과 flow 경계}}
+\begin{document}
+\reporttitle{2026-11-05 분석 · 2026-11-06 보완}{EXP94 재분석: 동일 입력의 원인과\\flow 경계 (CIC-IDS2017)}
+\recordnote{EXP94 실행의 corpus, 저장 예측, 원본 PCAP 헤더와 netFound 공개 파일을 읽어 분석했다. 모델은 학습하지 않았고 새 few-shot도 없다. 후보 비교는 train에서 validation으로만 했고, test는 영향 수치 두 개에만 썼다. 이 문서는 \texttt{20261104\_exp94.tex}의 일부 판단을 정정한다.}
+
+\section{한눈에 보기}
+\textbf{무엇을 했나.} EXP94 보고서는 입력이 같고 라벨이 다른 flow의 일부를 라벨 쪽 하한으로 읽었다. 입력이 같으면 flow를 어떻게 만들고 바꿨는지부터 봐야 한다는 사용자 지적에 따라, 원본 PCAP 헤더와 corpus를 대조하고 netFound 원 전처리와 공개 CIC-IDS-2017 파일도 실측했다.
+
+\textbf{무엇을 알았나.}
+\begin{itemize}
+\item 충돌의 주원인은 feature가 아니라 flow 경계다. 닫힌 연결 뒤의 꼬리 패킷이 새 flow가 되어 잔여 flow 284,600개(전체의 11.7\%)가 생겼다.
+\item 잔여 flow를 빼면 충돌은 L1 913개에서 2개, netFound 입력 110,324개에서 43,380개, 통계 45개 6,367개에서 69개로 준다. L1은 라벨 쪽 하한이 아니다.
+\item 점수 영향은 작다. test에서 잔여 행만 빼도 n=50 macro-F1은 0.5--1.4 pp 오르는 데 그치고, bf, bot, web 오탐에는 잔여 flow가 없다.
+\item 벡터가 달라지는 것과 구별되는 것은 다르다. 목적 포트는 충돌을 199개로 줄이지만 충돌 묶음의 validation 조회 정확도는 95.7\%로 그대로다.
+\item netFound 원 규칙은 TCP를 새 SYN에서만 나눈다. 패킷을 재생하면 5일 1,567,541 flow로 본 구현의 2,425,048개보다 적다. 잔여 flow는 본 구현 규칙의 산물이다.
+\item netFound 공개 CIC 파일은 무작위 80:20 분할이고 논문 지표는 weighted F1이라, EXP94의 macro-F1과 직접 비교하지 않는다.
+\end{itemize}
+
+\section{설정}
+\begin{itemize}
+\item 기준 실행: \path{tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e}.
+\item 잔여 flow 판정: 같은 5-tuple의 직전 flow가 RST나 양쪽 FIN으로 닫힌 뒤 0--2초 안에 시작, 패킷 2개 이하, payload 0, 첫 패킷에 SYN 없음.
+\item 층 정의: L1은 flow 정보에서 IP, 시각, 출발 포트, 원본 seq를 뺀 값이다. L2는 netFound 입력 토큰이고, L3는 분류기가 받는 feature다. netFound PCA는 소수 3자리로 반올림해 비교한다.
+\item 충돌 flow는 같은 입력 묶음에 라벨이 섞인 flow 전부다. 소수 라벨 행은 입력마다 가장 많은 라벨을 골라도 틀리는 flow다.
+\item 후보 필드 평가: train으로 만든 조회표로 충돌 묶음의 validation 831행을 맞힌 정확도다.
+\end{itemize}
+
+\section{결과: 잔여 flow}
+\begin{center}\small
+\begin{tabular}{lrrr}
+\toprule
+라벨 상태 & 전체 flow & 잔여 flow & 비율 \%\\\midrule
+background & 1,731,862 & 121,882 & 7.0\\
+confirmed & 538,428 & 25,014 & 4.6\\
+unresolved & 154,743 & 137,704 & 89.0\\
+\bottomrule
+\end{tabular}
+\end{center}
+라벨 있는 잔여 flow 146,896개는 모두 직전 flow와 라벨이 같다. class별로는 정상 121,882개, Portscan 24,989개, DoS 25개이고 ddos, bf, bot, web은 없다. 직전 flow와의 간격 중앙값은 0.15 ms이고 61.9\%가 1 ms 안이다. 직전 flow는 262,472개가 RST로, 22,128개가 양쪽 FIN으로 끝났다. 가장 많은 구성은 같은 쪽의 연속 RST 186,820개다. 보류된 Hulk 무payload flow 137,908개 중 133,626개도 잔여 flow다.
+
+\section{결과: 잔여 flow를 뺀 충돌}
+\begin{center}\small
+\begin{tabular}{lrrrr}
+\toprule
+층 & 충돌 flow 전 & 충돌 flow 후 & 소수 라벨 행 전 & 소수 라벨 행 후\\\midrule
+L1 flow 정보 & 913 & 2 & 12 & 1\\
+L2 netFound 입력 & 110,324 & 43,380 & 4,720 & 212\\
+L3 통계 45 & 6,367 & 69 & 172 & 11\\
+L3 netFound PCA 64 & 110,324 & 43,380 & 4,720 & 212\\
+\bottomrule
+\end{tabular}
+\end{center}
+보류 flow의 처리 정책에 따른 차이도 함께 사라진다. 보류를 공격으로 두면 통계 충돌이 138,527개에서 75개로 줄고, 정상으로 두면 L1 충돌이 131,418개에서 2개로 준다. 남은 netFound 충돌은 Portscan 42,609개, 정상 770개, DoS 1개이고, 42,443개가 패킷 2개 flow다.
+
+입력이 같아지는 정도는 패킷 수가 정한다. 잔여 제거 전 라벨 flow 기준으로 다른 flow와 입력이 같은 비율은 다음과 같다.
+\begin{center}\small
+\begin{tabular}{lrr}
+\toprule
+패킷 수 & flow & 입력 같은 \%\\\midrule
+1 & 129,117 & 99.0\\
+2 & 531,582 & 94.8\\
+3--5 & 691,512 & 92.1\\
+6--20 & 608,631 & 11.1\\
+21 이상 & 309,401 & 0.8\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+test에서 잔여 행만 뺀 저장 예측의 n=50 macro-F1(\%)은 다음과 같다. 재학습이 아니라 채점 대상이 바뀐 값이다.
+\begin{center}\small
+\begin{tabular}{llrr}
+\toprule
+view & 모델 & 전체 test & 잔여 제외\\\midrule
+통계 45 & XGB & 65.16 & 66.40\\
+통계 45 & TabPFN & 69.04 & 70.43\\
+netFound & XGB & 57.77 & 58.78\\
+netFound & TabPFN & 71.61 & 72.13\\
+\bottomrule
+\end{tabular}
+\end{center}
+TabPFN n=50에서 Portscan 오탐의 70--74\%는 잔여 flow이고, bf, bot, web 오탐에는 잔여 flow가 없다.
+
+\section{결과: 잔여 제거 후 후보 필드}
+\begin{center}\small
+\begin{tabular}{lrrr}
+\toprule
+추가 필드 & 충돌 flow & 소수 라벨 행 & validation 정확도 \%\\\midrule
+없음 & 43,380 & 212 & 95.7\\
+목적 포트 & 199 & 58 & 95.7\\
+서비스 포트 & 841 & 61 & 96.0\\
+원본 seq가 0인지 & 42,571 & 64 & 99.4\\
+같은 IP 쌍의 최근 60초 포트 수 & 1,143 & 27 & 99.9\\
+클라이언트의 최근 60초 접촉 대상 수 & 23,487 & 50 & 98.4\\
+\bottomrule
+\end{tabular}
+\end{center}
+표의 60초 포트 수는 잔여 flow까지 센 초기 열이다. EXP95 few-shot에 넣은 열은 남은 flow만 세어 충돌이 964개다.
+
+\section{결과: netFound 원 규칙과 공개 파일}
+netFound 원 전처리는 PcapSplitter connection 모드를 쓴다. TCP는 순수 SYN에서만 새 flow가 되고 RST, FIN, timeout으로 닫지 않는다. 공개 가중치 small, base, large는 모두 payload를 제거하고 패킷당 헤더 12토큰을 쓰며, 포트는 토큰화에서 버린다. 입력 구성을 바꾸려면 사전학습을 다시 해야 한다.
+
+\begin{center}\small
+\begin{tabular}{lrrr}
+\toprule
+묶음 & 본 구현 & 원 규칙 & 공개 파일\\\midrule
+전체 flow & 2,425,048 & 1,567,541 & 558,754\\
+월요일 정상 & 421,674 & 249,695 & 248,914\\
+Portscan 금요일 & 161,202 & 161,193 & 159,554\\
+Portscan 목요일 & 101,936 & 76,610 & 66,923\\
+dos & 171,738 & 169,599 & 29,754\\
+ddos & 95,683 & 95,683 & 45,168\\
+bf & 6,982 & 6,945 & 6,422\\
+bot & 736 & 736 & 0\\
+web & 104 & 104 & 2,019\\
+\bottomrule
+\end{tabular}
+\end{center}
+전체와 월요일의 원 규칙 값은 패킷 재생 값이고 ICMP는 재생하지 않았다. class 행의 원 규칙 값은 본 구현의 flow를 같은 5-tuple로 합친 값이다. 월요일 정상은 공개 파일과 99.7\% 일치하고 UDP 1--2패킷 139개가 정확히 같아서, 논문의 1--2패킷 제거는 공개 파일에 적용되지 않았다.
+
+공개 파일은 무작위 80:20 분할이고, 공격 7종이 100\% 단방향이며, 정상은 월요일 flow다. Port Scan의 99.6\%가 패킷 2개 이하다. 패킷 수, 응답 유무, 프로토콜 세 값의 tree만으로 weighted F1이 0.949다. 논문의 netFound-small 고정 값은 weighted F1 0.9928이고, EXP94 n=50 netFound+TabPFN은 weighted 0.9755, macro 0.7161이다.
+
+본 구현의 패킷 2개 이하 flow 807,636개(33.3\%)는 잔여 284,600개, 같은 5-tuple의 뒤 조각 290,560개, 독립 flow 232,476개로 나뉜다. 뒤 조각의 92.6\%는 120초 종료 뒤에 생겼고 90.4\%가 UDP다. 독립 flow의 90.4\%는 Portscan이다. 공개 파일도 패킷 2개 이하가 40.1\%이고 그 99.8\%가 스캔이다.
+
+\section{결과: feature 층 재집계}
+\begin{center}\small
+\begin{tabular}{lrrr}
+\toprule
+feature & 같은 벡터·다른 라벨 \% & 같은 벡터·같은 라벨 \% & test 중 train과 같은 벡터 \%\\\midrule
+CSV 78 & 0.24 & 15.00 & 14.2\\
+통계 45 & 0.28 & 21.09 & 17.9\\
+netFound PCA 64 & 4.86 & 54.46 & 56.2\\
+\bottomrule
+\end{tabular}
+\end{center}
+L3에서 새로 생긴 충돌은 없다. 충돌 flow는 모두 패킷 6개 이하이고, 12 burst와 6패킷 제한으로 잘린 flow 340,555개 중 충돌 flow는 0개다. L1이 같은 flow는 510,365개이고, 5-tuple까지 같으면 184,939개, 시작 시각까지 같으면 2,624개다. 마지막 2,624개는 전부 패킷 1개다.
+
+\section{근거가 뒷받침하는 해석}
+\begin{itemize}
+\item 동일 입력 충돌은 데이터의 고정된 하한이 아니다. 대부분 flow 경계와 입력 변환에서 생겼고, 원본 패킷에는 가르는 정보가 있었다.
+\item 잔여 flow 정리는 충돌을 크게 줄이지만 희소 class 점수의 해법은 아니다. bf, bot, web 오탐은 잔여 flow가 아니라 정상 세션에서 나온다.
+\item 후보 필드는 충돌 수가 아니라 held-out으로 판단해야 한다. 목적 포트는 충돌 수만 줄였고, 원본 seq 표시와 같은 IP 쌍의 포트 수는 validation 조회 정확도를 올렸다.
+\item 공개 파일의 높은 weighted F1은 분할과 지표가 달라 EXP94 수치의 비교 기준이 되지 않는다.
+\end{itemize}
+
+\section{정정: 20261104\_exp94.tex}
+EXP94 보고서 본문은 당시 서술을 그대로 두고, 아래 내용을 우선한다.
+\begin{center}\small
+\begin{tabularx}{\linewidth}{lYY}
+\toprule
+위치 & 기존 서술 & 정정\\\midrule
+\S1, \S5.2, \S6 & L1 0.04\%는 라벨 쪽 하한이고 파이프라인에 가를 정보가 없다 & L1은 IP, 시각, 출발 포트, 원본 seq를 뺀 비교다. 913개는 잔여 flow에서 왔고 제거하면 2개다\\
+\S5.2 & L1은 자르기 전 토큰 전부를 쓴다 & corpus 토큰은 이미 12 burst, 6패킷으로 잘려 있다\\
+\S5.2 & netFound PCA 64 충돌은 67,765행, 2.985\%다 & float32 비교가 같은 입력을 쪼갠 과소집계다. 소수 3자리 반올림으로 110,324행, 4.86\%다\\
+\S1, \S5.2, \S6 & 충돌의 정체는 패킷 1개짜리 RST flow다 & 그 대부분은 잔여 flow다. 제거 후 남은 충돌은 패킷 2개 Portscan flow가 중심이다\\
+\S1, \S5.2, \S5.3, \S6 & test의 56\%가 train과 같아 외워서 맞히므로 점수가 부풀 수 있다 & 56\%는 전체 train 기준이다. n=50 학습 350행과 같은 test는 8.69\%이고 정확도는 두 모델 모두 97.0\%다. XGB와 TabPFN의 격차는 나머지 행의 91.1\%와 97.5\%에서 나온다\\
+\S6 & netFound 벡터에 목적 포트를 결합하는 후보 & 철회한다. 충돌만 줄고 validation 정확도는 오르지 않는다\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{미검증 설명과 한계}
+\begin{itemize}
+\item Portscan 충돌의 validation 근거는 거의 목요일 세션에서 나왔다. 금요일 train에 같은 응답 유형이 없어 요일 간 판단은 할 수 없다.
+\item 잔여 행을 뺀 macro-F1은 재학습이 아니다. 실제 few-shot 평가는 EXP95가 맡는다.
+\item dos와 ddos의 공개 파일 대비 차이는 설명하지 못했다. 논문에는 CIC-IDS-2017 전처리 설명이 없어 공개 파일 실측으로만 판단했다.
+\item 시작 시각까지 같은 flow 2,624개는 같은 패킷의 이중 기록으로 보이지만, 원본 seq는 대조하지 않았다.
+\item 초기 추정 1,654,948 flow는 UDP 행 82,899개를 SYN으로 잘못 세어 과대했고 재생값으로 교체했다. timeout 이어짐도 451,230에서 534,169로 고쳤다.
+\end{itemize}
+
+\section{다음 개선안}
+\begin{itemize}
+\item 잔여 flow 처리, 원본 seq 표시, 최근 60초 포트 수는 EXP95에서 평가했다. 결과는 \texttt{20261106\_exp95.tex}에 있다.
+\item EXP95는 corpus를 다시 만들지 않고 행을 제외해 평가했다. flow 규칙을 고친 corpus 재생성은 하지 않았다.
+\item 희소 class 개선은 flow 경계와 별도로 다룬다.
+\end{itemize}
+
+\section{실행 기록}
+\begin{itemize}
+\item 경계 분석: \path{docs/lablog/evidence/20261105/exp94_flow_boundary_analysis.json}.
+\item 공개 파일 대조: \path{docs/lablog/evidence/20261105/exp94_netfound_cic_comparison.json}.
+\item 패킷 예시: \path{docs/lablog/evidence/20261105/exp94_packet_walkthrough.json}.
+\item flow 수 분해와 feature 층 재집계: \path{docs/lablog/evidence/20261106/exp94_flow_total_decomposition.json}.
+\item 덱 검토 질문의 판독값: \path{docs/lablog/evidence/20261104/exp94_qa_layer_examples.json}, \path{exp94_qa_confusion_uniform_prior.json}.
+\end{itemize}
+\end{document}

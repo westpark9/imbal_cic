@@ -1,0 +1,176 @@
+{
+ "schema": 1,
+ "run": "tabpfn/results/v7/exp95/20261106_051907_all_class_0ecc759e",
+ "scope": "Counts from saved arrays and the saved class F1 table. No model was fitted.",
+ "labelled": 2123394,
+ "le2": 513804,
+ "le2_pct": 24.2,
+ "classes": [
+  {
+   "name": "benign",
+   "flows": 1609980,
+   "le2": 302688,
+   "le2_pct": 18.8,
+   "le2_protocol": {
+    "1": 52,
+    "6": 27683,
+    "17": 274953
+   }
+  },
+  {
+   "name": "dos",
+   "flows": 171713,
+   "le2": 591,
+   "le2_pct": 0.3,
+   "le2_protocol": {
+    "6": 591
+   }
+  },
+  {
+   "name": "portscan",
+   "flows": 238149,
+   "le2": 210494,
+   "le2_pct": 88.4,
+   "le2_protocol": {
+    "1": 33,
+    "6": 210035,
+    "17": 426
+   }
+  },
+  {
+   "name": "ddos",
+   "flows": 95683,
+   "le2": 0,
+   "le2_pct": 0.0,
+   "le2_protocol": {}
+  },
+  {
+   "name": "bf",
+   "flows": 6982,
+   "le2": 30,
+   "le2_pct": 0.4,
+   "le2_protocol": {
+    "6": 30
+   }
+  },
+  {
+   "name": "bot",
+   "flows": 736,
+   "le2": 0,
+   "le2_pct": 0.0,
+   "le2_protocol": {}
+  },
+  {
+   "name": "web",
+   "flows": 104,
+   "le2": 0,
+   "le2_pct": 0.0,
+   "le2_protocol": {}
+  },
+  {
+   "name": "inf",
+   "flows": 36,
+   "le2": 1,
+   "le2_pct": 2.8,
+   "le2_protocol": {
+    "6": 1
+   }
+  },
+  {
+   "name": "heartbleed",
+   "flows": 11,
+   "le2": 0,
+   "le2_pct": 0.0,
+   "le2_protocol": {}
+  }
+ ],
+ "conflict": {
+  "rows": 43380,
+  "groups": 19,
+  "le2": 43264,
+  "le2_pct": 99.7,
+  "packets": {
+   "1": 821,
+   "2": 42443,
+   "4": 110,
+   "6": 6
+  },
+  "portscan": {
+   "rows": 42609,
+   "tcp": 42567,
+   "pure_syn_first": 42414,
+   "peer_rst": 42412,
+   "syn_then_peer_rst": 42412,
+   "own_rst": 148
+  },
+  "benign": {
+   "rows": 770,
+   "packets": {
+    "1": 669,
+    "2": 27,
+    "4": 70,
+    "6": 4
+   },
+   "tcp": 698,
+   "pure_syn_first": 18,
+   "peer_rst": 14,
+   "syn_then_peer_rst": 14,
+   "own_rst": 661
+  }
+ },
+ "le2_portscan": {
+  "tcp": 210035,
+  "pure_syn_first": 207130,
+  "peer_rst": 174021,
+  "syn_then_peer_rst": 174013,
+  "own_rst": 2549
+ },
+ "le2_benign": {
+  "tcp": 27683,
+  "pure_syn_first": 5342,
+  "peer_rst": 18997,
+  "syn_then_peer_rst": 5124,
+  "own_rst": 2139
+ },
+ "ports_gain_tabpfn_n50": {
+  "macro_pp": 1.4,
+  "by_class": {
+   "benign": {
+    "f1_pp": 0.37,
+    "share_pct": 2.9
+   },
+   "dos": {
+    "f1_pp": 0.63,
+    "share_pct": 5.0
+   },
+   "portscan": {
+    "f1_pp": 0.41,
+    "share_pct": 3.3
+   },
+   "ddos": {
+    "f1_pp": 0.28,
+    "share_pct": 2.2
+   },
+   "bf": {
+    "f1_pp": 0.61,
+    "share_pct": 4.8
+   },
+   "bot": {
+    "f1_pp": -0.82,
+    "share_pct": -6.5
+   },
+   "web": {
+    "f1_pp": 8.24,
+    "share_pct": 65.5
+   },
+   "inf": {
+    "f1_pp": -0.01,
+    "share_pct": -0.1
+   },
+   "heartbleed": {
+    "f1_pp": 2.87,
+    "share_pct": 22.8
+   }
+  }
+ }
+}

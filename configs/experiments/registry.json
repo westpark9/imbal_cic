@@ -442,7 +442,11 @@
     "tabpfn/results/v7/exp94/20261103_162600_csv_cic2017_fewshot_c2c3b851": "v7",
     "tabpfn/results/v7/exp94/20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d": "v7",
     "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e": "v7",
-    "tabpfn/results/v7/exp94/20261104_132432_pcap_cic2017_variants_f3b13342": "v7"
+    "tabpfn/results/v7/exp94/20261104_132432_pcap_cic2017_variants_f3b13342": "v7",
+    "tabpfn/results/v7/exp95/20261106_032140_boundary_context_6605c113": "v7",
+    "tabpfn/results/v7/exp95/20261106_040738_drop_fewshot_eed06999": "v7",
+    "tabpfn/results/v7/exp95/20261106_042628_drop_paired_418e36f3": "v7",
+    "tabpfn/results/v7/exp95/20261106_051907_all_class_0ecc759e": "v7"
   },
   "run_annotations": {
     "tabpfn/results/v4/exp61/20260929_exp61_sota_local_s43": {
@@ -738,6 +742,22 @@
     "tabpfn/results/v7/exp94/20261104_132432_pcap_cic2017_variants_f3b13342": {
       "evidence": "unreviewed",
       "note": "Managed execution; results require scientific review"
+    },
+    "tabpfn/results/v7/exp95/20261106_032140_boundary_context_6605c113": {
+      "evidence": "invalid",
+      "note": "Stopped before evaluation after scope review; not used."
+    },
+    "tabpfn/results/v7/exp95/20261106_040738_drop_fewshot_eed06999": {
+      "evidence": "exploratory",
+      "note": "Differences mix redrawn rows, refit PCA and deletion; superseded by drop_paired for the deletion effect."
+    },
+    "tabpfn/results/v7/exp95/20261106_042628_drop_paired_418e36f3": {
+      "evidence": "selected",
+      "note": "Paired few-shot with residual flows deleted; arm netfound-exp94-pca is the deletion effect."
+    },
+    "tabpfn/results/v7/exp95/20261106_051907_all_class_0ecc759e": {
+      "evidence": "selected",
+      "note": "Nine-class few-shot with residual flows deleted and the two side columns; netfound arms keep EXP94 PCA and paired rows."
     }
   },
   "schema": 2,
@@ -3520,6 +3540,15 @@
       ],
       "protocol": "configs/experiments/exp94_pcap_protocol.json",
       "note": "CIC2017 CSV reference (few-shot curves, identical-input audit, oracle ceiling) for the CIC2017 PCAP comparison; user request 2026-11-03"
+    },
+    "v7/exp95": {
+      "version": "v7",
+      "id": "exp95",
+      "scopes": [
+        "tabpfn"
+      ],
+      "entrypoints": [],
+      "protocol": "configs/experiments/exp95_all_class_protocol.json"
     }
   },
   "layout_migration": "configs/experiments/migrations/20261007_layout/manifest.json"

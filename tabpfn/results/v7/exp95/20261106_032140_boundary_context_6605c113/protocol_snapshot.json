@@ -1,0 +1,153 @@
+{
+  "experiment": "exp95",
+  "version": "v7",
+  "dataset": "CIC-IDS2017-PCAP-whole-network",
+  "base_run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+  "seed": 43,
+  "purpose": "Compare four treatments of residual flows and test behavioural side features in front of XGB and frozen TabPFN on every held-out flow, reusing the EXP94 flows, labels, splits, seeds and label budgets.",
+  "approval": "User request 2026-11-06: validate the slide 16 side features on more data and run the four residual options while tracking identical netFound inputs.",
+  "residual_rule": "A flow is residual when the previous flow on the same 5-tuple ended by rst or fin_handshake, the gap is 0 to 2 s, packets <= 2, payload is 0 and the first packet has no SYN.",
+  "handling": {
+    "keep": "EXP94 flows unchanged.",
+    "drop": "Residual flows removed. Parent flows, tokens, labels and splits unchanged.",
+    "tailcount": "drop plus three columns on the root parent: residual packets, RST packets and FIN packets, added in front of the classifier.",
+    "merge": "Residual packets appended to the root parent in the packet stream, which changes its statistics and netFound tokens. Parent label and split stay as judged before merging. Pure ACK tails stay dropped as in EXP94."
+  },
+  "feature_sets": {
+    "none": [],
+    "seq": [
+      "first_seq_zero",
+      "first_ack_zero"
+    ],
+    "ports": [
+      "pair_ports_60"
+    ],
+    "seq_ports": [
+      "first_seq_zero",
+      "first_ack_zero",
+      "pair_ports_60"
+    ],
+    "ctx": [
+      "cli_flows_60",
+      "cli_targets_60",
+      "cli_fail_60",
+      "pair_flows_60",
+      "pair_ports_60",
+      "pair_fail_60",
+      "srv_flows_60",
+      "srv_clients_60",
+      "srv_fail_60",
+      "sig_rep_60"
+    ],
+    "seq_ctx": [
+      "first_seq_zero",
+      "first_ack_zero",
+      "cli_flows_60",
+      "cli_targets_60",
+      "cli_fail_60",
+      "pair_flows_60",
+      "pair_ports_60",
+      "pair_fail_60",
+      "srv_flows_60",
+      "srv_clients_60",
+      "srv_fail_60",
+      "sig_rep_60"
+    ]
+  },
+  "feature_note": "Side columns never hold IP values, ports or timestamps. IPs and service ports are grouping keys only. Context is causal: records are ordered by flow end within one capture and a flow sees only itself and flows that ended before it. Count columns are log1p scaled, rate columns are not.",
+  "context_window_seconds": 60,
+  "views": [
+    "flowstats-v1",
+    "netfound-v2-small"
+  ],
+  "arms": [
+    [
+      "keep",
+      "none"
+    ],
+    [
+      "keep",
+      "seq"
+    ],
+    [
+      "keep",
+      "ports"
+    ],
+    [
+      "keep",
+      "seq_ports"
+    ],
+    [
+      "keep",
+      "ctx"
+    ],
+    [
+      "keep",
+      "seq_ctx"
+    ],
+    [
+      "drop",
+      "none"
+    ],
+    [
+      "drop",
+      "seq_ctx"
+    ],
+    [
+      "tailcount",
+      "none"
+    ],
+    [
+      "tailcount",
+      "seq_ctx"
+    ],
+    [
+      "merge",
+      "none"
+    ],
+    [
+      "merge",
+      "seq_ctx"
+    ]
+  ],
+  "validation_budgets": [
+    20,
+    50
+  ],
+  "selection": "Arms are ranked on validation macro-F1 of with_benign at the validation budgets, on the rows shared by all handling options. Test is reported for every arm and never used to choose one.",
+  "scoring": {
+    "own": "Test rows that exist under that handling.",
+    "common": "Test rows that exist under every handling, which are the non-residual rows.",
+    "full": "All EXP94 test rows. Under drop, tailcount and merge a residual row takes the prediction of its root parent."
+  },
+  "cross_session": {
+    "note": "Portscan training rows come from one capture only and every portscan row of the other capture is scored, so the side features must carry over between scan sessions.",
+    "budgets": [
+      20,
+      50
+    ],
+    "handling": "keep",
+    "feature_sets": [
+      "none",
+      "seq",
+      "ports",
+      "seq_ports",
+      "ctx",
+      "seq_ctx"
+    ],
+    "directions": [
+      [
+        "cic2017_thursday",
+        "cic2017_friday"
+      ],
+      [
+        "cic2017_friday",
+        "cic2017_thursday"
+      ]
+    ],
+    "class": "portscan"
+  },
+  "pca": "keep reuses the EXP94 PCA. Other handling options refit PCA 64 on their own train rows, including unresolved rows, with the same seed.",
+  "inherited": "Flow IDs, labels, splits, seeds 43 to 47, budgets 2 to 50, regimes, XGB and TabPFN settings and TabPFN checkpoint come from protocol_snapshot.json of the base run.",
+  "evaluate_workers": 4
+}

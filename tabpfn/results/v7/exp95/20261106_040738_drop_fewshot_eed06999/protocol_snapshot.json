@@ -1,0 +1,18 @@
+{
+  "experiment": "exp95",
+  "version": "v7",
+  "dataset": "CIC-IDS2017-PCAP-whole-network",
+  "base_run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+  "seed": 43,
+  "purpose": "Few-shot re-evaluation after deleting residual flows, paired with EXP94 on the same test rows.",
+  "approval": "User request 2026-11-06: run the few-shot evaluation on the data with residual flows deleted.",
+  "residual_rule": "A flow is residual when the previous flow on the same 5-tuple ended by rst or fin_handshake, the gap is 0 to 2 s, packets <= 2, payload is 0 and the first packet has no SYN.",
+  "views": [
+    "flowstats-v1",
+    "netfound-v2-small"
+  ],
+  "inherited": "Flow IDs, labels, split of each flow, seeds 43 to 47, budgets 2 to 50, regimes, XGB and TabPFN settings and TabPFN checkpoint come from protocol_snapshot.json of the base run. Tokens, embeddings and statistics of the remaining flows are reused unchanged.",
+  "pca": "PCA 64 is refit on the train rows that remain, including unresolved rows, with the same seed. The statistics view has no projection.",
+  "scoring": "One scoring only: the test rows that remain after deletion. The EXP94 baseline is recomputed from its saved predictions on exactly these rows.",
+  "sampling_note": "Few-shot pools lose the residual rows, so selected rows can differ from EXP94 at the same seed. The comparison is paired by seed, budget, method and view."
+}

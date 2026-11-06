@@ -1,0 +1,18 @@
+{
+  "experiment": "exp95",
+  "version": "v7",
+  "dataset": "CIC-IDS2017-PCAP-whole-network",
+  "base_run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+  "first_run": "tabpfn/results/v7/exp95/20261106_040738_drop_fewshot_eed06999",
+  "seed": 43,
+  "purpose": "Separate the effect of deleting residual flows from sampling and PCA changes. The first run redrew every few-shot row because the pools shifted and it refit PCA, so its paired differences mix three changes.",
+  "approval": "Same user request as the first run: few-shot with residual flows deleted. This run corrects the comparison design.",
+  "sampling": "Each job reuses the EXP94 selected flows of its seed and regime in the same order. A selected flow that is residual is replaced by a draw from the remaining train flows of that class with seed + 1009 * class + 777, at the same position, so smaller budgets stay prefixes.",
+  "arms": {
+    "flowstats-v1": "Statistics view on the remaining rows.",
+    "netfound-exp94-pca": "EXP94 PCA vectors of the remaining rows. Only deletion and replaced rows differ from EXP94.",
+    "netfound-refit-pca": "PCA vectors of the first run, refit on the remaining train rows."
+  },
+  "scoring": "One scoring only: the test rows that remain after deletion. EXP94 is recomputed from saved predictions on exactly these rows.",
+  "inherited": "Flow IDs, labels, splits, seeds 43 to 47, budgets 2 to 50, regimes, XGB and TabPFN settings and checkpoint come from protocol_snapshot.json of the base run."
+}

@@ -1,0 +1,349 @@
+{
+ "schema": 1,
+ "date": "2026-11-06",
+ "experiment": "exp95",
+ "base_run": "tabpfn/results/v7/exp94/20261104_104228_pcap_cic2017_9faba40e",
+ "scope": "Counts only. No model was fitted and no few-shot job ran. The user limited experiment 2 to counting conflicts under the four residual options.",
+ "code": "scripts/v7/exp95/run_boundary_context.py, stages base and merge; counts by the scratch script k_counts.py from their outputs.",
+ "layers": {
+  "L1": "flow information without IP, time, source port and raw seq",
+  "L2": "netFound tokenizer input",
+  "L3s": "45 statistics",
+  "L3p": "netFound PCA 64 rounded to 3 decimals"
+ },
+ "tailcount_note": "L1, L3s and L3p include the three tail columns; L2 is the drop input because netFound does not receive them.",
+ "merge_note": "163,454 of 204,824 root parents changed input; 315,812 residual packets were appended. Merged inputs were not re-encoded, so L3p is not measured. keep and drop gave equal L2 and L3p counts.",
+ "remaining_merge_L2": {
+  "rows": 43066,
+  "portscan": 42297,
+  "benign": 768,
+  "dos": 1,
+  "two_packet": 42154,
+  "merged_parents": 23
+ },
+ "replay_verification": {
+  "cic2017_monday": {
+   "flow_ids_equal": true,
+   "flows": 377951,
+   "tail_packets": 53477,
+   "tail_expected": 53477,
+   "closed_ack": 17869,
+   "closed_ack_base": 17869
+  },
+  "cic2017_tuesday": {
+   "flow_ids_equal": true,
+   "flows": 326431,
+   "tail_packets": 34151,
+   "tail_expected": 34151,
+   "closed_ack": 14464,
+   "closed_ack_base": 14464
+  },
+  "cic2017_wednesday": {
+   "flow_ids_equal": true,
+   "flows": 504357,
+   "tail_packets": 165588,
+   "tail_expected": 165588,
+   "closed_ack": 62243,
+   "closed_ack_base": 62243
+  },
+  "cic2017_thursday": {
+   "flow_ids_equal": true,
+   "flows": 369472,
+   "tail_packets": 42942,
+   "tail_expected": 42942,
+   "closed_ack": 10538,
+   "closed_ack_base": 10538
+  },
+  "cic2017_friday": {
+   "flow_ids_equal": true,
+   "flows": 562237,
+   "tail_packets": 19654,
+   "tail_expected": 19654,
+   "closed_ack": 8052,
+   "closed_ack_base": 8052
+  }
+ },
+ "counts": {
+  "keep": {
+   "L1": {
+    "rows": 2270243,
+    "same_rows": 375552,
+    "same_pct": 16.54,
+    "conflict": 913,
+    "conflict_pct": 0.04,
+    "same_label_pct": 16.5,
+    "groups": 9,
+    "minority": 12,
+    "ceiling": 99.999
+   },
+   "L2": {
+    "rows": 2270243,
+    "same_rows": 1338819,
+    "same_pct": 58.97,
+    "conflict": 110324,
+    "conflict_pct": 4.86,
+    "same_label_pct": 54.11,
+    "groups": 24,
+    "minority": 4720,
+    "ceiling": 99.792,
+    "by_packets": {
+     "1": {
+      "rows": 129117,
+      "same_pct": 99.0,
+      "conflict": 67588
+     },
+     "2": {
+      "rows": 531582,
+      "same_pct": 94.8,
+      "conflict": 42620
+     },
+     "3-5": {
+      "rows": 691512,
+      "same_pct": 92.1,
+      "conflict": 110
+     },
+     "6-20": {
+      "rows": 608631,
+      "same_pct": 11.1,
+      "conflict": 6
+     },
+     "21+": {
+      "rows": 309401,
+      "same_pct": 0.8,
+      "conflict": 0
+     }
+    }
+   },
+   "L3s": {
+    "rows": 2270243,
+    "same_rows": 485220,
+    "same_pct": 21.37,
+    "conflict": 6367,
+    "conflict_pct": 0.28,
+    "same_label_pct": 21.09,
+    "groups": 143,
+    "minority": 172,
+    "ceiling": 99.992
+   },
+   "L3p": {
+    "rows": 2270243,
+    "same_rows": 1346669,
+    "same_pct": 59.32,
+    "conflict": 110324,
+    "conflict_pct": 4.86,
+    "same_label_pct": 54.46,
+    "groups": 24,
+    "minority": 4720,
+    "ceiling": 99.792
+   }
+  },
+  "drop": {
+   "L1": {
+    "rows": 2123347,
+    "same_rows": 269458,
+    "same_pct": 12.69,
+    "conflict": 2,
+    "conflict_pct": 0.0,
+    "same_label_pct": 12.69,
+    "groups": 1,
+    "minority": 1,
+    "ceiling": 100.0
+   },
+   "L2": {
+    "rows": 2123347,
+    "same_rows": 1206242,
+    "same_pct": 56.81,
+    "conflict": 43380,
+    "conflict_pct": 2.043,
+    "same_label_pct": 54.77,
+    "groups": 19,
+    "minority": 212,
+    "ceiling": 99.99,
+    "by_packets": {
+     "1": {
+      "rows": 7853,
+      "same_pct": 97.2,
+      "conflict": 821
+     },
+     "2": {
+      "rows": 505950,
+      "same_pct": 97.2,
+      "conflict": 42443
+     },
+     "3-5": {
+      "rows": 691512,
+      "same_pct": 92.1,
+      "conflict": 110
+     },
+     "6-20": {
+      "rows": 608631,
+      "same_pct": 11.1,
+      "conflict": 6
+     },
+     "21+": {
+      "rows": 309401,
+      "same_pct": 0.8,
+      "conflict": 0
+     }
+    }
+   },
+   "L3s": {
+    "rows": 2123347,
+    "same_rows": 376453,
+    "same_pct": 17.73,
+    "conflict": 69,
+    "conflict_pct": 0.003,
+    "same_label_pct": 17.73,
+    "groups": 11,
+    "minority": 11,
+    "ceiling": 99.999
+   },
+   "L3p": {
+    "rows": 2123347,
+    "same_rows": 1214118,
+    "same_pct": 57.18,
+    "conflict": 43380,
+    "conflict_pct": 2.043,
+    "same_label_pct": 55.14,
+    "groups": 19,
+    "minority": 212,
+    "ceiling": 99.99
+   }
+  },
+  "merge": {
+   "L1": {
+    "rows": 2123347,
+    "same_rows": 269298,
+    "same_pct": 12.68,
+    "conflict": 2,
+    "conflict_pct": 0.0,
+    "same_label_pct": 12.68,
+    "groups": 1,
+    "minority": 1,
+    "ceiling": 100.0
+   },
+   "L2": {
+    "rows": 2123347,
+    "same_rows": 1205349,
+    "same_pct": 56.77,
+    "conflict": 43066,
+    "conflict_pct": 2.028,
+    "same_label_pct": 54.74,
+    "groups": 20,
+    "minority": 212,
+    "ceiling": 99.99,
+    "by_packets": {
+     "1": {
+      "rows": 7681,
+      "same_pct": 97.2,
+      "conflict": 796
+     },
+     "2": {
+      "rows": 502785,
+      "same_pct": 97.6,
+      "conflict": 42154
+     },
+     "3-5": {
+      "rows": 692540,
+      "same_pct": 92.0,
+      "conflict": 110
+     },
+     "6-20": {
+      "rows": 603351,
+      "same_pct": 11.2,
+      "conflict": 6
+     },
+     "21+": {
+      "rows": 316990,
+      "same_pct": 0.8,
+      "conflict": 0
+     }
+    }
+   },
+   "L3s": {
+    "rows": 2123347,
+    "same_rows": 373013,
+    "same_pct": 17.57,
+    "conflict": 65,
+    "conflict_pct": 0.003,
+    "same_label_pct": 17.56,
+    "groups": 9,
+    "minority": 9,
+    "ceiling": 100.0
+   }
+  },
+  "tailcount": {
+   "L1": {
+    "rows": 2123347,
+    "same_rows": 269347,
+    "same_pct": 12.69,
+    "conflict": 2,
+    "conflict_pct": 0.0,
+    "same_label_pct": 12.68,
+    "groups": 1,
+    "minority": 1,
+    "ceiling": 100.0
+   },
+   "L2": {
+    "rows": 2123347,
+    "same_rows": 1206242,
+    "same_pct": 56.81,
+    "conflict": 43380,
+    "conflict_pct": 2.043,
+    "same_label_pct": 54.77,
+    "groups": 19,
+    "minority": 212,
+    "ceiling": 99.99,
+    "by_packets": {
+     "1": {
+      "rows": 7853,
+      "same_pct": 97.2,
+      "conflict": 821
+     },
+     "2": {
+      "rows": 505950,
+      "same_pct": 97.2,
+      "conflict": 42443
+     },
+     "3-5": {
+      "rows": 691512,
+      "same_pct": 92.1,
+      "conflict": 110
+     },
+     "6-20": {
+      "rows": 608631,
+      "same_pct": 11.1,
+      "conflict": 6
+     },
+     "21+": {
+      "rows": 309401,
+      "same_pct": 0.8,
+      "conflict": 0
+     }
+    }
+   },
+   "L3s": {
+    "rows": 2123347,
+    "same_rows": 375082,
+    "same_pct": 17.66,
+    "conflict": 65,
+    "conflict_pct": 0.003,
+    "same_label_pct": 17.66,
+    "groups": 9,
+    "minority": 9,
+    "ceiling": 100.0
+   },
+   "L3p": {
+    "rows": 2123347,
+    "same_rows": 1213038,
+    "same_pct": 57.13,
+    "conflict": 43066,
+    "conflict_pct": 2.028,
+    "same_label_pct": 55.1,
+    "groups": 20,
+    "minority": 212,
+    "ceiling": 99.99
+   }
+  }
+ }
+}

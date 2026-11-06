@@ -10,7 +10,7 @@
 \hypersetup{pdftitle={EXP94: PCAP에서 직접 만든 표현은 CSV의 두 문제를 푸는가}}
 \begin{document}
 \reporttitle{2026-11-04 실행 · 2026-11-04 분석}{EXP94: PCAP에서 직접 만든 표현은\\CSV의 두 문제를 푸는가 (CIC-IDS2017)}
-\recordnote{이 문서는 앞선 보고서 없이 읽을 수 있게 썼다. 순서는 한눈에 보기(\S1) $\to$ 용어(\S2) $\to$ 배경(\S3) $\to$ PCAP에서 벡터까지(\S4) $\to$ CSV와의 비교(\S5) $\to$ 판정(\S6) $\to$ 실행 기록(\S7)이다. 수치 출처는 CSV 쪽 실행 \path{20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d}과 PCAP 쪽 실행 \path{20261104_104228_pcap_cic2017_9faba40e}이다. 라벨 정책 변형(a)은 \S6.1에 있고, PCA 차원 변형(b)은 사용자 판단으로 중단했다.}
+\recordnote{이 문서는 앞선 보고서 없이 읽을 수 있게 썼다. 순서는 한눈에 보기(\S1) $\to$ 용어(\S2) $\to$ 배경(\S3) $\to$ PCAP에서 벡터까지(\S4) $\to$ CSV와의 비교(\S5) $\to$ 판정(\S6) $\to$ 실행 기록(\S7)이다. 수치 출처는 CSV 쪽 실행 \path{20261103_163915_csv_cic2017_fewshot_bylabel_420aaf8d}과 PCAP 쪽 실행 \path{20261104_104228_pcap_cic2017_9faba40e}이다. 라벨 정책 변형(a)은 \S6.1에 있고, PCA 차원 변형(b)은 사용자 판단으로 중단했다. 2026-11-06 안내: \S1, \S5.2, \S5.3, \S6의 일부 판단은 \texttt{20261105\_exp94.tex}의 정정 절이 우선한다. 본문은 당시 서술을 그대로 둔다.}
 
 \section{한눈에 보기}
 \textbf{무엇을 했나.} CIC-IDS2017의 원시 패킷 파일(PCAP, 5일분 51 GB)에서 통신 단위(flow)를 직접 다시 만들고, 라벨을 다시 붙이고, 두 가지 방식으로 숫자 벡터를 만들어, 공식 배포 CSV와 같은 조건에서 비교했다.
